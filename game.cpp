@@ -95,6 +95,35 @@ Game::~Game()
 	clearWorms();
 }
 
+void Game::onKey(Uint32 key, bool state)
+{
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		Worm& w = *worms[i];
+		
+		for(std::size_t control = 0; control < WormSettings::MaxControl; ++control)
+		{
+			if(w.settings->controls[control] == key)
+			{
+				w.setControlState(static_cast<Worm::Control>(control), state);
+			}
+		}
+	}
+}
+
+void Game::releaseControls()
+{
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		Worm& w = *worms[i];
+		
+		for(std::size_t control = 0; control < WormSettings::MaxControl; ++control)
+		{
+			w.release(static_cast<Worm::Control>(control));
+		}
+	}
+}
+
 void Game::initGame()
 {
 	clearWorms();
@@ -153,6 +182,7 @@ void Game::initGame()
 	
 	gotChanged = false;
 	lastKilled = 0;
+	paused = true;
 }
 
 void Game::clearViewports()
@@ -578,6 +608,107 @@ void createBonus()
 	game.bonuses.free(bonus);
 }
 
+void Game::processFrame()
+{
+	++cycles;
+	
+	if(!H[HBonusDisable]
+	&& settings.maxBonuses > 0
+	&& rand(C[BonusDropChance]) == 0)
+	{
+		createBonus();
+	}
+		
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		worms[i]->process();
+	}
+	
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		worms[i]->ninjarope.process(*worms[i]);
+	}
+	
+	switch(game.settings.gameMode)
+	{
+	case Settings::GMGameOfTag:
+	{
+		bool someInvisible = false;
+		for(std::size_t i = 0; i < worms.size(); ++i)
+		{
+			if(!worms[i]->visible)
+			{
+				someInvisible = true;
+				break;
+			}
+		}
+		
+		if(!someInvisible
+		&& lastKilled
+		&& (cycles % 70) == 0
+		&& lastKilled->timer < settings.timeToLose)
+		{
+			++lastKilled->timer;
+		}
+	}
+	break;
+	}
+	
+	processViewports();
+	drawViewports();
+			
+	for(BonusList::iterator i = bonuses.begin(); i != bonuses.end(); ++i)
+	{
+		i->process();
+	}
+	
+	if((cycles & 1) == 0)
+	{
+		for(std::size_t i = 0; i < viewports.size(); ++i)
+		{
+			Viewport& v = *viewports[i];
+			
+			bool down = false;
+			
+			if(v.worm->killedTimer > 16)
+				down = true;
+				
+			if(down)
+			{
+				if(v.bannerY < 2)
+					++v.bannerY;
+			}
+			else
+			{
+				if(v.bannerY > -8)
+					--v.bannerY;
+			}
+		}
+	}
+	
+	for(SObjectList::iterator i = game.sobjects.begin(); i != game.sobjects.end(); ++i)
+	{
+		i->process();
+	}
+	
+	// TODO: Check processing order of bonuses, wobjects etc.
+	
+	for(WObjectList::iterator i = wobjects.begin(); i != wobjects.end(); ++i)
+	{
+		i->process();
+	}
+	
+	for(NObjectList::iterator i = nobjects.begin(); i != nobjects.end(); ++i)
+	{
+		i->process();
+	}
+	
+	for(BObjectList::iterator i = bobjects.begin(); i != bobjects.end(); ++i)
+	{
+		i->process();
+	}
+}
+
 void Game::startGame(bool isStartingGame)
 {
 	gfx.pal.clear();
@@ -590,11 +721,8 @@ void Game::startGame(bool isStartingGame)
 		{
 			generateLevel();
 		}
-	
-		
+
 		initGame();
-		
-		
 		
 		for(std::size_t i = 0; i < viewports.size(); ++i)
 		{
@@ -619,105 +747,11 @@ void Game::startGame(bool isStartingGame)
 	int fadeAmount = isStartingGame ? 180 : 0;
 	bool shutDown = false;
 	
+	paused = false;
+	
 	do
 	{
-		++cycles;
-		
-		if(!H[HBonusDisable]
-		&& settings.maxBonuses > 0
-		&& rand(C[BonusDropChance]) == 0)
-		{
-			createBonus();
-		}
-			
-		for(std::size_t i = 0; i < worms.size(); ++i)
-		{
-			worms[i]->process();
-		}
-		
-		for(std::size_t i = 0; i < worms.size(); ++i)
-		{
-			worms[i]->ninjarope.process(*worms[i]);
-		}
-		
-		switch(game.settings.gameMode)
-		{
-		case Settings::GMGameOfTag:
-		{
-			bool someInvisible = false;
-			for(std::size_t i = 0; i < worms.size(); ++i)
-			{
-				if(!worms[i]->visible)
-				{
-					someInvisible = true;
-					break;
-				}
-			}
-			
-			if(!someInvisible
-			&& lastKilled
-			&& (cycles % 70) == 0
-			&& lastKilled->timer < settings.timeToLose)
-			{
-				++lastKilled->timer;
-			}
-		}
-		break;
-		}
-		
-		processViewports();
-		drawViewports();
-				
-		for(BonusList::iterator i = bonuses.begin(); i != bonuses.end(); ++i)
-		{
-			i->process();
-		}
-		
-		if((cycles & 1) == 0)
-		{
-			for(std::size_t i = 0; i < viewports.size(); ++i)
-			{
-				Viewport& v = *viewports[i];
-				
-				bool down = false;
-				
-				if(v.worm->killedTimer > 16)
-					down = true;
-					
-				if(down)
-				{
-					if(v.bannerY < 2)
-						++v.bannerY;
-				}
-				else
-				{
-					if(v.bannerY > -8)
-						--v.bannerY;
-				}
-			}
-		}
-		
-		for(SObjectList::iterator i = game.sobjects.begin(); i != game.sobjects.end(); ++i)
-		{
-			i->process();
-		}
-		
-		// TODO: Check processing order of bonuses, wobjects etc.
-		
-		for(WObjectList::iterator i = wobjects.begin(); i != wobjects.end(); ++i)
-		{
-			i->process();
-		}
-		
-		for(NObjectList::iterator i = nobjects.begin(); i != nobjects.end(); ++i)
-		{
-			i->process();
-		}
-		
-		for(BObjectList::iterator i = bobjects.begin(); i != bobjects.end(); ++i)
-		{
-			i->process();
-		}
+		processFrame();
 		
 		if((cycles & 3) == 0)
 		{
@@ -780,6 +814,8 @@ void Game::startGame(bool isStartingGame)
 	while(fadeAmount > 0);
 	
 	gfx.clearKeys();
+	releaseControls();
+	paused = true;
 }
 
 bool Game::isGameOver()

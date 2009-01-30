@@ -129,9 +129,9 @@ void selectWeapons()
 				
 				if(weapID >= 0 && weapID < game.settings.selectableWeapons)
 				{
-					if(gfx.testKey(worm.keyLeft()))
+					if(worm.pressed(Worm::Left))
 					{
-						gfx.releaseKey(worm.keyLeft());
+						worm.release(Worm::Left);
 						
 						sfx.play(25, -1);
 						
@@ -148,9 +148,9 @@ void selectWeapons()
 						menus[i].items[curSel[i]].string = game.weapons[w].name;
 					}
 					
-					if(gfx.testKey(worm.keyRight()))
+					if(worm.pressed(Worm::Right))
 					{
-						gfx.releaseKey(worm.keyRight());
+						worm.release(Worm::Right);
 						
 						sfx.play(26, -1);
 						
@@ -168,21 +168,21 @@ void selectWeapons()
 					}
 				}
 				
-				if(gfx.testKeyOnce(worm.keyUp()))
+				if(worm.pressedOnce(Worm::Up))
 				{
 					sfx.play(26, -1);
 					int s = int(menus[i].items.size());
 					curSel[i] = (curSel[i] - 1 + s) % s;
 				}
 				
-				if(gfx.testKeyOnce(worm.keyDown()))
+				if(worm.pressedOnce(Worm::Down))
 				{
 					sfx.play(25, -1);
 					int s = int(menus[i].items.size());
 					curSel[i] = (curSel[i] + 1 + s) % s;
 				}
 				
-				if(gfx.testKey(worm.keyFire()))
+				if(worm.pressed(Worm::Fire))
 				{
 					if(curSel[i] == 0)
 					{

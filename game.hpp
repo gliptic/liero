@@ -105,8 +105,12 @@ struct AIParams
 };
 
 struct Game
-{
+{	
 	~Game();
+	
+	void onKey(Uint32 key, bool state);
+	void releaseControls();
+	void processFrame();
 	
 	void clearViewports();
 	void addViewport(Viewport*);
@@ -156,11 +160,14 @@ struct Game
 	Worm* lastKilled; // Last killed worm
 	bool gotChanged;
 	Rand rand;
+	bool paused;
 	
 	std::string settingsFile; // Currently loaded settings file
 	
 	std::vector<Viewport*> viewports;
 	std::vector<Worm*> worms;
+	
+	
 	
 	typedef ObjectList<Bonus, 99> BonusList;
 	typedef ObjectList<WObject, 600> WObjectList;

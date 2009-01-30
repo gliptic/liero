@@ -27,11 +27,12 @@ struct Ninjarope
 	void process(Worm& owner);
 };
 
+/*
 struct Controls
 {
 	bool up, down, left, right;
 	bool fire, change, jump;
-};
+};*/
 
 struct WormWeapon
 {
@@ -56,7 +57,9 @@ struct WormSettings
 	enum
 	{
 		Up, Down, Left, Right,
-		Fire, Change, Jump
+		Fire, Change, Jump,
+		
+		MaxControl
 	};
 	
 	WormSettings()
@@ -74,7 +77,7 @@ struct WormSettings
 	
 	int health;
 	int controller; // CPU / Human
-	Uint32 controls[7];
+	Uint32 controls[MaxControl];
 	int weapons[5]; // TODO: Adjustable
 	std::string name;
 	int rgb[3];
@@ -124,6 +127,19 @@ struct Worm
 		RFUp,
 		RFRight
 	};
+	
+	enum Control
+	{
+		Left = WormSettings::Left,
+		Right = WormSettings::Right,
+		Up = WormSettings::Up,
+		Down = WormSettings::Down,
+		Fire = WormSettings::Fire,
+		Change = WormSettings::Change,
+		Jump = WormSettings::Jump,
+		
+		MaxControl
+	};
 		
 	Worm(WormSettings* settings, int index, int wormSoundID)
 	: x(0), y(0), velX(0), velY(0)
@@ -154,11 +170,11 @@ struct Worm
 	, index(index)
 	, wormSoundID(wormSoundID)
 	, direction(0)
-	
-	
 	{
+		std::memset(controlStates, 0, sizeof(controlStates));
 	}
 	
+/*
 	int keyLeft()
 	{
 		return settings->controls[WormSettings::Left];
@@ -193,6 +209,39 @@ struct Worm
 	{
 		return settings->controls[WormSettings::Jump];
 	}
+	*/
+	
+	bool pressed(Control control)
+	{
+		return controlStates[control];
+	}
+	
+	bool pressedOnce(Control control)
+	{
+		bool state = controlStates[control];
+		controlStates[control] = false;
+		return state;
+	}
+	
+	void release(Control control)
+	{
+		controlStates[control] = false;
+	}
+	
+	void press(Control control)
+	{
+		controlStates[control] = true;
+	}
+	
+	void setControlState(Control control, bool state)
+	{
+		controlStates[control] = state;
+	}
+	
+	void toggleControlState(Control control)
+	{
+		controlStates[control] = !controlStates[control];
+	}
 	
 	void beginRespawn();
 	void doRespawning();
@@ -216,7 +265,7 @@ struct Worm
 	int hotspotX, hotspotY;      //Hotspots for laser, laser sight, etc.
 	fixed aimingAngle, aimingSpeed;
  
-	Controls controls;
+	//Controls controls;
 	bool ableToJump, ableToDig;   //The previous state of some keys
 	bool keyChangePressed;
 	bool movable;
@@ -252,6 +301,7 @@ struct Worm
 	int reacts[4];
 	WormWeapon weapons[5];
 	int direction;
+	bool controlStates[MaxControl];
 };
 
 bool checkForWormHit(int x, int y, int dist, Worm* ownWorm);

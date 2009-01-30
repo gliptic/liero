@@ -422,7 +422,10 @@ void processEvent(SDL_Event& ev)
 			*/
 			Uint32 dosScan = SDLToDOSKey(ev.key.keysym);
 			if(dosScan)
+			{
 				gfx.dosKeys[dosScan] = true;
+				game.onKey(dosScan, true);
+			}
 				
 #if 0
 			std::cout << "v " << s << ", " << std::hex << ev.key.keysym.mod << ", " << std::dec << int(ev.key.keysym.scancode) << std::endl;
@@ -450,7 +453,10 @@ void processEvent(SDL_Event& ev)
 			
 			Uint32 dosScan = SDLToDOSKey(s);
 			if(dosScan)
+			{
 				gfx.dosKeys[dosScan] = false;
+				game.onKey(dosScan, false);
+			}
 				
 #if 0
 			std::cout << "^ " << s << ", " << std::hex << ev.key.keysym.mod << ", " << std::dec << int(ev.key.keysym.scancode) << std::endl;

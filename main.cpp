@@ -184,6 +184,7 @@ catch(std::exception& ex)
 	SDL_Quit();
 	Console::setAttributes(0x2f);
 	Console::writeLine(std::string("EXCEPTION: ") + ex.what());
+	Console::writeLine("Press any key to quit");
 	Console::waitForAnyKey();
 	return 1;
 }

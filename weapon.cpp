@@ -140,8 +140,8 @@ void WObject::process()
 	if(H[HRemExp]
 	&& id == C[RemExpObject] - 1)
 	{
-		if(gfx.testKey(owner->keyChange())
-		&& gfx.testKey(owner->keyFire()))
+		if(owner->pressed(Worm::Change)
+		&& owner->pressed(Worm::Fire))
 		{
 			timeLeft = 0;
 		}
@@ -161,7 +161,7 @@ void WObject::process()
 			fixed newVelY = dirY * w.speed / 100;
 			
 			if(owner->visible
-			&& gfx.testKey(owner->keyUp()))
+			&& owner->pressed(Worm::Up))
 			{
 				newVelX += w.addSpeed * dirX / 100;
 				newVelY += w.addSpeed * dirY / 100;

@@ -501,7 +501,7 @@ void Viewport::draw()
 					drawLaserSight(hotspotX, hotspotY, tempX + 7, tempY + 4);
 				}
 				
-				if(ww.id == C[LaserWeapon] - 1 && gfx.testKey(w.keyFire()))
+				if(ww.id == C[LaserWeapon] - 1 && w.pressed(Worm::Fire))
 				{
 					drawLine(hotspotX, hotspotY, tempX + 7, tempY + 4, weapon.colourBullets);
 				}
@@ -586,7 +586,7 @@ void Viewport::draw()
 			gfx.font.drawText(":O", 50 + rect.x1, 10, 10);
 		}
 #endif
-		if(gfx.testKey(worm->keyChange()))
+		if(worm->pressed(Worm::Change))
 		{
 			int id = worm->weapons[worm->currentWeapon].id;
 			std::string const& name = game.weapons[id].name;

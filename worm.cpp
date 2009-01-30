@@ -338,7 +338,7 @@ void Worm::process()
 
 			processSteerables();
 			
-			if(!movable && !gfx.testKey(keyLeft()) && !gfx.testKey(keyRight())) // processSteerables sets movable to false, does this interfer?
+			if(!movable && !pressed(Left) && !pressed(Right)) // processSteerables sets movable to false, does this interfer?
 			{
 				movable = true;
 			} // 2FB1
@@ -347,7 +347,7 @@ void Worm::process()
 			processTasks();
 			processWeapons();
 			
-			if(gfx.testKey(keyFire()) && !gfx.testKey(keyChange())
+			if(pressed(Fire) && !pressed(Change)
 			&& weapons[currentWeapon].available
 			&& weapons[currentWeapon].delayLeft <= 0)
 			{
@@ -362,7 +362,7 @@ void Worm::process()
 			processPhysics();
 			processSight();
 			
-			if(gfx.testKey(keyChange()))
+			if(pressed(Change))
 			{
 				processWeaponChange();
 			}
@@ -496,14 +496,14 @@ void Worm::process()
 				} // 485D
 				*/
 
-				gfx.releaseKey(keyFire());				
+				release(Fire);				
 			}
 		}
 		else
 		{
 			// Worm is dead
 			
-			if(gfx.testKeyOnce(keyFire()))
+			if(pressedOnce(Fire))
 			{
 				ready = true;
 			}
@@ -573,28 +573,28 @@ void Worm::processLieroAI()
 	if(realDist < maxDist || !visible)
 	{
 		// The other worm is close enough
-		bool fire = gfx.testKey(keyFire());
+		bool fire = pressed(Fire);
 		if(game.rand(game.aiParams.k[fire][WormSettings::Fire]) == 0)
 		{
-			gfx.setKey(keyFire(), !fire);
+			setControlState(Fire, !fire);
 		} // 4DE7
 	}
 	else if(visible)
 	{
-		gfx.releaseKey(keyFire());
+		release(Fire);
 	} // 4DFA
 		
 	// In Liero this is a loop with two iterations, that's better maybe
-	bool jump = gfx.testKey(keyJump());
+	bool jump = pressed(Jump);
 	if(game.rand(game.aiParams.k[jump][WormSettings::Jump]) == 0)
 	{
-		gfx.toggleKey(keyJump());
+		toggleControlState(Jump);
 	}
 	
-	bool change = gfx.testKey(keyChange());
+	bool change = pressed(Change);
 	if(game.rand(game.aiParams.k[change][WormSettings::Change]) == 0)
 	{
-		gfx.toggleKey(keyChange());
+		toggleControlState(Change);
 	}
 
 //l_4E6B:
@@ -695,41 +695,41 @@ void Worm::processLieroAI()
    } // 51C6
 */
 
-	change = gfx.testKey(keyChange());
+	change = pressed(Change);
 	
 	if(change)
 	{
-		if(game.rand(game.aiParams.k[gfx.testKey(keyLeft())][WormSettings::Left]) == 0)
+		if(game.rand(game.aiParams.k[pressed(Left)][WormSettings::Left]) == 0)
 		{
-			gfx.toggleKey(keyLeft());
+			toggleControlState(Left);
 		}
 		
-		if(game.rand(game.aiParams.k[gfx.testKey(keyRight())][WormSettings::Right]) == 0)
+		if(game.rand(game.aiParams.k[pressed(Right)][WormSettings::Right]) == 0)
 		{
-			gfx.toggleKey(keyRight());
+			toggleControlState(Right);
 		}
 		
 		if(ninjarope.out && ninjarope.attached)
 		{
 // l_525F:
-			bool up = gfx.testKey(keyUp());
+			bool up = pressed(Up);
 			
 			if(game.rand(game.aiParams.k[up][WormSettings::Up]) == 0)
 			{
-				gfx.toggleKey(keyUp());
+				toggleControlState(Up);
 			}
 			
-			bool down = gfx.testKey(keyDown());
+			bool down = pressed(Down);
 			if(game.rand(game.aiParams.k[down][WormSettings::Down]) == 0)
 			{
-				gfx.toggleKey(keyDown());
+				toggleControlState(Down);
 			}
 		}
 		else
 		{
 // l_52D2:
-			gfx.releaseKey(keyUp());
-			gfx.releaseKey(keyDown());
+			release(Up);
+			release(Down);
 		} // 52F8
 	} // if(change)
 	else
@@ -737,51 +737,51 @@ void Worm::processLieroAI()
 	
 		if(realDist > maxDist)
 		{
-			gfx.setKey(keyRight(), (deltaX > 0));
-			gfx.setKey(keyLeft(), (deltaX <= 0));
+			setControlState(Right, (deltaX > 0));
+			setControlState(Left, (deltaX <= 0));
 		} // 5347
 		else
 		{
-			gfx.releaseKey(keyRight());
-			gfx.releaseKey(keyLeft());
+			release(Right);
+			release(Left);
 		}
 
 		if(direction != 0)
 		{
 			if(dir < 64)
-				gfx.pressKey(keyLeft());
+				press(Left);
 			// 5369
-			gfx.setKey(keyUp(),   (dir + 1 < ftoi(aimingAngle)));
+			setControlState(Up,   (dir + 1 < ftoi(aimingAngle)));
 			// 5379
-			gfx.setKey(keyDown(), (dir - 1 > ftoi(aimingAngle)));
+			setControlState(Down, (dir - 1 > ftoi(aimingAngle)));
 		}
 		else
 		{
 			if(dir > 64)
-				gfx.pressKey(keyRight());
+				press(Right);
 			// 53C6
-			gfx.setKey(keyUp(),   (dir - 1 > ftoi(aimingAngle)));
+			setControlState(Up,   (dir - 1 > ftoi(aimingAngle)));
 			// 53E8
-			gfx.setKey(keyDown(), (dir + 1 < ftoi(aimingAngle)));
+			setControlState(Down, (dir + 1 < ftoi(aimingAngle)));
 			// 540A
 		}
 		
-		if(gfx.testKey(keyLeft())
+		if(pressed(Left)
 		&& reacts[RFRight])
 		{
 			if(reacts[RFDown] > 0)
-				gfx.pressKey(keyRight());
+				press(Right);
 			else
-				gfx.pressKey(keyJump());
+				press(Jump);
 		} // 5454
 		
-		if(gfx.testKey(keyRight())
+		if(pressed(Right)
 		&& reacts[RFLeft])
 		{
 			if(reacts[RFDown] > 0)
-				gfx.pressKey(keyLeft());
+				press(Left);
 			else
-				gfx.pressKey(keyJump());
+				press(Jump);
 		} // 549E
 	}
 }
@@ -922,8 +922,8 @@ void Worm::processMovement()
 {
 	if(movable)
 	{
-		bool left = gfx.testKey(keyLeft());
-		bool right = gfx.testKey(keyRight());
+		bool left = pressed(Left);
+		bool right = pressed(Right);
 		
 		if(left && !right)
 		{
@@ -1034,13 +1034,13 @@ void Worm::processMovement()
 
 void Worm::processTasks()
 {
-	if(gfx.testKey(keyChange()))
+	if(pressed(Change))
 	{
 		if(ninjarope.out)
 		{
-			if(gfx.testKey(keyUp()))
+			if(pressed(Up))
 				ninjarope.length -= C[NRPullVel]; 
-			if(gfx.testKey(keyDown()))
+			if(pressed(Down))
 				ninjarope.length += C[NRReleaseVel];
 				
 			if(ninjarope.length < C[NRMinLength])
@@ -1049,7 +1049,7 @@ void Worm::processTasks()
 				ninjarope.length = C[NRMaxLength];
 		}
 		
-		if(gfx.testKeyOnce(keyJump()))
+		if(pressedOnce(Jump))
 		{
 			ninjarope.out = true;
 			ninjarope.attached = false;
@@ -1068,7 +1068,7 @@ void Worm::processTasks()
 	else
 	{
 		//Jump = remove ninjarope, jump
-		if(gfx.testKey(keyJump()))
+		if(pressed(Jump))
 		{
 			ninjarope.out = false;
 			ninjarope.attached = false;
@@ -1086,8 +1086,8 @@ void Worm::processTasks()
 
 void Worm::processAiming()
 {
-	bool up = gfx.testKey(keyUp());
-	bool down = gfx.testKey(keyDown());
+	bool up = pressed(Up);
+	bool down = pressed(Down);
 	
 	if(aimingSpeed != 0)
 	{
@@ -1126,7 +1126,7 @@ void Worm::processAiming()
 		}
 	}
 	
-	if(movable && (!ninjarope.out || !gfx.testKey(keyChange())))
+	if(movable && (!ninjarope.out || !pressed(Change)))
 	{
 		if(up)
 		{
@@ -1162,8 +1162,8 @@ void Worm::processWeaponChange()
 {
 	if(!keyChangePressed)
 	{
-		gfx.releaseKey(keyLeft());
-		gfx.releaseKey(keyRight());
+		release(Left);
+		release(Right);
 		
 		keyChangePressed = true;
 	}
@@ -1178,7 +1178,7 @@ void Worm::processWeaponChange()
 	
 	if(weapons[currentWeapon].available || game.settings.loadChange)
 	{
-		if(gfx.testKeyOnce(keyLeft()))
+		if(pressedOnce(Left))
 		{
 			if(--currentWeapon < 0)
 				currentWeapon = game.settings.selectableWeapons - 1;
@@ -1187,7 +1187,7 @@ void Worm::processWeaponChange()
 			hotspotY = ftoi(y);
 		}
 		
-		if(gfx.testKeyOnce(keyRight()))
+		if(pressedOnce(Right))
 		{
 			if(++currentWeapon >= game.settings.selectableWeapons)
 				currentWeapon = 0;
@@ -1382,10 +1382,10 @@ void Worm::processSteerables()
 		{
 			if(i->id == ww.id && i->owner == this)
 			{
-				if(gfx.testKey(keyLeft()))
+				if(pressed(Left))
 					i->curFrame -= (game.cycles & 1) + 1;
 					
-				if(gfx.testKey(keyRight()))
+				if(pressed(Right))
 					i->curFrame += (game.cycles & 1) + 1;
 					
 				i->curFrame &= 127; // Wrap
