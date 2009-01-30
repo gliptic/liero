@@ -1,0 +1,16 @@
+SubDir TOP ;
+
+C++FLAGS = -s -Wall ;
+CFLAGS = -s -Wall ;
+OPTIM = -O3 ;
+LINK = "g++" ;
+LINKFLAGS = "-lSDL -lSDL_mixer" ;
+
+Main liero1.34 :
+	blit.cpp bobject.cpp bonus.cpp console.cpp
+	constants.cpp filesystem.cpp font.cpp game.cpp
+	gfx.cpp keys.cpp level.cpp main.cpp math.cpp
+	menu.cpp ninjarope.cpp nobject.cpp rand.cpp
+	reader.cpp sdlmain.cpp settings.cpp sfx.cpp
+	sobject.cpp sys.cpp text.cpp viewport.cpp weapon.cpp
+	weapsel.cpp worm.cpp ;
