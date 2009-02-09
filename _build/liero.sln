@@ -5,9 +5,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liero", "liero.vcproj", "{C
 		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9} = {57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gvl", "..\gvl\build\gvl.vcproj", "{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gvl", "..\..\gvl\_build\gvl.vcproj", "{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gvl_test", "..\gvl_test\build\gvl_test.vcproj", "{84C16952-2A28-4539-A6CC-1AEE30DF00D6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gvl_test", "..\..\gvl\gvl_test\_build\gvl_test.vcproj", "{84C16952-2A28-4539-A6CC-1AEE30DF00D6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9} = {57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}
 	EndProjectSection

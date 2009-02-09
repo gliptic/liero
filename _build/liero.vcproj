@@ -17,8 +17,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug"
+			OutputDirectory="$(SolutionDir)\_bin\$(ConfigurationName)"
+			IntermediateDirectory="_trash\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(SolutionDir)\.."
+				AdditionalIncludeDirectories="$(SolutionDir)\..\.."
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -96,8 +96,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
+			OutputDirectory="$(SolutionDir)\_bin\$(ConfigurationName)"
+			IntermediateDirectory="_trash\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -124,7 +124,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="$(SolutionDir)\.."
+				AdditionalIncludeDirectories="$(SolutionDir)\..\.."
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
@@ -183,259 +183,255 @@
 	</References>
 	<Files>
 		<File
-			RelativePath=".\blit.cpp"
+			RelativePath="..\blit.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\bobject.cpp"
+			RelativePath="..\bobject.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\bobject.hpp"
+			RelativePath="..\bobject.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\bonus.cpp"
+			RelativePath="..\bonus.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\bonus.hpp"
+			RelativePath="..\bonus.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\colour.hpp"
+			RelativePath="..\colour.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\common.cpp"
+			RelativePath="..\common.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\common.hpp"
+			RelativePath="..\common.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\console.cpp"
+			RelativePath="..\console.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\console.hpp"
+			RelativePath="..\console.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\constants.cpp"
+			RelativePath="..\constants.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\constants.hpp"
+			RelativePath="..\constants.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\controller.hpp"
+			RelativePath="..\controller.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\filesystem.cpp"
+			RelativePath="..\filesystem.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\filesystem.hpp"
+			RelativePath="..\filesystem.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\font.cpp"
+			RelativePath="..\font.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\font.hpp"
+			RelativePath="..\font.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\game.cpp"
+			RelativePath="..\game.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\game.hpp"
+			RelativePath="..\game.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\gfx.cpp"
+			RelativePath="..\gfx.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\gfx.hpp"
+			RelativePath="..\gfx.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\Jamfile"
+			RelativePath="..\Jamfile"
 			>
 		</File>
 		<File
-			RelativePath=".\keys.cpp"
+			RelativePath="..\keys.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\keys.hpp"
+			RelativePath="..\keys.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\level.cpp"
+			RelativePath="..\level.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\level.hpp"
+			RelativePath="..\level.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\lfs.hpp"
+			RelativePath="..\main.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\main.cpp"
+			RelativePath="..\math.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\math.cpp"
+			RelativePath="..\math.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\math.hpp"
+			RelativePath="..\menu.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\menu.cpp"
+			RelativePath="..\menu.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\menu.hpp"
+			RelativePath="..\ninjarope.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\ninjarope.cpp"
+			RelativePath="..\nobject.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\nobject.cpp"
+			RelativePath="..\nobject.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\nobject.hpp"
+			RelativePath="..\objectList.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\objectList.hpp"
+			RelativePath="..\palette.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\palette.cpp"
+			RelativePath="..\palette.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\palette.hpp"
+			RelativePath="..\platform.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\platform.hpp"
+			RelativePath="..\rand.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\rand.cpp"
+			RelativePath="..\rand.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\rand.hpp"
+			RelativePath="..\reader.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\reader.cpp"
+			RelativePath="..\reader.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\reader.hpp"
+			RelativePath="..\rect.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\rect.hpp"
+			RelativePath="..\sdlmain.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sdlmain.cpp"
+			RelativePath="..\settings.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\settings.cpp"
+			RelativePath="..\settings.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\settings.hpp"
+			RelativePath="..\sfx.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sfx.cpp"
+			RelativePath="..\sfx.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sfx.hpp"
+			RelativePath="..\sobject.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sobject.cpp"
+			RelativePath="..\sobject.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sobject.hpp"
+			RelativePath="..\sprite.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sprite.hpp"
+			RelativePath="..\sys.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sys.cpp"
+			RelativePath="..\sys.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sys.hpp"
+			RelativePath="..\text.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\text.cpp"
+			RelativePath="..\text.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\text.hpp"
+			RelativePath="..\viewport.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\viewport.cpp"
+			RelativePath="..\viewport.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\viewport.hpp"
+			RelativePath="..\weapon.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\weapon.cpp"
+			RelativePath="..\weapon.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\weapon.hpp"
+			RelativePath="..\weapsel.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\weapsel.cpp"
+			RelativePath="..\weapsel.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\weapsel.hpp"
+			RelativePath="..\worm.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\worm.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\worm.hpp"
+			RelativePath="..\worm.hpp"
 			>
 		</File>
 	</Files>
