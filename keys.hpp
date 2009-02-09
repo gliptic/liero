@@ -12,4 +12,6 @@ Uint32 SDLToDOSKey(SDL_keysym const& keysym);
 Uint32 SDLToDOSKey(SDLKey key);
 SDLKey DOSToSDLKey(Uint32 scan);
 
+int const DkEscape = 1;
+
 #endif // LIERO_KEYS_HPP

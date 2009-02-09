@@ -10,7 +10,10 @@
 #include <cstdlib>
 #include <cctype>
 #include <SDL/SDL.h>
-#include <iostream>
+//#include <iostream>
+#include <cstdio>
+#include <memory>
+#include "controller.hpp"
 
 /*
 ds:0000 is 0x 1AE80
@@ -18,88 +21,8 @@ ds:0000 is 0x 1AE80
 
 Gfx gfx;
 
-int Gfx::fireConeOffset[2][7][2] =
-{
-	{{-3, 1}, {-4, 0}, {-4, -2}, {-4, -4}, {-3, -5}, {-2, -6}, {0, -6}},
-	{{3, 1}, {4, 0}, {4, -2}, {4, -4}, {3, -5}, {2, -6}, {0, -6}},
-};
 
-void Palette::activate()
-{
-	SDL_Color realPal[256];
-	
-	for(int i = 0; i < 256; ++i)
-	{
-		realPal[i].r = entries[i].r << 2;
-		realPal[i].g = entries[i].g << 2;
-		realPal[i].b = entries[i].b << 2;
-	}
-	
-	SDL_SetColors(gfx.back, realPal, 0, 256);
-}
 
-int fadeValue(int v, int amount)
-{
-	assert(v < 64);
-	v = (v * amount) >> 5;
-	if(v < 0) v = 0;
-	return v;
-}
-
-int lightUpValue(int v, int amount)
-{
-	v = (v * (32 - amount) + amount*63) >> 5;
-	if(v > 63) v = 63;
-	return v;
-}
-
-void Palette::fade(int amount)
-{
-	for(int i = 0; i < 256; ++i)
-	{
-		entries[i].r = fadeValue(entries[i].r, amount);
-		entries[i].g = fadeValue(entries[i].g, amount);
-		entries[i].b = fadeValue(entries[i].b, amount);
-	}
-}
-
-void Palette::lightUp(int amount)
-{
-	for(int i = 0; i < 256; ++i)
-	{
-		entries[i].r = lightUpValue(entries[i].r, amount);
-		entries[i].g = lightUpValue(entries[i].g, amount);
-		entries[i].b = lightUpValue(entries[i].b, amount);
-	}
-}
-
-void Palette::rotate(int from, int to)
-{
-	SDL_Color tocol = entries[to];
-	for(int i = to; i > from; --i)
-	{
-		entries[i] = entries[i - 1];
-	}
-	entries[from] = tocol;
-}
-
-void Palette::clear()
-{
-	std::memset(entries, 0, sizeof(entries));
-}
-
-void Palette::read(FILE* f)
-{
-	for(int i = 0; i < 256; ++i)
-	{
-		unsigned char rgb[3];
-		fread(rgb, 1, 3, f);
-		
-		entries[i].r = rgb[0] & 63;
-		entries[i].g = rgb[1] & 63;
-		entries[i].b = rgb[2] & 63;
-	}
-}
 
 
 void SpriteSet::read(FILE* f, int width, int height, int count)
@@ -155,11 +78,11 @@ Gfx::Gfx()
 , screen(0)
 , back(0)
 , frozenScreen(320 * 200)
-, screenFlash(0)
 , running(true)
 , fullscreen(false)
 , doubleRes(false)
 , menuCyclic(0)
+, fadeValue(0)
 {
 	clearKeys();
 }
@@ -202,20 +125,8 @@ void Gfx::setVideoMode()
 
 void Gfx::loadPalette()
 {
-	FILE* exe = openLieroEXE();
-	
-	std::fseek(exe, 132774, SEEK_SET);
-	
-	exepal.read(exe);
-	origpal = exepal;
+	origpal = common->exepal;
 	pal = origpal;
-	
-	std::fseek(exe, 0x1AF0C, SEEK_SET);
-	for(int i = 0; i < 4; ++i)
-	{
-		colourAnim[i].from = readUint8(exe);
-		colourAnim[i].to = readUint8(exe);
-	}
 }
 
 void Gfx::loadMenus()
@@ -236,180 +147,80 @@ void Gfx::loadMenus()
 	playerMenuValues.items.assign(13, MenuItem(48, 7, ""));
 }
 
-void Gfx::loadGfx()
-{
-	FILE* exe = openLieroEXE();
-	
-	fseek(exe, 0x1C1DE, SEEK_SET);
-	bonusFrames[0] = readUint8(exe);
-	bonusFrames[1] = readUint8(exe);
-	
-	FILE* gfx = openLieroCHR();
-	
-	fseek(gfx, 10, SEEK_SET); // Skip some header
-	
-	largeSprites.read(gfx, 16, 16, 110);
-	fseek(gfx, 4, SEEK_CUR); // Extra stuff
-	
-	smallSprites.read(gfx, 7, 7, 130);
-	fseek(gfx, 4, SEEK_CUR); // Extra stuff
-	
-	textSprites.read(gfx, 4, 4, 26);
-	
-	for(int y = 0; y < 16; ++y)
-	for(int x = 0; x < 16; ++x)
-	{
-		int idx = y * 16 + x;
-		largeSprites.spritePtr(73)[idx] = game.rand(4) + 160;
-		largeSprites.spritePtr(74)[idx] = game.rand(4) + 160;
-		
-		largeSprites.spritePtr(87)[idx] = game.rand(4) + 12;
-		largeSprites.spritePtr(88)[idx] = game.rand(4) + 12;
-		
-		largeSprites.spritePtr(82)[idx] = game.rand(4) + 94;
-		largeSprites.spritePtr(83)[idx] = game.rand(4) + 94;
-	}
-	
-	wormSprites.allocate(16, 16, 2 * 2 * 21);
-	
-	for(int i = 0; i < 21; ++i)
-	{
-		for(int y = 0; y < 16; ++y)
-		for(int x = 0; x < 16; ++x)
-		{
-			PalIdx pix = (largeSprites.spritePtr(16 + i) + y*16)[x];
-			
-			(wormSprite(i, 1, 0) + y*16)[x] = pix;
-			if(x == 15)
-				(wormSprite(i, 0, 0) + y*16)[15] = 0;
-			else
-				(wormSprite(i, 0, 0) + y*16)[14 - x] = pix;
-			
-			if(pix >= 30 && pix <= 34)
-				pix += 9; // Change worm colour
-				
-			(wormSprite(i, 1, 1) + y*16)[x] = pix;
-			
-			if(x == 15)
-				(wormSprite(i, 0, 1) + y*16)[15] = 0; // A bit haxy, but works
-			else
-				(wormSprite(i, 0, 1) + y*16)[14 - x] = pix;
-		}
-	}
-	
-	fireConeSprites.allocate(16, 16, 2 * 7);
-	
-	for(int i = 0; i < 7; ++i)
-	{
-		for(int y = 0; y < 16; ++y)
-		for(int x = 0; x < 16; ++x)
-		{
-			PalIdx pix = (largeSprites.spritePtr(9 + i) + y*16)[x];
-			
-			(fireConeSprite(i, 1) + y*16)[x] = pix;
-			
-			if(x == 15)
-				(fireConeSprite(i, 0) + y*16)[15] = 0;
-			else
-				(fireConeSprite(i, 0) + y*16)[14 - x] = pix;
-			
-		}
-	}
-}
+
 
 
 void Gfx::updateSettingsMenu()
 {
-	settingsMenuValues.items[0].string = game.texts.gameModes[game.settings.gameMode];
+	settingsMenuValues.items[0].string = common->texts.gameModes[settings->gameMode];
 	
-	switch(game.settings.gameMode)
+	switch(settings->gameMode)
 	{
 		case Settings::GMKillEmAll:
-			settingsMenuValues.items[1].string = toString(game.settings.lives);
-			settingsMenu.items[1].string = game.texts.gameModeSpec[0];
+			settingsMenuValues.items[1].string = toString(settings->lives);
+			settingsMenu.items[1].string = common->texts.gameModeSpec[0];
 		break;
 		
 		case Settings::GMGameOfTag:		
-			settingsMenuValues.items[1].string = timeToString(game.settings.timeToLose);
-			settingsMenu.items[1].string = game.texts.gameModeSpec[1];
+			settingsMenuValues.items[1].string = timeToString(settings->timeToLose);
+			settingsMenu.items[1].string = common->texts.gameModeSpec[1];
 		break;
 		
 		case Settings::GMCtF:
 		case Settings::GMSimpleCtF:
-			settingsMenuValues.items[1].string = toString(game.settings.flagsToWin);
-			settingsMenu.items[1].string = game.texts.gameModeSpec[2];
+			settingsMenuValues.items[1].string = toString(settings->flagsToWin);
+			settingsMenu.items[1].string = common->texts.gameModeSpec[2];
 		break;
 	}
 	
-	settingsMenuValues.items[2].string = toString(game.settings.loadingTime) + '%';
-	settingsMenuValues.items[3].string = toString(game.settings.maxBonuses);
+	settingsMenuValues.items[2].string = toString(settings->loadingTime) + '%';
+	settingsMenuValues.items[3].string = toString(settings->maxBonuses);
 	
-	settingsMenuValues.items[4].string = game.texts.onoff[game.settings.namesOnBonuses];
-	settingsMenuValues.items[5].string = game.texts.onoff[game.settings.map];
+	settingsMenuValues.items[4].string = common->texts.onoff[settings->namesOnBonuses];
+	settingsMenuValues.items[5].string = common->texts.onoff[settings->map];
 	
-	settingsMenuValues.items[6].string = toString(game.settings.blood) + '%';
+	settingsMenuValues.items[6].string = toString(settings->blood) + '%';
 	
-	std::string levelPath = joinPath(lieroEXERoot, game.settings.levelFile + ".lev");
-	if(!game.settings.randomLevel && fileExists(levelPath))
+	std::string levelPath = joinPath(lieroEXERoot, settings->levelFile + ".lev");
+	if(!settings->randomLevel && fileExists(levelPath))
 	{
-		settingsMenuValues.items[7].string = '"' + game.settings.levelFile + '"';
-		settingsMenuValues.items[8].string = game.texts.reloadLevel;
+		settingsMenuValues.items[7].string = '"' + settings->levelFile + '"';
+		settingsMenuValues.items[8].string = common->texts.reloadLevel;
 	}
 	else
 	{
-		settingsMenuValues.items[7].string = game.texts.random2;
-		settingsMenuValues.items[8].string = game.texts.regenLevel;
+		settingsMenuValues.items[7].string = common->texts.random2;
+		settingsMenuValues.items[8].string = common->texts.regenLevel;
 	}
 	
-	settingsMenuValues.items[8].string = game.texts.onoff[game.settings.regenerateLevel];
-	settingsMenuValues.items[9].string = game.texts.onoff[game.settings.shadow];
-	settingsMenuValues.items[10].string = game.texts.onoff[game.settings.screenSync];
-	settingsMenuValues.items[11].string = game.texts.onoff[game.settings.loadChange];
+	settingsMenuValues.items[8].string = common->texts.onoff[settings->regenerateLevel];
+	settingsMenuValues.items[9].string = common->texts.onoff[settings->shadow];
+	settingsMenuValues.items[10].string = common->texts.onoff[settings->screenSync];
+	settingsMenuValues.items[11].string = common->texts.onoff[settings->loadChange];
 	
 }
 
 void Gfx::updatePlayerMenu(int player)
 {
-	WormSettings const& ws = game.settings.wormSettings[player];
+	WormSettings const& ws = *settings->wormSettings[player];
 	
-	playerMenuValues.items[0].string = game.settings.wormSettings[player].name;
-	playerMenuValues.items[1].string = toString(game.settings.wormSettings[player].health) + '%';
-	playerMenuValues.items[2].string = toString(game.settings.wormSettings[player].rgb[0]);
-	playerMenuValues.items[3].string = toString(game.settings.wormSettings[player].rgb[1]);
-	playerMenuValues.items[4].string = toString(game.settings.wormSettings[player].rgb[2]);
+	playerMenuValues.items[0].string = ws.name;
+	playerMenuValues.items[1].string = toString(ws.health) + '%';
+	playerMenuValues.items[2].string = toString(ws.rgb[0]);
+	playerMenuValues.items[3].string = toString(ws.rgb[1]);
+	playerMenuValues.items[4].string = toString(ws.rgb[2]);
 	
 	for(int i = 0; i < 7; ++i)
 	{
-		playerMenuValues.items[i + 5].string = game.texts.keyNames[ws.controls[i]];
+		playerMenuValues.items[i + 5].string = common->texts.keyNames[ws.controls[i]];
 	}
 
-	playerMenuValues.items[12].string = game.texts.controllers[game.settings.wormSettings[player].controller];
+	playerMenuValues.items[12].string = common->texts.controllers[ws.controller];
 }
 
 
-void Gfx::setWormColours()
-{
-	int const b[2] = {0x58, 0x78}; // TODO: Read from EXE?
 
-	for(int i = 0; i < 2; ++i)
-	{
-		int idx = game.settings.wormSettings[i].colour;
-		
-		origpal.setWormColours(idx, game.settings.wormSettings[i].rgb);
-		
-		for(int j = 0; j < 6; ++j)
-		{
-			origpal.entries[b[i] + j] = origpal.entries[idx + (j % 3) - 1];
-		}
-		
-		for(int j = 0; j < 3; ++j)
-		{
-			origpal.entries[129 + i * 4 + j] = origpal.entries[idx + j];
-		}
-	}
-}
-
-void processEvent(SDL_Event& ev)
+void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 {
 	switch(ev.type)
 	{
@@ -423,8 +234,9 @@ void processEvent(SDL_Event& ev)
 			Uint32 dosScan = SDLToDOSKey(ev.key.keysym);
 			if(dosScan)
 			{
-				gfx.dosKeys[dosScan] = true;
-				game.onKey(dosScan, true);
+				dosKeys[dosScan] = true;
+				if(controller)
+					controller->onKey(dosScan, true);
 			}
 				
 #if 0
@@ -434,13 +246,13 @@ void processEvent(SDL_Event& ev)
 			if(((ev.key.keysym.mod & KMOD_ALT) && s == SDLK_RETURN)
 			|| s == SDLK_F5)
 			{
-				gfx.fullscreen = !gfx.fullscreen;
-				gfx.setVideoMode();
+				fullscreen = !fullscreen;
+				setVideoMode();
 			}
 			else if(s == SDLK_F6)
 			{
-				gfx.doubleRes = !gfx.doubleRes;
-				gfx.setVideoMode();
+				doubleRes = !doubleRes;
+				setVideoMode();
 			}
 		}
 		break;
@@ -454,8 +266,9 @@ void processEvent(SDL_Event& ev)
 			Uint32 dosScan = SDLToDOSKey(s);
 			if(dosScan)
 			{
-				gfx.dosKeys[dosScan] = false;
-				game.onKey(dosScan, false);
+				dosKeys[dosScan] = false;
+				if(controller)
+					controller->onKey(dosScan, false);
 			}
 				
 #if 0
@@ -466,18 +279,18 @@ void processEvent(SDL_Event& ev)
 		
 		case SDL_QUIT:
 		{
-			gfx.running = false;
+			running = false;
 		}
 		break;
 	}
 }
 
-void Gfx::process()
+void Gfx::process(Controller* controller)
 {
 	SDL_Event ev;
 	while(SDL_PollEvent(&ev))
 	{
-		processEvent(ev);
+		processEvent(ev, controller);
 	}
 	
 	processReader();
@@ -530,7 +343,7 @@ void Gfx::flip()
 	
 	SDL_Flip(back);
 	
-	if(game.settings.screenSync)
+	if(settings->screenSync)
 	{
 		static unsigned int const delay = 14u;
 		
@@ -603,44 +416,44 @@ void Gfx::settingEnter(int item)
 	switch(item)
 	{
 		case 0: //GAME MODE
-			game.settings.gameMode = (game.settings.gameMode + 1) % 4;
+			settings->gameMode = (settings->gameMode + 1) % 4;
 		break;
 		
 		case 1:  //LIVES / TIME TO LOSE / FLAGS TO WIN //D772
-			switch(game.settings.gameMode)
+			switch(settings->gameMode)
 			{
 				case Settings::GMKillEmAll:
-					inputInteger(game.settings.lives, 0, 999, 3, 280, selectY);
+					inputInteger(settings->lives, 0, 999, 3, 280, selectY);
 				break;
 				
 				case Settings::GMCtF: // D7AF
 				case Settings::GMSimpleCtF:
-					inputInteger(game.settings.flagsToWin, 0, 999, 3, 280, selectY);
+					inputInteger(settings->flagsToWin, 0, 999, 3, 280, selectY);
 				break;
 			} // D7E7
 		break;
 			
 		case 2: // LOADING TIMES // D7EA
-			inputInteger(game.settings.loadingTime, 0, 9999, 4, 280, selectY);
+			inputInteger(settings->loadingTime, 0, 9999, 4, 280, selectY);
 		break;
 		
 		case 3: // MAX BONUSES // D82A
-			inputInteger(game.settings.maxBonuses, 0, 99, 2, 280, selectY);
+			inputInteger(settings->maxBonuses, 0, 99, 2, 280, selectY);
    		break;
    		
 		case 4: // NAMES ON BONUSES // D86B
-			game.settings.namesOnBonuses ^= 1; //Toggles first bit
+			settings->namesOnBonuses ^= 1; //Toggles first bit
 		break;
 		
 		case 5: // MAP //D87F
-			game.settings.map ^= 1;
+			settings->map ^= 1;
 		break;
 		
 		case 7: // LEVEL //D893
 		{
 			std::vector<std::string> list;
 			
-			list.push_back(game.texts.random);
+			list.push_back(common->texts.random);
 			
 			DirectoryIterator di(joinPath(lieroEXERoot, ".")); // TODO: Fix lieroEXERoot to be "." instead of ""
 			
@@ -655,11 +468,11 @@ void Gfx::settingEnter(int item)
 			std::size_t curSel = 0;
 			std::size_t topItem = 0;
 			
-			if(!game.settings.levelFile.empty())
+			if(!settings->levelFile.empty())
 			{
 				for(std::size_t i = 1; i < list.size(); ++i)
 				{
-					if(ciCompare(list[i], game.settings.levelFile))
+					if(ciCompare(list[i], settings->levelFile))
 					{
 						curSel = i;
 						break;
@@ -679,8 +492,8 @@ void Gfx::settingEnter(int item)
 			// Reset the right part of the screen
 			blitImageNoKeyColour(screen, &frozenScreen[160], 160, 0, 160, 200, 320);
 			
-			drawRoundedBox(178, 20, 0, 7, gfx.font.getWidth(game.texts.selLevel));
-			gfx.font.drawText(game.texts.selLevel, 180, 21, 50);
+			drawRoundedBox(178, 20, 0, 7, common->font.getWidth(common->texts.selLevel));
+			common->font.drawText(common->texts.selLevel, 180, 21, 50);
 			
 			std::memcpy(&tempScreen[0], gfx.screenPixels, tempScreen.size());
 			
@@ -700,20 +513,20 @@ void Gfx::settingEnter(int item)
 						
 						if(i == curSel)
 						{
-							drawRoundedBox(178, int(curSel - topItem) * 8 + 28, 0, 7, gfx.font.getWidth(item));
+							drawRoundedBox(178, int(curSel - topItem) * 8 + 28, 0, 7, common->font.getWidth(item));
 						}
 						
-						gfx.font.drawText(item, 181, y + 1, 0);
-						gfx.font.drawText(item, 180, y, (i != curSel) ? 7 : 168);
+						common->font.drawText(item, 181, y + 1, 0);
+						common->font.drawText(item, 180, y, (i != curSel) ? 7 : 168);
 					}
 				}
 				
 				if(list.size() > 14)
 				{
-					gfx.font.drawChar(22, 172, 30, 0);
-					gfx.font.drawChar(22, 171, 29, 50);
-					gfx.font.drawChar(23, 172, 134, 0);
-					gfx.font.drawChar(23, 171, 133, 50);
+					common->font.drawChar(22, 172, 30, 0);
+					common->font.drawChar(22, 171, 29, 50);
+					common->font.drawChar(23, 172, 134, 0);
+					common->font.drawChar(23, 171, 133, 50);
 					
 					int height = int(14*96 / list.size());
 					int y = int(topItem * 96 / list.size());
@@ -749,13 +562,13 @@ void Gfx::settingEnter(int item)
 					
 					if(curSel == 0)
 					{
-						game.settings.randomLevel = true;
-						game.settings.levelFile.clear();
+						settings->randomLevel = true;
+						settings->levelFile.clear();
 					}
 					else
 					{
-						game.settings.randomLevel = false;
-						game.settings.levelFile = list[curSel];
+						settings->randomLevel = false;
+						settings->levelFile = list[curSel];
 					}
 					
 					break;
@@ -772,16 +585,16 @@ void Gfx::settingEnter(int item)
 		break;
 		
 		case 8: // REGENERATE LEVEL // DD92
-			game.settings.regenerateLevel ^= 1;
+			settings->regenerateLevel ^= 1;
 		break;
 		case 9: // SHADOWS // DDA6
-			game.settings.shadow ^= 1;
+			settings->shadow ^= 1;
 		break;
 		case 10: // SCREEN SYNC // DDBA
-			game.settings.screenSync ^= 1;
+			settings->screenSync ^= 1;
 		break;
 		case 11: // LOAD+CHANGE // DDCE
-			game.settings.loadChange ^= 1;
+			settings->loadChange ^= 1;
 		break;
 		
 		case 12: // PLAYER 1 OPTIONS // DDE2
@@ -801,11 +614,11 @@ void Gfx::settingEnter(int item)
 			// Reset the right part of the screen
 			blitImageNoKeyColour(screen, &frozenScreen[160], 160, 0, 160, 200, 320);
 			
-			drawRoundedBox(178, 20, 0, 7, gfx.font.getWidth(game.texts.weapon));
-			drawRoundedBox(248, 20, 0, 7, gfx.font.getWidth(game.texts.availability));
+			drawRoundedBox(178, 20, 0, 7, common->font.getWidth(common->texts.weapon));
+			drawRoundedBox(248, 20, 0, 7, common->font.getWidth(common->texts.availability));
 			
-			gfx.font.drawText(game.texts.weapon, 180, 21, 50);
-			gfx.font.drawText(game.texts.availability, 250, 21, 50);
+			common->font.drawText(common->texts.weapon, 180, 21, 50);
+			common->font.drawText(common->texts.availability, 250, 21, 50);
 			
 			std::memcpy(&tempScreen[0], gfx.screenPixels, tempScreen.size());
 			
@@ -818,12 +631,12 @@ void Gfx::settingEnter(int item)
 				{
 					if(i <= listItems)
 					{
-						int index = game.weapOrder[i];
-						int state = game.settings.weapTable[index];
-						std::string const& stateStr = game.texts.weapStates[state];
-						std::string const& weapName = game.weapons[index].name;
-						int nameWidth = gfx.font.getWidth(weapName);
-						int stateWidth = gfx.font.getWidth(stateStr);
+						int index = common->weapOrder[i];
+						int state = settings->weapTable[index];
+						std::string const& stateStr = common->texts.weapStates[state];
+						std::string const& weapName = common->weapons[index].name;
+						int nameWidth = common->font.getWidth(weapName);
+						int stateWidth = common->font.getWidth(stateStr);
 						
 						int y = int(i - topItem) * 8 + 29;
 						
@@ -833,19 +646,19 @@ void Gfx::settingEnter(int item)
 							drawRoundedBox(268 - stateWidth/2, y - 1, 0, 7, stateWidth);
 						}
 						
-						gfx.font.drawText(weapName, 181, y + 1, 0); // TODO: A single function drawing text with shadow
-						gfx.font.drawText(weapName, 180, y, (i != curSel) ? 7 : 168);
-						gfx.font.drawText(stateStr, 271 - stateWidth/2, y + 1, 0);
-						gfx.font.drawText(stateStr, 270 - stateWidth/2, y, (i != curSel) ? 7 : 168);
+						common->font.drawText(weapName, 181, y + 1, 0); // TODO: A single function drawing text with shadow
+						common->font.drawText(weapName, 180, y, (i != curSel) ? 7 : 168);
+						common->font.drawText(stateStr, 271 - stateWidth/2, y + 1, 0);
+						common->font.drawText(stateStr, 270 - stateWidth/2, y, (i != curSel) ? 7 : 168);
 						
 					}
 				}
 				
 				
-				gfx.font.drawChar(22, 172, 30, 0);
-				gfx.font.drawChar(22, 171, 29, 50);
-				gfx.font.drawChar(23, 172, 134, 0);
-				gfx.font.drawChar(23, 171, 133, 50);
+				common->font.drawChar(22, 172, 30, 0);
+				common->font.drawChar(22, 171, 29, 50);
+				common->font.drawChar(23, 172, 134, 0);
+				common->font.drawChar(23, 171, 133, 50);
 				
 				int height = 33;
 				int y = int((topItem * 96 + 96) / 40);
@@ -877,7 +690,7 @@ void Gfx::settingEnter(int item)
 				{
 					sfx.play(25, -1);
 					
-					unsigned char& v = game.settings.weapTable[game.weapOrder[curSel]];
+					unsigned char& v = settings->weapTable[common->weapOrder[curSel]];
 					
 					v = (v - 1 + 3) % 3;
 				}
@@ -886,7 +699,7 @@ void Gfx::settingEnter(int item)
 				{
 					sfx.play(26, -1);
 					
-					unsigned char& v = game.settings.weapTable[game.weapOrder[curSel]];
+					unsigned char& v = settings->weapTable[common->weapOrder[curSel]];
 					
 					v = (v + 1 + 3) % 3;
 				}
@@ -903,7 +716,7 @@ void Gfx::settingEnter(int item)
 					
 					for(int i = 0; i < 40; ++i)
 					{
-						if(game.settings.weapTable[i] == 0)
+						if(settings->weapTable[i] == 0)
 							++count;
 					}
 						
@@ -911,7 +724,7 @@ void Gfx::settingEnter(int item)
 						break; // Enough weapons available
 						
 					drawRoundedBox(178, 58, 0, 17, 98);
-					gfx.font.drawText(game.texts.noWeaps, 180, 60, 6);
+					common->font.drawText(common->texts.noWeaps, 180, 60, 6);
 					
 					flip();
 					process();
@@ -933,6 +746,8 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 	while(true)
 	{
 		std::string str = prefix + buffer + '_';
+		
+		Font& font = common->font;
 		
 		int width = font.getWidth(str);
 		
@@ -1010,7 +825,7 @@ void Gfx::playerSettings(int player)
 	int curSel = 0;
 	int menuCyclic = 0;
 	
-	WormSettings& ws = game.settings.wormSettings[player];
+	WormSettings& ws = *settings->wormSettings[player];
 	
 	updatePlayerMenu(player);
 	
@@ -1020,8 +835,8 @@ void Gfx::playerSettings(int player)
 		
 		drawBasicMenu(0);
 
-		playerMenu.draw(178, 20, false, curSel);
-		playerMenuValues.draw(273, 20, false, curSel);
+		playerMenu.draw(*common, 178, 20, false, curSel);
+		playerMenuValues.draw(*common, 273, 20, false, curSel);
 		
 		for(int o = 0; o < 12; o++)
 		{
@@ -1033,14 +848,14 @@ void Gfx::playerSettings(int player)
 
 				if(o == curSel)
 				{
-					drawRoundedBox(202, ypos + 20, 168, 7, game.settings.wormSettings[player].rgb[rgbcol] - 1);
+					drawRoundedBox(202, ypos + 20, 168, 7, ws.rgb[rgbcol] - 1);
 				}
 				else // CE98
 				{
-					drawRoundedBox(202, ypos + 20, 0, 7, game.settings.wormSettings[player].rgb[rgbcol] - 1);
+					drawRoundedBox(202, ypos + 20, 0, 7, ws.rgb[rgbcol] - 1);
 				}
 				
-				fillRect(203, ypos + 21, game.settings.wormSettings[player].rgb[rgbcol], 5, game.settings.wormSettings[player].colour);
+				fillRect(203, ypos + 21, ws.rgb[rgbcol], 5, ws.colour);
 			} // CED9
 			
 			
@@ -1048,7 +863,7 @@ void Gfx::playerSettings(int player)
 		
 		drawRoundedBox(163, 19, 0, 12, 11);
 
-		blitImage(gfx.screen, wormSprite(2, 1, player), 163, 20, 16, 16);
+		blitImage(gfx.screen, common->wormSprite(2, 1, player), 163, 20, 16, 16);
 		
 
 		// l_CF9E:
@@ -1194,7 +1009,7 @@ void Gfx::playerSettings(int player)
 			updatePlayerMenu(player);
 		}
 		
-		setWormColours();
+		origpal.setWormColours(*settings);
 		origpal.rotate(168, 174);
 		pal = origpal;
  
@@ -1229,7 +1044,7 @@ void Gfx::settingLeftRight(int change, int item)
 
 			resetLeftRight();
 
-			game.settings.gameMode = (game.settings.gameMode + change + 4) % 4;
+			settings->gameMode = (settings->gameMode + change + 4) % 4;
 			
 			
 		break;
@@ -1237,20 +1052,20 @@ void Gfx::settingLeftRight(int change, int item)
 		case 1: //LIVES / TIME TO LOSE / FLAGS TO WIN //E530
 			if(menuCyclic == 0)
 			{
-				switch(game.settings.gameMode)
+				switch(settings->gameMode)
 				{
 				case Settings::GMKillEmAll:
-					changeVariable(game.settings.lives, change, 1, 999, 1);
+					changeVariable(settings->lives, change, 1, 999, 1);
 					
 				break;
 				
 				case Settings::GMGameOfTag: // E579
-					changeVariable(game.settings.timeToLose, change, 60, 3600, 10);
+					changeVariable(settings->timeToLose, change, 60, 3600, 10);
 				break;
 				
 				case Settings::GMCtF:
 				case Settings::GMSimpleCtF: //E5B0
-					changeVariable(game.settings.flagsToWin, change, 1, 999, 1);
+					changeVariable(settings->flagsToWin, change, 1, 999, 1);
 				break;
 				} // E5E3
 			}
@@ -1258,19 +1073,19 @@ void Gfx::settingLeftRight(int change, int item)
 		case 2: //LOADING TIMES // E5E6
 			if(menuCyclic == 0)
 			{
-				changeVariable(game.settings.loadingTime, change, 0, 9999, 1);
+				changeVariable(settings->loadingTime, change, 0, 9999, 1);
 			}
 			break;
 		case 3: //MAX BONUSES // E622
 			if(menuCyclic == 0)
 			{
-				changeVariable(game.settings.maxBonuses, change, 0, 99, 1);
+				changeVariable(settings->maxBonuses, change, 0, 99, 1);
 			}
 			break;
 		case 6: //AMOUNT OF BLOOD // E65B
 			if(menuCyclic == 0)
 			{
-				changeVariable(game.settings.blood, change, 0, 500, 25);
+				changeVariable(settings->blood, change, 0, 500, 25);
 				
 			}
 			break;
@@ -1279,43 +1094,196 @@ void Gfx::settingLeftRight(int change, int item)
 
 void Gfx::mainLoop()
 {
-	game.generateLevel();
-	game.resetWorms();
+#if 0
+	std::auto_ptr<Game> game(new Game(common, settings));
+	
+	game->generateLevel();
+	// Seems unnecessary: game->resetWorms();
+	//game->enter();
 	
 	while(true)
 	{
+		// This doesn't seem to fill any useful purpose since we speparated out the drawing: game->processViewports();
+		game->draw();
+		
 		int selection = menuLoop();
 		
-		if(selection == 1 || selection == 0)
+		if(selection == 1)
 		{
-			game.startGame(selection == 1);
+			std::auto_ptr<Game> newGame(new Game(common, settings));
+			
+			if(!settings.regenerateLevel
+			&& settings.randomLevel == game->oldRandomLevel
+			&& settings.levelFile == game->oldLevelFile)
+			{
+				// Take level and palette from old game
+				// TODO: These should be packaged together in a unit. Consider moving the palette to the level.
+				newGame->level.swap(game->level);
+				newGame->oldLevelFile = game->oldLevelFile;
+				newGame->oldRandomLevel = game->oldRandomLevel;
+			}
+			else
+			{
+				newGame->generateLevel();
+			}
+			
+			game = newGame;
+			game->settings = settings; // Update game settings
+			game->enter();
+			game->startGame();
+			//game->gameLoop();
+		}
+		else if(selection == 0)
+		{
+			game->settings = settings; // Update game settings
+			game->enter();
+			//game->continueGame();
+			//game->gameLoop();
 		}
 		else if(selection == 3) // QUIT TO OS
 		{
 			break;
 		}
+		
+		game->shutDown = false;
+	
+		do
+		{
+			game->processFrame();
+			gfx.clear();
+			game->draw();
+			
+			flip();
+			process(game.get());
+		}
+		while(fadeValue > 0);
+		
+		clearKeys();
 	}
+#else
+	Rand rand; // TODO: Seed
+	std::auto_ptr<Controller> controller(new LocalController(common, settings));
+	
+	// Seems unnecessary: game->resetWorms();
+	//game->enter();
+	
+	Level newLevel;
+	newLevel.generateFromSettings(*common, *settings, rand);
+	controller->swapLevel(newLevel);
+	//controller->focus();
+	
+	while(true)
+	{
+		// This doesn't seem to fill any useful purpose since we separated out the drawing: game->processViewports();
+		//game->draw();
+		controller->draw();
+		
+		int selection = menuLoop();
+		
+		if(selection == 1)
+		{
+			std::auto_ptr<Controller> newController(new LocalController(common, settings));
+			
+			Level& oldLevel = controller->currentLevel();
+			
+			if(!settings->regenerateLevel
+			&& settings->randomLevel == oldLevel.oldRandomLevel
+			&& settings->levelFile == oldLevel.oldLevelFile)
+			{
+				// Take level and palette from old game
+				// TODO: These should be packaged together in a unit. Consider moving the palette to the level.
+				newController->swapLevel(oldLevel);
+			}
+			else
+			{
+				Level newLevel;
+				newLevel.generateFromSettings(*common, *settings, rand);
+				newController->swapLevel(newLevel);
+			}
+			
+			controller = newController;
+		}
+		else if(selection == 0)
+		{
+			
+		}
+		else if(selection == 3) // QUIT TO OS
+		{
+			break;
+		}
+		
+		controller->focus();
+		
+		while(true)
+		{
+			if(!controller->process())
+				break;
+			clear();
+			controller->draw();
+			
+			flip();
+			process(controller.get());
+		}
+		
+		controller->unfocus();
+		
+		if(controller->running())
+			firstMenuItem = 0;
+		else
+			firstMenuItem = 1;
+		
+		clearKeys();
+		
+		
+		/*
+		game->shutDown = false;
+	
+		do
+		{
+			game->processFrame();
+			clear();
+			game->draw();
+			
+			flip();
+			process(game.get());
+		}
+		while(fadeValue > 0);*/
+		
+		
+	}
+#endif
+}
+
+void Gfx::saveSettings()
+{
+	settings->save(joinPath(lieroEXERoot, settingsFile + ".DAT"));
+}
+
+bool Gfx::loadSettings()
+{
+	settings.reset(new Settings);
+	return settings->load(joinPath(lieroEXERoot, settingsFile + ".DAT"));
 }
 
 void Gfx::drawBasicMenu(int curSel)
 {
 	std::memcpy(screen->pixels, &frozenScreen[0], frozenScreen.size());
 	
-	font.drawText(game.texts.saveoptions, 36, 54+20, 0);
-	font.drawText(game.texts.loadoptions, 36, 61+20, 0);
+	common->font.drawText(common->texts.saveoptions, 36, 54+20, 0);
+	common->font.drawText(common->texts.loadoptions, 36, 61+20, 0);
 	
-	font.drawText(game.texts.saveoptions, 36, 53+20, 10);
-	font.drawText(game.texts.loadoptions, 36, 60+20, 10);
+	common->font.drawText(common->texts.saveoptions, 36, 53+20, 10);
+	common->font.drawText(common->texts.loadoptions, 36, 60+20, 10);
 	
-	if(game.settingsFile.empty())
+	if(settingsFile.empty())
 	{
-		gfx.font.drawText(game.texts.curOptNoFile, 36, 46+20, 0);
-		gfx.font.drawText(game.texts.curOptNoFile, 35, 45+20, 147);
+		common->font.drawText(common->texts.curOptNoFile, 36, 46+20, 0);
+		common->font.drawText(common->texts.curOptNoFile, 35, 45+20, 147);
 	}
 	else
 	{
-		gfx.font.drawText(game.texts.curOpt + game.settingsFile, 36, 46+20, 0);
-		gfx.font.drawText(game.texts.curOpt + game.settingsFile, 35, 45+20, 147);
+		common->font.drawText(common->texts.curOpt + settingsFile, 36, 46+20, 0);
+		common->font.drawText(common->texts.curOpt + settingsFile, 35, 45+20, 147);
 	}
 	
 	
@@ -1334,9 +1302,9 @@ char buffer[256];
 	*/
 	
 	if(curMenu == 0)
-		mainMenu.draw(53, 20, false, curSel, firstMenuItem);
+		mainMenu.draw(*common, 53, 20, false, curSel, firstMenuItem);
 	else
-		mainMenu.draw(53, 20, true, -1, firstMenuItem);
+		mainMenu.draw(*common, 53, 20, true, -1, firstMenuItem);
 }
 
 int upperCaseOnly(int k)
@@ -1354,17 +1322,15 @@ int upperCaseOnly(int k)
 int Gfx::menuLoop()
 {
 	std::memset(pal.entries, 0, sizeof(pal.entries));
-	game.processViewports();
-	game.drawViewports();
 	flip();
 	process();
 	
 	fillRect(0, 151, 160, 7, 0);
-	font.drawText(game.texts.copyright2, 2, 152, 19);
+	common->font.drawText(common->texts.copyright2, 2, 152, 19);
 	
 	int curSel = firstMenuItem;
 	int curSel2 = 0;
-	int fadeValue = 0;
+	fadeValue = 0;
 	curMenu = 0;
 
 	std::memcpy(&frozenScreen[0], screen->pixels, frozenScreen.size());
@@ -1382,13 +1348,13 @@ int Gfx::menuLoop()
 		
 		if(curMenu == 1)
 		{
-			settingsMenu.draw(178, 20, false, curSel2);
-			settingsMenuValues.draw(278, 20, false, curSel2);
+			settingsMenu.draw(*common, 178, 20, false, curSel2);
+			settingsMenuValues.draw(*common, 278, 20, false, curSel2);
 		}
 		else
 		{
-			settingsMenu.draw(178, 20, true);
-			settingsMenuValues.draw(278, 20, true);
+			settingsMenu.draw(*common, 178, 20, true);
+			settingsMenuValues.draw(*common, 278, 20, true);
 		}
 		
 		if(testSDLKeyOnce(SDLK_ESCAPE))
@@ -1471,17 +1437,17 @@ int Gfx::menuLoop()
 		
 		if(testSDLKeyOnce(SDLK_s)) // TODO: Check for the real 's' here?
 		{
-			if(inputString(game.settingsFile, 8, 35, 65, upperCaseOnly, "Filename: ", false))
+			if(inputString(settingsFile, 8, 35, 65, upperCaseOnly, "Filename: ", false))
 			{
-				game.saveSettings();
+				saveSettings();
 			}
 		}
 		
 		if(testSDLKeyOnce(SDLK_l)) // TODO: Check if inputString should make a sound even when loading fails
 		{
-			while(inputString(game.settingsFile, 8, 35, 65, upperCaseOnly, "Filename: ", false))
+			while(inputString(settingsFile, 8, 35, 65, upperCaseOnly, "Filename: ", false))
 			{
-				if(game.loadSettings())
+				if(loadSettings())
 				{
 					updateSettingsMenu();
 					break;
@@ -1503,7 +1469,7 @@ int Gfx::menuLoop()
 			} // EDBF
 		}
 
-		setWormColours();
+		origpal.setWormColours(*settings);
 		origpal.rotate(168, 174);
 		pal = origpal;
 
@@ -1518,10 +1484,10 @@ int Gfx::menuLoop()
 	}
 	while(menuRunning);
 
-	for(int w = 32; w > 0; --w)
+	for(fadeValue = 32; fadeValue > 0; --fadeValue)
 	{
 		pal = origpal;
-		pal.fade(w);
+		pal.fade(fadeValue);
 		flip(); // TODO: We should just screen sync and set the palette here
 	} // EE36
 	
@@ -1529,17 +1495,3 @@ int Gfx::menuLoop()
 }
 
 
-void Gfx::drawTextSmall(char const* str, int x, int y)
-{
-	for(; *str; ++str)
-	{
-		unsigned char c = *str - 'A';
-		
-		if(c < 26)
-		{
-			blitImage(screen, textSprites.spritePtr(c), x, y, 4, 4);
-		}
-		
-		x += 4;
-	}
-}

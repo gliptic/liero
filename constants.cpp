@@ -1,5 +1,6 @@
 #include "constants.hpp"
 #include "reader.hpp"
+#include "game.hpp" // TODO: We should move Common somewhere else
 
 #include <iostream>
 
@@ -241,11 +242,7 @@ HackDesc Hhackdesc[] =
 	{0, 0}
 };
 
-int C[MaxC];
-std::string S[MaxS];
-bool H[MaxH];
-
-void loadConstantsFromEXE()
+void Common::loadConstantsFromEXE()
 {
 	FILE* exe = openLieroEXE();
 	

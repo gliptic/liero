@@ -168,18 +168,18 @@ void blitFireCone(SDL_Surface* scr, int fc, PalIdx* mem, int x, int y)
 	}
 }
 
-void blitImageOnMap(PalIdx* mem, int x, int y, int width, int height)
+void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int width, int height)
 {
 	int pitch = width;
-	SDL_Rect clipRect = {0, 0, game.level.width, game.level.height};
+	SDL_Rect clipRect = {0, 0, level.width, level.height};
 	
 	CLIP_IMAGE(clipRect);
 	
-	BLIT2(&game.level.data[0], game.level.width,
+	BLIT2(&level.data[0], level.width,
 	{
 		if(c)
 		{
-			if(game.materials[*rowdest].dirtBack())
+			if(common.materials[*rowdest].dirtBack())
 				*rowdest = c;
 			else
 				*rowdest = c + 3;
@@ -187,7 +187,7 @@ void blitImageOnMap(PalIdx* mem, int x, int y, int width, int height)
 	});
 }
 
-void blitShadowImage(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int height)
+void blitShadowImage(Common& common, SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int height)
 {
 	int pitch = width;
 	
@@ -203,7 +203,7 @@ void blitShadowImage(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int
 		for(int x = 0; x < width; ++x)
 		{
 			PalIdx c = *rowsrc;
-			if(c && game.materials[*rowdest].seeShadow()) // TODO: Speed up this test?
+			if(c && common.materials[*rowdest].seeShadow()) // TODO: Speed up this test?
 				*rowdest += 4;
 			++rowsrc;
 			++rowdest;
@@ -214,17 +214,17 @@ void blitShadowImage(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int
 	}
 }
 
-void blitStone(bool p1, PalIdx* mem, int x, int y)
+void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 {
 	int width = 16;
 	int height = 16;
 	int pitch = width;
 	
-	SDL_Rect clip = {0, 0, game.level.width, game.level.height};
+	SDL_Rect clip = {0, 0, level.width, level.height};
 	
 	CLIP_IMAGE(clip);
 	
-	PalIdx* dest = &game.level.pixel(x, y);
+	PalIdx* dest = &level.pixel(x, y);
 	
 	if(p1)
 	{
@@ -236,7 +236,7 @@ void blitStone(bool p1, PalIdx* mem, int x, int y)
 			for(int x = 0; x < width; ++x)
 			{
 				PalIdx c = *rowsrc;
-				if(c && game.materials[*rowdest].dirtBack()) // TODO: Speed up this test?
+				if(c && common.materials[*rowdest].dirtBack()) // TODO: Speed up this test?
 					*rowdest = c;
 				else
 					*rowdest = c + 3;
@@ -244,7 +244,7 @@ void blitStone(bool p1, PalIdx* mem, int x, int y)
 				++rowdest;
 			}
 
-			dest += game.level.width;
+			dest += level.width;
 			mem += pitch;
 		}
 	}
@@ -265,17 +265,19 @@ void blitStone(bool p1, PalIdx* mem, int x, int y)
 				++rowdest;
 			}
 
-			dest += game.level.width;
+			dest += level.width;
 			mem += pitch;
 		}
 	}
 }
 
-void drawDirtEffect(int dirtEffect, int x, int y)
+void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, int x, int y)
 {
-	Texture& tex = game.textures[dirtEffect];
-	PalIdx* tFrame = gfx.largeSprites.spritePtr(tex.sFrame + game.rand(tex.rFrame));
-	PalIdx* mFrame = gfx.largeSprites.spritePtr(tex.mFrame);
+	//Common& common = *game.common;
+	
+	Texture& tex = common.textures[dirtEffect];
+	PalIdx* tFrame = common.largeSprites.spritePtr(tex.sFrame + rand(tex.rFrame));
+	PalIdx* mFrame = common.largeSprites.spritePtr(tex.mFrame);
 	
 	// TODO: Optimize this
 	
@@ -284,7 +286,7 @@ void drawDirtEffect(int dirtEffect, int x, int y)
 		for(int cy = 0; cy < 16; ++cy)
 		{
 			int my = cy + y;
-			if(my >= game.level.height - 1)
+			if(my >= level.height - 1)
 				break;
 				
 			if(my < 0)
@@ -293,7 +295,7 @@ void drawDirtEffect(int dirtEffect, int x, int y)
 			for(int cx = 0; cx < 16; ++cx)
 			{
 				int mx = cx + x;
-				if(mx >= game.level.width)
+				if(mx >= level.width)
 					break;
 					
 				if(mx < 0)
@@ -302,17 +304,17 @@ void drawDirtEffect(int dirtEffect, int x, int y)
 				switch(mFrame[(cy << 4) + cx])
 				{
 				case 6:
-					if(game.materials[game.level.pixel(mx, my)].anyDirt())
+					if(common.materials[level.pixel(mx, my)].anyDirt())
 					{
-						game.level.pixel(mx, my) = tFrame[((my & 15) << 4) + (mx & 15)];
+						level.pixel(mx, my) = tFrame[((my & 15) << 4) + (mx & 15)];
 					}
 				break;
 				
 				case 1:
-					PalIdx& pix = game.level.pixel(mx, my);
-					if(game.materials[pix].dirt())
+					PalIdx& pix = level.pixel(mx, my);
+					if(common.materials[pix].dirt())
 						pix = 1;
-					if(game.materials[pix].dirt2())
+					if(common.materials[pix].dirt2())
 						pix = 2;
 				}
 			}
@@ -323,7 +325,7 @@ void drawDirtEffect(int dirtEffect, int x, int y)
 		for(int cy = 0; cy < 16; ++cy)
 		{
 			int my = cy + y;
-			if(my >= game.level.height - 1)
+			if(my >= level.height - 1)
 				break;
 				
 			if(my < 0)
@@ -332,7 +334,7 @@ void drawDirtEffect(int dirtEffect, int x, int y)
 			for(int cx = 0; cx < 16; ++cx)
 			{
 				int mx = cx + x;
-				if(mx >= game.level.width)
+				if(mx >= level.width)
 					break;
 					
 				if(mx < 0)
@@ -342,24 +344,24 @@ void drawDirtEffect(int dirtEffect, int x, int y)
 				{
 				case 10:
 				case 6:
-					if(game.materials[game.level.pixel(mx, my)].background())
+					if(common.materials[level.pixel(mx, my)].background())
 					{
-						game.level.pixel(mx, my) = tFrame[((my & 15) << 4) + (mx & 15)];
+						level.pixel(mx, my) = tFrame[((my & 15) << 4) + (mx & 15)];
 					}
 				break;
 				
 				case 2:
 				{
-					PalIdx& pix = game.level.pixel(mx, my);
-					if(game.materials[pix].background())
+					PalIdx& pix = level.pixel(mx, my);
+					if(common.materials[pix].background())
 						pix = 2;
 				}
 				break;
 				
 				case 1:
 				{
-					PalIdx& pix = game.level.pixel(mx, my);
-					if(game.materials[pix].background())
+					PalIdx& pix = level.pixel(mx, my);
+					if(common.materials[pix].background())
 						pix = 1;
 				}
 				break;
@@ -369,24 +371,22 @@ void drawDirtEffect(int dirtEffect, int x, int y)
 	}
 }
 
-void correctShadow(Rect rect)
+void correctShadow(Common& common, Level& level, Rect rect)
 {
-	rect.intersect(Rect(0, 3, game.level.width - 3, game.level.height));
-	
-	Level& lev = game.level;
-	
+	rect.intersect(Rect(0, 3, level.width - 3, level.height));
+		
 	for(int x = rect.x1; x < rect.x2; ++x)
 	for(int y = rect.y1; y < rect.y2; ++y)
 	{
-		PalIdx& pix = lev.pixel(x, y);
-		if(game.materials[pix].seeShadow()
-		&& game.materials[lev.pixel(x + 3, y - 3)].dirtRock())
+		PalIdx& pix = level.pixel(x, y);
+		if(common.materials[pix].seeShadow()
+		&& common.materials[level.pixel(x + 3, y - 3)].dirtRock())
 		{
 			pix += 4;
 		}
 		else if(pix >= 164 // Remove shadow
 		&& pix <= 167
-		&& !game.materials[lev.pixel(x + 3, y - 3)].dirtRock())
+		&& !common.materials[level.pixel(x + 3, y - 3)].dirtRock())
 		{
 			pix -= 4;
 		}
@@ -429,9 +429,9 @@ if(dx > dy) { \
 			c -= dy; } \
 		body_ } } }
 
-void drawNinjarope(int fromX, int fromY, int toX, int toY)
+void drawNinjarope(Common& common, int fromX, int fromY, int toX, int toY)
 {
-	int colour = C[NRColourBegin];
+	int colour = common.C[NRColourBegin];
 	
 	SDL_Rect& clip = gfx.screen->clip_rect;
 	PalIdx* ptr = gfx.screenPixels;
@@ -439,8 +439,8 @@ void drawNinjarope(int fromX, int fromY, int toX, int toY)
 	
 	
 	DO_LINE({
-		if(++colour == C[NRColourEnd])
-			colour = C[NRColourBegin];
+		if(++colour == common.C[NRColourEnd])
+			colour = common.C[NRColourBegin];
 			
 		if(isInside(clip, cx, cy))
 			ptr[cy*pitch + cx] = colour;
@@ -464,7 +464,7 @@ void drawLaserSight(int fromX, int fromY, int toX, int toY)
 	});
 }
 
-void drawShadowLine(int fromX, int fromY, int toX, int toY)
+void drawShadowLine(Common& common, int fromX, int fromY, int toX, int toY)
 {
 	SDL_Rect& clip = gfx.screen->clip_rect;
 	PalIdx* ptr = gfx.screenPixels;
@@ -475,7 +475,7 @@ void drawShadowLine(int fromX, int fromY, int toX, int toY)
 		if(isInside(clip, cx, cy))
 		{
 			PalIdx& pix = ptr[cy*pitch + cx];
-			if(game.materials[pix].seeShadow())
+			if(common.materials[pix].seeShadow())
 				pix += 4;
 		}
 	});

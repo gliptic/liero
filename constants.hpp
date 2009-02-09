@@ -139,10 +139,10 @@ enum
 	MaxH
 };
 
-extern int C[MaxC];
-extern std::string S[MaxS];
-extern bool H[MaxH];
+// TODO: Move these to Common
 
-void loadConstantsFromEXE();
+
+
+
 
 #endif // LIERO_CONSTANTS_HPP

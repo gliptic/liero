@@ -13,22 +13,6 @@ int const Settings::wormAnimTab[] =
 	14
 };
 
-int maxBonuses;
-int blood;
-int timeToLose;
-int flagsToWin;
-int gameMode;
-bool shadow;
-bool loadChange;
-bool namesOnBonuses;
-bool regenerateLevel;
-int lives;
-int loadingTime;
-bool randomLevel;
-std::string levelFile;
-bool map;
-bool screenSync;
-
 Settings::Settings()
 : maxBonuses(4)
 , blood(100)
@@ -47,11 +31,14 @@ Settings::Settings()
 {
 	std::memset(weapTable, 0, sizeof(weapTable));
 	
-	wormSettings[0].colour = 32;
-	wormSettings[1].colour = 41;
+	wormSettings[0].reset(new WormSettings);
+	wormSettings[1].reset(new WormSettings);
 	
-	wormSettings[0].selWeapX = 50; // TODO: Read from exe
-	wormSettings[1].selWeapX = 210;
+	wormSettings[0]->colour = 32;
+	wormSettings[1]->colour = 41;
+	
+	wormSettings[0]->selWeapX = 50; // TODO: Read from exe
+	wormSettings[1]->selWeapX = 210;
 	
 	unsigned char defControls[2][7] =
 	{
@@ -69,12 +56,12 @@ Settings::Settings()
 	{
 		for(int j = 0; j < 7; ++j)
 		{
-			wormSettings[i].controls[j] = DOSToSDLKey(defControls[i][j]);
+			wormSettings[i]->controls[j] = DOSToSDLKey(defControls[i][j]);
 		}
 		
 		for(int j = 0; j < 3; ++j)
 		{
-			wormSettings[i].rgb[j] = defRGB[i][j];
+			wormSettings[i]->rgb[j] = defRGB[i][j];
 		}
 	}
 }
@@ -110,8 +97,8 @@ bool Settings::load(std::string const& path)
 	
 	screenSync = readUint8(opt) != 0;
 	map = readUint8(opt) != 0;
-	wormSettings[0].controller = readUint8(opt) & 0x1;
-	wormSettings[1].controller = readUint8(opt) & 0x1;
+	wormSettings[0]->controller = readUint8(opt) & 0x1;
+	wormSettings[1]->controller = readUint8(opt) & 0x1;
 	randomLevel = readUint8(opt) != 0;
 	blood = readUint16(opt);
 	gameMode = readUint8(opt);
@@ -128,22 +115,22 @@ bool Settings::load(std::string const& path)
 	
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 3; ++j)
-		wormSettings[i].rgb[j] = readUint8(opt) & 63;
+		wormSettings[i]->rgb[j] = readUint8(opt) & 63;
 		
 	for(int i = 0; i < 2; ++i)
 	{
 		for(int j = 0; j < 5; ++j)
 		{
-			wormSettings[i].weapons[j] = readUint8(opt);
+			wormSettings[i]->weapons[j] = readUint8(opt);
 		}
 	}
 
-	wormSettings[0].health = readUint16(opt);
-	wormSettings[1].health = readUint16(opt);
+	wormSettings[0]->health = readUint16(opt);
+	wormSettings[1]->health = readUint16(opt);
 
 	for(int i = 0; i < 2; ++i)
 	{
-		wormSettings[i].name = readPascalString(opt, 21);
+		wormSettings[i]->name = readPascalString(opt, 21);
 	}
 	
 	//fgetc(opt); // What's this?
@@ -157,7 +144,7 @@ bool Settings::load(std::string const& path)
 	{
 		for(int j = 0; j < 7; ++j)
 		{
-			wormSettings[i].controls[j] = limit<0, 177>(readUint8(opt));
+			wormSettings[i]->controls[j] = limit<0, 177>(readUint8(opt));
 		}
 	}
 	
@@ -165,10 +152,10 @@ bool Settings::load(std::string const& path)
 	
 	for(int i = 0; i < 2; ++i)
 	{
-		if(wormSettings[i].name.empty())
-			generateName(wormSettings[i]);
+		if(wormSettings[i]->name.empty())
+			generateName(*wormSettings[i]);
 		else
-			wormSettings[i].randomName = false;
+			wormSettings[i]->randomName = false;
 	}
 	
 	fclose(opt);
@@ -188,8 +175,8 @@ void Settings::save(std::string const& path)
 	
 	writeUint8(opt, screenSync);
 	writeUint8(opt, map);
-	writeUint8(opt, wormSettings[0].controller);
-	writeUint8(opt, wormSettings[1].controller);
+	writeUint8(opt, wormSettings[0]->controller);
+	writeUint8(opt, wormSettings[1]->controller);
 	writeUint8(opt, randomLevel);
 	writeUint16(opt, blood);
 	writeUint8(opt, gameMode);
@@ -201,25 +188,25 @@ void Settings::save(std::string const& path)
 	
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 3; ++j)
-		writeUint8(opt, wormSettings[i].rgb[j]);
+		writeUint8(opt, wormSettings[i]->rgb[j]);
 		
 	for(int i = 0; i < 2; ++i)
 	{
 		for(int j = 0; j < 5; ++j)
 		{
-			writeUint8(opt, wormSettings[i].weapons[j]);
+			writeUint8(opt, wormSettings[i]->weapons[j]);
 		}
 	}
 
-	writeUint16(opt, wormSettings[0].health);
-	writeUint16(opt, wormSettings[1].health);
+	writeUint16(opt, wormSettings[0]->health);
+	writeUint16(opt, wormSettings[1]->health);
 
 	for(int i = 0; i < 2; ++i)
 	{
-		if(wormSettings[i].randomName)
+		if(wormSettings[i]->randomName)
 			writePascalString(opt, "", 21);
 		else
-			writePascalString(opt, wormSettings[i].name, 21);
+			writePascalString(opt, wormSettings[i]->name, 21);
 	}
 	
 	//fputc(0, opt); // What's this?
@@ -235,7 +222,7 @@ void Settings::save(std::string const& path)
 	{
 		for(int j = 0; j < 7; ++j)
 		{
-			writeUint8(opt, wormSettings[i].controls[j]);
+			writeUint8(opt, wormSettings[i]->controls[j]);
 		}
 	}
 	

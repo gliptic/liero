@@ -5,10 +5,11 @@
 #include "objectList.hpp"
 
 struct Worm;
+struct Game;
 
 struct SObjectType
 {
-	void create(int x, int y, Worm* owner);
+	void create(Game& game, int x, int y, Worm* owner);
 	
 	int startSound;
 	int numSounds;
@@ -28,7 +29,7 @@ struct SObjectType
 
 struct SObject : ObjectListBase
 {
-	void process();
+	void process(Game& game);
 	
 	fixed x, y;
 	int id; // type

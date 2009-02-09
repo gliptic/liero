@@ -6,6 +6,7 @@
 #include <string>
 
 struct Worm;
+struct Game;
 
 struct Weapon
 {
@@ -18,7 +19,7 @@ struct Weapon
 		STLaser
 	};
 	
-	void fire(int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner);
+	void fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner);
 
 	int detectDistance;
 	bool affectByWorm;
@@ -76,8 +77,8 @@ struct Weapon
 
 struct WObject : ObjectListBase
 {
-	void blowUpObject(Worm* owner);
-	void process();
+	void blowUpObject(Game& game, Worm* cause);
+	void process(Game& game);
 	
 	fixed x, y;
 	fixed velX, velY;

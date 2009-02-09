@@ -5,8 +5,10 @@
 #include <SDL/SDL.h>
 #include <string>
 #include <cstring>
+#include <gvl/resman/shared_ptr.hpp>
 
 struct Worm;
+struct Game;
 
 struct Ninjarope
 {
@@ -52,7 +54,7 @@ struct WormWeapon
 	bool available;			
 };
 
-struct WormSettings
+struct WormSettings : gvl::shared
 {
 	enum
 	{
@@ -141,7 +143,7 @@ struct Worm
 		MaxControl
 	};
 		
-	Worm(WormSettings* settings, int index, int wormSoundID)
+	Worm(gvl::shared_ptr<WormSettings> settings, int index, int wormSoundID, Game& game)
 	: x(0), y(0), velX(0), velY(0)
 	, hotspotX(0), hotspotY(0)
 	, aimingAngle(0), aimingSpeed(0)
@@ -170,46 +172,10 @@ struct Worm
 	, index(index)
 	, wormSoundID(wormSoundID)
 	, direction(0)
+	, game(game)
 	{
 		std::memset(controlStates, 0, sizeof(controlStates));
 	}
-	
-/*
-	int keyLeft()
-	{
-		return settings->controls[WormSettings::Left];
-	}
-	
-	int keyRight()
-	{
-		return settings->controls[WormSettings::Right];
-	}
-	
-	int keyUp()
-	{
-		return settings->controls[WormSettings::Up];
-	}
-	
-	int keyDown()
-	{
-		return settings->controls[WormSettings::Down];
-	}
-	
-	int keyFire()
-	{
-		return settings->controls[WormSettings::Fire];
-	}
-	
-	int keyChange()
-	{
-		return settings->controls[WormSettings::Change];
-	}
-	
-	int keyJump()
-	{
-		return settings->controls[WormSettings::Jump];
-	}
-	*/
 	
 	bool pressed(Control control)
 	{
@@ -293,8 +259,8 @@ struct Worm
 	int fireCone;                //How much is left of the firecone
 	int leaveShellTimer;         //Time until next shell drop
 	
-	WormSettings* settings;
-	Viewport* viewport;
+	gvl::shared_ptr<WormSettings> settings; // !CLONING
+	Viewport* viewport; // !CLONING
 	int index; // 0 or 1
 	int wormSoundID;
 	
@@ -302,6 +268,7 @@ struct Worm
 	WormWeapon weapons[5];
 	int direction;
 	bool controlStates[MaxControl];
+	Game& game; // !CLONING
 };
 
 bool checkForWormHit(int x, int y, int dist, Worm* ownWorm);

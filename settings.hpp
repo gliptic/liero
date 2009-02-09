@@ -4,8 +4,9 @@
 #include "worm.hpp"
 #include <string>
 #include <cstring>
+#include <gvl/resman/shared_ptr.hpp>
 
-struct Settings
+struct Settings : gvl::shared
 {
 	enum
 	{
@@ -43,7 +44,7 @@ struct Settings
 	bool map;
 	bool screenSync;
 	
-	WormSettings wormSettings[2];
+	gvl::shared_ptr<WormSettings> wormSettings[2];
 };
 
 #endif // LIERO_SETTINGS_HPP

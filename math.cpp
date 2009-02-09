@@ -2,6 +2,7 @@
 #include "reader.hpp"
 #include <cmath>
 
+// TODO: Move to Common or hardcode, I don't think any TC is or would like to change these tables
 fixed sinTable[128];
 fixed cosTable[128];
 

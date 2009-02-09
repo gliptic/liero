@@ -4,19 +4,21 @@
 #include "game.hpp"
 #include "constants.hpp"
 
-void createBObject(fixed x, fixed y, fixed velX, fixed velY)
+void Game::createBObject(fixed x, fixed y, fixed velX, fixed velY)
 {
-	BObject& obj = *game.bobjects.newObjectReuse();
+	BObject& obj = *bobjects.newObjectReuse();
 	
-	obj.colour = game.rand(C[NumBloodColours]) + C[FirstBloodColour];
+	obj.colour = rand(common->C[NumBloodColours]) + common->C[FirstBloodColour];
 	obj.x = x;
 	obj.y = y;
 	obj.velX = velX;
 	obj.velY = velY;
 }
 
-void BObject::process()
+void BObject::process(Game& game)
 {
+	Common& common = *game.common;
+	
 	x += velX;
 	y += velY;
 	
@@ -30,10 +32,10 @@ void BObject::process()
 	else
 	{
 		PalIdx c = game.level.pixel(ix, iy);
-		Material m = game.materials[c];
+		Material m = common.materials[c];
 		
 		if(m.background())
-			velY += C[BObjGravity];
+			velY += common.C[BObjGravity];
 			
 		if((c >= 1 && c <= 2)
 		|| (c >= 77 && c <= 79)) // TODO: Read from EXE

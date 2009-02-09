@@ -4,6 +4,8 @@
 #include "math.hpp"
 #include "objectList.hpp"
 
+struct Game;
+
 struct Bonus : ObjectListBase
 {
 	Bonus()
@@ -18,7 +20,7 @@ struct Bonus : ObjectListBase
 	int timer;
 	int weapon;
 		
-	void process();
+	void process(Game& game);
 };
 
 #endif // LIERO_BONUS_HPP

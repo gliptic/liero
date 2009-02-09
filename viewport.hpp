@@ -4,13 +4,16 @@
 #include "rect.hpp"
 #include "worm.hpp"
 
+struct Game;
+
 struct Viewport
 {
-	Viewport(Rect rect, Worm* worm, int inGameX, int levwidth, int levheight)
+	Viewport(Rect rect, Worm* worm, int inGameX, int levwidth, int levheight, Game& game)
 	: worm(worm)
 	, bannerY(-8)
 	, inGameX(inGameX)
 	, rect(rect)
+	, game(game)
 	{
 		maxX = levwidth - rect.width();
 		maxY = levheight - rect.height();
@@ -28,10 +31,9 @@ struct Viewport
 	int centerX, centerY;
 	Worm* worm;
 	int bannerY;
-	
 	int inGameX; // 0 for first, 218 for second
-	
 	Rect rect;
+	Game& game;
 	
 	void setCenter(int x, int y)
 	{

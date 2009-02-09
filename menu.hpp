@@ -7,6 +7,8 @@
 #include <vector>
 #include "colour.hpp"
 
+struct Common;
+
 struct MenuItem
 {
 	MenuItem(
@@ -19,7 +21,7 @@ struct MenuItem
 	{
 	}
 	
-	void draw(int x, int y, bool selected, bool disabled, bool centered);
+	void draw(Common& common, int x, int y, bool selected, bool disabled, bool centered);
 	
 	PalIdx colour;
 	PalIdx disColour;
@@ -38,7 +40,7 @@ struct Menu
 	{
 	}
 	
-	void draw(int x, int y, bool disabled, int selection = -1, int firstItem = 0, int lastItem = -1);
+	void draw(Common& common, int x, int y, bool disabled, int selection = -1, int firstItem = 0, int lastItem = -1);
 	
 	std::vector<MenuItem> items;
 	int itemHeight;

@@ -12,9 +12,9 @@ MenuItem mnuMainMenuItems[] =
 	{6, 6,   "QUIT TO OS"}
 };*/
 
-void MenuItem::draw(int x, int y, bool selected, bool disabled, bool centered)
+void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, bool centered)
 {
-	int wid = gfx.font.getWidth(string);
+	int wid = common.font.getWidth(string);
 	if(centered)
 		x -= (wid >> 1);
 	
@@ -24,7 +24,7 @@ void MenuItem::draw(int x, int y, bool selected, bool disabled, bool centered)
 	}
 	else
 	{
-		gfx.font.drawText(string, x + 3, y + 2, 0);
+		common.font.drawText(string, x + 3, y + 2, 0);
 	}
 	
 	PalIdx c;
@@ -36,10 +36,10 @@ void MenuItem::draw(int x, int y, bool selected, bool disabled, bool centered)
 	else
 		c = colour;
 		
-	gfx.font.drawText(string, x + 2, y + 1, c);
+	common.font.drawText(string, x + 2, y + 1, c);
 }
 
-void Menu::draw(int x, int y, bool disabled, int selection, int firstItem, int lastItem)
+void Menu::draw(Common& common, int x, int y, bool disabled, int selection, int firstItem, int lastItem)
 {
 	if(lastItem == -1)
 		lastItem = int(items.size()) - 1;
@@ -47,16 +47,16 @@ void Menu::draw(int x, int y, bool disabled, int selection, int firstItem, int l
 	for(int c = firstItem; c <= lastItem; ++c)
 	{
 		if(disabled)
-			items[c].draw(x, y, false, true, centered);
+			items[c].draw(common, x, y, false, true, centered);
 		else
 		{
 			if(c != selection)
 			{
-				items[c].draw(x, y, false, false, centered);
+				items[c].draw(common, x, y, false, false, centered);
 			}
 			else
 			{
-				items[c].draw(x, y, true, false, centered);
+				items[c].draw(common, x, y, true, false, centered);
 			}
 		}
 		

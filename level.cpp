@@ -4,40 +4,42 @@
 #include "gfx.hpp"
 #include "colour.hpp"
 #include "filesystem.hpp"
+
+#include "reader.hpp" // TODO: For lieroEXERoot. We should move that into Common.
 #include <cstring>
 
-void Level::generateDirtPattern()
+void Level::generateDirtPattern(Common& common, Rand& rand)
 {
 	width = 504;
 	height = 350;
 	data.resize(width * height);
 	
-	pixel(0, 0) = game.rand(7) + 12;
+	pixel(0, 0) = rand(7) + 12;
 	
 	for(int y = 1; y < height; ++y)
-		pixel(0, y) = ((game.rand(7) + 12) + pixel(0, y - 1)) >> 1;
+		pixel(0, y) = ((rand(7) + 12) + pixel(0, y - 1)) >> 1;
 		
 	for(int x = 1; x < width; ++x)
-		pixel(x, 0) = ((game.rand(7) + 12) + pixel(x - 1, 0)) >> 1;
+		pixel(x, 0) = ((rand(7) + 12) + pixel(x - 1, 0)) >> 1;
 		
 	for(int y = 1; y < height; ++y)
 	for(int x = 1; x < width; ++x)
 	{
-		pixel(x, y) = (pixel(x - 1, y) + pixel(x, y - 1) + game.rand(8) + 12) / 3;
+		pixel(x, y) = (pixel(x - 1, y) + pixel(x, y - 1) + rand(8) + 12) / 3;
 	}
 	
 	// TODO: Optimize the following
 	
-	int count = game.rand(100);
+	int count = rand(100);
 	
 	for(int i = 0; i < count; ++i)
 	{
-		int x = game.rand(width) - 8;
-		int y = game.rand(height) - 8;
+		int x = rand(width) - 8;
+		int y = rand(height) - 8;
 		
-		int temp = game.rand(4) + 69;
+		int temp = rand(4) + 69;
 		
-		PalIdx* image = gfx.largeSprites.spritePtr(temp);
+		PalIdx* image = common.largeSprites.spritePtr(temp);
 		
 		for(int cy = 0; cy < 16; ++cy)
 		{
@@ -70,131 +72,134 @@ void Level::generateDirtPattern()
 		}
 	}
 	
-	count = game.rand(15);
+	count = rand(15);
 	
 	for(int i = 0; i < count; ++i)
 	{
-		int x = game.rand(width) - 8;
-		int y = game.rand(height) - 8;
+		int x = rand(width) - 8;
+		int y = rand(height) - 8;
 		
-		int which = game.rand(4) + 56;
+		int which = rand(4) + 56;
 		
-		blitStone(false, gfx.largeSprites.spritePtr(which), x, y);
+		blitStone(common, *this, false, common.largeSprites.spritePtr(which), x, y);
 	}
 }
 
-bool isNoRock(int size, int x, int y)
+bool isNoRock(Common& common, Level& level, int size, int x, int y)
 {
 	Rect rect(x, y, x + size + 1, y + size + 1);
 	
-	rect.intersect(Rect(0, 0, game.level.width, game.level.height));
+	rect.intersect(Rect(0, 0, level.width, level.height));
 	
 	for(int y = rect.y1; y < rect.y2; ++y)
 	for(int x = rect.x1; x < rect.x2; ++x)
 	{
-		if(game.materials[game.level.pixel(x, y)].rock())
+		if(common.materials[level.pixel(x, y)].rock())
 			return false;
 	}
 	
 	return true;
 }
 
-void Level::generateRandom()
+void Level::generateRandom(Common& common, Settings const& settings, Rand& rand)
 {
-	game.settings.levelFile.clear();
-	game.settings.randomLevel = true;
-	gfx.resetPalette(gfx.exepal);
+	// TODO: Skipping this is a minor deviation of liero behaviour
+	/*
+	gfx.settings.levelFile.clear();
+	gfx.settings.randomLevel = true;*/
+	//gfx.resetPalette(common.exepal); // TODO: Palette should be in Game (or Level?) and Game should transfer it to Gfx when needed
+	origpal.resetPalette(common.exepal, settings);
 	
-	generateDirtPattern();
+	generateDirtPattern(common, rand);
 	
-	int count = game.rand(50) + 5;
+	int count = rand(50) + 5;
 	
 	for(int i = 0; i < count; ++i)
 	{
-		int cx = game.rand(width) - 8;
-		int cy = game.rand(height) - 8;
+		int cx = rand(width) - 8;
+		int cy = rand(height) - 8;
 		
-		int dx = game.rand(11) - 5;
-		int dy = game.rand(5) - 2;
+		int dx = rand(11) - 5;
+		int dy = rand(5) - 2;
 		
-		int count2 = game.rand(12);
+		int count2 = rand(12);
 		
 		for(int j = 0; j < count2; ++j)
 		{
-			int count3 = game.rand(5);
+			int count3 = rand(5);
 		
 			for(int k = 0; k < count3; ++k)
 			{
 				cx += dx;
 				cy += dy;
-				drawDirtEffect(1, cx, cy); // TODO: Check if it really should be dirt effect 1
+				drawDirtEffect(common, rand, *this, 1, cx, cy); // TODO: Check if it really should be dirt effect 1
 			}
 			
 			cx -= (count3 + 1) * dx; // TODO: Check if it really should be (count3 + 1)
 			cy -= (count3 + 1) * dy; // TODO: Check if it really should be (count3 + 1)
 			
-			cx += game.rand(7) - 3;
-			cy += game.rand(15) - 7;
+			cx += rand(7) - 3;
+			cy += rand(15) - 7;
 		}
 	}
 	
-	count = game.rand(15) + 5;
+	count = rand(15) + 5;
 	for(int i = 0; i < count; ++i)
 	{
 		int cx, cy;
 		do
 		{
-			cx = game.rand(game.level.width) - 16;
+			cx = rand(width) - 16;
 			
-			if(game.rand(4) == 0)
-				cy = game.level.height - 1 - game.rand(20);
+			if(rand(4) == 0)
+				cy = height - 1 - rand(20);
 			else
-				cy = game.rand(game.level.height) - 16;
+				cy = rand(height) - 16;
 		}
-		while(!isNoRock(32, cx, cy));
+		while(!isNoRock(common, *this, 32, cx, cy));
 		
-		int rock = game.rand(3);
+		int rock = rand(3);
 		
-		blitStone(false, gfx.largeSprites.spritePtr(stoneTab[rock][0]), cx, cy);
-		blitStone(false, gfx.largeSprites.spritePtr(stoneTab[rock][1]), cx + 16, cy);
-		blitStone(false, gfx.largeSprites.spritePtr(stoneTab[rock][2]), cx, cy + 16);
-		blitStone(false, gfx.largeSprites.spritePtr(stoneTab[rock][3]), cx + 16, cy + 16);
+		blitStone(common, *this, false, common.largeSprites.spritePtr(stoneTab[rock][0]), cx, cy);
+		blitStone(common, *this, false, common.largeSprites.spritePtr(stoneTab[rock][1]), cx + 16, cy);
+		blitStone(common, *this, false, common.largeSprites.spritePtr(stoneTab[rock][2]), cx, cy + 16);
+		blitStone(common, *this, false, common.largeSprites.spritePtr(stoneTab[rock][3]), cx + 16, cy + 16);
 	}
 	
-	count = game.rand(25) + 5;
+	count = rand(25) + 5;
 	
 	for(int i = 0; i < count; ++i)
 	{
 		int cx, cy;
 		do
 		{
-			cx = game.rand(game.level.width) - 8;
+			cx = rand(width) - 8;
 			
-			if(game.rand(5) == 0)
-				cy = game.level.height - 1 - game.rand(13);
+			if(rand(5) == 0)
+				cy = height - 1 - rand(13);
 			else
-				cy = game.rand(game.level.height) - 8;
+				cy = rand(height) - 8;
 		}
-		while(!isNoRock(15, cx, cy));
+		while(!isNoRock(common, *this, 15, cx, cy));
 		
-		blitStone(0, gfx.largeSprites.spritePtr(game.rand(6) + 3), cx, cy);
+		blitStone(common, *this, false, common.largeSprites.spritePtr(rand(6) + 3), cx, cy);
 	}
 }
 
-void Level::makeShadow()
+void Level::makeShadow(Common& common)
 {
 	for(int x = 0; x < width - 3; ++x)
 	for(int y = 3; y < height; ++y)
 	{
-		if(game.materials[pixel(x, y)].seeShadow()
-		&& game.materials[pixel(x + 3, y - 3)].dirtRock())
+		if(common.materials[pixel(x, y)].seeShadow()
+		&& common.materials[pixel(x + 3, y - 3)].dirtRock())
 		{
 			pixel(x, y) += 4;
 		}
 		
 		if(pixel(x, y) >= 12
 		&& pixel(x, y) <= 18
-		&& game.materials[pixel(x + 3, y - 3)].rock())
+		&& common.materials[pixel(x + 3, y - 3)].rock())
 		{
 			pixel(x, y) -= 2;
 			if(pixel(x, y) < 12)
@@ -204,14 +209,14 @@ void Level::makeShadow()
 	
 	for(int x = 0; x < width; ++x)
 	{
-		if(game.materials[pixel(x, height - 1)].background())
+		if(common.materials[pixel(x, height - 1)].background())
 		{
 			pixel(x, height - 1) = 13;
 		}
 	}
 }
 
-bool Level::load(std::string const& path)
+bool Level::load(Common& common, Settings const& settings, std::string const& path)
 {
 	width = 504;
 	height = 350;
@@ -224,7 +229,7 @@ bool Level::load(std::string const& path)
 	std::size_t len = fileLength(f);
 	
 	if(len > 504*350
-	&& game.loadPowerlevelPalette)
+	&& common.loadPowerlevelPalette)
 	{
 		std::fseek(f, 504*350, SEEK_SET);
 		char buf[10];
@@ -235,7 +240,7 @@ bool Level::load(std::string const& path)
 		{
 			Palette pal;
 			pal.read(f);
-			gfx.resetPalette(pal);
+			origpal.resetPalette(pal, settings);
 			
 			std::fseek(f, 0, SEEK_SET);
 			std::fread(&data[0], 1, width * height, f);
@@ -245,7 +250,30 @@ bool Level::load(std::string const& path)
 	
 	std::fseek(f, 0, SEEK_SET);
 	std::fread(&data[0], 1, width * height, f);
-	gfx.resetPalette(gfx.exepal);
+	origpal.resetPalette(common.exepal, settings);
 	
 	return true;
+}
+
+void Level::generateFromSettings(Common& common, Settings const& settings, Rand& rand)
+{
+	if(settings.randomLevel)
+	{
+		generateRandom(common, settings, rand);
+	}
+	else
+	{
+		// TODO: Check .LEV as well as .lev
+		if(!load(common, settings, joinPath(lieroEXERoot, settings.levelFile + ".lev")))
+			generateRandom(common, settings, rand);
+
+	}
+	
+	oldRandomLevel = settings.randomLevel;
+	oldLevelFile = settings.levelFile;
+	
+	if(settings.shadow)
+	{
+		makeShadow(common);
+	}
 }
