@@ -796,6 +796,22 @@ void Worm::processLieroAI()
 	}
 }
 
+void Worm::initWeapons()
+{
+	Common& common = *game.common;
+	currentWeapon = 0; // It was 1 in OpenLiero A1
+	
+	for(int j = 0; j < game.settings->selectableWeapons; ++j)
+	{
+		WormWeapon& ww = weapons[j];
+		ww.id = common.weapOrder[settings->weapons[j]];
+		ww.ammo = common.weapons[weapons[j].id].ammo;
+		ww.delayLeft = 0;
+		ww.loadingLeft = 0;
+		ww.available = true;
+	}
+}
+
 void Worm::beginRespawn()
 {
 	Common& common = *game.common;

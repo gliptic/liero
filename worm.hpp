@@ -7,6 +7,8 @@
 #include <cstring>
 #include <gvl/resman/shared_ptr.hpp>
 
+#include <iostream> // TEMP
+
 struct Worm;
 struct Game;
 
@@ -142,6 +144,37 @@ struct Worm
 		
 		MaxControl
 	};
+	
+	struct ControlState
+	{
+		ControlState()
+		{
+			std::memset(state, 0, sizeof(state));
+		}
+		
+		bool operator==(ControlState const& b) const
+		{
+			for(int i = 0; i < Worm::MaxControl; ++i)
+			{
+				if(state[i] != b.state[i])
+					return false;
+			}
+			
+			return true;
+		}
+		
+		bool operator!=(ControlState const& b) const
+		{
+			return !operator==(b);
+		}
+		
+		bool& operator[](std::size_t n)
+		{
+			return state[n];
+		}
+		
+		bool state[Worm::MaxControl];
+	};
 		
 	Worm(gvl::shared_ptr<WormSettings> settings, int index, int wormSoundID, Game& game)
 	: x(0), y(0), velX(0), velY(0)
@@ -174,7 +207,18 @@ struct Worm
 	, direction(0)
 	, game(game)
 	{
-		std::memset(controlStates, 0, sizeof(controlStates));
+		//std::memset(controlStates, 0, sizeof(controlStates));
+		
+		makeSightGreen = false;
+		
+		ready = true;
+		movable = true;
+		
+		health = settings->health;
+		visible = false;
+		killedTimer = 150;
+		
+		//currentWeapon = 1; // This is later changed to 0, why is it here?
 	}
 	
 	bool pressed(Control control)
@@ -201,6 +245,10 @@ struct Worm
 	
 	void setControlState(Control control, bool state)
 	{
+		if(controlStates[control] != state)
+		{
+			std::cout << control << ": " << state << std::endl;
+		}
 		controlStates[control] = state;
 	}
 	
@@ -222,7 +270,7 @@ struct Worm
 	void fire();
 	void processSight();
 	void calculateReactionForce(int newX, int newY, int dir);
-	
+	void initWeapons();
 	void processLieroAI(); // Move?
 	
 	fixed x, y;                    //Worm position    
@@ -267,7 +315,7 @@ struct Worm
 	int reacts[4];
 	WormWeapon weapons[5];
 	int direction;
-	bool controlStates[MaxControl];
+	ControlState controlStates;
 	Game& game; // !CLONING
 };
 

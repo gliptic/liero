@@ -63,6 +63,8 @@ struct Level
 		return Rect(0, 0, width, height);
 	}
 	
+	void resize(int width_new, int height_new);
+	
 	std::vector<unsigned char> data;
 	
 	bool oldRandomLevel;

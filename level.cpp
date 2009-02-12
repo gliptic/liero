@@ -216,11 +216,16 @@ void Level::makeShadow(Common& common)
 	}
 }
 
+void Level::resize(int width_new, int height_new)
+{
+	width = width_new;
+	height = height_new;
+	data.resize(width * height);
+}
+
 bool Level::load(Common& common, Settings const& settings, std::string const& path)
 {
-	width = 504;
-	height = 350;
-	data.resize(width * height);
+	resize(504, 350);
 	
 	ScopedFile f(tolerantFOpen(path.c_str(), "rb"));
 	if(!f)

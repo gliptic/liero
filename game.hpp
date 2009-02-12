@@ -46,6 +46,7 @@ struct Game
 	void draw();
 	void startGame();
 	bool isGameOver();
+	void createDefaults();
 	
 	void generateLevel();
 	

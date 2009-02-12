@@ -4,6 +4,7 @@
 	Version="9,00"
 	Name="liero"
 	ProjectGUID="{CDE258F8-90DB-407B-8521-AA531EE4D167}"
+	RootNamespace="liero"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>
@@ -17,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)\_bin\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\_bin\$(ConfigurationName)"
 			IntermediateDirectory="_trash\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
@@ -96,7 +97,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)\_bin\$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)\..\_bin\$(ConfigurationName)"
 			IntermediateDirectory="_trash\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
@@ -352,6 +353,14 @@
 		</File>
 		<File
 			RelativePath="..\rect.hpp"
+			>
+		</File>
+		<File
+			RelativePath="..\replay.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\replay.hpp"
 			>
 		</File>
 		<File

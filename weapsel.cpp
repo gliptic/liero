@@ -220,10 +220,7 @@ bool WeaponSelection::processFrame()
 						
 						weapUsed[w] = true;
 						
-						WormWeapon& ww = worm.weapons[j];
-						
-						ww.ammo = 0;
-						ww.id = w;
+						//WormWeapon& ww = worm.weapons[j];
 						
 						menus[i].items[j + 1].string = common.weapons[w].name;
 					}
@@ -240,6 +237,8 @@ bool WeaponSelection::processFrame()
 	// TODO: Fix this check. Shouldn't ask gfx.
 	return (isReady[0] && isReady[1]); // || gfx.testSDLKey(SDLK_ESCAPE);
 }
+
+
 	
 void WeaponSelection::finalize()
 {
@@ -248,20 +247,14 @@ void WeaponSelection::finalize()
 	{
 		Worm& worm = *game.worms[i];
 		
-		worm.currentWeapon = 0; // It was 1 in OpenLiero A1
-		
-		for(int j = 0; j < game.settings->selectableWeapons; ++j)
-		{
-			worm.weapons[j].ammo = common.weapons[worm.weapons[j].id].ammo;
-		}
-		
+		worm.initWeapons();
 		/*
 		for(int j = 0; j < 6; ++j)
 		{
 			gfx.releaseKey(worm.settings->controls[j]);
 		}*/
-		game.releaseControls();
 	}
+	game.releaseControls();
 	
 	// TODO: Make sure the weapon selection is transfered back to Gfx to be saved
 }

@@ -10,12 +10,24 @@
 #include <cstdlib>
 //#include "text.hpp" // TEMP
 #include <ctime>
+
 #include <iostream>
+#include <gvl/support/log.hpp> // TEMP
 
 //Game game;
 
 
-
+void Game::createDefaults()
+{
+	Worm* worm1 = new Worm(settings->wormSettings[0], 0, 19, *this);
+	Worm* worm2 = new Worm(settings->wormSettings[1], 1, 20, *this);
+	
+	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350, *this));
+	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350, *this));
+	
+	addWorm(worm1);
+	addWorm(worm2);
+}
 
 Game::Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settingsInit)
 : common(common)
@@ -35,23 +47,13 @@ Game::Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settingsIni
 	bobjects.clear();
 	nobjects.clear();
 	
-	Worm* worm1 = new Worm(settings->wormSettings[0], 0, 19, *this);
-	Worm* worm2 = new Worm(settings->wormSettings[1], 1, 20, *this);
 	
-	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350, *this));
-	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350, *this));
 	
-	addWorm(worm1);
-	addWorm(worm2);
-	
+	/*
 	// TODO: Move as much of this as possible into the Worm ctor
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		Worm& w = *worms[i];
-		w.makeSightGreen = false;
-		w.lives = settings->lives;
-		w.ready = true;
-		w.movable = true;
 		
 		if(rand(2) > 0)
 		{
@@ -63,27 +65,13 @@ Game::Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settingsIni
 			w.aimingAngle = itof(96);
 			w.direction = 1;
 		}
-
-		w.health = w.settings->health;
-		w.visible = false;
-		w.killedTimer = 150;
-		
-		w.currentWeapon = 1; // This is later changed to 0, why is it here?
-
-/* Done in WormWeapon ctor
-		for(int i = 0; i < game.settings.selectableWeapons; ++i)
-		{
-			w.weapons[i].available = true;
-			w.weapons[i].delayLeft = 0;
-			w.weapons[i].ammo = 0;
-			
-		}*/
-	}
+	}*/
 	
 	cycles = 0;
 	
 	// TODO: Unhardcode 40. Also, this loop makes loading time settings only take effect when
 	// starting a new game. Although this emulates liero, consider changing it.
+	// TODO: This also ties common to the settings, it really has to change.
 	for(int w = 0; w < 40; ++w)
 	{
 		common->weapons[w].computedLoadingTime = (settings->loadingTime * common->weapons[w].loadingTime) / 100;
@@ -204,6 +192,7 @@ void Game::resetWorms()
 
 void Game::addWorm(Worm* worm)
 {
+	worm->lives = settings->lives;
 	worms.push_back(worm);
 }
 
@@ -319,6 +308,11 @@ void Game::createBonus()
 
 void Game::processFrame()
 {
+	if((cycles % 70) == 0)
+	{
+		LOG("rand() == " << rand(1000));
+	}
+	
 	if((cycles & 3) == 0)
 	{
 		for(int w = 0; w < 4; ++w)

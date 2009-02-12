@@ -1182,6 +1182,7 @@ void Gfx::mainLoop()
 		
 		if(selection == 1)
 		{
+#if 0
 			std::auto_ptr<Controller> newController(new LocalController(common, settings));
 			
 			Level& oldLevel = controller->currentLevel();
@@ -1202,6 +1203,9 @@ void Gfx::mainLoop()
 			}
 			
 			controller = newController;
+#else
+			controller.reset(new ReplayController(common, settings));
+#endif
 		}
 		else if(selection == 0)
 		{
@@ -1252,6 +1256,8 @@ void Gfx::mainLoop()
 		
 	}
 #endif
+
+	controller.reset();
 }
 
 void Gfx::saveSettings()

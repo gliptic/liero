@@ -3,6 +3,10 @@
 
 struct Controller
 {
+	virtual ~Controller()
+	{
+	}
+	
 	// Called when a key event is forwarded to the controller
 	virtual void onKey(int key, bool state) = 0;
 	
@@ -27,6 +31,10 @@ struct Controller
 #include "game.hpp"
 #include "worm.hpp"
 #include "weapsel.hpp"
+#include "replay.hpp"
+#include <gvl/io/stream.hpp>
+#include <gvl/io/devnull.hpp>
+#include <gvl/io/fstream.hpp>
 
 struct LocalController : Controller
 {
@@ -43,17 +51,19 @@ struct LocalController : Controller
 	, fadeValue(0)
 	, shutDown(false)
 	{
-		// TODO: Don't let WeaponSelection draw the game just yet because a level has not
-		// been loaded. Wait until the first call to draw()
+		game.createDefaults();
 	}
 	
-	void onKey(int key, bool state)
+	void onKey(int key, bool keyState)
 	{
 		Worm::Control control;
 		Worm* worm = game.findControlForKey(key, control);
 		if(worm)
 		{
-			worm->setControlState(control, state);
+			worm->setControlState(control, keyState);
+			/*
+			if(state == StateGame)
+				getReplay().setControlState(worm, control, keyState);*/
 		}
 				
 		if(key == DkEscape && !shutDown)
@@ -87,6 +97,8 @@ struct LocalController : Controller
 		}
 		else if(state == StateGame)
 		{
+			
+			getReplay().recordFrame(game);
 			game.processFrame();
 			
 			if(game.isGameOver()
@@ -149,6 +161,16 @@ struct LocalController : Controller
 		state = newState;
 	}
 	
+	Replay& getReplay()
+	{
+		if(!replay.get())
+		{
+			replay.reset(new Replay(gvl::stream_ptr(new gvl::fstream(std::fopen("test.lrp", "wb")))));
+			replay->beginRecord(game);
+		}
+		return *replay;
+	}
+	
 	void swapLevel(Level& newLevel)
 	{
 		currentLevel().swap(newLevel);
@@ -169,6 +191,140 @@ struct LocalController : Controller
 	State state;
 	int fadeValue;
 	bool shutDown;
+	std::auto_ptr<Replay> replay;
+};
+
+struct ReplayController : Controller
+{
+	enum State
+	{
+		StateGame,
+		StateGameEnded
+	};
+	
+	ReplayController(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings)
+	: state(StateGameEnded)
+	, fadeValue(0)
+	, shutDown(false)
+	, replay(gvl::stream_ptr(new gvl::fstream(std::fopen("test.lrp", "rb"))))
+	, common(common)
+	, settings(settings)
+	{
+	}
+	
+	void onKey(int key, bool keyState)
+	{
+		if(key == DkEscape && !shutDown)
+		{
+			fadeValue = 31;
+			shutDown = true;
+		}
+	}
+	
+	// Called when the controller loses focus. When not focused, it will not receive key events among other things.
+	void unfocus()
+	{
+	}
+	
+	// Called when the controller gets focus.
+	void focus()
+	{
+		if(state == StateGameEnded)
+		{
+			//game.reset(new Game(common, settings));
+			//replay.beginPlayback(*game);
+			game = replay.beginPlayback(common);
+			changeState(StateGame);
+		}
+		game->enter();
+		shutDown = false;
+		fadeValue = 0;
+	}
+	
+	bool process()
+	{
+		if(state == StateGame)
+		{
+			try
+			{
+				getReplay().playbackFrame(*game);
+			}
+			catch(gvl::stream_error& e)
+			{
+				shutDown = true;
+			}
+			game->processFrame();
+			
+			if(game->isGameOver()
+			&& !shutDown)
+			{
+				fadeValue = 180;
+				shutDown = true;
+			}
+		}
+		
+		if(shutDown)
+		{
+			if(fadeValue > 0)
+				fadeValue -= 1;
+			else
+				return false;
+		}
+		else
+		{
+			if(fadeValue < 33)
+			{
+				fadeValue += 1;
+			}
+		}
+		
+		return true;
+	}
+	
+	void draw()
+	{
+		if(state == StateGame || state == StateGameEnded)
+		{
+			game->draw();
+		}
+		gfx.fadeValue = fadeValue;
+	}
+	
+	void changeState(State newState)
+	{
+		if(state == newState)
+			return;
+
+		state = newState;
+	}
+		
+	void swapLevel(Level& newLevel)
+	{
+		currentLevel().swap(newLevel);
+	}
+	
+	Level& currentLevel()
+	{
+		return game->level;
+	}
+	
+	Replay& getReplay()
+	{
+		return replay;
+	}
+		
+	bool running()
+	{
+		return state != StateGameEnded;
+	}
+	
+	std::auto_ptr<Game> game;
+	State state;
+	int fadeValue;
+	bool shutDown;
+	Replay replay;
+	gvl::shared_ptr<Common> common;
+	gvl::shared_ptr<Settings> settings;
 };
 
 #endif // UUID_9CD8C22BC14D4832AE2A859530FE6339
