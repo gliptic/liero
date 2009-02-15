@@ -4,8 +4,90 @@
 #include "worm.hpp"
 #include "viewport.hpp"
 
+struct InArchive
+{
+	static bool const in = true;
+	static bool const out = false;
+	
+	
+	InArchive(gvl::stream_reader& reader)
+	: reader(reader)
+	{
+	}
+	
+	template<typename T>
+	InArchive& ui16(T& v)
+	{
+		v = gvl::read_uint16(reader);
+		return *this;
+	}
+	
+	template<typename T>
+	InArchive& ui32(T& v)
+	{
+		v = gvl::read_uint32(reader);
+		return *this;
+	}
+	
+	template<typename T>
+	InArchive& ui8(T& v)
+	{
+		v = reader.get();
+		return *this;
+	}
+	
+	template<typename T>
+	InArchive& b(T& v)
+	{
+		v = !!reader.get();
+		return *this;
+	}
+	
+	gvl::stream_reader& reader;
+};
+
+struct OutArchive
+{
+	static bool const in = false;
+	static bool const out = true;
+	
+	OutArchive(gvl::stream_writer& writer)
+	: writer(writer)
+	{
+	}
+	
+	
+	OutArchive& ui16(uint32_t v)
+	{
+		gvl::write_uint16(writer, v);
+		return *this;
+	}
+	
+	OutArchive& ui32(uint32_t v)
+	{
+		gvl::write_uint32(writer, v);
+		return *this;
+	}
+	
+	OutArchive& ui8(uint32_t v)
+	{
+		writer.put(v);
+		return *this;
+	}
+	
+	OutArchive& b(bool v)
+	{
+		writer.put(v ? 1 : 0);
+		return *this;
+	}
+	
+	gvl::stream_writer& writer;
+};
+
+/*
 void read(gvl::stream_reader& reader, Settings& settings)
 {
+	
 	WormWeapon
 	
 	int id;
@@ -13,8 +95,38 @@ void read(gvl::stream_reader& reader, Settings& settings)
 	int delayLeft;
 	int loadingLeft;
 	bool available;	
+
+}
+	*/
+	
+template<typename Archive>
+void archive(Archive ar, Settings& settings)
+{
+	for(int i = 0; i < 40; ++i)
+	{
+		ar.ui16(settings.weapTable[i]);
+	}
+	
+	ar
+	.ui16(settings.maxBonuses)
+	.ui16(settings.blood)
+	.ui16(settings.timeToLose)
+	.ui16(settings.flagsToWin)
+	.ui16(settings.gameMode)
+	.b(settings.shadow)
+	.b(settings.loadChange)
+	.b(settings.namesOnBonuses)
+	.b(settings.regenerateLevel)
+	.ui16(settings.lives)
+	.ui16(settings.loadingTime)
+	.b(settings.randomLevel)
+	.b(settings.map)
+	.b(settings.screenSync)
+	.ui16(settings.maxBonuses);
+	settings.levelFile = "";
 }
 
+/*
 void read(gvl::stream_reader& reader, Settings& settings)
 {
 	for(int i = 0; i < 40; ++i)
@@ -58,7 +170,7 @@ void write(gvl::stream_writer& writer, Settings& settings)
 	writer.put(settings.randomLevel);
 	writer.put(settings.map);
 	writer.put(settings.screenSync);
-}
+}*/
 
 void read(gvl::stream_reader& reader, Level& level)
 {
@@ -94,6 +206,39 @@ void write(gvl::stream_writer& writer, Level& level)
 	}
 }
 
+template<typename Archive>
+void archive(Archive ar, WormSettings& ws)
+{
+	ar
+	.ui32(ws.health)
+	.ui16(ws.controller);
+	for(int i = 0; i < 5; ++i)
+		ar.ui16(ws.weapons[i]);
+	for(int i = 0; i < 3; ++i)
+		ar.ui16(ws.rgb[i]);
+	ar.b(ws.randomName);
+}
+
+template<typename Archive>
+void archive(Archive ar, Viewport& viewport)
+{
+	ar
+	.ui16(viewport.x)
+	.ui16(viewport.y)
+	.ui32(viewport.shake)
+	.ui16(viewport.maxX)
+	.ui16(viewport.maxY)
+	.ui16(viewport.centerX)
+	.ui16(viewport.centerY)
+	
+	Worm* worm;
+	int bannerY;
+	int inGameX; // 0 for first, 218 for second
+	Rect rect;
+	
+}
+
+/*
 void write(gvl::stream_writer& writer, WormSettings& ws)
 {
 	gvl::write_uint32(writer, ws.health);
@@ -114,6 +259,18 @@ void read(gvl::stream_reader& reader, WormSettings& ws)
 	for(int i = 0; i < 3; ++i)
 		ws.rgb[i] = gvl::read_uint16(reader);
 	ws.randomName = !!reader.get();
+}*/
+
+template<typename T>
+void read(gvl::stream_reader& reader, T& ws)
+{
+	archive(InArchive(reader), ws);
+}
+
+template<typename T>
+void write(gvl::stream_writer& writer, T& ws)
+{
+	archive(OutArchive(writer), ws);
 }
 
 std::auto_ptr<Game> Replay::beginPlayback(gvl::shared_ptr<Common> common)
@@ -131,14 +288,14 @@ std::auto_ptr<Game> Replay::beginPlayback(gvl::shared_ptr<Common> common)
 	{
 		int wormId = nextWormId++;
 		gvl::shared_ptr<WormSettings> ws(new WormSettings);
-		read(reader, *ws);
+		//read(reader, *ws);
 		Worm* worm = new Worm(ws, wormId, 19+wormId, *game);
 		if(wormId == 0)
 			game->addViewport(new Viewport(Rect(0, 0, 158, 158), worm, 0, 504, 350, *game));
 		else
 			game->addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm, 218, 504, 350, *game));
 		game->addWorm(worm);
-		idToWorm[wormId] = worm; // MAJOR TODO: Create worms right here
+		idToWorm[wormId] = worm;
 		
 		worm->initWeapons();
 		/*
