@@ -176,7 +176,7 @@ struct Worm
 		bool state[Worm::MaxControl];
 	};
 		
-	Worm(gvl::shared_ptr<WormSettings> settings, int index, int wormSoundID, Game& game)
+	Worm(/*gvl::shared_ptr<WormSettings> settings, int index, int wormSoundID, */Game& game)
 	: x(0), y(0), velX(0), velY(0)
 	, hotspotX(0), hotspotY(0)
 	, aimingAngle(0), aimingSpeed(0)
@@ -200,8 +200,7 @@ struct Worm
 	, lastKilledBy(0)
 	, fireCone(0)
 	, leaveShellTimer(0)
-	, settings(settings)
-	, viewport(0)
+//	, viewport(0)
 	, index(index)
 	, wormSoundID(wormSoundID)
 	, direction(0)
@@ -214,7 +213,7 @@ struct Worm
 		ready = true;
 		movable = true;
 		
-		health = settings->health;
+		//health = settings->health;
 		visible = false;
 		killedTimer = 150;
 		
@@ -275,6 +274,8 @@ struct Worm
 	
 	fixed x, y;                    //Worm position    
 	fixed velX, velY;              //Worm velocity
+
+	int logicRespawnX, logicRespawnY;
 	
 	int hotspotX, hotspotY;      //Hotspots for laser, laser sight, etc.
 	fixed aimingAngle, aimingSpeed;
@@ -287,7 +288,7 @@ struct Worm
 	bool animate;                 //Should the worm be animated?
 	bool visible;                 //Is the worm visible?
 	bool ready;                   //Is the worm ready to play?
-	bool flag;                    //Has the worm a flag?
+	bool flag;                    //Does the worm have a flag?
 	bool makeSightGreen;          //Changes the sight color
 	int health;                  //Health left
 	int lives;                   //lives left
@@ -308,7 +309,7 @@ struct Worm
 	int leaveShellTimer;         //Time until next shell drop
 	
 	gvl::shared_ptr<WormSettings> settings; // !CLONING
-	Viewport* viewport; // !CLONING
+	//Viewport* viewport; // !CLONING
 	int index; // 0 or 1
 	int wormSoundID;
 	

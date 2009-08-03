@@ -102,9 +102,10 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 					{
 						for(int i = 0; i < bloodAmount; ++i)
 						{
+							int angle = game.rand(128);
 							common.nobjectTypes[6].create2(
 								game,
-								game.rand(128),
+								angle,
 								w.velX / 3, w.velY / 3,
 								w.x, w.y,
 								0,
@@ -112,10 +113,13 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 						}
 					}
 					
-					if(game.rand(3) == 0
-					&& !game.soundPlayer->isPlaying(w.wormSoundID))
+					if(game.rand(3) == 0)
 					{
-						game.soundPlayer->play(18 + game.rand(3), w.wormSoundID);
+						int snd = 18 + game.rand(3); // NOTE: MUST be outside the unpredictable branch below
+						if(!game.soundPlayer->isPlaying(w.wormSoundID))
+						{
+							game.soundPlayer->play(snd, w.wormSoundID);
+						}
 					}
 				}
 			}
@@ -217,9 +221,10 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 				if(common.materials[pix].anyDirt()
 				&& game.rand(8) == 0)
 				{
+					int angle = game.rand(128);
 					common.nobjectTypes[2].create2(
 						game,
-						game.rand(128),
+						angle,
 						0, 0,
 						itof(x), itof(y),
 						pix, owner);

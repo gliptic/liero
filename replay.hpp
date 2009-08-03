@@ -2,6 +2,7 @@
 #define UUID_4CF92C398C724F883A02E8A68FE1584F
 
 #include <gvl/io/stream.hpp>
+#include <gvl/serialization/context.hpp>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -10,25 +11,41 @@
 
 struct Game;
 
-struct Replay
+struct GameSerializationContext : gvl::serialization_context<GameSerializationContext>
 {
-	static int const replayVersion = 1;
+	GameSerializationContext()
+	: game(0)
+	, nextWormId(0)
+	{
+	}
 	
 	struct WormData
 	{
 		Worm::ControlState prevControls;
 	};
 	
+	typedef std::map<int, Worm*> IdToWormMap;
+	typedef std::map<Worm*, WormData> WormDataMap;
+	
+	
+	Game* game;
+	WormDataMap wormData;
+	IdToWormMap idToWorm;
+	int nextWormId;
+};
+
+struct Replay
+{
+	static int const replayVersion = 1;
+	
+	
 	Replay(gvl::stream_ptr str_init)
 	: str(str_init)
 	, writer(str_init)
 	, reader(str_init)
-	, nextWormId(0)
 	{
 	}
 	
-	typedef std::map<int, Worm*> IdToWormMap;
-	typedef std::map<Worm*, WormData> WormDataMap;
 	
 	
 	std::auto_ptr<Game> beginPlayback(gvl::shared_ptr<Common> common);
@@ -45,15 +62,11 @@ struct Replay
 	
 	void recordFrame(Game& game);
 	
-	
-	
-	
 	gvl::stream_ptr str;
 	gvl::stream_writer writer;
 	gvl::stream_reader reader;
-	WormDataMap wormData;
-	IdToWormMap idToWorm;
-	int nextWormId;
+	GameSerializationContext context;
+	
 };
 
 #endif // UUID_4CF92C398C724F883A02E8A68FE1584F

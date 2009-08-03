@@ -97,7 +97,6 @@ struct LocalController : Controller
 		}
 		else if(state == StateGame)
 		{
-			
 			getReplay().recordFrame(game);
 			game.processFrame();
 			
@@ -157,17 +156,17 @@ struct LocalController : Controller
 		{
 			ws.reset(new WeaponSelection(game));
 		}
+		else if(newState == StateGame)
+		{
+			replay.reset(new Replay(gvl::stream_ptr(new gvl::fstream(std::fopen("test.lrp", "wb")))));
+			replay->beginRecord(game);
+		}
 		
 		state = newState;
 	}
 	
 	Replay& getReplay()
 	{
-		if(!replay.get())
-		{
-			replay.reset(new Replay(gvl::stream_ptr(new gvl::fstream(std::fopen("test.lrp", "wb")))));
-			replay->beginRecord(game);
-		}
 		return *replay;
 	}
 	

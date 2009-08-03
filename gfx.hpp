@@ -137,7 +137,7 @@ struct Gfx
 	//void setWormColours();
 	int menuLoop();
 	void mainLoop();
-	void drawBasicMenu(int curSel);
+	void drawBasicMenu(/*int curSel*/);
 	void playerSettings(int player);
 	//void inputString(std::string& dest, std::size_t maxLen, int x, int y, bool onlyDigits = false);
 	bool inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int) = 0, std::string const& prefix = "", bool centered = true);
@@ -170,6 +170,7 @@ struct Gfx
 	bool doubleRes;
 	Uint32 lastFrame;
 	int menuCyclic;
+	int windowW, windowH;
 	Rand rand; // PRNG for things that don't affect the game
 	gvl::shared_ptr<Common> common;
 };

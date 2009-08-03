@@ -2,7 +2,7 @@
 #include "game.hpp"
 #include "sfx.hpp"
 #include "gfx.hpp"
-#include "viewport.hpp"
+//#include "viewport.hpp"
 #include "constants.hpp"
 #include "console.hpp"
 #include <cstdlib>
@@ -311,7 +311,7 @@ void Worm::process()
 					}
 					else if(i->frame == 0)
 					{
-						if(game.rand(common.C[BonusExplodeRisk]) > 1) // TODO: Read from EXE
+						if(game.rand(common.C[BonusExplodeRisk]) > 1)
 						{
 							WormWeapon& ww = weapons[currentWeapon];
 							
@@ -421,20 +421,11 @@ void Worm::process()
 					worm->flag = 0;
 				} // 468D
 				*/
-
-				if(this == game.lastKilled)
-				{
-					game.gotChanged = false;
-				}
-				else
-				{
-					game.gotChanged = true;
-				}
 				
 				leaveShellTimer = 0;
 				makeSightGreen = false;
 				// TODO: cGame::cWorm[w^1].makesightgreen = 0;
-				viewport->bannerY = -8;
+				
 				
 				Weapon& w = common.weapons[weapons[currentWeapon].id];
 				if(w.loopSound)
@@ -447,7 +438,18 @@ void Worm::process()
 				fireConeActive = 0;
 				ninjarope.out = false;
 				--lives;
-				game.lastKilled = this;
+				Worm* oldLastKilled = game.lastKilled;
+				// For GameOfTag, 'it' doesn't change if the killer
+				// was not 'it', itself, unknown or there were no 'it'.
+				if(game.settings->gameMode != Settings::GMGameOfTag
+				|| !game.lastKilled
+				|| !lastKilledBy
+				|| lastKilledBy == this
+				|| lastKilledBy == game.lastKilled)
+				{
+					game.lastKilled = this;
+				}
+				game.gotChanged = (oldLastKilled != game.lastKilled);
 				
 				if(lastKilledBy && lastKilledBy != this)
 				{
@@ -485,24 +487,6 @@ void Worm::process()
 						this);
 				}
 #endif
-				/* TODO
-				max = (120 * settings.blood) / 100;
-
-				long c;
-				if(max > 1)
-				{
-					for(c = 1; c <= max; c++)
-					{
-						//Blood mayhem!
-						CreateObject2(random(128), worm->m_fXVel/3, worm->m_fYVel/3, worm->m_fX, worm->m_fY, 0, 6, BYTE(w));
-					} // 47E9
-				}
-
-				for(c = 7; c <= 105; c += 14)
-				{
-					CreateObject2(c + random(14), worm->m_fXVel/3, worm->m_fYVel/3, worm->m_fX, worm->m_fY, 0, w, BYTE(w));
-				} // 485D
-				*/
 
 				release(Fire);				
 			}
@@ -818,6 +802,9 @@ void Worm::beginRespawn()
 	
 	int tempX = ftoi(x);
 	int tempY = ftoi(y);
+
+	logicRespawnX = tempX - 80;
+	logicRespawnY = tempY - 80;
 	
 	int enemyX = tempX;
 	int enemyY = tempY;
@@ -849,30 +836,48 @@ void Worm::beginRespawn()
 		}
 	}
 	while(!checkRespawnPosition(game, enemyX, enemyY, tempX, tempY, ftoi(x), ftoi(y)));
+
+	
 			
 	killedTimer = -1;
+}
+
+void limitXY(int& x, int& y, int maxX, int maxY)
+{
+	if(x < 0)
+		x = 0;
+	else if(x > maxX)
+		x = maxX;
+
+	if(y < 0)
+		y = 0;
+	if(y > maxY)
+		y = maxY;
 }
 
 void Worm::doRespawning()
 {
 	Common& common = *game.common;
+
+	for(int c = 0; c < 4; c++)
+	{
+		if(logicRespawnX < ftoi(x) - 80) ++logicRespawnX;
+		else if(logicRespawnX > ftoi(x) - 80) --logicRespawnX;
+
+		if(logicRespawnY < ftoi(y) - 80) ++logicRespawnY;
+		else if(logicRespawnY > ftoi(y) - 80) --logicRespawnY;
+	}
+
+	limitXY(logicRespawnX, logicRespawnY, game.level.width - 158, game.level.height - 158);
 	
 	int destX = ftoi(x) - 80;
-	if(destX < 0)
-		destX = 0;
-	else if(destX > game.level.width - 158)
-		destX = 346;
-		
 	int destY = ftoi(y) - 80;
-	if(destY < 0)
-		destY = 0;
-	if(destY > game.level.height - 158)
-		destY = game.level.height - 158;
+	limitXY(destX, destY, game.level.width - 158, game.level.height - 158);
 
-	if(viewport->x < destX + 5
-	&& viewport->x > destX - 5
-	&& viewport->y < destY + 5
-	&& viewport->y > destY - 5
+	if(logicRespawnX < destX + 5
+	&& logicRespawnX > destX - 5
+	&& logicRespawnY < destY + 5
+	&& logicRespawnY > destY - 5
 	&& ready)
 	{
 		int ix = ftoi(x), iy = ftoi(y);
@@ -918,7 +923,8 @@ void Worm::processWeapons()
 	if(ww.ammo <= 0)
 	{
 		ww.available = false;
-		ww.loadingLeft = w.computedLoadingTime;
+		int computedLoadingTime = w.computedLoadingTime(*game.settings);
+		ww.loadingLeft = computedLoadingTime;
 		ww.ammo = w.ammo;
 	}
 	

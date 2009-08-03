@@ -3,10 +3,11 @@
 
 #include "math.hpp"
 #include "objectList.hpp"
+#include "exactObjectList.hpp"
 
 struct Game;
 
-struct BObject : ObjectListBase
+struct BObject : ExactObjectListBase
 {
 	void process(Game& game);
 	

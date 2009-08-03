@@ -68,14 +68,17 @@ void Viewport::process()
 	else if(worm->health < 0)
 	{
 		setCenter(ftoi(worm->x), ftoi(worm->y));
+		
+		if(worm->killedTimer == 150) // TODO: This depends on what is the starting killedTimer
+			bannerY = -8;
 	}
 	
 	int realShake = ftoi(shake);
 	
 	if(realShake > 0)
 	{
-		x += game.rand(realShake * 2) - realShake;
-		y += game.rand(realShake * 2) - realShake;
+		x += rand(realShake * 2) - realShake;
+		y += rand(realShake * 2) - realShake;
 	}
 	
 	if(x < 0) x = 0;
@@ -144,7 +147,8 @@ void Viewport::draw()
 		
 		if(common.weapons[ww.id].loadingTime != 0)
 		{
-			ammoBarWidth = 100 - ww.loadingLeft * 100 / common.weapons[ww.id].computedLoadingTime;
+			int computedLoadingTime = common.weapons[ww.id].computedLoadingTime(*game.settings);
+			ammoBarWidth = 100 - ww.loadingLeft * 100 / computedLoadingTime;
 		}
 		else
 		{

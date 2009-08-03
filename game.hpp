@@ -73,11 +73,11 @@ struct Game
 	std::vector<Viewport*> viewports;
 	std::vector<Worm*> worms;
 	
-	typedef ObjectList<Bonus, 99> BonusList;
-	typedef ObjectList<WObject, 600> WObjectList;
-	typedef ObjectList<SObject, 700> SObjectList;
-	typedef ObjectList<NObject, 600> NObjectList;
-	typedef ObjectList<BObject, 700> BObjectList;
+	typedef ExactObjectList<Bonus, 99> BonusList;
+	typedef ExactObjectList<WObject, 600> WObjectList;
+	typedef ExactObjectList<SObject, 700> SObjectList;
+	typedef ExactObjectList<NObject, 600> NObjectList;
+	typedef ExactObjectList<BObject, 700> BObjectList;
 	BonusList bonuses;
 	WObjectList wobjects;
 	SObjectList sobjects;

@@ -3,10 +3,11 @@
 
 #include "math.hpp"
 #include "objectList.hpp"
+#include "exactObjectList.hpp"
 
 struct Game;
 
-struct Bonus : ObjectListBase
+struct Bonus : ExactObjectListBase
 {
 	Bonus()
 	: frame(-1)

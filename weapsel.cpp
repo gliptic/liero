@@ -33,7 +33,7 @@ WeaponSelection::WeaponSelection(Game& game)
 		{
 			if(ws.weapons[j] == 0)
 			{
-				ws.weapons[j] = game.rand(1, 41);
+				ws.weapons[j] = gfx.rand(1, 41);
 			}
 			
 			bool enoughWeapons = (enabledWeaps >= game.settings->selectableWeapons);
@@ -46,7 +46,7 @@ WeaponSelection::WeaponSelection(Game& game)
 				&& game.settings->weapTable[w] <= 0)
 					break;
 					
-				ws.weapons[j] = game.rand(1, 41);
+				ws.weapons[j] = gfx.rand(1, 41);
 			}
 			
 			int w = common.weapOrder[ws.weapons[j]];
@@ -207,7 +207,7 @@ bool WeaponSelection::processFrame()
 					{
 						while(true)
 						{
-							ws.weapons[j] = game.rand(1, 41);
+							ws.weapons[j] = gfx.rand(1, 41);
 							
 							int w = common.weapOrder[ws.weapons[j]];
 							

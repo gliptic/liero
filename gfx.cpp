@@ -83,6 +83,8 @@ Gfx::Gfx()
 , doubleRes(false)
 , menuCyclic(0)
 , fadeValue(0)
+, windowW(320)
+, windowH(200)
 {
 	clearKeys();
 }
@@ -99,7 +101,7 @@ void Gfx::init()
 
 void Gfx::setVideoMode()
 {
-	int flags = SDL_SWSURFACE;
+	int flags = SDL_SWSURFACE | SDL_RESIZABLE;
 	if(fullscreen)
 		flags |= SDL_FULLSCREEN;
 		
@@ -109,15 +111,18 @@ void Gfx::setVideoMode()
 		screen = 0;
 	}
 
-	if(!SDL_VideoModeOK(320, 200, 8, flags)
-	|| gfx.doubleRes)
+	if(!SDL_VideoModeOK(windowW, windowH, 8, flags))
+	{
+		// Default to 640x480
+		windowW = 640;
+		windowH = 480;
+	}
+
+	back = screen = SDL_SetVideoMode(windowW, windowH, 8, flags);
+	
+	if(windowH != 320 || windowW != 200)
 	{
 		screen = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
-		back = SDL_SetVideoMode(640, 480, 8, flags);
-	}
-	else
-	{
-		back = screen = SDL_SetVideoMode(320, 200, 8, flags);
 	}
 	screenPixels = static_cast<unsigned char*>(screen->pixels);
 	screenPitch = screen->pitch;
@@ -135,6 +140,8 @@ void Gfx::loadMenus()
 	
 	fseek(exe, 0x1B08A, SEEK_SET);
 	mainMenu.readItems(exe, 14, 4, true);
+	
+	mainMenu.items.push_back(MenuItem(1, 1, "REPLAY")); // TEMP
 	
 	fseek(exe, 0x1B0C2, SEEK_SET);
 	settingsMenu.readItems(exe, 21, 15, false, 48, 7);
@@ -247,11 +254,27 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			|| s == SDLK_F5)
 			{
 				fullscreen = !fullscreen;
+				if(fullscreen)
+				{
+					// Try lowest resolution
+					windowW = 320;
+					windowH = 200;
+				}
 				setVideoMode();
 			}
 			else if(s == SDLK_F6)
 			{
 				doubleRes = !doubleRes;
+				if(!doubleRes)
+				{
+					windowW = 320;
+					windowH = 200;
+				}
+				else
+				{
+					windowW = 640;
+					windowH = 480;
+				}
 				setVideoMode();
 			}
 		}
@@ -274,6 +297,14 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 #if 0
 			std::cout << "^ " << s << ", " << std::hex << ev.key.keysym.mod << ", " << std::dec << int(ev.key.keysym.scancode) << std::endl;
 #endif
+		}
+		break;
+		
+		case SDL_VIDEORESIZE:
+		{
+			windowW = ev.resize.w;
+			windowH = ev.resize.h;
+			setVideoMode();
 		}
 		break;
 		
@@ -317,27 +348,67 @@ void Gfx::clearKeys()
 	std::memset(dosKeys, 0, sizeof(dosKeys));
 }
 
+int fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY)
+{
+	int mag = 1;
+	
+	while(scrW*mag <= backW
+	   && scrH*mag <= backH)
+	   ++mag;
+	   
+	--mag; // mag was the first that didn't fit
+	
+	scrW *= mag;
+	scrH *= mag;
+	
+	offsetX = backW/2 - scrW/2;
+	offsetY = backH/2 - scrH/2;
+	   
+	return mag; 
+}
+
 void Gfx::flip()
 {
 	pal.activate();
 	if(screen != back)
 	{
-		PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels);
-		PalIdx* src = screenPixels;
+		int offsetX, offsetY;
+		int mag = fitScreen(back->w, back->h, screen->w, screen->h, offsetX, offsetY);
 		
-		std::size_t destPitch = back->pitch;
-		std::size_t srcPitch = screenPitch;
-		
-		for(int y = 0; y < 200; ++y)
-		for(int x = 0; x < 320; ++x)
+		if(mag == 1)
 		{
-			int dx = (x << 1);
-			int dy = (y << 1) + 40;
-			PalIdx pix = src[y*srcPitch + x];
-			dest[dy*destPitch + dx] = pix;
-			dest[dy*destPitch + (dx+1)] = pix;
-			dest[(dy+1)*destPitch + dx] = pix;
-			dest[(dy+1)*destPitch + (dx+1)] = pix;
+			std::size_t destPitch = back->pitch;
+			std::size_t srcPitch = screenPitch;
+			
+			PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels) + offsetY * destPitch + offsetX;
+			PalIdx* src = screenPixels;
+			
+			for(int y = 0; y < 200; ++y)
+			for(int x = 0; x < 320; ++x)
+			{
+				PalIdx pix = src[y*srcPitch + x];
+				dest[y*destPitch + x] = pix;
+			}	
+		}
+		else if(mag == 2)
+		{
+			std::size_t destPitch = back->pitch;
+			std::size_t srcPitch = screenPitch;
+			
+			PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels) + offsetY * destPitch + offsetX;
+			PalIdx* src = screenPixels;
+			
+			for(int y = 0; y < 200; ++y)
+			for(int x = 0; x < 320; ++x)
+			{
+				int dx = (x << 1);
+				int dy = (y << 1);
+				PalIdx pix = src[y*srcPitch + x];
+				dest[dy*destPitch + dx] = pix;
+				dest[dy*destPitch + (dx+1)] = pix;
+				dest[(dy+1)*destPitch + dx] = pix;
+				dest[(dy+1)*destPitch + (dx+1)] = pix;
+			}
 		}
 	}
 	
@@ -822,21 +893,24 @@ void Gfx::inputInteger(int& dest, int min, int max, std::size_t maxLen, int x, i
 
 void Gfx::playerSettings(int player)
 {
-	int curSel = 0;
+	//int curSel = 0;
 	int menuCyclic = 0;
 	
 	WormSettings& ws = *settings->wormSettings[player];
 	
 	updatePlayerMenu(player);
 	
+	playerMenu.selection = 0;
+	playerMenuValues.selection = 0;
+	
 	do
 	{
-		int selectY = (curSel << 3) + 20;
+		int selectY = (playerMenu.selection << 3) + 20;
 		
-		drawBasicMenu(0);
+		drawBasicMenu();
 
-		playerMenu.draw(*common, 178, 20, false, curSel);
-		playerMenuValues.draw(*common, 273, 20, false, curSel);
+		playerMenu.draw(*common, 178, 20, false);
+		playerMenuValues.draw(*common, 273, 20, false);
 		
 		for(int o = 0; o < 12; o++)
 		{
@@ -846,7 +920,7 @@ void Gfx::playerSettings(int player)
 			{
 				int rgbcol = o - 2;
 
-				if(o == curSel)
+				if(o == playerMenu.selection)
 				{
 					drawRoundedBox(202, ypos + 20, 168, 7, ws.rgb[rgbcol] - 1);
 				}
@@ -871,24 +945,26 @@ void Gfx::playerSettings(int player)
 		if(testSDLKeyOnce(SDLK_UP))
 		{
 			sfx.play(26, -1);
-			--curSel;
-			if(curSel < 0)
-				curSel = 12;
+			--playerMenu.selection;
+			if(playerMenu.selection < 0)
+				playerMenu.selection = 12;
+			playerMenuValues.selection = playerMenu.selection;
 		} // CFD0
 
 		if(testSDLKeyOnce(SDLK_DOWN))
 		{
 			sfx.play(25, -1);
 		
-			++curSel;
-			if(curSel > 12)
-				curSel = 0;
+			++playerMenu.selection;
+			if(playerMenu.selection > 12)
+				playerMenu.selection = 0;
+			playerMenuValues.selection = playerMenu.selection;
 		} // D002
 		
 		if(menuCyclic == 0)
 		{
 		
-			switch(curSel)
+			switch(playerMenu.selection)
 			{
 			case 1:
 				
@@ -913,16 +989,16 @@ void Gfx::playerSettings(int player)
 				
 				if(testSDLKey(SDLK_LEFT))
 				{
-					--ws.rgb[curSel - 2];
-					if(ws.rgb[curSel - 2] < 0)
-						ws.rgb[curSel - 2] = 0;
+					--ws.rgb[playerMenu.selection - 2];
+					if(ws.rgb[playerMenu.selection - 2] < 0)
+						ws.rgb[playerMenu.selection - 2] = 0;
 					updatePlayerMenu(player);
 				}
 				if(testSDLKey(SDLK_RIGHT))
 				{
-					++ws.rgb[curSel - 2];
-					if(ws.rgb[curSel - 2] > 63)
-						ws.rgb[curSel - 2] = 63;
+					++ws.rgb[playerMenu.selection - 2];
+					if(ws.rgb[playerMenu.selection - 2] > 63)
+						ws.rgb[playerMenu.selection - 2] = 63;
 					updatePlayerMenu(player);
 				}
 				
@@ -952,7 +1028,7 @@ void Gfx::playerSettings(int player)
 		{
 			sfx.play(27, -1);
 			
-			switch(curSel)
+			switch(playerMenu.selection)
 			{
 			case 0:
 				ws.randomName = false;
@@ -962,7 +1038,6 @@ void Gfx::playerSettings(int player)
 				{
 					Settings::generateName(ws);
 				}
-				//updatePlayerMenu(player);
 			break;
 			
 			case 1:
@@ -972,7 +1047,7 @@ void Gfx::playerSettings(int player)
 			case 2:
 			case 3:
 			case 4:
-				inputInteger(ws.rgb[curSel-2], 0, 63, 2, 275, selectY);
+				inputInteger(ws.rgb[playerMenu.selection-2], 0, 63, 2, 275, selectY);
 			break;
 			
 			case 5: // D2AB
@@ -989,7 +1064,7 @@ void Gfx::playerSettings(int player)
 				{
 					Uint32 k = SDLToDOSKey(key.sym);
 					if(k)
-						ws.controls[curSel - 5] = k;
+						ws.controls[playerMenu.selection - 5] = k;
 				/*
 					int lieroKey = SDLToLieroKeys[key.sym];
 					
@@ -1164,25 +1239,21 @@ void Gfx::mainLoop()
 	Rand rand; // TODO: Seed
 	std::auto_ptr<Controller> controller(new LocalController(common, settings));
 	
-	// Seems unnecessary: game->resetWorms();
 	//game->enter();
 	
 	Level newLevel;
 	newLevel.generateFromSettings(*common, *settings, rand);
 	controller->swapLevel(newLevel);
-	//controller->focus();
 	
 	while(true)
 	{
-		// This doesn't seem to fill any useful purpose since we separated out the drawing: game->processViewports();
-		//game->draw();
 		controller->draw();
 		
 		int selection = menuLoop();
 		
 		if(selection == 1)
 		{
-#if 0
+#if 1
 			std::auto_ptr<Controller> newController(new LocalController(common, settings));
 			
 			Level& oldLevel = controller->currentLevel();
@@ -1192,7 +1263,6 @@ void Gfx::mainLoop()
 			&& settings->levelFile == oldLevel.oldLevelFile)
 			{
 				// Take level and palette from old game
-				// TODO: These should be packaged together in a unit. Consider moving the palette to the level.
 				newController->swapLevel(oldLevel);
 			}
 			else
@@ -1204,7 +1274,7 @@ void Gfx::mainLoop()
 			
 			controller = newController;
 #else
-			controller.reset(new ReplayController(common, settings));
+			
 #endif
 		}
 		else if(selection == 0)
@@ -1214,6 +1284,10 @@ void Gfx::mainLoop()
 		else if(selection == 3) // QUIT TO OS
 		{
 			break;
+		}
+		else if(selection == 4)
+		{
+			controller.reset(new ReplayController(common, settings));
 		}
 		
 		controller->focus();
@@ -1271,7 +1345,7 @@ bool Gfx::loadSettings()
 	return settings->load(joinPath(lieroEXERoot, settingsFile + ".DAT"));
 }
 
-void Gfx::drawBasicMenu(int curSel)
+void Gfx::drawBasicMenu(/*int curSel*/)
 {
 	std::memcpy(screen->pixels, &frozenScreen[0], frozenScreen.size());
 	
@@ -1308,9 +1382,9 @@ char buffer[256];
 	*/
 	
 	if(curMenu == 0)
-		mainMenu.draw(*common, 53, 20, false, curSel, firstMenuItem);
+		mainMenu.draw(*common, 53, 20, false/*, curSel*/, firstMenuItem);
 	else
-		mainMenu.draw(*common, 53, 20, true, -1, firstMenuItem);
+		mainMenu.draw(*common, 53, 20, true/*, -1*/, firstMenuItem);
 }
 
 int upperCaseOnly(int k)
@@ -1334,8 +1408,11 @@ int Gfx::menuLoop()
 	fillRect(0, 151, 160, 7, 0);
 	common->font.drawText(common->texts.copyright2, 2, 152, 19);
 	
-	int curSel = firstMenuItem;
-	int curSel2 = 0;
+	mainMenu.selection = firstMenuItem;
+	settingsMenu.selection = 0;
+	settingsMenuValues.selection = 0;
+	//int mainMenu.selection = firstMenuItem;
+	//int settingsMenu.selection = 0;
 	fadeValue = 0;
 	curMenu = 0;
 
@@ -1350,12 +1427,12 @@ int Gfx::menuLoop()
 	{
 		menuCyclic = (menuCyclic + 1) % 5;
 		
-		drawBasicMenu(curSel);
+		drawBasicMenu();
 		
 		if(curMenu == 1)
 		{
-			settingsMenu.draw(*common, 178, 20, false, curSel2);
-			settingsMenuValues.draw(*common, 278, 20, false, curSel2);
+			settingsMenu.draw(*common, 178, 20, false);
+			settingsMenuValues.draw(*common, 278, 20, false);
 		}
 		else
 		{
@@ -1368,7 +1445,7 @@ int Gfx::menuLoop()
 			if(curMenu == 1)
 				curMenu = 0;
 			else
-				curSel = 3;
+				mainMenu.selection = 3;
 		}
 		
 		if(testSDLKeyOnce(SDLK_UP))
@@ -1377,19 +1454,21 @@ int Gfx::menuLoop()
 			
 			if(curMenu == 0)
 			{
-				--curSel;
-				if(curSel < firstMenuItem)
+				--mainMenu.selection;
+				if(mainMenu.selection < firstMenuItem)
 				{
-					curSel = int(mainMenu.items.size() - 1);
+					mainMenu.selection = int(mainMenu.items.size() - 1);
 				}
 			}
 			else if(curMenu == 1)
 			{
-				--curSel2;
-				if(curSel2 < 0)
+				--settingsMenu.selection;
+				
+				if(settingsMenu.selection < 0)
 				{
-					curSel2 = int(settingsMenu.items.size() - 1);
+					settingsMenu.selection = int(settingsMenu.items.size() - 1);
 				}
+				settingsMenuValues.selection = settingsMenu.selection;
 			}
 		}
 		
@@ -1400,20 +1479,21 @@ int Gfx::menuLoop()
 			
 			if(curMenu == 0)
 			{
-				++curSel;
-				if(curSel >= int(mainMenu.items.size()))
+				++mainMenu.selection;
+				if(mainMenu.selection >= int(mainMenu.items.size()))
 				{
-					curSel = firstMenuItem;
+					mainMenu.selection = firstMenuItem;
 				}
 			}
 			else if(curMenu == 1)
 			{
-				++curSel2;
+				++settingsMenu.selection;
 				
-				if(curSel2 >= int(settingsMenu.items.size()))
+				if(settingsMenu.selection >= int(settingsMenu.items.size()))
 				{
-					curSel2 = 0;
+					settingsMenu.selection = 0;
 				}
+				settingsMenuValues.selection = settingsMenu.selection;
 			}
 		}
 
@@ -1424,7 +1504,7 @@ int Gfx::menuLoop()
 			
 			if(curMenu == 0)
 			{
-				if(curSel == 2)
+				if(mainMenu.selection == 2)
 				{
 					curMenu = 1; // Go into settings menu
 				}
@@ -1436,7 +1516,7 @@ int Gfx::menuLoop()
 			}
 			else if(curMenu == 1)
 			{
-				settingEnter(curSel2);
+				settingEnter(settingsMenu.selection);
 				updateSettingsMenu();
 			}
 		}
@@ -1465,12 +1545,12 @@ int Gfx::menuLoop()
 		{
 			if(testSDLKey(SDLK_LEFT))
 			{
-				settingLeftRight(-1, curSel2);
+				settingLeftRight(-1, settingsMenu.selection);
 				updateSettingsMenu();
 			} // EDAE
 			if(testSDLKey(SDLK_RIGHT))
 			{
-				settingLeftRight(1, curSel2);
+				settingLeftRight(1, settingsMenu.selection);
 				updateSettingsMenu();
 			} // EDBF
 		}
@@ -1497,7 +1577,7 @@ int Gfx::menuLoop()
 		flip(); // TODO: We should just screen sync and set the palette here
 	} // EE36
 	
-	return curSel;
+	return mainMenu.selection;
 }
 
 

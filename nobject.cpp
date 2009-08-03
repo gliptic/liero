@@ -8,7 +8,7 @@
 void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int colour, Worm* owner)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
-
+	
 	obj.id = id;
 	obj.owner = owner;
 	obj.x = x;
@@ -46,6 +46,8 @@ void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int 
 void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int colour, Worm* owner)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
+	
+	
 
 	obj.id = id;
 	obj.owner = owner;
@@ -289,10 +291,13 @@ void NObject::process(Game& game)
 					if(t.hitDamage > 0)
 					{
 						if(w.health > 0
-						&& game.rand(3) == 0
-						&& !game.soundPlayer->isPlaying(w.wormSoundID))
+						&& game.rand(3) == 0)
 						{
-							game.soundPlayer->play(18 + game.rand(3), w.wormSoundID);
+							int snd = 18 + game.rand(3); // NOTE: MUST be outside the unpredictable branch below
+							if(!game.soundPlayer->isPlaying(w.wormSoundID))
+							{
+								game.soundPlayer->play(snd, w.wormSoundID);
+							}
 						}
 					}
 					
@@ -300,9 +305,10 @@ void NObject::process(Game& game)
 					
 					for(int i = 0; i < blood; ++i)
 					{
+						int angle = game.rand(128); 
 						common.nobjectTypes[6].create2(
 							game,
-							game.rand(128),
+							angle,
 							velX / 3, velY / 3,
 							x, y,
 							0,
@@ -314,7 +320,8 @@ void NObject::process(Game& game)
 					if(t.wormDestroy
 					&& !doExplode)
 					{
-						game.nobjects.free(this);
+						if(used) // Temp
+							game.nobjects.free(this);
 					}
 				}
 				
@@ -340,17 +347,20 @@ void NObject::process(Game& game)
 		{
 			for(int i = 0; i < t.splinterAmount; ++i)
 			{
+				int angle = game.rand(128);
+				int colorSub = game.rand(2);
 				common.nobjectTypes[t.splinterType].create2(
 					game,
-					game.rand(128),
+					angle,
 					0, 0,
 					x, y,
-					t.splinterColour - game.rand(2),
+					t.splinterColour - colorSub,
 					owner);
 			}
 		}
 		
-		game.nobjects.free(this);
+		if(used) // Temp
+			game.nobjects.free(this);
 	}
 }
 

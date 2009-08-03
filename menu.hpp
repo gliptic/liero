@@ -37,14 +37,16 @@ struct Menu
 	Menu(bool centered = false)
 	: itemHeight(8)
 	, centered(centered)
+	, selection(0)
 	{
 	}
 	
-	void draw(Common& common, int x, int y, bool disabled, int selection = -1, int firstItem = 0, int lastItem = -1);
+	void draw(Common& common, int x, int y, bool disabled/*, int selection = -1*/, int firstItem = 0, int lastItem = -1);
 	
 	std::vector<MenuItem> items;
 	int itemHeight;
-	bool centered;	
+	bool centered;
+	int selection;
 };
 
 #endif // LIERO_MENU_HPP

@@ -19,8 +19,19 @@
 
 void Game::createDefaults()
 {
-	Worm* worm1 = new Worm(settings->wormSettings[0], 0, 19, *this);
-	Worm* worm2 = new Worm(settings->wormSettings[1], 1, 20, *this);
+	Worm* worm1 = new Worm(*this);
+	worm1->settings = settings->wormSettings[0];
+	worm1->health = worm1->settings->health;
+	worm1->lives = settings->lives;
+	worm1->index = 0;
+	worm1->wormSoundID = 19;
+	
+	Worm* worm2 = new Worm(*this);
+	worm2->settings = settings->wormSettings[1];
+	worm2->health = worm2->settings->health;
+	worm2->lives = settings->lives;
+	worm2->index = 1;
+	worm2->wormSoundID = 20;
 	
 	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350, *this));
 	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350, *this));
@@ -34,54 +45,26 @@ Game::Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settingsIni
 , soundPlayer(new DefaultSoundPlayer)
 , settings(settingsInit)
 , screenFlash(0)
-//, shutDown(false)
+, gotChanged(false)
+, lastKilled(0)
+, paused(true)
 {
 	rand.seed(Uint32(std::time(0)));
-	
-	clearWorms();
-	clearViewports();
-	
-	bonuses.clear();
-	wobjects.clear();
-	sobjects.clear();
-	bobjects.clear();
-	nobjects.clear();
-	
-	
-	
-	/*
-	// TODO: Move as much of this as possible into the Worm ctor
-	for(std::size_t i = 0; i < worms.size(); ++i)
-	{
-		Worm& w = *worms[i];
-		
-		if(rand(2) > 0)
-		{
-			w.aimingAngle = itof(32);
-			w.direction = 0;
-		}
-		else
-		{
-			w.aimingAngle = itof(96);
-			w.direction = 1;
-		}
-	}*/
 	
 	cycles = 0;
 	
 	// TODO: Unhardcode 40. Also, this loop makes loading time settings only take effect when
 	// starting a new game. Although this emulates liero, consider changing it.
 	// TODO: This also ties common to the settings, it really has to change.
+	/*
 	for(int w = 0; w < 40; ++w)
 	{
 		common->weapons[w].computedLoadingTime = (settings->loadingTime * common->weapons[w].loadingTime) / 100;
 		if(common->weapons[w].computedLoadingTime == 0)
 			common->weapons[w].computedLoadingTime = 1;
-	}
+	}*/
 	
-	gotChanged = false;
-	lastKilled = 0;
-	paused = true;
+	
 }
 
 Game::~Game()
@@ -147,6 +130,7 @@ void Game::clearViewports()
 
 void Game::addViewport(Viewport* vp)
 {
+	//vp->worm->viewport = vp;
 	viewports.push_back(vp);
 }
 
@@ -192,7 +176,6 @@ void Game::resetWorms()
 
 void Game::addWorm(Worm* worm)
 {
-	worm->lives = settings->lives;
 	worms.push_back(worm);
 }
 

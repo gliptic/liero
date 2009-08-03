@@ -6,9 +6,19 @@
 #include "constants.hpp"
 #include <iostream>
 
+int Weapon::computedLoadingTime(Settings& settings)
+{
+	int ret = (settings.loadingTime * loadingTime) / 100;
+	if(ret == 0)
+		ret = 1;
+	return ret;
+}
+
 void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner)
 {
 	WObject* obj = game.wobjects.newObjectReuse();
+	
+	
 	
 	obj->id = id;
 	obj->x = x;
@@ -100,12 +110,14 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 		{
 			for(int i = 0; i < splinters; ++i)
 			{
+				int angle = game.rand(128);
+				int colorSub = game.rand(2);
 				common.nobjectTypes[w.splinterType].create2(
 					game,
-					game.rand(128),
+					angle,
 					0, 0,
 					x, y,
-					w.splinterColour - game.rand(2),
+					w.splinterColour - colorSub,
 					cause);
 			}
 		}
@@ -113,11 +125,12 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 		{
 			for(int i = 0; i < splinters; ++i)
 			{
+				int colorSub = game.rand(2);
 				common.nobjectTypes[w.splinterType].create1(
 					game,
 					velX, velY,
 					x, y,
-					w.splinterColour - game.rand(2),
+					w.splinterColour - colorSub,
 					cause);
 			}
 		}
@@ -136,6 +149,7 @@ void WObject::process(Game& game)
 	int iter = 0;
 	bool bounced = false;
 	bool doExplode = false;
+	bool doRemove = false;
 	
 	Common& common = *game.common;
 	Weapon& w = common.weapons[id];
@@ -247,17 +261,18 @@ void WObject::process(Game& game)
 			{
 				common.nobjectTypes[w.partTrailObj].create1(
 					game,
-					velX / common.C[SplinterLarpaVelDiv], velY / common.C[SplinterLarpaVelDiv], // TODO: Read from EXE
+					velX / common.C[SplinterLarpaVelDiv], velY / common.C[SplinterLarpaVelDiv],
 					x, y,
 					0,
 					owner);
 			}
 			else
 			{
+				int angle = game.rand(128);
 				common.nobjectTypes[w.partTrailObj].create2(
 					game,
-					game.rand(128),
-					velX / common.C[SplinterCracklerVelDiv], velY / common.C[SplinterCracklerVelDiv], // TODO: Read from EXE
+					angle,
+					velX / common.C[SplinterCracklerVelDiv], velY / common.C[SplinterCracklerVelDiv],
 					x, y,
 					0,
 					owner);
@@ -386,16 +401,17 @@ void WObject::process(Game& game)
 				
 				for(int i = 0; i < bloodAmount; ++i)
 				{
-					common.nobjectTypes[6].create2(game, game.rand(128), velX / 3, velY / 3, x, y, 0, &worm);
+					int angle = game.rand(128);
+					common.nobjectTypes[6].create2(game, angle, velX / 3, velY / 3, x, y, 0, &worm);
 				}
 								
 				if(w.hitDamage > 0
 				&& worm.health > 0
 				&& game.rand(3) == 0)
 				{
+					int snd = game.rand(3) + 18; // NOTE: MUST be outside the unpredictable branch below
 					if(!game.soundPlayer->isPlaying(worm.wormSoundID))
 					{
-						int snd = game.rand(3) + 18;
 						game.soundPlayer->play(snd, worm.wormSoundID);
 					}
 				}
@@ -407,8 +423,7 @@ void WObject::process(Game& game)
 						if(w.wormExplode)
 							doExplode = true;
 							
-						if(!doExplode)
-							game.wobjects.free(this);
+						doRemove = true;
 					}
 				}
 			}
@@ -416,6 +431,8 @@ void WObject::process(Game& game)
 
 		if(doExplode)
 			blowUpObject(game, owner);
+		else if(doRemove)
+			game.wobjects.free(this);
 	}
 	while(w.shotType == Weapon::STLaser
 	//&& !doExplode

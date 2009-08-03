@@ -144,7 +144,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib SDLmain.lib sdl_mixer.lib"
+				AdditionalDependencies="sdl.lib sdl_mixer.lib"
 				OutputFile="$(OutDir)/openliero.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -233,6 +233,10 @@
 		</File>
 		<File
 			RelativePath="..\controller.hpp"
+			>
+		</File>
+		<File
+			RelativePath="..\exactObjectList.hpp"
 			>
 		</File>
 		<File
@@ -358,6 +362,14 @@
 		<File
 			RelativePath="..\replay.cpp"
 			>
+			<FileConfiguration
+				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					DisableLanguageExtensions="true"
+				/>
+			</FileConfiguration>
 		</File>
 		<File
 			RelativePath="..\replay.hpp"

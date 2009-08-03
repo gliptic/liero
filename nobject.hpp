@@ -3,6 +3,7 @@
 
 #include "math.hpp"
 #include "objectList.hpp"
+#include "exactObjectList.hpp"
 
 struct Worm;
 struct Game;
@@ -44,7 +45,7 @@ struct NObjectType
 	int id;
 };
 
-struct NObject : ObjectListBase
+struct NObject : ExactObjectListBase
 {
 	void process(Game& game);
 	

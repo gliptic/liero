@@ -39,7 +39,7 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 	common.font.drawText(string, x + 2, y + 1, c);
 }
 
-void Menu::draw(Common& common, int x, int y, bool disabled, int selection, int firstItem, int lastItem)
+void Menu::draw(Common& common, int x, int y, bool disabled/*, int selection*/, int firstItem, int lastItem)
 {
 	if(lastItem == -1)
 		lastItem = int(items.size()) - 1;

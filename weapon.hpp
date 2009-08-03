@@ -3,10 +3,12 @@
 
 #include "math.hpp"
 #include "objectList.hpp"
+#include "exactObjectList.hpp"
 #include <string>
 
 struct Worm;
 struct Game;
+struct Settings;
 
 struct Weapon
 {
@@ -70,12 +72,14 @@ struct Weapon
 	int partTrailObj;
 	int partTrailDelay;
 	
+	int computedLoadingTime(Settings& settings);
+	
 	int id;
-	int computedLoadingTime;
+	//int computedLoadingTime;
 	std::string name;
 };
 
-struct WObject : ObjectListBase
+struct WObject : ExactObjectListBase
 {
 	void blowUpObject(Game& game, Worm* cause);
 	void process(Game& game);
@@ -87,5 +91,6 @@ struct WObject : ObjectListBase
 	int curFrame;
 	int timeLeft;
 };
+
 
 #endif // LIERO_WEAPON_HPP
