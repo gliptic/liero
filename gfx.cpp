@@ -596,20 +596,76 @@ void Gfx::flip()
 			}
 #endif
 		}
-		else
+		else if(mag > 2)
 		{
 			for(int y = 0; y < 200; ++y)
-			for(int x = 0; x < 320; ++x)
 			{
-				int dx = x * mag;
-				int dy = y * mag;
-				int dxmax = dx + mag;
-				int dymax = dy + mag;
-				PalIdx pix = src[y*srcPitch + x];
-				for(int dy2 = dy; dy2 < dymax; ++dy2)
-				for(int dx2 = dx; dx2 < dxmax; ++dx2)
+				PalIdx* line = src + y*srcPitch;
+				int destMagPitch = mag*destPitch;
+				PalIdx* destLine = dest + y*destMagPitch;
+				
+				for(int x = 0; x < 320/4 - 1; ++x)
 				{
-					dest[dy2*destPitch + dx2] = pix;
+					uint32_t pix = *reinterpret_cast<uint32_t*>(line);
+					line += 4;
+					
+					uint32_t a = pix >> 24;
+					uint32_t b = pix & 0x00ff0000;
+					uint32_t c = pix & 0x0000ff00;
+					uint32_t d = pix & 0x000000ff;
+					
+					a |= (a << 8);
+					b |= (b << 8);
+					c |= (c >> 8);
+					d |= (d << 8);
+					
+					a |= (a << 16);
+					b |= (b >> 16);
+					c |= (c << 16);
+					d |= (d << 16);
+					
+					// !arch
+					#define WRITE_BLOCK(C) \
+					do { \
+						int i = mag; \
+						while(i >= 4) { \
+							for(int y = 0; y < destMagPitch; y += destPitch) { \
+								uint32_t* dest32 = reinterpret_cast<uint32_t*>(destLine + y); \
+								*dest32 = (C); \
+							} \
+							destLine += 4; \
+							i -= 4; \
+						} \
+						if(i > 0) { \
+							for(int y = 0; y < destMagPitch; y += destPitch) { \
+								uint32_t* dest32 = reinterpret_cast<uint32_t*>(destLine + y); \
+								*dest32 = (C); \
+							} \
+							destLine += i; \
+						} \
+					} while(0)
+					
+					// !arch
+					WRITE_BLOCK(d);
+					WRITE_BLOCK(c);
+					WRITE_BLOCK(b);
+					WRITE_BLOCK(a);
+					
+					#undef WRITE_BLOCK
+					
+				}
+				
+				for(int x = 0; x < 4; ++x)
+				{
+					PalIdx pix = *line++;
+					for(int dy = 0; dy < destMagPitch; dy += destPitch)
+					{
+						for(int dx = 0; dx < mag; ++dx)
+						{
+							destLine[dy + dx] = pix;
+						}
+					}
+					destLine += mag;
 				}
 			}
 		}
@@ -780,7 +836,9 @@ struct ReplaySelectBehavior : ItemBehavior
 	int onEnter(Menu& menu, int item)
 	{
 		sfx.play(27);
-		return gfx.selectReplay();
+		int ret = gfx.selectReplay();
+		sfx.play(27);
+		return ret;
 	}
 };
 
@@ -1066,11 +1124,12 @@ void Gfx::selectProfile(WormSettings& ws)
 		if(testSDLKeyOnce(SDLK_RETURN)
 		|| testSDLKeyOnce(SDLK_KP_ENTER))
 		{
-			sfx.play(27);
-			
-			ws.loadProfile(profileMenu.items[profileMenu.selection()].string);
-			
-			return;
+			if(profileMenu.isSelectionValid())
+			{
+				ws.loadProfile(profileMenu.items[profileMenu.selection()].string);
+				
+				return;
+			}
 		}
 		
 		if(settings->extensions)
@@ -1149,15 +1208,19 @@ int Gfx::selectReplay()
 		if(testSDLKeyOnce(SDLK_RETURN)
 		|| testSDLKeyOnce(SDLK_KP_ENTER))
 		{
-			std::string replayName = replayMenu.items[replayMenu.selection()].string + ".lrp";			
-			std::string fullPath = joinPath(lieroEXERoot, replayName);
-			
-			// Reset controller before opening the replay, since we may be recording it
-			controller.reset();
-			
-			gvl::stream_ptr replay(new gvl::fstream(std::fopen(fullPath.c_str(), "rb")));
-			controller.reset(new ReplayController(common, replay));
-			return MaReplay;
+			if(replayMenu.isSelectionValid())
+			{
+				std::string replayName = replayMenu.items[replayMenu.selection()].string + ".lrp";			
+				std::string fullPath = joinPath(lieroEXERoot, replayName);
+				
+				// Reset controller before opening the replay, since we may be recording it
+				controller.reset();
+				
+				gvl::stream_ptr replay(new gvl::fstream(std::fopen(fullPath.c_str(), "rb")));
+				controller.reset(new ReplayController(common, replay));
+				
+				return MaReplay;
+			}
 		}
 		
 		if(settings->extensions)

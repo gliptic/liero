@@ -133,6 +133,11 @@ struct Menu
 		y = newY;
 	}
 	
+	bool isSelectionValid()
+	{
+		return selection_ >= 0 && selection_ < (int)items.size();
+	}
+	
 	void moveToFirstVisible();
 	void movement(int direction);
 	void movementPage(int direction);

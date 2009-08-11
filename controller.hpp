@@ -179,7 +179,7 @@ struct LocalController : CommonController
 			}
 		}
 		
-		CommonController::process();
+		//CommonController::process();
 		
 		if(goingToMenu)
 		{

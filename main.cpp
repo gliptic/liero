@@ -26,6 +26,8 @@
 
 #include <gvl/math/cmwc.hpp>
 
+//#include <gvl/support/profile.hpp> // TEMP
+
 //#undef main
 
 int gameEntry(int argc, char* argv[])
@@ -33,34 +35,6 @@ try
 {
 	gvl_init_ieee();
 	
-#if 0
-
-#if 1
-	gvl::mwc trand(10);
-#elif 0
-	gvl::cmwc987654978 trand;
-	trand.seed(10);
-#elif 0
-	Rand trand;
-#elif 1
-	gvl::default_xorshift trand(0);
-#endif
-	
-	uint32_t i = 0;
-	
-	double one = 0;
-	double zero = 0;
-	
-	std::clock_t before = std::clock();
-	for(uint64_t i = 0; i < 1000000000; ++i)
-	{
-		trand(0, 1000);
-	}
-	std::clock_t after = std::clock();
-	printf("%2.10f, %u\n", double(after - before) / CLOCKS_PER_SEC, trand());
-	return 0;
-#endif
-
 	// TODO: Better PRNG seeding
 	Console::init();
 	gfx.rand.seed(Uint32(std::time(0)));
@@ -215,6 +189,8 @@ try
 	closeAllCachedFiles();
 	
 	SDL_Quit();
+	
+	//gvl::present_profile(std::cout);
 	
 	return 0;
 }
