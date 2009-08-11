@@ -4,22 +4,8 @@
 #include "worm.hpp"
 #include "viewport.hpp"
 #include <gvl/support/type_info.hpp>
-
-inline int32_t uint32_as_int32(uint32_t x)
-{
-	if(x >= 0x80000000)
-		return (int32_t)(x - 0x80000000u) - 0x80000000;
-	else
-		return (int32_t)x;
-}
-
-inline uint32_t int32_as_uint32(int32_t x)
-{
-	if(x < 0)
-		return (uint32_t)(x + 0x80000000) + 0x80000000u;
-	else
-		return (uint32_t)x;
-}
+#include <gvl/serialization/archive.hpp>
+#include <gvl/io/deflate_filter.hpp>
 
 struct WormCreator
 {
@@ -37,259 +23,6 @@ struct ViewportCreator
 	}
 };
 
-template<typename Context>
-struct InArchive
-{
-	static bool const in = true;
-	static bool const out = false;
-	
-	
-	InArchive(gvl::stream_reader& reader, Context& context)
-	: reader(reader), context(context)
-	{
-	}
-	
-	template<typename T>
-	InArchive& i32(T& v)
-	{
-		v = uint32_as_int32(gvl::read_uint32(reader));
-		return *this;
-	}
-	
-	template<typename T>
-	InArchive& ui16(T& v)
-	{
-		v = gvl::read_uint16(reader);
-		return *this;
-	}
-	
-	template<typename T>
-	InArchive& ui32(T& v)
-	{
-		v = gvl::read_uint32(reader);
-		return *this;
-	}
-	
-	template<typename T>
-	InArchive& ui8(T& v)
-	{
-		v = reader.get();
-		return *this;
-	}
-	
-	template<typename T>
-	InArchive& b(T& v)
-	{
-		v = !!reader.get();
-		return *this;
-	}
-
-	template<typename T>
-	InArchive& str(T& v)
-	{
-		uint32_t len = gvl::read_uint32(reader);
-		v.clear();
-		for(uint32_t i = 0; i < len; ++i)
-		{
-			v.push_back((char)reader.get());
-		}
-		return *this;
-	}
-	
-	template<typename T, typename Creator>
-	InArchive& obj(T*& v, Creator creator)
-	{
-		uint32_t id = gvl::read_uint32(reader);
-		if(context.read(v, id, creator))
-			archive(*this, *v);
-			
-		return *this;
-	}
-	
-	template<typename T>
-	InArchive& obj(T*& v)
-	{
-		return obj(v, gvl::new_creator<T>());
-	}
-	
-	template<typename T, typename Creator>
-	InArchive& obj(gvl::shared_ptr<T>& v, Creator creator)
-	{
-		T* p;
-		obj(p, creator);
-		v.reset(p);
-		return *this;
-	}
-	
-	template<typename T>
-	InArchive& obj(gvl::shared_ptr<T>& v)
-	{
-		return obj(v, gvl::new_creator<T>());
-	}
-	
-	template<typename T, typename Creator>
-	InArchive& fobj(T*& v, Creator creator)
-	{
-		v = creator(context);
-		archive(*this, *v);
-			
-		return *this;
-	}
-	
-	template<typename T>
-	InArchive& fobj(T*& v)
-	{
-		return fobj(v, gvl::new_creator<T>());
-	}
-	
-	template<typename T, typename Creator>
-	InArchive& fobj(gvl::shared_ptr<T>& v, Creator creator)
-	{
-		T* p;
-		fobj(p, creator);
-		v.reset(p);
-		return *this;
-	}
-	
-	template<typename T>
-	InArchive& fobj(gvl::shared_ptr<T>& v)
-	{
-		return fobj(v, gvl::new_creator<T>());
-	}
-	
-	InArchive& check()
-	{
-		uint32_t v = gvl::read_uint32(reader);
-		if(v != 0x12345678)
-			throw std::runtime_error("Expected checkpoint here");
-		return *this;
-	}
-	
-	gvl::stream_reader& reader;
-	Context& context;
-};
-
-template<typename Context>
-struct OutArchive
-{
-	static bool const in = false;
-	static bool const out = true;
-	
-	OutArchive(gvl::stream_writer& writer, Context& context)
-	: writer(writer), context(context)
-	{
-	}
-	
-	
-	
-	OutArchive& i32(int32_t v)
-	{
-		gvl::write_uint32(writer, int32_as_uint32(v));
-		return *this;
-	}
-	
-	OutArchive& ui16(uint32_t v)
-	{
-		gvl::write_uint16(writer, v);
-		return *this;
-	}
-	
-	OutArchive& ui32(uint32_t v)
-	{
-		gvl::write_uint32(writer, v);
-		return *this;
-	}
-	
-	OutArchive& ui8(uint32_t v)
-	{
-		writer.put(v);
-		return *this;
-	}
-	
-	OutArchive& b(bool v)
-	{
-		writer.put(v ? 1 : 0);
-		return *this;
-	}
-
-	template<typename T>
-	OutArchive& str(T const& v)
-	{
-		gvl::write_uint32(writer, v.size());
-		for(uint32_t i = 0; i < v.size(); ++i)
-		{
-			writer.put((uint8_t)v[i]);
-		}
-		return *this;
-	}
-	
-	template<typename T, typename Creator>
-	OutArchive& obj(T*& v, Creator creator)
-	{
-		std::pair<bool, uint32_t> res = context.write(v);
-		
-		gvl::write_uint32(writer, res.second);
-		if(res.first)
-			archive(*this, *v);
-		
-		return *this;
-	}
-	
-	template<typename T>
-	OutArchive& obj(T*& v)
-	{
-		return obj(v, 0);
-	}
-	
-	template<typename T, typename Creator>
-	OutArchive& obj(gvl::shared_ptr<T>& v, Creator creator)
-	{
-		T* p = v.get();
-		return obj(p);
-	}
-	
-	template<typename T>
-	OutArchive& obj(gvl::shared_ptr<T>& v)
-	{
-		return obj(v, 0);
-	}
-	
-	template<typename T, typename Creator>
-	OutArchive& fobj(T*& v, Creator creator)
-	{
-		archive(*this, *v);
-		
-		return *this;
-	}
-	
-	template<typename T>
-	OutArchive& fobj(T*& v)
-	{
-		return fobj(v, 0);
-	}
-	
-	template<typename T, typename Creator>
-	OutArchive& fobj(gvl::shared_ptr<T>& v, Creator creator)
-	{
-		T* p = v.get();
-		return fobj(p);
-	}
-	
-	template<typename T>
-	OutArchive& fobj(gvl::shared_ptr<T>& v)
-	{
-		return fobj(v, 0);
-	}
-	
-	OutArchive& check()
-	{
-		gvl::write_uint32(writer, 0x12345678);
-		return *this;
-	}
-	
-	gvl::stream_writer& writer;
-	Context& context;
-};
 
 /*
 void read(gvl::stream_reader& reader, Settings& settings)
@@ -306,42 +39,17 @@ void read(gvl::stream_reader& reader, Settings& settings)
 }
 	*/
 	
-template<typename Archive>
-void archive(Archive ar, Settings& settings)
-{
-	for(int i = 0; i < 40; ++i)
-	{
-		ar.ui8(settings.weapTable[i]);
-	}
-	
-	ar
-	.ui16(settings.maxBonuses)
-	.ui16(settings.blood)
-	.ui16(settings.timeToLose)
-	.ui16(settings.flagsToWin)
-	.ui16(settings.gameMode)
-	.b(settings.shadow)
-	.b(settings.loadChange)
-	.b(settings.namesOnBonuses)
-	.b(settings.regenerateLevel)
-	.ui16(settings.lives)
-	.ui16(settings.loadingTime)
-	.b(settings.randomLevel)
-	.b(settings.map)
-	.b(settings.screenSync)
-	.str(settings.levelFile)
 
-	.check()
-	;
-}
 
 template<typename Archive>
 void archive(Archive ar, Worm::ControlState& cs)
 {
+/*
 	for(int i = 0; i < Worm::MaxControl; ++i)
 	{
 		ar.b(cs.state[i]);
-	}
+	}*/
+	ar.ui8(cs.istate);
 }
 
 template<typename Archive>
@@ -391,7 +99,6 @@ void archive(Archive ar, Worm& worm)
 	.i32(worm.leaveShellTimer)
 	.fobj(worm.settings)
 	.i32(worm.index)
-	.i32(worm.wormSoundID)
 	.i32(worm.reacts[0])
 	.i32(worm.reacts[1])
 	.i32(worm.reacts[2])
@@ -410,6 +117,7 @@ void archive(Archive ar, Worm& worm)
 	ar.ui8(worm.direction);
 	
 	archive(ar, worm.controlStates);
+	archive(ar, worm.prevControlStates);
 	
 	ar.check();
 }
@@ -432,66 +140,71 @@ void archive(Archive ar, Viewport& vp)
 	.i32(vp.rect.y1)
 	.i32(vp.rect.x2)
 	.i32(vp.rect.y2)
-	.ui32(vp.rand.curSeed)
 	;
-}
-/*
-void read(gvl::stream_reader& reader, Settings& settings)
-{
-	for(int i = 0; i < 40; ++i)
-	{
-		settings.weapTable[i] = gvl::read_uint16(reader);
-	}
-	settings.maxBonuses = gvl::read_uint16(reader);
-	settings.blood = gvl::read_uint16(reader);
-	settings.timeToLose = gvl::read_uint16(reader);
-	settings.flagsToWin = gvl::read_uint16(reader);
-	settings.gameMode = gvl::read_uint16(reader);
-	settings.shadow = !!reader.get();
-	settings.loadChange = !!reader.get();
-	settings.namesOnBonuses = !!reader.get();
-	settings.regenerateLevel = !!reader.get();
-	settings.lives = gvl::read_uint16(reader);
-	settings.loadingTime = gvl::read_uint16(reader);
-	settings.randomLevel = !!reader.get();
-	settings.levelFile = "";
-	settings.map = !!reader.get();
-	settings.screenSync = !!reader.get();
+	
+	archive(ar, vp.rand);
 }
 
-void write(gvl::stream_writer& writer, Settings& settings)
+struct mtf
 {
-	for(int i = 0; i < 40; ++i)
+	uint8_t order[256];
+	
+	mtf()
 	{
-		gvl::write_uint16(writer, settings.weapTable[i]);
+		for(int i = 0; i < 256; ++i)
+			order[i] = i;
 	}
-	gvl::write_uint16(writer, settings.maxBonuses);
-	gvl::write_uint16(writer, settings.blood);
-	gvl::write_uint16(writer, settings.timeToLose);
-	gvl::write_uint16(writer, settings.flagsToWin);
-	gvl::write_uint16(writer, settings.gameMode);
-	writer.put(settings.shadow);
-	writer.put(settings.loadChange);
-	writer.put(settings.namesOnBonuses);
-	writer.put(settings.regenerateLevel);
-	gvl::write_uint16(writer, settings.lives);
-	gvl::write_uint16(writer, settings.loadingTime);
-	writer.put(settings.randomLevel);
-	writer.put(settings.map);
-	writer.put(settings.screenSync);
-}*/
+	
+	uint8_t byte_to_rank(uint8_t v)
+	{
+		for(int i = 0; i < 256; ++i)
+		{
+			if(order[i] == v)
+				return i;
+		}
+		
+		return 0; // Will never reach here
+	}
+	
+	uint8_t rank_to_byte(uint8_t v)
+	{
+		return order[v];
+	}
+	
+	void promote_rank(uint8_t rank)
+	{
+		uint8_t byte = order[rank];
+		for(uint32_t i = rank; i-- > 0; )
+		{
+			order[i+1] = order[i];
+		}
+		order[0] = byte;
+	}
+};
 
-void archive(InArchive<GameSerializationContext> ar, Level& level)
+void archive(gvl::in_archive<GameSerializationContext> ar, Level& level)
 {
 	unsigned int w = gvl::read_uint16(ar.reader);
 	unsigned int h = gvl::read_uint16(ar.reader);
 	level.resize(w, h);
-	
+
+#if 1
 	for(unsigned int y = 0; y < h; ++y)
 	for(unsigned int x = 0; x < w; ++x)
 	{
 		level.data[y*w + x] = ar.reader.get();
 	}
+#else
+	mtf level_mtf;
+	for(unsigned int y = 0; y < h; ++y)
+	for(unsigned int x = 0; x < w; ++x)
+	{
+		uint8_t rank = ar.reader.get();
+		uint8_t pix = level_mtf.rank_to_byte(rank);
+		level.data[y*w + x] = pix;
+		level_mtf.promote_rank(rank);
+	}
+#endif
 	
 	for(unsigned int i = 0; i < 256; ++i)
 	{
@@ -501,11 +214,28 @@ void archive(InArchive<GameSerializationContext> ar, Level& level)
 	}
 }
 
-void archive(OutArchive<GameSerializationContext> ar, Level& level)
+template<typename Writer>
+void archive(gvl::out_archive<GameSerializationContext, Writer> ar, Level& level)
 {
 	ar.ui16(level.width);
 	ar.ui16(level.height);
-	ar.writer.put_bucket(new gvl::bucket(&level.data[0], level.width * level.height));
+	unsigned int w = level.width;
+	unsigned int h = level.height;
+	
+#if 1
+	ar.writer.put(&level.data[0], w * h);
+#else
+	mtf level_mtf;
+	
+	for(unsigned int y = 0; y < h; ++y)
+	for(unsigned int x = 0; x < w; ++x)
+	{
+		uint8_t pix = level.data[y*w + x];
+		uint8_t rank = level_mtf.byte_to_rank(pix);
+		ar.writer.put(rank);
+		level_mtf.promote_rank(rank);
+	}
+#endif
 	
 	for(unsigned int i = 0; i < 256; ++i)
 	{
@@ -515,23 +245,7 @@ void archive(OutArchive<GameSerializationContext> ar, Level& level)
 	}
 }
 
-template<typename Archive>
-void archive(Archive ar, WormSettings& ws)
-{
-	ar
-	.ui32(ws.colour)
-	.ui32(ws.health)
-	.ui16(ws.controller);
-	for(int i = 0; i < 5; ++i)
-		ar.ui16(ws.weapons[i]);
-	for(int i = 0; i < 3; ++i)
-		ar.ui16(ws.rgb[i]);
-	ar.b(ws.randomName);
-	ar.str(ws.name);
-}
-
-
-void archive_worms(InArchive<GameSerializationContext> ar, Game& game)
+void archive_worms(gvl::in_archive<GameSerializationContext> ar, Game& game)
 {
 	uint8_t cont;
 	while(ar.ui8(cont), cont)
@@ -541,15 +255,10 @@ void archive_worms(InArchive<GameSerializationContext> ar, Game& game)
 		Worm* worm;
 		ar.obj(worm, WormCreator());
 		
-		GameSerializationContext::WormData& data = ar.context.wormData[worm];
-		archive(ar, data.prevControls);
+		//printf("Worm ID %d: %s\n", wormId, worm->settings->name.c_str());
 		
-		/*
-		if(wormId == 0)
-			game.addViewport(new Viewport(Rect(0, 0, 158, 158), worm, 0, 504, 350, game));
-		else if(wormId == 1)
-			game.addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm, 218, 504, 350, game));
-			*/
+		GameSerializationContext::WormData& data = ar.context.wormData[worm];
+
 		game.addWorm(worm);
 		ar.context.idToWorm[wormId] = worm;
 	}
@@ -563,13 +272,16 @@ void archive_worms(InArchive<GameSerializationContext> ar, Game& game)
 	}
 }
 
-void archive_worms(OutArchive<GameSerializationContext> ar, Game& game)
+template<typename Writer>
+void archive_worms(gvl::out_archive<GameSerializationContext, Writer> ar, Game& game)
 {
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
 		Worm& worm = *game.worms[i];
 		
 		int wormId = ar.context.nextWormId++;
+		
+		//printf("Worm from game, ID %d: %s\n", wormId, worm.settings->name.c_str());
 		ar.context.idToWorm[wormId] = &worm;
 	}
 	
@@ -578,11 +290,13 @@ void archive_worms(OutArchive<GameSerializationContext> ar, Game& game)
 		ar.writer.put(1);
 		
 		Worm* worm = i->second;
+		GameSerializationContext::WormData& data = ar.context.wormData[worm];
 		
 		ar.obj(worm, WormCreator());
-			
-		GameSerializationContext::WormData& data = ar.context.wormData[worm];
-		archive(ar, data.prevControls);
+		
+		//printf("Worm ID %d: %s\n", i->first, worm->settings->name.c_str());
+		
+		data.settingsExpired = false; // We just serialized them, so they have to be up to date
 		
 	}
 	ar.writer.put(0);
@@ -599,15 +313,15 @@ void archive_worms(OutArchive<GameSerializationContext> ar, Game& game)
 template<typename Archive>
 void archive(Archive ar, Game& game)
 {
-	if(ar.in)
-		ar.context.game = &game;
+	ar.context.game = &game;
 	
 	ar
+	.fobj(game.settings)
 	.i32(game.cycles)
 	.b(game.gotChanged)
 	.obj(game.lastKilled, WormCreator())
-	.i32(game.screenFlash)
-	.ui32(game.rand.curSeed);
+	.i32(game.screenFlash);
+	archive(ar, game.rand);
 	
 	archive_worms(ar, game);
 	
@@ -615,95 +329,257 @@ void archive(Archive ar, Game& game)
 }
 
 template<typename T>
-void read(gvl::stream_reader& reader, GameSerializationContext& context, T& ws)
+void read(gvl::stream_reader& reader, GameSerializationContext& context, T& x)
 {
-	archive(InArchive<GameSerializationContext>(reader, context), ws);
+	archive(gvl::in_archive<GameSerializationContext>(reader, context), x);
 }
 
 template<typename T>
-void write(gvl::stream_writer& writer, GameSerializationContext& context, T& ws)
+void write(gvl::stream_writer& writer, GameSerializationContext& context, T& x)
 {
-	archive(OutArchive<GameSerializationContext>(writer, context), ws);
+	archive(gvl::out_archive<GameSerializationContext>(writer, context), x);
 }
 
-std::auto_ptr<Game> Replay::beginPlayback(gvl::shared_ptr<Common> common)
+template<typename T>
+gvl::gash::value_type hash(T& x)
 {
-	uint8_t version = reader.get();
+	GameSerializationContext context;
+	gvl::hash_accumulator<gvl::gash> ha;
+	
+	archive(gvl::out_archive<GameSerializationContext, gvl::hash_accumulator<gvl::gash> >(ha, context), x);
+	
+	ha.flush();
+	return ha.final();
+}
+
+template<typename Archive>
+void archive(Archive ar, gvl::gash::value_type& x)
+{
+	for(int i = 0; i < gvl::gash::value_type::size; ++i)
+	{
+		uint32_t h = uint32_t(x.value[i] >> 32);
+		uint32_t l = uint32_t(x.value[i] & 0xffffffff);
+		ar.ui32(l);
+		ar.ui32(h);
+		x.value[i] = (uint64_t(h) << 32) | l;
+	}
+}
+
+ReplayWriter::ReplayWriter(gvl::stream_ptr str_init)
+: settingsExpired(true)
+{
+#if 1
+	str.reset(new gvl::deflate_filter(true));
+	str->attach_sink(str_init);
+#else
+	str = str_init;
+#endif
+	writer.attach(str);
+}
+
+ReplayWriter::~ReplayWriter()
+{
+	endRecord();
+}
+
+ReplayReader::ReplayReader(gvl::stream_ptr str_init)
+{
+#if 1
+	str.reset(new gvl::deflate_filter(false));
+	str->attach_source(str_init);
+#else
+	str = str_init;
+#endif
+	reader.attach(str);
+}
+
+//#define DEBUG_REPLAYS
+
+uint32_t const replayMagic = ('L' << 24) | ('R' << 16) | ('P' << 8) | 'F';
+
+std::auto_ptr<Game> ReplayReader::beginPlayback(gvl::shared_ptr<Common> common)
+{
+	uint32_t readMagic = gvl::read_uint32(reader);
+	if(readMagic != replayMagic)
+		throw gvl::archive_check_error("File does not appear to be a replay");
+	context.replayVersion = reader.get();
+	if(context.replayVersion > GameSerializationContext::myReplayVersion)
+		throw gvl::archive_check_error("Replay version is too recent");
+	
 	gvl::shared_ptr<Settings> settings(new Settings);
-	read(reader, context, *settings);
-	
+
 	std::auto_ptr<Game> game(new Game(common, settings));
-	//context.game = game.get();
-	//game->rand.curSeed = gvl::read_uint32(reader);
-	//game->cycles = gvl::read_uint32(reader);
+
 	read(reader, context, *game);
+#ifdef DEBUG_REPLAYS
+	gvl::gash::value_type actualH = hash(*game);		
+	gvl::gash::value_type expectedH;
+	read(reader, context, expectedH);
 	
-	uint32_t magic = gvl::read_uint32(reader);
-	if(magic != 0x13371337)
-		throw "FAIL";
-		
+	if(actualH != expectedH)
+		std::cout << "Differing hashes" << std::endl;
+#endif
 	return game;
 }
 
-void Replay::beginRecord(Game& game)
+void ReplayWriter::beginRecord(Game& game)
 {
-	context.game = &game;
-	writer.put(replayVersion);
+	gvl::write_uint32(writer, replayMagic);
+	writer.put(context.replayVersion);
 	
-	write(writer, context, *game.settings);
-	//gvl::write_uint32(writer, game.rand.curSeed);
-	//gvl::write_uint32(writer, game.cycles);
 	write(writer, context, game);
+	settingsExpired = false; // We just serialized them, so they have to be up to date
 	
-	gvl::write_uint32(writer, 0x13371337);
+#ifdef DEBUG_REPLAYS
+	gvl::gash::value_type h = hash(game);
+	write(writer, context, h);
+#endif
 }
 
-void Replay::playbackFrame(Game& game)
+void ReplayWriter::endRecord()
 {
-	uint8_t first = reader.get();
-	if(first >= 0x80)
+	writer.put(0x83);
+}
+
+uint32_t fastGameChecksum(Game& game)
+{
+	// game.rand is like a golden thread
+	uint32_t checksum = game.rand.x;
+	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
-		// Nothing
+		Worm& worm = *game.worms[i];
+		checksum ^= worm.x;
+		checksum += worm.velX;
+		checksum ^= worm.y;
+		checksum += worm.velY;
 	}
+	
+	return checksum;
+}
+
+bool ReplayReader::playbackFrame()
+{
+	Game& game = *context.game;
+	
+	bool settingsChanged = false;
+	
+	while(true)
+	{
+		uint8_t first = reader.get();
+		
+		if(first == 0x80)
+			break;
+		else if(first == 0x81)
+		{
+			read(reader, context, *game.settings);
+			settingsChanged = true;
+		}
+		else if(first == 0x82)
+		{
+			uint32_t wormId = gvl::read_uint32(reader);
+			GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.find(wormId);
+			if(i != context.idToWorm.end())
+			{
+				read(reader, context, *i->second->settings);
+				settingsChanged = true;
+			}
+		}
+		else if(first == 0x83)
+		{
+			// End of replay
+			return false;
+		}
+		else if(first < 0x80)
+		{
+			uint8_t state = first;
+			for(GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.begin(); ;)
+			{
+				Worm* worm = i->second;
+				GameSerializationContext::WormData& data = context.wormData[worm];
+				
+				worm->controlStates.unpack(state ^ worm->prevControlStates.pack());
+				
+				++i;
+				if(i == context.idToWorm.end())
+					break;
+				
+				state = reader.get();
+			}
+			
+			break; // Read frame
+		}
+		else
+			throw gvl::archive_check_error("Unexpected header byte");
+	}
+	
+	if(settingsChanged)
+	{
+		game.updateSettings();
+	}
+	
+	if((game.cycles % (70 * 15)) == 0)
+	{
+		uint32_t expected = gvl::read_uint32(reader);
+		uint32_t actual = fastGameChecksum(game);
+		if(actual != expected)
+			throw gvl::archive_check_error("Replay has desynced");
+	}
+	
+#ifdef DEBUG_REPLAYS
+	uint32_t expected = gvl::read_uint32(reader);
+	uint32_t expected2 = gvl::read_uint32(reader);
+	gvl::gash::value_type actual = hash(game);
+	if(expected != (uint32_t)actual.value[0])
+	{
+		std::cout << "Expected: " << expected << ", was: " << (uint32_t)actual.value[0] << std::endl;
+		std::cout << "Frame: " << game.cycles << std::endl;
+		throw gvl::archive_check_error("Desynced state");
+	}
+	if(expected2 != game.cycles)
+	{
+		throw gvl::archive_check_error("Descyned stream");
+	}
+#endif
+	
+	return true;
+}
+
+
+void ReplayWriter::recordFrame()
+{
+	Game& game = *context.game;
+	
+	if(settingsExpired)
+	{
+		writer.put(0x81);
+		write(writer, context, *context.game->settings);
+		settingsExpired = false;
+	}
+	
+	bool writeStates = false;
+	
+	if(context.idToWorm.size() <= 3) // TODO: What limit do we want here? None?
+		writeStates = true;
 	else
 	{
-		uint8_t state = first;
-		for(GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.begin(); ;)
+		for(GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.begin();
+			i != context.idToWorm.end();
+			++i)
 		{
 			Worm* worm = i->second;
 			GameSerializationContext::WormData& data = context.wormData[worm];
-			
-			for(int c = 0; c < Worm::MaxControl; ++c)
+			if(worm->controlStates != worm->prevControlStates)
 			{
-				worm->setControlState(Worm::Control(c), ((state >> c) & 1) != 0);
+				writeStates = true;
 			}
 			
-			++i;
-			if(i == context.idToWorm.end())
-				break;
-			
-			state = reader.get();
-		}
-	}
-	
-	uint32_t magic = gvl::read_uint32(reader);
-	if(magic != 0x13371337)
-		throw "FAIL";
-}
-
-void Replay::recordFrame(Game& game)
-{
-	bool writeStates = true; // false;
-	for(GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.begin();
-		i != context.idToWorm.end();
-		++i)
-	{
-		Worm* worm = i->second;
-		GameSerializationContext::WormData& data = context.wormData[worm];
-		if(worm->controlStates != data.prevControls)
-		{
-			writeStates = true;
-			break;
+			if(data.settingsExpired)
+			{
+				writer.put(0x82);
+				gvl::write_uint32(writer, i->first);
+				write(writer, context, *worm->settings);
+				data.settingsExpired = false;
+			}
 		}
 	}
 	
@@ -716,16 +592,11 @@ void Replay::recordFrame(Game& game)
 			Worm* worm = i->second;
 			GameSerializationContext::WormData& data = context.wormData[worm];
 			
-			uint8_t state = 0;
-			for(int c = 0; c < Worm::MaxControl; ++c)
-			{
-				state |= uint8_t(worm->controlStates[c]) << c;
-			}
+			uint8_t state = worm->controlStates.pack() ^ worm->prevControlStates.pack();
 			
 			sassert(state < 0x80);
 			
 			writer.put(state);
-			data.prevControls = worm->controlStates;
 		}
 	}
 	else
@@ -733,5 +604,46 @@ void Replay::recordFrame(Game& game)
 		writer.put(0x80); // Bit 7 means empty frame
 	}
 	
-	gvl::write_uint32(writer, 0x13371337);
+	if((game.cycles % (70 * 15)) == 0)
+	{
+		uint32_t checksum = fastGameChecksum(game);
+		gvl::write_uint32(writer, checksum);
+	}
+	
+#ifdef DEBUG_REPLAYS
+	gvl::gash::value_type actual = hash(game);
+	gvl::write_uint32(writer, (uint32_t)actual.value[0]);
+	gvl::write_uint32(writer, game.cycles);
+#endif
+}
+
+void ReplayWriter::unfocus()
+{
+	for(GameSerializationContext::WormDataMap::iterator i = context.wormData.begin();
+		i != context.wormData.end();
+		++i)
+	{
+		i->second.lastSettingsHash = i->first->settings->updateHash();
+	}
+	
+	lastSettingsHash = context.game->settings->updateHash();
+}
+
+void ReplayWriter::focus()
+{
+	// TODO: Check hash of settings for game and all worms,
+	// mark differing ones for reserialization.
+	
+	for(GameSerializationContext::WormDataMap::iterator i = context.wormData.begin();
+		i != context.wormData.end();
+		++i)
+	{
+		if(i->second.lastSettingsHash != i->first->settings->updateHash())
+		{
+			i->second.settingsExpired = true;
+		}
+	}
+	
+	if(lastSettingsHash != context.game->settings->updateHash())
+		settingsExpired = true;
 }

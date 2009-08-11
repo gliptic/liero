@@ -99,7 +99,7 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 	
 	if(w.exploSound >= 0)
 	{
-		game.soundPlayer->play(w.exploSound, w.exploSound);
+		game.soundPlayer->play(w.exploSound);
 	}
 	
 	int splinters = w.splinterAmount;
@@ -140,7 +140,8 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 	{
 		int ix = ftoi(x), iy = ftoi(y);
 		drawDirtEffect(common, game.rand, game.level, w.dirtEffect, ftoi(x) - 7, ftoi(y) - 7);
-		correctShadow(common, game.level, Rect(ix - 10, iy - 10, ix + 11, iy + 11));
+		if(game.settings->shadow)
+			correctShadow(common, game.level, Rect(ix - 10, iy - 10, ix + 11, iy + 11));
 	}
 }
 
@@ -410,9 +411,9 @@ void WObject::process(Game& game)
 				&& game.rand(3) == 0)
 				{
 					int snd = game.rand(3) + 18; // NOTE: MUST be outside the unpredictable branch below
-					if(!game.soundPlayer->isPlaying(worm.wormSoundID))
+					if(!game.soundPlayer->isPlaying(&worm))
 					{
-						game.soundPlayer->play(snd, worm.wormSoundID);
+						game.soundPlayer->play(snd, &worm);
 					}
 				}
 				

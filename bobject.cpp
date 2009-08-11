@@ -15,7 +15,7 @@ void Game::createBObject(fixed x, fixed y, fixed velX, fixed velY)
 	obj.velY = velY;
 }
 
-void BObject::process(Game& game)
+bool BObject::process(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -27,7 +27,7 @@ void BObject::process(Game& game)
 	
 	if(!game.level.inside(ix, iy))
 	{
-		game.bobjects.free(this);
+		return false;
 	}
 	else
 	{
@@ -41,7 +41,7 @@ void BObject::process(Game& game)
 		|| (c >= 77 && c <= 79)) // TODO: Read from EXE
 		{
 			game.level.pixel(ix, iy) = 77 + game.rand(3);
-			game.bobjects.free(this);
+			return false;
 		}
 		/* This can't happen!
 		else if(iy >= game.level.height)
@@ -51,12 +51,14 @@ void BObject::process(Game& game)
 		else if(m.anyDirt())
 		{
 			game.level.pixel(ix, iy) = 82 + game.rand(3);
-			game.bobjects.free(this);
+			return false;
 		}
 		else if(m.rock())
 		{
 			game.level.pixel(ix, iy) = 85 + game.rand(3);
-			game.bobjects.free(this);
+			return false;
 		}
 	}
+	
+	return true;
 }

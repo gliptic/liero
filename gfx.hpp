@@ -31,6 +31,62 @@ struct Key
 
 struct Game;
 struct Controller;
+struct Gfx;
+
+struct PlayerMenu : Menu
+{
+	PlayerMenu(int x, int y)
+	: Menu(x, y)
+	{
+	}
+	
+	virtual void drawItemOverlay(Common& common, int item, int x, int y, bool selected, bool disabled);
+	
+	virtual ItemBehavior* getItemBehavior(Common& common, int item);
+	
+	gvl::shared_ptr<WormSettings> ws;
+};
+
+struct SettingsMenu : Menu
+{
+	SettingsMenu(int x, int y)
+	: Menu(x, y)
+	{
+	}
+	
+	virtual ItemBehavior* getItemBehavior(Common& common, int item);
+};
+
+struct HiddenMenu : Menu
+{
+	enum
+	{
+		Extensions,
+		RecordReplays,
+		Replays,
+		LoadPowerLevels,
+		ScalingFilter,
+		FullscreenW,
+		FullscreenH
+	};
+	
+	HiddenMenu(int x, int y)
+	: Menu(x, y)
+	
+	{
+	}
+	
+	virtual ItemBehavior* getItemBehavior(Common& common, int item);
+};
+
+enum
+{
+	MaResumeGame = 0,
+	MaNewGame = 1,
+	MaSettings = 2,
+	MaQuit = 3,
+	MaReplay = 4
+};
 
 struct Gfx
 {
@@ -130,10 +186,9 @@ struct Gfx
 	bool loadSettings();
 	
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
-	void settingEnter(int item);
-	void settingLeftRight(int change, int item);
+	//void settingEnter(int item);
+	//void settingLeftRight(int change, int item);
 	void updateSettingsMenu();
-	void updatePlayerMenu(int player);
 	//void setWormColours();
 	int menuLoop();
 	void mainLoop();
@@ -142,14 +197,20 @@ struct Gfx
 	//void inputString(std::string& dest, std::size_t maxLen, int x, int y, bool onlyDigits = false);
 	bool inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int) = 0, std::string const& prefix = "", bool centered = true);
 	void inputInteger(int& dest, int min, int max, std::size_t maxLen, int x, int y);
-		
-	int firstMenuItem; // The first visible item in the mainMenu
+	void selectLevel();
+	int  selectReplay();
+	void selectProfile(WormSettings& ws);
+	void updateExtensions(bool enabled);
+	void weaponOptions();
+	void infoBox(std::string const& text, int x = 320/2, int y = 200/2, bool clearScreen = true);
+	int fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY);
+
 	Menu mainMenu;
-	Menu settingsMenu;
-	Menu settingsMenuValues;
-	Menu playerMenu;
-	Menu playerMenuValues;
-	int curMenu;
+	SettingsMenu settingsMenu;
+	PlayerMenu playerMenu;
+	HiddenMenu hiddenMenu;
+	
+	Menu* curMenu;
 	std::string settingsFile; // Currently loaded settings file
 	gvl::shared_ptr<Settings> settings;
 	
@@ -167,13 +228,15 @@ struct Gfx
 	int fadeValue;
 	bool running;
 	bool fullscreen;
-	bool doubleRes;
 	Uint32 lastFrame;
 	int menuCyclic;
 	int windowW, windowH;
+	int prevMag; // Previous magnification used for drawing
 	Rand rand; // PRNG for things that don't affect the game
 	gvl::shared_ptr<Common> common;
+	std::auto_ptr<Controller> controller;
 };
+
 
 struct Level;
 

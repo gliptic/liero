@@ -6,6 +6,7 @@
 #include <gvl/support/debug.hpp>
 
 struct Settings;
+struct WormSettings;
 
 struct Palette
 {
@@ -41,9 +42,10 @@ struct Palette
 	void resetPalette(Palette const& newPal, Settings const& settings)
 	{
 		*this = newPal;
-		setWormColours(settings);
+		//setWormColours(settings);
 	}
 	
+	void setWormColour(int i, WormSettings const& settings);
 	void setWormColours(Settings const& settings);
 	
 	void clear();

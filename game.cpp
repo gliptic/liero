@@ -8,7 +8,7 @@
 #include "weapsel.hpp"
 #include "constants.hpp"
 #include <cstdlib>
-//#include "text.hpp" // TEMP
+#include "text.hpp" // TEMP
 #include <ctime>
 
 #include <iostream>
@@ -22,16 +22,16 @@ void Game::createDefaults()
 	Worm* worm1 = new Worm(*this);
 	worm1->settings = settings->wormSettings[0];
 	worm1->health = worm1->settings->health;
-	worm1->lives = settings->lives;
 	worm1->index = 0;
-	worm1->wormSoundID = 19;
+	if(worm1->settings->controller == 1)
+		worm1->ai.reset(new DumbLieroAI(*worm1));
 	
 	Worm* worm2 = new Worm(*this);
 	worm2->settings = settings->wormSettings[1];
 	worm2->health = worm2->settings->health;
-	worm2->lives = settings->lives;
 	worm2->index = 1;
-	worm2->wormSoundID = 20;
+	if(worm2->settings->controller == 1)
+		worm2->ai.reset(new DumbLieroAI(*worm2));
 	
 	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350, *this));
 	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350, *this));
@@ -179,36 +179,13 @@ void Game::addWorm(Worm* worm)
 	worms.push_back(worm);
 }
 
-void Game::generateLevel()
-{
-/*
-	if(settings->randomLevel)
-	{
-		level.generateRandom(*this);
-	}
-	else
-	{
-		// TODO: Check .LEV as well as .lev
-		if(!level.load(*this, joinPath(lieroEXERoot, settings.levelFile + ".lev")))
-			level.generateRandom(*this);
-
-	}
-	
-	level.oldRandomLevel = settings.randomLevel;
-	level.oldLevelFile = settings.levelFile;
-	
-	if(settings.shadow)
-	{
-		level.makeShadow(*this);
-	}*/
-}
-
 void Game::draw()
 {
 	drawViewports();
+
+	//common->font.drawText(toString(cycles / 70), 10, 10, 7);
 	
-	gfx.origpal = level.origpal;
-	gfx.pal = level.origpal;
+	gfx.pal = gfx.origpal;
 	gfx.pal.fade(gfx.fadeValue);
 
 	if(screenFlash > 0)
@@ -291,16 +268,11 @@ void Game::createBonus()
 
 void Game::processFrame()
 {
-	if((cycles % 70) == 0)
-	{
-		LOG("rand() == " << rand(1000));
-	}
-	
 	if((cycles & 3) == 0)
 	{
 		for(int w = 0; w < 4; ++w)
 		{
-			level.origpal.rotate(common->colourAnim[w].from, common->colourAnim[w].to);
+			gfx.origpal.rotate(common->colourAnim[w].from, common->colourAnim[w].to);
 		}
 	}
 	
@@ -372,9 +344,12 @@ void Game::processFrame()
 		i->process(*this);
 	}
 	
-	for(BObjectList::iterator i = bobjects.begin(); i != bobjects.end(); ++i)
+	for(BObjectList::iterator i = bobjects.begin(); i != bobjects.end(); )
 	{
-		i->process(*this);
+		if(i->process(*this))
+			++i;
+		else
+			bobjects.free(i);
 	}
 	
 	// NOTE: This was originally the beginning of the processing, but has been rotated down to
@@ -426,6 +401,12 @@ void Game::processFrame()
 	
 	processViewports();
 	
+	// Store old control states so we can see what changes (mainly for replays)
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		worms[i]->prevControlStates = worms[i]->controlStates;
+	}
+	
 }
 
 void Game::gameLoop()
@@ -448,33 +429,26 @@ void Game::gameLoop()
 #endif
 }
 
-void Game::enter()
+void Game::focus()
 {
-	//gfx.origpal = level.origpal; // Activate the Level palette
+	updateSettings();
+}
+
+void Game::updateSettings()
+{
+	gfx.origpal = level.origpal; // Activate the Level palette
+	
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		Worm& worm = *worms[i];
+		if(worm.index >= 0 && worm.index < 2)
+			gfx.origpal.setWormColour(worm.index, *worm.settings);
+	}
 }
 
 void Game::startGame()
-{/*
-	if(settings.regenerateLevel
-	|| settings.randomLevel != oldRandomLevel
-	|| settings.levelFile != oldLevelFile)
-	{
-		generateLevel();
-	}
-*/
-	
-
-	//selectWeapons(*this);
-	
-	soundPlayer->play(22, 22);
-
-	gfx.fadeValue = 180;
-}
-
-void Game::continueGame()
 {
-	//gfx.pal.clear();
-	gfx.fadeValue = 0;
+	soundPlayer->play(22);
 }
 
 bool Game::isGameOver()

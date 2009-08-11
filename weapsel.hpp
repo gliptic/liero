@@ -17,9 +17,8 @@ struct WeaponSelection
 	
 	int enabledWeaps;
 	int fadeValue;
-	int curSel[2];
-	bool isReady[2];
-	Menu menus[2];
+	std::vector<bool> isReady;
+	std::vector<Menu> menus;
 	bool cachedBackground;
 };
 

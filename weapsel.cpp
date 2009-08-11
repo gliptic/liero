@@ -5,11 +5,14 @@
 #include "text.hpp"
 #include "menu.hpp"
 #include "sfx.hpp"
+#include "viewport.hpp"
 #include <SDL/SDL.h>
 
 WeaponSelection::WeaponSelection(Game& game)
 : game(game)
 , enabledWeaps(0)
+, isReady(game.viewports.size())
+, menus(game.viewports.size())
 , cachedBackground(false)
 {
 	Common& common = *game.common;
@@ -20,14 +23,22 @@ WeaponSelection::WeaponSelection(Game& game)
 			++enabledWeaps;
 	}
 	
-	for(int i = 0; i < 2; ++i)
+	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
 		bool weapUsed[256] = {};
 		
-		Worm& worm = *game.worms[i];
+		Viewport& vp = *game.viewports[i];
+		
+		Worm& worm = *vp.worm;
 		WormSettings& ws = *worm.settings;
 		
 		menus[i].items.push_back(MenuItem(1, 1, common.texts.randomize));
+		
+		{
+			int x = vp.rect.center_x() - 31;
+			int y = vp.rect.center_y() - 51;
+			menus[i].place(x, y);
+		}	
 		
 		for(int j = 0; j < game.settings->selectableWeapons; ++j)
 		{
@@ -65,7 +76,7 @@ WeaponSelection::WeaponSelection(Game& game)
 		
 		worm.currentWeapon = 0;
 		
-		curSel[i] = 0;
+		menus[i].moveToFirstVisible();
 		isReady[i] = (ws.controller != 0); // AIs are ready immediately
 	}
 }
@@ -78,17 +89,21 @@ void WeaponSelection::draw()
 	{
 		game.draw();
 		
-		drawRoundedBox(114, 2, 0, 7, common.font.getWidth(common.texts.selWeap));
+		drawRoundedBox(114, 2, 0, 7, common.font.getDims(common.texts.selWeap));
 		
 		common.font.drawText(common.texts.selWeap, 116, 3, 50);
 		
-		for(int i = 0; i < 2; ++i)
+		for(std::size_t i = 0; i < menus.size(); ++i)
 		{
-			WormSettings& ws = *game.settings->wormSettings[i];
-			int selWeapX = ws.selWeapX;
-			int width = common.font.getWidth(ws.name);
-			drawRoundedBox(selWeapX + 29 - width/2, 18, 0, 7, width);
-			common.font.drawText(ws.name, selWeapX + 31 - width/2, 19, ws.colour + 1);
+			Viewport& vp = *game.viewports[i];
+			Menu& weaponMenu = menus[i];
+			
+			Worm& worm = *vp.worm;
+			WormSettings& ws = *worm.settings;
+			
+			int width = common.font.getDims(ws.name);
+			drawRoundedBox(weaponMenu.x + 29 - width/2, weaponMenu.y - 11, 0, 7, width);
+			common.font.drawText(ws.name, weaponMenu.x + 31 - width/2, weaponMenu.y - 10, ws.colour + 1);
 		}
 			
 		if(game.settings->levelFile.empty())
@@ -106,16 +121,18 @@ void WeaponSelection::draw()
 	
 	std::memcpy(gfx.screen->pixels, &gfx.frozenScreen[0], gfx.frozenScreen.size());
 
-	for(int i = 0; i < 2; ++i)
+	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
-		int weapID = curSel[i] - 1;
+		int weapID = menus[i].selection() - 1;
 		
-		Worm& worm = *game.worms[i];
+		Viewport& vp = *game.viewports[i];
+		
+		Worm& worm = *vp.worm;
 		WormSettings& ws = *worm.settings;
 		
 		if(!isReady[i])
 		{
-			menus[i].draw(common, ws.selWeapX - 2, 28, false, curSel[i]);
+			menus[i].draw(common, false);
 		}
 	}
 	
@@ -129,11 +146,15 @@ bool WeaponSelection::processFrame()
 {
 	Common& common = *game.common;
 	
-	for(int i = 0; i < 2; ++i)
+	bool allReady = true;
+	
+	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
-		int weapID = curSel[i] - 1;
+		int weapID = menus[i].selection() - 1;
 		
-		Worm& worm = *game.worms[i];
+		Viewport& vp = *game.viewports[i];
+		Worm& worm = *vp.worm;
+		
 		WormSettings& ws = *worm.settings;
 		
 		if(!isReady[i])
@@ -146,7 +167,7 @@ bool WeaponSelection::processFrame()
 				{
 					worm.release(Worm::Left);
 					
-					game.soundPlayer->play(25, -1);
+					game.soundPlayer->play(25);
 					
 					do
 					{
@@ -158,14 +179,14 @@ bool WeaponSelection::processFrame()
 					
 					int w = common.weapOrder[ws.weapons[weapID]];
 					worm.weapons[weapID].id = w;
-					menus[i].items[curSel[i]].string = common.weapons[w].name;
+					menus[i].items[menus[i].selection()].string = common.weapons[w].name;
 				}
 				
 				if(worm.pressed(Worm::Right))
 				{
 					worm.release(Worm::Right);
 					
-					game.soundPlayer->play(26, -1);
+					game.soundPlayer->play(26);
 					
 					do
 					{
@@ -177,27 +198,32 @@ bool WeaponSelection::processFrame()
 					
 					int w = common.weapOrder[ws.weapons[weapID]];
 					worm.weapons[weapID].id = w;
-					menus[i].items[curSel[i]].string = common.weapons[w].name;
+					menus[i].items[menus[i].selection()].string = common.weapons[w].name;
 				}
 			}
 			
 			if(worm.pressedOnce(Worm::Up))
 			{
-				game.soundPlayer->play(26, -1);
+				game.soundPlayer->play(26);
+				/*
 				int s = int(menus[i].items.size());
-				curSel[i] = (curSel[i] - 1 + s) % s;
+				curSel[i] = (curSel[i] - 1 + s) % s;*/
+				menus[i].movement(-1);
 			}
 			
 			if(worm.pressedOnce(Worm::Down))
 			{
-				game.soundPlayer->play(25, -1);
+				game.soundPlayer->play(25);
+				/*
 				int s = int(menus[i].items.size());
 				curSel[i] = (curSel[i] + 1 + s) % s;
+				*/
+				menus[i].movement(1);
 			}
 			
 			if(worm.pressed(Worm::Fire))
 			{
-				if(curSel[i] == 0)
+				if(menus[i].selection() == 0)
 				{
 					bool weapUsed[256] = {};
 					
@@ -225,17 +251,18 @@ bool WeaponSelection::processFrame()
 						menus[i].items[j + 1].string = common.weapons[w].name;
 					}
 				}
-				else if(curSel[i] == 6) // TODO: Unhardcode
+				else if(menus[i].selection() == 6) // TODO: Unhardcode
 				{
-					game.soundPlayer->play(27, -1);
+					game.soundPlayer->play(27);
 					isReady[i] = true;
 				}
 			}
 		}
+		
+		allReady = allReady && isReady[i];
 	}
 	
-	// TODO: Fix this check. Shouldn't ask gfx.
-	return (isReady[0] && isReady[1]); // || gfx.testSDLKey(SDLK_ESCAPE);
+	return allReady;
 }
 
 

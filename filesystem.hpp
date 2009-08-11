@@ -24,6 +24,7 @@ typedef std::auto_ptr<dir_itr_imp> dir_itr_imp_ptr;
 
 void dir_itr_init( dir_itr_imp_ptr & m_imp, char const* dir_path );
 std::string& dir_itr_dereference(dir_itr_imp_ptr const& m_imp );
+std::string& dir_itr_alt_dereference(dir_itr_imp_ptr const& m_imp );
 void dir_itr_increment( dir_itr_imp_ptr & m_imp );
 
 struct DirectoryIterator
@@ -41,6 +42,11 @@ struct DirectoryIterator
 	std::string const& operator*() const
 	{
 		return dir_itr_dereference( m_imp );
+	}
+	
+	std::string const& alt() const
+	{
+		return dir_itr_alt_dereference( m_imp );
 	}
 	
 	void operator++()

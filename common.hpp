@@ -110,7 +110,6 @@ struct AIParams
 struct Common : gvl::shared
 {
 	Common()
-	: loadPowerlevelPalette(false)
 	{
 	}
 	
@@ -145,7 +144,6 @@ struct Common : gvl::shared
 	int bonusRandTimer[2][2];
 	int bonusSObjects[2];
 	AIParams aiParams;
-	bool loadPowerlevelPalette;
 	ColourAnim colourAnim[4];
 	int bonusFrames[2];
 	SpriteSet smallSprites;

@@ -36,7 +36,7 @@ void Viewport::process()
 			
 			int objectsFound = 0;
 			
-			WormWeapon& ww = worm->weapons[worm->currentWeapon];
+			WormWeapon const& ww = worm->weapons[worm->currentWeapon];
 			
 			if(common.weapons[ww.id].shotType == Weapon::STSteerable)
 			{
@@ -129,7 +129,7 @@ void Viewport::draw()
 	
 	// Draw kills status
 	
-	WormWeapon& ww = worm->weapons[worm->currentWeapon];
+	WormWeapon const& ww = worm->weapons[worm->currentWeapon];
 	
 	if(ww.available)
 	{
@@ -297,7 +297,7 @@ void Viewport::draw()
 		
 	for(Game::SObjectList::iterator i = game.sobjects.begin(); i != game.sobjects.end(); ++i)
 	{
-		SObjectType& t = common.sobjectTypes[i->id];
+		SObjectType const& t = common.sobjectTypes[i->id];
 		int frame = i->curFrame + t.startFrame;
 		
 		// TODO: Check that blitImageR is the correct one to use (probably)
@@ -324,7 +324,7 @@ void Viewport::draw()
 	
 	for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
 	{
-		Weapon& w = common.weapons[i->id];
+		Weapon const& w = common.weapons[i->id];
 		
 		if(w.startFrame > -1)
 		{
@@ -418,7 +418,7 @@ void Viewport::draw()
 	
 	for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
 	{
-		NObjectType& t = common.nobjectTypes[i->id];
+		NObjectType const& t = common.nobjectTypes[i->id];
 		
 		if(t.startFrame > 0)
 		{
@@ -477,33 +477,21 @@ void Viewport::draw()
 
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
-		Worm& w = *game.worms[i];
+		Worm const& w = *game.worms[i];
 		
 		if(w.visible)
 		{
 			
 			int tempX = ftoi(w.x) - x - 7 + rect.x1;
 			int tempY = ftoi(w.y) - y - 5 + rect.y1;
-			int tempAng = ftoi(w.aimingAngle) - 12;
-			
-			if(w.direction != 0)
-				tempAng -= 49;
-				
-			tempAng >>= 3;
-			if(tempAng < 0) tempAng = 0;
-			else if(tempAng > 6) tempAng = 6;
-
-			if(w.direction != 0)
-			{
-				tempAng = 6 - tempAng;
-			} // 9581
+			int angleFrame = w.angleFrame();
 			
 			if(w.weapons[w.currentWeapon].available)
 			{
 				int hotspotX = w.hotspotX - x + rect.x1;
 				int hotspotY = w.hotspotY - y + rect.y1;
 				
-				WormWeapon& ww = w.weapons[w.currentWeapon];
+				WormWeapon const& ww = w.weapons[w.currentWeapon];
 				Weapon& weapon = common.weapons[ww.id];
 				
 				if(weapon.laserSight)
@@ -544,15 +532,11 @@ void Viewport::draw()
 				blitFireCone(
 					gfx.screen,
 					w.fireCone / 2,
-					common.fireConeSprite(tempAng, w.direction),
-					common.fireConeOffset[w.direction][tempAng][0] + tempX,
-					common.fireConeOffset[w.direction][tempAng][1] + tempY);
+					common.fireConeSprite(angleFrame, w.direction),
+					common.fireConeOffset[w.direction][angleFrame][0] + tempX,
+					common.fireConeOffset[w.direction][angleFrame][1] + tempY);
 			}
 			
-			if(w.animate)
-				w.currentFrame = tempAng + game.settings->wormAnimTab[(game.cycles & 31) >> 3];
-			else
-				w.currentFrame = tempAng + game.settings->wormAnimTab[0];
 			
 			blitImage(gfx.screen, common.wormSprite(w.currentFrame, w.direction, w.index), tempX, tempY, 16, 16);
 			if(game.settings->shadow)
@@ -647,7 +631,7 @@ void Viewport::draw()
 		
 		for(std::size_t i = 0; i < game.worms.size(); ++i)
 		{
-			Worm& w = *game.worms[i];
+			Worm const& w = *game.worms[i];
 			
 			if(w.visible)
 			{

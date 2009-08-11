@@ -85,25 +85,30 @@ void Palette::read(FILE* f)
 	}
 }
 
-void Palette::setWormColours(Settings const& settings)
+void Palette::setWormColour(int i, WormSettings const& settings)
 {
 	int const b[2] = {0x58, 0x78}; // TODO: Read from EXE?
-
-	for(int i = 0; i < 2; ++i)
+	
+	int idx = settings.colour;
+	
+	setWormColoursSpan(idx, settings.rgb);
+	
+	for(int j = 0; j < 6; ++j)
 	{
-		int idx = settings.wormSettings[i]->colour;
-		
-		setWormColoursSpan(idx, settings.wormSettings[i]->rgb);
-		
-		for(int j = 0; j < 6; ++j)
-		{
-			entries[b[i] + j] = entries[idx + (j % 3) - 1];
-		}
-		
-		for(int j = 0; j < 3; ++j)
-		{
-			entries[129 + i * 4 + j] = entries[idx + j];
-		}
+		entries[b[i] + j] = entries[idx + (j % 3) - 1];
+	}
+	
+	for(int j = 0; j < 3; ++j)
+	{
+		entries[129 + i * 4 + j] = entries[idx + j];
 	}
 }
 
+
+void Palette::setWormColours(Settings const& settings)
+{
+	for(int i = 0; i < 2; ++i)
+	{
+		setWormColour(i, *settings.wormSettings[i]);
+	}
+}

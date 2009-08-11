@@ -166,8 +166,8 @@ void NObject::process(Game& game)
 					iy - 3,
 					7,
 					7);
-					
-				correctShadow(common, game.level, Rect(ix - 8, iy - 8, ix + 9, iy + 9)); // This seems like an overly large rectangle
+				if(game.settings->shadow)
+					correctShadow(common, game.level, Rect(ix - 8, iy - 8, ix + 9, iy + 9)); // This seems like an overly large rectangle
 			}
 			
 			doExplode = true;
@@ -294,9 +294,9 @@ void NObject::process(Game& game)
 						&& game.rand(3) == 0)
 						{
 							int snd = 18 + game.rand(3); // NOTE: MUST be outside the unpredictable branch below
-							if(!game.soundPlayer->isPlaying(w.wormSoundID))
+							if(!game.soundPlayer->isPlaying(&w))
 							{
-								game.soundPlayer->play(snd, w.wormSoundID);
+								game.soundPlayer->play(snd, &w);
 							}
 						}
 					}
@@ -340,7 +340,8 @@ void NObject::process(Game& game)
 		{
 			drawDirtEffect(common, game.rand, game.level, t.dirtEffect, ftoi(x) - 7, ftoi(y) - 7);
 			
-			correctShadow(common, game.level, Rect(ftoi(x) - 10, ftoi(y) - 10, ftoi(x) + 11, ftoi(y) + 11));
+			if(game.settings->shadow)
+				correctShadow(common, game.level, Rect(ftoi(x) - 10, ftoi(y) - 10, ftoi(x) + 11, ftoi(y) + 11));
 		}
 		
 		if(t.splinterAmount > 0)

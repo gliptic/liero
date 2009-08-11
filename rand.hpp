@@ -2,7 +2,13 @@
 #define LIERO_RAND_HPP
 
 #include <SDL/SDL.h>
+#include <gvl/math/cmwc.hpp>
 
+struct Rand : gvl::mwc
+{
+};
+
+/*
 struct Rand
 {
 	// Currently the LCG used in Super-Duper
@@ -43,6 +49,6 @@ struct Rand
 	}
 	
 	Uint32 curSeed;
-};
+};*/
 
 #endif // LIERO_RAND_HPP

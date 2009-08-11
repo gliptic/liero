@@ -183,6 +183,14 @@
 	<References>
 	</References>
 	<Files>
+		<Filter
+			Name="gfx"
+			>
+			<File
+				RelativePath="..\gfx\macros.hpp"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\blit.cpp"
 			>
@@ -237,6 +245,10 @@
 		</File>
 		<File
 			RelativePath="..\exactObjectList.hpp"
+			>
+		</File>
+		<File
+			RelativePath="..\fastObjectList.hpp"
 			>
 		</File>
 		<File

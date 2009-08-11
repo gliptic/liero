@@ -30,8 +30,8 @@ struct Game
 	void releaseControls();
 	void processFrame();
 	void gameLoop();
-	void continueGame();
-	void enter();
+	void focus();
+	void updateSettings();
 	
 	void createBObject(fixed x, fixed y, fixed velX, fixed velY);
 	void createBonus();
@@ -47,9 +47,7 @@ struct Game
 	void startGame();
 	bool isGameOver();
 	void createDefaults();
-	
-	void generateLevel();
-	
+		
 	Material pixelMat(int x, int y)
 	{
 		return common->materials[level.pixel(x, y)];
@@ -77,7 +75,7 @@ struct Game
 	typedef ExactObjectList<WObject, 600> WObjectList;
 	typedef ExactObjectList<SObject, 700> SObjectList;
 	typedef ExactObjectList<NObject, 600> NObjectList;
-	typedef ExactObjectList<BObject, 700> BObjectList;
+	typedef FastObjectList<BObject, 700> BObjectList;
 	BonusList bonuses;
 	WObjectList wobjects;
 	SObjectList sobjects;

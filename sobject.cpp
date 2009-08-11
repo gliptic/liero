@@ -20,7 +20,7 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 	assert(numSounds < 10);
 	
 	if(startSound >= 0)
-		game.soundPlayer->play(game.rand(numSounds) + startSound, startSound);
+		game.soundPlayer->play(game.rand(numSounds) + startSound);
 		
 	for(std::size_t i = 0; i < game.viewports.size(); ++i)
 	{
@@ -116,9 +116,9 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 					if(game.rand(3) == 0)
 					{
 						int snd = 18 + game.rand(3); // NOTE: MUST be outside the unpredictable branch below
-						if(!game.soundPlayer->isPlaying(w.wormSoundID))
+						if(!game.soundPlayer->isPlaying(&w))
 						{
-							game.soundPlayer->play(snd, w.wormSoundID);
+							game.soundPlayer->play(snd, &w);
 						}
 					}
 				}
@@ -238,7 +238,8 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 	{
 		drawDirtEffect(common, game.rand, game.level, dirtEffect, x - 7, y - 7);
 		
-		correctShadow(common, game.level, Rect(x - 10, y - 10, x + 11, y + 11));
+		if(game.settings->shadow)
+			correctShadow(common, game.level, Rect(x - 10, y - 10, x + 11, y + 11));
 	}
 	
 	for(Game::BonusList::iterator i = game.bonuses.begin(); i != game.bonuses.end(); ++i)

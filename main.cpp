@@ -22,12 +22,45 @@
 #include <iostream>
 #include <ctime>
 #include <exception>
+#include <gvl/math/ieee.hpp>
+
+#include <gvl/math/cmwc.hpp>
 
 //#undef main
 
 int gameEntry(int argc, char* argv[])
 try
 {
+	gvl_init_ieee();
+	
+#if 0
+
+#if 1
+	gvl::mwc trand(10);
+#elif 0
+	gvl::cmwc987654978 trand;
+	trand.seed(10);
+#elif 0
+	Rand trand;
+#elif 1
+	gvl::default_xorshift trand(0);
+#endif
+	
+	uint32_t i = 0;
+	
+	double one = 0;
+	double zero = 0;
+	
+	std::clock_t before = std::clock();
+	for(uint64_t i = 0; i < 1000000000; ++i)
+	{
+		trand(0, 1000);
+	}
+	std::clock_t after = std::clock();
+	printf("%2.10f, %u\n", double(after - before) / CLOCKS_PER_SEC, trand());
+	return 0;
+#endif
+
 	// TODO: Better PRNG seeding
 	Console::init();
 	gfx.rand.seed(Uint32(std::time(0)));
@@ -35,7 +68,7 @@ try
 	bool exeSet = false;
 	gvl::shared_ptr<Common> common(new Common);
 	gfx.common = common;
-	common->loadPowerlevelPalette = true;
+	//common->loadPowerlevelPalette = true;
 	
 	for(int i = 1; i < argc; ++i)
 	{
@@ -47,10 +80,10 @@ try
 				// SDL_putenv seems to take char* in linux, STOOPID
 				SDL_putenv(const_cast<char*>((std::string("SDL_VIDEODRIVER=") + &argv[i][2]).c_str()));
 			break;
-			
+			/*
 			case 'r':
 				common->loadPowerlevelPalette = false;
-			break;
+			break;*/
 			}
 		}
 		else
@@ -138,12 +171,14 @@ try
 	
 	gfx.settingsFile = "LIERO";
 	
+#if 0 // This is just stupid, no need to emulate it
 	if(!fileExists(lieroOPT)) // NOTE: Liero doesn't seem to use the contents of LIERO.OPT for anything useful
 	{
 		gfx.settings.reset(new Settings);
 		gfx.saveSettings();
 	}
 	else
+#endif
 	{
 	/*
 		FILE* f = fopen(lieroOPT.c_str(), "rb");

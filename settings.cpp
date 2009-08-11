@@ -5,6 +5,12 @@
 #include "gfx.hpp"
 #include "filesystem.hpp"
 
+#include <gvl/io/fstream.hpp>
+#include <gvl/serialization/context.hpp>
+#include <gvl/serialization/archive.hpp>
+
+#include <gvl/crypt/gash.hpp>
+
 int const Settings::wormAnimTab[] =
 {
 	0,
@@ -12,6 +18,16 @@ int const Settings::wormAnimTab[] =
 	0,
 	14
 };
+
+Extensions::Extensions()
+: extensions(false)
+, recordReplays(true)
+, loadPowerlevelPalette(true)
+, scaleFilter(Settings::SfNearest)
+, fullscreenW(640)
+, fullscreenH(480)
+{
+}
 
 Settings::Settings()
 : maxBonuses(4)
@@ -28,6 +44,7 @@ Settings::Settings()
 , randomLevel(true)
 , map(true)
 , screenSync(true)
+
 {
 	std::memset(weapTable, 0, sizeof(weapTable));
 	
@@ -37,8 +54,8 @@ Settings::Settings()
 	wormSettings[0]->colour = 32;
 	wormSettings[1]->colour = 41;
 	
-	wormSettings[0]->selWeapX = 50; // TODO: Read from exe
-	wormSettings[1]->selWeapX = 210;
+	//wormSettings[0]->selWeapX = 50;
+	//wormSettings[1]->selWeapX = 210;
 	
 	unsigned char defControls[2][7] =
 	{
@@ -56,7 +73,7 @@ Settings::Settings()
 	{
 		for(int j = 0; j < 7; ++j)
 		{
-			wormSettings[i]->controls[j] = DOSToSDLKey(defControls[i][j]);
+			wormSettings[i]->controls[j] = defControls[i][j];
 		}
 		
 		for(int j = 0; j < 3; ++j)
@@ -64,17 +81,6 @@ Settings::Settings()
 			wormSettings[i]->rgb[j] = defRGB[i][j];
 		}
 	}
-}
-
-template<int L, int H>
-inline int limit(int v)
-{
-	if(v >= H)
-		return H - 1;
-	else if(v < L)
-		return L;
-		
-	return v;
 }
 
 bool Settings::load(std::string const& path)
@@ -89,6 +95,12 @@ bool Settings::load(std::string const& path)
 	if(size < 155)
 		return false; // .dat is too short
 	
+	gvl::stream_reader reader(gvl::stream_ptr(new gvl::fstream(opt)));
+	gvl::default_serialization_context context;
+	
+	archive_liero(gvl::in_archive<gvl::default_serialization_context>(reader, context), *this);
+	
+#if 0
 	maxBonuses = readUint8(opt);
 	loadingTime = readUint16(opt);
 	lives = readUint16(opt);
@@ -159,14 +171,35 @@ bool Settings::load(std::string const& path)
 	}
 	
 	fclose(opt);
+#endif
 	
 	return true;
 }
 
+gvl::gash::value_type& Settings::updateHash()
+{
+	gvl::default_serialization_context context;
+	gvl::hash_accumulator<gvl::gash> ha;
+	
+	archive(gvl::out_archive<gvl::default_serialization_context, gvl::hash_accumulator<gvl::gash> >(ha, context), *this);
+	
+	ha.flush();
+	hash = ha.final();
+	return hash;
+}
+
 void Settings::save(std::string const& path)
 {
-	FILE* opt = fopen(path.c_str(), "wb");
+	{
+		FILE* opt = fopen(path.c_str(), "wb");
+		gvl::stream_writer writer(gvl::stream_ptr(new gvl::fstream(opt)));
 	
+		gvl::default_serialization_context context;
+		
+		archive_liero(gvl::out_archive<gvl::default_serialization_context>(writer, context), *this);
+	}
+	
+#if 0
 	writeUint8(opt, maxBonuses);
 	writeUint16(opt, loadingTime);
 	writeUint16(opt, lives);
@@ -229,6 +262,7 @@ void Settings::save(std::string const& path)
 	writePascalString(opt, levelFile, 9);
 	
 	fclose(opt);
+#endif
 }
 
 void Settings::generateName(WormSettings& ws)

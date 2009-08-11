@@ -72,6 +72,10 @@ enum
 	SplinterLarpaVelDiv,
 	SplinterCracklerVelDiv,
 	
+	BloodStepUp,
+	BloodStepDown,
+	BloodLimit,
+	
 	// FallDamage hack
 	FallDamageRight,
 	FallDamageLeft,
@@ -135,6 +139,11 @@ enum
 	HWormFloat,
 	HRemExp,
 	HSignedRecoil,
+	
+	HAirJump,
+	HMultiJump,
+	
+	
 	
 	MaxH
 };

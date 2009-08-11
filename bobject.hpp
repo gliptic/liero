@@ -3,13 +3,14 @@
 
 #include "math.hpp"
 #include "objectList.hpp"
-#include "exactObjectList.hpp"
+//#include "exactObjectList.hpp"
+#include "fastObjectList.hpp"
 
 struct Game;
 
-struct BObject : ExactObjectListBase
+struct BObject // : ExactObjectListBase
 {
-	void process(Game& game);
+	bool process(Game& game);
 	
 	fixed x, y;
 	fixed velX, velY;

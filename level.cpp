@@ -234,7 +234,7 @@ bool Level::load(Common& common, Settings const& settings, std::string const& pa
 	std::size_t len = fileLength(f);
 	
 	if(len > 504*350
-	&& common.loadPowerlevelPalette)
+	&& (settings.extensions && settings.loadPowerlevelPalette))
 	{
 		std::fseek(f, 504*350, SEEK_SET);
 		char buf[10];

@@ -2,10 +2,13 @@
 #define LIERO_WORM_HPP
 
 #include "math.hpp"
+#include "rand.hpp"
 #include <SDL/SDL.h>
 #include <string>
 #include <cstring>
 #include <gvl/resman/shared_ptr.hpp>
+
+#include <gvl/crypt/gash.hpp>
 
 #include <iostream> // TEMP
 
@@ -79,8 +82,13 @@ struct WormSettings : gvl::shared
 		std::memset(weapons, 0, sizeof(weapons));
 	}
 	
+	gvl::gash::value_type& updateHash();
+	
+	void saveProfile(std::string const& newProfileName);
+	void loadProfile(std::string const& newProfileName);
+	
 	int health;
-	int controller; // CPU / Human
+	uint32_t controller; // CPU / Human
 	Uint32 controls[MaxControl];
 	int weapons[5]; // TODO: Adjustable
 	std::string name;
@@ -88,8 +96,28 @@ struct WormSettings : gvl::shared
 	bool randomName;
 	
 	int colour;
-	int selWeapX;
+	
+	std::string profileName;
+	
+	gvl::gash::value_type hash;
 };
+
+template<typename Archive>
+void archive(Archive ar, WormSettings& ws)
+{
+	ar
+	.ui32(ws.colour)
+	.ui32(ws.health)
+	.ui16(ws.controller);
+	for(int i = 0; i < WormSettings::MaxControl; ++i)
+		ar.ui16(ws.controls[i]);
+	for(int i = 0; i < 5; ++i)
+		ar.ui16(ws.weapons[i]);
+	for(int i = 0; i < 3; ++i)
+		ar.ui16(ws.rgb[i]);
+	ar.b(ws.randomName);
+	ar.str(ws.name);
+}
 
 /*
 typedef struct _settings
@@ -122,7 +150,31 @@ typedef struct _settings
 
 struct Viewport;
 
-struct Worm
+struct WormAI
+{
+	WormAI(Worm& worm)
+	: worm(worm)
+	{
+	}
+	
+	virtual void process() = 0;
+	
+	Worm& worm;
+};
+
+struct DumbLieroAI : WormAI
+{
+	DumbLieroAI(Worm& worm)
+	: WormAI(worm)
+	{
+	}
+	
+	void process();
+	
+	Rand rand;
+};
+
+struct Worm : gvl::shared
 {
 	enum
 	{
@@ -145,22 +197,49 @@ struct Worm
 		MaxControl
 	};
 	
+	
 	struct ControlState
 	{
 		ControlState()
+		: istate(0)
 		{
-			std::memset(state, 0, sizeof(state));
+			//std::memset(state, 0, sizeof(state));
 		}
 		
 		bool operator==(ControlState const& b) const
 		{
+		/*
 			for(int i = 0; i < Worm::MaxControl; ++i)
 			{
 				if(state[i] != b.state[i])
 					return false;
 			}
 			
-			return true;
+			return true;*/
+			
+			return istate == b.istate;
+		}
+		
+		uint32_t pack() const
+		{
+		/*
+			uint8_t state = 0;
+			for(int c = 0; c < MaxControl; ++c)
+			{
+				state |= uint8_t(controlStates[c]) << c;
+			}*/
+			
+			return istate;
+		}
+		
+		void unpack(uint32_t state)
+		{
+		/*
+			for(int c = 0; c < Worm::MaxControl; ++c)
+			{
+				state[c] = ((state >> c) & 1) != 0);
+			}*/
+			istate = state & 0x7f;
 		}
 		
 		bool operator!=(ControlState const& b) const
@@ -168,12 +247,21 @@ struct Worm
 			return !operator==(b);
 		}
 		
-		bool& operator[](std::size_t n)
+		bool operator[](std::size_t n) const
 		{
-			return state[n];
+			return ((istate >> n) & 1) != 0;
 		}
 		
-		bool state[Worm::MaxControl];
+		void set(std::size_t n, bool v)
+		{
+			if(v)
+				istate |= 1 << n;
+			else
+				istate &= ~(uint32_t(1u) << n);
+		}
+		
+		//bool state[Worm::MaxControl];
+		uint32_t istate;
 	};
 		
 	Worm(/*gvl::shared_ptr<WormSettings> settings, int index, int wormSoundID, */Game& game)
@@ -202,7 +290,6 @@ struct Worm
 	, leaveShellTimer(0)
 //	, viewport(0)
 	, index(index)
-	, wormSoundID(wormSoundID)
 	, direction(0)
 	, game(game)
 	{
@@ -220,7 +307,7 @@ struct Worm
 		//currentWeapon = 1; // This is later changed to 0, why is it here?
 	}
 	
-	bool pressed(Control control)
+	bool pressed(Control control) const
 	{
 		return controlStates[control];
 	}
@@ -228,32 +315,28 @@ struct Worm
 	bool pressedOnce(Control control)
 	{
 		bool state = controlStates[control];
-		controlStates[control] = false;
+		controlStates.set(control, false);
 		return state;
 	}
 	
 	void release(Control control)
 	{
-		controlStates[control] = false;
+		controlStates.set(control, false);
 	}
 	
 	void press(Control control)
 	{
-		controlStates[control] = true;
+		controlStates.set(control, true);
 	}
 	
 	void setControlState(Control control, bool state)
 	{
-		if(controlStates[control] != state)
-		{
-			std::cout << control << ": " << state << std::endl;
-		}
-		controlStates[control] = state;
+		controlStates.set(control, state);
 	}
 	
 	void toggleControlState(Control control)
 	{
-		controlStates[control] = !controlStates[control];
+		controlStates.set(control, !controlStates[control]);
 	}
 	
 	void beginRespawn();
@@ -270,7 +353,7 @@ struct Worm
 	void processSight();
 	void calculateReactionForce(int newX, int newY, int dir);
 	void initWeapons();
-	void processLieroAI(); // Move?
+	int angleFrame() const;
 	
 	fixed x, y;                    //Worm position    
 	fixed velX, velY;              //Worm velocity
@@ -311,12 +394,14 @@ struct Worm
 	gvl::shared_ptr<WormSettings> settings; // !CLONING
 	//Viewport* viewport; // !CLONING
 	int index; // 0 or 1
-	int wormSoundID;
+	
+	std::auto_ptr<WormAI> ai;
 	
 	int reacts[4];
 	WormWeapon weapons[5];
 	int direction;
 	ControlState controlStates;
+	ControlState prevControlStates;
 	Game& game; // !CLONING
 };
 
