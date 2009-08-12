@@ -592,7 +592,9 @@ void Gfx::flip()
 			}
 			else if(settings->scaleFilter == Settings::SfScale2X)
 			{
-				FILTER_X(dest, destPitch, src, srcPitch, 320, 200, 2, SCALE2X);
+				#define DECL int downOffset = destPitch ; SCALE2X_DECL
+				FILTER_X(dest, 2*destPitch, src, srcPitch, 320, 200, 1, 2, SCALE2X, DECL, READER_8, WRITER_2X_8);
+				#undef DECL
 			}
 #endif
 		}
