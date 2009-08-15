@@ -105,7 +105,7 @@ void Viewport::process()
 	}*/
 }
 
-void Viewport::draw()
+void Viewport::draw(bool isReplay)
 {
 	Common& common = *game.common;
 	if(worm) // Should not be necessary further on
@@ -166,6 +166,12 @@ void Viewport::draw()
 	}
 	
 	common.font.drawText((common.texts.kills + toString(worm->kills)), inGameX, 171, 10);
+	
+	if(isReplay)
+	{
+		common.font.drawText(worm->settings->name, inGameX, 192, 4);
+		common.font.drawText(timeToStringEx(game.cycles * 14), 95, 185, 7);
+	}
 	
 	switch(game.settings->gameMode)
 	{

@@ -13,6 +13,9 @@ struct WeaponSelection
 	bool processFrame();
 	void finalize();
 	
+	void focus();
+	void unfocus();
+	
 	Game& game;
 	
 	int enabledWeaps;
@@ -20,6 +23,7 @@ struct WeaponSelection
 	std::vector<bool> isReady;
 	std::vector<Menu> menus;
 	bool cachedBackground;
+	bool focused;
 };
 
 //void selectWeapons(Game& game);

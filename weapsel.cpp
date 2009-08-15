@@ -14,6 +14,7 @@ WeaponSelection::WeaponSelection(Game& game)
 , isReady(game.viewports.size())
 , menus(game.viewports.size())
 , cachedBackground(false)
+, focused(true)
 {
 	Common& common = *game.common;
 	
@@ -121,6 +122,9 @@ void WeaponSelection::draw()
 	
 	std::memcpy(gfx.screen->pixels, &gfx.frozenScreen[0], gfx.frozenScreen.size());
 
+	if(!focused)
+		return;
+		
 	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
 		int weapID = menus[i].selection() - 1;
@@ -286,6 +290,15 @@ void WeaponSelection::finalize()
 	// TODO: Make sure the weapon selection is transfered back to Gfx to be saved
 }
 
+void WeaponSelection::focus()
+{
+	focused = true;
+}
+
+void WeaponSelection::unfocus()
+{
+	focused = false;
+}
 
 #if 0
 void selectWeapons(Game& game)

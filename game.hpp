@@ -39,11 +39,11 @@ struct Game
 	void clearViewports();
 	void addViewport(Viewport*);
 	void processViewports();
-	void drawViewports();
+	void drawViewports(bool isReplay = false);
 	void clearWorms();
 	void addWorm(Worm*);
 	void resetWorms();
-	void draw();
+	void draw(bool isReplay = false);
 	void startGame();
 	bool isGameOver();
 	void createDefaults();
@@ -75,7 +75,7 @@ struct Game
 	typedef ExactObjectList<WObject, 600> WObjectList;
 	typedef ExactObjectList<SObject, 700> SObjectList;
 	typedef ExactObjectList<NObject, 600> NObjectList;
-	typedef FastObjectList<BObject, 700> BObjectList;
+	typedef FastObjectList<BObject> BObjectList;
 	BonusList bonuses;
 	WObjectList wobjects;
 	SObjectList sobjects;

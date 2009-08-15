@@ -3,9 +3,12 @@
 
 #include <cstddef>
 #include <cassert>
+#include <vector>
+#include <algorithm>
 #include <gvl/support/debug.hpp>
 
-template<typename T, int Limit>
+
+template<typename T>
 struct FastObjectList
 {
 	struct iterator
@@ -39,14 +42,15 @@ struct FastObjectList
 		T* cur;
 	};
 	
-	FastObjectList()
+	FastObjectList(std::size_t limit = 1)
+	: limit(limit), arr(limit)
 	{
 		clear();
 	}
 	
 	T* getFreeObject()
 	{
-		sassert(nextFree != &arr[Limit]);
+		sassert(nextFree != &arr[0] + limit);
 		T* ptr = nextFree++;
 		++count;
 		return ptr;
@@ -55,8 +59,8 @@ struct FastObjectList
 	T* newObjectReuse()
 	{
 		T* ret;
-		if(nextFree == &arr[Limit])
-			ret = &arr[Limit - 1];
+		if(nextFree == &arr[0] + limit)
+			ret = &arr[limit - 1];
 		else
 			ret = getFreeObject();
 
@@ -65,7 +69,7 @@ struct FastObjectList
 	
 	T* newObject()
 	{
-		if(nextFree == &arr[Limit])
+		if(nextFree == &arr[0] + limit)
 			return 0;
 			
 		T* ret = getFreeObject();
@@ -84,7 +88,7 @@ struct FastObjectList
 		
 	void free(T* ptr)
 	{
-		sassert(ptr < nextFree && ptr >= arr);
+		sassert(ptr < nextFree && ptr >= &arr[0]);
 		*ptr = *--nextFree;
 		--count;
 	}
@@ -97,7 +101,15 @@ struct FastObjectList
 	void clear()
 	{
 		count = 0;
-		nextFree = arr;
+		nextFree = &arr[0];
+	}
+	
+	void resize(std::size_t newLimit)
+	{
+		limit = newLimit;
+		count = std::min(count, newLimit);
+		arr.resize(newLimit);
+		nextFree = &arr[0] + count;
 	}
 	
 	std::size_t size() const
@@ -105,7 +117,8 @@ struct FastObjectList
 		return count;
 	}
 	
-	T arr[Limit];
+	std::size_t limit;
+	std::vector<T> arr;
 	T* nextFree;
 	std::size_t count;
 };

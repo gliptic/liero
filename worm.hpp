@@ -59,7 +59,24 @@ struct WormWeapon
 	bool available;			
 };
 
-struct WormSettings : gvl::shared
+struct JoystickButton
+{
+	JoystickButton()
+	: joystickNum(255)
+	, buttonNum(255)
+	{
+	}
+	
+	int joystickNum;
+	int buttonNum;
+};
+
+struct WormSettingsExtensions
+{
+	JoystickButton joystickButtons[7];
+};
+
+struct WormSettings : gvl::shared, WormSettingsExtensions
 {
 	enum
 	{
@@ -117,6 +134,21 @@ void archive(Archive ar, WormSettings& ws)
 		ar.ui16(ws.rgb[i]);
 	ar.b(ws.randomName);
 	ar.str(ws.name);
+	if(ar.context.replayVersion <= 1)
+	{
+		ws.WormSettingsExtensions::operator=(WormSettingsExtensions());
+		return;
+	}
+
+	int wsVersion = myGameVersion;
+	ar.ui8(wsVersion);
+
+	for(int c = 0; c < WormSettings::MaxControl; ++c)
+	{
+		gvl::enable_when(ar, wsVersion >= 2)
+			.ui8(ws.joystickButtons[c].joystickNum, 255)
+			.ui8(ws.joystickButtons[c].buttonNum, 255);
+	}
 }
 
 /*

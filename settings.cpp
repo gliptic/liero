@@ -24,8 +24,10 @@ Extensions::Extensions()
 , recordReplays(true)
 , loadPowerlevelPalette(true)
 , scaleFilter(Settings::SfNearest)
+, depth32(true)
 , fullscreenW(640)
 , fullscreenH(480)
+, bloodParticleMax(700)
 {
 }
 

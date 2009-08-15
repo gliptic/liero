@@ -64,7 +64,7 @@ struct Viewport
 	}
 	
 	
-	void draw();
+	void draw(bool isReplay);
 	void process();
 
 /*

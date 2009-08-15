@@ -13,6 +13,7 @@
 
 #include <gvl/serialization/context.hpp>
 #include <gvl/serialization/archive.hpp>
+#include "replay.hpp"
 
 #include <gvl/crypt/gash.hpp>
 #include <gvl/io/fstream.hpp>
@@ -24,10 +25,11 @@ struct Point
 
 gvl::gash::value_type& WormSettings::updateHash()
 {
-	gvl::default_serialization_context context;
+	GameSerializationContext context;
 	gvl::hash_accumulator<gvl::gash> ha;
 	
-	archive(gvl::out_archive<gvl::default_serialization_context, gvl::hash_accumulator<gvl::gash> >(ha, context), *this);
+	
+	archive(gvl::out_archive<GameSerializationContext, gvl::hash_accumulator<gvl::gash> >(ha, context), *this);
 	
 	ha.flush();
 	hash = ha.final();
@@ -44,8 +46,8 @@ void WormSettings::saveProfile(std::string const& newProfileName)
 		gvl::stream_writer writer(str);
 		
 		profileName = newProfileName;
-		gvl::default_serialization_context context;
-		archive(gvl::out_archive<>(writer, context), *this);
+		GameSerializationContext context;
+		archive(gvl::out_archive<GameSerializationContext>(writer, context), *this);
 	}
 	catch(gvl::stream_error& e)
 	{
@@ -55,6 +57,7 @@ void WormSettings::saveProfile(std::string const& newProfileName)
 
 void WormSettings::loadProfile(std::string const& newProfileName)
 {
+	int oldColor = colour;
 	try
 	{
 		std::string path(joinPath(lieroEXERoot, newProfileName) + ".lpf");
@@ -62,14 +65,17 @@ void WormSettings::loadProfile(std::string const& newProfileName)
 		
 		gvl::stream_reader reader(str);
 
-		profileName = newProfileName;		
-		gvl::default_serialization_context context;
-		archive(gvl::in_archive<>(reader, context), *this);
+		profileName = newProfileName;
+		GameSerializationContext context;
+		archive(gvl::in_archive<GameSerializationContext>(reader, context), *this);
 	}
 	catch(gvl::stream_error& e)
 	{
 		Console::writeWarning(std::string("Stream error loading profile: ") + e.what());
+		Console::writeWarning("The profile may just be old, in which case there is nothing to worry about");
 	}
+	
+	colour = oldColor;  // We preserve the color
 }
 
 void Worm::calculateReactionForce(int newX, int newY, int dir)

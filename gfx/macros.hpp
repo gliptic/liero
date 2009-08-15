@@ -7,7 +7,9 @@ inline uint8_t choose(uint8_t this_, uint8_t if_this, uint8_t is_different_from_
 	return this_ ^ ((this_^otherwise_this) & mask);
 }
 
-#if 0
+#define SCALE2X_DECL uint32_t R1, R2, R3, R4
+
+#if 1
 #define SCALE2X() do { \
     if(B != H && F != D) { \
         R1 = D == B ? B : E; \
@@ -23,7 +25,7 @@ inline uint8_t choose(uint8_t this_, uint8_t if_this, uint8_t is_different_from_
 } while(0)
 #else
 
-#define SCALE2X_DECL uint32_t R1, R2, R3, R4
+
 
 #define SCALE2X() do { \
 	if(B != H && F != D) { \

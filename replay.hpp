@@ -9,17 +9,18 @@
 #include <memory>
 #include "worm.hpp"
 #include "common.hpp"
+#include "version.hpp"
 
 struct Game;
 
 struct GameSerializationContext : gvl::serialization_context<GameSerializationContext>
 {
-	static int const myReplayVersion = 1;
+	
 	
 	GameSerializationContext()
 	: game(0)
 	, nextWormId(0)
-	, replayVersion(myReplayVersion)
+	, replayVersion(myGameVersion)
 	{
 	}
 	
@@ -33,6 +34,11 @@ struct GameSerializationContext : gvl::serialization_context<GameSerializationCo
 		gvl::gash::value_type lastSettingsHash;
 		bool settingsExpired;
 	};
+	
+	int version()
+	{
+		return replayVersion;
+	}
 	
 	typedef std::map<int, Worm*> IdToWormMap;
 	typedef std::map<Worm*, WormData> WormDataMap;

@@ -32,6 +32,20 @@ void Game::createDefaults()
 	worm2->index = 1;
 	if(worm2->settings->controller == 1)
 		worm2->ai.reset(new DumbLieroAI(*worm2));
+		
+#if 0
+	for(int i = 0; i < 10; ++i)
+	{
+		Worm* worm2 = new Worm(*this);
+		worm2->settings = settings->wormSettings[1];
+		worm2->health = worm2->settings->health;
+		worm2->index = 1;
+		if(worm2->settings->controller == 1)
+			worm2->ai.reset(new DumbLieroAI(*worm2));
+			
+		addWorm(worm2);
+	}
+#endif
 	
 	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350, *this));
 	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350, *this));
@@ -144,11 +158,11 @@ void Game::processViewports()
 	}
 }
 
-void Game::drawViewports()
+void Game::drawViewports(bool isReplay)
 {
 	for(std::size_t i = 0; i < viewports.size(); ++i)
 	{
-		viewports[i]->draw();
+		viewports[i]->draw(isReplay);
 	}
 }
 
@@ -179,9 +193,9 @@ void Game::addWorm(Worm* worm)
 	worms.push_back(worm);
 }
 
-void Game::draw()
+void Game::draw(bool isReplay)
 {
-	drawViewports();
+	drawViewports(isReplay);
 
 	//common->font.drawText(toString(cycles / 70), 10, 10, 7);
 	
@@ -449,6 +463,7 @@ void Game::updateSettings()
 void Game::startGame()
 {
 	soundPlayer->play(22);
+	bobjects.resize(settings->bloodParticleMax);
 }
 
 bool Game::isGameOver()

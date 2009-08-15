@@ -13,6 +13,7 @@
 #include "settings.hpp"
 #include <gvl/resman/shared_ptr.hpp>
 #include "common.hpp"
+#include <gvl/math/rect.hpp>
 
 
 
@@ -67,7 +68,8 @@ struct HiddenMenu : Menu
 		LoadPowerLevels,
 		ScalingFilter,
 		FullscreenW,
-		FullscreenH
+		FullscreenH,
+		Depth32
 	};
 	
 	HiddenMenu(int x, int y)
@@ -232,6 +234,7 @@ struct Gfx
 	int menuCyclic;
 	int windowW, windowH;
 	int prevMag; // Previous magnification used for drawing
+	gvl::rect lastUpdateRect; // Last region that was updated when flipping
 	Rand rand; // PRNG for things that don't affect the game
 	gvl::shared_ptr<Common> common;
 	std::auto_ptr<Controller> controller;

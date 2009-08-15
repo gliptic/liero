@@ -17,6 +17,7 @@ void Palette::activate()
 	}
 	
 	SDL_SetColors(gfx.back, realPal, 0, 256);
+	SDL_SetColors(gfx.screen, realPal, 0, 256);
 }
 
 int fadeValue(int v, int amount)

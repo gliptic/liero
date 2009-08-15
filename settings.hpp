@@ -7,12 +7,13 @@
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/support/cstdint.hpp>
 #include <gvl/crypt/gash.hpp>
+#include "version.hpp"
 
 // We isolate extensions for the benefit of the .dat loader.
 // It can then easily reset the extensions if they fail to load.
 struct Extensions
 {
-	static int const myVersion = 1;
+	static int const myVersion = 2;
 	
 	Extensions();
 	
@@ -21,6 +22,8 @@ struct Extensions
 	bool recordReplays;
 	bool loadPowerlevelPalette;
 	uint32_t scaleFilter;
+	bool depth32;
+	int bloodParticleMax;
 	
 	int fullscreenW;
 	int fullscreenH;
@@ -212,11 +215,8 @@ void archive_liero(Archive ar, Settings& settings)
 	try
 	{
 		// Extensions
-		int fileExtensionVersion = Extensions::myVersion;
+		int fileExtensionVersion = myGameVersion;
 		ar.ui8(fileExtensionVersion);
-		
-		if(fileExtensionVersion < Extensions::myVersion)
-			settings.Extensions::operator=(Extensions()); // Absent settings get default values
 		
 		ar.b(settings.extensions);
 		ar.b(settings.recordReplays);
@@ -224,11 +224,31 @@ void archive_liero(Archive ar, Settings& settings)
 		ar.ui8(settings.scaleFilter);
 		ar.ui16(settings.fullscreenW);
 		ar.ui16(settings.fullscreenH);
+		
+		gvl::enable_when(ar, fileExtensionVersion >= 2)
+			.b(settings.depth32, true);
+			
+		for(int i = 0; i < 2; ++i)
+		{
+			WormSettings& ws = *settings.wormSettings[i];
+			for(int c = 0; c < WormSettings::MaxControl; ++c)
+			{
+				gvl::enable_when(ar, fileExtensionVersion > 2)
+					.ui8(ws.joystickButtons[c].joystickNum, 255)
+					.ui8(ws.joystickButtons[c].buttonNum, 255);
+			}
+		}
 	}
 	catch(gvl::stream_error&)
 	{
 		// Reset to default state
 		settings.Extensions::operator=(Extensions());
+		
+		for(int i = 0; i < 2; ++i)
+		{
+			WormSettings& ws = *settings.wormSettings[i];
+			ws.WormSettingsExtensions::operator=(WormSettingsExtensions());
+		}
 	}
 }
 
@@ -261,16 +281,21 @@ void archive(Archive ar, Settings& settings)
 	
 	// Extensions
 	int fileExtensionVersion = Extensions::myVersion;
+			
+	ar.ui8(fileExtensionVersion);
+	
 	ar
-	.ui8(fileExtensionVersion)
 	.b(settings.extensions)
 	.b(settings.recordReplays)
 	.b(settings.loadPowerlevelPalette)
 	.ui8(settings.scaleFilter)
 	.ui16(settings.fullscreenW)
-	.ui16(settings.fullscreenH)
+	.ui16(settings.fullscreenH);
+	
+	gvl::enable_when(ar, fileExtensionVersion >= 2)
+		.b(settings.depth32, true);
 
-	.check()
+	ar.check()
 	;
 }
 

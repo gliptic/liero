@@ -25,6 +25,8 @@ struct Controller
 	
 	virtual Level* currentLevel() = 0;
 	
+	virtual Game* currentGame() = 0;
+	
 	virtual void swapLevel(Level& newLevel) = 0;
 };
 
@@ -43,36 +45,49 @@ struct CommonController : Controller
 {
 	CommonController()
 	: frameSkip(1)
+	, inverseFrameSkip(false)
+	, cycles(0)
 	{
 	}
 	
 	bool process()
 	{
-		if(gfx.testSDLKey(SDLK_1))
-			frameSkip = 1;
-		else if(gfx.testSDLKey(SDLK_2))
-			frameSkip = 2;
-		else if(gfx.testSDLKey(SDLK_3))
-			frameSkip = 4;
-		else if(gfx.testSDLKey(SDLK_4))
-			frameSkip = 8;
-		else if(gfx.testSDLKey(SDLK_5))
-			frameSkip = 16;
-		else if(gfx.testSDLKey(SDLK_6))
-			frameSkip = 32;
-		else if(gfx.testSDLKey(SDLK_7))
-			frameSkip = 64;
-		else if(gfx.testSDLKey(SDLK_8))
-			frameSkip = 128;
-		else if(gfx.testSDLKey(SDLK_9))
-			frameSkip = 256;
-		else if(gfx.testSDLKey(SDLK_0))
-			frameSkip = 512;
+		int newFrameSkip = 0;
+		if(gfx.testSDLKeyOnce(SDLK_1))
+			newFrameSkip = 1;
+		else if(gfx.testSDLKeyOnce(SDLK_2))
+			newFrameSkip = 2;
+		else if(gfx.testSDLKeyOnce(SDLK_3))
+			newFrameSkip = 4;
+		else if(gfx.testSDLKeyOnce(SDLK_4))
+			newFrameSkip = 8;
+		else if(gfx.testSDLKeyOnce(SDLK_5))
+			newFrameSkip = 16;
+		else if(gfx.testSDLKeyOnce(SDLK_6))
+			newFrameSkip = 32;
+		else if(gfx.testSDLKeyOnce(SDLK_7))
+			newFrameSkip = 64;
+		else if(gfx.testSDLKeyOnce(SDLK_8))
+			newFrameSkip = 128;
+		else if(gfx.testSDLKeyOnce(SDLK_9))
+			newFrameSkip = 256;
+		else if(gfx.testSDLKeyOnce(SDLK_0))
+			newFrameSkip = 512;
+			
+		if(newFrameSkip)
+		{
+			inverseFrameSkip = (gfx.testSDLKey(SDLK_RCTRL) || gfx.testSDLKey(SDLK_LCTRL));
+			frameSkip = newFrameSkip;
+		}
+		
+		++cycles;
 			
 		return true;
 	}
 	
 	int frameSkip;
+	bool inverseFrameSkip;
+	int cycles;
 };
 
 struct LocalController : CommonController
@@ -120,6 +135,8 @@ struct LocalController : CommonController
 	{
 		if(replay.get())
 			replay->unfocus();
+		if(state == StateWeaponSelection)
+			ws->unfocus();
 	}
 	
 	// Called when the controller gets focus.
@@ -131,6 +148,8 @@ struct LocalController : CommonController
 			fadeValue = 0;
 			return;
 		}
+		if(state == StateWeaponSelection)
+			ws->focus();
 		if(replay.get())
 			replay->focus();
 		if(state == StateInitial) // TODO: Have a separate initial state
@@ -149,7 +168,8 @@ struct LocalController : CommonController
 		}
 		else if(state == StateGame || state == StateGameEnded)
 		{
-			for(int i = 0; i < frameSkip && (state == StateGame || state == StateGameEnded); ++i)
+			int realFrameSkip = inverseFrameSkip ? !(cycles % frameSkip) : frameSkip;
+			for(int i = 0; i < realFrameSkip && (state == StateGame || state == StateGameEnded); ++i)
 			{
 				for(std::size_t i = 0; i < game.worms.size(); ++i)
 				{
@@ -244,6 +264,7 @@ struct LocalController : CommonController
 				worm.lives = game.settings->lives;
 			}
 			
+			game.startGame();
 			if(game.settings->extensions && game.settings->recordReplays)
 			{
 				try
@@ -252,8 +273,27 @@ struct LocalController : CommonController
 					std::tm* now = std::localtime(&ticks);
 					
 					char buf[512];
-					std::strftime(buf, sizeof(buf), "Replay %Y-%m-%d %H.%M.%S.lrp", now);
-					std::string path = joinPath(lieroEXERoot, buf);
+					std::strftime(buf, sizeof(buf), " %Y-%m-%d %H.%M.%S.lrp", now);
+					
+					std::string prefix;
+					for(std::size_t i = 0; i < 2; ++i)
+					{
+						Worm& worm = *game.worms[i];
+						std::string const& name = worm.settings->name;
+						int chars = 0;
+						
+						if(i > 0)
+							prefix.push_back('-');
+						for(std::size_t c = 0; c < name.size() && chars < 4; ++c, ++chars)
+						{
+							unsigned char ch = (unsigned char)name[c];
+							if(std::isalnum(ch))
+								prefix.push_back(ch);
+						}
+						
+						
+					}
+					std::string path = joinPath(lieroEXERoot, prefix + buf);
 					replay.reset(new ReplayWriter(gvl::stream_ptr(new gvl::fstream(path.c_str(), "wb"))));
 					replay->beginRecord(game);
 				}
@@ -266,7 +306,7 @@ struct LocalController : CommonController
 					return;
 				}
 			}
-			game.startGame();
+			
 		}
 		else if(newState == StateGameEnded)
 		{
@@ -302,6 +342,11 @@ struct LocalController : CommonController
 	Level* currentLevel()
 	{
 		return &game.level;
+	}
+	
+	Game* currentGame()
+	{
+		return &game;
 	}
 		
 	bool running()
@@ -384,7 +429,8 @@ struct ReplayController : CommonController
 	{
 		if(state == StateGame || state == StateGameEnded)
 		{
-			for(int i = 0; i < frameSkip && (state == StateGame || state == StateGameEnded); ++i)
+			int realFrameSkip = inverseFrameSkip ? !(cycles % frameSkip) : frameSkip;
+			for(int i = 0; i < realFrameSkip && (state == StateGame || state == StateGameEnded); ++i)
 			{
 				if(replay.get())
 				{
@@ -444,7 +490,7 @@ struct ReplayController : CommonController
 	{
 		if(state == StateGame || state == StateGameEnded)
 		{
-			game->draw();
+			game->draw(true);
 		}
 		gfx.fadeValue = fadeValue;
 	}
@@ -480,6 +526,12 @@ struct ReplayController : CommonController
 			return &game->level;
 		return 0;
 	}
+
+	Game* currentGame()
+	{
+		return game.get();
+	}
+	
 	
 	bool running()
 	{

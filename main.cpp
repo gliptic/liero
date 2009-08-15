@@ -174,6 +174,8 @@ try
 		//fclose(f);
 	}
 	
+	gfx.setVideoMode();
+	
 	//game.initGame();
 	gfx.mainLoop();
 	

@@ -56,7 +56,7 @@ void Font::drawChar(unsigned char c, int x, int y, int colour)
 
 void Font::drawText(char const* str, std::size_t len, int x, int y, int colour)
 {
-	if(y >= 0 && y < gfx.screen->h-8)
+	if(y >= 0 && y <= gfx.screen->h-8)
 	{
 		int orgX = x;
 		
@@ -73,7 +73,7 @@ void Font::drawText(char const* str, std::size_t len, int x, int y, int colour)
 			{
 				c -= 2;
 				
-				if(x >= 0 && x < gfx.screen->w-7)
+				if(x >= 0 && x <= gfx.screen->w-7)
 				{
 					PalIdx* scr = &gfx.getScreenPixel(x, y);
 					unsigned char* fnt = chars[c].data;

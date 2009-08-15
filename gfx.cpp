@@ -178,9 +178,11 @@ struct ProfileSaveBehavior : ItemBehavior
 		
 		if(saveAs)
 		{
-			std::string name = ws.profileName;
-			if(gfx.inputString(name, 30, x, y))
+			std::string name;
+			if(gfx.inputString(name, 30, x, y) && !name.empty())
 				ws.saveProfile(name);
+				
+			sfx.play(27);
 		}
 		else
 			ws.saveProfile(ws.profileName);
@@ -226,7 +228,6 @@ Gfx::Gfx()
 
 void Gfx::init()
 {
-	setVideoMode();
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_EnableUNICODE(1);
 	SDL_WM_SetCaption("Liero 1.35b1", 0);
@@ -236,6 +237,10 @@ void Gfx::init()
 
 void Gfx::setVideoMode()
 {
+	int bitDepth = 8;
+	if(settings->depth32)
+		bitDepth = 32;
+	
 	int flags = SDL_SWSURFACE | SDL_RESIZABLE;
 	if(fullscreen)
 	{
@@ -252,19 +257,17 @@ void Gfx::setVideoMode()
 		SDL_FreeSurface(screen);
 		screen = 0;
 	}
-	
-	
 
-	if(!SDL_VideoModeOK(windowW, windowH, 8, flags))
+	if(!SDL_VideoModeOK(windowW, windowH, bitDepth, flags))
 	{
 		// Default to 640x480
 		windowW = 640;
 		windowH = 480;
 	}
 
-	back = screen = SDL_SetVideoMode(windowW, windowH, 8, flags);
+	back = screen = SDL_SetVideoMode(windowW, windowH, bitDepth, flags);
 	
-	if(windowH != 320 || windowW != 200)
+	if(bitDepth != 8 && windowH != 320 || windowW != 200)
 	{
 		screen = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
 	}
@@ -319,8 +322,9 @@ void Gfx::loadMenus()
 	hiddenMenu.addItem(MenuItem(48, 7, "Load replay..."));
 	hiddenMenu.addItem(MenuItem(48, 7, "PowerLevel palettes"));
 	hiddenMenu.addItem(MenuItem(48, 7, "Scaling filter"));
-	hiddenMenu.addItem(MenuItem(48, 7, "Fullscreen W"));
-	hiddenMenu.addItem(MenuItem(48, 7, "Fullscreen H"));
+	hiddenMenu.addItem(MenuItem(48, 7, "Fullscreen width"));
+	hiddenMenu.addItem(MenuItem(48, 7, "Fullscreen height"));
+	hiddenMenu.addItem(MenuItem(48, 7, "TESTING 32-bit mode"));
 	hiddenMenu.valueOffsetX = 100;
 }
 
@@ -470,6 +474,14 @@ void Gfx::clearKeys()
 	std::memset(dosKeys, 0, sizeof(dosKeys));
 }
 
+void preparePalette(SDL_PixelFormat* format, SDL_Palette* pal, uint32_t (&pal32)[256])
+{
+	for(int i = 0; i < 256; ++i)
+	{
+		pal32[i] = SDL_MapRGB(format, pal->colors[i].r, pal->colors[i].g, pal->colors[i].b);		 
+	}
+}
+
 int Gfx::fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY)
 {
 	int mag = 1;
@@ -496,184 +508,296 @@ int Gfx::fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& 
 
 void Gfx::flip()
 {
+	gvl::rect updateRect;
 	pal.activate();
 	if(screen != back)
 	{
 		int offsetX, offsetY;
 		int mag = fitScreen(back->w, back->h, screen->w, screen->h, offsetX, offsetY);
 		
+		gvl::rect newRect(offsetX, offsetY, screen->w * mag, screen->h * mag);
+		
 		if(mag != prevMag)
 		{
 			// Clear background if magnification is decreased to
 			// avoid leftovers.
 			SDL_FillRect(back, 0, 0);
+			updateRect = lastUpdateRect | newRect;
 		}
+		else
+			updateRect = newRect;
 		prevMag = mag;
 		
 		std::size_t destPitch = back->pitch;
 		std::size_t srcPitch = screenPitch;
 		
-		PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels) + offsetY * destPitch + offsetX;
+		PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels) + offsetY * destPitch + offsetX * back->format->BytesPerPixel;
 		PalIdx* src = screenPixels;
 		
-		if(mag == 1)
+		
+		if(back->format->BitsPerPixel == 8)
 		{
-			for(int y = 0; y < 200; ++y)
+			
+			if(mag == 1)
 			{
-				PalIdx* line = src + y*srcPitch;
-				PalIdx* destLine = dest + y*destPitch;
-				
-				std::memcpy(destLine, line, 320);
-#if 0
-				for(int x = 0; x < 320; ++x)
-				{
-					PalIdx pix = src[y*srcPitch + x];
-					dest[y*destPitch + x] = pix;
-				}
-#endif
-			}
-		}
-		else if(mag == 2)
-		{
-#if 1
-
-			if(settings->scaleFilter == Settings::SfNearest)
-			{
-	
 				for(int y = 0; y < 200; ++y)
 				{
 					PalIdx* line = src + y*srcPitch;
-					PalIdx* destLine = dest + 2*y*destPitch;
+					PalIdx* destLine = dest + y*destPitch;
 					
-#if 0
+					std::memcpy(destLine, line, 320);
+	#if 0
 					for(int x = 0; x < 320; ++x)
 					{
-						PalIdx pix = *line++;
-						destLine[0] = pix;
-						destLine[1] = pix;
-						destLine[destPitch] = pix;
-						destLine[destPitch + 1] = pix;
-						
-						destLine += 2;
+						PalIdx pix = src[y*srcPitch + x];
+						dest[y*destPitch + x] = pix;
 					}
-#else
-					// NOTE! This only works on a little-endian machine that allows unaligned access
-					for(int x = 0; x < 320/4; ++x)
+	#endif
+				}
+			}
+			else if(mag == 2)
+			{
+	#if 1
+
+				if(settings->scaleFilter == Settings::SfNearest)
+				{
+		
+					for(int y = 0; y < 200; ++y)
 					{
-						// !arch NOTE! Unaligned access
+						PalIdx* line = src + y*srcPitch;
+						PalIdx* destLine = dest + 2*y*destPitch;
+						
+	#if 0
+						for(int x = 0; x < 320; ++x)
+						{
+							PalIdx pix = *line++;
+							destLine[0] = pix;
+							destLine[1] = pix;
+							destLine[destPitch] = pix;
+							destLine[destPitch + 1] = pix;
+							
+							destLine += 2;
+						}
+	#else
+						// NOTE! This only works on a little-endian machine that allows unaligned access
+						for(int x = 0; x < 320/4; ++x)
+						{
+							// !arch NOTE! Unaligned access
+							uint32_t pix = *reinterpret_cast<uint32_t*>(line);
+							line += 4;
+							
+							uint32_t a = (pix & 0xff000000);
+							uint32_t b = (pix & 0x00ff0000) >> 8;
+							uint32_t c = (pix & 0x0000ff00) << 16;
+							uint32_t d = (pix & 0x000000ff) << 8;
+							
+							uint32_t A = a | b;
+							uint32_t C = c | d;
+							
+							A |= A >> 8;
+							C |= C >> 8;
+							
+							uint32_t* dest32T = reinterpret_cast<uint32_t*>(destLine);
+							uint32_t* dest32B = reinterpret_cast<uint32_t*>(destLine + destPitch);
+							
+							// !arch NOTE! Assumes little-endian, C and A should be swapped if big-endian
+							dest32T[0] = C;
+							dest32T[1] = A;
+							dest32B[0] = C;
+							dest32B[1] = A;
+							
+							destLine += 8;
+						}
+	#endif
+					}
+					
+				}
+				else if(settings->scaleFilter == Settings::SfScale2X)
+				{
+					#define DECL int downOffset = destPitch ; SCALE2X_DECL
+					FILTER_X(dest, 2*destPitch, src, srcPitch, 320, 200, 1, 2, SCALE2X, DECL, READER_8, WRITER_2X_8);
+					#undef DECL
+				}
+	#endif
+			}
+			else if(mag > 2)
+			{
+				for(int y = 0; y < 200; ++y)
+				{
+					PalIdx* line = src + y*srcPitch;
+					int destMagPitch = mag*destPitch;
+					PalIdx* destLine = dest + y*destMagPitch;
+					
+					for(int x = 0; x < 320/4 - 1; ++x)
+					{
 						uint32_t pix = *reinterpret_cast<uint32_t*>(line);
 						line += 4;
 						
-						uint32_t a = (pix & 0xff000000);
-						uint32_t b = (pix & 0x00ff0000) >> 8;
-						uint32_t c = (pix & 0x0000ff00) << 16;
-						uint32_t d = (pix & 0x000000ff) << 8;
+						uint32_t a = pix >> 24;
+						uint32_t b = pix & 0x00ff0000;
+						uint32_t c = pix & 0x0000ff00;
+						uint32_t d = pix & 0x000000ff;
 						
-						uint32_t A = a | b;
-						uint32_t C = c | d;
+						a |= (a << 8);
+						b |= (b << 8);
+						c |= (c >> 8);
+						d |= (d << 8);
 						
-						A |= A >> 8;
-						C |= C >> 8;
+						a |= (a << 16);
+						b |= (b >> 16);
+						c |= (c << 16);
+						d |= (d << 16);
 						
-						uint32_t* dest32T = reinterpret_cast<uint32_t*>(destLine);
-						uint32_t* dest32B = reinterpret_cast<uint32_t*>(destLine + destPitch);
+						// !arch
+						#define WRITE_BLOCK(C) \
+						do { \
+							int i = mag; \
+							while(i >= 4) { \
+								for(int y = 0; y < destMagPitch; y += destPitch) { \
+									uint32_t* dest32 = reinterpret_cast<uint32_t*>(destLine + y); \
+									*dest32 = (C); \
+								} \
+								destLine += 4; \
+								i -= 4; \
+							} \
+							if(i > 0) { \
+								for(int y = 0; y < destMagPitch; y += destPitch) { \
+									uint32_t* dest32 = reinterpret_cast<uint32_t*>(destLine + y); \
+									*dest32 = (C); \
+								} \
+								destLine += i; \
+							} \
+						} while(0)
 						
-						// !arch NOTE! Assumes little-endian, C and A should be swapped if big-endian
-						dest32T[0] = C;
-						dest32T[1] = A;
-						dest32B[0] = C;
-						dest32B[1] = A;
+						// !arch
+						WRITE_BLOCK(d);
+						WRITE_BLOCK(c);
+						WRITE_BLOCK(b);
+						WRITE_BLOCK(a);
 						
-						destLine += 8;
+						#undef WRITE_BLOCK
+						
 					}
-#endif
+					
+					for(int x = 0; x < 4; ++x)
+					{
+						PalIdx pix = *line++;
+						for(int dy = 0; dy < destMagPitch; dy += destPitch)
+						{
+							for(int dx = 0; dx < mag; ++dx)
+							{
+								destLine[dy + dx] = pix;
+							}
+						}
+						destLine += mag;
+					}
 				}
-				
+			}
+		}
+		else if(back->format->BitsPerPixel == 32)
+		{
+			uint32_t pal32[256];
+			preparePalette(back->format, screen->format->palette, pal32);
+			
+			if(mag == 1)
+			{
+				for(int y = 0; y < 200; ++y)
+				{
+					PalIdx* line = src + y*srcPitch;
+					uint32_t* destLine = reinterpret_cast<uint32_t*>(dest + y*destPitch);
+					
+					for(int x = 0; x < 320; ++x)
+					{
+						PalIdx pix = *line++;
+						*destLine++ = pal32[pix];
+					}
+				}
 			}
 			else if(settings->scaleFilter == Settings::SfScale2X)
 			{
 				#define DECL int downOffset = destPitch ; SCALE2X_DECL
-				FILTER_X(dest, 2*destPitch, src, srcPitch, 320, 200, 1, 2, SCALE2X, DECL, READER_8, WRITER_2X_8);
+				#define PALREADER_8(x, src) do { \
+					x = pal32[*(src)]; \
+				} while(0)
+				
+				#define WRITE32(p, v) *reinterpret_cast<uint32_t*>(p) = (v)
+
+				#define WRITER_2X_32(dest) do { \
+					uint8_t* pix_2x_dest_ = dest; \
+					WRITE32(pix_2x_dest_, R1); \
+					WRITE32(pix_2x_dest_+4, R2); \
+					WRITE32(pix_2x_dest_+downOffset, R3); \
+					WRITE32(pix_2x_dest_+downOffset+4, R4); \
+				} while(0)
+				FILTER_X(dest, 2*destPitch, src, srcPitch, 320, 200, 1, 2*4, SCALE2X, DECL, PALREADER_8, WRITER_2X_32);
 				#undef DECL
 			}
-#endif
-		}
-		else if(mag > 2)
-		{
-			for(int y = 0; y < 200; ++y)
+			else
 			{
-				PalIdx* line = src + y*srcPitch;
-				int destMagPitch = mag*destPitch;
-				PalIdx* destLine = dest + y*destMagPitch;
-				
-				for(int x = 0; x < 320/4 - 1; ++x)
+				if(mag > 1)
 				{
-					uint32_t pix = *reinterpret_cast<uint32_t*>(line);
-					line += 4;
-					
-					uint32_t a = pix >> 24;
-					uint32_t b = pix & 0x00ff0000;
-					uint32_t c = pix & 0x0000ff00;
-					uint32_t d = pix & 0x000000ff;
-					
-					a |= (a << 8);
-					b |= (b << 8);
-					c |= (c >> 8);
-					d |= (d << 8);
-					
-					a |= (a << 16);
-					b |= (b >> 16);
-					c |= (c << 16);
-					d |= (d << 16);
-					
-					// !arch
-					#define WRITE_BLOCK(C) \
-					do { \
-						int i = mag; \
-						while(i >= 4) { \
-							for(int y = 0; y < destMagPitch; y += destPitch) { \
-								uint32_t* dest32 = reinterpret_cast<uint32_t*>(destLine + y); \
-								*dest32 = (C); \
-							} \
-							destLine += 4; \
-							i -= 4; \
-						} \
-						if(i > 0) { \
-							for(int y = 0; y < destMagPitch; y += destPitch) { \
-								uint32_t* dest32 = reinterpret_cast<uint32_t*>(destLine + y); \
-								*dest32 = (C); \
-							} \
-							destLine += i; \
-						} \
-					} while(0)
-					
-					// !arch
-					WRITE_BLOCK(d);
-					WRITE_BLOCK(c);
-					WRITE_BLOCK(b);
-					WRITE_BLOCK(a);
-					
-					#undef WRITE_BLOCK
-					
-				}
-				
-				for(int x = 0; x < 4; ++x)
-				{
-					PalIdx pix = *line++;
-					for(int dy = 0; dy < destMagPitch; dy += destPitch)
+					for(int y = 0; y < 200; ++y)
 					{
-						for(int dx = 0; dx < mag; ++dx)
+						PalIdx* line = src + y*srcPitch;
+						int destMagPitch = mag*destPitch;
+						uint8_t* destLine = dest + y*destMagPitch;
+						
+						for(int x = 0; x < 320/4; ++x)
 						{
-							destLine[dy + dx] = pix;
+							uint32_t pix = *reinterpret_cast<uint32_t*>(line);
+							line += 4;
+							
+							uint32_t a = pal32[pix >> 24];
+							uint32_t b = pal32[(pix & 0x00ff0000) >> 16];
+							uint32_t c = pal32[(pix & 0x0000ff00) >> 8];
+							uint32_t d = pal32[pix & 0x000000ff];
+							
+							//uint32_t* destLine32 = reinterpret_cast<uint32_t*>(destLine);
+							
+							for(int dx = 0; dx < mag; ++dx)
+							{
+								for(int dy = 0; dy < destMagPitch; dy += destPitch)
+								{
+									*reinterpret_cast<uint32_t*>(destLine + dy) = d;
+								}
+								destLine += 4;
+							}
+							for(int dx = 0; dx < mag; ++dx)
+							{
+								for(int dy = 0; dy < destMagPitch; dy += destPitch)
+								{
+									*reinterpret_cast<uint32_t*>(destLine + dy) = c;
+								}
+								destLine += 4;
+							}
+							for(int dx = 0; dx < mag; ++dx)
+							{
+								for(int dy = 0; dy < destMagPitch; dy += destPitch)
+								{
+									*reinterpret_cast<uint32_t*>(destLine + dy) = b;
+								}
+								destLine += 4;
+							}
+							for(int dx = 0; dx < mag; ++dx)
+							{
+								for(int dy = 0; dy < destMagPitch; dy += destPitch)
+								{
+									*reinterpret_cast<uint32_t*>(destLine + dy) = a;
+								}
+								destLine += 4;
+							}
 						}
 					}
-					destLine += mag;
 				}
 			}
 		}
 	}
 	
-	SDL_Flip(back);
+	//if(fullscreen)
+		SDL_Flip(back);
+	/*else
+		SDL_UpdateRect(back, updateRect.x1, updateRect.y1, updateRect.width(), updateRect.height());*/
+	lastUpdateRect = updateRect;
 	
 	if(settings->screenSync)
 	{
@@ -697,6 +821,7 @@ void Gfx::flip()
 	else
 		SDL_Delay(0);
 }
+
 
 
 void Gfx::clear()
@@ -915,9 +1040,33 @@ struct ExtensionsSwitchBehavior : BooleanSwitchBehavior
 	}
 };
 
+struct Depth32Behavior : BooleanSwitchBehavior
+{
+	Depth32Behavior(Common& common, bool& v)
+	: BooleanSwitchBehavior(common, v)
+	{
+	}
+	
+	int onEnter(Menu& menu, int item)
+	{
+		BooleanSwitchBehavior::onEnter(menu, item);
+		gfx.setVideoMode();
+		return -1;
+	}
+	
+	bool onLeftRight(Menu& menu, int item, int dir)
+	{
+		BooleanSwitchBehavior::onLeftRight(menu, item, dir);
+		gfx.setVideoMode();
+		return true;
+	}
+};
+
+
+
 void Gfx::updateExtensions(bool enabled)
 {
-	for(std::size_t i = HiddenMenu::Extensions + 1; i < hiddenMenu.items.size(); ++i)
+	for(std::size_t i = HiddenMenu::Extensions + 1; i < HiddenMenu::FullscreenW; ++i)
 	{
 		hiddenMenu.setVisibility(i, enabled);
 	}
@@ -933,6 +1082,7 @@ static std::string const scaleFilterNames[Settings::SfMax] =
 	"Nearest",
 	"Scale2X"
 };
+
 
 ItemBehavior* HiddenMenu::getItemBehavior(Common& common, int item)
 {
@@ -952,6 +1102,8 @@ ItemBehavior* HiddenMenu::getItemBehavior(Common& common, int item)
 			return new IntegerBehavior(common, gfx.settings->fullscreenW, 0, 9999, 0);
 		case FullscreenH:
 			return new IntegerBehavior(common, gfx.settings->fullscreenH, 0, 9999, 0);
+		case Depth32:
+			return new Depth32Behavior(common, gfx.settings->depth32);
 		default:
 			return Menu::getItemBehavior(common, item);
 	}
@@ -1624,27 +1776,25 @@ void Gfx::mainLoop()
 	Rand rand = gfx.rand;
 	controller.reset(new LocalController(common, settings));
 	
-	//game->enter();
-	
 	{
 		Level newLevel;
 		newLevel.generateFromSettings(*common, *settings, rand);
 		controller->swapLevel(newLevel);
 	}
 	
+	controller->currentGame()->focus();
+	// TODO: Unfocus game when necessary
+	
 	while(true)
 	{
+		clear();
 		controller->draw();
 		
 		gfx.mainMenu.setVisibility(0, controller->running());
 		int selection = menuLoop();
 		
-		
-		
-		
 		if(selection == MaNewGame)
 		{
-#if 1
 			std::auto_ptr<Controller> newController(new LocalController(common, settings));
 			
 			Level* oldLevel = controller->currentLevel();
@@ -1665,8 +1815,6 @@ void Gfx::mainLoop()
 			}
 			
 			controller = newController;
-#else
-#endif
 		}
 		else if(selection == MaResumeGame)
 		{

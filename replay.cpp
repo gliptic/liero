@@ -182,11 +182,25 @@ struct mtf
 	}
 };
 
+template<typename Archive>
+void archive(Archive ar, Palette& pal)
+{
+	for(int i = 0; i < 256; ++i)
+	{
+		ar.ui8(pal.entries[i].r);
+		ar.ui8(pal.entries[i].g);
+		ar.ui8(pal.entries[i].b);
+	}
+}
+
 void archive(gvl::in_archive<GameSerializationContext> ar, Level& level)
 {
 	unsigned int w = gvl::read_uint16(ar.reader);
 	unsigned int h = gvl::read_uint16(ar.reader);
 	level.resize(w, h);
+	
+	if(ar.context.replayVersion > 1)
+		archive(ar, level.origpal);
 
 #if 1
 	for(unsigned int y = 0; y < h; ++y)
@@ -221,6 +235,9 @@ void archive(gvl::out_archive<GameSerializationContext, Writer> ar, Level& level
 	ar.ui16(level.height);
 	unsigned int w = level.width;
 	unsigned int h = level.height;
+	
+	if(ar.context.replayVersion > 1)
+		archive(ar, level.origpal);
 	
 #if 1
 	ar.writer.put(&level.data[0], w * h);
@@ -403,7 +420,7 @@ std::auto_ptr<Game> ReplayReader::beginPlayback(gvl::shared_ptr<Common> common)
 	if(readMagic != replayMagic)
 		throw gvl::archive_check_error("File does not appear to be a replay");
 	context.replayVersion = reader.get();
-	if(context.replayVersion > GameSerializationContext::myReplayVersion)
+	if(context.replayVersion > myGameVersion)
 		throw gvl::archive_check_error("Replay version is too recent");
 	
 	gvl::shared_ptr<Settings> settings(new Settings);
