@@ -4,6 +4,7 @@
 	Version="9,00"
 	Name="liero"
 	ProjectGUID="{CDE258F8-90DB-407B-8521-AA531EE4D167}"
+	RootNamespace="liero"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
 	>
@@ -17,8 +18,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug"
+			OutputDirectory="$(SolutionDir)\..\_bin\$(ConfigurationName)"
+			IntermediateDirectory="_trash\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -41,13 +42,14 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="$(SolutionDir)\..\.."
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -95,8 +97,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release"
+			OutputDirectory="$(SolutionDir)\..\_bin\$(ConfigurationName)"
+			IntermediateDirectory="_trash\$(ConfigurationName)"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			CharacterSet="2"
@@ -123,11 +125,12 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories="$(SolutionDir)\..\.."
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				Detect64BitPortabilityProblems="true"
+				Detect64BitPortabilityProblems="false"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -141,7 +144,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib SDLmain.lib sdl_mixer.lib"
+				AdditionalDependencies="sdl.lib sdl_mixer.lib"
 				OutputFile="$(OutDir)/openliero.exe"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
@@ -180,236 +183,292 @@
 	<References>
 	</References>
 	<Files>
+		<Filter
+			Name="gfx"
+			>
+			<File
+				RelativePath="..\gfx\macros.hpp"
+				>
+			</File>
+		</Filter>
 		<File
-			RelativePath=".\blit.cpp"
+			RelativePath="..\blit.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\bobject.cpp"
+			RelativePath="..\bobject.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\bobject.hpp"
+			RelativePath="..\bobject.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\bonus.cpp"
+			RelativePath="..\bonus.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\bonus.hpp"
+			RelativePath="..\bonus.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\colour.hpp"
+			RelativePath="..\colour.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\console.cpp"
+			RelativePath="..\common.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\console.hpp"
+			RelativePath="..\common.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\constants.cpp"
+			RelativePath="..\console.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\constants.hpp"
+			RelativePath="..\console.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\filesystem.cpp"
+			RelativePath="..\constants.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\filesystem.hpp"
+			RelativePath="..\constants.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\font.cpp"
+			RelativePath="..\controller.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\font.hpp"
+			RelativePath="..\exactObjectList.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\game.cpp"
+			RelativePath="..\fastObjectList.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\game.hpp"
+			RelativePath="..\filesystem.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\gfx.cpp"
+			RelativePath="..\filesystem.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\gfx.hpp"
+			RelativePath="..\font.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\Jamfile"
+			RelativePath="..\font.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\keys.cpp"
+			RelativePath="..\game.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\keys.hpp"
+			RelativePath="..\game.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\level.cpp"
+			RelativePath="..\gfx.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\level.hpp"
+			RelativePath="..\gfx.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\lfs.hpp"
+			RelativePath="..\Jamfile"
 			>
 		</File>
 		<File
-			RelativePath=".\main.cpp"
+			RelativePath="..\keys.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\math.cpp"
+			RelativePath="..\keys.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\math.hpp"
+			RelativePath="..\level.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\menu.cpp"
+			RelativePath="..\level.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\menu.hpp"
+			RelativePath="..\main.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\ninjarope.cpp"
+			RelativePath="..\math.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\nobject.cpp"
+			RelativePath="..\math.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\nobject.hpp"
+			RelativePath="..\menu.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\objectList.hpp"
+			RelativePath="..\menu.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\platform.hpp"
+			RelativePath="..\ninjarope.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\rand.cpp"
+			RelativePath="..\nobject.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\rand.hpp"
+			RelativePath="..\nobject.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\reader.cpp"
+			RelativePath="..\objectList.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\reader.hpp"
+			RelativePath="..\palette.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\rect.hpp"
+			RelativePath="..\palette.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sdlmain.cpp"
+			RelativePath="..\platform.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\settings.cpp"
+			RelativePath="..\rand.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\settings.hpp"
+			RelativePath="..\rand.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sfx.cpp"
+			RelativePath="..\reader.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sfx.hpp"
+			RelativePath="..\reader.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sobject.cpp"
+			RelativePath="..\rect.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sobject.hpp"
+			RelativePath="..\replay.cpp"
+			>
+			<FileConfiguration
+				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					DisableLanguageExtensions="true"
+				/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath="..\replay.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sys.cpp"
+			RelativePath="..\sdlmain.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\sys.hpp"
+			RelativePath="..\settings.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\text.cpp"
+			RelativePath="..\settings.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\text.hpp"
+			RelativePath="..\sfx.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\viewport.cpp"
+			RelativePath="..\sfx.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\viewport.hpp"
+			RelativePath="..\sobject.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\weapon.cpp"
+			RelativePath="..\sobject.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\weapon.hpp"
+			RelativePath="..\sprite.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\weapsel.cpp"
+			RelativePath="..\sys.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\weapsel.hpp"
+			RelativePath="..\sys.hpp"
 			>
 		</File>
 		<File
-			RelativePath=".\worm.cpp"
+			RelativePath="..\text.cpp"
 			>
 		</File>
 		<File
-			RelativePath=".\worm.hpp"
+			RelativePath="..\text.hpp"
+			>
+		</File>
+		<File
+			RelativePath="..\version.hpp"
+			>
+		</File>
+		<File
+			RelativePath="..\viewport.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\viewport.hpp"
+			>
+		</File>
+		<File
+			RelativePath="..\weapon.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\weapon.hpp"
+			>
+		</File>
+		<File
+			RelativePath="..\weapsel.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\weapsel.hpp"
+			>
+		</File>
+		<File
+			RelativePath="..\worm.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\worm.hpp"
 			>
 		</File>
 	</Files>

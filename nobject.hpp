@@ -3,13 +3,15 @@
 
 #include "math.hpp"
 #include "objectList.hpp"
+#include "exactObjectList.hpp"
 
 struct Worm;
+struct Game;
 
 struct NObjectType
 {
-	void create1(fixed velX, fixed velY, int x, int y, int colour, Worm* owner);
-	void create2(int angle, fixed velX, fixed velY, fixed x, fixed y, int colour, Worm* owner);
+	void create1(Game& game, fixed velX, fixed velY, int x, int y, int colour, Worm* owner);
+	void create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int colour, Worm* owner);
 
 	int detectDistance;
 	fixed gravity;
@@ -43,9 +45,9 @@ struct NObjectType
 	int id;
 };
 
-struct NObject : ObjectListBase
+struct NObject : ExactObjectListBase
 {
-	void process();
+	void process(Game& game);
 	
 	fixed x, y;
 	fixed velX, velY;

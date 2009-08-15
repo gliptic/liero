@@ -3,15 +3,21 @@
 
 #include "rect.hpp"
 #include "worm.hpp"
+#include "rand.hpp"
+#include <ctime>
+
+struct Game;
 
 struct Viewport
 {
-	Viewport(Rect rect, Worm* worm, int inGameX, int levwidth, int levheight)
+	Viewport(Rect rect, Worm* worm, int inGameX, int levwidth, int levheight, Game& game)
 	: worm(worm)
 	, bannerY(-8)
 	, inGameX(inGameX)
 	, rect(rect)
+	, game(game)
 	{
+		rand.seed((Uint32)std::clock());
 		maxX = levwidth - rect.width();
 		maxY = levheight - rect.height();
 		centerX = rect.width() >> 1;
@@ -19,7 +25,12 @@ struct Viewport
 		x = 0;
 		y = 0;
 		shake = 0;
-		worm->viewport = this;
+	}
+	
+	Viewport(Game& game)
+	: game(game)
+	{
+		
 	}
 	
 	int x, y;
@@ -28,10 +39,11 @@ struct Viewport
 	int centerX, centerY;
 	Worm* worm;
 	int bannerY;
-	
 	int inGameX; // 0 for first, 218 for second
-	
+	Rand rand;
 	Rect rect;
+	Game& game;
+
 	
 	void setCenter(int x, int y)
 	{
@@ -52,7 +64,7 @@ struct Viewport
 	}
 	
 	
-	void draw();
+	void draw(bool isReplay);
 	void process();
 
 /*

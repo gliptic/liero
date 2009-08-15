@@ -11,6 +11,7 @@ inline std::string toString(int v)
 }
 
 char const* timeToString(int sec);
+char const* timeToStringEx(int ms);
 
 inline void rtrim(std::string& str)
 {

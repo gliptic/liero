@@ -15,6 +15,23 @@ char const* timeToString(int sec)
 	return ret;
 }
 
+char const* timeToStringEx(int ms)
+{
+	static char ret[9];
+	
+	ret[0] = '0' + (ms / 600000);
+	ret[1] = '0' + (ms % 600000) / 60000;
+	ret[2] = ':';
+	ret[3] = '0' + (ms % 60000) / 10000;
+	ret[4] = '0' + (ms % 10000) / 1000;
+	ret[5] = '.';
+	ret[6] = '0' + (ms % 1000) / 100;
+	ret[7] = '0' + (ms % 100) / 10;
+	ret[8] = 0;
+	
+	return ret;
+}
+
 int safeToUpper(char ch)
 {
 	return std::toupper(static_cast<unsigned char>(ch));

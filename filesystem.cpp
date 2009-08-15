@@ -134,19 +134,42 @@ std::size_t fileLength(FILE* f)
 
 namespace
 {
+
+struct filename_result
+{
+	filename_result()
+	: name(0), alt_name(0)
+	{
+	}
+	
+	filename_result(char const* name, char const* alt_name)
+	: name(name), alt_name(alt_name)
+	{
+	
+	}
+	
+	operator void const*()
+	{
+		return name;
+	}
+	
+	char const* name;
+	char const* alt_name;
+};
+
 #ifdef LIERO_POSIX
 
 # define BOOST_HANDLE DIR *
 # define BOOST_INVALID_HANDLE_VALUE 0
 # define BOOST_SYSTEM_DIRECTORY_TYPE struct dirent *
 
-inline const char *  find_first_file( const char * dir,
+inline filename_result find_first_file( const char * dir,
 BOOST_HANDLE & handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
 // Returns: 0 if error, otherwise name
 {
 	const char * dummy_first_name = ".";
 	return ( (handle = ::opendir( dir ))
-		== BOOST_INVALID_HANDLE_VALUE ) ? 0 : dummy_first_name;
+		== BOOST_INVALID_HANDLE_VALUE ) ? filename_result() : filename_result(dummy_first_name, dummy_first_name);
 }  
 
 inline void find_close( BOOST_HANDLE handle )
@@ -155,7 +178,7 @@ inline void find_close( BOOST_HANDLE handle )
 	::closedir( handle );
 }
 
-inline const char * find_next_file(
+inline filename_result find_next_file(
 BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
 // Returns: if EOF 0, otherwise name
 // Throws: if system reports error
@@ -172,9 +195,9 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
 		{
 			throw std::runtime_error("Error iterating directory");
 		}
-		else { return 0; } // end reached
+		else { return filename_result(); } // end reached
 	}
-	return dp->d_name;
+	return filename_result(dp->d_name, dp->d_name);
 }
 #elif defined(LIERO_WIN32)
 
@@ -182,14 +205,21 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
 # define BOOST_INVALID_HANDLE_VALUE INVALID_HANDLE_VALUE
 # define BOOST_SYSTEM_DIRECTORY_TYPE WIN32_FIND_DATAA
 
-inline const char * find_first_file( const char * dir,
+
+inline filename_result find_first_file( const char * dir,
 BOOST_HANDLE & handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 // Returns: 0 if error, otherwise name
 {
 	//    std::cout << "find_first_file " << dir << std::endl;
 	std::string dirpath( std::string(dir) + "/*" );
-	return ( (handle = ::FindFirstFileA( dirpath.c_str(), &data ))
-		== BOOST_INVALID_HANDLE_VALUE ) ? 0 : (data.cAlternateFileName[0] ? data.cAlternateFileName : data.cFileName);
+	bool fail = ( (handle = ::FindFirstFileA( dirpath.c_str(), &data )) == BOOST_INVALID_HANDLE_VALUE );
+	
+	if(fail)
+		return filename_result();
+	
+	return filename_result(
+		data.cFileName,
+		data.cAlternateFileName[0] ? data.cAlternateFileName : data.cFileName);
 }  
 
 inline void find_close( BOOST_HANDLE handle )
@@ -199,7 +229,7 @@ inline void find_close( BOOST_HANDLE handle )
 	::FindClose( handle );
 }
 
-inline const char * find_next_file(
+inline filename_result find_next_file(
 BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 // Returns: 0 if EOF, otherwise name
 // Throws: if system reports error
@@ -210,10 +240,12 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 		{
 			throw std::exception("Error iterating directory");
 		}
-		else { return 0; } // end reached
+		else { return filename_result(); } // end reached
 	}
 	
-	return data.cAlternateFileName[0] ? data.cAlternateFileName : data.cFileName;
+	return filename_result(
+		data.cFileName,
+		data.cAlternateFileName[0] ? data.cAlternateFileName : data.cFileName);
 }
 #else
 
@@ -225,7 +257,13 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 struct dir_itr_imp
 {
 public:
+	dir_itr_imp()
+	{
+		
+	}
+	
 	std::string       entry_path;
+	std::string       entry_alt_path;
 	BOOST_HANDLE      handle;
 
 	~dir_itr_imp()
@@ -254,11 +292,11 @@ inline bool dot_or_dot_dot( char const * name )
 //  directory_iterator implementation  ---------------------------------------//
 
 void dir_itr_init( dir_itr_imp_ptr & m_imp,
-                                        char const* dir_path )
+	char const* dir_path )
 {
-	m_imp.reset( new dir_itr_imp );
+	m_imp.reset( new dir_itr_imp() );
 	BOOST_SYSTEM_DIRECTORY_TYPE scratch;
-	const char * name = 0;  // initialization quiets compiler warnings
+	filename_result name;  // initialization quiets compiler warnings
 	if ( !dir_path[0] )
 		m_imp->handle = BOOST_INVALID_HANDLE_VALUE;
 	else
@@ -266,9 +304,10 @@ void dir_itr_init( dir_itr_imp_ptr & m_imp,
 
 	if ( m_imp->handle != BOOST_INVALID_HANDLE_VALUE )
 	{
-		if ( !dot_or_dot_dot( name ) )
+		if ( !dot_or_dot_dot( name.name ) )
 		{ 
-			m_imp->entry_path = name;
+			m_imp->entry_path = name.name;
+			m_imp->entry_alt_path = name.alt_name;
 		}
 		else
 		{
@@ -289,21 +328,28 @@ std::string & dir_itr_dereference(
 	return m_imp->entry_path;
 }
 
+std::string & dir_itr_alt_dereference(
+	const dir_itr_imp_ptr & m_imp )
+{
+	assert( m_imp.get() ); // fails if dereference end iterator
+	return m_imp->entry_alt_path;
+}
+
 void dir_itr_increment( dir_itr_imp_ptr & m_imp )
 {
 	assert( m_imp.get() ); // fails on increment end iterator
 	assert( m_imp->handle != BOOST_INVALID_HANDLE_VALUE ); // reality check
 
 	BOOST_SYSTEM_DIRECTORY_TYPE scratch;
-	const char * name;
+	filename_result name;
 
-	while ( (name = find_next_file( m_imp->handle,
-		scratch )) != 0 )
+	while ( (name = find_next_file( m_imp->handle, scratch )) )
 	{
 		// append name, except ignore "." or ".."
-		if ( !dot_or_dot_dot( name ) )
+		if ( !dot_or_dot_dot( name.name ) )
 		{
-			m_imp->entry_path = name;
+			m_imp->entry_path = name.name;
+			m_imp->entry_alt_path = name.alt_name;
 			return;
 		}
 	}

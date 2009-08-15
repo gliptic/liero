@@ -19,7 +19,7 @@ struct Font
 	
 	void loadFromEXE();
 	void drawText(char const* str, std::size_t len, int x, int y, int colour);
-	int getWidth(char const* str, std::size_t len);
+	int getDims(char const* str, std::size_t len, int* height = 0);
 	void drawChar(unsigned char ch, int x, int y, int colour);
 	
 	void drawText(std::string const& str, int x, int y, int colour)
@@ -27,9 +27,9 @@ struct Font
 		drawText(str.data(), str.size(), x, y, colour);
 	}
 	
-	int getWidth(std::string const& str)
+	int getDims(std::string const& str, int* height = 0)
 	{
-		return getWidth(str.data(), str.size());
+		return getDims(str.data(), str.size(), height);
 	}
 	
 	std::vector<Char> chars;

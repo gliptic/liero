@@ -4,23 +4,25 @@
 #include <iostream>
 #include <cstdlib>
 
-void Bonus::process()
+void Bonus::process(Game& game)
 {
+	Common& common = *game.common;
+	
 	y += velY;
 	
 	int ix = ftoi(x), iy = ftoi(y);
 	
 	if(game.level.inside(ix, iy + 1)
-	&& game.materials[game.level.pixel(ix, iy + 1)].background())
+	&& common.materials[game.level.pixel(ix, iy + 1)].background())
 	{
-		velY += C[BonusGravity];
+		velY += common.C[BonusGravity];
 	}
 		
 	int inewY = ftoi(y + velY);
 	if(inewY < 0 || inewY >= game.level.height - 1
-	|| game.materials[game.level.pixel(ix, inewY)].dirtRock())
+	|| common.materials[game.level.pixel(ix, inewY)].dirtRock())
 	{
-		velY = -(velY * C[BonusBounceMul]) / C[BonusBounceDiv];
+		velY = -(velY * common.C[BonusBounceMul]) / common.C[BonusBounceDiv];
 		
 		if(std::abs(velY) < 100) // TODO: Read from EXE
 			velY = 0;
@@ -28,7 +30,7 @@ void Bonus::process()
 	
 	if(--timer <= 0)
 	{
-		game.sobjectTypes[game.bonusSObjects[frame]].create(ix, iy, 0);
+		common.sobjectTypes[common.bonusSObjects[frame]].create(game, ix, iy, 0);
 		if(used)
 			game.bonuses.free(this);
 	}

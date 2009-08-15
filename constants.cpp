@@ -1,5 +1,6 @@
 #include "constants.hpp"
 #include "reader.hpp"
+#include "game.hpp" // TODO: We should move Common somewhere else
 
 #include <iostream>
 
@@ -34,10 +35,19 @@ int CSint24desc[][3] =
 	{BonusGravity, 0x72C3, 0x72C9},
 	{BObjGravity, 0x744A, 0x7450},
 	
+	
+	
 	// WormFloat hack
 	{WormFloatPower, 0x29DB, 0x29E1},
 	
 	{0, -1, -1}
+};
+
+int CUint16desc[][2] =
+{
+	{BloodLimit, 0xE686},
+	
+	{0, -1}
 };
 
 int CSint16desc[][2] =
@@ -68,6 +78,7 @@ int CSint16desc[][2] =
 	{BonusDropChance, 0xBECA},
 	{SplinterLarpaVelDiv, 0x677D},
 	{SplinterCracklerVelDiv, 0x67D0},
+	
 	
 	// WormFloat hack
 	{WormFloatLevel, 0x29D3},
@@ -112,6 +123,9 @@ int CSint8desc[][2] =
 	{FallDamageLeft, 0x3A8B},
 	{FallDamageDown, 0x3B08},
 	{FallDamageUp, 0x3B85},
+	
+	{BloodStepUp, 0xE67B},
+	{BloodStepDown, 0xE68E},
 	
 	{0, -1}
 };
@@ -225,7 +239,19 @@ int hSignedRecoilInd[][2] =
 	{-1, 0}
 };
 
+int hAirJumpInd[][2] =
+{
+	{0x3313, 0xEB},
+	{0x3314, 0x06},
+	{-1, 0}
+};
 
+int hMultiJumpInd[][2] =
+{
+	{0x331B, 0xEB},
+	{0x331C, 0x06},
+	{-1, 0}
+};
 
 HackDesc Hhackdesc[] =
 {
@@ -238,14 +264,12 @@ HackDesc Hhackdesc[] =
 	{HBonusDisable, hBonusDisableInd},
 	{HRemExp, hRemExpInd},
 	{HSignedRecoil, hSignedRecoilInd},
+	{HAirJump, hAirJumpInd},
+	{HMultiJump, hMultiJumpInd},
 	{0, 0}
 };
 
-int C[MaxC];
-std::string S[MaxS];
-bool H[MaxH];
-
-void loadConstantsFromEXE()
+void Common::loadConstantsFromEXE()
 {
 	FILE* exe = openLieroEXE();
 	
@@ -277,6 +301,14 @@ void loadConstantsFromEXE()
 		C[CSint16desc[i][0]] = readSint16(exe);
 		
 		//std::cout << C[CSint16desc[i][0]] << std::endl;
+	}
+	
+	for(int i = 0; CUint16desc[i][1] >= 0; ++i)
+	{
+		fseek(exe, CUint16desc[i][1], SEEK_SET);
+		C[CUint16desc[i][0]] = readUint16(exe);
+		
+		//std::cout << C[CUint16desc[i][0]] << std::endl;
 	}
 	
 	for(int i = 0; CSint8desc[i][1] >= 0; ++i)

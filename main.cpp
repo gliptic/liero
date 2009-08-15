@@ -22,18 +22,27 @@
 #include <iostream>
 #include <ctime>
 #include <exception>
+#include <gvl/math/ieee.hpp>
+
+#include <gvl/math/cmwc.hpp>
+
+//#include <gvl/support/profile.hpp> // TEMP
 
 //#undef main
 
 int gameEntry(int argc, char* argv[])
 try
 {
+	gvl_init_ieee();
+	
 	// TODO: Better PRNG seeding
 	Console::init();
 	gfx.rand.seed(Uint32(std::time(0)));
 	
 	bool exeSet = false;
-	game.loadPowerlevelPalette = true;
+	gvl::shared_ptr<Common> common(new Common);
+	gfx.common = common;
+	//common->loadPowerlevelPalette = true;
 	
 	for(int i = 1; i < argc; ++i)
 	{
@@ -45,10 +54,10 @@ try
 				// SDL_putenv seems to take char* in linux, STOOPID
 				SDL_putenv(const_cast<char*>((std::string("SDL_VIDEODRIVER=") + &argv[i][2]).c_str()));
 			break;
-			
+			/*
 			case 'r':
-				game.loadPowerlevelPalette = false;
-			break;
+				common->loadPowerlevelPalette = false;
+			break;*/
 			}
 		}
 		else
@@ -68,78 +77,82 @@ try
 	std::cout << SDL_VideoDriverName(buf, 256) << std::endl;
 */
 	
+	common->texts.loadFromEXE();
 		
-	game.texts.loadFromEXE();
+	//common.texts.loadFromEXE();
 	initKeys();
-	game.rand.seed(Uint32(std::time(0)));
-	loadConstantsFromEXE();
+	//game.rand.seed(Uint32(std::time(0)));
+	common->loadConstantsFromEXE();
 	loadTablesFromEXE();
 
 	Console::clear();
-	Console::writeTextBar(game.texts.copyright1, game.texts.copyrightBarFormat);
+	Console::writeTextBar(common->texts.copyright1, common->texts.copyrightBarFormat);
 	Console::setAttributes(0x07);
 	Console::writeLine("");
 	
-	Console::write(S[LoadingAndThinking]);
-	gfx.font.loadFromEXE();
-	gfx.loadPalette();
+	Console::write(common->S[LoadingAndThinking]);
+	common->font.loadFromEXE();
+	common->loadPalette();
+	gfx.loadPalette(); // This gets the palette from common
 	gfx.loadMenus();
-	gfx.loadGfx();
-	game.loadMaterials();
-	game.loadWeapons();
-	game.loadTextures();
-	game.loadOthers();
-	Console::writeLine(S[OK]);
+	common->loadGfx();
+	common->loadMaterials();
+	common->loadWeapons();
+	common->loadTextures();
+	common->loadOthers();
+	Console::writeLine(common->S[OK]);
 	
-	Console::writeLine(S[InitSound]);
+	Console::writeLine(common->S[InitSound]);
 	sfx.init();
 	
-	Console::write(S[Init_BaseIO]);
+	Console::write(common->S[Init_BaseIO]);
 	Console::write("0220");
-	Console::write(S[Init_IRQ]);
+	Console::write(common->S[Init_IRQ]);
 	Console::write("7");
-	Console::write(S[Init_DMA8]);
+	Console::write(common->S[Init_DMA8]);
 	Console::write("1");
-	Console::write(S[Init_DMA16]);
+	Console::write(common->S[Init_DMA16]);
 	Console::writeLine("5");
 	
-	Console::write(S[Init_DSPVersion]);
+	Console::write(common->S[Init_DSPVersion]);
 	SDL_version const* mixerVer = Mix_Linked_Version();
 	Console::write(toString(mixerVer->major) + "." + toString(mixerVer->minor));
-	Console::write(S[Init_Colon]);
-	Console::write(S[Init_16bit]);
-	Console::writeLine(S[Init_Autoinit]);
+	Console::write(common->S[Init_Colon]);
+	Console::write(common->S[Init_16bit]);
+	Console::writeLine(common->S[Init_Autoinit]);
 	
-	Console::writeLine(S[Init_XMSSucc]);
+	Console::writeLine(common->S[Init_XMSSucc]);
 	
-	Console::write(S[Init_FreeXMS]);
+	Console::write(common->S[Init_FreeXMS]);
 #ifdef LIERO_WIN32
 	Console::write(toString(Win32::getFreeMemory()));
 #else
 	
 	Console::write("OVER 9000 ");
 #endif
-	Console::write(S[Init_k]);
+	Console::write(common->S[Init_k]);
 	
-	Console::write(S[LoadingSounds]);
+	Console::write(common->S[LoadingSounds]);
 	sfx.loadFromSND();
-	Console::writeLine(S[OK2]);
+	Console::writeLine(common->S[OK2]);
 	
 	Console::writeLine("");
-	Console::write(S[PressAnyKey]);
+	Console::write(common->S[PressAnyKey]);
 	Console::waitForAnyKey();
 	Console::clear();
 	
 	gfx.init();
 	
-	game.settingsFile = "LIERO";
+	gfx.settingsFile = "LIERO";
 	
+#if 0 // This is just stupid, no need to emulate it
 	if(!fileExists(lieroOPT)) // NOTE: Liero doesn't seem to use the contents of LIERO.OPT for anything useful
 	{
-		game.settings = Settings();
-		game.saveSettings();
+		gfx.settings.reset(new Settings);
+		gfx.saveSettings();
 	}
 	else
+#endif
 	{
 	/*
 		FILE* f = fopen(lieroOPT.c_str(), "rb");
@@ -151,24 +164,26 @@ try
 		
 		rtrim(game.settingsFile);
 		*/
-		if(!game.loadSettings())
+		if(!gfx.loadSettings())
 		{
-			game.settingsFile = "LIERO";
-			game.settings = Settings();
-			game.saveSettings();
+			gfx.settingsFile = "LIERO";
+			gfx.settings.reset(new Settings);
+			gfx.saveSettings();
 		}
 
 		//fclose(f);
 	}
 	
-	game.initGame();
+	gfx.setVideoMode();
+	
+	//game.initGame();
 	gfx.mainLoop();
 	
-	game.settingsFile = "LIERO";
-	game.settings.save(joinPath(lieroEXERoot, "LIERO.DAT"));
+	gfx.settingsFile = "LIERO";
+	gfx.settings->save(joinPath(lieroEXERoot, "LIERO.DAT"));
 	
 	FILE* f = fopen(lieroOPT.c_str(), "wb");
-	fwrite(game.settingsFile.data(), 1, game.settingsFile.size(), f);
+	fwrite(gfx.settingsFile.data(), 1, gfx.settingsFile.size(), f);
 	fputc('\r', f);
 	fputc('\n', f);
 	fclose(f);
@@ -177,6 +192,8 @@ try
 	
 	SDL_Quit();
 	
+	//gvl::present_profile(std::cout);
+	
 	return 0;
 }
 catch(std::exception& ex)
@@ -184,6 +201,7 @@ catch(std::exception& ex)
 	SDL_Quit();
 	Console::setAttributes(0x2f);
 	Console::writeLine(std::string("EXCEPTION: ") + ex.what());
+	Console::writeLine("Press any key to quit");
 	Console::waitForAnyKey();
 	return 1;
 }

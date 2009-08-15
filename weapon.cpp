@@ -6,9 +6,19 @@
 #include "constants.hpp"
 #include <iostream>
 
-void Weapon::fire(int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner)
+int Weapon::computedLoadingTime(Settings& settings)
+{
+	int ret = (settings.loadingTime * loadingTime) / 100;
+	if(ret == 0)
+		ret = 1;
+	return ret;
+}
+
+void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner)
 {
 	WObject* obj = game.wobjects.newObjectReuse();
+	
+	
 	
 	obj->id = id;
 	obj->x = x;
@@ -70,9 +80,10 @@ void Weapon::fire(int angle, fixed velX, fixed velY, int speed, fixed x, fixed y
 		obj->timeLeft -= game.rand(timeToExploV);
 }
 
-void WObject::blowUpObject(Worm* owner)
+void WObject::blowUpObject(Game& game, Worm* cause)
 {
-	Weapon& w = game.weapons[id];
+	Common& common = *game.common;
+	Weapon& w = common.weapons[id];
 	
 	fixed x = this->x;
 	fixed y = this->y;
@@ -83,12 +94,12 @@ void WObject::blowUpObject(Worm* owner)
 	
 	if(w.createOnExp >= 0)
 	{
-		game.sobjectTypes[w.createOnExp].create(ftoi(x), ftoi(y), owner);
+		common.sobjectTypes[w.createOnExp].create(game, ftoi(x), ftoi(y), cause);
 	}
 	
 	if(w.exploSound >= 0)
 	{
-		sfx.play(w.exploSound, w.exploSound);
+		game.soundPlayer->play(w.exploSound);
 	}
 	
 	int splinters = w.splinterAmount;
@@ -99,23 +110,28 @@ void WObject::blowUpObject(Worm* owner)
 		{
 			for(int i = 0; i < splinters; ++i)
 			{
-				game.nobjectTypes[w.splinterType].create2(
-					game.rand(128),
+				int angle = game.rand(128);
+				int colorSub = game.rand(2);
+				common.nobjectTypes[w.splinterType].create2(
+					game,
+					angle,
 					0, 0,
 					x, y,
-					w.splinterColour - game.rand(2),
-					owner);
+					w.splinterColour - colorSub,
+					cause);
 			}
 		}
 		else
 		{
 			for(int i = 0; i < splinters; ++i)
 			{
-				game.nobjectTypes[w.splinterType].create1(
+				int colorSub = game.rand(2);
+				common.nobjectTypes[w.splinterType].create1(
+					game,
 					velX, velY,
 					x, y,
-					w.splinterColour - game.rand(2),
-					owner);
+					w.splinterColour - colorSub,
+					cause);
 			}
 		}
 	}
@@ -123,25 +139,28 @@ void WObject::blowUpObject(Worm* owner)
 	if(w.dirtEffect >= 0)
 	{
 		int ix = ftoi(x), iy = ftoi(y);
-		drawDirtEffect(w.dirtEffect, ftoi(x) - 7, ftoi(y) - 7);
-		correctShadow(Rect(ix - 10, iy - 10, ix + 11, iy + 11));
+		drawDirtEffect(common, game.rand, game.level, w.dirtEffect, ftoi(x) - 7, ftoi(y) - 7);
+		if(game.settings->shadow)
+			correctShadow(common, game.level, Rect(ix - 10, iy - 10, ix + 11, iy + 11));
 	}
 }
 
-void WObject::process()
+void WObject::process(Game& game)
 {
 	int iter = 0;
 	bool bounced = false;
 	bool doExplode = false;
+	bool doRemove = false;
 	
-	Weapon& w = game.weapons[id];
+	Common& common = *game.common;
+	Weapon& w = common.weapons[id];
 	
 	// As liero would do this while rendering, we try to do it as early as possible
-	if(H[HRemExp]
-	&& id == C[RemExpObject] - 1)
+	if(common.H[HRemExp]
+	&& id == common.C[RemExpObject] - 1)
 	{
-		if(gfx.testKey(owner->keyChange())
-		&& gfx.testKey(owner->keyFire()))
+		if(owner->pressed(Worm::Change)
+		&& owner->pressed(Worm::Fire))
 		{
 			timeLeft = 0;
 		}
@@ -161,7 +180,7 @@ void WObject::process()
 			fixed newVelY = dirY * w.speed / 100;
 			
 			if(owner->visible
-			&& gfx.testKey(owner->keyUp()))
+			&& owner->pressed(Worm::Up))
 			{
 				newVelX += w.addSpeed * dirX / 100;
 				newVelY += w.addSpeed * dirY / 100;
@@ -233,7 +252,7 @@ void WObject::process()
 		if(w.objTrailType >= 0
 		&& (game.cycles % w.objTrailDelay) == 0)
 		{
-			game.sobjectTypes[w.objTrailType].create(ftoi(x), ftoi(y), owner);
+			common.sobjectTypes[w.objTrailType].create(game, ftoi(x), ftoi(y), owner);
 		}
 		
 		if(w.partTrailObj >= 0
@@ -241,17 +260,20 @@ void WObject::process()
 		{
 			if(w.partTrailType == 1)
 			{
-				game.nobjectTypes[w.partTrailObj].create1(
-					velX / C[SplinterLarpaVelDiv], velY / C[SplinterLarpaVelDiv], // TODO: Read from EXE
+				common.nobjectTypes[w.partTrailObj].create1(
+					game,
+					velX / common.C[SplinterLarpaVelDiv], velY / common.C[SplinterLarpaVelDiv],
 					x, y,
 					0,
 					owner);
 			}
 			else
 			{
-				game.nobjectTypes[w.partTrailObj].create2(
-					game.rand(128),
-					velX / C[SplinterCracklerVelDiv], velY / C[SplinterCracklerVelDiv], // TODO: Read from EXE
+				int angle = game.rand(128);
+				common.nobjectTypes[w.partTrailObj].create2(
+					game,
+					angle,
+					velX / common.C[SplinterCracklerVelDiv], velY / common.C[SplinterCracklerVelDiv],
 					x, y,
 					0,
 					owner);
@@ -376,21 +398,22 @@ void WObject::process()
 					worm.lastKilledBy = owner;
 				}
 				
-				int bloodAmount = w.bloodOnHit * game.settings.blood / 100;
+				int bloodAmount = w.bloodOnHit * game.settings->blood / 100;
 				
 				for(int i = 0; i < bloodAmount; ++i)
 				{
-					game.nobjectTypes[6].create2(game.rand(128), velX / 3, velY / 3, x, y, 0, &worm);
+					int angle = game.rand(128);
+					common.nobjectTypes[6].create2(game, angle, velX / 3, velY / 3, x, y, 0, &worm);
 				}
 								
 				if(w.hitDamage > 0
 				&& worm.health > 0
 				&& game.rand(3) == 0)
 				{
-					if(!sfx.isPlaying(worm.wormSoundID))
+					int snd = game.rand(3) + 18; // NOTE: MUST be outside the unpredictable branch below
+					if(!game.soundPlayer->isPlaying(&worm))
 					{
-						int snd = game.rand(3) + 18;
-						sfx.play(snd, worm.wormSoundID);
+						game.soundPlayer->play(snd, &worm);
 					}
 				}
 				
@@ -401,15 +424,16 @@ void WObject::process()
 						if(w.wormExplode)
 							doExplode = true;
 							
-						if(!doExplode)
-							game.wobjects.free(this);
+						doRemove = true;
 					}
 				}
 			}
 		}
 
 		if(doExplode)
-			blowUpObject(owner);
+			blowUpObject(game, owner);
+		else if(doRemove)
+			game.wobjects.free(this);
 	}
 	while(w.shotType == Weapon::STLaser
 	//&& !doExplode

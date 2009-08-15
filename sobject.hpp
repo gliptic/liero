@@ -3,12 +3,14 @@
 
 #include "math.hpp"
 #include "objectList.hpp"
+#include "exactObjectList.hpp"
 
 struct Worm;
+struct Game;
 
 struct SObjectType
 {
-	void create(int x, int y, Worm* owner);
+	void create(Game& game, int x, int y, Worm* owner);
 	
 	int startSound;
 	int numSounds;
@@ -26,13 +28,12 @@ struct SObjectType
 	int id;
 };
 
-struct SObject : ObjectListBase
+struct SObject : ExactObjectListBase
 {
-	void process();
+	void process(Game& game);
 	
 	fixed x, y;
 	int id; // type
-	Worm* owner;
 	int curFrame;
 	int animDelay;
 };

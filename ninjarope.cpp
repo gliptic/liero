@@ -7,6 +7,9 @@
 
 void Ninjarope::process(Worm& owner)
 {
+	Game& game = owner.game;
+	Common& common = *game.common;
+	
 	if(out)
 	{
 		x += velX;
@@ -32,31 +35,32 @@ void Ninjarope::process(Worm& owner)
 		fixed diffX = x - owner.x;
 		fixed diffY = y - owner.y;
 		
-		forceX = (diffX << C[NRForceShlX]) / C[NRForceDivX];
-		forceY = (diffY << C[NRForceShlY]) / C[NRForceDivY];
+		forceX = (diffX << common.C[NRForceShlX]) / common.C[NRForceDivX];
+		forceY = (diffY << common.C[NRForceShlY]) / common.C[NRForceDivY];
 		
-		curLen = (vectorLength(ftoi(diffX), ftoi(diffY)) + 1) << C[NRForceLenShl];
+		curLen = (vectorLength(ftoi(diffX), ftoi(diffY)) + 1) << common.C[NRForceLenShl];
 		
 		if(ix <= 0
 		|| ix >= game.level.width - 1
 		|| iy <= 0
 		|| iy >= game.level.height - 1
-		|| game.materials[game.level.pixel(ix, iy)].dirtRock())
+		|| common.materials[game.level.pixel(ix, iy)].dirtRock())
 		{
 			if(!attached)
 			{
-				length = C[NRAttachLength];
+				length = common.C[NRAttachLength];
 				attached = true;
 				
 				if(game.level.inside(ix, iy))
 				{
 					PalIdx pix = game.level.pixel(ix, iy);
 					
-					if(game.materials[pix].anyDirt())
+					if(common.materials[pix].anyDirt())
 					{
 						for(int i = 0; i < 11; ++i) // TODO: Check 11 and read from exe
 						{
-							game.nobjectTypes[2].create2(
+							common.nobjectTypes[2].create2(
+								game,
 								game.rand(128),
 								0, 0,
 								x, y,
@@ -75,7 +79,7 @@ void Ninjarope::process(Worm& owner)
 		{
 			if(!attached)
 			{
-				length = C[NRAttachLength]; // TODO: Should this value be separate from the non-worm attaching?
+				length = common.C[NRAttachLength]; // TODO: Should this value be separate from the non-worm attaching?
 				attached = true;
 			}
 			
@@ -107,7 +111,7 @@ void Ninjarope::process(Worm& owner)
 		}
 		else
 		{
-			velY += C[NinjaropeGravity];
+			velY += common.C[NinjaropeGravity];
 
 			if(curLen > length)
 			{

@@ -72,6 +72,10 @@ enum
 	SplinterLarpaVelDiv,
 	SplinterCracklerVelDiv,
 	
+	BloodStepUp,
+	BloodStepDown,
+	BloodLimit,
+	
 	// FallDamage hack
 	FallDamageRight,
 	FallDamageLeft,
@@ -136,13 +140,18 @@ enum
 	HRemExp,
 	HSignedRecoil,
 	
+	HAirJump,
+	HMultiJump,
+	
+	
+	
 	MaxH
 };
 
-extern int C[MaxC];
-extern std::string S[MaxS];
-extern bool H[MaxH];
+// TODO: Move these to Common
 
-void loadConstantsFromEXE();
+
+
+
 
 #endif // LIERO_CONSTANTS_HPP

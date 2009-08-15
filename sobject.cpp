@@ -12,14 +12,15 @@
 #include <cassert>
 #include <iostream> // TEMP
 
-void SObjectType::create(int x, int y, Worm* owner)
+void SObjectType::create(Game& game, int x, int y, Worm* owner)
 {
+	Common& common = *game.common;
 	SObject& obj = *game.sobjects.newObjectReuse();
 	
 	assert(numSounds < 10);
 	
 	if(startSound >= 0)
-		sfx.play(game.rand(numSounds) + startSound, startSound);
+		game.soundPlayer->play(game.rand(numSounds) + startSound);
 		
 	for(std::size_t i = 0; i < game.viewports.size(); ++i)
 	{
@@ -41,9 +42,9 @@ void SObjectType::create(int x, int y, Worm* owner)
 	obj.curFrame = 0;
 	obj.animDelay = animDelay;
 	
-	if(flash > gfx.screenFlash)
+	if(flash > game.screenFlash)
 	{
-		gfx.screenFlash = flash;
+		game.screenFlash = flash;
 	}
 		
 	if(damage > 0)
@@ -95,14 +96,16 @@ void SObjectType::create(int x, int y, Worm* owner)
 					if(w.health <= 0)
 						w.lastKilledBy = owner;
 						
-					int bloodAmount = game.settings.blood * powerSum / 100;
+					int bloodAmount = game.settings->blood * powerSum / 100;
 					
 					if(bloodAmount > 0)
 					{
 						for(int i = 0; i < bloodAmount; ++i)
 						{
-							game.nobjectTypes[6].create2(
-								game.rand(128),
+							int angle = game.rand(128);
+							common.nobjectTypes[6].create2(
+								game,
+								angle,
 								w.velX / 3, w.velY / 3,
 								w.x, w.y,
 								0,
@@ -110,10 +113,13 @@ void SObjectType::create(int x, int y, Worm* owner)
 						}
 					}
 					
-					if(game.rand(3) == 0
-					&& !sfx.isPlaying(w.wormSoundID))
+					if(game.rand(3) == 0)
 					{
-						sfx.play(18 + game.rand(3), w.wormSoundID);
+						int snd = 18 + game.rand(3); // NOTE: MUST be outside the unpredictable branch below
+						if(!game.soundPlayer->isPlaying(&w))
+						{
+							game.soundPlayer->play(snd, &w);
+						}
 					}
 				}
 			}
@@ -123,7 +129,7 @@ void SObjectType::create(int x, int y, Worm* owner)
 		
 		for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
 		{
-			Weapon& weapon = game.weapons[i->id];
+			Weapon& weapon = common.weapons[i->id];
 			
 			if(weapon.affectByExplosions)
 			{
@@ -158,7 +164,7 @@ void SObjectType::create(int x, int y, Worm* owner)
 					// Is it a booby trap?
 					if(i->id == 34) // TODO: Read from EXE
 					{
-						i->blowUpObject(owner);
+						i->blowUpObject(game, owner);
 					}
 				}
 			} // if( ... affectByExplosions ...
@@ -166,7 +172,7 @@ void SObjectType::create(int x, int y, Worm* owner)
 		
 		for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
 		{
-			NObjectType& t = game.nobjectTypes[i->id];
+			NObjectType& t = common.nobjectTypes[i->id];
 		
 			if(t.affectByExplosions)
 			{
@@ -212,11 +218,13 @@ void SObjectType::create(int x, int y, Worm* owner)
 			for(int x = rect.x1; x < rect.x2; ++x)
 			{
 				PalIdx pix = game.level.pixel(x, y);
-				if(game.materials[pix].anyDirt()
+				if(common.materials[pix].anyDirt()
 				&& game.rand(8) == 0)
 				{
-					game.nobjectTypes[2].create2(
-						game.rand(128),
+					int angle = game.rand(128);
+					common.nobjectTypes[2].create2(
+						game,
+						angle,
 						0, 0,
 						itof(x), itof(y),
 						pix, owner);
@@ -228,9 +236,10 @@ void SObjectType::create(int x, int y, Worm* owner)
 	
 	if(dirtEffect >= 0)
 	{
-		drawDirtEffect(dirtEffect, x - 7, y - 7);
+		drawDirtEffect(common, game.rand, game.level, dirtEffect, x - 7, y - 7);
 		
-		correctShadow(Rect(x - 10, y - 10, x + 11, y + 11));
+		if(game.settings->shadow)
+			correctShadow(common, game.level, Rect(x - 10, y - 10, x + 11, y + 11));
 	}
 	
 	for(Game::BonusList::iterator i = game.bonuses.begin(); i != game.bonuses.end(); ++i)
@@ -243,14 +252,15 @@ void SObjectType::create(int x, int y, Worm* owner)
 		&& iy < y + detectRange)
 		{
 			game.bonuses.free(i);
-			game.sobjectTypes[0].create(ix, iy, owner);
+			common.sobjectTypes[0].create(game, ix, iy, owner);
 		}
 	} // for( ... bonuses ...
 }
 
-void SObject::process()
+void SObject::process(Game& game)
 {
-	SObjectType& t = game.sobjectTypes[id];
+	Common& common = *game.common;
+	SObjectType& t = common.sobjectTypes[id];
 	
 	
 	if(--animDelay <= 0)

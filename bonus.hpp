@@ -3,8 +3,11 @@
 
 #include "math.hpp"
 #include "objectList.hpp"
+#include "exactObjectList.hpp"
 
-struct Bonus : ObjectListBase
+struct Game;
+
+struct Bonus : ExactObjectListBase
 {
 	Bonus()
 	: frame(-1)
@@ -18,7 +21,7 @@ struct Bonus : ObjectListBase
 	int timer;
 	int weapon;
 		
-	void process();
+	void process(Game& game);
 };
 
 #endif // LIERO_BONUS_HPP

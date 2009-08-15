@@ -1,0 +1,43 @@
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liero", "liero.vcproj", "{CDE258F8-90DB-407B-8521-AA531EE4D167}"
+	ProjectSection(ProjectDependencies) = postProject
+		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9} = {57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gvl_test", "..\..\gvl\gvl_test\_build\gvl_test.vcproj", "{84C16952-2A28-4539-A6CC-1AEE30DF00D6}"
+	ProjectSection(ProjectDependencies) = postProject
+		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9} = {57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gvl", "..\..\gvl\_build\gvl.vcproj", "{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CDE258F8-90DB-407B-8521-AA531EE4D167}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CDE258F8-90DB-407B-8521-AA531EE4D167}.Debug|Win32.Build.0 = Debug|Win32
+		{CDE258F8-90DB-407B-8521-AA531EE4D167}.Debug|x64.ActiveCfg = Debug|Win32
+		{CDE258F8-90DB-407B-8521-AA531EE4D167}.Release|Win32.ActiveCfg = Release|Win32
+		{CDE258F8-90DB-407B-8521-AA531EE4D167}.Release|Win32.Build.0 = Release|Win32
+		{CDE258F8-90DB-407B-8521-AA531EE4D167}.Release|x64.ActiveCfg = Release|Win32
+		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Debug|x64.ActiveCfg = Debug|Win32
+		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Release|Win32.ActiveCfg = Release|Win32
+		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Release|x64.ActiveCfg = Release|Win32
+		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}.Debug|Win32.Build.0 = Debug|Win32
+		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}.Debug|x64.ActiveCfg = Debug|Win32
+		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}.Release|Win32.ActiveCfg = Release|Win32
+		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}.Release|Win32.Build.0 = Release|Win32
+		{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}.Release|x64.ActiveCfg = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

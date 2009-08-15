@@ -1,13 +1,18 @@
 #include "math.hpp"
 #include "reader.hpp"
 #include <cmath>
+#include <gvl/math/ieee.hpp>
 
+
+// TODO: Move to Common or hardcode, I don't think any TC is or would like to change these tables
 fixed sinTable[128];
 fixed cosTable[128];
 
 int vectorLength(int x, int y)
 {
-	return int(std::sqrt(double(x*x) + double(y*y))); // TODO: Figure out how liero does it exactly, or at least make it machine independent
+	// x*x + y*y fits exactly in a double, so we don't need
+	// to use gA.
+	return int(gSqrt(double(x*x) + double(y*y)));
 }
 
 void loadTablesFromEXE()

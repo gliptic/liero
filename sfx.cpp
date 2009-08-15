@@ -65,7 +65,7 @@ void Sfx::loadFromSND()
 	}
 }
 
-void Sfx::play(int sound, int id, int loops)
+void Sfx::play(int sound, void* id, int loops)
 {
 	for(int i = 0; i < 8; ++i)
 	{
@@ -77,7 +77,7 @@ void Sfx::play(int sound, int id, int loops)
 	}
 }
 
-void Sfx::playOn(int channel, int sound, int id, int loops)
+void Sfx::playOn(int channel, int sound, void* id, int loops)
 {
 	if(sound < 0 || sound >= int(sounds.size()))
 	{
@@ -88,7 +88,7 @@ void Sfx::playOn(int channel, int sound, int id, int loops)
 	channelInfo[channel].id = id;
 }
 
-void Sfx::stop(int id)
+void Sfx::stop(void* id)
 {
 	for(int i = 0; i < 8; ++i)
 	{
@@ -99,7 +99,7 @@ void Sfx::stop(int id)
 	}
 }
 
-bool Sfx::isPlaying(int id)
+bool Sfx::isPlaying(void* id)
 {
 	for(int i = 0; i < 8; ++i)
 	{

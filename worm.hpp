@@ -2,11 +2,18 @@
 #define LIERO_WORM_HPP
 
 #include "math.hpp"
+#include "rand.hpp"
 #include <SDL/SDL.h>
 #include <string>
 #include <cstring>
+#include <gvl/resman/shared_ptr.hpp>
+
+#include <gvl/crypt/gash.hpp>
+
+#include <iostream> // TEMP
 
 struct Worm;
+struct Game;
 
 struct Ninjarope
 {
@@ -27,11 +34,12 @@ struct Ninjarope
 	void process(Worm& owner);
 };
 
+/*
 struct Controls
 {
 	bool up, down, left, right;
 	bool fire, change, jump;
-};
+};*/
 
 struct WormWeapon
 {
@@ -51,12 +59,31 @@ struct WormWeapon
 	bool available;			
 };
 
-struct WormSettings
+struct JoystickButton
+{
+	JoystickButton()
+	: joystickNum(255)
+	, buttonNum(255)
+	{
+	}
+	
+	int joystickNum;
+	int buttonNum;
+};
+
+struct WormSettingsExtensions
+{
+	JoystickButton joystickButtons[7];
+};
+
+struct WormSettings : gvl::shared, WormSettingsExtensions
 {
 	enum
 	{
 		Up, Down, Left, Right,
-		Fire, Change, Jump
+		Fire, Change, Jump,
+		
+		MaxControl
 	};
 	
 	WormSettings()
@@ -72,17 +99,57 @@ struct WormSettings
 		std::memset(weapons, 0, sizeof(weapons));
 	}
 	
+	gvl::gash::value_type& updateHash();
+	
+	void saveProfile(std::string const& newProfileName);
+	void loadProfile(std::string const& newProfileName);
+	
 	int health;
-	int controller; // CPU / Human
-	Uint32 controls[7];
+	uint32_t controller; // CPU / Human
+	Uint32 controls[MaxControl];
 	int weapons[5]; // TODO: Adjustable
 	std::string name;
 	int rgb[3];
 	bool randomName;
 	
 	int colour;
-	int selWeapX;
+	
+	std::string profileName;
+	
+	gvl::gash::value_type hash;
 };
+
+template<typename Archive>
+void archive(Archive ar, WormSettings& ws)
+{
+	ar
+	.ui32(ws.colour)
+	.ui32(ws.health)
+	.ui16(ws.controller);
+	for(int i = 0; i < WormSettings::MaxControl; ++i)
+		ar.ui16(ws.controls[i]);
+	for(int i = 0; i < 5; ++i)
+		ar.ui16(ws.weapons[i]);
+	for(int i = 0; i < 3; ++i)
+		ar.ui16(ws.rgb[i]);
+	ar.b(ws.randomName);
+	ar.str(ws.name);
+	if(ar.context.replayVersion <= 1)
+	{
+		ws.WormSettingsExtensions::operator=(WormSettingsExtensions());
+		return;
+	}
+
+	int wsVersion = myGameVersion;
+	ar.ui8(wsVersion);
+
+	for(int c = 0; c < WormSettings::MaxControl; ++c)
+	{
+		gvl::enable_when(ar, wsVersion >= 2)
+			.ui8(ws.joystickButtons[c].joystickNum, 255)
+			.ui8(ws.joystickButtons[c].buttonNum, 255);
+	}
+}
 
 /*
 typedef struct _settings
@@ -115,7 +182,31 @@ typedef struct _settings
 
 struct Viewport;
 
-struct Worm
+struct WormAI
+{
+	WormAI(Worm& worm)
+	: worm(worm)
+	{
+	}
+	
+	virtual void process() = 0;
+	
+	Worm& worm;
+};
+
+struct DumbLieroAI : WormAI
+{
+	DumbLieroAI(Worm& worm)
+	: WormAI(worm)
+	{
+	}
+	
+	void process();
+	
+	Rand rand;
+};
+
+struct Worm : gvl::shared
 {
 	enum
 	{
@@ -124,8 +215,88 @@ struct Worm
 		RFUp,
 		RFRight
 	};
+	
+	enum Control
+	{
+		Left = WormSettings::Left,
+		Right = WormSettings::Right,
+		Up = WormSettings::Up,
+		Down = WormSettings::Down,
+		Fire = WormSettings::Fire,
+		Change = WormSettings::Change,
+		Jump = WormSettings::Jump,
 		
-	Worm(WormSettings* settings, int index, int wormSoundID)
+		MaxControl
+	};
+	
+	
+	struct ControlState
+	{
+		ControlState()
+		: istate(0)
+		{
+			//std::memset(state, 0, sizeof(state));
+		}
+		
+		bool operator==(ControlState const& b) const
+		{
+		/*
+			for(int i = 0; i < Worm::MaxControl; ++i)
+			{
+				if(state[i] != b.state[i])
+					return false;
+			}
+			
+			return true;*/
+			
+			return istate == b.istate;
+		}
+		
+		uint32_t pack() const
+		{
+		/*
+			uint8_t state = 0;
+			for(int c = 0; c < MaxControl; ++c)
+			{
+				state |= uint8_t(controlStates[c]) << c;
+			}*/
+			
+			return istate;
+		}
+		
+		void unpack(uint32_t state)
+		{
+		/*
+			for(int c = 0; c < Worm::MaxControl; ++c)
+			{
+				state[c] = ((state >> c) & 1) != 0);
+			}*/
+			istate = state & 0x7f;
+		}
+		
+		bool operator!=(ControlState const& b) const
+		{
+			return !operator==(b);
+		}
+		
+		bool operator[](std::size_t n) const
+		{
+			return ((istate >> n) & 1) != 0;
+		}
+		
+		void set(std::size_t n, bool v)
+		{
+			if(v)
+				istate |= 1 << n;
+			else
+				istate &= ~(uint32_t(1u) << n);
+		}
+		
+		//bool state[Worm::MaxControl];
+		uint32_t istate;
+	};
+		
+	Worm(/*gvl::shared_ptr<WormSettings> settings, int index, int wormSoundID, */Game& game)
 	: x(0), y(0), velX(0), velY(0)
 	, hotspotX(0), hotspotY(0)
 	, aimingAngle(0), aimingSpeed(0)
@@ -149,49 +320,55 @@ struct Worm
 	, lastKilledBy(0)
 	, fireCone(0)
 	, leaveShellTimer(0)
-	, settings(settings)
-	, viewport(0)
+//	, viewport(0)
 	, index(index)
-	, wormSoundID(wormSoundID)
 	, direction(0)
-	
-	
+	, game(game)
 	{
+		//std::memset(controlStates, 0, sizeof(controlStates));
+		
+		makeSightGreen = false;
+		
+		ready = true;
+		movable = true;
+		
+		//health = settings->health;
+		visible = false;
+		killedTimer = 150;
+		
+		//currentWeapon = 1; // This is later changed to 0, why is it here?
 	}
 	
-	int keyLeft()
+	bool pressed(Control control) const
 	{
-		return settings->controls[WormSettings::Left];
+		return controlStates[control];
 	}
 	
-	int keyRight()
+	bool pressedOnce(Control control)
 	{
-		return settings->controls[WormSettings::Right];
+		bool state = controlStates[control];
+		controlStates.set(control, false);
+		return state;
 	}
 	
-	int keyUp()
+	void release(Control control)
 	{
-		return settings->controls[WormSettings::Up];
+		controlStates.set(control, false);
 	}
 	
-	int keyDown()
+	void press(Control control)
 	{
-		return settings->controls[WormSettings::Down];
+		controlStates.set(control, true);
 	}
 	
-	int keyFire()
+	void setControlState(Control control, bool state)
 	{
-		return settings->controls[WormSettings::Fire];
+		controlStates.set(control, state);
 	}
 	
-	int keyChange()
+	void toggleControlState(Control control)
 	{
-		return settings->controls[WormSettings::Change];
-	}
-	
-	int keyJump()
-	{
-		return settings->controls[WormSettings::Jump];
+		controlStates.set(control, !controlStates[control]);
 	}
 	
 	void beginRespawn();
@@ -207,16 +384,18 @@ struct Worm
 	void fire();
 	void processSight();
 	void calculateReactionForce(int newX, int newY, int dir);
-	
-	void processLieroAI(); // Move?
+	void initWeapons();
+	int angleFrame() const;
 	
 	fixed x, y;                    //Worm position    
 	fixed velX, velY;              //Worm velocity
+
+	int logicRespawnX, logicRespawnY;
 	
 	int hotspotX, hotspotY;      //Hotspots for laser, laser sight, etc.
 	fixed aimingAngle, aimingSpeed;
  
-	Controls controls;
+	//Controls controls;
 	bool ableToJump, ableToDig;   //The previous state of some keys
 	bool keyChangePressed;
 	bool movable;
@@ -224,7 +403,7 @@ struct Worm
 	bool animate;                 //Should the worm be animated?
 	bool visible;                 //Is the worm visible?
 	bool ready;                   //Is the worm ready to play?
-	bool flag;                    //Has the worm a flag?
+	bool flag;                    //Does the worm have a flag?
 	bool makeSightGreen;          //Changes the sight color
 	int health;                  //Health left
 	int lives;                   //lives left
@@ -244,14 +423,18 @@ struct Worm
 	int fireCone;                //How much is left of the firecone
 	int leaveShellTimer;         //Time until next shell drop
 	
-	WormSettings* settings;
-	Viewport* viewport;
+	gvl::shared_ptr<WormSettings> settings; // !CLONING
+	//Viewport* viewport; // !CLONING
 	int index; // 0 or 1
-	int wormSoundID;
+	
+	std::auto_ptr<WormAI> ai;
 	
 	int reacts[4];
 	WormWeapon weapons[5];
 	int direction;
+	ControlState controlStates;
+	ControlState prevControlStates;
+	Game& game; // !CLONING
 };
 
 bool checkForWormHit(int x, int y, int dist, Worm* ownWorm);

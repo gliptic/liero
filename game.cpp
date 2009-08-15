@@ -8,85 +8,77 @@
 #include "weapsel.hpp"
 #include "constants.hpp"
 #include <cstdlib>
-//#include "text.hpp" // TEMP
+#include "text.hpp" // TEMP
+#include <ctime>
 
 #include <iostream>
+#include <gvl/support/log.hpp> // TEMP
 
-Game game;
+//Game game;
 
-int stoneTab[3][4] =
+
+void Game::createDefaults()
 {
-	{98, 60, 61, 62},
-	{63, 75, 85, 86},
-	{89, 90, 97, 96}
-};
-
-void Texts::loadFromEXE()
-{
-	FILE* exe = openLieroEXE();
+	Worm* worm1 = new Worm(*this);
+	worm1->settings = settings->wormSettings[0];
+	worm1->health = worm1->settings->health;
+	worm1->index = 0;
+	if(worm1->settings->controller == 1)
+		worm1->ai.reset(new DumbLieroAI(*worm1));
 	
-	
-	random = readPascalStringAt(exe, 0xD6E3);
-	random2 = readPascalStringAt(exe, 0xD413);
-	regenLevel = readPascalStringAt(exe, 0xD41A);
-	reloadLevel = readPascalStringAt(exe, 0xD42D);
-	
-	copyright1 = readPascalStringAt(exe, 0xFB60);
-	copyright2 = readPascalStringAt(exe, 0xE693);
-	saveoptions = readPascalStringAt(exe, 0xE6BB);
-	loadoptions = readPascalStringAt(exe, 0xE6CC);
-	curOptNoFile = readPascalStringAt(exe, 0xE6DD);
-	curOpt = readPascalStringAt(exe, 0xE6FA);
-	
-	fseek(exe, 0x1B2BA, SEEK_SET);
-	for(int i = 0; i < 4; ++i)
-	{
-		gameModes[i] = readPascalString(exe, 17);
-	}
-	
-	gameModeSpec[0] = readPascalStringAt(exe, 0xD3EC);
-	gameModeSpec[1] = readPascalStringAt(exe, 0xD3F2);
-	gameModeSpec[2] = readPascalStringAt(exe, 0xD3FF);
-	
-	onoff[0] = readPascalStringAt(exe, 0x1AE84);
-	onoff[1] = readPascalStringAt(exe, 0x1AE88);
-	
-	controllers[0] = readPascalStringAt(exe, 0x1B204);
-	controllers[1] = readPascalStringAt(exe, 0x1B20A);
-	
-	fseek(exe, 0x1B2FE, SEEK_SET);
-	for(int i = 0; i < 3; ++i)
-	{
-		weapStates[i] = readPascalString(exe, 13);
-	}
+	Worm* worm2 = new Worm(*this);
+	worm2->settings = settings->wormSettings[1];
+	worm2->health = worm2->settings->health;
+	worm2->index = 1;
+	if(worm2->settings->controller == 1)
+		worm2->ai.reset(new DumbLieroAI(*worm2));
 		
-	fseek(exe, 0x209A6, SEEK_SET);
-	for(int i = 1; i < 177; ++i) // First key starts at 1
+#if 0
+	for(int i = 0; i < 10; ++i)
 	{
-		keyNames[i] = readPascalString(exe, 13);
+		Worm* worm2 = new Worm(*this);
+		worm2->settings = settings->wormSettings[1];
+		worm2->health = worm2->settings->health;
+		worm2->index = 1;
+		if(worm2->settings->controller == 1)
+			worm2->ai.reset(new DumbLieroAI(*worm2));
+			
+		addWorm(worm2);
 	}
+#endif
 	
-	selWeap = readPascalStringAt(exe, 0xA9C0);
-	levelRandom = readPascalStringAt(exe, 0xA9D5);
-	levelIs1 = readPascalStringAt(exe, 0xA9E3);
-	levelIs2 = readPascalStringAt(exe, 0xA9EC);
-	randomize = readPascalStringAt(exe, 0xA9F4);
-	done = readPascalStringAt(exe, 0xA9EE);
+	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350, *this));
+	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350, *this));
 	
-	reloading = readPascalStringAt(exe, 0x7583);
-	pressFire = readPascalStringAt(exe, 0x7590);
+	addWorm(worm1);
+	addWorm(worm2);
+}
+
+Game::Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settingsInit)
+: common(common)
+, soundPlayer(new DefaultSoundPlayer)
+, settings(settingsInit)
+, screenFlash(0)
+, gotChanged(false)
+, lastKilled(0)
+, paused(true)
+{
+	rand.seed(Uint32(std::time(0)));
 	
-	kills = readPascalStringAt(exe, 0x75A4);
-	lives = readPascalStringAt(exe, 0x75AC);
+	cycles = 0;
 	
-	selLevel = readPascalStringAt(exe, 0xD6F2);
+	// TODO: Unhardcode 40. Also, this loop makes loading time settings only take effect when
+	// starting a new game. Although this emulates liero, consider changing it.
+	// TODO: This also ties common to the settings, it really has to change.
+	/*
+	for(int w = 0; w < 40; ++w)
+	{
+		common->weapons[w].computedLoadingTime = (settings->loadingTime * common->weapons[w].loadingTime) / 100;
+		if(common->weapons[w].computedLoadingTime == 0)
+			common->weapons[w].computedLoadingTime = 1;
+	}*/
 	
-	weapon = readPascalStringAt(exe, 0xD700);
-	availability = readPascalStringAt(exe, 0xD707);
-	noWeaps = readPascalStringAt(exe, 0xD714);
 	
-	fseek(exe, 0xFC5B, SEEK_SET);
-	copyrightBarFormat = readUint8(exe);
 }
 
 Game::~Game()
@@ -95,64 +87,52 @@ Game::~Game()
 	clearWorms();
 }
 
-void Game::initGame()
+void Game::onKey(Uint32 key, bool state)
 {
-	clearWorms();
-	clearViewports();
-	
-	bonuses.clear();
-	wobjects.clear();
-	sobjects.clear();
-	bobjects.clear();
-	nobjects.clear();
-	
-	Worm* worm1 = new Worm(&game.settings.wormSettings[0], 0, 19);
-	Worm* worm2 = new Worm(&game.settings.wormSettings[1], 1, 20);
-	
-	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350));
-	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350));
-	
-	addWorm(worm1);
-	addWorm(worm2);
-	
-	// TODO: Move as much of this as possible into the Worm ctor
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		Worm& w = *worms[i];
-		w.makeSightGreen = false;
-		w.lives = game.settings.lives;
-		w.ready = true;
-		w.movable = true;
 		
-		if(game.rand(2) > 0)
+		for(std::size_t control = 0; control < WormSettings::MaxControl; ++control)
 		{
-			w.aimingAngle = itof(32);
-			w.direction = 0;
+			if(w.settings->controls[control] == key)
+			{
+				w.setControlState(static_cast<Worm::Control>(control), state);
+			}
 		}
-		else
-		{
-			w.aimingAngle = itof(96);
-			w.direction = 1;
-		}
+	}
+}
 
-		w.health = w.settings->health;
-		w.visible = false;
-		w.killedTimer = 150;
+Worm* Game::findControlForKey(int key, Worm::Control& control)
+{
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		Worm& w = *worms[i];
 		
-		w.currentWeapon = 1; // This is later changed to 0, why is it here?
-
-/* Done in WormWeapon ctor
-		for(int i = 0; i < game.settings.selectableWeapons; ++i)
+		for(std::size_t c = 0; c < WormSettings::MaxControl; ++c)
 		{
-			w.weapons[i].available = true;
-			w.weapons[i].delayLeft = 0;
-			w.weapons[i].ammo = 0;
-			
-		}*/
+			if(w.settings->controls[c] == key)
+			{
+				control = static_cast<Worm::Control>(c);
+				return &w;
+			}
+		}
 	}
 	
-	gotChanged = false;
-	lastKilled = 0;
+	return 0;
+}
+
+void Game::releaseControls()
+{
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		Worm& w = *worms[i];
+		
+		for(std::size_t control = 0; control < WormSettings::MaxControl; ++control)
+		{
+			w.release(static_cast<Worm::Control>(control));
+		}
+	}
 }
 
 void Game::clearViewports()
@@ -164,6 +144,7 @@ void Game::clearViewports()
 
 void Game::addViewport(Viewport* vp)
 {
+	//vp->worm->viewport = vp;
 	viewports.push_back(vp);
 }
 
@@ -177,12 +158,11 @@ void Game::processViewports()
 	}
 }
 
-void Game::drawViewports()
+void Game::drawViewports(bool isReplay)
 {
-	gfx.clear();
 	for(std::size_t i = 0; i < viewports.size(); ++i)
 	{
-		viewports[i]->draw();
+		viewports[i]->draw(isReplay);
 	}
 }
 
@@ -199,7 +179,7 @@ void Game::resetWorms()
 	{
 		Worm& w = *worms[i];
 		w.health = w.settings->health;
-		w.lives = settings.lives; // Not in the original!
+		w.lives = settings->lives; // Not in the original!
 		w.kills = 0;
 		w.visible = false;
 		w.killedTimer = 150;
@@ -213,303 +193,25 @@ void Game::addWorm(Worm* worm)
 	worms.push_back(worm);
 }
 
-void Game::loadMaterials()
+void Game::draw(bool isReplay)
 {
-	FILE* exe = openLieroEXE();
+	drawViewports(isReplay);
+
+	//common->font.drawText(toString(cycles / 70), 10, 10, 7);
 	
-	std::fseek(exe, 0x01C2E0, SEEK_SET);
-	
-	for(int i = 0; i < 256; ++i)
+	gfx.pal = gfx.origpal;
+	gfx.pal.fade(gfx.fadeValue);
+
+	if(screenFlash > 0)
 	{
-		materials[i].flags = 0;
-	}
-	
-	unsigned char bits[32];
-	
-	for(int i = 0; i < 5; ++i)
-	{
-		fread(bits, 1, 32, exe);
-		
-		for(int j = 0; j < 256; ++j)
-		{
-			int bit = ((bits[j >> 3] >> (j & 7)) & 1);
-			materials[j].flags |= bit << i;
-		}
-	}
-	
-	std::fseek(exe, 0x01AEA8, SEEK_SET);
-	
-	fread(bits, 1, 32, exe);
-	
-	for(int j = 0; j < 256; ++j)
-	{
-		int bit = ((bits[j >> 3] >> (j & 7)) & 1);
-		materials[j].flags |= bit << 5;
+		gfx.pal.lightUp(screenFlash);
 	}
 }
 
-struct Read32
+bool checkBonusSpawnPosition(Game& game, int x, int y)
 {
-	static inline int run(FILE* f)
-	{
-		return readSint32(f);
-	}
-};
-
-struct Read16
-{
-	static inline int run(FILE* f)
-	{
-		return readSint16(f);
-	}
-};
-
-struct Read8
-{
-	static inline int run(FILE* f)
-	{
-		return readUint8(f);
-	}
-};
-
-struct ReadBool
-{
-	static inline bool run(FILE* f)
-	{
-		return readUint8(f) != 0;
-	}
-};
-
-template<typename T>
-struct Dec
-{
-	static inline int run(FILE* f)
-	{
-		return T::run(f) - 1;
-	}
-};
-
-template<typename Reader, typename T, int N, typename U>
-inline void readMembers(FILE* f, T(&arr)[N], U (T::*mem))
-{
-	for(int i = 0; i < N; ++i)
-	{
-		(arr[i].*mem) = Reader::run(f);
-	}
-}
-
-void Game::loadWeapons()
-{
-	FILE* exe = openLieroEXE();
+	Common& common = *game.common;
 	
-	fseek(exe, 112806, SEEK_SET);
-	
-	readMembers<Read8>(exe, weapons, &Weapon::detectDistance);
-	readMembers<ReadBool>(exe, weapons, &Weapon::affectByWorm);
-	readMembers<Read8>(exe, weapons, &Weapon::blowAway);
-	
-	for(int i = 0; i < 40; ++i)
-	{
-		weapOrder[i + 1] = readUint8(exe) - 1;
-	}
-	
-	readMembers<Read16>(exe, weapons, &Weapon::gravity);
-	readMembers<ReadBool>(exe, weapons, &Weapon::shadow);
-	readMembers<ReadBool>(exe, weapons, &Weapon::laserSight);
-	readMembers<Dec<Read8> >(exe, weapons, &Weapon::launchSound);
-	readMembers<ReadBool>(exe, weapons, &Weapon::loopSound);
-	readMembers<Dec<Read8> >(exe, weapons, &Weapon::exploSound);
-	readMembers<Read16>(exe, weapons, &Weapon::speed);
-	readMembers<Read16>(exe, weapons, &Weapon::addSpeed);
-	readMembers<Read16>(exe, weapons, &Weapon::distribution);
-	readMembers<Read8>(exe, weapons, &Weapon::parts);
-	readMembers<Read8>(exe, weapons, &Weapon::recoil);
-	readMembers<Read16>(exe, weapons, &Weapon::multSpeed);
-	readMembers<Read16>(exe, weapons, &Weapon::delay);
-	readMembers<Read16>(exe, weapons, &Weapon::loadingTime);
-	readMembers<Read8>(exe, weapons, &Weapon::ammo);
-	readMembers<Dec<Read8> >(exe, weapons, &Weapon::createOnExp);
-	readMembers<Dec<Read8> >(exe, weapons, &Weapon::dirtEffect);
-	readMembers<Read8>(exe, weapons, &Weapon::leaveShells);
-	readMembers<Read8>(exe, weapons, &Weapon::leaveShellDelay);
-	readMembers<ReadBool>(exe, weapons, &Weapon::playReloadSound);
-	readMembers<ReadBool>(exe, weapons, &Weapon::wormExplode);
-	readMembers<ReadBool>(exe, weapons, &Weapon::explGround);
-	readMembers<ReadBool>(exe, weapons, &Weapon::wormCollide);
-	readMembers<Read8>(exe, weapons, &Weapon::fireCone);
-	readMembers<ReadBool>(exe, weapons, &Weapon::collideWithObjects);
-	readMembers<ReadBool>(exe, weapons, &Weapon::affectByExplosions);
-	readMembers<Read8>(exe, weapons, &Weapon::bounce);
-	readMembers<Read16>(exe, weapons, &Weapon::timeToExplo);
-	readMembers<Read16>(exe, weapons, &Weapon::timeToExploV);
-	readMembers<Read8>(exe, weapons, &Weapon::hitDamage);
-	readMembers<Read8>(exe, weapons, &Weapon::bloodOnHit);
-	readMembers<Read16>(exe, weapons, &Weapon::startFrame);
-	readMembers<Read8>(exe, weapons, &Weapon::numFrames);
-	readMembers<ReadBool>(exe, weapons, &Weapon::loopAnim);
-	readMembers<Read8>(exe, weapons, &Weapon::shotType);
-	readMembers<Read8>(exe, weapons, &Weapon::colourBullets);
-	readMembers<Read8>(exe, weapons, &Weapon::splinterAmount);
-	readMembers<Read8>(exe, weapons, &Weapon::splinterColour);
-	readMembers<Dec<Read8> >(exe, weapons, &Weapon::splinterType);
-	readMembers<Read8>(exe, weapons, &Weapon::splinterScatter);
-	readMembers<Dec<Read8> >(exe, weapons, &Weapon::objTrailType);
-	readMembers<Read8>(exe, weapons, &Weapon::objTrailDelay);
-	readMembers<Read8>(exe, weapons, &Weapon::partTrailType);
-	readMembers<Dec<Read8> >(exe, weapons, &Weapon::partTrailObj);
-	readMembers<Read8>(exe, weapons, &Weapon::partTrailDelay);
-	
-	fseek(exe, 0x1B676, SEEK_SET);
-	for(int i = 0; i < 40; ++i)
-	{
-		weapons[i].name = readPascalString(exe, 14);
-		weapons[i].id = i;
-	}
-	
-	// Special objects
-	fseek(exe, 115218, SEEK_SET);
-	readMembers<Dec<Read8> >(exe, sobjectTypes, &SObjectType::startSound);
-	//fseek(exe, 115232, SEEK_SET);
-	readMembers<Read8>(exe, sobjectTypes, &SObjectType::numSounds);
-	//fseek(exe, 115246, SEEK_SET);
-	readMembers<Read8>(exe, sobjectTypes, &SObjectType::animDelay);
-	//fseek(exe, 115260, SEEK_SET);
-	readMembers<Read8>(exe, sobjectTypes, &SObjectType::startFrame);
-	//fseek(exe, 115274, SEEK_SET);
-	readMembers<Read8>(exe, sobjectTypes, &SObjectType::numFrames);
-	//fseek(exe, 115288, SEEK_SET);
-	readMembers<Read8>(exe, sobjectTypes, &SObjectType::detectRange);
-	//fseek(exe, 115302, SEEK_SET);
-	readMembers<Read8>(exe, sobjectTypes, &SObjectType::damage);
-	//fseek(exe, 0x1C274, SEEK_SET);
-	readMembers<Read32>(exe, sobjectTypes, &SObjectType::blowAway); // blowAway has 13 slots, not 14. The last value will overlap with shadow.
-	fseek(exe, 115368, SEEK_SET);
-	readMembers<ReadBool>(exe, sobjectTypes, &SObjectType::shadow);
-	//fseek(exe, 115382, SEEK_SET);
-	readMembers<Read8>(exe, sobjectTypes, &SObjectType::shake);
-	//fseek(exe, 115396, SEEK_SET);
-	readMembers<Read8>(exe, sobjectTypes, &SObjectType::flash);
-	//fseek(exe, 115410, SEEK_SET); // Was 115409
-	readMembers<Dec<Read8> >(exe, sobjectTypes, &SObjectType::dirtEffect);
-	
-	for(int i = 0; i < 14; ++i) // TODO: Unhardcode
-	{
-		sobjectTypes[i].id = i;
-	}
-	
-	fseek(exe, 111430, SEEK_SET);
-	
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::detectDistance);
-	readMembers<Read16>(exe, nobjectTypes, &NObjectType::gravity);
-	readMembers<Read16>(exe, nobjectTypes, &NObjectType::speed);
-	readMembers<Read16>(exe, nobjectTypes, &NObjectType::speedV);
-	readMembers<Read16>(exe, nobjectTypes, &NObjectType::distribution);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::blowAway);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::bounce);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::hitDamage);
-	readMembers<ReadBool>(exe, nobjectTypes, &NObjectType::wormExplode);
-	readMembers<ReadBool>(exe, nobjectTypes, &NObjectType::explGround);
-	readMembers<ReadBool>(exe, nobjectTypes, &NObjectType::wormDestroy);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::bloodOnHit);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::startFrame);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::numFrames);
-	readMembers<ReadBool>(exe, nobjectTypes, &NObjectType::drawOnMap);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::colourBullets);
-	readMembers<Dec<Read8> >(exe, nobjectTypes, &NObjectType::createOnExp);
-	readMembers<ReadBool>(exe, nobjectTypes, &NObjectType::affectByExplosions);
-	readMembers<Dec<Read8> >(exe, nobjectTypes, &NObjectType::dirtEffect);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::splinterAmount);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::splinterColour);
-	readMembers<Dec<Read8> >(exe, nobjectTypes, &NObjectType::splinterType);
-	readMembers<ReadBool>(exe, nobjectTypes, &NObjectType::bloodTrail);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::bloodTrailDelay);
-	readMembers<Dec<Read8> >(exe, nobjectTypes, &NObjectType::leaveObj);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::leaveObjDelay);
-	readMembers<Read16>(exe, nobjectTypes, &NObjectType::timeToExplo);
-	readMembers<Read16>(exe, nobjectTypes, &NObjectType::timeToExploV);
-	
-	for(int i = 0; i < 24; ++i) // TODO: Unhardcode
-	{
-		nobjectTypes[i].id = i;
-	}
-}
-
-void Game::loadTextures()
-{
-	FILE* exe = openLieroEXE();
-	
-	fseek(exe, 0x1C208, SEEK_SET);
-	readMembers<ReadBool>(exe, textures, &Texture::nDrawBack);
-	fseek(exe, 0x1C1EA, SEEK_SET);
-	readMembers<Read8>(exe, textures, &Texture::mFrame);
-	fseek(exe, 0x1C1F4, SEEK_SET);
-	readMembers<Read8>(exe, textures, &Texture::sFrame);
-	fseek(exe, 0x1C1FE, SEEK_SET);
-	readMembers<Read8>(exe, textures, &Texture::rFrame);
-}
-
-void Game::loadOthers()
-{
-	FILE* exe = openLieroEXE();
-	
-	fseek(exe, 0x1C1E2, SEEK_SET);
-	
-	for(int i = 0; i < 2; ++i)
-	for(int j = 0; j < 2; ++j)
-		bonusRandTimer[j][i] = readUint16(exe);
-		
-	fseek(exe, 0x1AEEE + 2, SEEK_SET);
-	
-	for(int i = 0; i < 2; ++i)
-	for(int j = 0; j < 7; ++j)
-		aiParams.k[i][j] = readUint16(exe);
-		
-	fseek(exe, 0x1C1E0, SEEK_SET);
-	
-	for(int i = 0; i < 2; ++i)
-		bonusSObjects[i] = readUint8(exe) - 1;
-}
-
-void Game::generateLevel()
-{
-	if(settings.randomLevel)
-	{
-		level.generateRandom();
-	}
-	else
-	{
-		// TODO: Check .LEV as well as .lev
-		if(!level.load(joinPath(lieroEXERoot, settings.levelFile + ".lev")))
-			level.generateRandom();
-
-	}
-	
-	oldRandomLevel = settings.randomLevel;
-	oldLevelFile = settings.levelFile;
-	
-	if(settings.shadow)
-	{
-		level.makeShadow();
-	}
-}
-
-void Game::saveSettings()
-{
-	settings.save(joinPath(lieroEXERoot, settingsFile + ".DAT"));
-}
-
-bool Game::loadSettings()
-{
-	return settings.load(joinPath(lieroEXERoot, settingsFile + ".DAT"));
-}
-
-void Game::draw()
-{
-	drawViewports();
-}
-
-bool checkBonusSpawnPosition(int x, int y)
-{
 	Rect rect(x - 2, y - 2, x + 3, y + 3);
 	
 	rect.intersect(game.level.rect());
@@ -517,274 +219,256 @@ bool checkBonusSpawnPosition(int x, int y)
 	for(int cx = rect.x1; cx < rect.x2; ++cx)
 	for(int cy = rect.y1; cy < rect.y2; ++cy)
 	{
-		if(game.materials[game.level.pixel(cx, cy)].dirtRock())
+		if(common.materials[game.level.pixel(cx, cy)].dirtRock())
 			return false;
 	}
 	
 	return true;
 }
 
-void createBonus()
+void Game::createBonus()
 {
-	if(int(game.bonuses.size()) >= game.settings.maxBonuses)
+	if(int(bonuses.size()) >= settings->maxBonuses)
 		return;
 		
-	Bonus* bonus = game.bonuses.newObject();
+	Bonus* bonus = bonuses.newObject();
 	if(!bonus)
 		return;
 	
 	for(std::size_t i = 0; i < 50000; ++i)
 	{
-		int ix = game.rand(C[BonusSpawnRectW]);
-		int iy = game.rand(C[BonusSpawnRectH]);
+		int ix = rand(common->C[BonusSpawnRectW]);
+		int iy = rand(common->C[BonusSpawnRectH]);
 		
-		if(H[HBonusSpawnRect])
+		if(common->H[HBonusSpawnRect])
 		{
-			ix += C[BonusSpawnRectX];
-			iy += C[BonusSpawnRectY];
+			ix += common->C[BonusSpawnRectX];
+			iy += common->C[BonusSpawnRectY];
 		}
 		
-		if(checkBonusSpawnPosition(ix, iy))
+		if(checkBonusSpawnPosition(*this, ix, iy))
 		{
 			int frame;
 			
-			if(H[HBonusOnlyHealth])
+			if(common->H[HBonusOnlyHealth])
 				frame = 1;
-			else if(H[HBonusOnlyWeapon])
+			else if(common->H[HBonusOnlyWeapon])
 				frame = 0;
 			else
-				frame = game.rand(2);
+				frame = rand(2);
 			
 			bonus->x = itof(ix);
 			bonus->y = itof(iy);
 			bonus->velY = 0;
 			bonus->frame = frame;
-			bonus->timer = game.rand(game.bonusRandTimer[frame][1]) + game.bonusRandTimer[frame][0];
+			bonus->timer = rand(common->bonusRandTimer[frame][1]) + common->bonusRandTimer[frame][0];
 			
 			if(frame == 0)
 			{
 				do
 				{
-					bonus->weapon = game.rand(40); // TODO: Unhardcode
+					bonus->weapon = rand(40); // TODO: Unhardcode
 				}
-				while(game.settings.weapTable[bonus->weapon] == 2);
+				while(settings->weapTable[bonus->weapon] == 2);
 			}
 			
-			game.sobjectTypes[7].create(ix, iy, 0);
+			common->sobjectTypes[7].create(*this, ix, iy, 0);
 			return;
 		}
 	} // 234F
 	
-	game.bonuses.free(bonus);
+	bonuses.free(bonus);
 }
 
-void Game::startGame(bool isStartingGame)
+void Game::processFrame()
 {
-	gfx.pal.clear();
-	
-	if(isStartingGame)
+	if((cycles & 3) == 0)
 	{
-		if(settings.regenerateLevel
-		|| settings.randomLevel != oldRandomLevel
-		|| settings.levelFile != oldLevelFile)
+		for(int w = 0; w < 4; ++w)
 		{
-			generateLevel();
-		}
-	
-		
-		initGame();
-		
-		
-		
-		for(std::size_t i = 0; i < viewports.size(); ++i)
-		{
-			viewports[i]->x = 0;
-			viewports[i]->y = 0;
-		}
-
-		selectWeapons();
-		
-		sfx.play(22, 22);
-
-		cycles = 0;
-		
-		for(int w = 0; w < 40; ++w)
-		{
-			weapons[w].computedLoadingTime = (settings.loadingTime * weapons[w].loadingTime) / 100;
-			if(weapons[w].computedLoadingTime == 0)
-				weapons[w].computedLoadingTime = 1;
+			gfx.origpal.rotate(common->colourAnim[w].from, common->colourAnim[w].to);
 		}
 	}
 	
-	int fadeAmount = isStartingGame ? 180 : 0;
-	bool shutDown = false;
+	if(screenFlash > 0)
+		--screenFlash;
+	
+	
+	
+	for(std::size_t i = 0; i < viewports.size(); ++i)
+	{
+		if(viewports[i]->shake > 0)
+			viewports[i]->shake -= 4000; // TODO: Read 4000 from exe?
+	}
+	
+	/*
+	// TODO: Move this stuff
+	if(gfx.testSDLKeyOnce(SDLK_ESCAPE)
+	&& !shutDown)
+	{
+		gfx.firstMenuItem = 0;
+		gfx.fadeValue = 31;
+		shutDown = true;
+	}
+*/
+	
+	for(BonusList::iterator i = bonuses.begin(); i != bonuses.end(); ++i)
+	{
+		i->process(*this);
+	}
+	
+	if((cycles & 1) == 0)
+	{
+		for(std::size_t i = 0; i < viewports.size(); ++i)
+		{
+			Viewport& v = *viewports[i];
+			
+			bool down = false;
+			
+			if(v.worm->killedTimer > 16)
+				down = true;
+				
+			if(down)
+			{
+				if(v.bannerY < 2)
+					++v.bannerY;
+			}
+			else
+			{
+				if(v.bannerY > -8)
+					--v.bannerY;
+			}
+		}
+	}
+	
+	for(SObjectList::iterator i = sobjects.begin(); i != sobjects.end(); ++i)
+	{
+		i->process(*this);
+	}
+	
+	// TODO: Check processing order of bonuses, wobjects etc.
+	
+	for(WObjectList::iterator i = wobjects.begin(); i != wobjects.end(); ++i)
+	{
+		i->process(*this);
+	}
+	
+	for(NObjectList::iterator i = nobjects.begin(); i != nobjects.end(); ++i)
+	{
+		i->process(*this);
+	}
+	
+	for(BObjectList::iterator i = bobjects.begin(); i != bobjects.end(); )
+	{
+		if(i->process(*this))
+			++i;
+		else
+			bobjects.free(i);
+	}
+	
+	// NOTE: This was originally the beginning of the processing, but has been rotated down to
+	// separate out the drawing
+	++cycles;
+	
+	// This can be moved after the drawing
+	if(!common->H[HBonusDisable]
+	&& settings->maxBonuses > 0
+	&& rand(common->C[BonusDropChance]) == 0)
+	{
+		createBonus();
+	}
+		
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		worms[i]->process();
+	}
+	
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		worms[i]->ninjarope.process(*worms[i]);
+	}
+	
+	switch(settings->gameMode)
+	{
+	case Settings::GMGameOfTag:
+	{
+		bool someInvisible = false;
+		for(std::size_t i = 0; i < worms.size(); ++i)
+		{
+			if(!worms[i]->visible)
+			{
+				someInvisible = true;
+				break;
+			}
+		}
+		
+		if(!someInvisible
+		&& lastKilled
+		&& (cycles % 70) == 0
+		&& lastKilled->timer < settings->timeToLose)
+		{
+			++lastKilled->timer;
+		}
+	}
+	break;
+	}
+	
+	processViewports();
+	
+	// Store old control states so we can see what changes (mainly for replays)
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		worms[i]->prevControlStates = worms[i]->controlStates;
+	}
+	
+}
+
+void Game::gameLoop()
+{
+#if 0
+	shutDown = false;
 	
 	do
 	{
-		++cycles;
-		
-		if(!H[HBonusDisable]
-		&& settings.maxBonuses > 0
-		&& rand(C[BonusDropChance]) == 0)
-		{
-			createBonus();
-		}
-			
-		for(std::size_t i = 0; i < worms.size(); ++i)
-		{
-			worms[i]->process();
-		}
-		
-		for(std::size_t i = 0; i < worms.size(); ++i)
-		{
-			worms[i]->ninjarope.process(*worms[i]);
-		}
-		
-		switch(game.settings.gameMode)
-		{
-		case Settings::GMGameOfTag:
-		{
-			bool someInvisible = false;
-			for(std::size_t i = 0; i < worms.size(); ++i)
-			{
-				if(!worms[i]->visible)
-				{
-					someInvisible = true;
-					break;
-				}
-			}
-			
-			if(!someInvisible
-			&& lastKilled
-			&& (cycles % 70) == 0
-			&& lastKilled->timer < settings.timeToLose)
-			{
-				++lastKilled->timer;
-			}
-		}
-		break;
-		}
-		
-		processViewports();
-		drawViewports();
-				
-		for(BonusList::iterator i = bonuses.begin(); i != bonuses.end(); ++i)
-		{
-			i->process();
-		}
-		
-		if((cycles & 1) == 0)
-		{
-			for(std::size_t i = 0; i < viewports.size(); ++i)
-			{
-				Viewport& v = *viewports[i];
-				
-				bool down = false;
-				
-				if(v.worm->killedTimer > 16)
-					down = true;
-					
-				if(down)
-				{
-					if(v.bannerY < 2)
-						++v.bannerY;
-				}
-				else
-				{
-					if(v.bannerY > -8)
-						--v.bannerY;
-				}
-			}
-		}
-		
-		for(SObjectList::iterator i = game.sobjects.begin(); i != game.sobjects.end(); ++i)
-		{
-			i->process();
-		}
-		
-		// TODO: Check processing order of bonuses, wobjects etc.
-		
-		for(WObjectList::iterator i = wobjects.begin(); i != wobjects.end(); ++i)
-		{
-			i->process();
-		}
-		
-		for(NObjectList::iterator i = nobjects.begin(); i != nobjects.end(); ++i)
-		{
-			i->process();
-		}
-		
-		for(BObjectList::iterator i = bobjects.begin(); i != bobjects.end(); ++i)
-		{
-			i->process();
-		}
-		
-		if((cycles & 3) == 0)
-		{
-			for(int w = 0; w < 4; ++w)
-			{
-				gfx.origpal.rotate(gfx.colourAnim[w].from, gfx.colourAnim[w].to);
-			}
-		}
-		
-		gfx.pal = gfx.origpal;
-		
-		if(fadeAmount <= 32)
-			gfx.pal.fade(fadeAmount);
-
-		if(gfx.screenFlash > 0)
-		{
-			gfx.pal.lightUp(gfx.screenFlash);
-		}
+		processFrame();
+		draw();
 		
 		gfx.flip();
-		gfx.process();
-		
-		if(gfx.screenFlash > 0)
-			--gfx.screenFlash;
-		
-		if(isGameOver())
-		{
-			gfx.firstMenuItem = 1;
-			shutDown = true;
-		}
-		
-		for(std::size_t i = 0; i < viewports.size(); ++i)
-		{
-			if(viewports[i]->shake > 0)
-				viewports[i]->shake -= 4000; // TODO: Read 4000 from exe?
-		}
-		
-		if(gfx.testSDLKeyOnce(SDLK_ESCAPE)
-		&& !shutDown)
-		{
-			gfx.firstMenuItem = 0;
-			fadeAmount = 31;
-			shutDown = true;
-		}
-
-		if(shutDown)
-		{
-			fadeAmount -= 1;
-		}
-		else if(!isStartingGame)
-		{
-			if(fadeAmount < 33)
-			{
-				fadeAmount += 1;
-				if(fadeAmount >= 33)
-					fadeAmount = 180;
-			}
-		}
+		gfx.process(this);
 	}
-	while(fadeAmount > 0);
+	while(gfx.fadeValue > 0);
 	
 	gfx.clearKeys();
+	//releaseControls();
+#endif
+}
+
+void Game::focus()
+{
+	updateSettings();
+}
+
+void Game::updateSettings()
+{
+	gfx.origpal = level.origpal; // Activate the Level palette
+	
+	for(std::size_t i = 0; i < worms.size(); ++i)
+	{
+		Worm& worm = *worms[i];
+		if(worm.index >= 0 && worm.index < 2)
+			gfx.origpal.setWormColour(worm.index, *worm.settings);
+	}
+}
+
+void Game::startGame()
+{
+	soundPlayer->play(22);
+	bobjects.resize(settings->bloodParticleMax);
 }
 
 bool Game::isGameOver()
 {
-	if(settings.gameMode == Settings::GMKillEmAll)
+	if(settings->gameMode == Settings::GMKillEmAll)
 	{
 		for(std::size_t i = 0; i < worms.size(); ++i)
 		{
@@ -792,20 +476,20 @@ bool Game::isGameOver()
 				return true;
 		}
 	}
-	else if(settings.gameMode == Settings::GMGameOfTag)
+	else if(settings->gameMode == Settings::GMGameOfTag)
 	{
 		for(std::size_t i = 0; i < worms.size(); ++i)
 		{
-			if(worms[i]->timer >= game.settings.timeToLose)
+			if(worms[i]->timer >= settings->timeToLose)
 				return true;
 		}
 	}
-	else if(settings.gameMode == Settings::GMCtF
-	|| settings.gameMode == Settings::GMSimpleCtF)
+	else if(settings->gameMode == Settings::GMCtF
+	|| settings->gameMode == Settings::GMSimpleCtF)
 	{
 		for(std::size_t i = 0; i < worms.size(); ++i)
 		{
-			if(worms[i]->flags >= game.settings.flagsToWin)
+			if(worms[i]->flags >= settings->flagsToWin)
 				return true;
 		}
 	}
@@ -813,15 +497,17 @@ bool Game::isGameOver()
 	return false;
 }
 
-bool checkRespawnPosition(int x2, int y2, int oldX, int oldY, int x, int y)
+bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x, int y)
 {
+	Common& common = *game.common;
+	
 	int deltaX = oldX;
 	int deltaY = oldY - y;
 	int enemyDX = x2 - x;
 	int enemyDY = y2 - y;
 	
-	if((std::abs(deltaX) <= C[WormMinSpawnDistLast] && std::abs(deltaY) <= C[WormMinSpawnDistLast])
-	|| (std::abs(enemyDX) <= C[WormMinSpawnDistEnemy] && std::abs(enemyDY) <= C[WormMinSpawnDistEnemy]))
+	if((std::abs(deltaX) <= common.C[WormMinSpawnDistLast] && std::abs(deltaY) <= common.C[WormMinSpawnDistLast])
+	|| (std::abs(enemyDX) <= common.C[WormMinSpawnDistEnemy] && std::abs(enemyDY) <= common.C[WormMinSpawnDistEnemy]))
 		return false;
 		
 	int maxX = x + 3;
@@ -837,7 +523,7 @@ bool checkRespawnPosition(int x2, int y2, int oldX, int oldY, int x, int y)
 	for(int i = minX; i != maxX; ++i)
 	for(int j = minY; j != maxY; ++j)
 	{
-		if(game.materials[game.level.pixel(i, j)].rock()) // TODO: The special rock respawn bug is here, consider an option to turn it off
+		if(common.materials[game.level.pixel(i, j)].rock()) // TODO: The special rock respawn bug is here, consider an option to turn it off
 			return false;
 	}
 	

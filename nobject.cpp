@@ -5,10 +5,10 @@
 #include "bobject.hpp"
 #include <iostream>
 
-void NObjectType::create1(fixed velX, fixed velY, int x, int y, int colour, Worm* owner)
+void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int colour, Worm* owner)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
-
+	
 	obj.id = id;
 	obj.owner = owner;
 	obj.x = x;
@@ -43,9 +43,11 @@ void NObjectType::create1(fixed velX, fixed velY, int x, int y, int colour, Worm
 	
 }
 
-void NObjectType::create2(int angle, fixed velX, fixed velY, fixed x, fixed y, int colour, Worm* owner)
+void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int colour, Worm* owner)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
+	
+	
 
 	obj.id = id;
 	obj.owner = owner;
@@ -85,8 +87,10 @@ void NObjectType::create2(int angle, fixed velX, fixed velY, fixed x, fixed y, i
 		obj.timeLeft -= game.rand(timeToExploV);
 }
 
-void NObject::process()
+void NObject::process(Game& game)
 {
+	Common& common = *game.common;
+	
 	bool bounced = false;
 	bool doExplode = false;
 	
@@ -102,7 +106,7 @@ void NObject::process()
 	if(id >= 20 && id <= 21)
 		inewY += 2; // Special flag exception, TODO: Check indexes of flags
 		
-	NObjectType& t = game.nobjectTypes[id];
+	NObjectType& t = common.nobjectTypes[id];
 		
 	if(t.bounce > 0)
 	{
@@ -129,7 +133,7 @@ void NObject::process()
 	&& t.bloodTrailDelay > 0
 	&& (game.cycles % t.bloodTrailDelay) == 0)
 	{
-		createBObject(x, y, velX / 4, velY / 4); // TODO: Read from EXE
+		game.createBObject(x, y, velX / 4, velY / 4); // TODO: Read from EXE
 	}
 	
 	// Original didn't have this. Essential fix!
@@ -155,13 +159,15 @@ void NObject::process()
 			if(t.startFrame > 0 && t.drawOnMap)
 			{
 				blitImageOnMap(
-					gfx.smallSprites.spritePtr(t.startFrame + curFrame),
+					common,
+					game.level,
+					common.smallSprites.spritePtr(t.startFrame + curFrame),
 					ix - 3,
 					iy - 3,
 					7,
 					7);
-					
-				correctShadow(Rect(ix - 8, iy - 8, ix + 9, iy + 9)); // This seems like an overly large rectangle
+				if(game.settings->shadow)
+					correctShadow(common, game.level, Rect(ix - 8, iy - 8, ix + 9, iy + 9)); // This seems like an overly large rectangle
 			}
 			
 			doExplode = true;
@@ -174,7 +180,7 @@ void NObject::process()
 		&& t.leaveObj >= 0 // NOTE: AFAIK, this doesn't exist in Liero, but some TCs seem to forget to set leaveObjDelay to 0 when not using this trail
 		&& (game.cycles % t.leaveObjDelay) == 0)
 		{
-			game.sobjectTypes[t.leaveObj].create(ftoi(x), ftoi(y), owner);
+			common.sobjectTypes[t.leaveObj].create(game, ftoi(x), ftoi(y), owner);
 		}
 		
 		velY += t.gravity;
@@ -220,7 +226,7 @@ void NObject::process()
 					w.velY += t.blowAway * velY / 100;
 					w.health -= t.hitDamage;
 					
-					if(game.settings.gameMode == Settings::GMCtF)
+					if(game.settings->gameMode == Settings::GMCtF)
 					{
 						/* TODO
 						if(objnum == 21)
@@ -252,7 +258,7 @@ void NObject::process()
 						}
 						*/
 					}
-					else if(game.settings.gameMode == Settings::GMSimpleCtF)
+					else if(game.settings->gameMode == Settings::GMSimpleCtF)
 					{
 						/*
 						if(objnum == 21)
@@ -285,19 +291,24 @@ void NObject::process()
 					if(t.hitDamage > 0)
 					{
 						if(w.health > 0
-						&& game.rand(3) == 0
-						&& !sfx.isPlaying(w.wormSoundID))
+						&& game.rand(3) == 0)
 						{
-							sfx.play(18 + game.rand(3), w.wormSoundID);
+							int snd = 18 + game.rand(3); // NOTE: MUST be outside the unpredictable branch below
+							if(!game.soundPlayer->isPlaying(&w))
+							{
+								game.soundPlayer->play(snd, &w);
+							}
 						}
 					}
 					
-					int blood = t.bloodOnHit * game.settings.blood / 100;
+					int blood = t.bloodOnHit * game.settings->blood / 100;
 					
 					for(int i = 0; i < blood; ++i)
 					{
-						game.nobjectTypes[6].create2(
-							game.rand(128),
+						int angle = game.rand(128); 
+						common.nobjectTypes[6].create2(
+							game,
+							angle,
 							velX / 3, velY / 3,
 							x, y,
 							0,
@@ -309,7 +320,8 @@ void NObject::process()
 					if(t.wormDestroy
 					&& !doExplode)
 					{
-						game.nobjects.free(this);
+						if(used) // Temp
+							game.nobjects.free(this);
 					}
 				}
 				
@@ -321,30 +333,35 @@ void NObject::process()
 	{
 		if(t.createOnExp >= 0)
 		{
-			game.sobjectTypes[t.createOnExp].create(ftoi(x), ftoi(y), owner);
+			common.sobjectTypes[t.createOnExp].create(game, ftoi(x), ftoi(y), owner);
 		}
 		
 		if(t.dirtEffect >= 0)
 		{
-			drawDirtEffect(t.dirtEffect, ftoi(x) - 7, ftoi(y) - 7);
+			drawDirtEffect(common, game.rand, game.level, t.dirtEffect, ftoi(x) - 7, ftoi(y) - 7);
 			
-			correctShadow(Rect(ftoi(x) - 10, ftoi(y) - 10, ftoi(x) + 11, ftoi(y) + 11));
+			if(game.settings->shadow)
+				correctShadow(common, game.level, Rect(ftoi(x) - 10, ftoi(y) - 10, ftoi(x) + 11, ftoi(y) + 11));
 		}
 		
 		if(t.splinterAmount > 0)
 		{
 			for(int i = 0; i < t.splinterAmount; ++i)
 			{
-				game.nobjectTypes[t.splinterType].create2(
-					game.rand(128),
+				int angle = game.rand(128);
+				int colorSub = game.rand(2);
+				common.nobjectTypes[t.splinterType].create2(
+					game,
+					angle,
 					0, 0,
 					x, y,
-					t.splinterColour - game.rand(2),
+					t.splinterColour - colorSub,
 					owner);
 			}
 		}
 		
-		game.nobjects.free(this);
+		if(used) // Temp
+			game.nobjects.free(this);
 	}
 }
 

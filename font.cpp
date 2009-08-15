@@ -56,7 +56,7 @@ void Font::drawChar(unsigned char c, int x, int y, int colour)
 
 void Font::drawText(char const* str, std::size_t len, int x, int y, int colour)
 {
-	if(y >= 0 && y < gfx.screen->h-8)
+	if(y >= 0 && y <= gfx.screen->h-8)
 	{
 		int orgX = x;
 		
@@ -73,7 +73,7 @@ void Font::drawText(char const* str, std::size_t len, int x, int y, int colour)
 			{
 				c -= 2;
 				
-				if(x >= 0 && x < gfx.screen->w-7)
+				if(x >= 0 && x <= gfx.screen->w-7)
 				{
 					PalIdx* scr = &gfx.getScreenPixel(x, y);
 					unsigned char* fnt = chars[c].data;
@@ -96,16 +96,28 @@ void Font::drawText(char const* str, std::size_t len, int x, int y, int colour)
 	}
 }
 
-int Font::getWidth(char const* str, std::size_t len)
+int Font::getDims(char const* str, std::size_t len, int* height)
 {
 	int width = 0;
+	int maxHeight = 8;
+	
+	int maxWidth = 0;
 	
 	for(std::size_t i = 0; i < len; ++str, ++i)
 	{
 		unsigned char c = static_cast<unsigned char>(*str);
 		if(c >= 2 && c < 252)
 			width += chars[c - 2].width;
+		else if(!c)
+		{
+			maxWidth = std::max(maxWidth, width);
+			width = 0;
+			maxHeight += 8;
+		}
 	}
 	
-	return width;
+	if(height)
+		*height = maxHeight;
+	
+	return std::max(maxWidth, width);
 }
