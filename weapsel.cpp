@@ -90,22 +90,6 @@ void WeaponSelection::draw()
 	{
 		game.draw();
 		
-		drawRoundedBox(114, 2, 0, 7, common.font.getDims(common.texts.selWeap));
-		
-		common.font.drawText(common.texts.selWeap, 116, 3, 50);
-		
-		for(std::size_t i = 0; i < menus.size(); ++i)
-		{
-			Viewport& vp = *game.viewports[i];
-			Menu& weaponMenu = menus[i];
-			
-			Worm& worm = *vp.worm;
-			WormSettings& ws = *worm.settings;
-			
-			int width = common.font.getDims(ws.name);
-			drawRoundedBox(weaponMenu.x + 29 - width/2, weaponMenu.y - 11, 0, 7, width);
-			common.font.drawText(ws.name, weaponMenu.x + 31 - width/2, weaponMenu.y - 10, ws.colour + 1);
-		}
 			
 		if(game.settings->levelFile.empty())
 		{
@@ -125,14 +109,24 @@ void WeaponSelection::draw()
 	if(!focused)
 		return;
 		
+
+	drawRoundedBox(114, 2, 0, 7, common.font.getDims(common.texts.selWeap));
+	
+	common.font.drawText(common.texts.selWeap, 116, 3, 50);
+		
 	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
-		int weapID = menus[i].selection() - 1;
+		Menu& weaponMenu = menus[i];
+		int weapID = weaponMenu.selection() - 1;
 		
 		Viewport& vp = *game.viewports[i];
 		
 		Worm& worm = *vp.worm;
 		WormSettings& ws = *worm.settings;
+		
+		int width = common.font.getDims(ws.name);
+		drawRoundedBox(weaponMenu.x + 29 - width/2, weaponMenu.y - 11, 0, 7, width);
+		common.font.drawText(ws.name, weaponMenu.x + 31 - width/2, weaponMenu.y - 10, ws.colour + 1);
 		
 		if(!isReady[i])
 		{

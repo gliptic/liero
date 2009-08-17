@@ -152,7 +152,7 @@ struct LocalController : CommonController
 			ws->focus();
 		if(replay.get())
 			replay->focus();
-		if(state == StateInitial) // TODO: Have a separate initial state
+		if(state == StateInitial)
 			changeState(StateWeaponSelection);
 		game.focus();
 		goingToMenu = false;
@@ -458,12 +458,12 @@ struct ReplayController : CommonController
 				game->processFrame();
 			}
 			
-			/*
 			if(game->isGameOver()
 			&& !goingToMenu)
 			{
-				changeState(StateGameEnded);
-			}*/
+				fadeValue = 180;
+				goingToMenu = true;
+			}
 		}
 		
 		CommonController::process();
