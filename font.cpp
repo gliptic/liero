@@ -1,6 +1,7 @@
 #include "font.hpp"
 #include "reader.hpp"
 #include "gfx.hpp"
+#include "gfx/macros.hpp"
 #include "colour.hpp"
 #include <iostream>
 
@@ -35,63 +36,58 @@ void Font::loadFromEXE()
 
 void Font::drawChar(unsigned char c, int x, int y, int colour)
 {
-	if(c >= 2 && c < 252
-	&& x >= 0 && x < gfx.screen->w-7)
+	if(c >= 2 && c < 252) // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since drawText subtracts 2?
 	{
-		PalIdx* scr = &gfx.getScreenPixel(x, y);
-		unsigned char* fnt = chars[c].data;
+		SDL_Surface* scr = gfx.screen;
+		uint8_t* mem = chars[c].data;
+		int width = 7;
+		int height = 8;
+		int pitch = 7;
 		
-		for(int cy = 8; cy > 0; --cy)
+		CLIP_IMAGE(scr->clip_rect);
+		
+		PalIdx* scrptr = static_cast<PalIdx*>(scr->pixels) + y*scr->pitch + x;
+		
+		for(int cy = 0; cy < height; ++cy)
 		{
-			for(int cx = 7; cx > 0; --cx)
-			{
-				if(*fnt) *scr = colour;
-				++scr; ++fnt;
-			}
+			PalIdx* rowdest = scrptr;
+			PalIdx* rowsrc = mem;
 			
-			scr += gfx.screen->pitch - 7;
+			for(int cx = 0; cx < width; ++cx)
+			{
+				PalIdx c = *rowsrc;
+				if(c)
+					*rowdest = colour;
+				++rowsrc;
+				++rowdest;
+			}
+
+			scrptr += scr->pitch;
+			mem += pitch;
 		}
 	}
 }
 
 void Font::drawText(char const* str, std::size_t len, int x, int y, int colour)
 {
-	if(y >= 0 && y <= gfx.screen->h-8)
+	int orgX = x;
+	
+	for(std::size_t i = 0; i < len; ++str, ++i)
 	{
-		int orgX = x;
+		unsigned char c = static_cast<unsigned char>(*str);
 		
-		for(std::size_t i = 0; i < len; ++str, ++i)
+		if(!c)
 		{
-			unsigned char c = static_cast<unsigned char>(*str);
+			x = orgX;
+			y += 8;
+		}
+		else if(c >= 2 && c < 252)
+		{
+			c -= 2;
 			
-			if(!c)
-			{
-				x = orgX;
-				y += 8;
-			}
-			else if(c >= 2 && c < 252)
-			{
-				c -= 2;
-				
-				if(x >= 0 && x <= gfx.screen->w-7)
-				{
-					PalIdx* scr = &gfx.getScreenPixel(x, y);
-					unsigned char* fnt = chars[c].data;
-					
-					for(int cy = 8; cy > 0; --cy)
-					{
-						for(int cx = 7; cx > 0; --cx)
-						{
-							if(*fnt) *scr = colour;
-							++scr; ++fnt;
-						}
-						
-						scr += gfx.screen->pitch - 7;
-					}
-				}
-				
-				x += chars[c].width;
-			}
+			drawChar(c, x, y, colour);
+			
+			x += chars[c].width;
 		}
 	}
 }

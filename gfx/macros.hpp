@@ -153,4 +153,23 @@ inline uint8_t choose(uint8_t this_, uint8_t if_this, uint8_t is_different_from_
     } \
 } while(0)
 
+#define CLIP_IMAGE(clip) \
+{ \
+	int top = y - (clip).y; \
+	if(top < 0)	{ \
+		mem += -top * pitch; \
+		height += top; \
+		y = (clip).y; } \
+	int bottom = y + height - ((clip).y + (clip).h); \
+	if(bottom > 0) height -= bottom; \
+	int left = x - (clip).x; \
+	if(left < 0) { \
+		mem -= left; \
+		width += left; \
+		x = (clip).x; } \
+	int right = x + width - ((clip).x + (clip).w); \
+	if(right > 0) width -= right; \
+	if(width <= 0 || height <= 0) return; \
+}
+
 #endif // UUID_16A8D91C6BEA4174A45E11A5F85FB93C
