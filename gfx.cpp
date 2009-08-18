@@ -200,28 +200,29 @@ struct ProfileSaveBehavior : ItemBehavior
 		}
 	}
 	
-	bool saveAs;
 	Common& common;
 	WormSettings& ws;
+	bool saveAs;
 };
 
 
 Gfx::Gfx()
-: screen(0)
-, back(0)
-, frozenScreen(320 * 200)
-, running(true)
-, fullscreen(false)
-, menuCyclic(0)
-, fadeValue(0)
-, windowW(320)
-, windowH(200)
-, prevMag(0)
-, mainMenu(53, 20)
+: mainMenu(53, 20)
 , settingsMenu(178, 20)
 , playerMenu(178, 20)
 , hiddenMenu(178, 20)
 , curMenu(0)
+, screen(0)
+, back(0)
+, frozenScreen(320 * 200)
+, running(true)
+, fullscreen(false)
+, fadeValue(0)
+, menuCyclic(0)
+, windowW(320)
+, windowH(200)
+, prevMag(0)
+
 {
 	clearKeys();
 }

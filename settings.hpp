@@ -7,6 +7,7 @@
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/support/cstdint.hpp>
 #include <gvl/crypt/gash.hpp>
+#include <gvl/serialization/archive.hpp> // For gvl::enable_when
 #include "version.hpp"
 
 // We isolate extensions for the benefit of the .dat loader.

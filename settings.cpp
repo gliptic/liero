@@ -25,9 +25,9 @@ Extensions::Extensions()
 , loadPowerlevelPalette(true)
 , scaleFilter(Settings::SfNearest)
 , depth32(true)
+, bloodParticleMax(700)
 , fullscreenW(640)
 , fullscreenH(480)
-, bloodParticleMax(700)
 {
 }
 

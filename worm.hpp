@@ -6,9 +6,12 @@
 #include <SDL/SDL.h>
 #include <string>
 #include <cstring>
+#include <memory>
 #include <gvl/resman/shared_ptr.hpp>
-
+#include "version.hpp"
+#include <gvl/serialization/archive.hpp> // For gvl::enable_when
 #include <gvl/crypt/gash.hpp>
+
 
 #include <iostream> // TEMP
 

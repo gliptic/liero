@@ -72,6 +72,7 @@ struct NullSoundPlayer : SoundPlayer
 	
 	bool isPlaying(void* id)
 	{
+		return false;
 	}
 	
 	void playOn(int channel, int sound, void* id, int loops)

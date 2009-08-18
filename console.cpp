@@ -1,6 +1,6 @@
 #include "console.hpp"
-#include "game.hpp"
-#include "constants.hpp"
+//#include "game.hpp"
+//#include "constants.hpp"
 #include "platform.hpp"
 #include <iostream>
 

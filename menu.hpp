@@ -22,8 +22,8 @@ struct MenuItem
 	: colour(colour)
 	, disColour(disColour)
 	, string(string)
-	, visible(true)
 	, hasValue(false)
+	, visible(true)
 	{
 	}
 	
