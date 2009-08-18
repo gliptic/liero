@@ -280,7 +280,7 @@ void Settings::generateName(WormSettings& ws)
 	
 	std::vector<char> chars(len);
 	
-	fread(&chars[0], 1, len, f);
+	checkedFread(&chars[0], 1, len, f);
 	
 	fclose(f);
 	

@@ -103,7 +103,7 @@ void Game::onKey(Uint32 key, bool state)
 	}
 }
 
-Worm* Game::findControlForKey(int key, Worm::Control& control)
+Worm* Game::findControlForKey(uint32_t key, Worm::Control& control)
 {
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{

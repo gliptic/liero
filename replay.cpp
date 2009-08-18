@@ -274,7 +274,7 @@ void archive_worms(gvl::in_archive<GameSerializationContext> ar, Game& game)
 		
 		//printf("Worm ID %d: %s\n", wormId, worm->settings->name.c_str());
 		
-		GameSerializationContext::WormData& data = ar.context.wormData[worm];
+		//GameSerializationContext::WormData& data = ar.context.wormData[worm];
 
 		game.addWorm(worm);
 		ar.context.idToWorm[wormId] = worm;
@@ -512,7 +512,7 @@ bool ReplayReader::playbackFrame()
 			for(GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.begin(); ;)
 			{
 				Worm* worm = i->second;
-				GameSerializationContext::WormData& data = context.wormData[worm];
+				//GameSerializationContext::WormData& data = context.wormData[worm];
 				
 				worm->controlStates.unpack(state ^ worm->prevControlStates.pack());
 				
@@ -607,7 +607,7 @@ void ReplayWriter::recordFrame()
 			++i)
 		{
 			Worm* worm = i->second;
-			GameSerializationContext::WormData& data = context.wormData[worm];
+			//GameSerializationContext::WormData& data = context.wormData[worm];
 			
 			uint8_t state = worm->controlStates.pack() ^ worm->prevControlStates.pack();
 			

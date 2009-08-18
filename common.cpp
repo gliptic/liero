@@ -117,7 +117,7 @@ void Common::loadMaterials()
 	
 	for(int i = 0; i < 5; ++i)
 	{
-		fread(bits, 1, 32, exe);
+		checkedFread(bits, 1, 32, exe);
 		
 		for(int j = 0; j < 256; ++j)
 		{
@@ -128,7 +128,7 @@ void Common::loadMaterials()
 	
 	std::fseek(exe, 0x01AEA8, SEEK_SET);
 	
-	fread(bits, 1, 32, exe);
+	checkedFread(bits, 1, 32, exe);
 	
 	for(int j = 0; j < 256; ++j)
 	{

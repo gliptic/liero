@@ -227,9 +227,10 @@ struct Gfx
 	unsigned char* screenPixels;
 	unsigned int screenPitch;
 	
-	int fadeValue;
+
 	bool running;
 	bool fullscreen;
+	int fadeValue;
 	Uint32 lastFrame;
 	int menuCyclic;
 	int windowW, windowH;

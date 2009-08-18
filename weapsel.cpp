@@ -117,7 +117,6 @@ void WeaponSelection::draw()
 	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
 		Menu& weaponMenu = menus[i];
-		int weapID = weaponMenu.selection() - 1;
 		
 		Viewport& vp = *game.viewports[i];
 		
@@ -267,7 +266,6 @@ bool WeaponSelection::processFrame()
 	
 void WeaponSelection::finalize()
 {
-	Common& common = *game.common;
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
 		Worm& worm = *game.worms[i];

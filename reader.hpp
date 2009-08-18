@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <string>
+#include <stdexcept>
 #include <SDL/SDL.h>
 
 extern std::string lieroEXERoot;
@@ -15,19 +16,25 @@ FILE* openLieroEXE();
 FILE* openLieroSND();
 FILE* openLieroCHR();
 
+inline void checkedFread(void* ptr, std::size_t size, std::size_t count, FILE* f)
+{
+	if(fread(ptr, size, count, f) != count)
+		throw std::runtime_error("fread failed to read fully");
+}
+
 inline std::string readPascalString(FILE* f)
 {
 	unsigned char length;
-	fread(&length, 1, 1, f);
+	checkedFread(&length, 1, 1, f);
 	char txt[256];
-	fread(txt, 1, length, f);
+	checkedFread(txt, 1, length, f);
 	return std::string(txt, length);
 }
 
 inline std::string readPascalString(FILE* f, unsigned char fieldLen)
 {
 	char txt[256];
-	fread(txt, 1, fieldLen, f);
+	checkedFread(txt, 1, fieldLen, f);
 	unsigned char length = static_cast<unsigned char>(txt[0]);
 	return std::string(txt + 1, length);
 }
@@ -46,16 +53,16 @@ inline std::string readPascalStringAt(FILE* f, int location)
 {
 	unsigned char length;
 	fseek(f, location, SEEK_SET);
-	fread(&length, 1, 1, f);
+	checkedFread(&length, 1, 1, f);
 	char txt[256];
-	fread(txt, 1, length, f);
+	checkedFread(txt, 1, length, f);
 	return std::string(txt, length);
 }
 
 inline Uint32 readUint8(FILE* f)
 {
 	unsigned char temp[1];
-	fread(temp, 1, 1, f);
+	checkedFread(temp, 1, 1, f);
 	return temp[0];
 }
 
@@ -67,14 +74,14 @@ inline void writeUint8(FILE* f, Uint32 v)
 inline Sint32 readSint8(FILE* f)
 {
 	char temp[1];
-	fread(temp, 1, 1, f);
+	checkedFread(temp, 1, 1, f);
 	return temp[0];
 }
 
 inline Uint32 readUint16(FILE* f)
 {
 	unsigned char temp[2];
-	fread(temp, 1, 2, f);
+	checkedFread(temp, 1, 2, f);
 	return temp[0] + (temp[1] << 8);
 }
 
@@ -87,21 +94,21 @@ inline void writeUint16(FILE* f, Uint32 v)
 inline Sint32 readSint16(FILE* f)
 {
 	unsigned char temp[2];
-	fread(temp, 1, 2, f);
+	checkedFread(temp, 1, 2, f);
 	return temp[0] + (static_cast<char>(temp[1]) << 8);
 }
 
 inline Uint32 readUint32(FILE* f)
 {
 	unsigned char temp[4];
-	fread(temp, 1, 4, f);
+	checkedFread(temp, 1, 4, f);
 	return temp[0] + (temp[1] << 8) + (temp[2] << 16) + (temp[3] << 24);
 }
 
 inline Sint32 readSint32(FILE* f)
 {
 	unsigned char temp[4];
-	fread(temp, 1, 4, f);
+	checkedFread(temp, 1, 4, f);
 	return temp[0] + (temp[1] << 8) + (temp[2] << 16) + (static_cast<char>(temp[3]) << 24);
 }
 

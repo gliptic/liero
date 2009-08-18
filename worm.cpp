@@ -1464,7 +1464,6 @@ void Worm::fire()
 bool checkForWormHit(int x, int y, int dist, Worm* ownWorm)
 {
 	Game& game = ownWorm->game;
-	Common& common = *game.common;
 	
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{

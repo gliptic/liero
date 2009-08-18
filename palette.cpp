@@ -78,7 +78,7 @@ void Palette::read(FILE* f)
 	for(int i = 0; i < 256; ++i)
 	{
 		unsigned char rgb[3];
-		fread(rgb, 1, 3, f);
+		checkedFread(rgb, 1, 3, f);
 		
 		entries[i].r = rgb[0] & 63;
 		entries[i].g = rgb[1] & 63;

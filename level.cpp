@@ -239,7 +239,7 @@ bool Level::load(Common& common, Settings const& settings, std::string const& pa
 		std::fseek(f, 504*350, SEEK_SET);
 		char buf[10];
 		
-		std::fread(buf, 1, 10, f);
+		checkedFread(buf, 1, 10, f);
 		
 		if(!std::memcmp("POWERLEVEL", buf, 10))
 		{
@@ -248,13 +248,13 @@ bool Level::load(Common& common, Settings const& settings, std::string const& pa
 			origpal.resetPalette(pal, settings);
 			
 			std::fseek(f, 0, SEEK_SET);
-			std::fread(&data[0], 1, width * height, f);
+			checkedFread(&data[0], 1, width * height, f);
 			return true;
 		}
 	}
 	
 	std::fseek(f, 0, SEEK_SET);
-	std::fread(&data[0], 1, width * height, f);
+	checkedFread(&data[0], 1, width * height, f);
 	origpal.resetPalette(common.exepal, settings);
 	
 	return true;

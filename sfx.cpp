@@ -12,11 +12,29 @@ Sfx sfx;
 
 void Sfx::init()
 {
+	if(initialized)
+		return;
+	initialized = true;
+	
+	SDL_InitSubSystem(SDL_INIT_AUDIO);
 	int ret = Mix_OpenAudio(22050, AUDIO_S16SYS, 1, 512);
+	if(ret != 0)
+	{
+		Console::writeWarning(std::string("Mix_OpenAudio returned error: ") + Mix_GetError());
+	}
+	
 	Mix_AllocateChannels(8);
 	Mix_Volume(-1, 128);
+}
+
+void Sfx::deinit()
+{
+	if(!initialized)
+		return;
+	initialized = false;
 	
-	assert(ret == 0);
+	Mix_CloseAudio();
+	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 }
 
 void Sfx::loadFromSND()
@@ -53,7 +71,7 @@ void Sfx::loadFromSND()
 		if(length > 0)
 		{
 			fseek(snd, offset, SEEK_SET);
-			fread(&temp[0], 1, length, snd);
+			checkedFread(&temp[0], 1, length, snd);
 		}
 		
 		for(int j = 0; j < length; ++j)

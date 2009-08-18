@@ -44,7 +44,7 @@ void SpriteSet::read(FILE* f, int width, int height, int count)
 	
 	std::vector<PalIdx> temp(amount);
 	
-	fread(&temp[0], 1, amount, f);
+	checkedFread(&temp[0], 1, amount, f);
 	
 	PalIdx* dest = &data[0];
 	PalIdx* src = &temp[0];
@@ -234,6 +234,11 @@ void Gfx::init()
 	SDL_WM_SetCaption("Liero 1.35b2", 0);
 	SDL_ShowCursor(SDL_DISABLE);
 	lastFrame = SDL_GetTicks();
+	
+	screen = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
+
+	screenPixels = static_cast<unsigned char*>(screen->pixels);
+	screenPitch = screen->pitch;
 }
 
 void Gfx::setVideoMode()
@@ -252,12 +257,6 @@ void Gfx::setVideoMode()
 			windowH = settings->fullscreenH;
 		}
 	}
-		
-	if(screen != back)
-	{
-		SDL_FreeSurface(screen);
-		screen = 0;
-	}
 
 	if(!SDL_VideoModeOK(windowW, windowH, bitDepth, flags))
 	{
@@ -266,14 +265,7 @@ void Gfx::setVideoMode()
 		windowH = 480;
 	}
 
-	back = screen = SDL_SetVideoMode(windowW, windowH, bitDepth, flags);
-	
-	if(bitDepth != 8 && windowH != 320 || windowW != 200)
-	{
-		screen = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
-	}
-	screenPixels = static_cast<unsigned char*>(screen->pixels);
-	screenPitch = screen->pitch;
+	back = SDL_SetVideoMode(windowW, windowH, bitDepth, flags);
 }
 
 void Gfx::loadPalette()
@@ -1686,11 +1678,6 @@ ItemBehavior* PlayerMenu::getItemBehavior(Common& common, int item)
 
 void Gfx::playerSettings(int player)
 {
-	//int curSel = 0;
-	//int menuCyclic = 0;
-	
-	WormSettings& ws = *settings->wormSettings[player];
-	
 	playerMenu.ws = settings->wormSettings[player];
 	
 	playerMenu.updateItems(*common);

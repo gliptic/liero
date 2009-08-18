@@ -15,7 +15,7 @@ void Font::loadFromEXE()
 	
 	fseek(exe, 0x1C825, SEEK_SET);
 	
-	fread(&temp[0], 1, FontSize, exe);
+	checkedFread(&temp[0], 1, FontSize, exe);
 	
 	for(int i = 0; i < 250; ++i)
 	{

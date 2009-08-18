@@ -17,9 +17,14 @@ struct Sfx
 		void* id; // ID of the sound playing on this channel
 	};
 	
+	Sfx()
+	: initialized(false)
+	{
+	}
 	~Sfx();
 	
 	void init();
+	void deinit();
 	void loadFromSND();
 	
 	void play(int sound, void* id = 0, int loops = 0);	
@@ -29,6 +34,7 @@ struct Sfx
 	
 	std::vector<Mix_Chunk> sounds;
 	ChannelInfo channelInfo[8];
+	bool initialized;
 };
 
 extern Sfx sfx;

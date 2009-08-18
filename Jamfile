@@ -1,8 +1,9 @@
 SubDir TOP liero ;
 
-C++FLAGS = -s -Wall -I$(TOP) ;
-CFLAGS = -s -Wall -I$(TOP) ;
-OPTIM = -O3 ;
+C++FLAGS = -Wall -I$(TOP) ;
+CFLAGS = -Wall -I$(TOP) ;
+#OPTIM = -O3 ;
+OPTIM = -O0 ;
 LINK = "g++" ;
 LINKFLAGS = "-lSDL -lSDL_mixer" ;
 
@@ -13,6 +14,8 @@ Main openliero : blit.cpp bobject.cpp bonus.cpp common.cpp console.cpp
 	reader.cpp sdlmain.cpp replay.cpp settings.cpp sfx.cpp
 	sobject.cpp sys.cpp text.cpp viewport.cpp weapon.cpp
 	weapsel.cpp worm.cpp ;
+	
+MakeLocate openliero$(SUFEXE) : $(TOP)/liero/_bin ;
 	
 LinkLibraries openliero : libgvl ;
 

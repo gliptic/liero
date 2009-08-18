@@ -26,7 +26,7 @@ struct Game
 	~Game();
 	
 	void onKey(Uint32 key, bool state);
-	Worm* findControlForKey(int key, Worm::Control& control);
+	Worm* findControlForKey(uint32_t key, Worm::Control& control);
 	void releaseControls();
 	void processFrame();
 	void gameLoop();
@@ -54,19 +54,16 @@ struct Game
 	}
 	
 	Level level;
-	gvl::shared_ptr<Settings> settings;
 	
-	
-	
-	int cycles;
-	Worm* lastKilled; // Last killed worm  !CLONING
-	bool gotChanged;
-	Rand rand;
-	bool paused;
-	//bool shutDown;
-	int screenFlash;
 	gvl::shared_ptr<Common> common;
 	gvl::shared_ptr<SoundPlayer> soundPlayer;
+	gvl::shared_ptr<Settings> settings;
+	int screenFlash;
+	bool gotChanged;
+	Worm* lastKilled; // Last killed worm  !CLONING
+	bool paused;
+	int cycles;
+	Rand rand;
 	
 	std::vector<Viewport*> viewports;
 	std::vector<Worm*> worms;

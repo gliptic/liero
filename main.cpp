@@ -27,6 +27,7 @@
 #include <gvl/math/cmwc.hpp>
 
 //#include <gvl/support/profile.hpp> // TEMP
+#include <gvl/support/log.hpp> // TEMP
 
 //#undef main
 
@@ -70,7 +71,7 @@ try
 	if(!exeSet)
 		setLieroEXE("LIERO.EXE");
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+	SDL_Init(SDL_INIT_VIDEO);
 	
 /*
 	char buf[256];
@@ -103,7 +104,6 @@ try
 	Console::writeLine(common->S[OK]);
 	
 	Console::writeLine(common->S[InitSound]);
-	sfx.init();
 	
 	Console::write(common->S[Init_BaseIO]);
 	Console::write("0220");
@@ -175,6 +175,7 @@ try
 	}
 	
 	gfx.setVideoMode();
+	sfx.init();
 	
 	//game.initGame();
 	gfx.mainLoop();
@@ -190,6 +191,7 @@ try
 	
 	closeAllCachedFiles();
 	
+	sfx.deinit();
 	SDL_Quit();
 	
 	//gvl::present_profile(std::cout);

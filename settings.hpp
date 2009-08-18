@@ -186,7 +186,7 @@ void archive_liero(Archive ar, Settings& settings)
 	ar.b(settings.loadChange);
 	
 	char lieroStr[] = "\x05LIERO\0\0";
-	for(int i = 0; i < sizeof(lieroStr); ++i)
+	for(std::size_t i = 0; i < sizeof(lieroStr); ++i)
 	{
 		ar.ui8(lieroStr[i]);
 	}

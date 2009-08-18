@@ -407,7 +407,7 @@ void Menu::readItems(FILE* f, int length, int count, bool colourPrefix, PalIdx c
 	char temp[256];
 	for(int i = 0; i < count; ++i)
 	{
-		fread(&temp[0], 1, length, f);
+		checkedFread(&temp[0], 1, length, f);
 		int offset = 1;
 		int length = static_cast<unsigned char>(temp[0]);
 		if(colourPrefix)
