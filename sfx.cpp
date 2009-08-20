@@ -14,8 +14,6 @@ void Sfx::init()
 {
 	if(initialized)
 		return;
-		
-	return;
 	
 	SDL_InitSubSystem(SDL_INIT_AUDIO);
 	int ret = Mix_OpenAudio(22050, AUDIO_S16SYS, 1, 512);
