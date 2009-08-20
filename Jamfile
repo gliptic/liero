@@ -2,10 +2,9 @@ SubDir TOP liero ;
 
 C++FLAGS = -Wall -I$(TOP) ;
 CFLAGS = -Wall -I$(TOP) ;
-#OPTIM = -O3 ;
-OPTIM = -O0 ;
+OPTIM = -O3 ;
 LINK = "g++" ;
-LINKFLAGS = "-lSDL -lSDL_mixer" ;
+LINKLIBS on openliero$(SUFEXE) = -lSDL -lSDL_mixer -lrt ;
 
 Main openliero : blit.cpp bobject.cpp bonus.cpp common.cpp console.cpp
 	constants.cpp filesystem.cpp font.cpp game.cpp
