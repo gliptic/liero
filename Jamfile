@@ -1,7 +1,7 @@
 SubDir TOP liero ;
 
-C++FLAGS = -Wall -I$(TOP) ;
-CFLAGS = -Wall -I$(TOP) ;
+C++FLAGS = -Wall -I$(TOP) -DNDEBUG ;
+CFLAGS = -Wall -I$(TOP) -DNDEBUG ;
 OPTIM = -O3 ;
 LINK = "g++" ;
 LINKLIBS on openliero$(SUFEXE) = -lSDL -lSDL_mixer -lrt ;

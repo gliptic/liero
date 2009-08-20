@@ -14,17 +14,21 @@ void Sfx::init()
 {
 	if(initialized)
 		return;
-	initialized = true;
+		
+	return;
 	
 	SDL_InitSubSystem(SDL_INIT_AUDIO);
 	int ret = Mix_OpenAudio(22050, AUDIO_S16SYS, 1, 512);
-	if(ret != 0)
+	if(ret == 0)
+	{
+		initialized = true;
+		Mix_AllocateChannels(8);
+		Mix_Volume(-1, 128);
+	}
+	else
 	{
 		Console::writeWarning(std::string("Mix_OpenAudio returned error: ") + Mix_GetError());
 	}
-	
-	Mix_AllocateChannels(8);
-	Mix_Volume(-1, 128);
 }
 
 void Sfx::deinit()
@@ -85,6 +89,9 @@ void Sfx::loadFromSND()
 
 void Sfx::play(int sound, void* id, int loops)
 {
+	if(!initialized)
+		return;
+		
 	for(int i = 0; i < 8; ++i)
 	{
 		if(!Mix_Playing(i))
@@ -97,6 +104,9 @@ void Sfx::play(int sound, void* id, int loops)
 
 void Sfx::playOn(int channel, int sound, void* id, int loops)
 {
+	if(!initialized)
+		return;
+		
 	if(sound < 0 || sound >= int(sounds.size()))
 	{
 		Console::writeWarning("Attempt to play non-existent sound");
@@ -108,6 +118,9 @@ void Sfx::playOn(int channel, int sound, void* id, int loops)
 
 void Sfx::stop(void* id)
 {
+	if(!initialized)
+		return;
+		
 	for(int i = 0; i < 8; ++i)
 	{
 		if(Mix_Playing(i) && channelInfo[i].id == id)
@@ -119,6 +132,9 @@ void Sfx::stop(void* id)
 
 bool Sfx::isPlaying(void* id)
 {
+	if(!initialized)
+		return false;
+		
 	for(int i = 0; i < 8; ++i)
 	{
 		if(Mix_Playing(i) && channelInfo[i].id == id)
