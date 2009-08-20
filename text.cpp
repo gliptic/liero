@@ -51,6 +51,23 @@ bool ciCompare(std::string const& a, std::string const& b)
 	return true;
 }
 
+bool ciLess(std::string const& a, std::string const& b)
+{
+	for(std::size_t i = 0; i < a.size(); ++i)
+	{
+		if(i >= b.size()) // a is longer, thus a > b
+			return false;
+		int ach = safeToUpper(a[i]);
+		int bch = safeToUpper(b[i]); 
+		if(ach < bch)
+			return true;
+		else if(ach > bch)
+			return false;
+	}
+	
+	return b.size() > a.size(); // if b is longer, then a < b, otherwise a == b
+}
+
 int unicodeToDOS(int c)
 {
 	int table[][2] =

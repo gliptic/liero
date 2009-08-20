@@ -31,6 +31,7 @@ inline void findReplace(std::string& str, std::string const& find, std::string c
 }
 
 bool ciCompare(std::string const& a, std::string const& b);
+bool ciLess(std::string const& a, std::string const& b);
 int unicodeToDOS(int c);
 
 #endif // LIERO_TEXT_HPP

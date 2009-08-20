@@ -1102,6 +1102,16 @@ ItemBehavior* HiddenMenu::getItemBehavior(Common& common, int item)
 	}
 }
 
+struct LevelSort
+{
+	typedef std::pair<std::string, std::string> type;
+
+	bool operator()(type const& a, type const& b) const
+	{
+		return ciLess(a.first, b.first);
+	}
+};
+
 void Gfx::selectLevel()
 {
 	Menu levelMenu(178, 28);
@@ -1128,7 +1138,7 @@ void Gfx::selectLevel()
 		}
 	}
 	
-	std::sort(levels.begin(), levels.end());
+	std::sort(levels.begin(), levels.end(), LevelSort());
 	
 	for(std::size_t i = 0; i < levels.size(); ++i)
 	{
@@ -1225,32 +1235,35 @@ void Gfx::selectLevel()
 
 void Gfx::selectProfile(WormSettings& ws)
 {
-	Menu profileMenu(178, 28);
+	Menu profileMenu(28, 28);
 	
 	profileMenu.setHeight(14);
 		
 	DirectoryIterator di(joinPath(lieroEXERoot, ".")); // TODO: Fix lieroEXERoot to be "." instead of ""
+	
+	std::vector<std::string> profiles;
 	
 	for(; di; ++di)
 	{
 		std::string str = *di;
 		
 		if(ciCompare(getExtension(str), "LPF"))
-			profileMenu.addItem(MenuItem(7, 7, getBasename(str)));
+			profiles.push_back(getBasename(str));
+			
 	}
+	
+	std::sort(profiles.begin(), profiles.end(), ciLess);
+	
+	for(std::size_t i = 0; i < profiles.size(); ++i)
+		profileMenu.addItem(MenuItem(7, 7, profiles[i]));
 	
 	profileMenu.moveToFirstVisible();
 	
 	do
 	{
 		std::memcpy(gfx.screenPixels, &frozenScreen[0], frozenScreen.size());
-		
-		drawBasicMenu();
-		
-		std::string selReplay = "Select profile";
-		
-		drawRoundedBox(178, 20, 0, 7, common->font.getDims(selReplay));
-		common->font.drawText(selReplay, 180, 21, 50);
+
+		common->font.drawFramedText("Select profile", 28, 20, 50);
 
 		profileMenu.draw(*common, false);
 		
@@ -1307,21 +1320,30 @@ void Gfx::selectProfile(WormSettings& ws)
 	return;
 }
 
+
+
 int Gfx::selectReplay()
 {
-	Menu replayMenu(178, 28);
+	Menu replayMenu(28, 28);
 	
 	replayMenu.setHeight(14);
 		
 	DirectoryIterator di(joinPath(lieroEXERoot, ".")); // TODO: Fix lieroEXERoot to be "." instead of ""
+	
+	std::vector<std::string> replays;
 	
 	for(; di; ++di)
 	{
 		std::string str = *di;
 		
 		if(ciCompare(getExtension(str), "LRP"))
-			replayMenu.addItem(MenuItem(7, 7, getBasename(str)));
+			replays.push_back(getBasename(str));
 	}
+	
+	std::sort(replays.begin(), replays.end(), ciLess);
+	
+	for(std::size_t i = 0; i < replays.size(); ++i)
+		replayMenu.addItem(MenuItem(7, 7, replays[i]));
 	
 	replayMenu.moveToFirstVisible();
 	
@@ -1329,12 +1351,12 @@ int Gfx::selectReplay()
 	{
 		std::memcpy(gfx.screenPixels, &frozenScreen[0], frozenScreen.size());
 		
-		drawBasicMenu();
-		
 		std::string selReplay = "Select replay";
 		
-		drawRoundedBox(178, 20, 0, 7, common->font.getDims(selReplay));
-		common->font.drawText(selReplay, 180, 21, 50);
+		common->font.drawFramedText(selReplay, 28, 20, 50);
+		/*
+		drawRoundedBox(28, 20, 0, 7, common->font.getDims(selReplay));
+		common->font.drawText(selReplay, 30, 21, 50);*/
 
 		replayMenu.draw(*common, false);
 		

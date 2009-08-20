@@ -92,6 +92,12 @@ void Font::drawText(char const* str, std::size_t len, int x, int y, int colour)
 	}
 }
 
+void Font::drawFramedText(std::string const& text, int x, int y, int color)
+{
+	drawRoundedBox(x, y, 0, 7, getDims(text));
+	drawText(text, x + 2, y + 1, color);
+}
+
 int Font::getDims(char const* str, std::size_t len, int* height)
 {
 	int width = 0;

@@ -32,6 +32,8 @@ struct Font
 		return getDims(str.data(), str.size(), height);
 	}
 	
+	void drawFramedText(std::string const& text, int x, int y, int color);
+	
 	std::vector<Char> chars;
 };
 
