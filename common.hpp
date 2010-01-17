@@ -1,13 +1,13 @@
 #ifndef UUID_9E238CFB9F074A3A432E22AE5B8EE5FB
 #define UUID_9E238CFB9F074A3A432E22AE5B8EE5FB
 
-#include "font.hpp"
+#include "gfx/font.hpp"
 #include "weapon.hpp"
 #include "sobject.hpp"
 #include "nobject.hpp"
 #include "constants.hpp"
-#include "palette.hpp"
-#include "sprite.hpp"
+#include "gfx/palette.hpp"
+#include "gfx/sprite.hpp"
 #include <string>
 #include <gvl/resman/shared_ptr.hpp>
 

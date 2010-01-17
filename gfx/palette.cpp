@@ -1,8 +1,8 @@
 #include "palette.hpp"
 
-#include "settings.hpp"
-#include "reader.hpp"
-#include "gfx.hpp"
+#include "../settings.hpp"
+#include "../reader.hpp"
+#include "../gfx.hpp"
 #include <SDL/SDL.h>
 
 void Palette::activate()

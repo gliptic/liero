@@ -16,9 +16,14 @@
 //#include <iostream>
 #include <cstdio>
 #include <memory>
-#include "controller.hpp"
+
+#include "controller/replayController.hpp"
+#include "controller/localController.hpp"
+#include "controller/controller.hpp"
 
 #include "gfx/macros.hpp"
+
+#include "menu/arrayEnumBehaviour.hpp"
 
 /*
 ds:0000 is 0x 1AE80
@@ -75,25 +80,6 @@ void SpriteSet::allocate(int width, int height, int count)
 	int amount = spriteSize * count;
 	data.resize(amount);
 }
-
-struct ArrayEnumBehavior : EnumBehavior
-{
-	template<int N>
-	ArrayEnumBehavior(Common& common, uint32_t& v, std::string const (&arr)[N], bool brokenEnter = false)
-	: EnumBehavior(common, v, 0, N-1, brokenEnter)
-	, arr(arr)
-	{
-	}
-		
-	void onUpdate(Menu& menu, int item)
-	{
-		MenuItem& i = menu.items[item];
-		i.value = arr[v];
-		i.hasValue = true;
-	}
-	
-	std::string const* arr;
-};
 
 struct KeyBehavior : ArrayEnumBehavior
 {
@@ -950,18 +936,6 @@ struct PlayerSettingsBehavior : ItemBehavior
 	int player;
 };
 
-
-struct ReplaySelectBehavior : ItemBehavior
-{
-	int onEnter(Menu& menu, int item)
-	{
-		sfx.play(27);
-		int ret = gfx.selectReplay();
-		sfx.play(27);
-		return ret;
-	}
-};
-
 ItemBehavior* SettingsMenu::getItemBehavior(Common& common, int item)
 {
 	switch(item)
@@ -1018,45 +992,6 @@ ItemBehavior* SettingsMenu::getItemBehavior(Common& common, int item)
 	}
 }
 
-struct ExtensionsSwitchBehavior : BooleanSwitchBehavior
-{
-	ExtensionsSwitchBehavior(Common& common, bool& v)
-	: BooleanSwitchBehavior(common, v)
-	{
-	}
-	
-	void onUpdate(Menu& menu, int item)
-	{
-		BooleanSwitchBehavior::onUpdate(menu, item);
-		
-		gfx.updateExtensions(v);
-	}
-};
-
-struct Depth32Behavior : BooleanSwitchBehavior
-{
-	Depth32Behavior(Common& common, bool& v)
-	: BooleanSwitchBehavior(common, v)
-	{
-	}
-	
-	int onEnter(Menu& menu, int item)
-	{
-		BooleanSwitchBehavior::onEnter(menu, item);
-		gfx.setVideoMode();
-		return -1;
-	}
-	
-	bool onLeftRight(Menu& menu, int item, int dir)
-	{
-		BooleanSwitchBehavior::onLeftRight(menu, item, dir);
-		gfx.setVideoMode();
-		return true;
-	}
-};
-
-
-
 void Gfx::updateExtensions(bool enabled)
 {
 	for(std::size_t i = HiddenMenu::Extensions + 1; i < HiddenMenu::FullscreenW; ++i)
@@ -1067,38 +1002,6 @@ void Gfx::updateExtensions(bool enabled)
 	for(std::size_t i = 13; i < playerMenu.items.size(); ++i)
 	{
 		playerMenu.setVisibility(i, enabled);
-	}
-}
-
-static std::string const scaleFilterNames[Settings::SfMax] =
-{
-	"Nearest",
-	"Scale2X"
-};
-
-
-ItemBehavior* HiddenMenu::getItemBehavior(Common& common, int item)
-{
-	switch(item)
-	{
-		case Extensions:
-			return new ExtensionsSwitchBehavior(common, gfx.settings->extensions);
-		case RecordReplays:
-			return new BooleanSwitchBehavior(common, gfx.settings->recordReplays);
-		case Replays:
-			return new ReplaySelectBehavior();
-		case LoadPowerLevels:
-			return new BooleanSwitchBehavior(common, gfx.settings->loadPowerlevelPalette);
-		case ScalingFilter:
-			return new ArrayEnumBehavior(common, gfx.settings->scaleFilter, scaleFilterNames);
-		case FullscreenW:
-			return new IntegerBehavior(common, gfx.settings->fullscreenW, 0, 9999, 0);
-		case FullscreenH:
-			return new IntegerBehavior(common, gfx.settings->fullscreenH, 0, 9999, 0);
-		case Depth32:
-			return new Depth32Behavior(common, gfx.settings->depth32);
-		default:
-			return Menu::getItemBehavior(common, item);
 	}
 }
 

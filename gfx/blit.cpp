@@ -1,8 +1,8 @@
-#include "gfx.hpp"
-#include "game.hpp"
-#include "rect.hpp"
-#include "constants.hpp"
-#include "gfx/macros.hpp"
+#include "../gfx.hpp"
+#include "../rect.hpp"
+#include "../constants.hpp"
+#include "../level.hpp"
+#include "macros.hpp"
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
@@ -257,8 +257,6 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 
 void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, int x, int y)
 {
-	//Common& common = *game.common;
-	
 	Texture& tex = common.textures[dirtEffect];
 	PalIdx* tFrame = common.largeSprites.spritePtr(tex.sFrame + rand(tex.rFrame));
 	PalIdx* mFrame = common.largeSprites.spritePtr(tex.mFrame);

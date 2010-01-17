@@ -2,7 +2,7 @@
 #define LIERO_MENU_MENU_ITEM_HPP
 
 #include <string>
-#include "../colour.hpp"
+#include "../gfx/colour.hpp"
 
 struct Common;
 

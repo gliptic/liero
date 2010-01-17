@@ -4,9 +4,9 @@
 #include <SDL/SDL.h>
 #include <cstdio>
 #include <cassert>
-#include "font.hpp"
+#include "gfx/font.hpp"
 #include "menu/menu.hpp"
-#include "colour.hpp"
+#include "gfx/colour.hpp"
 #include "rect.hpp"
 #include "rand.hpp"
 #include "keys.hpp"
@@ -15,7 +15,7 @@
 #include "common.hpp"
 #include <gvl/math/rect.hpp>
 
-
+#include "menu/hiddenMenu.hpp"
 
 struct Key
 {
@@ -52,29 +52,6 @@ struct SettingsMenu : Menu
 {
 	SettingsMenu(int x, int y)
 	: Menu(x, y)
-	{
-	}
-	
-	virtual ItemBehavior* getItemBehavior(Common& common, int item);
-};
-
-struct HiddenMenu : Menu
-{
-	enum
-	{
-		Extensions,
-		RecordReplays,
-		Replays,
-		LoadPowerLevels,
-		ScalingFilter,
-		FullscreenW,
-		FullscreenH,
-		Depth32
-	};
-	
-	HiddenMenu(int x, int y)
-	: Menu(x, y)
-	
 	{
 	}
 	

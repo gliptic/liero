@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <utility>
 #include "rect.hpp"
-#include "palette.hpp"
+#include "gfx/palette.hpp"
 #include <SDL/SDL.h>
 
 struct Game;

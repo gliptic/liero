@@ -1,6 +1,6 @@
 #include "bobject.hpp"
 
-#include "colour.hpp"
+#include "gfx/colour.hpp"
 #include "game.hpp"
 #include "constants.hpp"
 

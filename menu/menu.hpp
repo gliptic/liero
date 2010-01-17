@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <vector>
 #include <memory>
-#include "../colour.hpp"
+#include "../gfx/colour.hpp"
 
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/support/cstdint.hpp>

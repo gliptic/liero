@@ -1,7 +1,7 @@
 #include "font.hpp"
-#include "reader.hpp"
-#include "gfx.hpp"
-#include "gfx/macros.hpp"
+#include "../reader.hpp"
+#include "../gfx.hpp"
+#include "macros.hpp"
 #include "colour.hpp"
 #include <iostream>
 

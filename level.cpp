@@ -2,7 +2,7 @@
 
 #include "game.hpp"
 #include "gfx.hpp"
-#include "colour.hpp"
+#include "gfx/colour.hpp"
 #include "filesystem.hpp"
 
 #include "reader.hpp" // TODO: For lieroEXERoot. We should move that into Common.
