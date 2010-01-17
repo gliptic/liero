@@ -1,7 +1,7 @@
 #ifndef LIERO_WEAPSEL_HPP
 #define LIERO_WEAPSEL_HPP
 
-#include "menu.hpp"
+#include "menu/menu.hpp"
 
 struct Game;
 

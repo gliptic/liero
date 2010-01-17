@@ -6,57 +6,20 @@
 #include <cstdio>
 #include <vector>
 #include <memory>
-#include "colour.hpp"
+#include "../colour.hpp"
 
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/support/cstdint.hpp>
 
+#include "menuItem.hpp"
+#include "itemBehaviour.hpp"
+
+#include "integerBehaviour.hpp"
+#include "booleanSwitchBehaviour.hpp"
+#include "timeBehaviour.hpp"
+#include "enumBehaviour.hpp"
+
 struct Common;
-
-struct MenuItem
-{
-	MenuItem(
-		PalIdx colour,
-		PalIdx disColour,
-		std::string string)
-	: colour(colour)
-	, disColour(disColour)
-	, string(string)
-	, hasValue(false)
-	, visible(true)
-	{
-	}
-	
-	void draw(Common& common, int x, int y, bool selected, bool disabled, bool centered, int valueOffsetX);
-	
-	PalIdx colour;
-	PalIdx disColour;
-	std::string string;
-	
-	bool hasValue;
-	std::string value;
-	
-	bool visible;
-};
-
-struct Menu;
-
-struct ItemBehavior
-{
-	virtual bool onLeftRight(Menu& menu, int item, int dir)
-	{
-		return true;
-	}
-	
-	virtual int onEnter(Menu& menu, int item)
-	{
-		return -1;
-	}
-	
-	virtual void onUpdate(Menu& menu, int item)
-	{
-	}
-};
 
 struct Gfx;
 
@@ -188,78 +151,5 @@ struct Menu
 private:
 	int selection_; // Global index
 };
-
-struct Common;
-
-struct BooleanSwitchBehavior : ItemBehavior
-{
-	BooleanSwitchBehavior(Common& common, bool& v)
-	: common(common), v(v)
-	{
-	}
-	
-	bool onLeftRight(Menu& menu, int item, int dir);
-	int onEnter(Menu& menu, int item);
-	void onUpdate(Menu& menu, int item);
-	
-	Common& common;
-	bool& v;
-};
-
-struct IntegerBehavior : ItemBehavior
-{
-	IntegerBehavior(Common& common, int& v, int min, int max, int step = 1, bool percentage = false)
-	: common(common), v(v)
-	, min(min), max(max), step(step)
-	, percentage(percentage)
-	, allowEntry(true)
-	{
-	}
-	
-	bool onLeftRight(Menu& menu, int item, int dir);
-	int onEnter(Menu& menu, int item);
-	void onUpdate(Menu& menu, int item);
-	
-	
-	
-	Common& common;
-	int& v;
-	int min, max, step;
-	bool percentage;
-	bool allowEntry;
-};
-
-struct EnumBehavior : ItemBehavior
-{
-	EnumBehavior(Common& common, uint32_t& v, uint32_t min, uint32_t max, bool brokenLeftRight = false)
-	: common(common), v(v)
-	, min(min), max(max)
-	, brokenLeftRight(brokenLeftRight)
-	{
-	}
-	
-	bool onLeftRight(Menu& menu, int item, int dir);
-	int onEnter(Menu& menu, int item);
-	void onUpdate(Menu& menu, int item);
-	
-	void change(Menu& menu, int item, int dir);
-	
-	Common& common;
-	uint32_t& v;
-	uint32_t min, max;
-	bool brokenLeftRight;
-};
-
-struct TimeBehavior : IntegerBehavior
-{
-	TimeBehavior(Common& common, int& v, int min, int max, int step = 1, bool percentage = false)
-	: IntegerBehavior(common, v, min, max, step, percentage)
-	{
-	}
-	
-	void onUpdate(Menu& menu, int item);
-};
-
-
 
 #endif // LIERO_MENU_HPP

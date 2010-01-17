@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cassert>
 #include "font.hpp"
-#include "menu.hpp"
+#include "menu/menu.hpp"
 #include "colour.hpp"
 #include "rect.hpp"
 #include "rand.hpp"

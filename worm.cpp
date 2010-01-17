@@ -893,7 +893,7 @@ void Worm::initWeapons()
 	Common& common = *game.common;
 	currentWeapon = 0; // It was 1 in OpenLiero A1
 	
-	for(int j = 0; j < game.settings->selectableWeapons; ++j)
+	for(int j = 0; j < Settings::selectableWeapons; ++j)
 	{
 		WormWeapon& ww = weapons[j];
 		ww.id = common.weapOrder[settings->weapons[j]];
@@ -1020,7 +1020,7 @@ void Worm::processWeapons()
 {
 	Common& common = *game.common;
 	
-	for(int i = 0; i < game.settings->selectableWeapons; ++i)
+	for(int i = 0; i < Settings::selectableWeapons; ++i)
 	{
 		if(weapons[i].delayLeft >= 0)
 			--weapons[i].delayLeft;
@@ -1339,7 +1339,7 @@ void Worm::processWeaponChange()
 		if(pressedOnce(Left))
 		{
 			if(--currentWeapon < 0)
-				currentWeapon = game.settings->selectableWeapons - 1;
+				currentWeapon = Settings::selectableWeapons - 1;
 				
 			hotspotX = ftoi(x);
 			hotspotY = ftoi(y);
@@ -1347,7 +1347,7 @@ void Worm::processWeaponChange()
 		
 		if(pressedOnce(Right))
 		{
-			if(++currentWeapon >= game.settings->selectableWeapons)
+			if(++currentWeapon >= Settings::selectableWeapons)
 				currentWeapon = 0;
 				
 			hotspotX = ftoi(x);

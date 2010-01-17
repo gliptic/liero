@@ -3,7 +3,7 @@
 #include "game.hpp"
 #include "worm.hpp"
 #include "text.hpp"
-#include "menu.hpp"
+#include "menu/menu.hpp"
 #include "sfx.hpp"
 #include "viewport.hpp"
 #include <SDL/SDL.h>
@@ -41,14 +41,14 @@ WeaponSelection::WeaponSelection(Game& game)
 			menus[i].place(x, y);
 		}	
 		
-		for(int j = 0; j < game.settings->selectableWeapons; ++j)
+		for(int j = 0; j < Settings::selectableWeapons; ++j)
 		{
 			if(ws.weapons[j] == 0)
 			{
 				ws.weapons[j] = gfx.rand(1, 41);
 			}
 			
-			bool enoughWeapons = (enabledWeaps >= game.settings->selectableWeapons);
+			bool enoughWeapons = (enabledWeaps >= Settings::selectableWeapons);
 			
 			while(true)
 			{
@@ -158,7 +158,7 @@ bool WeaponSelection::processFrame()
 		{
 			//menus[i].draw(common, ws.selWeapX - 2, 28, false, curSel[i]);
 
-			if(weapID >= 0 && weapID < game.settings->selectableWeapons)
+			if(weapID >= 0 && weapID < Settings::selectableWeapons)
 			{
 				if(worm.pressed(Worm::Left))
 				{
@@ -224,9 +224,9 @@ bool WeaponSelection::processFrame()
 				{
 					bool weapUsed[256] = {};
 					
-					bool enoughWeapons = (enabledWeaps >= game.settings->selectableWeapons);
+					bool enoughWeapons = (enabledWeaps >= Settings::selectableWeapons);
 					
-					for(int j = 0; j < game.settings->selectableWeapons; ++j)
+					for(int j = 0; j < Settings::selectableWeapons; ++j)
 					{
 						while(true)
 						{
