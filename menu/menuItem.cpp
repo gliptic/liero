@@ -30,7 +30,7 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 	else if(selected)
 		c = 168;
 	else
-		c = colour;
+		c = color;
 		
 	common.font.drawText(string, x + 2, y + 1, c);
 	if(hasValue)

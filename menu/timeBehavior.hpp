@@ -1,7 +1,7 @@
 #ifndef LIERO_MENU_TIME_BEHAVIOUR_HPP
 #define LIERO_MENU_TIME_BEHAVIOUR_HPP
 
-#include "integerBehaviour.hpp"
+#include "integerBehavior.hpp"
 
 struct Common;
 struct Menu;

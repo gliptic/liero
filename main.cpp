@@ -71,7 +71,7 @@ try
 	if(!exeSet)
 		setLieroEXE("LIERO.EXE");
 
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
 	
 /*
 	char buf[256];

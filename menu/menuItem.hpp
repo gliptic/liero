@@ -2,17 +2,17 @@
 #define LIERO_MENU_MENU_ITEM_HPP
 
 #include <string>
-#include "../gfx/colour.hpp"
+#include "../gfx/color.hpp"
 
 struct Common;
 
 struct MenuItem
 {
 	MenuItem(
-		PalIdx colour,
+		PalIdx color,
 		PalIdx disColour,
 		std::string string)
-	: colour(colour)
+	: color(color)
 	, disColour(disColour)
 	, string(string)
 	, hasValue(false)
@@ -22,7 +22,7 @@ struct MenuItem
 	
 	void draw(Common& common, int x, int y, bool selected, bool disabled, bool centered, int valueOffsetX);
 	
-	PalIdx colour;
+	PalIdx color;
 	PalIdx disColour;
 	std::string string;
 	

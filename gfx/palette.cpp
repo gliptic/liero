@@ -90,7 +90,7 @@ void Palette::setWormColour(int i, WormSettings const& settings)
 {
 	int const b[2] = {0x58, 0x78}; // TODO: Read from EXE?
 	
-	int idx = settings.colour;
+	int idx = settings.color;
 	
 	setWormColoursSpan(idx, settings.rgb);
 	

@@ -1,7 +1,7 @@
 #include "worm.hpp"
 #include "constants.hpp"
 #include "game.hpp"
-#include "gfx/colour.hpp"
+#include "gfx/color.hpp"
 #include "math.hpp"
 //#include <cmath>
 

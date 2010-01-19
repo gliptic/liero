@@ -245,7 +245,7 @@ void Menu::movement(int direction)
 	}
 }
 
-void Menu::readItems(FILE* f, int length, int count, bool colourPrefix, PalIdx colour, PalIdx disColour)
+void Menu::readItems(FILE* f, int length, int count, bool colorPrefix, PalIdx color, PalIdx disColour)
 {
 	char temp[256];
 	for(int i = 0; i < count; ++i)
@@ -253,21 +253,21 @@ void Menu::readItems(FILE* f, int length, int count, bool colourPrefix, PalIdx c
 		checkedFread(&temp[0], 1, length, f);
 		int offset = 1;
 		int length = static_cast<unsigned char>(temp[0]);
-		if(colourPrefix)
+		if(colorPrefix)
 		{
-			colour = disColour = temp[2];
+			color = disColour = temp[2];
 			length -= 2;
 			offset += 2;
 		}
-		addItem(MenuItem(colour, disColour, std::string(&temp[offset], length)));
+		addItem(MenuItem(color, disColour, std::string(&temp[offset], length)));
 	}
 	
 	setTop(0);
 }
 
-void Menu::readItem(FILE* f, int offset, PalIdx colour, PalIdx disColour)
+void Menu::readItem(FILE* f, int offset, PalIdx color, PalIdx disColour)
 {
-	addItem(MenuItem(colour, disColour, readPascalStringAt(f, offset)));
+	addItem(MenuItem(color, disColour, readPascalStringAt(f, offset)));
 }
 
 int Menu::addItem(MenuItem item)

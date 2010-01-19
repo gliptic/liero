@@ -1,5 +1,5 @@
 
-#include "integerBehaviour.hpp"
+#include "integerBehavior.hpp"
 
 #include "menu.hpp"
 #include "menuItem.hpp"

@@ -1,5 +1,5 @@
 
-#include "timeBehaviour.hpp"
+#include "timeBehavior.hpp"
 
 #include "menu.hpp"
 #include "menuItem.hpp"

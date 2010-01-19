@@ -111,7 +111,8 @@ Worm* Game::findControlForKey(uint32_t key, Worm::Control& control)
 		
 		for(std::size_t c = 0; c < WormSettings::MaxControl; ++c)
 		{
-			if(w.settings->controls[c] == key)
+			uint32_t *controls = settings->extensions? w.settings->controlsEx : w.settings->controls;
+			if( controls[c] == key )
 			{
 				control = static_cast<Worm::Control>(c);
 				return &w;
@@ -286,7 +287,7 @@ void Game::processFrame()
 	{
 		for(int w = 0; w < 4; ++w)
 		{
-			gfx.origpal.rotate(common->colourAnim[w].from, common->colourAnim[w].to);
+			gfx.origpal.rotate(common->colorAnim[w].from, common->colorAnim[w].to);
 		}
 	}
 	

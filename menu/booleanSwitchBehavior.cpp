@@ -1,5 +1,5 @@
 
-#include "booleanSwitchBehaviour.hpp"
+#include "booleanSwitchBehavior.hpp"
 
 #include "menu.hpp"
 #include "menuItem.hpp"

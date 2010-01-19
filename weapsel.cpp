@@ -125,7 +125,7 @@ void WeaponSelection::draw()
 		
 		int width = common.font.getDims(ws.name);
 		drawRoundedBox(weaponMenu.x + 29 - width/2, weaponMenu.y - 11, 0, 7, width);
-		common.font.drawText(ws.name, weaponMenu.x + 31 - width/2, weaponMenu.y - 10, ws.colour + 1);
+		common.font.drawText(ws.name, weaponMenu.x + 31 - width/2, weaponMenu.y - 10, ws.color + 1);
 		
 		if(!isReady[i])
 		{

@@ -57,7 +57,7 @@ void WormSettings::saveProfile(std::string const& newProfileName)
 
 void WormSettings::loadProfile(std::string const& newProfileName)
 {
-	int oldColor = colour;
+	int oldColor = color;
 	try
 	{
 		std::string path(joinPath(lieroEXERoot, newProfileName) + ".lpf");
@@ -75,7 +75,7 @@ void WormSettings::loadProfile(std::string const& newProfileName)
 		Console::writeWarning("The profile may just be old, in which case there is nothing to worry about");
 	}
 	
-	colour = oldColor;  // We preserve the color
+	color = oldColor;  // We preserve the color
 }
 
 void Worm::calculateReactionForce(int newX, int newY, int dir)

@@ -1,6 +1,6 @@
 #include "bobject.hpp"
 
-#include "gfx/colour.hpp"
+#include "gfx/color.hpp"
 #include "game.hpp"
 #include "constants.hpp"
 
@@ -8,7 +8,7 @@ void Game::createBObject(fixed x, fixed y, fixed velX, fixed velY)
 {
 	BObject& obj = *bobjects.newObjectReuse();
 	
-	obj.colour = rand(common->C[NumBloodColours]) + common->C[FirstBloodColour];
+	obj.color = rand(common->C[NumBloodColours]) + common->C[FirstBloodColour];
 	obj.x = x;
 	obj.y = y;
 	obj.velX = velX;

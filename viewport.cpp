@@ -196,13 +196,13 @@ void Viewport::draw(bool isReplay)
 				state = 1; // We're better or equal off
 		}
 		
-		int colour;
+		int color;
 		if(game.lastKilled == worm)
-			colour = stateColours[state];
+			color = stateColours[state];
 		else
-			colour = stateColours[state + 2];
+			color = stateColours[state + 2];
 		
-		common.font.drawText(timeToString(worm->timer), 5, 106 + 84*worm->index, 161, colour);
+		common.font.drawText(timeToString(worm->timer), 5, 106 + 84*worm->index, 161, color);
 	}
 	break;
 	}	
@@ -507,7 +507,7 @@ void Viewport::draw(bool isReplay)
 				
 				if(ww.id == common.C[LaserWeapon] - 1 && w.pressed(Worm::Fire))
 				{
-					drawLine(hotspotX, hotspotY, tempX + 7, tempY + 4, weapon.colourBullets);
+					drawLine(hotspotX, hotspotY, tempX + 7, tempY + 4, weapon.colorBullets);
 				}
 			}
 			
@@ -605,7 +605,7 @@ void Viewport::draw(bool isReplay)
 		int posX = ftoi(i->x) + offsX;
 		int posY = ftoi(i->y) + offsY;
 		if(isInside(gfx.screen->clip_rect, posX, posY))
-			gfx.getScreenPixel(posX, posY) = PalIdx(i->colour);
+			gfx.getScreenPixel(posX, posY) = PalIdx(i->color);
 			
 		if(game.settings->shadow)
 		{

@@ -231,12 +231,22 @@ void archive_liero(Archive ar, Settings& settings)
 			
 		for(int i = 0; i < 2; ++i)
 		{
+			for(int c = 0; c < WormSettings::MaxControl; ++c)
+			{
+				int dummy = 0;
+				gvl::enable_when(ar, fileExtensionVersion >= 2)
+					.ui8(dummy, 255)
+					.ui8(dummy, 255);
+			}
+		}
+		
+		for(int i = 0; i < 2; ++i)
+		{
 			WormSettings& ws = *settings.wormSettings[i];
 			for(int c = 0; c < WormSettings::MaxControl; ++c)
 			{
-				gvl::enable_when(ar, fileExtensionVersion > 2)
-					.ui8(ws.joystickButtons[c].joystickNum, 255)
-					.ui8(ws.joystickButtons[c].buttonNum, 255);
+				gvl::enable_when(ar, fileExtensionVersion >= 3)
+					.ui32(ws.controlsEx[c], ws.controls[c]);
 			}
 		}
 	}

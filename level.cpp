@@ -2,7 +2,7 @@
 
 #include "game.hpp"
 #include "gfx.hpp"
-#include "gfx/colour.hpp"
+#include "gfx/color.hpp"
 #include "filesystem.hpp"
 
 #include "reader.hpp" // TODO: For lieroEXERoot. We should move that into Common.
@@ -103,7 +103,7 @@ bool isNoRock(Common& common, Level& level, int size, int x, int y)
 
 void Level::generateRandom(Common& common, Settings const& settings, Rand& rand)
 {
-	// TODO: Skipping this is a minor deviation of liero behaviour
+	// TODO: Skipping this is a minor deviation of liero behavior
 	/*
 	gfx.settings.levelFile.clear();
 	gfx.settings.randomLevel = true;*/

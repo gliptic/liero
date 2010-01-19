@@ -1,5 +1,5 @@
 
-#include "enumBehaviour.hpp"
+#include "enumBehavior.hpp"
 
 #include "menu.hpp"
 #include "menuItem.hpp"

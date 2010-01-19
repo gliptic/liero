@@ -96,8 +96,8 @@ void Common::loadPalette()
 	std::fseek(exe, 0x1AF0C, SEEK_SET);
 	for(int i = 0; i < 4; ++i)
 	{
-		colourAnim[i].from = readUint8(exe);
-		colourAnim[i].to = readUint8(exe);
+		colorAnim[i].from = readUint8(exe);
+		colorAnim[i].to = readUint8(exe);
 	}
 }
 
@@ -237,7 +237,7 @@ void Common::loadWeapons()
 	readMembers<Read8>(exe, weapons, &Weapon::numFrames);
 	readMembers<ReadBool>(exe, weapons, &Weapon::loopAnim);
 	readMembers<Read8>(exe, weapons, &Weapon::shotType);
-	readMembers<Read8>(exe, weapons, &Weapon::colourBullets);
+	readMembers<Read8>(exe, weapons, &Weapon::colorBullets);
 	readMembers<Read8>(exe, weapons, &Weapon::splinterAmount);
 	readMembers<Read8>(exe, weapons, &Weapon::splinterColour);
 	readMembers<Dec<Read8> >(exe, weapons, &Weapon::splinterType);
@@ -303,7 +303,7 @@ void Common::loadWeapons()
 	readMembers<Read8>(exe, nobjectTypes, &NObjectType::startFrame);
 	readMembers<Read8>(exe, nobjectTypes, &NObjectType::numFrames);
 	readMembers<ReadBool>(exe, nobjectTypes, &NObjectType::drawOnMap);
-	readMembers<Read8>(exe, nobjectTypes, &NObjectType::colourBullets);
+	readMembers<Read8>(exe, nobjectTypes, &NObjectType::colorBullets);
 	readMembers<Dec<Read8> >(exe, nobjectTypes, &NObjectType::createOnExp);
 	readMembers<ReadBool>(exe, nobjectTypes, &NObjectType::affectByExplosions);
 	readMembers<Dec<Read8> >(exe, nobjectTypes, &NObjectType::dirtEffect);
@@ -411,7 +411,7 @@ void Common::loadGfx()
 				(wormSprite(i, 0, 0) + y*16)[14 - x] = pix;
 			
 			if(pix >= 30 && pix <= 34)
-				pix += 9; // Change worm colour
+				pix += 9; // Change worm color
 				
 			(wormSprite(i, 1, 1) + y*16)[x] = pix;
 			

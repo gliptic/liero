@@ -144,7 +144,7 @@ struct Common : gvl::shared
 	int bonusRandTimer[2][2];
 	int bonusSObjects[2];
 	AIParams aiParams;
-	ColourAnim colourAnim[4];
+	ColourAnim colorAnim[4];
 	int bonusFrames[2];
 	SpriteSet smallSprites;
 	SpriteSet largeSprites;

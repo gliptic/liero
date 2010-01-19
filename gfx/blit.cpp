@@ -7,24 +7,34 @@
 #include <cassert>
 #include <cstdlib>
 
-void drawBar(int x, int y, int width, int colour)
+void fillRect(int x, int y, int w, int h, int color)
+{
+	SDL_Rect rect;
+	rect.x = x;
+	rect.y = y;
+	rect.w = w;
+	rect.h = h;
+	SDL_FillRect(gfx.screen, &rect, color);
+}
+
+void drawBar(int x, int y, int width, int color)
 {
 	if(width > 0)
 	{
-		std::memset(&gfx.getScreenPixel(x, y), colour, width);
-		std::memset(&gfx.getScreenPixel(x, y+1), colour, width);
+		std::memset(&gfx.getScreenPixel(x, y), color, width);
+		std::memset(&gfx.getScreenPixel(x, y+1), color, width);
 	}
 }
 
-void drawRoundedBox(int x, int y, int colour, int height, int width)
+void drawRoundedBox(int x, int y, int color, int height, int width)
 {
 	height--;
-	std::memset(&gfx.getScreenPixel(x+1,y), colour, width+1);
+	std::memset(&gfx.getScreenPixel(x+1,y), color, width+1);
 	for(long i=1; i<height; i++)
 	{
-		std::memset(&gfx.getScreenPixel(x,y+i), colour, width+3);
+		std::memset(&gfx.getScreenPixel(x,y+i), color, width+3);
 	}
-	std::memset(&gfx.getScreenPixel(x+1,y+height), colour, width+1);
+	std::memset(&gfx.getScreenPixel(x+1,y+height), color, width+1);
 }
 
 
@@ -413,7 +423,7 @@ if(dx > dy) { \
 
 void drawNinjarope(Common& common, int fromX, int fromY, int toX, int toY)
 {
-	int colour = common.C[NRColourBegin];
+	int color = common.C[NRColourBegin];
 	
 	SDL_Rect& clip = gfx.screen->clip_rect;
 	PalIdx* ptr = gfx.screenPixels;
@@ -421,11 +431,11 @@ void drawNinjarope(Common& common, int fromX, int fromY, int toX, int toY)
 	
 	
 	DO_LINE({
-		if(++colour == common.C[NRColourEnd])
-			colour = common.C[NRColourBegin];
+		if(++color == common.C[NRColourEnd])
+			color = common.C[NRColourBegin];
 			
 		if(isInside(clip, cx, cy))
-			ptr[cy*pitch + cx] = colour;
+			ptr[cy*pitch + cx] = color;
 	});
 }
 
@@ -463,7 +473,7 @@ void drawShadowLine(Common& common, int fromX, int fromY, int toX, int toY)
 	});
 }
 
-void drawLine(int fromX, int fromY, int toX, int toY, int colour)
+void drawLine(int fromX, int fromY, int toX, int toY, int color)
 {
 	SDL_Rect& clip = gfx.screen->clip_rect;
 	PalIdx* ptr = gfx.screenPixels;
@@ -473,7 +483,7 @@ void drawLine(int fromX, int fromY, int toX, int toY, int colour)
 	DO_LINE({
 		if(isInside(clip, cx, cy))
 		{
-			ptr[cy*pitch + cx] = colour;
+			ptr[cy*pitch + cx] = color;
 		}
 	});
 }

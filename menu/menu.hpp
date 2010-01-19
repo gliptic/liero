@@ -6,18 +6,18 @@
 #include <cstdio>
 #include <vector>
 #include <memory>
-#include "../gfx/colour.hpp"
+#include "../gfx/color.hpp"
 
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/support/cstdint.hpp>
 
 #include "menuItem.hpp"
-#include "itemBehaviour.hpp"
+#include "itemBehavior.hpp"
 
-#include "integerBehaviour.hpp"
-#include "booleanSwitchBehaviour.hpp"
-#include "timeBehaviour.hpp"
-#include "enumBehaviour.hpp"
+#include "integerBehavior.hpp"
+#include "booleanSwitchBehavior.hpp"
+#include "timeBehavior.hpp"
+#include "enumBehavior.hpp"
 
 struct Common;
 
@@ -25,9 +25,9 @@ struct Gfx;
 
 struct Menu
 {
-	void readItems(FILE* f, int length, int count, bool colourPrefix, PalIdx colour = 0, PalIdx disColour = 0);
+	void readItems(FILE* f, int length, int count, bool colorPrefix, PalIdx color = 0, PalIdx disColour = 0);
 	
-	void readItem(FILE* f, int offset, PalIdx colour = 0, PalIdx disColour = 0);
+	void readItem(FILE* f, int offset, PalIdx color = 0, PalIdx disColour = 0);
 	
 	Menu(bool centered = false)
 	{

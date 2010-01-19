@@ -2,7 +2,7 @@
 #include "../reader.hpp"
 #include "../gfx.hpp"
 #include "macros.hpp"
-#include "colour.hpp"
+#include "color.hpp"
 #include <iostream>
 
 void Font::loadFromEXE()
@@ -34,7 +34,7 @@ void Font::loadFromEXE()
 	}
 }
 
-void Font::drawChar(unsigned char c, int x, int y, int colour)
+void Font::drawChar(unsigned char c, int x, int y, int color)
 {
 	if(c >= 2 && c < 252) // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since drawText subtracts 2?
 	{
@@ -57,7 +57,7 @@ void Font::drawChar(unsigned char c, int x, int y, int colour)
 			{
 				PalIdx c = *rowsrc;
 				if(c)
-					*rowdest = colour;
+					*rowdest = color;
 				++rowsrc;
 				++rowdest;
 			}
@@ -68,7 +68,7 @@ void Font::drawChar(unsigned char c, int x, int y, int colour)
 	}
 }
 
-void Font::drawText(char const* str, std::size_t len, int x, int y, int colour)
+void Font::drawText(char const* str, std::size_t len, int x, int y, int color)
 {
 	int orgX = x;
 	
@@ -85,7 +85,7 @@ void Font::drawText(char const* str, std::size_t len, int x, int y, int colour)
 		{
 			c -= 2;
 			
-			drawChar(c, x, y, colour);
+			drawChar(c, x, y, color);
 			
 			x += chars[c].width;
 		}

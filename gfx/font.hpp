@@ -18,13 +18,13 @@ struct Font
 	}
 	
 	void loadFromEXE();
-	void drawText(char const* str, std::size_t len, int x, int y, int colour);
+	void drawText(char const* str, std::size_t len, int x, int y, int color);
 	int getDims(char const* str, std::size_t len, int* height = 0);
-	void drawChar(unsigned char ch, int x, int y, int colour);
+	void drawChar(unsigned char ch, int x, int y, int color);
 	
-	void drawText(std::string const& str, int x, int y, int colour)
+	void drawText(std::string const& str, int x, int y, int color)
 	{
-		drawText(str.data(), str.size(), x, y, colour);
+		drawText(str.data(), str.size(), x, y, color);
 	}
 	
 	int getDims(std::string const& str, int* height = 0)

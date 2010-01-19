@@ -10,8 +10,8 @@ struct Game;
 
 struct NObjectType
 {
-	void create1(Game& game, fixed velX, fixed velY, int x, int y, int colour, Worm* owner);
-	void create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int colour, Worm* owner);
+	void create1(Game& game, fixed velX, fixed velY, int x, int y, int color, Worm* owner);
+	void create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int color, Worm* owner);
 
 	int detectDistance;
 	fixed gravity;
@@ -28,7 +28,7 @@ struct NObjectType
 	int startFrame;
 	int numFrames;
 	bool drawOnMap;
-	int colourBullets;
+	int colorBullets;
 	int createOnExp;
 	bool affectByExplosions;
 	int dirtEffect;

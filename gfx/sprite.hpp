@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <cstdio>
-#include "colour.hpp"
+#include "color.hpp"
 
 struct SpriteSet
 {

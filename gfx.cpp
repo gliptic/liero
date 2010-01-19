@@ -23,7 +23,7 @@
 
 #include "gfx/macros.hpp"
 
-#include "menu/arrayEnumBehaviour.hpp"
+#include "menu/arrayEnumBehavior.hpp"
 
 /*
 ds:0000 is 0x 1AE80
@@ -31,82 +31,47 @@ ds:0000 is 0x 1AE80
 
 Gfx gfx;
 
-
-
-
-
-void SpriteSet::read(FILE* f, int width, int height, int count)
+struct KeyBehavior : ItemBehavior
 {
-	assert(width == height); // We only support rectangular sprites right now
-	
-	this->width = width;
-	this->height = height;
-	this->spriteSize = width * height;
-	this->count = count;
-	
-	int amount = spriteSize * count;
-	data.resize(amount);
-	
-	std::vector<PalIdx> temp(amount);
-	
-	checkedFread(&temp[0], 1, amount, f);
-	
-	PalIdx* dest = &data[0];
-	PalIdx* src = &temp[0];
-	
-	for(int i = 0; i < count; i++)
-	{
-		for(int x = 0; x < width; ++x)
-		{
-			for(int y = 0; y < height; ++y)
-			{
-				dest[x + y*width] = src[y];
-			}
-			
-			src += height;
-		}
-		
-		dest += spriteSize;
-	}
-}
-
-void SpriteSet::allocate(int width, int height, int count)
-{
-	this->width = width;
-	this->height = height;
-	this->spriteSize = width * height;
-	this->count = count;
-	
-	int amount = spriteSize * count;
-	data.resize(amount);
-}
-
-struct KeyBehavior : ArrayEnumBehavior
-{
-	KeyBehavior(Common& common, uint32_t& v)
-	: ArrayEnumBehavior(common, v, common.texts.keyNames)
+	KeyBehavior(Common& common, uint32_t& key, uint32_t& keyEx, bool extended = false)
+	: common(common)
+	, key(key)
+	, keyEx(keyEx)
+	, extended(extended)
 	{
 	}
 	
 	int onEnter(Menu& menu, int item)
 	{
 		sfx.play(27);
-		
-		SDL_keysym key(gfx.waitForKey());
-		
-		if(key.sym != SDLK_ESCAPE)
-		{
-			uint32_t k = SDLToDOSKey(key.sym);
-			if(k)
-			{
-				v = k;
-				onUpdate(menu, item);
-			}
+		uint32_t k;
+		bool isEx;
+		do {
+			k = gfx.waitForKeyEx();
+			isEx = isExtendedKey(k);
+		}while( !extended && isEx );
+
+		if ( k != DkEscape ) {
+			
+			if ( !isEx ) key = k;
+			keyEx = k;
+			
+			onUpdate(menu, item);
 		}
 		
 		gfx.clearKeys();
 		return -1;
 	}
+	
+	void onUpdate(Menu& menu, int item)
+	{
+		menu.items[item].value = gfx.getKeyName( extended? keyEx : key );
+	}
+	
+	Common& common;
+	uint32_t& key;
+	uint32_t& keyEx;
+	bool extended;
 };
 
 struct WormNameBehavior : ItemBehavior
@@ -208,7 +173,6 @@ Gfx::Gfx()
 , windowW(320)
 , windowH(200)
 , prevMag(0)
-
 {
 	clearKeys();
 }
@@ -225,6 +189,15 @@ void Gfx::init()
 
 	screenPixels = static_cast<unsigned char*>(screen->pixels);
 	screenPitch = screen->pitch;
+	
+	// Joystick init:
+	SDL_JoystickEventState(SDL_ENABLE);
+	int numJoysticks = SDL_NumJoysticks();
+	joysticks.resize(numJoysticks);
+	for ( int i = 0; i < numJoysticks; ++i ) {
+		joysticks[i].sdlJoystick = SDL_JoystickOpen(i);
+		joysticks[i].clearState();
+	}
 }
 
 void Gfx::setVideoMode()
@@ -418,6 +391,60 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			running = false;
 		}
 		break;
+		
+		case SDL_JOYAXISMOTION:
+		{
+			Joystick &js = joysticks[ev.jbutton.which];
+			int jbtn = 4 + 2 * ev.jaxis.axis;
+			if ( (ev.jaxis.value > JoyAxisThreshold) != js.btnState[jbtn] ) {
+				js.btnState[jbtn] = (ev.jaxis.value > JoyAxisThreshold);
+				if (controller)
+					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
+			}
+			jbtn++;
+			if ( (ev.jaxis.value < -JoyAxisThreshold) != js.btnState[jbtn] ) {
+				js.btnState[jbtn] = (ev.jaxis.value < -JoyAxisThreshold);
+				if (controller)
+					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
+			}
+		}break;
+		case SDL_JOYHATMOTION:
+		{
+			Joystick &js = joysticks[ev.jbutton.which];
+			if ( (bool)(ev.jhat.value & SDL_HAT_UP) != js.btnState[0] ) {
+				int jbtn = 0;
+				js.btnState[jbtn] = (ev.jhat.value & SDL_HAT_UP);
+				if (controller)
+					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
+			}
+			if ( (bool)(ev.jhat.value & SDL_HAT_DOWN) != js.btnState[1] ) {
+				int jbtn = 1;
+				js.btnState[jbtn] = (ev.jhat.value & SDL_HAT_DOWN);
+				if (controller)
+					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
+			}
+			if ( (bool)(ev.jhat.value & SDL_HAT_LEFT) != js.btnState[2] ) {
+				int jbtn = 2;
+				js.btnState[jbtn] = (ev.jhat.value & SDL_HAT_LEFT);
+				if (controller)
+					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
+			}
+			if ( (bool)(ev.jhat.value & SDL_HAT_RIGHT) != js.btnState[3] ) {
+				int jbtn = 3;
+				js.btnState[jbtn] = (ev.jhat.value & SDL_HAT_RIGHT);
+				if (controller)
+					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
+			}
+		}break;
+		case SDL_JOYBUTTONDOWN:
+		case SDL_JOYBUTTONUP:
+		{
+			Joystick &js = joysticks[ev.jbutton.which];
+			int jbtn = 16 + ev.jbutton.button;
+			js.btnState[jbtn] = ev.jbutton.state == SDL_PRESSED;
+			if (controller)
+				controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn]);
+		}break;
 	}
 }
 
@@ -445,6 +472,55 @@ SDL_keysym Gfx::waitForKey()
 	}
 	
 	return SDL_keysym(); // Dummy
+}
+
+uint32_t Gfx::waitForKeyEx()
+{
+	SDL_Event ev;
+	while(SDL_WaitEvent(&ev))
+	{
+		processEvent(ev);
+		switch ( ev.type ) {
+		case SDL_KEYDOWN:
+			return SDLToDOSKey(ev.key.keysym);
+			
+		case SDL_JOYAXISMOTION:
+			if ( ev.jaxis.value > JoyAxisThreshold ) {
+				return joyButtonToExKey( ev.jbutton.which, 4 + 2 * ev.jaxis.axis );
+			}else if ( ev.jaxis.value < -JoyAxisThreshold ){
+				return joyButtonToExKey( ev.jbutton.which, 5 + 2 * ev.jaxis.axis );
+			}
+			break;
+		case SDL_JOYHATMOTION:
+			if ( ev.jhat.value & SDL_HAT_UP ) {
+				return joyButtonToExKey( ev.jbutton.which, 0 );
+			}else if ( ev.jhat.value & SDL_HAT_DOWN ) {
+				return joyButtonToExKey( ev.jbutton.which, 1 );
+			}else if ( ev.jhat.value & SDL_HAT_LEFT ) {
+				return joyButtonToExKey( ev.jbutton.which, 2 );
+			}else if ( ev.jhat.value & SDL_HAT_RIGHT ) {
+				return joyButtonToExKey( ev.jbutton.which, 3 );
+			}
+			break;
+		case SDL_JOYBUTTONDOWN:
+			return joyButtonToExKey( ev.jbutton.which, 16 + ev.jbutton.button );
+		}
+	}
+	
+	return 0; // Dummy
+}
+
+std::string Gfx::getKeyName( uint32_t key ) {
+	if ( key < MaxDOSKey ) {
+		return common->texts.keyNames[key];
+	}else if ( key >= JoyKeysStart ) {
+		key -= JoyKeysStart;
+		int joyNum = key / MaxJoyButtons;
+		key -= joyNum * MaxJoyButtons;
+		return "J" + toString(joyNum) + "_" + toString(key);
+	}
+	
+	return "";
 }
 
 void Gfx::clearKeys()
@@ -801,21 +877,9 @@ void Gfx::flip()
 		SDL_Delay(0);
 }
 
-
-
 void Gfx::clear()
 {
 	SDL_FillRect(screen, 0, 0);
-}
-
-void fillRect(int x, int y, int w, int h, int colour)
-{
-	SDL_Rect rect;
-	rect.x = x;
-	rect.y = y;
-	rect.w = w;
-	rect.h = h;
-	SDL_FillRect(gfx.screen, &rect, colour);
 }
 
 void playChangeSound(int change)
@@ -1553,7 +1617,7 @@ void PlayerMenu::drawItemOverlay(Common& common, int item, int x, int y, bool se
 			drawRoundedBox(x + 24, y, 0, 7, ws->rgb[rgbcol] - 1);
 		}
 		
-		fillRect(x + 25, y + 1, ws->rgb[rgbcol], 5, ws->colour);
+		fillRect(x + 25, y + 1, ws->rgb[rgbcol], 5, ws->color);
 	} // CED9
 }
 
@@ -1579,7 +1643,7 @@ ItemBehavior* PlayerMenu::getItemBehavior(Common& common, int item)
 		case 9:
 		case 10:
 		case 11:
-			return new KeyBehavior(common, ws->controls[item - 5]);
+			return new KeyBehavior(common, ws->controls[item - 5], ws->controlsEx[item - 5], gfx.settings->extensions );
 			
 		case 12: // Controller
 		{

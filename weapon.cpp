@@ -71,7 +71,7 @@ void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixe
 	}
 	else
 	{
-		obj->curFrame = colourBullets - game.rand(2);
+		obj->curFrame = colorBullets - game.rand(2);
 	}
 	
 	obj->timeLeft = timeToExplo;

@@ -53,8 +53,8 @@ Settings::Settings()
 	wormSettings[0].reset(new WormSettings);
 	wormSettings[1].reset(new WormSettings);
 	
-	wormSettings[0]->colour = 32;
-	wormSettings[1]->colour = 41;
+	wormSettings[0]->color = 32;
+	wormSettings[1]->color = 41;
 	
 	//wormSettings[0]->selWeapX = 50;
 	//wormSettings[1]->selWeapX = 210;

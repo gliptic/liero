@@ -14,4 +14,19 @@ SDLKey DOSToSDLKey(Uint32 scan);
 
 int const DkEscape = 1;
 
+int const MaxJoyButtons = 32;
+
+uint32_t const MaxDOSKey 	= 177;
+uint32_t const JoyKeysStart	= 512;
+
+inline uint32_t joyButtonToExKey( int joyNum, int joyButton ) {
+	return JoyKeysStart + MaxJoyButtons * joyNum + joyButton;
+}
+
+inline bool isExtendedKey( uint32_t k ) {
+	return k >= MaxDOSKey;
+}
+
+const int JoyAxisThreshold = 10000;
+
 #endif // LIERO_KEYS_HPP

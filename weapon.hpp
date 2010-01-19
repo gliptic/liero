@@ -61,7 +61,7 @@ struct Weapon
 	int numFrames;
 	bool loopAnim;
 	int shotType;
-	int colourBullets;
+	int colorBullets;
 	int splinterAmount;
 	int splinterColour;
 	int splinterType;

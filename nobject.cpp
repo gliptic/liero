@@ -5,7 +5,7 @@
 #include "bobject.hpp"
 #include <iostream>
 
-void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int colour, Worm* owner)
+void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int color, Worm* owner)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
 	
@@ -27,13 +27,13 @@ void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int 
 	{
 		obj.curFrame = game.rand(numFrames + 1);
 	}
-	else if(colour != 0)
+	else if(color != 0)
 	{
-		obj.curFrame = colour;
+		obj.curFrame = color;
 	}
 	else
 	{
-		obj.curFrame = colourBullets;
+		obj.curFrame = colorBullets;
 	}
 	
 	obj.timeLeft = timeToExplo;
@@ -43,7 +43,7 @@ void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int 
 	
 }
 
-void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int colour, Worm* owner)
+void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int color, Worm* owner)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
 	
@@ -72,13 +72,13 @@ void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x
 	{
 		obj.curFrame = game.rand(numFrames + 1);
 	}
-	else if(colour != 0)
+	else if(color != 0)
 	{
-		obj.curFrame = colour;
+		obj.curFrame = color;
 	}
 	else
 	{
-		obj.curFrame = colourBullets;
+		obj.curFrame = colorBullets;
 	}
 	
 	obj.timeLeft = timeToExplo;

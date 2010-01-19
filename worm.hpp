@@ -62,24 +62,7 @@ struct WormWeapon
 	bool available;			
 };
 
-struct JoystickButton
-{
-	JoystickButton()
-	: joystickNum(255)
-	, buttonNum(255)
-	{
-	}
-	
-	int joystickNum;
-	int buttonNum;
-};
-
 struct WormSettingsExtensions
-{
-	JoystickButton joystickButtons[7];
-};
-
-struct WormSettings : gvl::shared, WormSettingsExtensions
 {
 	enum
 	{
@@ -89,11 +72,16 @@ struct WormSettings : gvl::shared, WormSettingsExtensions
 		MaxControl
 	};
 	
+	uint32_t controlsEx[MaxControl];
+};
+
+struct WormSettings : gvl::shared, WormSettingsExtensions
+{
 	WormSettings()
 	: health(100)
 	, controller(0)
 	, randomName(true)
-	, colour(0)
+	, color(0)
 	{
 		rgb[0] = 26;
 		rgb[1] = 26;
@@ -109,13 +97,13 @@ struct WormSettings : gvl::shared, WormSettingsExtensions
 	
 	int health;
 	uint32_t controller; // CPU / Human
-	Uint32 controls[MaxControl];
+	uint32_t controls[MaxControl];
 	int weapons[5]; // TODO: Adjustable
 	std::string name;
 	int rgb[3];
 	bool randomName;
 	
-	int colour;
+	int color;
 	
 	std::string profileName;
 	
@@ -126,7 +114,7 @@ template<typename Archive>
 void archive(Archive ar, WormSettings& ws)
 {
 	ar
-	.ui32(ws.colour)
+	.ui32(ws.color)
 	.ui32(ws.health)
 	.ui16(ws.controller);
 	for(int i = 0; i < WormSettings::MaxControl; ++i)
@@ -148,9 +136,16 @@ void archive(Archive ar, WormSettings& ws)
 
 	for(int c = 0; c < WormSettings::MaxControl; ++c)
 	{
+		int dummy = 0;
 		gvl::enable_when(ar, wsVersion >= 2)
-			.ui8(ws.joystickButtons[c].joystickNum, 255)
-			.ui8(ws.joystickButtons[c].buttonNum, 255);
+			.ui8(dummy, 255)
+			.ui8(dummy, 255);
+	}
+	
+	for(int c = 0; c < WormSettings::MaxControl; ++c)
+	{
+		gvl::enable_when(ar, wsVersion >= 3)
+			.ui32(ws.controlsEx[c], ws.controls[c]);
 	}
 }
 

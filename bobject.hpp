@@ -14,7 +14,7 @@ struct BObject // : ExactObjectListBase
 	
 	fixed x, y;
 	fixed velX, velY;
-	int colour;
+	int color;
 };
 
 //void createBObject(fixed x, fixed y, fixed velX, fixed velY);

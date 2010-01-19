@@ -10,7 +10,7 @@
 
 #include "gfx/font.hpp"
 #include "gfx/blit.hpp"
-#include "gfx/colour.hpp"
+#include "gfx/color.hpp"
 #include "menu/menu.hpp"
 #include "menu/hiddenMenu.hpp"
 #include "rect.hpp"
@@ -69,6 +69,15 @@ enum
 	MaSettings = 2,
 	MaQuit = 3,
 	MaReplay = 4
+};
+
+struct Joystick {
+	SDL_Joystick *sdlJoystick;
+	bool btnState[MaxJoyButtons];
+	
+	void clearState() {
+		for ( int i = 0; i < MaxJoyButtons; ++i ) btnState[i] = false;
+	}
 };
 
 struct Gfx
@@ -164,6 +173,8 @@ struct Gfx
 	
 	
 	SDL_keysym waitForKey();
+	uint32_t waitForKeyEx();
+	std::string getKeyName( uint32_t key );
 	
 	void saveSettings();
 	bool loadSettings();
@@ -199,7 +210,7 @@ struct Gfx
 	
 	Palette pal;
 	Palette origpal;
-		
+	
 	//bool keys[SDLK_LAST];
 	bool dosKeys[177];
 	SDL_Surface* screen;
@@ -220,6 +231,8 @@ struct Gfx
 	Rand rand; // PRNG for things that don't affect the game
 	gvl::shared_ptr<Common> common;
 	std::auto_ptr<Controller> controller;
+	
+	std::vector<Joystick> joysticks;
 };
 
 extern Gfx gfx;
