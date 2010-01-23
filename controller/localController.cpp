@@ -26,7 +26,13 @@ void LocalController::onKey(int key, bool keyState)
 	Worm* worm = game.findControlForKey(key, control);
 	if(worm)
 	{
-		worm->setControlState(control, keyState);
+		worm->cleanControlStates.set(control, keyState);
+		worm->controlStates = worm->cleanControlStates;
+		
+		if ( worm->pressed(Worm::Digg) ) {
+			worm->setControlState(Worm::Left, true);
+			worm->setControlState(Worm::Right, true);
+		}
 	}
 			
 	if(key == DkEscape && !goingToMenu)

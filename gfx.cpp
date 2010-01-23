@@ -257,14 +257,20 @@ void Gfx::loadMenus()
 	}
 	
 	fseek(exe, 0x1B210, SEEK_SET);
-	playerMenu.readItems(exe, 13, 13, false, 48, 7);
+	playerMenu.readItems(exe, 13, 12, false, 48, 7);
+	
+	// Extra control settings:
+	playerMenu.addItem(MenuItem(48, 7, "DIGG"));
+	
+	// Finish reading liero menus:
+	playerMenu.readItems(exe, 13, 1, false, 48, 7);
 	playerMenu.valueOffsetX = 95;
 	
 	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE"));
 	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE AS..."));
 	playerMenu.addItem(MenuItem(3, 7, "LOAD PROFILE"));
 	
-	for(int i = 0; i < 13; ++i)
+	for(int i = 0; i < 14; ++i)
 	{
 		playerMenu.items[i].hasValue = true;
 	}
@@ -1063,7 +1069,9 @@ void Gfx::updateExtensions(bool enabled)
 		hiddenMenu.setVisibility(i, enabled);
 	}
 	
-	for(std::size_t i = 13; i < playerMenu.items.size(); ++i)
+	playerMenu.setVisibility(12, enabled);
+	
+	for(std::size_t i = 14; i < playerMenu.items.size(); ++i)
 	{
 		playerMenu.setVisibility(i, enabled);
 	}
@@ -1644,20 +1652,24 @@ ItemBehavior* PlayerMenu::getItemBehavior(Common& common, int item)
 		case 10:
 		case 11:
 			return new KeyBehavior(common, ws->controls[item - 5], ws->controlsEx[item - 5], gfx.settings->extensions );
+		
+		case 12: // Controls Extension
+			return new KeyBehavior(common, ws->controlsEx[item - 5], ws->controlsEx[item - 5], gfx.settings->extensions );
+
 			
-		case 12: // Controller
+		case 13: // Controller
 		{
 			// Controller cannot be changed with Enter
 			return new ArrayEnumBehavior(common, ws->controller, common.texts.controllers, true);
 		}
 		
-		case 13: // Save profile
+		case 14: // Save profile
 			return new ProfileSaveBehavior(common, *ws, false);
 			
-		case 14: // Save profile as
+		case 15: // Save profile as
 			return new ProfileSaveBehavior(common, *ws, true);
 			
-		case 15:
+		case 16:
 			return new ProfileLoadBehavior(common, *ws);
 			
 		default:
@@ -1674,69 +1686,6 @@ void Gfx::playerSettings(int player)
 	
 	curMenu = &playerMenu;
 	return;
-#if 0
-	//playerMenuValues.selection = playerMenu.selection;
-	
-	do
-	{
-		//int selectY = (playerMenu.selection() << 3) + 20;
-		
-		drawBasicMenu();
-
-		playerMenu.draw(*common, false);
-		//playerMenuValues.draw(*common, 273, 20, false);
-		
-		drawRoundedBox(163, 19, 0, 12, 11);
-
-		blitImage(gfx.screen, common->wormSprite(2, 1, player), 163, 20, 16, 16);
-		
-
-		// l_CF9E:
-
-		if(testSDLKeyOnce(SDLK_UP))
-		{
-			sfx.play(26);
-			
-			playerMenu.movement(-1);
-		} // CFD0
-
-		if(testSDLKeyOnce(SDLK_DOWN))
-		{
-			sfx.play(25);
-
-			playerMenu.movement(1);
-		} // D002
-		
-		
-		if(testSDLKey(SDLK_LEFT))
-		{
-			if(!playerMenu.onLeftRight(*common, -1))
-				resetLeftRight();
-		}
-		if(testSDLKey(SDLK_RIGHT))
-		{
-			if(!playerMenu.onLeftRight(*common, 1))
-				resetLeftRight();
-		}
-		
-		if(testSDLKeyOnce(SDLK_RETURN)
-		|| testSDLKeyOnce(SDLK_KP_ENTER))
-		{
-			playerMenu.onEnter(*common);
-		}
-		
-		origpal.setWormColours(*settings);
-		origpal.rotate(168, 174);
-		pal = origpal;
- 
-		flip();
-		process();
-		
-		menuCyclic = (menuCyclic + 1) & 3;
-	}
-	while(!testSDLKeyOnce(SDLK_ESCAPE));
-#endif
-
 }
 
 /*

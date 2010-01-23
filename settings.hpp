@@ -243,7 +243,7 @@ void archive_liero(Archive ar, Settings& settings)
 		for(int i = 0; i < 2; ++i)
 		{
 			WormSettings& ws = *settings.wormSettings[i];
-			for(int c = 0; c < WormSettings::MaxControl; ++c)
+			for(int c = 0; c < WormSettings::MaxControlEx; ++c)
 			{
 				gvl::enable_when(ar, fileExtensionVersion >= 3)
 					.ui32(ws.controlsEx[c], ws.controls[c]);

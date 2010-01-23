@@ -64,15 +64,16 @@ struct WormWeapon
 
 struct WormSettingsExtensions
 {
-	enum
+	enum Control
 	{
 		Up, Down, Left, Right,
 		Fire, Change, Jump,
-		
-		MaxControl
+		Digg,
+		MaxControlEx
 	};
+	static const int MaxControl = Digg;
 	
-	uint32_t controlsEx[MaxControl];
+	uint32_t controlsEx[MaxControlEx];
 };
 
 struct WormSettings : gvl::shared, WormSettingsExtensions
@@ -142,7 +143,7 @@ void archive(Archive ar, WormSettings& ws)
 			.ui8(dummy, 255);
 	}
 	
-	for(int c = 0; c < WormSettings::MaxControl; ++c)
+	for(int c = 0; c < WormSettings::MaxControlEx; ++c)
 	{
 		gvl::enable_when(ar, wsVersion >= 3)
 			.ui32(ws.controlsEx[c], ws.controls[c]);
@@ -223,9 +224,9 @@ struct Worm : gvl::shared
 		Fire = WormSettings::Fire,
 		Change = WormSettings::Change,
 		Jump = WormSettings::Jump,
-		
-		MaxControl
+		Digg = WormSettings::Digg
 	};
+	static const unsigned int MaxControl = Digg;
 	
 	
 	struct ControlState
@@ -259,7 +260,7 @@ struct Worm : gvl::shared
 				state |= uint8_t(controlStates[c]) << c;
 			}*/
 			
-			return istate;
+			return istate & ((1 << MaxControl)-1);
 		}
 		
 		void unpack(uint32_t state)
@@ -279,7 +280,7 @@ struct Worm : gvl::shared
 		
 		bool operator[](std::size_t n) const
 		{
-			return ((istate >> n) & 1) != 0;
+			return ((istate >> n) & 1) != 0; // Glip: Changed this so that the assert in the replay packing wouldnt break :\
 		}
 		
 		void set(std::size_t n, bool v)
@@ -431,6 +432,7 @@ struct Worm : gvl::shared
 	WormWeapon weapons[5];
 	int direction;
 	ControlState controlStates;
+	ControlState cleanControlStates; // For the dig hax, it stores the control without the dig transformation
 	ControlState prevControlStates;
 	Game& game; // !CLONING
 };
