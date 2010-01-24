@@ -1,5 +1,5 @@
-#ifndef LIERO_MENU_MENU_ITEM_HPP
-#define LIERO_MENU_MENU_ITEM_HPP
+#ifndef UUID_68BF27AE54944A5A75C91BBAD19D89F9
+#define UUID_68BF27AE54944A5A75C91BBAD19D89F9
 
 #include <string>
 #include "../gfx/color.hpp"
@@ -32,4 +32,4 @@ struct MenuItem
 	bool visible;
 };
 
-#endif // LIERO_MENU_MENU_ITEM_HPP
+#endif // UUID_68BF27AE54944A5A75C91BBAD19D89F9

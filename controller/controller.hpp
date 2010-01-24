@@ -33,15 +33,6 @@ struct Controller
 	virtual void swapLevel(Level& newLevel) = 0;
 };
 
-#include "../game.hpp"
-#include "../worm.hpp"
-#include "../weapsel.hpp"
-#include "../replay.hpp"
-#include "../console.hpp"
-#include <gvl/serialization/except.hpp>
-#include <gvl/io/stream.hpp>
-#include <gvl/io/devnull.hpp>
-#include <gvl/io/fstream.hpp>
-#include <ctime>
+
 
 #endif // UUID_9CD8C22BC14D4832AE2A859530FE6339

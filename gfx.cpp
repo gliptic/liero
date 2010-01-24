@@ -46,14 +46,17 @@ struct KeyBehavior : ItemBehavior
 		sfx.play(27);
 		uint32_t k;
 		bool isEx;
-		do {
+		do
+		{
 			k = gfx.waitForKeyEx();
 			isEx = isExtendedKey(k);
-		}while( !extended && isEx );
+		}
+		while(!extended && isEx);
 
-		if ( k != DkEscape ) {
-			
-			if ( !isEx ) key = k;
+		if(k != DkEscape)
+		{
+			if(!isEx)
+				key = k;
 			keyEx = k;
 			
 			onUpdate(menu, item);
@@ -65,7 +68,7 @@ struct KeyBehavior : ItemBehavior
 	
 	void onUpdate(Menu& menu, int item)
 	{
-		menu.items[item].value = gfx.getKeyName( extended? keyEx : key );
+		menu.items[item].value = gfx.getKeyName(extended ? keyEx : key);
 	}
 	
 	Common& common;
@@ -260,7 +263,7 @@ void Gfx::loadMenus()
 	playerMenu.readItems(exe, 13, 12, false, 48, 7);
 	
 	// Extra control settings:
-	playerMenu.addItem(MenuItem(48, 7, "DIGG"));
+	playerMenu.addItem(MenuItem(48, 7, "DIG"));
 	
 	// Finish reading liero menus:
 	playerMenu.readItems(exe, 13, 1, false, 48, 7);
@@ -400,57 +403,61 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		
 		case SDL_JOYAXISMOTION:
 		{
-			Joystick &js = joysticks[ev.jbutton.which];
-			int jbtn = 4 + 2 * ev.jaxis.axis;
-			if ( (ev.jaxis.value > JoyAxisThreshold) != js.btnState[jbtn] ) {
-				js.btnState[jbtn] = (ev.jaxis.value > JoyAxisThreshold);
-				if (controller)
-					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
+			Joystick& js = joysticks[ev.jbutton.which];
+			int jbtnBase = 4 + 2 * ev.jaxis.axis;
+			
+			bool newBtnStates[2];
+			newBtnStates[0] = (ev.jaxis.value > JoyAxisThreshold);
+			newBtnStates[1] = (ev.jaxis.value < -JoyAxisThreshold);
+			
+			for(int i = 0; i < 2; ++i)
+			{
+				int jbtn = jbtnBase + i;
+				bool newState = newBtnStates[i];
+				
+				if(newState != js.btnState[jbtn])
+				{
+					js.btnState[jbtn] = newState;
+					if (controller)
+						controller->onKey(joyButtonToExKey(ev.jbutton.which, jbtn), newState);
+				}
 			}
-			jbtn++;
-			if ( (ev.jaxis.value < -JoyAxisThreshold) != js.btnState[jbtn] ) {
-				js.btnState[jbtn] = (ev.jaxis.value < -JoyAxisThreshold);
-				if (controller)
-					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
-			}
-		}break;
+		}
+		break;
+		
 		case SDL_JOYHATMOTION:
 		{
-			Joystick &js = joysticks[ev.jbutton.which];
-			if ( (bool)(ev.jhat.value & SDL_HAT_UP) != js.btnState[0] ) {
-				int jbtn = 0;
-				js.btnState[jbtn] = (ev.jhat.value & SDL_HAT_UP);
-				if (controller)
-					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
+			Joystick& js = joysticks[ev.jbutton.which];
+			
+			bool newBtnStates[4];
+			newBtnStates[0] = (ev.jhat.value & SDL_HAT_UP) != 0;
+			newBtnStates[1] = (ev.jhat.value & SDL_HAT_DOWN) != 0;
+			newBtnStates[2] = (ev.jhat.value & SDL_HAT_LEFT) != 0;
+			newBtnStates[3] = (ev.jhat.value & SDL_HAT_RIGHT) != 0;
+			
+			for(int jbtn = 0; jbtn < 4; ++jbtn)
+			{
+				bool newState = newBtnStates[jbtn];
+				if(newState != js.btnState[jbtn])
+				{
+					js.btnState[jbtn] = newState;
+					if(controller)
+						controller->onKey(joyButtonToExKey(ev.jbutton.which, jbtn), newState);
+				}
 			}
-			if ( (bool)(ev.jhat.value & SDL_HAT_DOWN) != js.btnState[1] ) {
-				int jbtn = 1;
-				js.btnState[jbtn] = (ev.jhat.value & SDL_HAT_DOWN);
-				if (controller)
-					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
-			}
-			if ( (bool)(ev.jhat.value & SDL_HAT_LEFT) != js.btnState[2] ) {
-				int jbtn = 2;
-				js.btnState[jbtn] = (ev.jhat.value & SDL_HAT_LEFT);
-				if (controller)
-					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
-			}
-			if ( (bool)(ev.jhat.value & SDL_HAT_RIGHT) != js.btnState[3] ) {
-				int jbtn = 3;
-				js.btnState[jbtn] = (ev.jhat.value & SDL_HAT_RIGHT);
-				if (controller)
-					controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn] );
-			}
-		}break;
+		}
+		break;
+		
 		case SDL_JOYBUTTONDOWN:
-		case SDL_JOYBUTTONUP:
+		case SDL_JOYBUTTONUP: /* Fall-through */
 		{
-			Joystick &js = joysticks[ev.jbutton.which];
+			Joystick& js = joysticks[ev.jbutton.which];
 			int jbtn = 16 + ev.jbutton.button;
-			js.btnState[jbtn] = ev.jbutton.state == SDL_PRESSED;
-			if (controller)
-				controller->onKey(joyButtonToExKey( ev.jbutton.which, jbtn ), js.btnState[jbtn]);
-		}break;
+			js.btnState[jbtn] = (ev.jbutton.state == SDL_PRESSED);
+			if(controller)
+				controller->onKey(joyButtonToExKey(ev.jbutton.which, jbtn), js.btnState[jbtn]);
+		}
+		break;
 	}
 }
 
@@ -486,40 +493,45 @@ uint32_t Gfx::waitForKeyEx()
 	while(SDL_WaitEvent(&ev))
 	{
 		processEvent(ev);
-		switch ( ev.type ) {
+		switch (ev.type)
+		{
 		case SDL_KEYDOWN:
 			return SDLToDOSKey(ev.key.keysym);
 			
 		case SDL_JOYAXISMOTION:
-			if ( ev.jaxis.value > JoyAxisThreshold ) {
+			if(ev.jaxis.value > JoyAxisThreshold)
 				return joyButtonToExKey( ev.jbutton.which, 4 + 2 * ev.jaxis.axis );
-			}else if ( ev.jaxis.value < -JoyAxisThreshold ){
+			else if ( ev.jaxis.value < -JoyAxisThreshold )
 				return joyButtonToExKey( ev.jbutton.which, 5 + 2 * ev.jaxis.axis );
-			}
+
 			break;
 		case SDL_JOYHATMOTION:
-			if ( ev.jhat.value & SDL_HAT_UP ) {
-				return joyButtonToExKey( ev.jbutton.which, 0 );
-			}else if ( ev.jhat.value & SDL_HAT_DOWN ) {
-				return joyButtonToExKey( ev.jbutton.which, 1 );
-			}else if ( ev.jhat.value & SDL_HAT_LEFT ) {
-				return joyButtonToExKey( ev.jbutton.which, 2 );
-			}else if ( ev.jhat.value & SDL_HAT_RIGHT ) {
-				return joyButtonToExKey( ev.jbutton.which, 3 );
-			}
+			if(ev.jhat.value & SDL_HAT_UP)
+				return joyButtonToExKey(ev.jbutton.which, 0);
+			else if(ev.jhat.value & SDL_HAT_DOWN)
+				return joyButtonToExKey(ev.jbutton.which, 1);
+			else if (ev.jhat.value & SDL_HAT_LEFT)
+				return joyButtonToExKey(ev.jbutton.which, 2);
+			else if (ev.jhat.value & SDL_HAT_RIGHT)
+				return joyButtonToExKey(ev.jbutton.which, 3);
+
 			break;
 		case SDL_JOYBUTTONDOWN:
-			return joyButtonToExKey( ev.jbutton.which, 16 + ev.jbutton.button );
+			return joyButtonToExKey(ev.jbutton.which, 16 + ev.jbutton.button);
 		}
 	}
 	
 	return 0; // Dummy
 }
 
-std::string Gfx::getKeyName( uint32_t key ) {
-	if ( key < MaxDOSKey ) {
+std::string Gfx::getKeyName(uint32_t key)
+{
+	if(key < MaxDOSKey)
+	{
 		return common->texts.keyNames[key];
-	}else if ( key >= JoyKeysStart ) {
+	}
+	else if(key >= JoyKeysStart)
+	{
 		key -= JoyKeysStart;
 		int joyNum = key / MaxJoyButtons;
 		key -= joyNum * MaxJoyButtons;
@@ -1687,15 +1699,6 @@ void Gfx::playerSettings(int player)
 	curMenu = &playerMenu;
 	return;
 }
-
-/*
-void Gfx::settingLeftRight(int change, int item)
-{
-	if(!settingsMenu.onLeftRight(*common, change)) // TODO: This assumes the item is selected, we should make settingLeftRight do so too
-	{
-		resetLeftRight();
-	}
-}*/
 
 void Gfx::mainLoop()
 {

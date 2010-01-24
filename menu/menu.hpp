@@ -1,5 +1,5 @@
-#ifndef LIERO_MENU_HPP
-#define LIERO_MENU_HPP
+#ifndef UUID_3DC24B15AD67494EEAB541B4AE253D0F
+#define UUID_3DC24B15AD67494EEAB541B4AE253D0F
 
 #include <cstddef>
 #include <string>
@@ -152,4 +152,4 @@ private:
 	int selection_; // Global index
 };
 
-#endif // LIERO_MENU_HPP
+#endif // UUID_3DC24B15AD67494EEAB541B4AE253D0F

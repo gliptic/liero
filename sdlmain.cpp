@@ -1,8 +1,8 @@
-#include "platform.hpp"
+#include <gvl/support/platform.hpp>
 
 int gameEntry(int argc, char *argv[]);
 
-#if defined(LIERO_WIN32) && !defined(DISABLE_MAINHACK)
+#if GVL_WINDOWS && !defined(DISABLE_MAINHACK)
 // A bit of a hack to avoid DLL dependencies
 #define _WIN32_WINDOWS 0x0410
 #define WINVER 0x0410

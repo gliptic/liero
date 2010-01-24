@@ -1,6 +1,6 @@
 #include "sys.hpp"
 	
-#ifdef LIERO_WIN32
+#if GVL_WIN32
 
 #include <windows.h>
 

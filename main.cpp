@@ -1,8 +1,10 @@
-#ifndef LIERO_MAIN_HPP
-#define LIERO_MAIN_HPP
+#ifndef UUID_DC1D9513CDD34960AB8A648004DA149D
+#define UUID_DC1D9513CDD34960AB8A648004DA149D
 
 #include <SDL/SDL.h>
+#if !SDL13
 #include <SDL/SDL_getenv.h>
+#endif
 
 #include "gfx.hpp"
 #include "sfx.hpp"
@@ -17,7 +19,7 @@
 #include "constants.hpp"
 #include "math.hpp"
 #include "console.hpp"
-#include "platform.hpp"
+#include <gvl/support/platform.hpp>
 
 #include <iostream>
 #include <ctime>
@@ -114,17 +116,18 @@ try
 	Console::write(common->S[Init_DMA16]);
 	Console::writeLine("5");
 	
+#if !DISABLE_SOUND	
 	Console::write(common->S[Init_DSPVersion]);
 	SDL_version const* mixerVer = Mix_Linked_Version();
 	Console::write(toString(mixerVer->major) + "." + toString(mixerVer->minor));
 	Console::write(common->S[Init_Colon]);
 	Console::write(common->S[Init_16bit]);
 	Console::writeLine(common->S[Init_Autoinit]);
-	
+#endif	
 	Console::writeLine(common->S[Init_XMSSucc]);
 	
 	Console::write(common->S[Init_FreeXMS]);
-#ifdef LIERO_WIN32
+#if GVL_WIN32
 	Console::write(toString(Win32::getFreeMemory()));
 #else
 	
@@ -208,5 +211,4 @@ catch(std::exception& ex)
 	return 1;
 }
 
-#endif // LIERO_MAIN_HPP
-
+#endif // UUID_DC1D9513CDD34960AB8A648004DA149D

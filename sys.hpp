@@ -1,9 +1,9 @@
-#ifndef LIERO_SYS_HPP
-#define LIERO_SYS_HPP
+#ifndef UUID_88D344A5E8A241202CFCE098C27844EB
+#define UUID_88D344A5E8A241202CFCE098C27844EB
 
-#include "platform.hpp"
+#include <gvl/support/platform.hpp>
 
-#ifdef LIERO_WIN32
+#if GVL_WIN32
 
 namespace Win32
 {
@@ -12,4 +12,4 @@ int getFreeMemory();
 
 #endif
 
-#endif // LIERO_SYS_HPP
+#endif // UUID_88D344A5E8A241202CFCE098C27844EB

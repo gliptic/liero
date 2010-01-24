@@ -1,5 +1,5 @@
 #include "filesystem.hpp"
-#include "platform.hpp"
+#include <gvl/support/platform.hpp>
 #include <stdexcept>
 #include <cassert>
 #include <cctype>
@@ -113,7 +113,7 @@ std::size_t fileLength(FILE* f)
 	return len;
 }
 
-#if defined(LIERO_WIN32)
+#if GVL_WINDOWS
 #  include "windows.h"
 
 #  if defined(__BORLANDC__) || defined(__MWERKS__)
@@ -157,7 +157,7 @@ struct filename_result
 	char const* alt_name;
 };
 
-#ifdef LIERO_POSIX
+#if GVL_LINUX
 
 # define BOOST_HANDLE DIR *
 # define BOOST_INVALID_HANDLE_VALUE 0
@@ -199,7 +199,7 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
 	}
 	return filename_result(dp->d_name, dp->d_name);
 }
-#elif defined(LIERO_WIN32)
+#elif GVL_WINDOWS
 
 # define BOOST_HANDLE HANDLE
 # define BOOST_INVALID_HANDLE_VALUE INVALID_HANDLE_VALUE

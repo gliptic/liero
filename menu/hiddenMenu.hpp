@@ -1,5 +1,5 @@
-#ifndef LIERO_MENU_HIDDEN_MENU_HPP
-#define LIERO_MENU_HIDDEN_MENU_HPP
+#ifndef UUID_C2D646F783444E7630AA27BB8F6C0B15
+#define UUID_C2D646F783444E7630AA27BB8F6C0B15
 
 #include "menu.hpp"
 
@@ -28,4 +28,4 @@ struct HiddenMenu : Menu
 	virtual ItemBehavior* getItemBehavior(Common& common, int item);
 };
 
-#endif // LIERO_MENU_HIDDEN_MENU_HPP
+#endif // UUID_C2D646F783444E7630AA27BB8F6C0B15

@@ -43,7 +43,7 @@ void WormSettings::saveProfile(std::string const& newProfileName)
 		std::string path(joinPath(lieroEXERoot, newProfileName) + ".lpf");
 		gvl::stream_ptr str(new gvl::fstream(path.c_str(), "wb"));
 		
-		gvl::stream_writer writer(str);
+		gvl::octet_stream_writer writer(str);
 		
 		profileName = newProfileName;
 		GameSerializationContext context;
@@ -63,7 +63,7 @@ void WormSettings::loadProfile(std::string const& newProfileName)
 		std::string path(joinPath(lieroEXERoot, newProfileName) + ".lpf");
 		gvl::stream_ptr str(new gvl::fstream(path.c_str(), "rb"));
 		
-		gvl::stream_reader reader(str);
+		gvl::octet_stream_reader reader(str);
 
 		profileName = newProfileName;
 		GameSerializationContext context;

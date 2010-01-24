@@ -68,10 +68,11 @@ struct WormSettingsExtensions
 	{
 		Up, Down, Left, Right,
 		Fire, Change, Jump,
-		Digg,
+		Dig,
+		MaxControl = Dig,
 		MaxControlEx
 	};
-	static const int MaxControl = Digg;
+	//static const int MaxControl = Dig;
 	
 	uint32_t controlsEx[MaxControlEx];
 };
@@ -224,9 +225,10 @@ struct Worm : gvl::shared
 		Fire = WormSettings::Fire,
 		Change = WormSettings::Change,
 		Jump = WormSettings::Jump,
-		Digg = WormSettings::Digg
+		MaxControl
+		//Dig = WormSettings::Dig
 	};
-	static const unsigned int MaxControl = Digg;
+	//static const unsigned int MaxControl = Dig;
 	
 	
 	struct ControlState
@@ -234,45 +236,23 @@ struct Worm : gvl::shared
 		ControlState()
 		: istate(0)
 		{
-			//std::memset(state, 0, sizeof(state));
 		}
 		
 		bool operator==(ControlState const& b) const
 		{
-		/*
-			for(int i = 0; i < Worm::MaxControl; ++i)
-			{
-				if(state[i] != b.state[i])
-					return false;
-			}
-			
-			return true;*/
-			
 			return istate == b.istate;
 		}
 		
 		uint32_t pack() const
 		{
-		/*
-			uint8_t state = 0;
-			for(int c = 0; c < MaxControl; ++c)
-			{
-				state |= uint8_t(controlStates[c]) << c;
-			}*/
-			
-			return istate & ((1 << MaxControl)-1);
+			return istate; // & ((1 << MaxControl)-1);
 		}
 		
 		void unpack(uint32_t state)
 		{
-		/*
-			for(int c = 0; c < Worm::MaxControl; ++c)
-			{
-				state[c] = ((state >> c) & 1) != 0);
-			}*/
 			istate = state & 0x7f;
 		}
-		
+				
 		bool operator!=(ControlState const& b) const
 		{
 			return !operator==(b);
@@ -280,7 +260,7 @@ struct Worm : gvl::shared
 		
 		bool operator[](std::size_t n) const
 		{
-			return ((istate >> n) & 1) != 0; // Glip: Changed this so that the assert in the replay packing wouldnt break :\
+			return ((istate >> n) & 1) != 0;
 		}
 		
 		void set(std::size_t n, bool v)
@@ -291,7 +271,6 @@ struct Worm : gvl::shared
 				istate &= ~(uint32_t(1u) << n);
 		}
 		
-		//bool state[Worm::MaxControl];
 		uint32_t istate;
 	};
 		
@@ -432,9 +411,12 @@ struct Worm : gvl::shared
 	WormWeapon weapons[5];
 	int direction;
 	ControlState controlStates;
-	ControlState cleanControlStates; // For the dig hax, it stores the control without the dig transformation
 	ControlState prevControlStates;
 	Game& game; // !CLONING
+	
+	// Data for LocalController
+	ControlState cleanControlStates; // This contains the real state of real and extended controls
+	
 };
 
 bool checkForWormHit(int x, int y, int dist, Worm* ownWorm);

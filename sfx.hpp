@@ -1,7 +1,9 @@
 #ifndef LIERO_SFX_HPP
 #define LIERO_SFX_HPP
 
+#if !DISABLE_SOUND
 #include <SDL/SDL_mixer.h>
+#endif
 #include <vector>
 #include <gvl/resman/shared_ptr.hpp>
 
@@ -31,9 +33,10 @@ struct Sfx
 	bool isPlaying(void* id);
 	void playOn(int channel, int sound, void* id, int loops = 0);
 	void stop(void* id);
-	
+#if !DISABLE_SOUND
 	std::vector<Mix_Chunk> sounds;
 	ChannelInfo channelInfo[8];
+#endif
 	bool initialized;
 };
 

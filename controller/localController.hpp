@@ -5,6 +5,15 @@
 
 #include "../game.hpp"
 
+#include "../worm.hpp"
+#include "../weapsel.hpp"
+#include "../replay.hpp"
+#include "../console.hpp"
+#include <gvl/serialization/except.hpp>
+#include <gvl/io/stream.hpp>
+#include <gvl/io/fstream.hpp>
+#include <ctime>
+
 struct WeaponSelection;
 struct ReplayWriter;
 

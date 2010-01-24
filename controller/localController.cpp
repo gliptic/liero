@@ -6,6 +6,8 @@
 #include "../reader.hpp"
 #include "../filesystem.hpp"
 
+#include <cctype>
+
 LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings)
 : game(common, settings)
 , state(StateInitial)
@@ -27,11 +29,24 @@ void LocalController::onKey(int key, bool keyState)
 	if(worm)
 	{
 		worm->cleanControlStates.set(control, keyState);
-		worm->controlStates = worm->cleanControlStates;
 		
-		if ( worm->pressed(Worm::Digg) ) {
-			worm->setControlState(Worm::Left, true);
-			worm->setControlState(Worm::Right, true);
+		if(control < Worm::MaxControl)
+		{
+			// Only real controls 
+			worm->setControlState(control, keyState);
+		}
+		
+		if(worm->cleanControlStates[WormSettings::Dig])
+		{
+			worm->press(Worm::Left);
+			worm->press(Worm::Right);
+		}
+		else
+		{
+			if(!worm->cleanControlStates[Worm::Left])
+				worm->release(Worm::Left);
+			if(!worm->cleanControlStates[Worm::Right])
+				worm->release(Worm::Right);
 		}
 	}
 			

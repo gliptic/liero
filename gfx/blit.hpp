@@ -1,5 +1,5 @@
-#ifndef LIERO_GFX_BLIT_HPP
-#define LIERO_GFX_BLIT_HPP
+#ifndef UUID_9059AB0F9EA54E1EDF52E7BF41433D0B
+#define UUID_9059AB0F9EA54E1EDF52E7BF41433D0B
 
 #include <SDL/SDL.h>
 
@@ -35,4 +35,4 @@ inline void blitImageNoKeyColour(SDL_Surface* scr, PalIdx* mem, int x, int y, in
 	blitImageNoKeyColour(scr, mem, x, y, width, height, width);
 }
 
-#endif // LIERO_GFX_BLIT_HPP
+#endif // UUID_9059AB0F9EA54E1EDF52E7BF41433D0B

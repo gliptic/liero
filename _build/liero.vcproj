@@ -12,6 +12,9 @@
 		<Platform
 			Name="Win32"
 		/>
+		<Platform
+			Name="x64"
+		/>
 	</Platforms>
 	<ToolFiles>
 	</ToolFiles>
@@ -42,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="$(SolutionDir)\..\.."
+				AdditionalIncludeDirectories="&quot;$(VCInstallDir)\include\SDL&quot;;&quot;$(SolutionDir)\..\..&quot;"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -96,6 +99,86 @@
 			/>
 		</Configuration>
 		<Configuration
+			Name="Debug|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="&quot;$(VCInstallDir)\include\SDL&quot;;&quot;$(SolutionDir)\..\..&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="3"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="sdl.lib sdl_mixer.lib"
+				OutputFile="$(OutDir)/openliero.exe"
+				LinkIncremental="2"
+				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(OutDir)/liero.pdb"
+				SubSystem="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)\..\_bin\$(ConfigurationName)"
 			IntermediateDirectory="_trash\$(ConfigurationName)"
@@ -125,7 +208,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="$(SolutionDir)\..\.."
+				AdditionalIncludeDirectories="&quot;$(VCInstallDir)\include\SDL&quot;;&quot;$(SolutionDir)\..\..&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
@@ -179,6 +262,91 @@
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
+		<Configuration
+			Name="Release|x64"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
+			CharacterSet="2"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+				TargetEnvironment="3"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="3"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				WholeProgramOptimization="true"
+				AdditionalIncludeDirectories="&quot;$(VCInstallDir)\include\SDL&quot;;&quot;$(SolutionDir)\..\..&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK"
+				RuntimeLibrary="0"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="false"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="sdl.lib sdl_mixer.lib"
+				OutputFile="$(OutDir)/openliero.exe"
+				LinkIncremental="1"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				LinkTimeCodeGeneration="1"
+				RandomizedBaseAddress="1"
+				DataExecutionPrevention="0"
+				TargetMachine="17"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+				EmbedManifest="false"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -187,14 +355,234 @@
 			Name="gfx"
 			>
 			<File
+				RelativePath="..\gfx\blit.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\gfx\blit.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\gfx\color.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\gfx\font.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\gfx\font.hpp"
+				>
+			</File>
+			<File
 				RelativePath="..\gfx\macros.hpp"
 				>
 			</File>
+			<File
+				RelativePath="..\gfx\palette.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\gfx\palette.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\gfx\sprite.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\gfx\sprite.hpp"
+				>
+			</File>
 		</Filter>
-		<File
-			RelativePath="..\blit.cpp"
+		<Filter
+			Name="minimix"
 			>
-		</File>
+			<File
+				RelativePath="..\minimix\minimix.h"
+				>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\minimix\sound.h"
+				>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\minimix\state.c"
+				>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\minimix\state.h"
+				>
+				<FileConfiguration
+					Name="Debug|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|x64"
+					ExcludedFromBuild="true"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+					/>
+				</FileConfiguration>
+			</File>
+		</Filter>
+		<Filter
+			Name="controller"
+			>
+			<File
+				RelativePath="..\controller\commonController.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\controller\commonController.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\controller\controller.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\controller\localController.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\controller\localController.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\controller\replayController.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\controller\replayController.hpp"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="menu"
+			>
+			<File
+				RelativePath="..\menu\arrayEnumBehavior.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\booleanSwitchBehavior.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\booleanSwitchBehavior.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\enumBehavior.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\enumBehavior.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\hiddenMenu.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\hiddenMenu.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\integerBehavior.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\integerBehavior.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\itemBehavior.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\itemBehavior.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\menu.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\menu.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\menuItem.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\menuItem.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\timeBehavior.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\menu\timeBehavior.hpp"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\bobject.cpp"
 			>
@@ -209,10 +597,6 @@
 		</File>
 		<File
 			RelativePath="..\bonus.hpp"
-			>
-		</File>
-		<File
-			RelativePath="..\colour.hpp"
 			>
 		</File>
 		<File
@@ -257,14 +641,6 @@
 		</File>
 		<File
 			RelativePath="..\filesystem.hpp"
-			>
-		</File>
-		<File
-			RelativePath="..\font.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\font.hpp"
 			>
 		</File>
 		<File
@@ -316,14 +692,6 @@
 			>
 		</File>
 		<File
-			RelativePath="..\menu.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\menu.hpp"
-			>
-		</File>
-		<File
 			RelativePath="..\ninjarope.cpp"
 			>
 		</File>
@@ -340,15 +708,7 @@
 			>
 		</File>
 		<File
-			RelativePath="..\palette.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\palette.hpp"
-			>
-		</File>
-		<File
-			RelativePath="..\platform.hpp"
+			RelativePath="..\platform_.hpp"
 			>
 		</File>
 		<File
@@ -376,6 +736,14 @@
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
+				>
+				<Tool
+					Name="VCCLCompilerTool"
+					DisableLanguageExtensions="true"
+				/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Debug|x64"
 				>
 				<Tool
 					Name="VCCLCompilerTool"
@@ -413,10 +781,6 @@
 		</File>
 		<File
 			RelativePath="..\sobject.hpp"
-			>
-		</File>
-		<File
-			RelativePath="..\sprite.hpp"
 			>
 		</File>
 		<File

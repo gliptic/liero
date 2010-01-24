@@ -1,10 +1,10 @@
 #include "console.hpp"
 //#include "game.hpp"
 //#include "constants.hpp"
-#include "platform.hpp"
+#include <gvl/support/platform.hpp>
 #include <iostream>
 
-#if defined(LIERO_WIN32)
+#if GVL_WIN32
 #include "windows.h"
 
 namespace Console
@@ -161,7 +161,7 @@ void clear()
 
 }
 
-#elif defined(LIERO_POSIX)
+#else
 
 namespace Console
 {
@@ -207,10 +207,6 @@ void clear()
 }
 
 }
-
-#else
-
-#error "Not supported"
 
 #endif
 

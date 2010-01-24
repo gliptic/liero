@@ -1,5 +1,7 @@
 #include "replayController.hpp"
 
+#include "../game.hpp"
+
 ReplayController::ReplayController(gvl::shared_ptr<Common> common, gvl::stream_ptr source)
 : state(StateInitial)
 , fadeValue(0)

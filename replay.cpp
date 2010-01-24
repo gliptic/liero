@@ -346,13 +346,13 @@ void archive(Archive ar, Game& game)
 }
 
 template<typename T>
-void read(gvl::stream_reader& reader, GameSerializationContext& context, T& x)
+void read(gvl::octet_stream_reader& reader, GameSerializationContext& context, T& x)
 {
 	archive(gvl::in_archive<GameSerializationContext>(reader, context), x);
 }
 
 template<typename T>
-void write(gvl::stream_writer& writer, GameSerializationContext& context, T& x)
+void write(gvl::octet_stream_writer& writer, GameSerializationContext& context, T& x)
 {
 	archive(gvl::out_archive<GameSerializationContext>(writer, context), x);
 }

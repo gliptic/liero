@@ -1,9 +1,9 @@
-#ifndef LIERO_MENU_ENUM_BEHAVIOUR_HPP
-#define LIERO_MENU_ENUM_BEHAVIOUR_HPP
+#ifndef UUID_171F520E38DF4A036E1AA3901EEA4801
+#define UUID_171F520E38DF4A036E1AA3901EEA4801
 
 #include "itemBehavior.hpp"
 
-#include <stdint.h>
+#include <gvl/support/cstdint.hpp>
 
 struct Common;
 struct Menu;
@@ -29,4 +29,4 @@ struct EnumBehavior : ItemBehavior
 	bool brokenLeftRight;
 };
 
-#endif // LIERO_MENU_ENUM_BEHAVIOUR_HPP
+#endif // UUID_171F520E38DF4A036E1AA3901EEA4801

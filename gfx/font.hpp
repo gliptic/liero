@@ -1,5 +1,5 @@
-#ifndef LIERO_FONT_HPP
-#define LIERO_FONT_HPP
+#ifndef UUID_B06B65B783A849C7B4E509A9676180F8
+#define UUID_B06B65B783A849C7B4E509A9676180F8
 
 #include <vector>
 #include <string>
@@ -37,4 +37,4 @@ struct Font
 	std::vector<Char> chars;
 };
 
-#endif // LIERO_FONT_HPP
+#endif // UUID_B06B65B783A849C7B4E509A9676180F8

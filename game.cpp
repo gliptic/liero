@@ -109,12 +109,11 @@ Worm* Game::findControlForKey(uint32_t key, Worm::Control& control)
 	{
 		Worm& w = *worms[i];
 		
-		uint32_t *controls = settings->extensions? w.settings->controlsEx : w.settings->controls;
-		std::size_t maxControl = settings->extensions? WormSettings::MaxControlEx : WormSettings::MaxControl;
+		uint32_t* controls = settings->extensions ? w.settings->controlsEx : w.settings->controls;
+		std::size_t maxControl = settings->extensions ? WormSettings::MaxControlEx : WormSettings::MaxControl;
 		for(std::size_t c = 0; c < maxControl; ++c)
 		{
-			
-			if( controls[c] == key )
+			if(controls[c] == key)
 			{
 				control = static_cast<Worm::Control>(c);
 				return &w;
