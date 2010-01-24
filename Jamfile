@@ -6,13 +6,32 @@ OPTIM = -O3 ;
 LINK = "g++" ;
 LINKLIBS on openliero$(SUFEXE) = -lSDL -lSDL_mixer -lrt ;
 
-Main openliero : blit.cpp bobject.cpp bonus.cpp common.cpp console.cpp
-	constants.cpp filesystem.cpp font.cpp game.cpp
+Main openliero : bobject.cpp bonus.cpp common.cpp console.cpp
+	constants.cpp filesystem.cpp game.cpp
 	gfx.cpp keys.cpp level.cpp main.cpp math.cpp
-	menu.cpp ninjarope.cpp nobject.cpp palette.cpp rand.cpp
+	ninjarope.cpp nobject.cpp rand.cpp
 	reader.cpp sdlmain.cpp replay.cpp settings.cpp sfx.cpp
 	sobject.cpp sys.cpp text.cpp viewport.cpp weapon.cpp
-	weapsel.cpp worm.cpp ;
+	weapsel.cpp worm.cpp
+	
+	controller/commonController.cpp
+	controller/localController.cpp
+	controller/replayController.cpp
+	
+	gfx/blit.cpp
+	gfx/font.cpp
+	gfx/palette.cpp
+	gfx/sprite.cpp
+	
+	menu/booleanSwitchBehavior.cpp
+	menu/enumBehavior.cpp
+	menu/hiddenMenu.cpp
+	menu/integerBehavior.cpp
+	menu/itemBehavior.cpp
+	menu/menu.cpp
+	menu/menuItem.cpp
+	menu/timeBehavior.cpp
+	;
 	
 MakeLocate openliero$(SUFEXE) : $(TOP)/liero/_bin ;
 	
