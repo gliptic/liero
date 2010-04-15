@@ -33,7 +33,7 @@ WeaponSelection::WeaponSelection(Game& game)
 		Worm& worm = *vp.worm;
 		WormSettings& ws = *worm.settings;
 		
-		menus[i].items.push_back(MenuItem(1, 1, common.texts.randomize));
+		menus[i].items.push_back(MenuItem(57, 57, common.texts.randomize));
 		
 		{
 			int x = vp.rect.center_x() - 31;
