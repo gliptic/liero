@@ -25,9 +25,11 @@
 
 #include "menu/arrayEnumBehavior.hpp"
 
-/*
-ds:0000 is 0x 1AE80
-*/
+extern "C"
+{
+#include "video_recorder.h"
+#include "tl/vector.h"
+}
 
 Gfx gfx;
 
@@ -205,9 +207,7 @@ void Gfx::init()
 
 void Gfx::setVideoMode()
 {
-	int bitDepth = 8;
-	if(settings->depth32)
-		bitDepth = 32;
+	int bitDepth = 32;
 	
 	int flags = SDL_SWSURFACE | SDL_RESIZABLE;
 	if(fullscreen)
@@ -281,11 +281,11 @@ void Gfx::loadMenus()
 	hiddenMenu.addItem(MenuItem(48, 7, "Extensions"));
 	hiddenMenu.addItem(MenuItem(48, 7, "Record replays"));
 	hiddenMenu.addItem(MenuItem(48, 7, "Load replay..."));
+	hiddenMenu.addItem(MenuItem(48, 7, "Replay to video..."));
 	hiddenMenu.addItem(MenuItem(48, 7, "PowerLevel palettes"));
 	hiddenMenu.addItem(MenuItem(48, 7, "Scaling filter"));
 	hiddenMenu.addItem(MenuItem(48, 7, "Fullscreen width"));
 	hiddenMenu.addItem(MenuItem(48, 7, "Fullscreen height"));
-	hiddenMenu.addItem(MenuItem(48, 7, "TESTING 32-bit mode"));
 	hiddenMenu.valueOffsetX = 100;
 }
 
@@ -579,6 +579,101 @@ int Gfx::fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& 
 	return mag; 
 }
 
+void Gfx::scaleDraw(
+	PalIdx* src, int w, int h, std::size_t srcPitch,
+	uint8_t* dest, std::size_t destPitch, int mag, uint32_t scaleFilter, uint32_t* pal32)
+{
+	if(mag == 1)
+	{
+		for(int y = 0; y < h; ++y)
+		{
+			PalIdx* line = src + y*srcPitch;
+			uint32_t* destLine = reinterpret_cast<uint32_t*>(dest + y*destPitch);
+					
+			for(int x = 0; x < w; ++x)
+			{
+				PalIdx pix = *line++;
+				*destLine++ = pal32[pix];
+			}
+		}
+	}
+	else if(scaleFilter == Settings::SfScale2X)
+	{
+		#define DECL int downOffset = destPitch ; SCALE2X_DECL
+		#define PALREADER_8(x, src) do { \
+			x = pal32[*(src)]; \
+		} while(0)
+				
+		#define WRITE32(p, v) *reinterpret_cast<uint32_t*>(p) = (v)
+
+		#define WRITER_2X_32(dest) do { \
+			uint8_t* pix_2x_dest_ = dest; \
+			WRITE32(pix_2x_dest_, R1); \
+			WRITE32(pix_2x_dest_+4, R2); \
+			WRITE32(pix_2x_dest_+downOffset, R3); \
+			WRITE32(pix_2x_dest_+downOffset+4, R4); \
+		} while(0)
+		FILTER_X(dest, 2*destPitch, src, srcPitch, w, h, 1, 2*4, SCALE2X, DECL, PALREADER_8, WRITER_2X_32);
+		#undef DECL
+	}
+	else
+	{
+		if(mag > 1)
+		{
+			for(int y = 0; y < h; ++y)
+			{
+				PalIdx* line = src + y*srcPitch;
+				int destMagPitch = mag*destPitch;
+				uint8_t* destLine = dest + y*destMagPitch;
+						
+				for(int x = 0; x < w/4; ++x)
+				{
+					uint32_t pix = *reinterpret_cast<uint32_t*>(line);
+					line += 4;
+							
+					uint32_t a = pal32[pix >> 24];
+					uint32_t b = pal32[(pix & 0x00ff0000) >> 16];
+					uint32_t c = pal32[(pix & 0x0000ff00) >> 8];
+					uint32_t d = pal32[pix & 0x000000ff];
+
+					for(int dx = 0; dx < mag; ++dx)
+					{
+						for(int dy = 0; dy < destMagPitch; dy += destPitch)
+						{
+							*reinterpret_cast<uint32_t*>(destLine + dy) = d;
+						}
+						destLine += 4;
+					}
+					for(int dx = 0; dx < mag; ++dx)
+					{
+						for(int dy = 0; dy < destMagPitch; dy += destPitch)
+						{
+							*reinterpret_cast<uint32_t*>(destLine + dy) = c;
+						}
+						destLine += 4;
+					}
+					for(int dx = 0; dx < mag; ++dx)
+					{
+						for(int dy = 0; dy < destMagPitch; dy += destPitch)
+						{
+							*reinterpret_cast<uint32_t*>(destLine + dy) = b;
+						}
+						destLine += 4;
+					}
+					for(int dx = 0; dx < mag; ++dx)
+					{
+						for(int dy = 0; dy < destMagPitch; dy += destPitch)
+						{
+							*reinterpret_cast<uint32_t*>(destLine + dy) = a;
+						}
+						destLine += 4;
+					}
+				}
+			}
+		}
+	}
+}
+
 void Gfx::flip()
 {
 	gvl::rect updateRect;
@@ -607,269 +702,17 @@ void Gfx::flip()
 		PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels) + offsetY * destPitch + offsetX * back->format->BytesPerPixel;
 		PalIdx* src = screenPixels;
 		
-		
-		if(back->format->BitsPerPixel == 8)
-		{
-			
-			if(mag == 1)
-			{
-				for(int y = 0; y < 200; ++y)
-				{
-					PalIdx* line = src + y*srcPitch;
-					PalIdx* destLine = dest + y*destPitch;
-					
-					std::memcpy(destLine, line, 320);
-	#if 0
-					for(int x = 0; x < 320; ++x)
-					{
-						PalIdx pix = src[y*srcPitch + x];
-						dest[y*destPitch + x] = pix;
-					}
-	#endif
-				}
-			}
-			else if(mag == 2)
-			{
-	#if 1
-
-				if(settings->scaleFilter == Settings::SfNearest)
-				{
-		
-					for(int y = 0; y < 200; ++y)
-					{
-						PalIdx* line = src + y*srcPitch;
-						PalIdx* destLine = dest + 2*y*destPitch;
-						
-	#if 0
-						for(int x = 0; x < 320; ++x)
-						{
-							PalIdx pix = *line++;
-							destLine[0] = pix;
-							destLine[1] = pix;
-							destLine[destPitch] = pix;
-							destLine[destPitch + 1] = pix;
-							
-							destLine += 2;
-						}
-	#else
-						// NOTE! This only works on a little-endian machine that allows unaligned access
-						for(int x = 0; x < 320/4; ++x)
-						{
-							// !arch NOTE! Unaligned access
-							uint32_t pix = *reinterpret_cast<uint32_t*>(line);
-							line += 4;
-							
-							uint32_t a = (pix & 0xff000000);
-							uint32_t b = (pix & 0x00ff0000) >> 8;
-							uint32_t c = (pix & 0x0000ff00) << 16;
-							uint32_t d = (pix & 0x000000ff) << 8;
-							
-							uint32_t A = a | b;
-							uint32_t C = c | d;
-							
-							A |= A >> 8;
-							C |= C >> 8;
-							
-							uint32_t* dest32T = reinterpret_cast<uint32_t*>(destLine);
-							uint32_t* dest32B = reinterpret_cast<uint32_t*>(destLine + destPitch);
-							
-							// !arch NOTE! Assumes little-endian, C and A should be swapped if big-endian
-							dest32T[0] = C;
-							dest32T[1] = A;
-							dest32B[0] = C;
-							dest32B[1] = A;
-							
-							destLine += 8;
-						}
-	#endif
-					}
-					
-				}
-				else if(settings->scaleFilter == Settings::SfScale2X)
-				{
-					#define DECL int downOffset = destPitch ; SCALE2X_DECL
-					FILTER_X(dest, 2*destPitch, src, srcPitch, 320, 200, 1, 2, SCALE2X, DECL, READER_8, WRITER_2X_8);
-					#undef DECL
-				}
-	#endif
-			}
-			else if(mag > 2)
-			{
-				for(int y = 0; y < 200; ++y)
-				{
-					PalIdx* line = src + y*srcPitch;
-					int destMagPitch = mag*destPitch;
-					PalIdx* destLine = dest + y*destMagPitch;
-					
-					for(int x = 0; x < 320/4 - 1; ++x)
-					{
-						uint32_t pix = *reinterpret_cast<uint32_t*>(line);
-						line += 4;
-						
-						uint32_t a = pix >> 24;
-						uint32_t b = pix & 0x00ff0000;
-						uint32_t c = pix & 0x0000ff00;
-						uint32_t d = pix & 0x000000ff;
-						
-						a |= (a << 8);
-						b |= (b << 8);
-						c |= (c >> 8);
-						d |= (d << 8);
-						
-						a |= (a << 16);
-						b |= (b >> 16);
-						c |= (c << 16);
-						d |= (d << 16);
-						
-						// !arch
-						#define WRITE_BLOCK(C) \
-						do { \
-							int i = mag; \
-							while(i >= 4) { \
-								for(int y = 0; y < destMagPitch; y += destPitch) { \
-									uint32_t* dest32 = reinterpret_cast<uint32_t*>(destLine + y); \
-									*dest32 = (C); \
-								} \
-								destLine += 4; \
-								i -= 4; \
-							} \
-							if(i > 0) { \
-								for(int y = 0; y < destMagPitch; y += destPitch) { \
-									uint32_t* dest32 = reinterpret_cast<uint32_t*>(destLine + y); \
-									*dest32 = (C); \
-								} \
-								destLine += i; \
-							} \
-						} while(0)
-						
-						// !arch
-						WRITE_BLOCK(d);
-						WRITE_BLOCK(c);
-						WRITE_BLOCK(b);
-						WRITE_BLOCK(a);
-						
-						#undef WRITE_BLOCK
-						
-					}
-					
-					for(int x = 0; x < 4; ++x)
-					{
-						PalIdx pix = *line++;
-						for(int dy = 0; dy < destMagPitch; dy += destPitch)
-						{
-							for(int dx = 0; dx < mag; ++dx)
-							{
-								destLine[dy + dx] = pix;
-							}
-						}
-						destLine += mag;
-					}
-				}
-			}
-		}
-		else if(back->format->BitsPerPixel == 32)
+		if(back->format->BitsPerPixel == 32)
 		{
 			uint32_t pal32[256];
 			preparePalette(back->format, screen->format->palette, pal32);
-			
-			if(mag == 1)
-			{
-				for(int y = 0; y < 200; ++y)
-				{
-					PalIdx* line = src + y*srcPitch;
-					uint32_t* destLine = reinterpret_cast<uint32_t*>(dest + y*destPitch);
-					
-					for(int x = 0; x < 320; ++x)
-					{
-						PalIdx pix = *line++;
-						*destLine++ = pal32[pix];
-					}
-				}
-			}
-			else if(settings->scaleFilter == Settings::SfScale2X)
-			{
-				#define DECL int downOffset = destPitch ; SCALE2X_DECL
-				#define PALREADER_8(x, src) do { \
-					x = pal32[*(src)]; \
-				} while(0)
-				
-				#define WRITE32(p, v) *reinterpret_cast<uint32_t*>(p) = (v)
-
-				#define WRITER_2X_32(dest) do { \
-					uint8_t* pix_2x_dest_ = dest; \
-					WRITE32(pix_2x_dest_, R1); \
-					WRITE32(pix_2x_dest_+4, R2); \
-					WRITE32(pix_2x_dest_+downOffset, R3); \
-					WRITE32(pix_2x_dest_+downOffset+4, R4); \
-				} while(0)
-				FILTER_X(dest, 2*destPitch, src, srcPitch, 320, 200, 1, 2*4, SCALE2X, DECL, PALREADER_8, WRITER_2X_32);
-				#undef DECL
-			}
-			else
-			{
-				if(mag > 1)
-				{
-					for(int y = 0; y < 200; ++y)
-					{
-						PalIdx* line = src + y*srcPitch;
-						int destMagPitch = mag*destPitch;
-						uint8_t* destLine = dest + y*destMagPitch;
-						
-						for(int x = 0; x < 320/4; ++x)
-						{
-							uint32_t pix = *reinterpret_cast<uint32_t*>(line);
-							line += 4;
-							
-							uint32_t a = pal32[pix >> 24];
-							uint32_t b = pal32[(pix & 0x00ff0000) >> 16];
-							uint32_t c = pal32[(pix & 0x0000ff00) >> 8];
-							uint32_t d = pal32[pix & 0x000000ff];
-							
-							//uint32_t* destLine32 = reinterpret_cast<uint32_t*>(destLine);
-							
-							for(int dx = 0; dx < mag; ++dx)
-							{
-								for(int dy = 0; dy < destMagPitch; dy += destPitch)
-								{
-									*reinterpret_cast<uint32_t*>(destLine + dy) = d;
-								}
-								destLine += 4;
-							}
-							for(int dx = 0; dx < mag; ++dx)
-							{
-								for(int dy = 0; dy < destMagPitch; dy += destPitch)
-								{
-									*reinterpret_cast<uint32_t*>(destLine + dy) = c;
-								}
-								destLine += 4;
-							}
-							for(int dx = 0; dx < mag; ++dx)
-							{
-								for(int dy = 0; dy < destMagPitch; dy += destPitch)
-								{
-									*reinterpret_cast<uint32_t*>(destLine + dy) = b;
-								}
-								destLine += 4;
-							}
-							for(int dx = 0; dx < mag; ++dx)
-							{
-								for(int dy = 0; dy < destMagPitch; dy += destPitch)
-								{
-									*reinterpret_cast<uint32_t*>(destLine + dy) = a;
-								}
-								destLine += 4;
-							}
-						}
-					}
-				}
-			}
+		
+			scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, settings->scaleFilter, pal32);
 		}
 	}
 	
-	//if(fullscreen)
-		SDL_Flip(back);
-	/*else
-		SDL_UpdateRect(back, updateRect.x1, updateRect.y1, updateRect.width(), updateRect.height());*/
+	SDL_Flip(back);
+	
 	lastUpdateRect = updateRect;
 	
 	if(settings->screenSync)
@@ -1309,7 +1152,7 @@ void Gfx::selectProfile(WormSettings& ws)
 
 
 
-int Gfx::selectReplay()
+int Gfx::selectReplay(bool recordToVideo)
 {
 	Menu replayMenu(28, 28);
 	
@@ -1341,9 +1184,6 @@ int Gfx::selectReplay()
 		std::string selReplay = "Select replay";
 		
 		common->font.drawFramedText(selReplay, 28, 20, 50);
-		/*
-		drawRoundedBox(28, 20, 0, 7, common->font.getDims(selReplay));
-		common->font.drawText(selReplay, 30, 21, 50);*/
 
 		replayMenu.draw(*common, false);
 		
@@ -1366,16 +1206,134 @@ int Gfx::selectReplay()
 		{
 			if(replayMenu.isSelectionValid())
 			{
-				std::string replayName = replayMenu.items[replayMenu.selection()].string + ".lrp";			
+				std::string replayName = replayMenu.items[replayMenu.selection()].string + ".lrp";
 				std::string fullPath = joinPath(lieroEXERoot, replayName);
+
+				if(recordToVideo)
+				{
+					gvl::stream_ptr replay(new gvl::fstream(std::fopen(fullPath.c_str(), "rb")));
+					ReplayReader replayReader(replay);
+
+					std::string replayVideoName = replayMenu.items[replayMenu.selection()].string + ".mp4";
+					std::string fullVideoPath = joinPath(lieroEXERoot, replayVideoName);
+
+					std::auto_ptr<Game> game(replayReader.beginPlayback(common));
+
+					sfx_mixer* mixer = sfx_mixer_create();
+
+					game->soundPlayer.reset(new RecordSoundPlayer(mixer));
+					game->startGame();
+					game->focus();
+
+					int w = 1280, h = 720;
+
+					AVRational framerate;
+					framerate.num = 1;
+					framerate.den = 30;
+
+					AVRational nativeFramerate;
+					nativeFramerate.num = 1;
+					nativeFramerate.den = 70;
+
+					av_register_all();
+					video_recorder vidrec;
+					vidrec_init(&vidrec, fullVideoPath.c_str(), w, h, framerate);
+
+					tl_vector soundBuffer;
+					tl_vector_new_empty(soundBuffer);
+
+					std::size_t audioCodecFrames = 1024;
+
+					AVRational sampleDebt;
+					sampleDebt.num = 0;
+					sampleDebt.den = 70;
+
+					AVRational frameDebt;
+					frameDebt.num = 0;
+					frameDebt.den = 1;
+
+					int offsetX, offsetY;
+					int mag = fitScreen(w, h, screen->w, screen->h, offsetX, offsetY);
+
+					uint32_t prevShowFrameMs = SDL_GetTicks();
+					int f = 0;
+					while(replayReader.playbackFrame())
+					{
+						game->processFrame();
+						clear();
+						game->draw(true);
+						gfx.fadeValue = 33;
+
+						sampleDebt.num += 44100; // sampleDebt += 44100 / 70
+						int mixerFrames = sampleDebt.num / sampleDebt.den; // floor(sampleDebt)
+						sampleDebt.num -= mixerFrames * sampleDebt.den; // sampleDebt -= mixerFrames
+
+						std::size_t mixerStart = soundBuffer.size;
+						tl_vector_reserve(soundBuffer, int16_t, soundBuffer.size + mixerFrames);
+						sfx_mixer_mix(mixer, tl_vector_idx(soundBuffer, int16_t, mixerStart), mixerFrames);
+						tl_vector_post_enlarge(soundBuffer, int16_t, mixerFrames);
+						
+						{
+							int16_t* audioSamples = tl_vector_idx(soundBuffer, int16_t, 0);
+							std::size_t samplesLeft = soundBuffer.size;
+
+							while (samplesLeft > audioCodecFrames)
+							{
+								vidrec_write_audio_frame(&vidrec, audioSamples, audioCodecFrames);
+								audioSamples += audioCodecFrames;
+								samplesLeft -= audioCodecFrames;
+							}
+								
+							frameDebt = av_add_q(frameDebt, nativeFramerate);
+
+							if (av_cmp_q(frameDebt, framerate) > 0)
+							{
+								frameDebt = av_sub_q(frameDebt, framerate);
+
+								pal.activate();
+								PalIdx* src = screenPixels;
+								std::size_t destPitch = vidrec.tmp_picture->linesize[0];
+								uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
+								std::size_t srcPitch = screenPitch;
+								
+								uint32_t pal32[256];
+								preparePalette(back->format, screen->format->palette, pal32);
+
+								scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, Settings::SfNearest, pal32);
+
+								vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
+							}
+
+							// Move rest to the beginning of the buffer
+							assert(audioSamples + samplesLeft == tl_vector_idx(soundBuffer, int16_t, soundBuffer.size));
+							memmove(soundBuffer.impl, audioSamples, samplesLeft * sizeof(int16_t));
+							soundBuffer.size = samplesLeft;
+						}
+
+						uint32_t nowMs = SDL_GetTicks();
+						if (prevShowFrameMs + 100 < nowMs)
+						{
+							prevShowFrameMs = SDL_GetTicks();
+							flip();
+							process(0);
+						}
+					}
+
+					tl_vector_free(soundBuffer);
+					vidrec_finalize(&vidrec);
+
+					// TODO: Destroy mixer
+				}
+				else
+				{
+					// Reset controller before opening the replay, since we may be recording it
+					controller.reset();
 				
-				// Reset controller before opening the replay, since we may be recording it
-				controller.reset();
+					gvl::stream_ptr replay(new gvl::fstream(std::fopen(fullPath.c_str(), "rb")));
+					controller.reset(new ReplayController(common, replay));
 				
-				gvl::stream_ptr replay(new gvl::fstream(std::fopen(fullPath.c_str(), "rb")));
-				controller.reset(new ReplayController(common, replay));
-				
-				return MaReplay;
+					return MaReplay;
+				}
 			}
 		}
 		

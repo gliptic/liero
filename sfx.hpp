@@ -3,9 +3,14 @@
 
 #if !DISABLE_SOUND
 #include <SDL/SDL_mixer.h>
+extern "C" {
+#include "mixer/mixer.h"
+}
 #endif
 #include <vector>
 #include <gvl/resman/shared_ptr.hpp>
+
+
 
 struct Sfx
 {
@@ -31,12 +36,14 @@ struct Sfx
 	
 	void play(int sound, void* id = 0, int loops = 0);	
 	bool isPlaying(void* id);
-	void playOn(int channel, int sound, void* id, int loops = 0);
+	//void playOn(int channel, int sound, void* id, int loops = 0);
 	void stop(void* id);
 #if !DISABLE_SOUND
-	std::vector<Mix_Chunk> sounds;
+	std::vector<sfx_sound*> sounds;
 	ChannelInfo channelInfo[8];
 #endif
+
+	sfx_mixer* mixer;
 	bool initialized;
 };
 
@@ -46,8 +53,32 @@ struct SoundPlayer : gvl::shared
 {
 	virtual void play(int sound, void* id = 0, int loops = 0) = 0;
 	virtual bool isPlaying(void* id) = 0;
-	virtual void playOn(int channel, int sound, void* id, int loops = 0) = 0;
 	virtual void stop(void* id) = 0;
+};
+
+struct RecordSoundPlayer : SoundPlayer
+{
+	RecordSoundPlayer(sfx_mixer* mixer)
+	: mixer(mixer)
+	{
+	}
+
+	sfx_mixer* mixer;
+
+	void play(int sound, void* id = 0, int loops = 0)
+	{
+		sfx_mixer_add(mixer, sfx.sounds[sound], sfx_mixer_now(mixer), id, loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
+	}
+	
+	bool isPlaying(void* id)
+	{
+		return sfx_is_playing(mixer, id) != 0;
+	}
+	
+	void stop(void* id)
+	{
+		sfx_mixer_stop(mixer, id);
+	}
 };
 
 struct DefaultSoundPlayer : SoundPlayer
@@ -60,11 +91,6 @@ struct DefaultSoundPlayer : SoundPlayer
 	bool isPlaying(void* id)
 	{
 		return sfx.isPlaying(id);
-	}
-	
-	void playOn(int channel, int sound, void* id, int loops = 0)
-	{
-		return sfx.playOn(channel, sound, id, loops);
 	}
 	
 	void stop(void* id)
@@ -82,10 +108,6 @@ struct NullSoundPlayer : SoundPlayer
 	bool isPlaying(void* id)
 	{
 		return false;
-	}
-	
-	void playOn(int channel, int sound, void* id, int loops)
-	{
 	}
 	
 	void stop(void* id)

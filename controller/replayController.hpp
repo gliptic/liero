@@ -14,6 +14,10 @@
 #include <gvl/io/stream.hpp>
 #include <gvl/io/fstream.hpp>
 #include <ctime>
+extern "C"
+{
+#include "../mixer/mixer.h"
+}
 
 struct Game;
 
@@ -48,6 +52,9 @@ struct ReplayController : CommonController
 	std::auto_ptr<ReplayReader> replay;
 	gvl::shared_ptr<Common> common;
 	//gvl::shared_ptr<Settings> settings;
+
+	bool recordToVideo;
+	sfx_mixer* recordMixer;
 };
 
 #endif // LIERO_CONTROLLER_REPLAY_CONTROLLER_HPP

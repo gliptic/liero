@@ -13,6 +13,7 @@ struct HiddenMenu : Menu
 		Extensions,
 		RecordReplays,
 		Replays,
+		ReplaysToVideo,
 		LoadPowerLevels,
 		ScalingFilter,
 		FullscreenW,

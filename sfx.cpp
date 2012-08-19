@@ -12,7 +12,12 @@
 
 Sfx sfx;
 
-#define HQ_SOUND 1
+extern "C" static void SDLCALL Sfx_callback(void *userdata, Uint8 *stream, int len)
+{
+	uint32 frame_count = len / 2;
+
+	sfx_mixer_mix((sfx_mixer*)userdata, stream, frame_count);
+}
 
 void Sfx::init()
 {
@@ -22,20 +27,29 @@ void Sfx::init()
 	
 	SDL_InitSubSystem(SDL_INIT_AUDIO);
 
-#if HQ_SOUND
-	int ret = Mix_OpenAudio(44100, AUDIO_S16SYS, 1, 4*512);
-#else
-	int ret = Mix_OpenAudio(22050, AUDIO_S16SYS, 1, 512);
-#endif
+	mixer = sfx_mixer_create();
+
+	SDL_AudioSpec spec;
+	memset(&spec, 0, sizeof(spec));
+	spec.channels = 1;
+	spec.freq = 44100;
+	spec.format = AUDIO_S16SYS;
+	spec.size = 4*512;
+	spec.callback = Sfx_callback;
+	spec.userdata = mixer;
+	
+	int ret = SDL_OpenAudio(&spec, NULL);
+	
 	if(ret == 0)
 	{
 		initialized = true;
-		Mix_AllocateChannels(8);
-		Mix_Volume(-1, 128);
+		//Mix_AllocateChannels(8);
+		//Mix_Volume(-1, 128);
+		SDL_PauseAudio(0);
 	}
 	else
 	{
-		Console::writeWarning(std::string("Mix_OpenAudio returned error: ") + Mix_GetError());
+		Console::writeWarning(std::string("SDL_OpenAudio returned error: ") + SDL_GetError());
 	}
 #endif
 }
@@ -47,7 +61,8 @@ void Sfx::deinit()
 		return;
 	initialized = false;
 
-	Mix_CloseAudio();
+	//Mix_CloseAudio();
+	SDL_CloseAudio();
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 #endif
 }
@@ -72,21 +87,13 @@ void Sfx::loadFromSND()
 		
 		oldPos = ftell(snd);
 		
-#if HQ_SOUND
 		int byteLength = length * 4;
-#else
-		int byteLength = length * 2;
-#endif
-		Uint8* buf = new Uint8[byteLength];
+
+		sounds[i] = sfx_new_sound(byteLength / 2);
 		
-		sounds[i].allocated = 0;
-		sounds[i].abuf = buf;
-		sounds[i].alen = byteLength;
-		sounds[i].volume = 128;
+		int16_t* ptr = reinterpret_cast<int16_t*>(sfx_sound_data(sounds[i]));
 		
-		Sint16* ptr = reinterpret_cast<Sint16*>(buf);
-		
-		std::vector<Sint8> temp(length);
+		std::vector<uint8_t> temp(length);
 		
 		if(length > 0)
 		{
@@ -94,26 +101,18 @@ void Sfx::loadFromSND()
 			checkedFread(&temp[0], 1, length, snd);
 		}
 		
-#if HQ_SOUND
-		int prev = (temp[0]) * 30;
+		int prev = ((int8_t)temp[0]) * 30;
 		*ptr++ = prev;
 		
 		for(int j = 1; j < length; ++j)
 		{
-			int cur = temp[j] * 30;
+			int cur = (int8_t)temp[j] * 30;
 			*ptr++ = (prev + cur) / 2;
 			*ptr++ = cur;
 			prev = cur;
 		}
 		
 		*ptr++ = prev;
-#else
-		for(int j = 0; j < length; ++j)
-		{
-			ptr[j] = int(temp[j]) * 30;
-		}
-#endif
-		
 	}
 #endif
 }
@@ -124,30 +123,7 @@ void Sfx::play(int sound, void* id, int loops)
 	if(!initialized)
 		return;
 
-	for(int i = 0; i < 8; ++i)
-	{
-		if(!Mix_Playing(i))
-		{
-			playOn(i, sound, id, loops);
-			return;
-		}
-	}
-#endif
-}
-
-void Sfx::playOn(int channel, int sound, void* id, int loops)
-{
-#if !DISABLE_SOUND
-	if(!initialized)
-		return;
-		
-	if(sound < 0 || sound >= int(sounds.size()))
-	{
-		Console::writeWarning("Attempt to play non-existent sound");
-		return;
-	}
-	Mix_PlayChannel(channel, &sounds[sound], loops);
-	channelInfo[channel].id = id;
+	sfx_mixer_add(mixer, sounds[sound], sfx_mixer_now(mixer), id, loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
 #endif
 }
 
@@ -156,14 +132,18 @@ void Sfx::stop(void* id)
 #if !DISABLE_SOUND
 	if(!initialized)
 		return;
-		
+
+	sfx_mixer_stop(mixer, id);
+
+	// TODO
+	/*
 	for(int i = 0; i < 8; ++i)
 	{
 		if(Mix_Playing(i) && channelInfo[i].id == id)
 		{
 			Mix_HaltChannel(i);
 		}
-	}
+	}*/
 #endif
 }
 
@@ -172,24 +152,27 @@ bool Sfx::isPlaying(void* id)
 #if !DISABLE_SOUND
 	if(!initialized)
 		return false;
-		
+
+	return sfx_is_playing(mixer, id) != 0;
+	/* TODO
 	for(int i = 0; i < 8; ++i)
 	{
 		if(Mix_Playing(i) && channelInfo[i].id == id)
 			return true;
-	}
-#endif
-	
+	}*/
+#else
 	return false;
+#endif
 }
 
 Sfx::~Sfx()
 {
+	deinit();
+
 #if !DISABLE_SOUND
 	for(std::size_t i = 0; i < sounds.size(); ++i)
 	{
-		delete [] sounds[i].abuf;
-		sounds[i].abuf = 0;
+		sfx_free_sound(sounds[i]);
 	}
 #endif
 }

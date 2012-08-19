@@ -416,7 +416,6 @@ struct Worm : gvl::shared
 	
 	// Data for LocalController
 	ControlState cleanControlStates; // This contains the real state of real and extended controls
-	
 };
 
 bool checkForWormHit(int x, int y, int dist, Worm* ownWorm);

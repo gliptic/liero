@@ -33,11 +33,18 @@
 
 //#undef main
 
+extern "C" int test_video();
+
 int gameEntry(int argc, char* argv[])
 try
 {
 	gvl_init_ieee();
 	
+#if 0
+	test_video();
+	return 0;
+#endif
+		
 	// TODO: Better PRNG seeding
 	Console::init();
 	gfx.rand.seed(Uint32(std::time(0)));

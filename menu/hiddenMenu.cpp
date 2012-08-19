@@ -48,8 +48,18 @@ struct ReplaySelectBehavior : ItemBehavior
 	int onEnter(Menu& menu, int item)
 	{
 		sfx.play(27);
-		int ret = gfx.selectReplay();
+		int ret = gfx.selectReplay(false);
 		sfx.play(27);
+		return ret;
+	}
+};
+
+struct ReplayToVideoBehavior : ItemBehavior
+{
+	int onEnter(Menu& menu, int item)
+	{
+		sfx.play(27);
+		int ret = gfx.selectReplay(true);
 		return ret;
 	}
 };
@@ -70,6 +80,8 @@ ItemBehavior* HiddenMenu::getItemBehavior(Common& common, int item)
 			return new BooleanSwitchBehavior(common, gfx.settings->recordReplays);
 		case Replays:
 			return new ReplaySelectBehavior();
+		case ReplaysToVideo:
+			return new ReplayToVideoBehavior();
 		case LoadPowerLevels:
 			return new BooleanSwitchBehavior(common, gfx.settings->loadPowerlevelPalette);
 		case ScalingFilter:

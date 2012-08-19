@@ -192,12 +192,16 @@ struct Gfx
 	bool inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int) = 0, std::string const& prefix = "", bool centered = true);
 	void inputInteger(int& dest, int min, int max, std::size_t maxLen, int x, int y);
 	void selectLevel();
-	int  selectReplay();
+	int  selectReplay(bool recordToVideo);
 	void selectProfile(WormSettings& ws);
 	void updateExtensions(bool enabled);
 	void weaponOptions();
 	void infoBox(std::string const& text, int x = 320/2, int y = 200/2, bool clearScreen = true);
 	int fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY);
+
+	static void scaleDraw(
+		PalIdx* src, int w, int h, std::size_t srcPitch, uint8_t* dest, std::size_t destPitch,
+		int mag, uint32_t scaleFilter, uint32_t* pal32);
 
 	Menu mainMenu;
 	SettingsMenu settingsMenu;

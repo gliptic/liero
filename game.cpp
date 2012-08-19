@@ -66,19 +66,6 @@ Game::Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settingsIni
 	rand.seed(Uint32(std::time(0)));
 	
 	cycles = 0;
-	
-	// TODO: Unhardcode 40. Also, this loop makes loading time settings only take effect when
-	// starting a new game. Although this emulates liero, consider changing it.
-	// TODO: This also ties common to the settings, it really has to change.
-	/*
-	for(int w = 0; w < 40; ++w)
-	{
-		common->weapons[w].computedLoadingTime = (settings->loadingTime * common->weapons[w].loadingTime) / 100;
-		if(common->weapons[w].computedLoadingTime == 0)
-			common->weapons[w].computedLoadingTime = 1;
-	}*/
-	
-	
 }
 
 Game::~Game()
