@@ -13,7 +13,6 @@
 #include <utility>
 #include <algorithm>
 #include <SDL/SDL.h>
-//#include <iostream>
 #include <cstdio>
 #include <memory>
 

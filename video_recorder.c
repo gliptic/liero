@@ -93,7 +93,7 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 		c->bit_rate = 500*1000;
 		c->bit_rate_tolerance = 0;
 		c->coder_type = 1;  // coder = 1
-		c->flags |=CODEC_FLAG_LOOP_FILTER;   // flags=+loop
+		c->flags |= CODEC_FLAG_LOOP_FILTER;   // flags=+loop
 		c->me_cmp |= 1;  // cmp=+chroma, where CHROMA = 1
 		//c->partitions|=X264_PART_I8X8+X264_PART_I4X4+X264_PART_P8X8+X264_PART_B8X8; // partitions=+parti8x8+parti4x4+partp8x8+partb8x8
 		c->me_method = ME_HEX;    // me_method=hex
@@ -355,41 +355,28 @@ int vidrec_write_video_frame(video_recorder* self, AVFrame* pic)
 {
 	int out_size, ret;
 	AVCodecContext *c;
-	static struct SwsContext *img_convert_ctx; // TODO: Unstatic
 
 	c = self->video_st->codec;
 
 	/* as we only generate a YUV420P picture, we must convert it
 		* to the codec pixel format if needed */
-	if (img_convert_ctx == NULL) {
-		img_convert_ctx = sws_getContext(c->width, c->height,
+	if (self->img_convert_ctx == NULL) {
+		self->img_convert_ctx = sws_getContext(c->width, c->height,
 											SOURCE_PIX_FMT,
 											c->width, c->height,
 											c->pix_fmt,
 											sws_flags, NULL, NULL, NULL);
-		if (img_convert_ctx == NULL) {
+		if (self->img_convert_ctx == NULL) {
 			fprintf(stderr,
 					"Cannot initialize the conversion context\n");
 			return 1;
 		}
 	}
 
-	sws_scale(img_convert_ctx, pic->data, pic->linesize,
+	sws_scale(self->img_convert_ctx, pic->data, pic->linesize,
 				0, c->height, self->picture->data, self->picture->linesize);
 
-	if (self->oc->oformat->flags & AVFMT_RAWPICTURE) {
-		/* Raw video case - the API will change slightly in the near
-			* future for that. */
-		AVPacket pkt;
-		av_init_packet(&pkt);
-
-		pkt.flags        |= AV_PKT_FLAG_KEY;
-		pkt.stream_index  = self->video_st->index;
-		pkt.data          = (uint8_t *)self->picture;
-		pkt.size          = sizeof(AVPicture);
-
-		ret = av_interleaved_write_frame(self->oc, &pkt);
-	} else {
+	{
 		/* encode the image */
 		AVPacket pkt = {0};
 		int got_packet = 0;

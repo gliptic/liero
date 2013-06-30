@@ -28,22 +28,20 @@
 
 #include <gvl/math/cmwc.hpp>
 
+extern "C" {
+#include "tl/test/test.h"
+}
+
 //#include <gvl/support/profile.hpp> // TEMP
-#include <gvl/support/log.hpp> // TEMP
-
-//#undef main
-
-extern "C" int test_video();
+//#include <gvl/support/log.hpp> // TEMP
 
 int gameEntry(int argc, char* argv[])
 try
 {
 	gvl_init_ieee();
-	
-#if 0
-	test_video();
+
+	tl_tests();
 	return 0;
-#endif
 		
 	// TODO: Better PRNG seeding
 	Console::init();
@@ -52,7 +50,6 @@ try
 	bool exeSet = false;
 	gvl::shared_ptr<Common> common(new Common);
 	gfx.common = common;
-	//common->loadPowerlevelPalette = true;
 	
 	for(int i = 1; i < argc; ++i)
 	{
@@ -88,10 +85,8 @@ try
 */
 	
 	common->texts.loadFromEXE();
-		
-	//common.texts.loadFromEXE();
+
 	initKeys();
-	//game.rand.seed(Uint32(std::time(0)));
 	common->loadConstantsFromEXE();
 	loadTablesFromEXE();
 
@@ -125,8 +120,7 @@ try
 	
 #if !DISABLE_SOUND	
 	Console::write(common->S[Init_DSPVersion]);
-	SDL_version const* mixerVer = Mix_Linked_Version();
-	Console::write(toString(mixerVer->major) + "." + toString(mixerVer->minor));
+	Console::write(toString(0) + "." + toString(1));
 	Console::write(common->S[Init_Colon]);
 	Console::write(common->S[Init_16bit]);
 	Console::writeLine(common->S[Init_Autoinit]);
@@ -155,39 +149,16 @@ try
 	
 	gfx.settingsFile = "LIERO";
 	
-#if 0 // This is just stupid, no need to emulate it
-	if(!fileExists(lieroOPT)) // NOTE: Liero doesn't seem to use the contents of LIERO.OPT for anything useful
+	if(!gfx.loadSettings())
 	{
+		gfx.settingsFile = "LIERO";
 		gfx.settings.reset(new Settings);
 		gfx.saveSettings();
-	}
-	else
-#endif
-	{
-	/*
-		FILE* f = fopen(lieroOPT.c_str(), "rb");
-		std::size_t len = fileLength(f);
-		if(len > 255) len = 255;
-		char buf[256];
-		fread(buf, 1, len, f);
-		game.settingsFile.assign(buf, len);
-		
-		rtrim(game.settingsFile);
-		*/
-		if(!gfx.loadSettings())
-		{
-			gfx.settingsFile = "LIERO";
-			gfx.settings.reset(new Settings);
-			gfx.saveSettings();
-		}
-
-		//fclose(f);
 	}
 	
 	gfx.setVideoMode();
 	sfx.init();
 	
-	//game.initGame();
 	gfx.mainLoop();
 	
 	gfx.settingsFile = "LIERO";

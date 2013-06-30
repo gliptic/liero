@@ -16,6 +16,7 @@ typedef struct video_recorder {
 	AVOutputFormat *fmt;
 	AVFormatContext *oc;
 	AVStream *audio_st, *video_st;
+	struct SwsContext *img_convert_ctx;
 } video_recorder;
 
 int  vidrec_init(video_recorder* self, char const* filename, int width, int height, AVRational framerate);

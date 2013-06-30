@@ -2,8 +2,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liero", "liero.vcxproj", "{CDE258F8-90DB-407B-8521-AA531EE4D167}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gvl_test", "..\..\gvl\gvl_test\_build\gvl_test.vcxproj", "{84C16952-2A28-4539-A6CC-1AEE30DF00D6}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gvl", "..\..\gvl\_build\gvl.vcxproj", "{57ADDF43-2FAC-4C85-8D88-72DEE580A3C9}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "tl", "..\..\tl\_build\tl.vcxproj", "{7FC0A21B-7780-470B-960E-38294E4BA0AB}"
@@ -32,14 +30,6 @@ Global
 		{7FC0A21B-7780-470B-960E-38294E4BA0AB}.Release|Win32.Build.0 = Release|Win32
 		{7FC0A21B-7780-470B-960E-38294E4BA0AB}.Release|x64.ActiveCfg = Release|x64
 		{7FC0A21B-7780-470B-960E-38294E4BA0AB}.Release|x64.Build.0 = Release|x64
-		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Debug|Win32.ActiveCfg = Debug|Win32
-		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Debug|Win32.Build.0 = Debug|Win32
-		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Debug|x64.ActiveCfg = Debug|X64
-		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Debug|x64.Build.0 = Debug|X64
-		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Release|Win32.ActiveCfg = Release|Win32
-		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Release|Win32.Build.0 = Release|Win32
-		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Release|x64.ActiveCfg = Release|X64
-		{84C16952-2A28-4539-A6CC-1AEE30DF00D6}.Release|x64.Build.0 = Release|X64
 		{CDE258F8-90DB-407B-8521-AA531EE4D167}.Debug|Win32.ActiveCfg = Debug|Win32
 		{CDE258F8-90DB-407B-8521-AA531EE4D167}.Debug|Win32.Build.0 = Debug|Win32
 		{CDE258F8-90DB-407B-8521-AA531EE4D167}.Debug|x64.ActiveCfg = Debug|x64

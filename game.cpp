@@ -12,10 +12,6 @@
 #include <ctime>
 
 #include <iostream>
-#include <gvl/support/log.hpp> // TEMP
-
-//Game game;
-
 
 void Game::createDefaults()
 {
