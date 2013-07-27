@@ -271,58 +271,48 @@ HackDesc Hhackdesc[] =
 
 void Common::loadConstantsFromEXE()
 {
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 	
 	for(int i = 0; CSint32desc[i][1] >= 0; ++i)
 	{
-		fseek(exe, CSint32desc[i][1], SEEK_SET);
+		exe.seekg(CSint32desc[i][1]);
 		int a = readUint16(exe);
-		fseek(exe, CSint32desc[i][2], SEEK_SET);
+		exe.seekg(CSint32desc[i][2]);
 		int b = readSint16(exe);
 		C[CSint32desc[i][0]] = a + (b << 16);
-		
-		//std::cout << C[CSint32desc[i][0]] << std::endl;
 	}
 	
 	for(int i = 0; CSint24desc[i][1] >= 0; ++i)
 	{
-		fseek(exe, CSint24desc[i][1], SEEK_SET);
+		exe.seekg(CSint24desc[i][1]);
 		int a = readUint16(exe);
-		fseek(exe, CSint24desc[i][2], SEEK_SET);
+		exe.seekg(CSint24desc[i][2]);
 		int b = readSint8(exe);
 		C[CSint24desc[i][0]] = a + (b << 16);
-		
-		//std::cout << C[CSint24desc[i][0]] << std::endl;
 	}
 	
 	for(int i = 0; CSint16desc[i][1] >= 0; ++i)
 	{
-		fseek(exe, CSint16desc[i][1], SEEK_SET);
+		exe.seekg(CSint16desc[i][1]);
 		C[CSint16desc[i][0]] = readSint16(exe);
-		
-		//std::cout << C[CSint16desc[i][0]] << std::endl;
 	}
 	
 	for(int i = 0; CUint16desc[i][1] >= 0; ++i)
 	{
-		fseek(exe, CUint16desc[i][1], SEEK_SET);
+		exe.seekg(CUint16desc[i][1]);
 		C[CUint16desc[i][0]] = readUint16(exe);
-		
-		//std::cout << C[CUint16desc[i][0]] << std::endl;
 	}
 	
 	for(int i = 0; CSint8desc[i][1] >= 0; ++i)
 	{
-		fseek(exe, CSint8desc[i][1], SEEK_SET);
+		exe.seekg(CSint8desc[i][1]);
 		C[CSint8desc[i][0]] = readSint8(exe);
 	}
 	
 	for(int i = 0; CUint8desc[i][1] >= 0; ++i)
 	{
-		fseek(exe, CUint8desc[i][1], SEEK_SET);
+		exe.seekg(CUint8desc[i][1]);
 		C[CUint8desc[i][0]] = readUint8(exe);
-		
-		//std::cout << C[CUint8desc[i][0]] << std::endl;
 	}
 	
 	for(int i = 0; Sstringdesc[i][1] >= 0; ++i)
@@ -336,8 +326,8 @@ void Common::loadConstantsFromEXE()
 		bool active = true;
 		for(; (*ind)[0] >= 0; ++ind)
 		{
-			std::fseek(exe, (*ind)[0], SEEK_SET);
-			int b = std::fgetc(exe);
+			exe.seekg((*ind)[0]);
+			int b = exe.get();
 			if(b != (*ind)[1])
 			{
 				active = false;

@@ -1,0 +1,324 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCTargetsPath Condition="'$(VCTargetsPath11)' != '' and '$(VSVersion)' == '' and '$(VisualStudioVersion)' == ''">$(VCTargetsPath11)</VCTargetsPath>
+  </PropertyGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{CDE258F8-90DB-407B-8521-AA531EE4D167}</ProjectGuid>
+    <RootNamespace>liero</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v110</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>11.0.50522.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)\..\_bin\$(Configuration)\</OutDir>
+    <IntDir>_trash\$(Configuration)\</IntDir>
+    <TargetName>liero</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>openliero</TargetName>
+    <TargetExt>.exe</TargetExt>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)\..\_bin\$(Configuration)\</OutDir>
+    <IntDir>_trash\$(Configuration)\</IntDir>
+    <TargetName>liero</TargetName>
+    <TargetExt>.lib</TargetExt>
+    <LinkIncremental>false</LinkIncremental>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>openliero</TargetName>
+    <TargetExt>.exe</TargetExt>
+    <LinkIncremental>false</LinkIncremental>
+    <EmbedManifest>false</EmbedManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>sdl.lib;avcodec.lib;avformat.lib;avresample.lib;avutil.lib;avfilter.lib;swscale.lib</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)liero.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention />
+      <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>sdl.lib;avcodec.lib;avformat.lib;avresample.lib;avutil.lib;avfilter.lib;swscale.lib</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)liero.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention />
+      <TargetMachine>MachineX64</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>
+      </AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention />
+      <TargetMachine>MachineX86</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader />
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>sdl.lib;avcodec.lib;avformat.lib;avresample.lib;avutil.lib;avfilter.lib;swscale.lib</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention />
+      <TargetMachine>MachineX64</TargetMachine>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\gfx\blit.cpp" />
+    <ClCompile Include="..\gfx\font.cpp" />
+    <ClCompile Include="..\gfx\palette.cpp" />
+    <ClCompile Include="..\gfx\sprite.cpp" />
+    <ClCompile Include="..\controller\commonController.cpp" />
+    <ClCompile Include="..\controller\localController.cpp" />
+    <ClCompile Include="..\controller\replayController.cpp" />
+    <ClCompile Include="..\menu\booleanSwitchBehavior.cpp" />
+    <ClCompile Include="..\menu\enumBehavior.cpp" />
+    <ClCompile Include="..\menu\hiddenMenu.cpp" />
+    <ClCompile Include="..\menu\integerBehavior.cpp" />
+    <ClCompile Include="..\menu\itemBehavior.cpp" />
+    <ClCompile Include="..\menu\menu.cpp" />
+    <ClCompile Include="..\menu\menuItem.cpp" />
+    <ClCompile Include="..\menu\timeBehavior.cpp" />
+    <ClCompile Include="..\bobject.cpp" />
+    <ClCompile Include="..\bonus.cpp" />
+    <ClCompile Include="..\common.cpp" />
+    <ClCompile Include="..\console.cpp" />
+    <ClCompile Include="..\constants.cpp" />
+    <ClCompile Include="..\filesystem.cpp" />
+    <ClCompile Include="..\game.cpp" />
+    <ClCompile Include="..\gfx.cpp" />
+    <ClCompile Include="..\keys.cpp" />
+    <ClCompile Include="..\level.cpp" />
+    <ClCompile Include="..\math.cpp" />
+    <ClCompile Include="..\mixer\mixer.c" />
+    <ClCompile Include="..\ninjarope.cpp" />
+    <ClCompile Include="..\nobject.cpp" />
+    <ClCompile Include="..\rand.cpp" />
+    <ClCompile Include="..\reader.cpp" />
+    <ClCompile Include="..\replay.cpp" />
+    <ClCompile Include="..\settings.cpp" />
+    <ClCompile Include="..\sfx.cpp" />
+    <ClCompile Include="..\sobject.cpp" />
+    <ClCompile Include="..\stats_recorder.cpp" />
+    <ClCompile Include="..\sys.cpp" />
+    <ClCompile Include="..\text.cpp" />
+    <ClCompile Include="..\viewport.cpp" />
+    <ClCompile Include="..\weapon.cpp" />
+    <ClCompile Include="..\weapsel.cpp" />
+    <ClCompile Include="..\worm.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\gfx\bitmap.hpp" />
+    <ClInclude Include="..\gfx\blit.hpp" />
+    <ClInclude Include="..\gfx\color.hpp" />
+    <ClInclude Include="..\gfx\font.hpp" />
+    <ClInclude Include="..\gfx\macros.hpp" />
+    <ClInclude Include="..\gfx\palette.hpp" />
+    <ClInclude Include="..\gfx\sprite.hpp" />
+    <ClInclude Include="..\controller\commonController.hpp" />
+    <ClInclude Include="..\controller\controller.hpp" />
+    <ClInclude Include="..\controller\localController.hpp" />
+    <ClInclude Include="..\controller\replayController.hpp" />
+    <ClInclude Include="..\menu\arrayEnumBehavior.hpp" />
+    <ClInclude Include="..\menu\booleanSwitchBehavior.hpp" />
+    <ClInclude Include="..\menu\enumBehavior.hpp" />
+    <ClInclude Include="..\menu\hiddenMenu.hpp" />
+    <ClInclude Include="..\menu\integerBehavior.hpp" />
+    <ClInclude Include="..\menu\itemBehavior.hpp" />
+    <ClInclude Include="..\menu\menu.hpp" />
+    <ClInclude Include="..\menu\menuItem.hpp" />
+    <ClInclude Include="..\menu\timeBehavior.hpp" />
+    <ClInclude Include="..\bobject.hpp" />
+    <ClInclude Include="..\bonus.hpp" />
+    <ClInclude Include="..\common.hpp" />
+    <ClInclude Include="..\console.hpp" />
+    <ClInclude Include="..\constants.hpp" />
+    <ClInclude Include="..\controller.hpp" />
+    <ClInclude Include="..\exactObjectList.hpp" />
+    <ClInclude Include="..\fastObjectList.hpp" />
+    <ClInclude Include="..\filesystem.hpp" />
+    <ClInclude Include="..\game.hpp" />
+    <ClInclude Include="..\gfx.hpp" />
+    <ClInclude Include="..\keys.hpp" />
+    <ClInclude Include="..\level.hpp" />
+    <ClInclude Include="..\math.hpp" />
+    <ClInclude Include="..\mixer\mixer.h" />
+    <ClInclude Include="..\nobject.hpp" />
+    <ClInclude Include="..\objectList.hpp" />
+    <ClInclude Include="..\rand.hpp" />
+    <ClInclude Include="..\reader.hpp" />
+    <ClInclude Include="..\rect.hpp" />
+    <ClInclude Include="..\replay.hpp" />
+    <ClInclude Include="..\settings.hpp" />
+    <ClInclude Include="..\sfx.hpp" />
+    <ClInclude Include="..\sobject.hpp" />
+    <ClInclude Include="..\stats_recorder.hpp" />
+    <ClInclude Include="..\sys.hpp" />
+    <ClInclude Include="..\text.hpp" />
+    <ClInclude Include="..\version.hpp" />
+    <ClInclude Include="..\viewport.hpp" />
+    <ClInclude Include="..\weapon.hpp" />
+    <ClInclude Include="..\weapsel.hpp" />
+    <ClInclude Include="..\worm.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Jamfile" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\gvl\_build\gvl.vcxproj">
+      <Project>{57addf43-2fac-4c85-8d88-72dee580a3c9}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\..\tl\_build\tl.vcxproj">
+      <Project>{7fc0a21b-7780-470b-960e-38294e4ba0ab}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

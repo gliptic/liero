@@ -3,18 +3,13 @@
 #include <SDL/SDL.h>
 #include <map>
 #include <stdexcept>
+#include <vector>
 
 std::string lieroOPT;
 std::string lieroEXERoot;
 
 namespace
 {
-
-struct ReaderFile
-{
-	unsigned int lastTouch;
-	FILE* f;
-};
 
 typedef std::map<std::string, ReaderFile> ReaderFileMap;
 
@@ -24,71 +19,51 @@ std::string lieroSND;
 
 ReaderFileMap readerFiles;
 
-void closeReaderFile(ReaderFileMap::iterator i)
+}
+
+void openFileUncached(ReaderFile& rf, std::string const& name)
 {
-	fclose(i->second.f);
-	readerFiles.erase(i);
+	FILE* f = tolerantFOpen(name.c_str(), "rb");
+	if(!f)
+		throw std::runtime_error("Could not open '" + name + '\'');
+	fseek(f, 0, SEEK_END);
+	long len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	rf.data = new uint8_t[len];
+	rf.len = len;
+	fread(rf.data, 1, len, f);
+	fclose(f);
 }
 
-
-}
-
-FILE* openFile(std::string const& name)
+ReaderFile& openFile(std::string const& name)
 {
 	ReaderFileMap::iterator i = readerFiles.find(name);
 	if(i != readerFiles.end())
 	{
-		i->second.lastTouch = SDL_GetTicks();
-		return i->second.f;
+		i->second.seekg(0);
+		return i->second;
 	}
 
-	FILE* f = tolerantFOpen(name.c_str(), "rb");
-	if(!f)
-		throw std::runtime_error("Could not open '" + name + '\'');
 	ReaderFile& rf = readerFiles[name];
-	rf.f = f;
-	rf.lastTouch = SDL_GetTicks();
-	return f;
+	openFileUncached(rf, name);
+
+	return rf;
 }
 
-FILE* openLieroEXE()
+ReaderFile& openLieroEXE()
 {
 	return openFile(lieroEXE);
 }
 
-FILE* openLieroSND()
+ReaderFile& openLieroSND()
 {
 	return openFile(lieroSND);
 }
 
-FILE* openLieroCHR()
+ReaderFile& openLieroCHR()
 {
 	return openFile(lieroCHR);
-}
-
-void processReader()
-{
-	unsigned int now = SDL_GetTicks();
-	for(ReaderFileMap::iterator i = readerFiles.begin(); i != readerFiles.end(); )
-	{
-		ReaderFileMap::iterator cur = i;
-		++i;
-		
-		if((now - cur->second.lastTouch) > 5000)
-		{
-			closeReaderFile(cur);
-		}
-	}
-}
-
-void closeAllCachedFiles()
-{
-	for(ReaderFileMap::iterator i = readerFiles.begin(); i != readerFiles.end(); )
-	{
-		ReaderFileMap::iterator cur = i;
-		++i;
-		closeReaderFile(cur);
-	}
 }
 
 void setLieroEXE(std::string const& path)

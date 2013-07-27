@@ -12,11 +12,11 @@ void Font::loadFromEXE()
 	std::size_t const FontSize = 250 * 8 * 8 + 1;
 	std::vector<unsigned char> temp(FontSize);
 	
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 	
-	fseek(exe, 0x1C825, SEEK_SET);
+	exe.seekg(0x1C825);
 	
-	checkedFread(&temp[0], 1, FontSize, exe);
+	exe.get(reinterpret_cast<uint8_t*>(&temp[0]), FontSize);
 	
 	for(int i = 0; i < 250; ++i)
 	{
@@ -38,15 +38,15 @@ void Font::drawChar(unsigned char c, int x, int y, int color)
 {
 	if(c >= 2 && c < 252) // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since drawText subtracts 2?
 	{
-		SDL_Surface* scr = gfx.screen;
+		Bitmap& scr = gfx.screenBmp;
 		uint8_t* mem = chars[c].data;
 		int width = 7;
 		int height = 8;
 		int pitch = 7;
 		
-		CLIP_IMAGE(scr->clip_rect);
+		CLIP_IMAGE(scr.clip_rect);
 		
-		PalIdx* scrptr = static_cast<PalIdx*>(scr->pixels) + y*scr->pitch + x;
+		PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
 		
 		for(int cy = 0; cy < height; ++cy)
 		{
@@ -62,7 +62,7 @@ void Font::drawChar(unsigned char c, int x, int y, int color)
 				++rowdest;
 			}
 
-			scrptr += scr->pitch;
+			scrptr += scr.pitch;
 			mem += pitch;
 		}
 	}
@@ -94,7 +94,7 @@ void Font::drawText(char const* str, std::size_t len, int x, int y, int color)
 
 void Font::drawFramedText(std::string const& text, int x, int y, int color)
 {
-	drawRoundedBox(x, y, 0, 7, getDims(text));
+	drawRoundedBox(gfx.screenBmp, x, y, 0, 7, getDims(text));
 	drawText(text, x + 2, y + 1, color);
 }
 

@@ -15,10 +15,11 @@
 #include <string>
 #include <gvl/resman/shared_ptr.hpp>
 #include "common.hpp"
+#include "stats_recorder.hpp"
 
 struct Viewport;
 struct Worm;
-
+struct Renderer;
 
 struct Game
 {
@@ -39,11 +40,11 @@ struct Game
 	void clearViewports();
 	void addViewport(Viewport*);
 	void processViewports();
-	void drawViewports(bool isReplay = false);
+	void drawViewports(Renderer& renderer, bool isReplay = false);
 	void clearWorms();
 	void addWorm(Worm*);
 	void resetWorms();
-	void draw(bool isReplay = false);
+	void draw(Renderer& renderer, bool isReplay = false);
 	void startGame();
 	bool isGameOver();
 	void createDefaults();
@@ -58,6 +59,7 @@ struct Game
 	gvl::shared_ptr<Common> common;
 	gvl::shared_ptr<SoundPlayer> soundPlayer;
 	gvl::shared_ptr<Settings> settings;
+	gvl::shared_ptr<StatsRecorder> statsRecorder;
 	int screenFlash;
 	bool gotChanged;
 	Worm* lastKilled; // Last killed worm  !CLONING

@@ -5,19 +5,14 @@
 #include "../gfx.hpp"
 #include <SDL/SDL.h>
 
-void Palette::activate()
+void Palette::activate(SDL_Color realPal[256])
 {
-	SDL_Color realPal[256];
-	
 	for(int i = 0; i < 256; ++i)
 	{
 		realPal[i].r = entries[i].r << 2;
 		realPal[i].g = entries[i].g << 2;
 		realPal[i].b = entries[i].b << 2;
 	}
-	
-	SDL_SetColors(gfx.back, realPal, 0, 256);
-	SDL_SetColors(gfx.screen, realPal, 0, 256);
 }
 
 int fadeValue(int v, int amount)
@@ -73,12 +68,12 @@ void Palette::clear()
 	std::memset(entries, 0, sizeof(entries));
 }
 
-void Palette::read(FILE* f)
+void Palette::read(ReaderFile& f)
 {
 	for(int i = 0; i < 256; ++i)
 	{
 		unsigned char rgb[3];
-		checkedFread(rgb, 1, 3, f);
+		f.get(reinterpret_cast<uint8_t*>(rgb), 3);
 		
 		entries[i].r = rgb[0] & 63;
 		entries[i].g = rgb[1] & 63;

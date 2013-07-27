@@ -65,7 +65,8 @@ void Ninjarope::process(Worm& owner)
 								0, 0,
 								x, y,
 								pix,
-								&owner);
+								&owner,
+								0);
 						}
 					}
 				}

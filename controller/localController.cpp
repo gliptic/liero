@@ -150,7 +150,7 @@ bool LocalController::process()
 	return true;
 }
 
-void LocalController::draw()
+void LocalController::draw(Renderer& renderer)
 {
 	if(state == StateWeaponSelection)
 	{
@@ -158,9 +158,9 @@ void LocalController::draw()
 	}
 	else if(state == StateGame || state == StateGameEnded || state == StateInitial)
 	{
-		game.draw();
+		game.draw(renderer);
 	}
-	gfx.fadeValue = fadeValue;
+	renderer.fadeValue = fadeValue;
 }
 
 void LocalController::changeState(State newState)

@@ -2,12 +2,15 @@
 
 #include "../game.hpp"
 
-ReplayController::ReplayController(gvl::shared_ptr<Common> common, gvl::stream_ptr source)
+ReplayController::ReplayController(
+	gvl::shared_ptr<Common> common, gvl::stream_ptr source,
+	gvl::stream_ptr statsSink)
 : state(StateInitial)
 , fadeValue(0)
 , goingToMenu(false)
 , replay(new ReplayReader(source))
 , common(common)
+, statsSink(statsSink)
 {
 }
 
@@ -117,13 +120,13 @@ bool ReplayController::process()
 	return true;
 }
 
-void ReplayController::draw()
+void ReplayController::draw(Renderer& renderer)
 {
 	if(state == StateGame || state == StateGameEnded)
 	{
-		game->draw(true);
+		game->draw(renderer, true);
 	}
-	gfx.fadeValue = fadeValue;
+	renderer.fadeValue = fadeValue;
 }
 
 void ReplayController::changeState(State newState)
@@ -140,6 +143,7 @@ void ReplayController::changeState(State newState)
 			fadeValue = 180;
 			goingToMenu = true;
 		}
+		game->statsRecorder->write(*common, statsSink);
 		replay.reset();
 	}
 

@@ -9,18 +9,18 @@
 
 struct PreserveClipRect
 {
-	PreserveClipRect(SDL_Surface* surf)
-	: surf(surf)
+	PreserveClipRect(Bitmap& bmp)
+	: bmp(bmp)
 	{
-		SDL_GetClipRect(surf, &rect);
+		rect = bmp.clip_rect;
 	}
 	
 	~PreserveClipRect()
 	{
-		SDL_SetClipRect(surf, &rect);
+		bmp.clip_rect = rect;
 	}
 	
-	SDL_Surface* surf;
+	Bitmap& bmp;
 	SDL_Rect rect;
 };
 
@@ -105,7 +105,7 @@ void Viewport::process()
 	}*/
 }
 
-void Viewport::draw(bool isReplay)
+void Viewport::draw(Renderer& renderer, bool isReplay)
 {
 	Common& common = *game.common;
 	if(worm) // Should not be necessary further on
@@ -113,7 +113,7 @@ void Viewport::draw(bool isReplay)
 		if(worm->visible)
 		{
 			int lifebarWidth = worm->health * 100 / worm->settings->health;
-			drawBar(inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
+			drawBar(renderer.screenBmp, inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
 		}
 		else
 		{
@@ -122,7 +122,7 @@ void Viewport::draw(bool isReplay)
 			{
 				if(lifebarWidth > 100)
 					lifebarWidth = 100;
-				drawBar(inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
+				drawBar(renderer.screenBmp, inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
 			}
 		}
 	}
@@ -138,7 +138,7 @@ void Viewport::draw(bool isReplay)
 			int ammoBarWidth = ww.ammo * 100 / common.weapons[ww.id].ammo;
 			
 			if(ammoBarWidth > 0)
-				drawBar(inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
+				drawBar(renderer.screenBmp, inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
 		}
 	}
 	else
@@ -156,7 +156,7 @@ void Viewport::draw(bool isReplay)
 		}
 		
 		if(ammoBarWidth > 0)
-			drawBar(inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
+			drawBar(renderer.screenBmp, inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
 		
 		if((game.cycles % 20) > 10
 		&& worm->visible)
@@ -207,7 +207,7 @@ void Viewport::draw(bool isReplay)
 	break;
 	}	
 
-	PreserveClipRect pcr(gfx.screen);
+	PreserveClipRect pcr(renderer.screenBmp);
 	
 	SDL_Rect viewportClip;
 	viewportClip.x = rect.x1;
@@ -215,12 +215,12 @@ void Viewport::draw(bool isReplay)
 	viewportClip.w = rect.width();
 	viewportClip.h = rect.height();
 	
-	SDL_SetClipRect(gfx.screen, &viewportClip);
+	renderer.screenBmp.clip_rect = viewportClip;
 	
 	int offsX = rect.x1 - x;
 	int offsY = rect.y1 - y;
 	
-	blitImageNoKeyColour(gfx.screen, &game.level.data[0], offsX, offsY, game.level.width, game.level.height); // TODO: Unhardcode
+	blitImageNoKeyColour(renderer.screenBmp, &game.level.data[0], offsX, offsY, game.level.width, game.level.height); // TODO: Unhardcode
 	
 	if(!worm->visible
 	&& worm->killedTimer <= 0
@@ -270,7 +270,7 @@ void Viewport::draw(bool isReplay)
 			int f = common.bonusFrames[i->frame];
 			
 			blitImage(
-				gfx.screen,
+				renderer.screenBmp,
 				common.smallSprites.spritePtr(f),
 				ftoi(i->x) - x - 3 + rect.x1,
 				ftoi(i->y) - y - 3 + rect.y1,
@@ -280,7 +280,7 @@ void Viewport::draw(bool isReplay)
 			{
 				blitShadowImage(
 					common,
-					gfx.screen,
+					renderer.screenBmp,
 					common.smallSprites.spritePtr(f),
 					ftoi(i->x) - x - 5 + rect.x1,
 					ftoi(i->y) - y - 1 + rect.y1, // This was - 3 in the original, but that seems wrong
@@ -308,7 +308,7 @@ void Viewport::draw(bool isReplay)
 		
 		// TODO: Check that blitImageR is the correct one to use (probably)
 		blitImageR(
-			gfx.screen,
+			renderer.screenBmp,
 			common.largeSprites.spritePtr(frame),
 			i->x + offsX,
 			i->y + offsY,
@@ -318,7 +318,7 @@ void Viewport::draw(bool isReplay)
 		{
 			blitShadowImage(
 				common,
-				gfx.screen,
+				renderer.screenBmp,
 				common.largeSprites.spritePtr(frame),
 				i->x + offsX - 3,
 				i->y + offsY + 3, // TODO: Original doesn't offset the shadow, which is clearly wrong. Check that this offset is correct.
@@ -366,7 +366,7 @@ void Viewport::draw(bool isReplay)
 			{
 				blitShadowImage(
 					common,
-					gfx.screen,
+					renderer.screenBmp,
 					common.smallSprites.spritePtr(w.startFrame + curFrame),
 					posX - x - 3 + rect.x1,
 					posY - y + 3 + rect.y1, // TODO: Combine rect.x1 - x into one number, same with y
@@ -375,7 +375,7 @@ void Viewport::draw(bool isReplay)
 			}
 			
 			blitImage(
-				gfx.screen,
+				renderer.screenBmp,
 				common.smallSprites.spritePtr(w.startFrame + curFrame),
 				posX - x + rect.x1,
 				posY - y + rect.y1, // TODO: Combine rect.x1 - x into one number, same with y
@@ -387,17 +387,17 @@ void Viewport::draw(bool isReplay)
 			int posX = ftoi(i->x) - x + rect.x1;
 			int posY = ftoi(i->y) - y + rect.y1;
 			
-			if(isInside(gfx.screen->clip_rect, posX, posY))
-				gfx.screenPixels[posY*gfx.screenPitch + posX] = static_cast<PalIdx>(i->curFrame);
+			if(isInside(renderer.screenBmp.clip_rect, posX, posY))
+				renderer.screenBmp.getPixel(posX, posY) = static_cast<PalIdx>(i->curFrame);
 			
 			if(game.settings->shadow)
 			{
 				posX -= 3;
 				posY += 3;
 				
-				if(isInside(gfx.screen->clip_rect, posX, posY))
+				if(isInside(renderer.screenBmp.clip_rect, posX, posY))
 				{
-					PalIdx& pix = gfx.screenPixels[posY*gfx.screenPitch + posX];
+					PalIdx& pix = renderer.screenBmp.getPixel(posX, posY);
 					if(common.materials[pix].seeShadow())
 						pix += 4;
 				}
@@ -442,7 +442,7 @@ void Viewport::draw(bool isReplay)
 			{
 				blitShadowImage(
 					common,
-					gfx.screen,
+					renderer.screenBmp,
 					common.smallSprites.spritePtr(t.startFrame + i->curFrame),
 					posX - 3 + offsX,
 					posY + 3 + offsY,
@@ -451,7 +451,7 @@ void Viewport::draw(bool isReplay)
 			}
 			
 			blitImage(
-				gfx.screen,
+				renderer.screenBmp,
 				common.smallSprites.spritePtr(t.startFrame + i->curFrame),
 				posX + offsX,
 				posY + offsY,
@@ -463,17 +463,17 @@ void Viewport::draw(bool isReplay)
 		{
 			int posX = ftoi(i->x) + offsX;
 			int posY = ftoi(i->y) + offsY;
-			if(isInside(gfx.screen->clip_rect, posX, posY))
-				gfx.getScreenPixel(posX, posY) = PalIdx(i->curFrame);
+			if(isInside(renderer.screenBmp.clip_rect, posX, posY))
+				renderer.screenBmp.getPixel(posX, posY) = PalIdx(i->curFrame);
 				
 			if(game.settings->shadow)
 			{
 				posX -= 3;
 				posY += 3;
 				
-				if(isInside(gfx.screen->clip_rect, posX, posY))
+				if(isInside(renderer.screenBmp.clip_rect, posX, posY))
 				{
-					PalIdx& pix = gfx.getScreenPixel(posX, posY);
+					PalIdx& pix = renderer.screenBmp.getPixel(posX, posY);
 					if(common.materials[pix].seeShadow())
 						pix += 4;
 				}
@@ -502,12 +502,12 @@ void Viewport::draw(bool isReplay)
 				
 				if(weapon.laserSight)
 				{
-					drawLaserSight(hotspotX, hotspotY, tempX + 7, tempY + 4);
+					drawLaserSight(renderer.screenBmp, renderer.rand, hotspotX, hotspotY, tempX + 7, tempY + 4);
 				}
 				
 				if(ww.id == common.C[LaserWeapon] - 1 && w.pressed(Worm::Fire))
 				{
-					drawLine(hotspotX, hotspotY, tempX + 7, tempY + 4, weapon.colorBullets);
+					drawLine(renderer.screenBmp, hotspotX, hotspotY, tempX + 7, tempY + 4, weapon.colorBullets);
 				}
 			}
 			
@@ -516,14 +516,14 @@ void Viewport::draw(bool isReplay)
 				int ninjaropeX = ftoi(w.ninjarope.x) - x + rect.x1;
 				int ninjaropeY = ftoi(w.ninjarope.y) - y + rect.y1;
 				
-				drawNinjarope(common, ninjaropeX, ninjaropeY, tempX + 7, tempY + 4);
+				drawNinjarope(common, renderer.screenBmp, ninjaropeX, ninjaropeY, tempX + 7, tempY + 4);
 				
-				blitImage(gfx.screen, common.largeSprites.spritePtr(84), ninjaropeX - 1, ninjaropeY - 1, 16, 16);
+				blitImage(renderer.screenBmp, common.largeSprites.spritePtr(84), ninjaropeX - 1, ninjaropeY - 1, 16, 16);
 				
 				if(game.settings->shadow)
 				{
-					drawShadowLine(common, ninjaropeX - 3, ninjaropeY + 3, tempX + 7 - 3, tempY + 4 + 3);
-					blitShadowImage(common, gfx.screen, common.largeSprites.spritePtr(84), ninjaropeX - 4, ninjaropeY + 2, 16, 16);
+					drawShadowLine(common, renderer.screenBmp, ninjaropeX - 3, ninjaropeY + 3, tempX + 7 - 3, tempY + 4 + 3);
+					blitShadowImage(common, renderer.screenBmp, common.largeSprites.spritePtr(84), ninjaropeX - 4, ninjaropeY + 2, 16, 16);
 				}
 				
 			}
@@ -536,7 +536,7 @@ void Viewport::draw(bool isReplay)
 				//NOTE! Check function 1071C and see what it actually does*/
 				
 				blitFireCone(
-					gfx.screen,
+					renderer.screenBmp,
 					w.fireCone / 2,
 					common.fireConeSprite(angleFrame, w.direction),
 					common.fireConeOffset[w.direction][angleFrame][0] + tempX,
@@ -544,9 +544,9 @@ void Viewport::draw(bool isReplay)
 			}
 			
 			
-			blitImage(gfx.screen, common.wormSprite(w.currentFrame, w.direction, w.index), tempX, tempY, 16, 16);
+			blitImage(renderer.screenBmp, common.wormSprite(w.currentFrame, w.direction, w.index), tempX, tempY, 16, 16);
 			if(game.settings->shadow)
-				blitShadowImage(common, gfx.screen, common.wormSprite(w.currentFrame, w.direction, w.index), tempX - 3, tempY + 3, 16, 16);
+				blitShadowImage(common, renderer.screenBmp, common.wormSprite(w.currentFrame, w.direction, w.index), tempX - 3, tempY + 3, 16, 16);
 		}
 	}
 	
@@ -558,7 +558,7 @@ void Viewport::draw(bool isReplay)
 		if(worm->makeSightGreen)
 		{
 			blitImage(
-				gfx.screen,
+				renderer.screenBmp,
 				common.smallSprites.spritePtr(44),
 				tempX,
 				tempY,
@@ -567,7 +567,7 @@ void Viewport::draw(bool isReplay)
 		else
 		{
 			blitImage(
-				gfx.screen,
+				renderer.screenBmp,
 				common.smallSprites.spritePtr(43),
 				tempX,
 				tempY,
@@ -604,17 +604,17 @@ void Viewport::draw(bool isReplay)
 	{
 		int posX = ftoi(i->x) + offsX;
 		int posY = ftoi(i->y) + offsY;
-		if(isInside(gfx.screen->clip_rect, posX, posY))
-			gfx.getScreenPixel(posX, posY) = PalIdx(i->color);
+		if(isInside(renderer.screenBmp.clip_rect, posX, posY))
+			renderer.screenBmp.getPixel(posX, posY) = PalIdx(i->color);
 			
 		if(game.settings->shadow)
 		{
 			posX -= 3;
 			posY += 3;
 			
-			if(isInside(gfx.screen->clip_rect, posX, posY))
+			if(isInside(renderer.screenBmp.clip_rect, posX, posY))
 			{
-				PalIdx& pix = gfx.getScreenPixel(posX, posY);
+				PalIdx& pix = renderer.screenBmp.getPixel(posX, posY);
 				if(common.materials[pix].seeShadow())
 					pix += 4;
 			}
@@ -629,7 +629,7 @@ void Viewport::draw(bool isReplay)
 			int mx = 5;
 			for(int x = 134; x < 185; ++x)
 			{
-				gfx.getScreenPixel(x, y) = game.level.checkedPixelWrap(mx, my);
+				renderer.screenBmp.getPixel(x, y) = game.level.checkedPixelWrap(mx, my);
 				mx += 10;
 			}
 			my += 10;
@@ -644,7 +644,7 @@ void Viewport::draw(bool isReplay)
 				int x = ftoi(w.x) / 10 + 134;
 				int y = ftoi(w.y) / 10 + 162;
 				
-				gfx.getScreenPixel(x, y) = 129 + w.index * 4;
+				renderer.screenBmp.getPixel(x, y) = 129 + w.index * 4;
 			}
 		}
 	}

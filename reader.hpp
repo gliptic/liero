@@ -4,118 +4,131 @@
 #include <cstdio>
 #include <string>
 #include <stdexcept>
+#include <vector>
 #include <SDL/SDL.h>
+#include <gvl/cstdint.hpp>
+#include <gvl/io/stream.hpp>
 
 extern std::string lieroEXERoot;
 extern std::string lieroOPT;
 
+struct ReaderFile
+{
+	ReaderFile()
+	: data(0), pos(0), len(0)
+	{
+	}
+
+	~ReaderFile()
+	{
+		delete[] data;
+	}
+
+	uint8_t* data;
+	size_t pos, len;
+
+	void seekg(size_t newPos)
+	{
+		if (newPos > len)
+			throw gvl::stream_read_error(gvl::stream::read_eos, "EOF in seekg()");
+		pos = newPos;
+	}
+
+	size_t tellg()
+	{
+		return pos;
+	}
+
+	void skip(size_t step)
+	{
+		seekg(pos + step);
+	}
+
+	uint8_t get()
+	{
+		if (pos >= len)
+			throw gvl::stream_read_error(gvl::stream::read_eos, "EOF in get()");
+		return data[pos++];
+	}
+
+	void get(uint8_t* p, unsigned int l)
+	{
+		if (pos + l > len)
+			throw gvl::stream_read_error(gvl::stream::read_eos, "EOF in get()");
+		std::memcpy(p, data + pos, l);
+		pos += l;
+	}
+};
+
 // Return an opened file
-FILE* openFile(std::string const& name);
+ReaderFile& openFile(std::string const& name);
+void openFileUncached(ReaderFile& rf, std::string const& name);
 
-FILE* openLieroEXE();
-FILE* openLieroSND();
-FILE* openLieroCHR();
+ReaderFile& openLieroEXE();
+ReaderFile& openLieroSND();
+ReaderFile& openLieroCHR();
 
+/*
 inline void checkedFread(void* ptr, std::size_t size, std::size_t count, FILE* f)
 {
 	if(fread(ptr, size, count, f) != count)
 		throw std::runtime_error("fread failed to read fully");
-}
+}*/
 
-inline std::string readPascalString(FILE* f)
+inline std::string readPascalString(ReaderFile& f)
 {
-	unsigned char length;
-	checkedFread(&length, 1, 1, f);
+	unsigned char length = f.get();
+
 	char txt[256];
-	checkedFread(txt, 1, length, f);
+	f.get(reinterpret_cast<uint8_t*>(txt), length);
 	return std::string(txt, length);
 }
 
-inline std::string readPascalString(FILE* f, unsigned char fieldLen)
+inline std::string readPascalString(ReaderFile& f, unsigned char fieldLen)
 {
 	char txt[256];
-	checkedFread(txt, 1, fieldLen, f);
+	f.get(reinterpret_cast<uint8_t*>(txt), fieldLen);
+
 	unsigned char length = static_cast<unsigned char>(txt[0]);
 	return std::string(txt + 1, length);
 }
 
-inline void writePascalString(FILE* f, std::string const& str, unsigned char fieldLen)
+inline std::string readPascalStringAt(ReaderFile& f, size_t location)
 {
-	int len = int(str.size() < fieldLen ? str.size() : fieldLen - 1);
-	std::size_t zeroes = fieldLen - 1 - len;
-	fputc(len, f);
-	fwrite(str.data(), 1, len, f);
-	for(std::size_t i = 0; i < zeroes; ++i)
-		fputc(0, f);
+	f.seekg(location);
+	return readPascalString(f);
 }
 
-inline std::string readPascalStringAt(FILE* f, int location)
+inline Uint32 readUint8(ReaderFile& f)
 {
-	unsigned char length;
-	fseek(f, location, SEEK_SET);
-	checkedFread(&length, 1, 1, f);
-	char txt[256];
-	checkedFread(txt, 1, length, f);
-	return std::string(txt, length);
+	return f.get();
 }
 
-inline Uint32 readUint8(FILE* f)
+inline Sint32 readSint8(ReaderFile& f)
 {
-	unsigned char temp[1];
-	checkedFread(temp, 1, 1, f);
-	return temp[0];
+	return (int8_t)f.get();
 }
 
-inline void writeUint8(FILE* f, Uint32 v)
+inline Uint32 readUint16(ReaderFile& f)
 {
-	fputc(v & 0xff, f);
+	return gvl::read_uint16_le(f);
 }
 
-inline Sint32 readSint8(FILE* f)
+inline Sint32 readSint16(ReaderFile& f)
 {
-	char temp[1];
-	checkedFread(temp, 1, 1, f);
-	return temp[0];
+	return (int)(int16_t)gvl::read_uint16_le(f);
 }
 
-inline Uint32 readUint16(FILE* f)
+inline Uint32 readUint32(ReaderFile& f)
 {
-	unsigned char temp[2];
-	checkedFread(temp, 1, 2, f);
-	return temp[0] + (temp[1] << 8);
+	return gvl::read_uint32_le(f);
 }
 
-inline void writeUint16(FILE* f, Uint32 v)
+inline Sint32 readSint32(ReaderFile& f)
 {
-	fputc(v & 0xff, f);
-	fputc((v >> 8) & 0xff, f);
-}
-
-inline Sint32 readSint16(FILE* f)
-{
-	unsigned char temp[2];
-	checkedFread(temp, 1, 2, f);
-	return temp[0] + (static_cast<char>(temp[1]) << 8);
-}
-
-inline Uint32 readUint32(FILE* f)
-{
-	unsigned char temp[4];
-	checkedFread(temp, 1, 4, f);
-	return temp[0] + (temp[1] << 8) + (temp[2] << 16) + (temp[3] << 24);
-}
-
-inline Sint32 readSint32(FILE* f)
-{
-	unsigned char temp[4];
-	checkedFread(temp, 1, 4, f);
-	return temp[0] + (temp[1] << 8) + (temp[2] << 16) + (static_cast<char>(temp[3]) << 24);
+	return (int32_t)gvl::read_uint32_le(f);
 }
 
 void setLieroEXE(std::string const& path);
-
-// Close old files
-void processReader();
-void closeAllCachedFiles();
 
 #endif // LIERO_READER_HPP

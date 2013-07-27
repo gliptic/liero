@@ -12,7 +12,7 @@
 #include <cassert>
 #include <iostream> // TEMP
 
-void SObjectType::create(Game& game, int x, int y, Worm* owner)
+void SObjectType::create(Game& game, int x, int y, Worm* owner, WormWeapon* firedBy, WObject* from)
 {
 	Common& common = *game.common;
 	SObject& obj = *game.sobjects.newObjectReuse();
@@ -46,6 +46,8 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 	{
 		game.screenFlash = flash;
 	}
+
+	game.statsRecorder->damagePotential(owner, firedBy, damage);
 		
 	if(damage > 0)
 	{
@@ -88,10 +90,17 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 				int z = damage * powerSum;
 				if(detectRange)
 					z /= detectRange;
+
+				if (from && !from->hasHit)
+				{
+					game.statsRecorder->hit(owner, firedBy, &w);
+					from->hasHit = true;
+				}
 					
 				if(w.health > 0)
 				{
 					w.health -= z;
+					game.statsRecorder->damageDealt(owner, firedBy, &w, z, false);
 					
 					if(w.health <= 0)
 						w.lastKilledBy = owner;
@@ -109,7 +118,8 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 								w.velX / 3, w.velY / 3,
 								w.x, w.y,
 								0,
-								&w);
+								&w,
+								firedBy);
 						}
 					}
 					
@@ -227,7 +237,7 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 						angle,
 						0, 0,
 						itof(x), itof(y),
-						pix, owner);
+						pix, owner, firedBy);
 				}
 			}
 		}
@@ -252,7 +262,7 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner)
 		&& iy < y + detectRange)
 		{
 			game.bonuses.free(i);
-			common.sobjectTypes[0].create(game, ix, iy, owner);
+			common.sobjectTypes[0].create(game, ix, iy, owner, firedBy);
 		}
 	} // for( ... bonuses ...
 }

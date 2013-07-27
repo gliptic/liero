@@ -14,16 +14,20 @@ int Weapon::computedLoadingTime(Settings& settings)
 	return ret;
 }
 
-void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner)
+void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner, WormWeapon* ww)
 {
 	WObject* obj = game.wobjects.newObjectReuse();
-	
-	
 	
 	obj->id = id;
 	obj->x = x;
 	obj->y = y;
 	obj->owner = owner;
+
+	// STATS
+	obj->firedBy = ww;
+	obj->hasHit = false;
+	game.statsRecorder->damagePotential(owner, ww, hitDamage);
+	game.statsRecorder->shot(owner, ww);
 
 	if(distribution)
 	{
@@ -94,7 +98,7 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 	
 	if(w.createOnExp >= 0)
 	{
-		common.sobjectTypes[w.createOnExp].create(game, ftoi(x), ftoi(y), cause);
+		common.sobjectTypes[w.createOnExp].create(game, ftoi(x), ftoi(y), cause, firedBy, this);
 	}
 	
 	if(w.exploSound >= 0)
@@ -118,7 +122,8 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 					0, 0,
 					x, y,
 					w.splinterColour - colorSub,
-					cause);
+					cause,
+					firedBy);
 			}
 		}
 		else
@@ -131,7 +136,8 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 					velX, velY,
 					x, y,
 					w.splinterColour - colorSub,
-					cause);
+					cause,
+					firedBy);
 			}
 		}
 	}
@@ -252,7 +258,7 @@ void WObject::process(Game& game)
 		if(w.objTrailType >= 0
 		&& (game.cycles % w.objTrailDelay) == 0)
 		{
-			common.sobjectTypes[w.objTrailType].create(game, ftoi(x), ftoi(y), owner);
+			common.sobjectTypes[w.objTrailType].create(game, ftoi(x), ftoi(y), owner, firedBy);
 		}
 		
 		if(w.partTrailObj >= 0
@@ -265,7 +271,8 @@ void WObject::process(Game& game)
 					velX / common.C[SplinterLarpaVelDiv], velY / common.C[SplinterLarpaVelDiv],
 					x, y,
 					0,
-					owner);
+					owner,
+					firedBy);
 			}
 			else
 			{
@@ -276,7 +283,8 @@ void WObject::process(Game& game)
 					velX / common.C[SplinterCracklerVelDiv], velY / common.C[SplinterCracklerVelDiv],
 					x, y,
 					0,
-					owner);
+					owner,
+					firedBy);
 			}
 		}
 		
@@ -393,6 +401,11 @@ void WObject::process(Game& game)
 				worm.velY += (velY * w.blowAway) / 100;
 				
 				worm.health -= w.hitDamage;
+				game.statsRecorder->damageDealt(owner, firedBy, &worm, w.hitDamage, hasHit);
+				if (!hasHit)
+					game.statsRecorder->hit(owner, firedBy, &worm);
+				hasHit = true;
+
 				if(worm.health <= 0) // Original has worm.health < 0 which is wrong
 				{
 					worm.lastKilledBy = owner;
@@ -403,7 +416,7 @@ void WObject::process(Game& game)
 				for(int i = 0; i < bloodAmount; ++i)
 				{
 					int angle = game.rand(128);
-					common.nobjectTypes[6].create2(game, angle, velX / 3, velY / 3, x, y, 0, &worm);
+					common.nobjectTypes[6].create2(game, angle, velX / 3, velY / 3, x, y, 0, &worm, firedBy);
 				}
 								
 				if(w.hitDamage > 0

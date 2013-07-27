@@ -1,5 +1,9 @@
 #include "video_recorder.h"
 
+#include "libavutil/mathematics.h"
+#include "libavformat/avformat.h"
+#include "libswscale/swscale.h"
+
 #define STREAM_PIX_FMT    PIX_FMT_YUV420P
 #define SOURCE_PIX_FMT    PIX_FMT_BGRA
 

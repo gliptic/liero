@@ -2,22 +2,22 @@
 #define UUID_74C8EE76D5564F2D8C7BBC9B26C16192
 
 #include <SDL/SDL.h>
-#include <cstdio>
 #include <gvl/support/debug.hpp>
 
 struct Settings;
 struct WormSettings;
+struct ReaderFile;
 
 struct Palette
 {
 	SDL_Color entries[256];
 	
 	// TODO: Move definitions of these from gfx.cpp to palette.cpp
-	void activate();
+	void activate(SDL_Color realPal[256]);
 	void fade(int amount);
 	void lightUp(int amount);
 	void rotate(int from, int to);
-	void read(FILE* f);
+	void read(ReaderFile& f);
 	
 	void scaleAdd(int dest, int const(&c)[3], int scale, int add)
 	{

@@ -226,20 +226,27 @@ void Level::resize(int width_new, int height_new)
 bool Level::load(Common& common, Settings const& settings, std::string const& path)
 {
 	resize(504, 350);
-	
-	ScopedFile f(tolerantFOpen(path.c_str(), "rb"));
-	if(!f)
+
+	ReaderFile f;
+
+	try
+	{
+		openFileUncached(f, path);
+	}
+	catch (std::runtime_error&)
+	{
 		return false;
-		
-	std::size_t len = fileLength(f);
+	}
+
+	std::size_t len = f.len;
 	
 	if(len >= 504*350 + 10 + 256*3
 	&& (settings.extensions && settings.loadPowerlevelPalette))
 	{
-		std::fseek(f, 504*350, SEEK_SET);
-		char buf[10];
-		
-		checkedFread(buf, 1, 10, f);
+		f.seekg(504*350);
+
+		uint8_t buf[10];
+		f.get(buf, 10);
 		
 		if(!std::memcmp("POWERLEVEL", buf, 10))
 		{
@@ -247,14 +254,14 @@ bool Level::load(Common& common, Settings const& settings, std::string const& pa
 			pal.read(f);
 			origpal.resetPalette(pal, settings);
 			
-			std::fseek(f, 0, SEEK_SET);
-			checkedFread(&data[0], 1, width * height, f);
+			f.seekg(0);
+			f.get(reinterpret_cast<uint8_t*>(&data[0]), width * height);
 			return true;
 		}
 	}
 	
-	std::fseek(f, 0, SEEK_SET);
-	checkedFread(&data[0], 1, width * height, f);
+	f.seekg(0);
+	f.get(reinterpret_cast<uint8_t*>(&data[0]), width * height);
 	origpal.resetPalette(common.exepal, settings);
 	
 	return true;

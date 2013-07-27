@@ -9,6 +9,7 @@
 struct Worm;
 struct Game;
 struct Settings;
+struct WormWeapon;
 
 struct Weapon
 {
@@ -21,7 +22,7 @@ struct Weapon
 		STLaser
 	};
 	
-	void fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner);
+	void fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner, WormWeapon* ww);
 
 	int detectDistance;
 	bool affectByWorm;
@@ -87,9 +88,14 @@ struct WObject : ExactObjectListBase
 	fixed x, y;
 	fixed velX, velY;
 	int id;
-	Worm* owner;
+	//Worm* owner;
+	int ownerIdx;
 	int curFrame;
 	int timeLeft;
+
+	// STATS
+	WormWeapon* firedBy;
+	bool hasHit;
 };
 
 

@@ -127,20 +127,25 @@ void Settings::save(std::string const& path)
 
 void Settings::generateName(WormSettings& ws)
 {
-	FILE* f = fopen(joinPath(lieroEXERoot, "NAMES.DAT").c_str(), "rb");
-	
-	if(!f)
+	ReaderFile f;
+
+	try
+	{
+		openFileUncached(f, joinPath(lieroEXERoot, "NAMES.DAT"));
+	}
+	catch (std::runtime_error)
+	{
 		return;
-		
+	}
+	
 	std::vector<std::string> names;
 	
-	std::size_t len = fileLength(f);
+	std::size_t len = f.len;
 	
+	// TODO: This is a bit silly since we switched to ReaderFile
 	std::vector<char> chars(len);
 	
-	checkedFread(&chars[0], 1, len, f);
-	
-	fclose(f);
+	f.get(reinterpret_cast<uint8_t*>(&chars[0]), len);
 	
 	std::size_t begin = 0;
 	for(std::size_t i = 0; i < len; ++i)

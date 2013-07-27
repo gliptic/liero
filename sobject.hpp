@@ -7,10 +7,12 @@
 
 struct Worm;
 struct Game;
+struct WormWeapon;
+struct WObject;
 
 struct SObjectType
 {
-	void create(Game& game, int x, int y, Worm* owner);
+	void create(Game& game, int x, int y, Worm* owner, WormWeapon* firedBy, WObject* from = 0);
 	
 	int startSound;
 	int numSounds;

@@ -5,7 +5,7 @@
 #include <vector>
 #include <cassert>
 
-void SpriteSet::read(FILE* f, int width, int height, int count)
+void SpriteSet::read(ReaderFile& f, int width, int height, int count)
 {
 	assert(width == height); // We only support rectangular sprites right now
 	
@@ -17,12 +17,12 @@ void SpriteSet::read(FILE* f, int width, int height, int count)
 	int amount = spriteSize * count;
 	data.resize(amount);
 	
-	std::vector<PalIdx> temp(amount);
+	std::vector<uint8_t> temp(amount);
 	
-	checkedFread(&temp[0], 1, amount, f);
+	f.get(&temp[0], amount);
 	
 	PalIdx* dest = &data[0];
-	PalIdx* src = &temp[0];
+	uint8_t* src = &temp[0];
 	
 	for(int i = 0; i < count; i++)
 	{

@@ -5,7 +5,7 @@
 #include "bobject.hpp"
 #include <iostream>
 
-void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int color, Worm* owner)
+void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int color, Worm* owner, WormWeapon* firedBy)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
 	
@@ -16,6 +16,11 @@ void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int 
 	
 	obj.velX = velX;
 	obj.velY = velY;
+
+	// STATS
+	obj.firedBy = firedBy;
+	obj.hasHit = false;
+	game.statsRecorder->damagePotential(owner, firedBy, hitDamage);
 	
 	if(distribution)
 	{
@@ -43,16 +48,19 @@ void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int 
 	
 }
 
-void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int color, Worm* owner)
+void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int color, Worm* owner, WormWeapon* firedBy)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
 	
-	
-
 	obj.id = id;
 	obj.owner = owner;
 	obj.x = x;
 	obj.y = y;
+
+	// STATS
+	obj.firedBy = firedBy;
+	obj.hasHit = false;
+	game.statsRecorder->damagePotential(owner, firedBy, hitDamage);
 	
 	int realSpeed = speed - game.rand(speedV);
 		
@@ -180,7 +188,7 @@ void NObject::process(Game& game)
 		&& t.leaveObj >= 0 // NOTE: AFAIK, this doesn't exist in Liero, but some TCs seem to forget to set leaveObjDelay to 0 when not using this trail
 		&& (game.cycles % t.leaveObjDelay) == 0)
 		{
-			common.sobjectTypes[t.leaveObj].create(game, ftoi(x), ftoi(y), owner);
+			common.sobjectTypes[t.leaveObj].create(game, ftoi(x), ftoi(y), owner, firedBy);
 		}
 		
 		velY += t.gravity;
@@ -224,7 +232,10 @@ void NObject::process(Game& game)
 				{
 					w.velX += t.blowAway * velX / 100;
 					w.velY += t.blowAway * velY / 100;
+
 					w.health -= t.hitDamage;
+					game.statsRecorder->damageDealt(owner, firedBy, &w, t.hitDamage, hasHit);
+					hasHit = true;
 					
 					if(game.settings->gameMode == Settings::GMCtF)
 					{
@@ -312,7 +323,8 @@ void NObject::process(Game& game)
 							velX / 3, velY / 3,
 							x, y,
 							0,
-							owner);
+							owner,
+							0);
 					}
 										
 					if(t.wormExplode)
@@ -333,7 +345,7 @@ void NObject::process(Game& game)
 	{
 		if(t.createOnExp >= 0)
 		{
-			common.sobjectTypes[t.createOnExp].create(game, ftoi(x), ftoi(y), owner);
+			common.sobjectTypes[t.createOnExp].create(game, ftoi(x), ftoi(y), owner, firedBy);
 		}
 		
 		if(t.dirtEffect >= 0)
@@ -356,7 +368,8 @@ void NObject::process(Game& game)
 					0, 0,
 					x, y,
 					t.splinterColour - colorSub,
-					owner);
+					owner,
+					0);
 			}
 		}
 		

@@ -3,6 +3,7 @@
 
 struct Level;
 struct Game;
+struct Renderer;
 
 struct Controller
 {
@@ -21,7 +22,7 @@ struct Controller
 	
 	virtual bool process() = 0;
 	
-	virtual void draw() = 0;
+	virtual void draw(Renderer& renderer) = 0;
 	
 	// Returns true if the game is still running. The menu should check this to decide whether to show the resume option.
 	virtual bool running() = 0;

@@ -7,6 +7,7 @@
 #include <ctime>
 
 struct Game;
+struct Renderer;
 
 struct Viewport
 {
@@ -64,19 +65,8 @@ struct Viewport
 	}
 	
 	
-	void draw(bool isReplay);
+	void draw(Renderer& renderer, bool isReplay);
 	void process();
-
-/*
- void Init(BLOCK &vp);
- void Limit();
- void SetCenter(long _x, long _y);
- void ShakeIt();
- void Draw();
- void ScrollTo(long _x, long _y, long iter);
- void BlitLarge(IMAGE img, long _x, long _y);
- void BlitLargeShadow(IMAGE img, long _x, long _y);
-*/
 };
 
 #endif // LIERO_VIEWPORT_HPP

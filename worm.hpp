@@ -402,7 +402,6 @@ struct Worm : gvl::shared
 	int leaveShellTimer;         //Time until next shell drop
 	
 	gvl::shared_ptr<WormSettings> settings; // !CLONING
-	//Viewport* viewport; // !CLONING
 	int index; // 0 or 1
 	
 	std::auto_ptr<WormAI> ai;

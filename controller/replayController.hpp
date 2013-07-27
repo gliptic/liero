@@ -30,7 +30,7 @@ struct ReplayController : CommonController
 		StateGameEnded
 	};
 	
-	ReplayController(gvl::shared_ptr<Common> common, gvl::stream_ptr source);
+	ReplayController(gvl::shared_ptr<Common> common, gvl::stream_ptr source, gvl::stream_ptr statsSink);
 	
 	void onKey(int key, bool keyState);
 	// Called when the controller loses focus. When not focused, it will not receive key events among other things.
@@ -38,7 +38,7 @@ struct ReplayController : CommonController
 	// Called when the controller gets focus.
 	void focus();
 	bool process();
-	void draw();
+	void draw(Renderer& renderer);
 	void changeState(State newState);
 	void swapLevel(Level& newLevel);
 	Level* currentLevel();
@@ -51,6 +51,7 @@ struct ReplayController : CommonController
 	bool goingToMenu;
 	std::auto_ptr<ReplayReader> replay;
 	gvl::shared_ptr<Common> common;
+	gvl::stream_ptr statsSink;
 	//gvl::shared_ptr<Settings> settings;
 
 	bool recordToVideo;

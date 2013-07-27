@@ -5,6 +5,8 @@
 #include <cstdio>
 #include "color.hpp"
 
+struct ReaderFile;
+
 struct SpriteSet
 {
 	std::vector<PalIdx> data;
@@ -13,7 +15,7 @@ struct SpriteSet
 	int spriteSize;
 	int count;
 	
-	void read(FILE* f, int width, int height, int count);
+	void read(ReaderFile& f, int width, int height, int count);
 	
 	PalIdx* spritePtr(int frame)
 	{

@@ -20,14 +20,14 @@
 #include "enumBehavior.hpp"
 
 struct Common;
-
+struct ReaderFile;
 struct Gfx;
 
 struct Menu
 {
-	void readItems(FILE* f, int length, int count, bool colorPrefix, PalIdx color = 0, PalIdx disColour = 0);
+	void readItems(ReaderFile& f, int length, int count, bool colorPrefix, PalIdx color = 0, PalIdx disColour = 0);
 	
-	void readItem(FILE* f, int offset, PalIdx color = 0, PalIdx disColour = 0);
+	void readItem(ReaderFile& f, int offset, PalIdx color = 0, PalIdx disColour = 0);
 	
 	Menu(bool centered = false)
 	{

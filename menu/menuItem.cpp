@@ -12,9 +12,9 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 	
 	if(selected)
 	{
-		drawRoundedBox(x, y, 0, 7, wid);
+		drawRoundedBox(gfx.screenBmp, x, y, 0, 7, wid);
 		if(hasValue)
-			drawRoundedBox(x + valueOffsetX - (valueWid >> 1), y, 0, 7, valueWid);
+			drawRoundedBox(gfx.screenBmp, x + valueOffsetX - (valueWid >> 1), y, 0, 7, valueWid);
 	}
 	else
 	{

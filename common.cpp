@@ -19,7 +19,7 @@ int stoneTab[3][4] =
 
 void Texts::loadFromEXE()
 {
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 
 	random = readPascalStringAt(exe, 0xD6E3);
 	random2 = readPascalStringAt(exe, 0xD413);
@@ -33,7 +33,7 @@ void Texts::loadFromEXE()
 	curOptNoFile = readPascalStringAt(exe, 0xE6DD);
 	curOpt = readPascalStringAt(exe, 0xE6FA);
 	
-	fseek(exe, 0x1B2BA, SEEK_SET);
+	exe.seekg(0x1B2BA);
 	for(int i = 0; i < 4; ++i)
 	{
 		gameModes[i] = readPascalString(exe, 17);
@@ -49,13 +49,13 @@ void Texts::loadFromEXE()
 	controllers[0] = readPascalStringAt(exe, 0x1B204);
 	controllers[1] = readPascalStringAt(exe, 0x1B20A);
 	
-	fseek(exe, 0x1B2FE, SEEK_SET);
+	exe.seekg(0x1B2FE);
 	for(int i = 0; i < 3; ++i)
 	{
 		weapStates[i] = readPascalString(exe, 13);
 	}
 		
-	fseek(exe, 0x209A6, SEEK_SET);
+	exe.seekg(0x209A6);
 	for(int i = 1; i < 177; ++i) // First key starts at 1
 	{
 		keyNames[i] = readPascalString(exe, 13);
@@ -80,20 +80,19 @@ void Texts::loadFromEXE()
 	availability = readPascalStringAt(exe, 0xD707);
 	noWeaps = readPascalStringAt(exe, 0xD714);
 	
-	fseek(exe, 0xFC5B, SEEK_SET);
+	exe.seekg(0xFC5B);
 	copyrightBarFormat = readUint8(exe);
 }
 
 void Common::loadPalette()
 {
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 	
-	std::fseek(exe, 132774, SEEK_SET);
+	exe.seekg(132774);
 	
 	exepal.read(exe);
 
-	
-	std::fseek(exe, 0x1AF0C, SEEK_SET);
+	exe.seekg(0x1AF0C);
 	for(int i = 0; i < 4; ++i)
 	{
 		colorAnim[i].from = readUint8(exe);
@@ -104,9 +103,9 @@ void Common::loadPalette()
 
 void Common::loadMaterials()
 {
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 	
-	std::fseek(exe, 0x01C2E0, SEEK_SET);
+	exe.seekg(0x01C2E0);
 	
 	for(int i = 0; i < 256; ++i)
 	{
@@ -117,7 +116,7 @@ void Common::loadMaterials()
 	
 	for(int i = 0; i < 5; ++i)
 	{
-		checkedFread(bits, 1, 32, exe);
+		exe.get(reinterpret_cast<uint8_t*>(bits), 32);
 		
 		for(int j = 0; j < 256; ++j)
 		{
@@ -126,9 +125,9 @@ void Common::loadMaterials()
 		}
 	}
 	
-	std::fseek(exe, 0x01AEA8, SEEK_SET);
+	exe.seekg(0x01AEA8);
 	
-	checkedFread(bits, 1, 32, exe);
+	exe.get(reinterpret_cast<uint8_t*>(bits), 32);
 	
 	for(int j = 0; j < 256; ++j)
 	{
@@ -139,7 +138,7 @@ void Common::loadMaterials()
 
 struct Read32
 {
-	static inline int run(FILE* f)
+	static inline int run(ReaderFile& f)
 	{
 		return readSint32(f);
 	}
@@ -147,7 +146,7 @@ struct Read32
 
 struct Read16
 {
-	static inline int run(FILE* f)
+	static inline int run(ReaderFile& f)
 	{
 		return readSint16(f);
 	}
@@ -155,7 +154,7 @@ struct Read16
 
 struct Read8
 {
-	static inline int run(FILE* f)
+	static inline int run(ReaderFile& f)
 	{
 		return readUint8(f);
 	}
@@ -163,7 +162,7 @@ struct Read8
 
 struct ReadBool
 {
-	static inline bool run(FILE* f)
+	static inline bool run(ReaderFile& f)
 	{
 		return readUint8(f) != 0;
 	}
@@ -172,14 +171,14 @@ struct ReadBool
 template<typename T>
 struct Dec
 {
-	static inline int run(FILE* f)
+	static inline int run(ReaderFile& f)
 	{
 		return T::run(f) - 1;
 	}
 };
 
 template<typename Reader, typename T, int N, typename U>
-inline void readMembers(FILE* f, T(&arr)[N], U (T::*mem))
+inline void readMembers(ReaderFile& f, T(&arr)[N], U (T::*mem))
 {
 	for(int i = 0; i < N; ++i)
 	{
@@ -189,9 +188,9 @@ inline void readMembers(FILE* f, T(&arr)[N], U (T::*mem))
 
 void Common::loadWeapons()
 {
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 	
-	fseek(exe, 112806, SEEK_SET);
+	exe.seekg(112806);
 	
 	readMembers<Read8>(exe, weapons, &Weapon::detectDistance);
 	readMembers<ReadBool>(exe, weapons, &Weapon::affectByWorm);
@@ -248,7 +247,7 @@ void Common::loadWeapons()
 	readMembers<Dec<Read8> >(exe, weapons, &Weapon::partTrailObj);
 	readMembers<Read8>(exe, weapons, &Weapon::partTrailDelay);
 	
-	fseek(exe, 0x1B676, SEEK_SET);
+	exe.seekg(0x1B676);
 	for(int i = 0; i < 40; ++i)
 	{
 		weapons[i].name = readPascalString(exe, 14);
@@ -256,7 +255,7 @@ void Common::loadWeapons()
 	}
 	
 	// Special objects
-	fseek(exe, 115218, SEEK_SET);
+	exe.seekg(115218);
 	readMembers<Dec<Read8> >(exe, sobjectTypes, &SObjectType::startSound);
 	//fseek(exe, 115232, SEEK_SET);
 	readMembers<Read8>(exe, sobjectTypes, &SObjectType::numSounds);
@@ -272,7 +271,8 @@ void Common::loadWeapons()
 	readMembers<Read8>(exe, sobjectTypes, &SObjectType::damage);
 	//fseek(exe, 0x1C274, SEEK_SET);
 	readMembers<Read32>(exe, sobjectTypes, &SObjectType::blowAway); // blowAway has 13 slots, not 14. The last value will overlap with shadow.
-	fseek(exe, 115368, SEEK_SET);
+
+	exe.seekg(115368);
 	readMembers<ReadBool>(exe, sobjectTypes, &SObjectType::shadow);
 	//fseek(exe, 115382, SEEK_SET);
 	readMembers<Read8>(exe, sobjectTypes, &SObjectType::shake);
@@ -286,7 +286,7 @@ void Common::loadWeapons()
 		sobjectTypes[i].id = i;
 	}
 	
-	fseek(exe, 111430, SEEK_SET);
+	exe.seekg(111430);
 	
 	readMembers<Read8>(exe, nobjectTypes, &NObjectType::detectDistance);
 	readMembers<Read16>(exe, nobjectTypes, &NObjectType::gravity);
@@ -325,35 +325,35 @@ void Common::loadWeapons()
 
 void Common::loadTextures()
 {
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 	
-	fseek(exe, 0x1C208, SEEK_SET);
+	exe.seekg(0x1C208);
 	readMembers<ReadBool>(exe, textures, &Texture::nDrawBack);
-	fseek(exe, 0x1C1EA, SEEK_SET);
+	exe.seekg(0x1C1EA);
 	readMembers<Read8>(exe, textures, &Texture::mFrame);
-	fseek(exe, 0x1C1F4, SEEK_SET);
+	exe.seekg(0x1C1F4);
 	readMembers<Read8>(exe, textures, &Texture::sFrame);
-	fseek(exe, 0x1C1FE, SEEK_SET);
+	exe.seekg(0x1C1FE);
 	readMembers<Read8>(exe, textures, &Texture::rFrame);
 }
 
 void Common::loadOthers()
 {
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 	
-	fseek(exe, 0x1C1E2, SEEK_SET);
+	exe.seekg(0x1C1E2);
 	
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 2; ++j)
 		bonusRandTimer[j][i] = readUint16(exe);
 		
-	fseek(exe, 0x1AEEE + 2, SEEK_SET);
+	exe.seekg(0x1AEEE + 2);
 	
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 7; ++j)
 		aiParams.k[i][j] = readUint16(exe);
 		
-	fseek(exe, 0x1C1E0, SEEK_SET);
+	exe.seekg(0x1C1E0);
 	
 	for(int i = 0; i < 2; ++i)
 		bonusSObjects[i] = readUint8(exe) - 1;
@@ -361,21 +361,21 @@ void Common::loadOthers()
 
 void Common::loadGfx()
 {
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 	
-	fseek(exe, 0x1C1DE, SEEK_SET);
+	exe.seekg(0x1C1DE);
 	bonusFrames[0] = readUint8(exe);
 	bonusFrames[1] = readUint8(exe);
 	
-	FILE* gfx = openLieroCHR();
+	ReaderFile& gfx = openLieroCHR();
 	
-	fseek(gfx, 10, SEEK_SET); // Skip some header
+	gfx.seekg(10); // Skip some header
 	
 	largeSprites.read(gfx, 16, 16, 110);
-	fseek(gfx, 4, SEEK_CUR); // Extra stuff
+	gfx.skip(4); // Extra stuff
 	
 	smallSprites.read(gfx, 7, 7, 130);
-	fseek(gfx, 4, SEEK_CUR); // Extra stuff
+	gfx.skip(4); // Extra stuff
 	
 	textSprites.read(gfx, 4, 4, 26);
 	
@@ -450,7 +450,7 @@ void Common::drawTextSmall(char const* str, int x, int y)
 		
 		if(c < 26)
 		{
-			blitImage(gfx.screen, textSprites.spritePtr(c), x, y, 4, 4);
+			blitImage(gfx.screenBmp, textSprites.spritePtr(c), x, y, 4, 4);
 		}
 		
 		x += 4;

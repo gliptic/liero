@@ -7,11 +7,12 @@
 
 struct Worm;
 struct Game;
+struct WormWeapon;
 
 struct NObjectType
 {
-	void create1(Game& game, fixed velX, fixed velY, int x, int y, int color, Worm* owner);
-	void create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int color, Worm* owner);
+	void create1(Game& game, fixed velX, fixed velY, int x, int y, int color, Worm* owner, WormWeapon* firedBy);
+	void create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int color, Worm* owner, WormWeapon* firedBy);
 
 	int detectDistance;
 	fixed gravity;
@@ -53,8 +54,13 @@ struct NObject : ExactObjectListBase
 	fixed velX, velY;
 	int timeLeft;
 	int id;
-	Worm* owner;
+	//Worm* owner;
+	int ownerIdx;
 	int curFrame;
+
+	// STATS
+	WormWeapon* firedBy;
+	bool hasHit;
 };
 
 #endif // LIERO_NOBJECT_HPP

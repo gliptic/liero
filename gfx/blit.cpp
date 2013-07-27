@@ -1,66 +1,80 @@
-#include "../gfx.hpp"
+#include "blit.hpp"
 #include "../rect.hpp"
 #include "../constants.hpp"
 #include "../level.hpp"
+#include "../common.hpp"
+#include "../rand.hpp"
+#include "bitmap.hpp"
 #include "macros.hpp"
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
+#include <algorithm>
 
-void fillRect(int x, int y, int w, int h, int color)
+void fillRect(Bitmap& scr, int x, int y, int w, int h, int color)
 {
-	SDL_Rect rect;
-	rect.x = x;
-	rect.y = y;
-	rect.w = w;
-	rect.h = h;
-	SDL_FillRect(gfx.screen, &rect, color);
+	int x2 = x + w;
+	int y2 = y + h;
+	int clipx2 = scr.clip_rect.x + scr.clip_rect.w;
+	int clipy2 = scr.clip_rect.y + scr.clip_rect.h;
+	x = std::max(x, (int)scr.clip_rect.x);
+	y = std::max(y, (int)scr.clip_rect.y);
+	x2 = std::min(x2, clipx2);
+	y2 = std::min(y2, clipy2);
+
+	for (; y < y2; ++y)
+	{
+		std::memset(&scr.getPixel(x, y), color, x2 - x);
+	}
 }
 
-void drawBar(int x, int y, int width, int color)
+void fill(Bitmap& scr, int color)
+{
+	std::memset(scr.pixels, color, scr.pitch * scr.h);
+}
+
+void drawBar(Bitmap& scr, int x, int y, int width, int color)
 {
 	if(width > 0)
 	{
-		std::memset(&gfx.getScreenPixel(x, y), color, width);
-		std::memset(&gfx.getScreenPixel(x, y+1), color, width);
+		std::memset(&scr.getPixel(x, y), color, width);
+		std::memset(&scr.getPixel(x, y+1), color, width);
 	}
 }
 
-void drawRoundedBox(int x, int y, int color, int height, int width)
+void drawRoundedBox(Bitmap& scr, int x, int y, int color, int height, int width)
 {
 	height--;
-	std::memset(&gfx.getScreenPixel(x+1,y), color, width+1);
+	std::memset(&scr.getPixel(x+1,y), color, width+1);
 	for(long i=1; i<height; i++)
 	{
-		std::memset(&gfx.getScreenPixel(x,y+i), color, width+3);
+		std::memset(&scr.getPixel(x,y+i), color, width+3);
 	}
-	std::memset(&gfx.getScreenPixel(x+1,y+height), color, width+1);
+	std::memset(&scr.getPixel(x+1,y+height), color, width+1);
 }
 
-
-
-void blitImageNoKeyColour(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int height, int pitch)
+void blitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height, int pitch)
 {
-	CLIP_IMAGE(scr->clip_rect);
+	CLIP_IMAGE(scr.clip_rect);
 
-	PalIdx* scrptr = static_cast<PalIdx*>(scr->pixels) + y*scr->pitch + x;
+	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
 
 	for(int y = 0; y < height; ++y)
 	{
 		std::memcpy(scrptr, mem, width);
 
-		scrptr += scr->pitch;
+		scrptr += scr.pitch;
 		mem += pitch;
 	}
 }
 
-void blitImage(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int height)
+void blitImage(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height)
 {
 	int pitch = width;
 	
-	CLIP_IMAGE(scr->clip_rect);
+	CLIP_IMAGE(scr.clip_rect);
 
-	PalIdx* scrptr = static_cast<PalIdx*>(scr->pixels) + y*scr->pitch + x;
+	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
 
 	for(int y = 0; y < height; ++y)
 	{
@@ -76,13 +90,13 @@ void blitImage(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int heigh
 			++rowdest;
 		}
 
-		scrptr += scr->pitch;
+		scrptr += scr.pitch;
 		mem += pitch;
 	}
 }
 
 #define BLIT(body) do { \
-	PalIdx* scrptr = static_cast<PalIdx*>(scr->pixels) + y*scr->pitch + x; \
+	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x; \
 	for(int y = 0; y < height; ++y)	{ \
 		PalIdx* rowdest = scrptr; \
 		PalIdx* rowsrc = mem; \
@@ -91,7 +105,7 @@ void blitImage(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int heigh
 			body \
 			++rowsrc; \
 			++rowdest; } \
-		scrptr += scr->pitch; \
+		scrptr += scr.pitch; \
 		mem += pitch; } } while(false)
 		
 #define BLIT2(pixels, destpitch, body) do { \
@@ -107,13 +121,13 @@ void blitImage(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int heigh
 		scrptr += (destpitch); \
 		mem += pitch; } } while(false)
 
-void blitImageR(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int height)
+void blitImageR(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height)
 {
 	int pitch = width;
 	
-	CLIP_IMAGE(scr->clip_rect);
+	CLIP_IMAGE(scr.clip_rect);
 
-	PalIdx* scrptr = static_cast<PalIdx*>(scr->pixels) + y*scr->pitch + x;
+	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
 
 	for(int y = 0; y < height; ++y)
 	{
@@ -129,18 +143,18 @@ void blitImageR(SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int heig
 			++rowdest;
 		}
 
-		scrptr += scr->pitch;
+		scrptr += scr.pitch;
 		mem += pitch;
 	}
 }
 
-void blitFireCone(SDL_Surface* scr, int fc, PalIdx* mem, int x, int y)
+void blitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y)
 {
 	int width = 16;
 	int height = 16;
 	int pitch = width;
 	
-	CLIP_IMAGE(scr->clip_rect);
+	CLIP_IMAGE(scr.clip_rect);
 	
 	switch(fc)
 	{
@@ -181,13 +195,13 @@ void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int
 	});
 }
 
-void blitShadowImage(Common& common, SDL_Surface* scr, PalIdx* mem, int x, int y, int width, int height)
+void blitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int width, int height)
 {
 	int pitch = width;
 	
-	CLIP_IMAGE(scr->clip_rect);
+	CLIP_IMAGE(scr.clip_rect);
 
-	PalIdx* scrptr = static_cast<PalIdx*>(scr->pixels) + y*scr->pitch + x;
+	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
 
 	for(int y = 0; y < height; ++y)
 	{
@@ -203,7 +217,7 @@ void blitShadowImage(Common& common, SDL_Surface* scr, PalIdx* mem, int x, int y
 			++rowdest;
 		}
 
-		scrptr += scr->pitch;
+		scrptr += scr.pitch;
 		mem += pitch;
 	}
 }
@@ -421,13 +435,13 @@ if(dx > dy) { \
 			c -= dy; } \
 		body_ } } }
 
-void drawNinjarope(Common& common, int fromX, int fromY, int toX, int toY)
+void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY)
 {
 	int color = common.C[NRColourBegin];
 	
-	SDL_Rect& clip = gfx.screen->clip_rect;
-	PalIdx* ptr = gfx.screenPixels;
-	unsigned int pitch = gfx.screenPitch;
+	SDL_Rect& clip = scr.clip_rect;
+	PalIdx* ptr = scr.pixels;
+	unsigned int pitch = scr.pitch;
 	
 	
 	DO_LINE({
@@ -439,28 +453,28 @@ void drawNinjarope(Common& common, int fromX, int fromY, int toX, int toY)
 	});
 }
 
-void drawLaserSight(int fromX, int fromY, int toX, int toY)
+void drawLaserSight(Bitmap& scr, Rand& rand, int fromX, int fromY, int toX, int toY)
 {
-	SDL_Rect& clip = gfx.screen->clip_rect;
-	PalIdx* ptr = gfx.screenPixels;
-	unsigned int pitch = gfx.screenPitch;
+	SDL_Rect& clip = scr.clip_rect;
+	PalIdx* ptr = scr.pixels;
+	unsigned int pitch = scr.pitch;
 	
 	
 	DO_LINE({
 		
-		if(gfx.rand(5) == 0)
+		if(rand(5) == 0)
 		{
 			if(isInside(clip, cx, cy))
-				ptr[cy*pitch + cx] = gfx.rand(2) + 83;
+				ptr[cy*pitch + cx] = rand(2) + 83;
 		}
 	});
 }
 
-void drawShadowLine(Common& common, int fromX, int fromY, int toX, int toY)
+void drawShadowLine(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY)
 {
-	SDL_Rect& clip = gfx.screen->clip_rect;
-	PalIdx* ptr = gfx.screenPixels;
-	unsigned int pitch = gfx.screenPitch;
+	SDL_Rect& clip = scr.clip_rect;
+	PalIdx* ptr = scr.pixels;
+	unsigned int pitch = scr.pitch;
 	
 	
 	DO_LINE({
@@ -473,11 +487,11 @@ void drawShadowLine(Common& common, int fromX, int fromY, int toX, int toY)
 	});
 }
 
-void drawLine(int fromX, int fromY, int toX, int toY, int color)
+void drawLine(Bitmap& scr, int fromX, int fromY, int toX, int toY, int color)
 {
-	SDL_Rect& clip = gfx.screen->clip_rect;
-	PalIdx* ptr = gfx.screenPixels;
-	unsigned int pitch = gfx.screenPitch;
+	SDL_Rect& clip = scr.clip_rect;
+	PalIdx* ptr = scr.pixels;
+	unsigned int pitch = scr.pitch;
 	
 	
 	DO_LINE({

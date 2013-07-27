@@ -54,6 +54,7 @@ Game::Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settingsIni
 : common(common)
 , soundPlayer(new DefaultSoundPlayer)
 , settings(settingsInit)
+, statsRecorder(new NormalStatsRecorder)
 , screenFlash(0)
 , gotChanged(false)
 , lastKilled(0)
@@ -143,11 +144,11 @@ void Game::processViewports()
 	}
 }
 
-void Game::drawViewports(bool isReplay)
+void Game::drawViewports(Renderer& renderer, bool isReplay)
 {
 	for(std::size_t i = 0; i < viewports.size(); ++i)
 	{
-		viewports[i]->draw(isReplay);
+		viewports[i]->draw(renderer, isReplay);
 	}
 }
 
@@ -178,18 +179,18 @@ void Game::addWorm(Worm* worm)
 	worms.push_back(worm);
 }
 
-void Game::draw(bool isReplay)
+void Game::draw(Renderer& renderer, bool isReplay)
 {
-	drawViewports(isReplay);
+	drawViewports(renderer, isReplay);
 
 	//common->font.drawText(toString(cycles / 70), 10, 10, 7);
 	
-	gfx.pal = gfx.origpal;
-	gfx.pal.fade(gfx.fadeValue);
+	renderer.pal = renderer.origpal;
+	renderer.pal.fade(renderer.fadeValue);
 
 	if(screenFlash > 0)
 	{
-		gfx.pal.lightUp(screenFlash);
+		renderer.pal.lightUp(screenFlash);
 	}
 }
 
@@ -257,7 +258,7 @@ void Game::createBonus()
 				while(settings->weapTable[bonus->weapon] == 2);
 			}
 			
-			common->sobjectTypes[7].create(*this, ix, iy, 0);
+			common->sobjectTypes[7].create(*this, ix, iy, 0, 0);
 			return;
 		}
 	} // 234F
@@ -406,6 +407,7 @@ void Game::processFrame()
 		worms[i]->prevControlStates = worms[i]->controlStates;
 	}
 	
+	statsRecorder->tick();
 }
 
 void Game::gameLoop()

@@ -401,7 +401,7 @@ void Worm::process()
 							int bix = ftoi(i->x);
 							int biy = ftoi(i->y);
 							game.bonuses.free(i);
-							common.sobjectTypes[0].create(game, bix, biy, this);
+							common.sobjectTypes[0].create(game, bix, biy, this, 0);
 						}
 					}
 				}
@@ -457,7 +457,7 @@ void Worm::process()
 						}
 					}
 					
-					common.nobjectTypes[6].create1(game, velX, velY, x, y, 0, this);
+					common.nobjectTypes[6].create1(game, velX, velY, x, y, 0, this, 0);
 				}
 			}
 			
@@ -538,7 +538,7 @@ void Worm::process()
 							velX / 3, velY / 3,
 							x, y,
 							0,
-							this);
+							this, 0);
 					}
 				}
 				
@@ -551,9 +551,11 @@ void Worm::process()
 						velX / 3, velY / 3,
 						x, y,
 						0,
-						this);
+						this, 0);
 				}
 #endif
+
+				game.statsRecorder->afterDeath(this);
 
 				release(Fire);				
 			}
@@ -945,7 +947,7 @@ void Worm::beginRespawn()
 	}
 	while(!checkRespawnPosition(game, enemyX, enemyY, tempX, tempY, ftoi(x), ftoi(y)));
 
-	
+	game.statsRecorder->afterSpawn(this);
 			
 	killedTimer = -1;
 }
@@ -1060,7 +1062,7 @@ void Worm::processWeapons()
 	{
 		if(--leaveShellTimer <= 0)
 		{
-			common.nobjectTypes[7].create1(game, game.rand(16000) - 8000, -int(game.rand(20000)), x, y, 0, this);
+			common.nobjectTypes[7].create1(game, game.rand(16000) - 8000, -int(game.rand(20000)), x, y, 0, this, 0);
 		}
 	}
 }
@@ -1427,7 +1429,7 @@ void Worm::fire()
 					speed,
 					firingX,
 					firingY,
-					this);
+					this, &ww);
 			}
 		}
 	}
@@ -1447,7 +1449,7 @@ void Worm::fire()
 					w.speed,
 					firingX,
 					firingY,
-					this);
+					this, &ww);
 			}
 		}
 	}

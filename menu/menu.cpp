@@ -45,8 +45,8 @@ void Menu::draw(Common& common/*, int x, int y*/, bool disabled)
 		scrollTabHeight = std::max(scrollTabHeight, 0);
 		int scrollTabY = y + int(topItem * scrollBarHeight / visibleItemCount);
 		
-		fillRect(x - 7, scrollTabY + 9, 7, scrollTabHeight, 0);
-		fillRect(x - 8, scrollTabY + 8, 7, scrollTabHeight, 7);
+		fillRect(gfx.screenBmp, x - 7, scrollTabY + 9, 7, scrollTabHeight, 0);
+		fillRect(gfx.screenBmp, x - 8, scrollTabY + 8, 7, scrollTabHeight, 7);
 	}
 }
 
@@ -245,12 +245,12 @@ void Menu::movement(int direction)
 	}
 }
 
-void Menu::readItems(FILE* f, int length, int count, bool colorPrefix, PalIdx color, PalIdx disColour)
+void Menu::readItems(ReaderFile& f, int length, int count, bool colorPrefix, PalIdx color, PalIdx disColour)
 {
 	char temp[256];
 	for(int i = 0; i < count; ++i)
 	{
-		checkedFread(&temp[0], 1, length, f);
+		f.get(reinterpret_cast<uint8_t*>(temp), length);
 		int offset = 1;
 		int length = static_cast<unsigned char>(temp[0]);
 		if(colorPrefix)
@@ -265,7 +265,7 @@ void Menu::readItems(FILE* f, int length, int count, bool colorPrefix, PalIdx co
 	setTop(0);
 }
 
-void Menu::readItem(FILE* f, int offset, PalIdx color, PalIdx disColour)
+void Menu::readItem(ReaderFile& f, int offset, PalIdx color, PalIdx disColour)
 {
 	addItem(MenuItem(color, disColour, readPascalStringAt(f, offset)));
 }

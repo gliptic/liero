@@ -70,22 +70,22 @@ void Sfx::deinit()
 void Sfx::loadFromSND()
 {
 #if !DISABLE_SOUND
-	FILE* snd = openLieroSND();
+	ReaderFile& snd = openLieroSND();
 		
 	int count = readUint16(snd);
 	
 	sounds.resize(count);
 	
-	long oldPos = ftell(snd);
+	long oldPos = snd.tellg();
 	
 	for(int i = 0; i < count; ++i)
 	{
-		fseek(snd, oldPos + 8, SEEK_SET); // Skip name
+		snd.seekg(oldPos + 8);
 		
 		int offset = readUint32(snd);
 		int length = readUint32(snd);
 		
-		oldPos = ftell(snd);
+		oldPos = snd.tellg();
 		
 		int byteLength = length * 4;
 
@@ -97,8 +97,8 @@ void Sfx::loadFromSND()
 		
 		if(length > 0)
 		{
-			fseek(snd, offset, SEEK_SET);
-			checkedFread(&temp[0], 1, length, snd);
+			snd.seekg(offset);
+			snd.get(&temp[0], length);
 		}
 		
 		int prev = ((int8_t)temp[0]) * 30;

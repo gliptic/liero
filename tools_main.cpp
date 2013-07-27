@@ -1,5 +1,5 @@
-#ifndef UUID_DC1D9513CDD34960AB8A648004DA149D
-#define UUID_DC1D9513CDD34960AB8A648004DA149D
+#ifndef UUID_8615289728154E2FB9B179C2745D5FA9
+#define UUID_8615289728154E2FB9B179C2745D5FA9
 
 #include <SDL/SDL.h>
 #if !SDL13
@@ -24,6 +24,8 @@
 #include <iostream>
 #include <ctime>
 #include <exception>
+#include <gvl/math/ieee.hpp>
+
 #include <gvl/math/cmwc.hpp>
 
 //#include <gvl/support/profile.hpp> // TEMP
@@ -32,6 +34,8 @@
 int gameEntry(int argc, char* argv[])
 try
 {
+	gvl_init_ieee();
+
 	// TODO: Better PRNG seeding
 	Console::init();
 	gfx.rand.seed(Uint32(std::time(0)));
@@ -68,11 +72,6 @@ try
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
 	
-/*
-	char buf[256];
-	std::cout << SDL_VideoDriverName(buf, 256) << std::endl;
-*/
-	
 	common->texts.loadFromEXE();
 
 	initKeys();
@@ -80,11 +79,7 @@ try
 	loadTablesFromEXE();
 
 	Console::clear();
-	Console::writeTextBar(common->texts.copyright1, common->texts.copyrightBarFormat);
-	Console::setAttributes(0x07);
-	Console::writeLine("");
-	
-	Console::write(common->S[LoadingAndThinking]);
+
 	common->font.loadFromEXE();
 	common->loadPalette();
 	gfx.loadPalette(); // This gets the palette from common
@@ -94,75 +89,12 @@ try
 	common->loadWeapons();
 	common->loadTextures();
 	common->loadOthers();
-	Console::writeLine(common->S[OK]);
-	
-	Console::writeLine(common->S[InitSound]);
-	
-	Console::write(common->S[Init_BaseIO]);
-	Console::write("0220");
-	Console::write(common->S[Init_IRQ]);
-	Console::write("7");
-	Console::write(common->S[Init_DMA8]);
-	Console::write("1");
-	Console::write(common->S[Init_DMA16]);
-	Console::writeLine("5");
-	
-#if !DISABLE_SOUND	
-	Console::write(common->S[Init_DSPVersion]);
-	Console::write(toString(0) + "." + toString(1));
-	Console::write(common->S[Init_Colon]);
-	Console::write(common->S[Init_16bit]);
-	Console::writeLine(common->S[Init_Autoinit]);
-#endif	
-	Console::writeLine(common->S[Init_XMSSucc]);
-	
-	Console::write(common->S[Init_FreeXMS]);
-#if GVL_WIN32
-	Console::write(toString(Win32::getFreeMemory()));
-#else
-	
-	Console::write("OVER 9000 ");
-#endif
-	Console::write(common->S[Init_k]);
-	
-	Console::write(common->S[LoadingSounds]);
 	sfx.loadFromSND();
-	Console::writeLine(common->S[OK2]);
-	
-	Console::writeLine("");
-	Console::write(common->S[PressAnyKey]);
-	Console::waitForAnyKey();
-	Console::clear();
-	
 	gfx.init();
 	
 	gfx.settingsFile = "LIERO";
-	
-	if(!gfx.loadSettings())
-	{
-		gfx.settingsFile = "LIERO";
-		gfx.settings.reset(new Settings);
-		gfx.saveSettings();
-	}
-	
-	gfx.setVideoMode();
-	sfx.init();
-	
-	gfx.mainLoop();
-	
-	gfx.settingsFile = "LIERO";
-	gfx.settings->save(joinPath(lieroEXERoot, "LIERO.DAT"));
-	
-	FILE* f = fopen(lieroOPT.c_str(), "wb");
-	fwrite(gfx.settingsFile.data(), 1, gfx.settingsFile.size(), f);
-	fputc('\r', f);
-	fputc('\n', f);
-	fclose(f);
-	
-	sfx.deinit();
+
 	SDL_Quit();
-	
-	//gvl::present_profile(std::cout);
 	
 	return 0;
 }
@@ -176,4 +108,4 @@ catch(std::exception& ex)
 	return 1;
 }
 
-#endif // UUID_DC1D9513CDD34960AB8A648004DA149D
+#endif // UUID_8615289728154E2FB9B179C2745D5FA9

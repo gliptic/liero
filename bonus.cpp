@@ -30,7 +30,7 @@ void Bonus::process(Game& game)
 	
 	if(--timer <= 0)
 	{
-		common.sobjectTypes[common.bonusSObjects[frame]].create(game, ix, iy, 0);
+		common.sobjectTypes[common.bonusSObjects[frame]].create(game, ix, iy, 0, 0);
 		if(used)
 			game.bonuses.free(this);
 	}

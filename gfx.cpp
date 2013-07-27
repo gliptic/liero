@@ -24,11 +24,7 @@
 
 #include "menu/arrayEnumBehavior.hpp"
 
-extern "C"
-{
-#include "video_recorder.h"
-#include "tl/vector.h"
-}
+
 
 Gfx gfx;
 
@@ -167,18 +163,28 @@ Gfx::Gfx()
 , playerMenu(178, 20)
 , hiddenMenu(178, 20)
 , curMenu(0)
-, screen(0)
 , back(0)
 , frozenScreen(320 * 200)
 , running(true)
 , fullscreen(false)
-, fadeValue(0)
 , menuCyclic(0)
 , windowW(320)
 , windowH(200)
 , prevMag(0)
 {
 	clearKeys();
+}
+
+void Renderer::init()
+{
+	screenBmp.pixels = new unsigned char[320 * 200];
+	screenBmp.pitch = 320;
+	screenBmp.w = 320;
+	screenBmp.h = 200;
+	screenBmp.clip_rect.x = 0;
+	screenBmp.clip_rect.y = 0;
+	screenBmp.clip_rect.w = 320;
+	screenBmp.clip_rect.h = 200;
 }
 
 void Gfx::init()
@@ -188,11 +194,8 @@ void Gfx::init()
 	SDL_WM_SetCaption("Liero 1.35b2", 0);
 	SDL_ShowCursor(SDL_DISABLE);
 	lastFrame = SDL_GetTicks();
-	
-	screen = SDL_CreateRGBSurface(SDL_SWSURFACE, 320, 200, 8, 0, 0, 0, 0);
 
-	screenPixels = static_cast<unsigned char*>(screen->pixels);
-	screenPitch = screen->pitch;
+	Renderer::init();
 	
 	// Joystick init:
 	SDL_JoystickEventState(SDL_ENABLE);
@@ -237,12 +240,12 @@ void Gfx::loadPalette()
 
 void Gfx::loadMenus()
 {
-	FILE* exe = openLieroEXE();
+	ReaderFile& exe = openLieroEXE();
 	
-	fseek(exe, 0x1B08A, SEEK_SET);
+	exe.seekg(0x1B08A);
 	mainMenu.readItems(exe, 14, 4, true);
 			
-	fseek(exe, 0x1B0C2, SEEK_SET);
+	exe.seekg(0x1B0C2);
 	settingsMenu.readItems(exe, 21, 15, false, 48, 7);
 	settingsMenu.valueOffsetX = 100;
 	
@@ -258,7 +261,7 @@ void Gfx::loadMenus()
 		settingsMenu.items[i].hasValue = true;
 	}
 	
-	fseek(exe, 0x1B210, SEEK_SET);
+	exe.seekg(0x1B210);
 	playerMenu.readItems(exe, 13, 12, false, 48, 7);
 	
 	// Extra control settings:
@@ -467,8 +470,6 @@ void Gfx::process(Controller* controller)
 	{
 		processEvent(ev, controller);
 	}
-	
-	processReader();
 }
 
 SDL_keysym Gfx::waitForKey()
@@ -546,15 +547,23 @@ void Gfx::clearKeys()
 	std::memset(dosKeys, 0, sizeof(dosKeys));
 }
 
-void preparePalette(SDL_PixelFormat* format, SDL_Palette* pal, uint32_t (&pal32)[256])
+void Gfx::preparePalette(SDL_PixelFormat* format, SDL_Color realPal[256], uint32_t (&pal32)[256])
 {
 	for(int i = 0; i < 256; ++i)
 	{
-		pal32[i] = SDL_MapRGB(format, pal->colors[i].r, pal->colors[i].g, pal->colors[i].b);		 
+		pal32[i] = SDL_MapRGB(format, realPal[i].r, realPal[i].g, realPal[i].b);		 
 	}
 }
 
-int Gfx::fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY)
+void Gfx::preparePaletteBgra(SDL_Color realPal[256], uint32_t (&pal32)[256])
+{
+	for(int i = 0; i < 256; ++i)
+	{
+		pal32[i] = (realPal[i].r << 16) | (realPal[i].g << 8) | realPal[i].b;
+	}
+}
+
+int Gfx::fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY, uint32_t scaleFilter)
 {
 	int mag = 1;
 	
@@ -564,7 +573,7 @@ int Gfx::fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& 
 	   
 	--mag; // mag was the first that didn't fit
 	
-	if(settings->scaleFilter == Settings::SfScale2X)
+	if(scaleFilter == Settings::SfScale2X)
 	{
 		mag = std::min(mag, 2);
 	}
@@ -576,6 +585,39 @@ int Gfx::fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& 
 	offsetY = backH/2 - scrH/2;
 	   
 	return mag; 
+}
+
+void Gfx::overlay(
+	SDL_PixelFormat* format,
+	uint8_t* src, int w, int h, std::size_t srcPitch,
+	uint8_t* dest, std::size_t destPitch, int mag)
+{
+	uint32_t transparent = SDL_MapRGB(format, 255, 0, 255);
+
+	for(int y = 0; y < h; ++y)
+	{
+		uint8_t* line = src + y*srcPitch;
+		int destMagPitch = mag*destPitch;
+		uint8_t* destLine = dest + y*destMagPitch;
+						
+		for(int x = 0; x < w; ++x)
+		{
+			uint32_t pix = *reinterpret_cast<uint32_t*>(line);
+			line += 4;
+
+			if (pix == transparent)
+				continue;
+
+			for(int dx = 0; dx < mag; ++dx)
+			{
+				for(int dy = 0; dy < destMagPitch; dy += destPitch)
+				{
+					*reinterpret_cast<uint32_t*>(destLine + dy) = pix;
+				}
+				destLine += 4;
+			}
+		}
+	}
 }
 
 void Gfx::scaleDraw(
@@ -676,13 +718,14 @@ void Gfx::scaleDraw(
 void Gfx::flip()
 {
 	gvl::rect updateRect;
-	pal.activate();
-	if(screen != back)
+	SDL_Color realPal[256];
+	pal.activate(realPal);
+
 	{
 		int offsetX, offsetY;
-		int mag = fitScreen(back->w, back->h, screen->w, screen->h, offsetX, offsetY);
+		int mag = fitScreen(back->w, back->h, screenBmp.w, screenBmp.h, offsetX, offsetY, settings->scaleFilter);
 		
-		gvl::rect newRect(offsetX, offsetY, screen->w * mag, screen->h * mag);
+		gvl::rect newRect(offsetX, offsetY, screenBmp.w * mag, screenBmp.h * mag);
 		
 		if(mag != prevMag)
 		{
@@ -696,15 +739,16 @@ void Gfx::flip()
 		prevMag = mag;
 		
 		std::size_t destPitch = back->pitch;
-		std::size_t srcPitch = screenPitch;
+		std::size_t srcPitch = screenBmp.pitch;
 		
 		PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels) + offsetY * destPitch + offsetX * back->format->BytesPerPixel;
-		PalIdx* src = screenPixels;
+		PalIdx* src = screenBmp.pixels;
 		
 		if(back->format->BitsPerPixel == 32)
 		{
 			uint32_t pal32[256];
-			preparePalette(back->format, screen->format->palette, pal32);
+
+			preparePalette(back->format, realPal, pal32);
 		
 			scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, settings->scaleFilter, pal32);
 		}
@@ -737,9 +781,9 @@ void Gfx::flip()
 		SDL_Delay(0);
 }
 
-void Gfx::clear()
+void Renderer::clear()
 {
-	SDL_FillRect(screen, 0, 0);
+	fill(screenBmp, 0);
 }
 
 void playChangeSound(int change)
@@ -994,11 +1038,11 @@ void Gfx::selectLevel()
 
 	do
 	{
-		std::memcpy(gfx.screenPixels, &frozenScreen[0], frozenScreen.size());
+		std::memcpy(gfx.screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
 		
 		drawBasicMenu();
 		
-		drawRoundedBox(178, 20, 0, 7, common->font.getDims(common->texts.selLevel));
+		drawRoundedBox(screenBmp, 178, 20, 0, 7, common->font.getDims(common->texts.selLevel));
 		common->font.drawText(common->texts.selLevel, 180, 21, 50);
 
 		levelMenu.draw(*common, false);
@@ -1090,7 +1134,7 @@ void Gfx::selectProfile(WormSettings& ws)
 	
 	do
 	{
-		std::memcpy(gfx.screenPixels, &frozenScreen[0], frozenScreen.size());
+		std::memcpy(gfx.screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
 
 		common->font.drawFramedText("Select profile", 28, 20, 50);
 
@@ -1178,7 +1222,7 @@ int Gfx::selectReplay(bool recordToVideo)
 	
 	do
 	{
-		std::memcpy(gfx.screenPixels, &frozenScreen[0], frozenScreen.size());
+		std::memcpy(gfx.screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
 		
 		std::string selReplay = "Select replay";
 		
@@ -1205,131 +1249,29 @@ int Gfx::selectReplay(bool recordToVideo)
 		{
 			if(replayMenu.isSelectionValid())
 			{
-				std::string replayName = replayMenu.items[replayMenu.selection()].string + ".lrp";
+				std::string name = replayMenu.items[replayMenu.selection()].string;
+				std::string replayName = name + ".lrp";
+				std::string statsName = name + ".txt";
 				std::string fullPath = joinPath(lieroEXERoot, replayName);
+				std::string fullStatsPath = joinPath(lieroEXERoot, statsName);
 
+#if 0
 				if(recordToVideo)
 				{
-					gvl::stream_ptr replay(new gvl::fstream(std::fopen(fullPath.c_str(), "rb")));
-					ReplayReader replayReader(replay);
+					std::string replayVideoName = name + ".mp4";
 
-					std::string replayVideoName = replayMenu.items[replayMenu.selection()].string + ".mp4";
-					std::string fullVideoPath = joinPath(lieroEXERoot, replayVideoName);
-
-					std::auto_ptr<Game> game(replayReader.beginPlayback(common));
-
-					sfx_mixer* mixer = sfx_mixer_create();
-
-					game->soundPlayer.reset(new RecordSoundPlayer(mixer));
-					game->startGame();
-					game->focus();
-
-					int w = 1280, h = 720;
-
-					AVRational framerate;
-					framerate.num = 1;
-					framerate.den = 30;
-
-					AVRational nativeFramerate;
-					nativeFramerate.num = 1;
-					nativeFramerate.den = 70;
-
-					av_register_all();
-					video_recorder vidrec;
-					vidrec_init(&vidrec, fullVideoPath.c_str(), w, h, framerate);
-
-					tl_vector soundBuffer;
-					tl_vector_new_empty(soundBuffer);
-
-					std::size_t audioCodecFrames = 1024;
-
-					AVRational sampleDebt;
-					sampleDebt.num = 0;
-					sampleDebt.den = 70;
-
-					AVRational frameDebt;
-					frameDebt.num = 0;
-					frameDebt.den = 1;
-
-					int offsetX, offsetY;
-					int mag = fitScreen(w, h, screen->w, screen->h, offsetX, offsetY);
-
-					uint32_t prevShowFrameMs = SDL_GetTicks();
-					int f = 0;
-					while(replayReader.playbackFrame())
-					{
-						game->processFrame();
-						clear();
-						game->draw(true);
-						gfx.fadeValue = 33;
-
-						sampleDebt.num += 44100; // sampleDebt += 44100 / 70
-						int mixerFrames = sampleDebt.num / sampleDebt.den; // floor(sampleDebt)
-						sampleDebt.num -= mixerFrames * sampleDebt.den; // sampleDebt -= mixerFrames
-
-						std::size_t mixerStart = soundBuffer.size;
-						tl_vector_reserve(soundBuffer, int16_t, soundBuffer.size + mixerFrames);
-						sfx_mixer_mix(mixer, tl_vector_idx(soundBuffer, int16_t, mixerStart), mixerFrames);
-						tl_vector_post_enlarge(soundBuffer, int16_t, mixerFrames);
-						
-						{
-							int16_t* audioSamples = tl_vector_idx(soundBuffer, int16_t, 0);
-							std::size_t samplesLeft = soundBuffer.size;
-
-							while (samplesLeft > audioCodecFrames)
-							{
-								vidrec_write_audio_frame(&vidrec, audioSamples, audioCodecFrames);
-								audioSamples += audioCodecFrames;
-								samplesLeft -= audioCodecFrames;
-							}
-								
-							frameDebt = av_add_q(frameDebt, nativeFramerate);
-
-							if (av_cmp_q(frameDebt, framerate) > 0)
-							{
-								frameDebt = av_sub_q(frameDebt, framerate);
-
-								pal.activate();
-								PalIdx* src = screenPixels;
-								std::size_t destPitch = vidrec.tmp_picture->linesize[0];
-								uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
-								std::size_t srcPitch = screenPitch;
-								
-								uint32_t pal32[256];
-								preparePalette(back->format, screen->format->palette, pal32);
-
-								scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, Settings::SfNearest, pal32);
-
-								vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
-							}
-
-							// Move rest to the beginning of the buffer
-							assert(audioSamples + samplesLeft == tl_vector_idx(soundBuffer, int16_t, soundBuffer.size));
-							memmove(soundBuffer.impl, audioSamples, samplesLeft * sizeof(int16_t));
-							soundBuffer.size = samplesLeft;
-						}
-
-						uint32_t nowMs = SDL_GetTicks();
-						if (prevShowFrameMs + 100 < nowMs)
-						{
-							prevShowFrameMs = SDL_GetTicks();
-							flip();
-							process(0);
-						}
-					}
-
-					tl_vector_free(soundBuffer);
-					vidrec_finalize(&vidrec);
-
-					// TODO: Destroy mixer
+					replayToVideo(*this, common, fullPath, replayVideoName);
 				}
 				else
+#endif
 				{
 					// Reset controller before opening the replay, since we may be recording it
 					controller.reset();
 				
 					gvl::stream_ptr replay(new gvl::fstream(std::fopen(fullPath.c_str(), "rb")));
-					controller.reset(new ReplayController(common, replay));
+					gvl::stream_ptr stats(new gvl::fstream(std::fopen(fullStatsPath.c_str(), "wb")));
+
+					controller.reset(new ReplayController(common, replay, stats));
 				
 					return MaReplay;
 				}
@@ -1396,12 +1338,12 @@ void Gfx::weaponOptions()
 	
 	while(true)
 	{
-		std::memcpy(gfx.screenPixels, &frozenScreen[0], frozenScreen.size());
+		std::memcpy(gfx.screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
 		
 		drawBasicMenu();
 		
-		drawRoundedBox(179, 20, 0, 7, common->font.getDims(common->texts.weapon));
-		drawRoundedBox(249, 20, 0, 7, common->font.getDims(common->texts.availability));
+		drawRoundedBox(screenBmp, 179, 20, 0, 7, common->font.getDims(common->texts.weapon));
+		drawRoundedBox(screenBmp, 249, 20, 0, 7, common->font.getDims(common->texts.availability));
 		
 		common->font.drawText(common->texts.weapon, 181, 21, 50);
 		common->font.drawText(common->texts.availability, 251, 21, 50);
@@ -1477,7 +1419,7 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	if(clearScreen)
 	{
 		pal = common->exepal;
-		SDL_FillRect(screen, 0, bgColor);
+		fill(screenBmp, bgColor);
 	}
 	
 	int height;
@@ -1486,7 +1428,7 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	int cx = x - width/2 - 2;
 	int cy = y - height/2 - 2;
 	
-	drawRoundedBox(cx, cy, 0, height+1, width+1);
+	drawRoundedBox(screenBmp, cx, cy, 0, height+1, width+1);
 	common->font.drawText(text, cx+2, cy+2, 6);
 	
 	flip();
@@ -1496,7 +1438,7 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	clearKeys();
 	
 	if(clearScreen)
-		SDL_FillRect(screen, 0, bgColor);
+		fill(screenBmp, bgColor);
 }
 
 bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int), std::string const& prefix, bool centered)
@@ -1517,9 +1459,9 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 		
 		int offset = clrX + y*320; // TODO: Unhardcode 320
 		
-		blitImageNoKeyColour(screen, &frozenScreen[offset], clrX, y, clrX + 10 + width, 8, 320);
+		blitImageNoKeyColour(screenBmp, &frozenScreen[offset], clrX, y, clrX + 10 + width, 8, 320);
 		
-		drawRoundedBox(x - 2 - adjust, y, 0, 7, width);
+		drawRoundedBox(screenBmp, x - 2 - adjust, y, 0, 7, width);
 		
 		font.drawText(str, x - adjust, y + 1, 50);
 		flip();
@@ -1587,14 +1529,14 @@ void PlayerMenu::drawItemOverlay(Common& common, int item, int x, int y, bool se
 
 		if(selected)
 		{
-			drawRoundedBox(x + 24, y, 168, 7, ws->rgb[rgbcol] - 1);
+			drawRoundedBox(gfx.screenBmp, x + 24, y, 168, 7, ws->rgb[rgbcol] - 1);
 		}
 		else // CE98
 		{
-			drawRoundedBox(x + 24, y, 0, 7, ws->rgb[rgbcol] - 1);
+			drawRoundedBox(gfx.screenBmp, x + 24, y, 0, 7, ws->rgb[rgbcol] - 1);
 		}
 		
-		fillRect(x + 25, y + 1, ws->rgb[rgbcol], 5, ws->color);
+		fillRect(gfx.screenBmp, x + 25, y + 1, ws->rgb[rgbcol], 5, ws->color);
 	} // CED9
 }
 
@@ -1674,7 +1616,7 @@ void Gfx::mainLoop()
 	while(true)
 	{
 		clear();
-		controller->draw();
+		controller->draw(*this);
 		
 		gfx.mainMenu.setVisibility(0, controller->running());
 		int selection = menuLoop();
@@ -1722,7 +1664,7 @@ void Gfx::mainLoop()
 			if(!controller->process())
 				break;
 			clear();
-			controller->draw();
+			controller->draw(*this);
 			
 			flip();
 			process(controller.get());
@@ -1766,7 +1708,7 @@ bool Gfx::loadSettings()
 
 void Gfx::drawBasicMenu(/*int curSel*/)
 {
-	std::memcpy(screen->pixels, &frozenScreen[0], frozenScreen.size());
+	std::memcpy(screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
 	
 	common->font.drawText(common->texts.saveoptions, 36, 54+20, 0);
 	common->font.drawText(common->texts.loadoptions, 36, 61+20, 0);
@@ -1821,7 +1763,7 @@ int Gfx::menuLoop()
 	flip();
 	process();
 	
-	fillRect(0, 151, 160, 7, 0);
+	fillRect(gfx.screenBmp, 0, 151, 160, 7, 0);
 	common->font.drawText(common->texts.copyright2, 2, 152, 19);
 	
 	mainMenu.moveToFirstVisible();
@@ -1831,7 +1773,7 @@ int Gfx::menuLoop()
 	fadeValue = 0;
 	curMenu = &mainMenu;
 
-	std::memcpy(&frozenScreen[0], screen->pixels, frozenScreen.size());
+	std::memcpy(&frozenScreen[0], screenBmp.pixels, frozenScreen.size());
 
 	updateExtensions(settings->extensions);
 	updateSettingsMenu();
