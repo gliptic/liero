@@ -1,8 +1,8 @@
 #include "weapon.hpp"
 #include "game.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "math.hpp"
-#include "gfx.hpp"
+#include "gfx/renderer.hpp"
 #include "constants.hpp"
 #include <iostream>
 
@@ -14,18 +14,20 @@ int Weapon::computedLoadingTime(Settings& settings)
 	return ret;
 }
 
-void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, Worm* owner, WormWeapon* ww)
+void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, int ownerIdx, WormWeapon* ww)
 {
 	WObject* obj = game.wobjects.newObjectReuse();
 	
 	obj->id = id;
 	obj->x = x;
 	obj->y = y;
-	obj->owner = owner;
+	obj->ownerIdx = ownerIdx;
 
 	// STATS
 	obj->firedBy = ww;
 	obj->hasHit = false;
+
+	Worm* owner = game.wormByIdx(ownerIdx);
 	game.statsRecorder->damagePotential(owner, ww, hitDamage);
 	game.statsRecorder->shot(owner, ww);
 
@@ -84,7 +86,7 @@ void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixe
 		obj->timeLeft -= game.rand(timeToExploV);
 }
 
-void WObject::blowUpObject(Game& game, Worm* cause)
+void WObject::blowUpObject(Game& game, int causeIdx)
 {
 	Common& common = *game.common;
 	Weapon& w = common.weapons[id];
@@ -98,7 +100,7 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 	
 	if(w.createOnExp >= 0)
 	{
-		common.sobjectTypes[w.createOnExp].create(game, ftoi(x), ftoi(y), cause, firedBy, this);
+		common.sobjectTypes[w.createOnExp].create(game, ftoi(x), ftoi(y), causeIdx, firedBy, this);
 	}
 	
 	if(w.exploSound >= 0)
@@ -122,7 +124,7 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 					0, 0,
 					x, y,
 					w.splinterColour - colorSub,
-					cause,
+					causeIdx,
 					firedBy);
 			}
 		}
@@ -136,7 +138,7 @@ void WObject::blowUpObject(Game& game, Worm* cause)
 					velX, velY,
 					x, y,
 					w.splinterColour - colorSub,
-					cause,
+					causeIdx,
 					firedBy);
 			}
 		}
@@ -160,6 +162,8 @@ void WObject::process(Game& game)
 	
 	Common& common = *game.common;
 	Weapon& w = common.weapons[id];
+
+	Worm* owner = game.wormByIdx(ownerIdx);
 	
 	// As liero would do this while rendering, we try to do it as early as possible
 	if(common.H[HRemExp]
@@ -254,15 +258,13 @@ void WObject::process(Game& game)
 			velX = velX * w.multSpeed / 100;
 			velY = velY * w.multSpeed / 100;
 		}
-		
-		if(w.objTrailType >= 0
-		&& (game.cycles % w.objTrailDelay) == 0)
+
+		if(w.objTrailType >= 0 && (game.cycles % w.objTrailDelay) == 0)
 		{
-			common.sobjectTypes[w.objTrailType].create(game, ftoi(x), ftoi(y), owner, firedBy);
+			common.sobjectTypes[w.objTrailType].create(game, ftoi(x), ftoi(y), ownerIdx, firedBy);
 		}
 		
-		if(w.partTrailObj >= 0
-		&& (game.cycles % w.partTrailDelay) == 0)
+		if(w.partTrailObj >= 0 && (game.cycles % w.partTrailDelay) == 0)
 		{
 			if(w.partTrailType == 1)
 			{
@@ -271,7 +273,7 @@ void WObject::process(Game& game)
 					velX / common.C[SplinterLarpaVelDiv], velY / common.C[SplinterLarpaVelDiv],
 					x, y,
 					0,
-					owner,
+					ownerIdx,
 					firedBy);
 			}
 			else
@@ -283,7 +285,7 @@ void WObject::process(Game& game)
 					velX / common.C[SplinterCracklerVelDiv], velY / common.C[SplinterCracklerVelDiv],
 					x, y,
 					0,
-					owner,
+					ownerIdx,
 					firedBy);
 			}
 		}
@@ -293,7 +295,7 @@ void WObject::process(Game& game)
 			for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
 			{
 				if(i->id != id
-				|| i->owner != owner)
+				|| i->ownerIdx != ownerIdx)
 				{
 					if(x >= i->x - itof(2)
 					&& x <= i->x + itof(2)
@@ -309,7 +311,7 @@ void WObject::process(Game& game)
 			for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
 			{
 				if(i->id != id
-				|| i->owner != owner)
+				|| i->ownerIdx != ownerIdx)
 				{
 					if(x >= i->x - itof(2)
 					&& x <= i->x + itof(2)
@@ -395,7 +397,7 @@ void WObject::process(Game& game)
 			// Change to use that here too.
 			
 			if((w.hitDamage || w.blowAway || w.bloodOnHit || w.wormCollide)
-			&& checkForSpecWormHit(ftoi(x), ftoi(y), w.detectDistance, worm))
+			&& checkForSpecWormHit(game, ftoi(x), ftoi(y), w.detectDistance, worm))
 			{
 				worm.velX += (velX * w.blowAway) / 100;
 				worm.velY += (velY * w.blowAway) / 100;
@@ -406,9 +408,9 @@ void WObject::process(Game& game)
 					game.statsRecorder->hit(owner, firedBy, &worm);
 				hasHit = true;
 
-				if(worm.health <= 0) // Original has worm.health < 0 which is wrong
+				if(worm.health <= 0)
 				{
-					worm.lastKilledBy = owner;
+					worm.lastKilledByIdx = ownerIdx;
 				}
 				
 				int bloodAmount = w.bloodOnHit * game.settings->blood / 100;
@@ -416,7 +418,7 @@ void WObject::process(Game& game)
 				for(int i = 0; i < bloodAmount; ++i)
 				{
 					int angle = game.rand(128);
-					common.nobjectTypes[6].create2(game, angle, velX / 3, velY / 3, x, y, 0, &worm, firedBy);
+					common.nobjectTypes[6].create2(game, angle, velX / 3, velY / 3, x, y, 0, worm.index, firedBy);
 				}
 								
 				if(w.hitDamage > 0
@@ -444,7 +446,7 @@ void WObject::process(Game& game)
 		}
 
 		if(doExplode)
-			blowUpObject(game, owner);
+			blowUpObject(game, ownerIdx);
 		else if(doRemove)
 			game.wobjects.free(this);
 	}

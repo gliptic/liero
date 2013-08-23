@@ -17,19 +17,33 @@ char const* timeToString(int sec)
 
 char const* timeToStringEx(int ms)
 {
-	static char ret[9];
+	static char ret[10];
 	
-	ret[0] = '0' + (ms / 600000);
-	ret[1] = '0' + (ms % 600000) / 60000;
-	ret[2] = ':';
-	ret[3] = '0' + (ms % 60000) / 10000;
-	ret[4] = '0' + (ms % 10000) / 1000;
-	ret[5] = '.';
-	ret[6] = '0' + (ms % 1000) / 100;
-	ret[7] = '0' + (ms % 100) / 10;
-	ret[8] = 0;
+	int c = 0;
+	if (ms >= 6000000)
+	{
+		ret[c++] = '0' + (ms / 6000000); ms %= 6000000;
+	}
+
+	if (ms >= 60000)
+	{
+		ret[c++] = '0' + (ms / 600000); ms %= 600000;
+		ret[c++] = '0' + (ms / 60000); ms %= 60000;
+		ret[c++] = ':';
+	}
+	ret[c++] = '0' + ms / 10000; ms %= 10000;
+	ret[c++] = '0' + ms / 1000; ms %= 1000;
+	ret[c++] = '.';
+	ret[c++] = '0' + ms / 100; ms %= 100;
+	ret[c++] = '0' + ms / 10;
+	ret[c++] = 0;
 	
 	return ret;
+}
+
+char const* timeToStringFrames(int frames)
+{
+	return timeToStringEx(frames * 14);
 }
 
 int safeToUpper(char ch)

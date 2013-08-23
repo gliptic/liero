@@ -19,24 +19,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v110_xp</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v110_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -58,7 +60,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -80,6 +82,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -91,13 +94,50 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\controller\commonController.cpp" />
+    <ClCompile Include="..\controller\localController.cpp" />
+    <ClCompile Include="..\controller\replayController.cpp" />
+    <ClCompile Include="..\controller\stats_presenter.cpp" />
+    <ClCompile Include="..\gfx.cpp" />
+    <ClCompile Include="..\keys.cpp" />
     <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="..\menu\booleanSwitchBehavior.cpp" />
+    <ClCompile Include="..\menu\enumBehavior.cpp" />
+    <ClCompile Include="..\menu\hiddenMenu.cpp" />
+    <ClCompile Include="..\menu\integerBehavior.cpp" />
+    <ClCompile Include="..\menu\itemBehavior.cpp" />
+    <ClCompile Include="..\menu\menu.cpp" />
+    <ClCompile Include="..\menu\menuItem.cpp" />
+    <ClCompile Include="..\menu\timeBehavior.cpp" />
     <ClCompile Include="..\sdlmain.cpp" />
+    <ClCompile Include="..\sfx.cpp" />
+    <ClCompile Include="..\weapsel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="liero.vcxproj">
       <Project>{cde258f8-90db-407b-8521-aa531ee4d167}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\controller\commonController.hpp" />
+    <ClInclude Include="..\controller\controller.hpp" />
+    <ClInclude Include="..\controller\localController.hpp" />
+    <ClInclude Include="..\controller\replayController.hpp" />
+    <ClInclude Include="..\controller\stats_presenter.hpp" />
+    <ClInclude Include="..\gfx.hpp" />
+    <ClInclude Include="..\keys.hpp" />
+    <ClInclude Include="..\menu\arrayEnumBehavior.hpp" />
+    <ClInclude Include="..\menu\booleanSwitchBehavior.hpp" />
+    <ClInclude Include="..\menu\enumBehavior.hpp" />
+    <ClInclude Include="..\menu\fileSelector.hpp" />
+    <ClInclude Include="..\menu\hiddenMenu.hpp" />
+    <ClInclude Include="..\menu\integerBehavior.hpp" />
+    <ClInclude Include="..\menu\itemBehavior.hpp" />
+    <ClInclude Include="..\menu\menu.hpp" />
+    <ClInclude Include="..\menu\menuItem.hpp" />
+    <ClInclude Include="..\menu\timeBehavior.hpp" />
+    <ClInclude Include="..\sfx.hpp" />
+    <ClInclude Include="..\weapsel.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

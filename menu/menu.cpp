@@ -5,8 +5,81 @@
 #include "../reader.hpp"
 #include "../text.hpp"
 #include <cmath>
+#include <cctype>
+#include <algorithm>
 
 #include "../common.hpp"
+
+void Menu::onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains)
+{
+	for (; begin != end; ++begin)
+	{
+		bool isTab = begin->sym == SDLK_TAB;
+		if ((begin->unicode >= 32 && begin->unicode < 128)
+		  || isTab)
+		{
+			Uint32 time = SDL_GetTicks();
+			if (!isTab && time - searchTime > 1500)
+				searchPrefix.clear();
+
+			while (true)
+			{
+				bool wasEmpty = searchPrefix.empty();
+				auto newPrefix = searchPrefix;
+				
+				if (!isTab)
+					newPrefix += char(begin->unicode);
+				searchTime = time;
+
+				bool found = false;
+
+				int skip = isTab ? 1 : 0;
+
+				for (std::size_t offs = skip; offs < items.size(); ++offs)
+				{
+					int i = (selection_ + offs) % items.size();
+					auto const& menuString = items[i].string;
+					
+					if (items[i].visible
+					 && menuString.size() >= newPrefix.size())
+					{
+						bool result;
+						
+						if (contains)
+						{
+							result = std::search(menuString.begin(), menuString.end(), newPrefix.begin(), newPrefix.end(), [](char a, char b) {
+								return std::toupper((unsigned char)a) == std::toupper((unsigned char)b);
+							}) != menuString.end();
+						}
+						else
+						{
+							result = std::equal(newPrefix.begin(), newPrefix.end(), menuString.begin(), [](char a, char b) {
+								return std::toupper((unsigned char)a) == std::toupper((unsigned char)b);
+							});
+						}
+					
+						if (result)
+						{
+							found = true;
+							moveTo(i);
+							break;
+						}
+					}
+				}
+
+				if (found)
+				{
+					searchPrefix = newPrefix;
+					break;
+				}
+
+				searchPrefix.clear();
+				if (wasEmpty)
+					break;
+			}
+		}
+	}
+}
 
 void Menu::draw(Common& common/*, int x, int y*/, bool disabled)
 {
@@ -33,10 +106,10 @@ void Menu::draw(Common& common/*, int x, int y*/, bool disabled)
 	{
 		int menuHeight = height * itemHeight + 1;
 		
-		common.font.drawChar(22, x - 6, y + 2, 0);
-		common.font.drawChar(22, x - 7, y + 1, 50);
-		common.font.drawChar(23, x - 6, y + menuHeight - 7, 0);
-		common.font.drawChar(23, x - 7, y + menuHeight - 8, 50);
+		common.font.drawChar(gfx.screenBmp, 22, x - 6, y + 2, 0);
+		common.font.drawChar(gfx.screenBmp, 22, x - 7, y + 1, 50);
+		common.font.drawChar(gfx.screenBmp, 23, x - 6, y + menuHeight - 7, 0);
+		common.font.drawChar(gfx.screenBmp, 23, x - 7, y + menuHeight - 8, 50);
 		
 		int scrollBarHeight = menuHeight - 17;
 		
@@ -277,6 +350,13 @@ int Menu::addItem(MenuItem item)
 	if(item.visible)
 		++visibleItemCount;
 	return idx;
+}
+
+void Menu::clear()
+{
+	items.clear();
+	visibleItemCount = 0;
+	setTop(0);
 }
 
 int Menu::addItem(MenuItem item, int pos)

@@ -3,9 +3,8 @@
 #include "../settings.hpp"
 #include "../reader.hpp"
 #include "../gfx.hpp"
-#include <SDL/SDL.h>
 
-void Palette::activate(SDL_Color realPal[256])
+void Palette::activate(Color realPal[256])
 {
 	for(int i = 0; i < 256; ++i)
 	{
@@ -53,14 +52,15 @@ void Palette::lightUp(int amount)
 	}
 }
 
-void Palette::rotate(int from, int to)
+void Palette::rotateFrom(Palette& source, int from, int to, unsigned dist)
 {
-	SDL_Color tocol = entries[to];
-	for(int i = to; i > from; --i)
+	int count = (to - from + 1);
+	dist %= count;
+
+	for(int i = 0; i < count; ++i)
 	{
-		entries[i] = entries[i - 1];
+		entries[from + i] = source.entries[from + ((i + count - dist) % count)];
 	}
-	entries[from] = tocol;
 }
 
 void Palette::clear()
@@ -81,17 +81,17 @@ void Palette::read(ReaderFile& f)
 	}
 }
 
+int const Palette::wormColourIndexes[2] = {0x58, 0x78}; // TODO: Read from EXE?
+
 void Palette::setWormColour(int i, WormSettings const& settings)
 {
-	int const b[2] = {0x58, 0x78}; // TODO: Read from EXE?
-	
 	int idx = settings.color;
 	
 	setWormColoursSpan(idx, settings.rgb);
 	
 	for(int j = 0; j < 6; ++j)
 	{
-		entries[b[i] + j] = entries[idx + (j % 3) - 1];
+		entries[wormColourIndexes[i] + j] = entries[idx + (j % 3) - 1];
 	}
 	
 	for(int j = 0; j < 3; ++j)

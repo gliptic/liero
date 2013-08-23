@@ -1,16 +1,16 @@
 #include "replayController.hpp"
 
 #include "../game.hpp"
+#include "stats_presenter.hpp"
+#include "../sfx.hpp"
 
 ReplayController::ReplayController(
-	gvl::shared_ptr<Common> common, gvl::stream_ptr source,
-	gvl::stream_ptr statsSink)
+	gvl::shared_ptr<Common> common, gvl::stream_ptr source)
 : state(StateInitial)
 , fadeValue(0)
 , goingToMenu(false)
 , replay(new ReplayReader(source))
 , common(common)
-, statsSink(statsSink)
 {
 }
 
@@ -41,7 +41,7 @@ void ReplayController::focus()
 	{
 		try
 		{
-			game = replay->beginPlayback(common);
+			game = replay->beginPlayback(common, gvl::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)));
 		}
 		catch(std::runtime_error& e)
 		{
@@ -54,7 +54,7 @@ void ReplayController::focus()
 		// Changing state first when game is available
 		changeState(StateGame);
 	}
-	game->focus();
+	game->focus(gfx);
 	goingToMenu = false;
 	fadeValue = 0;
 }
@@ -70,10 +70,10 @@ bool ReplayController::process()
 			{
 				try
 				{
-					if(!replay->playbackFrame())
+					if(!replay->playbackFrame(gfx))
 					{
 						// End of replay
-						changeState(StateGameEnded);
+						replay.reset();
 					}
 				}
 				catch(gvl::stream_error& e)
@@ -81,40 +81,54 @@ bool ReplayController::process()
 					gfx.infoBox(std::string("Stream error in replay: ") + e.what());
 					//Console::writeWarning(std::string("Stream error in replay: ") + e.what());
 					changeState(StateGameEnded);
+					replay.reset();
 				}
 				catch(gvl::archive_check_error& e)
 				{
 					gfx.infoBox(std::string("Archive error in replay: ") + e.what());
 					//Console::writeWarning(std::string("Archive error in replay: ") + e.what());
 					changeState(StateGameEnded);
+					replay.reset();
 				}
 			}
 			game->processFrame();
+
+			if(goingToMenu)
+			{
+				if(fadeValue > 0)
+					fadeValue -= 1;
+				else
+					break;
+			}
+			else if(fadeValue < 33)
+			{
+				fadeValue += 1;
+			}
 		}
 		
-		if(game->isGameOver()
-		&& !goingToMenu)
+		if(game->isGameOver())
 		{
-			fadeValue = 180;
-			goingToMenu = true;
+			changeState(StateGameEnded);
 		}
 	}
 	
 	CommonController::process();
-	
-	if(goingToMenu)
+
+	if (goingToMenu && fadeValue <= 0)
 	{
-		if(fadeValue > 0)
-			fadeValue -= 1;
-		else
-			return false;
-	}
-	else
-	{
-		if(fadeValue < 33)
+		if (state == StateGameEnded)
 		{
-			fadeValue += 1;
+			game->statsRecorder->finish(*game);
+			presentStats(static_cast<NormalStatsRecorder&>(*game->statsRecorder), *game);
 		}
+		return false;
+	}
+
+	if (!replay.get() && state == StateGame)
+	{
+		game->statsRecorder->finish(*game);
+		presentStats(static_cast<NormalStatsRecorder&>(*game->statsRecorder), *game);
+		return false;
 	}
 	
 	return true;
@@ -135,7 +149,9 @@ void ReplayController::changeState(State newState)
 		return;
 	
 	if(newState == StateGame)
+	{
 		game->startGame();
+	}
 	else if(newState == StateGameEnded)
 	{
 		if(!goingToMenu)
@@ -143,8 +159,6 @@ void ReplayController::changeState(State newState)
 			fadeValue = 180;
 			goingToMenu = true;
 		}
-		game->statsRecorder->write(*common, statsSink);
-		replay.reset();
 	}
 
 	state = newState;

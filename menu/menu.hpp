@@ -1,6 +1,7 @@
 #ifndef UUID_3DC24B15AD67494EEAB541B4AE253D0F
 #define UUID_3DC24B15AD67494EEAB541B4AE253D0F
 
+#include <SDL/SDL.h>
 #include <cstddef>
 #include <string>
 #include <cstdio>
@@ -53,9 +54,11 @@ struct Menu
 		bottomItem = 0;
 		//showScroll = false;
 		visibleItemCount = 0;
+		searchTime = 0;
 	}
 	
 	void draw(Common& common/*, int x, int y*/, bool disabled);
+	void process();
 	
 	virtual void drawItemOverlay(Common& common, int item, int x, int y, bool selected, bool disabled)
 	{
@@ -79,6 +82,8 @@ struct Menu
 		std::auto_ptr<ItemBehavior> b(getItemBehavior(common, selection()));
 		return b->onEnter(*this, selection());
 	}
+
+	void onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains = false);
 	
 	void updateItems(Common& common)
 	{
@@ -107,6 +112,7 @@ struct Menu
 	
 	int addItem(MenuItem item);
 	int addItem(MenuItem item, int pos);
+	void clear();
 	
 	bool itemPosition(int item, int& x, int& y);
 	
@@ -133,6 +139,9 @@ struct Menu
 	void setBottom(int newBottomVisIdx);
 	void setTop(int newTopVisIdx);
 	void scroll(int amount);
+
+	std::string searchPrefix;
+	Uint32 searchTime;
 		
 	std::vector<MenuItem> items;
 	int itemHeight;

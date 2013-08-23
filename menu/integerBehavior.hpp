@@ -11,6 +11,7 @@ struct IntegerBehavior : ItemBehavior
 	IntegerBehavior(Common& common, int& v, int min, int max, int step = 1, bool percentage = false)
 	: common(common), v(v)
 	, min(min), max(max), step(step)
+	, scrollInterval(5)
 	, percentage(percentage)
 	, allowEntry(true)
 	{
@@ -25,6 +26,7 @@ struct IntegerBehavior : ItemBehavior
 	Common& common;
 	int& v;
 	int min, max, step;
+	int scrollInterval;
 	bool percentage;
 	bool allowEntry;
 };

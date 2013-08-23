@@ -1,15 +1,17 @@
 
 #include "localController.hpp"
 
+#include "stats_presenter.hpp"
 #include "../keys.hpp"
 #include "../gfx.hpp"
+#include "../sfx.hpp"
 #include "../reader.hpp"
 #include "../filesystem.hpp"
 
 #include <cctype>
 
 LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings)
-: game(common, settings)
+: game(common, settings, gvl::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)))
 , state(StateInitial)
 , fadeValue(0)
 , goingToMenu(false)
@@ -81,7 +83,7 @@ void LocalController::focus()
 		replay->focus();
 	if(state == StateInitial)
 		changeState(StateWeaponSelection);
-	game.focus();
+	game.focus(gfx);
 	goingToMenu = false;
 	fadeValue = 0;
 }
@@ -98,11 +100,12 @@ bool LocalController::process()
 		int realFrameSkip = inverseFrameSkip ? !(cycles % frameSkip) : frameSkip;
 		for(int i = 0; i < realFrameSkip && (state == StateGame || state == StateGameEnded); ++i)
 		{
-			for(std::size_t i = 0; i < game.worms.size(); ++i)
+			int phase = game.cycles % 2;
+			for (std::size_t i = 0; i < game.worms.size(); ++i)
 			{
-				Worm& worm = *game.worms[i];
+				Worm& worm = *game.worms[(i + phase) % game.worms.size()];
 				if(worm.ai.get())
-					worm.ai->process();
+					worm.ai->process(game, worm);
 			}
 			if(replay.get())
 			{
@@ -135,7 +138,12 @@ bool LocalController::process()
 		else
 		{
 			if(state == StateGameEnded)
+			{
 				endRecord();
+				game.statsRecorder->finish(game);
+				// TODO: Get rid of cast.
+				presentStats(static_cast<NormalStatsRecorder&>(*game.statsRecorder), game);
+			}
 			return false;
 		}
 	}
@@ -191,7 +199,6 @@ void LocalController::changeState(State newState)
 			worm.lives = game.settings->lives;
 		}
 		
-		game.startGame();
 		if(game.settings->extensions && game.settings->recordReplays)
 		{
 			try
@@ -217,23 +224,23 @@ void LocalController::changeState(State newState)
 						if(std::isalnum(ch))
 							prefix.push_back(ch);
 					}
-					
-					
 				}
-				std::string path = joinPath(lieroEXERoot, prefix + buf);
+				std::string path = joinPath(joinPath(lieroEXERoot, "Replays"), prefix + buf);
+				create_directories(path);
+
 				replay.reset(new ReplayWriter(gvl::stream_ptr(new gvl::fstream(path.c_str(), "wb"))));
 				replay->beginRecord(game);
 			}
 			catch(std::runtime_error& e)
 			{
-				//Console::writeWarning();
 				gfx.infoBox(std::string("Error starting replay recording: ") + e.what());
 				goingToMenu = true;
 				fadeValue = 0;
 				return;
 			}
 		}
-		
+
+		game.startGame();
 	}
 	else if(newState == StateGameEnded)
 	{

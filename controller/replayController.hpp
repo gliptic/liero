@@ -30,7 +30,7 @@ struct ReplayController : CommonController
 		StateGameEnded
 	};
 	
-	ReplayController(gvl::shared_ptr<Common> common, gvl::stream_ptr source, gvl::stream_ptr statsSink);
+	ReplayController(gvl::shared_ptr<Common> common, gvl::stream_ptr source);
 	
 	void onKey(int key, bool keyState);
 	// Called when the controller loses focus. When not focused, it will not receive key events among other things.
@@ -51,11 +51,7 @@ struct ReplayController : CommonController
 	bool goingToMenu;
 	std::auto_ptr<ReplayReader> replay;
 	gvl::shared_ptr<Common> common;
-	gvl::stream_ptr statsSink;
-	//gvl::shared_ptr<Settings> settings;
 
-	bool recordToVideo;
-	sfx_mixer* recordMixer;
 };
 
 #endif // LIERO_CONTROLLER_REPLAY_CONTROLLER_HPP

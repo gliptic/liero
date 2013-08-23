@@ -9,19 +9,19 @@
 bool BooleanSwitchBehavior::onLeftRight(Menu& menu, int item, int dir)
 {
 	if(dir > 0)
-		sfx.play(25);
+		sfx.play(common, 25);
 	else
-		sfx.play(26);
+		sfx.play(common, 26);
 
-	v = !v;
+	set(!v);
 	onUpdate(menu, item);
 	return false;
 }
 
 int BooleanSwitchBehavior::onEnter(Menu& menu, int item)
 {
-	sfx.play(27);
-	v = !v;
+	sfx.play(common, 27);
+	set(!v);
 	onUpdate(menu, item);
 	return -1;
 }

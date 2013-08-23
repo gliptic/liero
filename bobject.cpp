@@ -32,7 +32,8 @@ bool BObject::process(Game& game)
 	else
 	{
 		PalIdx c = game.level.pixel(ix, iy);
-		Material m = common.materials[c];
+		//Material m = common.materials[c];
+		Material m = game.level.mat(ix, iy);
 		
 		if(m.background())
 			velY += common.C[BObjGravity];
@@ -40,22 +41,17 @@ bool BObject::process(Game& game)
 		if((c >= 1 && c <= 2)
 		|| (c >= 77 && c <= 79)) // TODO: Read from EXE
 		{
-			game.level.pixel(ix, iy) = 77 + game.rand(3);
+			game.level.setPixel(ix, iy, 77 + game.rand(3), common);
 			return false;
 		}
-		/* This can't happen!
-		else if(iy >= game.level.height)
-		{
-			// Nothing
-		}*/
 		else if(m.anyDirt())
 		{
-			game.level.pixel(ix, iy) = 82 + game.rand(3);
+			game.level.setPixel(ix, iy, 82 + game.rand(3), common);
 			return false;
 		}
 		else if(m.rock())
 		{
-			game.level.pixel(ix, iy) = 85 + game.rand(3);
+			game.level.setPixel(ix, iy, 85 + game.rand(3), common);
 			return false;
 		}
 	}

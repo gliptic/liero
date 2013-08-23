@@ -5,12 +5,10 @@
 #include <string>
 #include <stdexcept>
 #include <vector>
-#include <SDL/SDL.h>
 #include <gvl/cstdint.hpp>
 #include <gvl/io/stream.hpp>
 
 extern std::string lieroEXERoot;
-extern std::string lieroOPT;
 
 struct ReaderFile
 {
@@ -68,13 +66,6 @@ ReaderFile& openLieroEXE();
 ReaderFile& openLieroSND();
 ReaderFile& openLieroCHR();
 
-/*
-inline void checkedFread(void* ptr, std::size_t size, std::size_t count, FILE* f)
-{
-	if(fread(ptr, size, count, f) != count)
-		throw std::runtime_error("fread failed to read fully");
-}*/
-
 inline std::string readPascalString(ReaderFile& f)
 {
 	unsigned char length = f.get();
@@ -99,32 +90,32 @@ inline std::string readPascalStringAt(ReaderFile& f, size_t location)
 	return readPascalString(f);
 }
 
-inline Uint32 readUint8(ReaderFile& f)
+inline uint32_t readUint8(ReaderFile& f)
 {
 	return f.get();
 }
 
-inline Sint32 readSint8(ReaderFile& f)
+inline int32_t readSint8(ReaderFile& f)
 {
 	return (int8_t)f.get();
 }
 
-inline Uint32 readUint16(ReaderFile& f)
+inline uint32_t readUint16(ReaderFile& f)
 {
 	return gvl::read_uint16_le(f);
 }
 
-inline Sint32 readSint16(ReaderFile& f)
+inline int32_t readSint16(ReaderFile& f)
 {
 	return (int)(int16_t)gvl::read_uint16_le(f);
 }
 
-inline Uint32 readUint32(ReaderFile& f)
+inline uint32_t readUint32(ReaderFile& f)
 {
 	return gvl::read_uint32_le(f);
 }
 
-inline Sint32 readSint32(ReaderFile& f)
+inline int32_t readSint32(ReaderFile& f)
 {
 	return (int32_t)gvl::read_uint32_le(f);
 }

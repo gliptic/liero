@@ -113,16 +113,15 @@ public:
 
 		//return true;
 	}
-/*
-	bool inside(basic_vec<T> v) const
+
+	bool inside(T vx, T vy) const
 	{
-		T diffX = v.x - x1;
-		T diffY = v.y - y1;
+		T diffX = vx - x1;
+		T diffY = vy - y1;
 		
 		return diffX < width() && diffX >= T(0)
 		    && diffY < height() && diffY >= T(0);
-		
-	}*/
+	}
 	
 	basic_rect operator&(basic_rect const& b) const
 	{

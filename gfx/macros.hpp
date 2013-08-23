@@ -155,19 +155,19 @@ inline uint8_t choose(uint8_t this_, uint8_t if_this, uint8_t is_different_from_
 
 #define CLIP_IMAGE(clip) \
 { \
-	int top = y - (clip).y; \
+	int top = y - (clip).y1; \
 	if(top < 0)	{ \
 		mem += -top * pitch; \
 		height += top; \
-		y = (clip).y; } \
-	int bottom = y + height - ((clip).y + (clip).h); \
+		y = (clip).y1; } \
+	int bottom = y + height - ((clip).y2); \
 	if(bottom > 0) height -= bottom; \
-	int left = x - (clip).x; \
+	int left = x - (clip).x1; \
 	if(left < 0) { \
 		mem -= left; \
 		width += left; \
-		x = (clip).x; } \
-	int right = x + width - ((clip).x + (clip).w); \
+		x = (clip).x1; } \
+	int right = x + width - ((clip).x2); \
 	if(right > 0) width -= right; \
 	if(width <= 0 || height <= 0) return; \
 }

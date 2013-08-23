@@ -3,31 +3,38 @@
 #include "viewport.hpp"
 #include "worm.hpp"
 #include "filesystem.hpp"
-#include "gfx.hpp"
-#include "sfx.hpp"
+#include "gfx/renderer.hpp"
 #include "weapsel.hpp"
 #include "constants.hpp"
 #include <cstdlib>
 #include "text.hpp" // TEMP
 #include <ctime>
+#include "ai/predictive_ai.hpp"
 
-#include <iostream>
+gvl::shared_ptr<WormAI> createAi(int controller, Worm& worm)
+{
+	if (controller == 1)
+		//return gvl::shared_ptr<WormAI>(new DumbLieroAI());
+		return gvl::shared_ptr<WormAI>(new SimpleAI());
+	else if (controller == 2)
+		return gvl::shared_ptr<WormAI>(new FollowAI(worm.index == 0));
+
+	return gvl::shared_ptr<WormAI>();
+}
 
 void Game::createDefaults()
 {
-	Worm* worm1 = new Worm(*this);
+	Worm* worm1 = new Worm();
 	worm1->settings = settings->wormSettings[0];
 	worm1->health = worm1->settings->health;
 	worm1->index = 0;
-	if(worm1->settings->controller == 1)
-		worm1->ai.reset(new DumbLieroAI(*worm1));
+	worm1->ai = createAi(worm1->settings->controller, *worm1);
 	
-	Worm* worm2 = new Worm(*this);
+	Worm* worm2 = new Worm();
 	worm2->settings = settings->wormSettings[1];
 	worm2->health = worm2->settings->health;
 	worm2->index = 1;
-	if(worm2->settings->controller == 1)
-		worm2->ai.reset(new DumbLieroAI(*worm2));
+	worm2->ai = createAi(worm2->settings->controller, *worm2);
 		
 #if 0
 	for(int i = 0; i < 10; ++i)
@@ -43,24 +50,29 @@ void Game::createDefaults()
 	}
 #endif
 	
-	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350, *this));
-	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350, *this));
+	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350));
+	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350));
 	
 	addWorm(worm1);
 	addWorm(worm2);
 }
 
-Game::Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settingsInit)
+Game::Game(
+	gvl::shared_ptr<Common> common,
+	gvl::shared_ptr<Settings> settingsInit,
+	gvl::shared_ptr<SoundPlayer> soundPlayer)
 : common(common)
-, soundPlayer(new DefaultSoundPlayer)
+, soundPlayer(soundPlayer)
 , settings(settingsInit)
 , statsRecorder(new NormalStatsRecorder)
 , screenFlash(0)
 , gotChanged(false)
-, lastKilled(0)
+, lastKilledIdx(-1)
 , paused(true)
+, level(*common)
+, quickSim(false)
 {
-	rand.seed(Uint32(std::time(0)));
+	rand.seed(uint32_t(std::time(0)));
 	
 	cycles = 0;
 }
@@ -71,7 +83,7 @@ Game::~Game()
 	clearWorms();
 }
 
-void Game::onKey(Uint32 key, bool state)
+void Game::onKey(uint32_t key, bool state)
 {
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
@@ -140,7 +152,7 @@ void Game::processViewports()
 {
 	for(std::size_t i = 0; i < viewports.size(); ++i)
 	{
-		viewports[i]->process();
+		viewports[i]->process(*this);
 	}
 }
 
@@ -148,7 +160,7 @@ void Game::drawViewports(Renderer& renderer, bool isReplay)
 {
 	for(std::size_t i = 0; i < viewports.size(); ++i)
 	{
-		viewports[i]->draw(renderer, isReplay);
+		viewports[i]->draw(*this, renderer, isReplay);
 	}
 }
 
@@ -184,8 +196,12 @@ void Game::draw(Renderer& renderer, bool isReplay)
 	drawViewports(renderer, isReplay);
 
 	//common->font.drawText(toString(cycles / 70), 10, 10, 7);
-	
+
 	renderer.pal = renderer.origpal;
+
+	for(int w = 0; w < 4; ++w)
+		renderer.pal.rotateFrom(renderer.origpal, common->colorAnim[w].from, common->colorAnim[w].to, cycles >> 3);
+	
 	renderer.pal.fade(renderer.fadeValue);
 
 	if(screenFlash > 0)
@@ -205,7 +221,7 @@ bool checkBonusSpawnPosition(Game& game, int x, int y)
 	for(int cx = rect.x1; cx < rect.x2; ++cx)
 	for(int cy = rect.y1; cy < rect.y2; ++cy)
 	{
-		if(common.materials[game.level.pixel(cx, cy)].dirtRock())
+		if(game.level.mat(cx, cy).dirtRock())
 			return false;
 	}
 	
@@ -268,35 +284,16 @@ void Game::createBonus()
 
 void Game::processFrame()
 {
-	if((cycles & 3) == 0)
-	{
-		for(int w = 0; w < 4; ++w)
-		{
-			gfx.origpal.rotate(common->colorAnim[w].from, common->colorAnim[w].to);
-		}
-	}
-	
+	statsRecorder->preTick(*this);
+
 	if(screenFlash > 0)
 		--screenFlash;
-	
-	
 	
 	for(std::size_t i = 0; i < viewports.size(); ++i)
 	{
 		if(viewports[i]->shake > 0)
 			viewports[i]->shake -= 4000; // TODO: Read 4000 from exe?
 	}
-	
-	/*
-	// TODO: Move this stuff
-	if(gfx.testSDLKeyOnce(SDLK_ESCAPE)
-	&& !shutDown)
-	{
-		gfx.firstMenuItem = 0;
-		gfx.fadeValue = 31;
-		shutDown = true;
-	}
-*/
 	
 	for(BonusList::iterator i = bonuses.begin(); i != bonuses.end(); ++i)
 	{
@@ -332,8 +329,6 @@ void Game::processFrame()
 		i->process(*this);
 	}
 	
-	// TODO: Check processing order of bonuses, wobjects etc.
-	
 	for(WObjectList::iterator i = wobjects.begin(); i != wobjects.end(); ++i)
 	{
 		i->process(*this);
@@ -356,7 +351,6 @@ void Game::processFrame()
 	// separate out the drawing
 	++cycles;
 	
-	// This can be moved after the drawing
 	if(!common->H[HBonusDisable]
 	&& settings->maxBonuses > 0
 	&& rand(common->C[BonusDropChance]) == 0)
@@ -366,12 +360,12 @@ void Game::processFrame()
 		
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
-		worms[i]->process();
+		worms[i]->process(*this);
 	}
 	
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
-		worms[i]->ninjarope.process(*worms[i]);
+		worms[i]->ninjarope.process(*worms[i], *this);
 	}
 	
 	switch(settings->gameMode)
@@ -387,13 +381,94 @@ void Game::processFrame()
 				break;
 			}
 		}
+
+		Worm* lastKilledBy = wormByIdx(lastKilledIdx);
 		
 		if(!someInvisible
-		&& lastKilled
+		&& lastKilledBy
 		&& (cycles % 70) == 0
-		&& lastKilled->timer < settings->timeToLose)
+		&& lastKilledBy->timer < settings->timeToLose)
 		{
-			++lastKilled->timer;
+			++lastKilledBy->timer;
+		}
+	}
+	break;
+
+	case Settings::GMHoldazone:
+	{
+		int contenderIdx = -1;
+		int contenders = 0;
+
+		for (Worm* w : worms)
+		{
+			int x = ftoi(w->x), y = ftoi(w->y);
+
+			if (w->visible
+			&& holdazone.rect.inside(x, y))
+			{
+				contenderIdx = w->index;
+				++contenders;
+			}
+		}
+
+		if (contenders == 0)
+			contenderIdx = holdazone.holderIdx;
+
+		if (contenders <= 1)
+		{
+			if (contenderIdx < 0 || (holdazone.contenderIdx != contenderIdx && holdazone.contenderFrames != 0))
+			{
+				if (holdazone.contenderFrames == 0 || --holdazone.contenderFrames == 0)
+				{
+					holdazone.contenderIdx = contenderIdx;
+					holdazone.holderIdx = -1;
+				}
+			}
+			else
+			{
+				holdazone.contenderIdx = contenderIdx;
+
+				if (holdazone.contenderFrames < settings->zoneCaptureTime
+				 && ++holdazone.contenderFrames >= settings->zoneCaptureTime
+				 && holdazone.holderIdx != holdazone.contenderIdx)
+				{
+					// New holder
+					
+					int newTimeout = holdazone.timeoutLeft;
+					if (holdazone.contenderIdx >= 0)
+						newTimeout += settings->zoneTimeout * 70 / 4;
+					else
+						newTimeout += settings->zoneTimeout * 70 / 8;
+
+					holdazone.timeoutLeft = std::min(newTimeout, settings->zoneTimeout * 70);
+
+					holdazone.holderIdx = holdazone.contenderIdx;
+				}
+			}
+		}
+
+		bool dec = false;
+
+		if (holdazone.holderIdx >= 0)
+		{
+			auto* holder = wormByIdx(holdazone.holderIdx);
+				
+			if ((cycles % 70) == 0)
+				++holder->timer;
+
+			dec = true;
+		}
+		else
+		{
+			dec = (cycles % 4) == 0;
+		}
+
+		if (dec)
+		{
+			if (--holdazone.timeoutLeft <= 0)
+			{
+				spawnZone();
+			}
 		}
 	}
 	break;
@@ -407,43 +482,47 @@ void Game::processFrame()
 		worms[i]->prevControlStates = worms[i]->controlStates;
 	}
 	
-	statsRecorder->tick();
+	statsRecorder->tick(*this);
 }
 
-void Game::gameLoop()
+void Game::focus(Renderer& renderer)
 {
-#if 0
-	shutDown = false;
-	
-	do
-	{
-		processFrame();
-		draw();
-		
-		gfx.flip();
-		gfx.process(this);
-	}
-	while(gfx.fadeValue > 0);
-	
-	gfx.clearKeys();
-	//releaseControls();
-#endif
+	updateSettings(renderer);
 }
 
-void Game::focus()
+void Game::updateSettings(Renderer& renderer)
 {
-	updateSettings();
-}
-
-void Game::updateSettings()
-{
-	gfx.origpal = level.origpal; // Activate the Level palette
+	renderer.origpal = level.origpal; // Activate the Level palette
 	
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		Worm& worm = *worms[i];
 		if(worm.index >= 0 && worm.index < 2)
-			gfx.origpal.setWormColour(worm.index, *worm.settings);
+			renderer.origpal.setWormColour(worm.index, *worm.settings);
+	}
+}
+
+void Game::spawnZone()
+{
+	gvl::ivec2 pos;
+
+	while (holdazone.zoneWidth >= 5)
+	{
+		if (level.selectSpawn(rand, holdazone.zoneWidth, holdazone.zoneHeight - 8, pos))
+		{
+			holdazone.rect.x1 = pos.x;
+			holdazone.rect.y1 = pos.y;
+			holdazone.rect.x2 = pos.x + holdazone.zoneWidth;
+			holdazone.rect.y2 = pos.y + holdazone.zoneHeight;
+			holdazone.timeoutLeft = settings->zoneTimeout * 70;
+			holdazone.contenderIdx = -1;
+			holdazone.contenderFrames = 0;
+			holdazone.holderIdx = -1;
+			break;
+		}
+
+		holdazone.zoneWidth /= 2;
+		holdazone.zoneHeight /= 2;
 	}
 }
 
@@ -451,6 +530,11 @@ void Game::startGame()
 {
 	soundPlayer->play(22);
 	bobjects.resize(settings->bloodParticleMax);
+
+	if (settings->gameMode == Settings::GMHoldazone)
+	{
+		spawnZone();
+	}
 }
 
 bool Game::isGameOver()
@@ -471,16 +555,13 @@ bool Game::isGameOver()
 				return true;
 		}
 	}
-	else if(settings->gameMode == Settings::GMCtF
-	|| settings->gameMode == Settings::GMSimpleCtF)
+	else if(settings->gameMode == Settings::GMHoldazone)
 	{
-		for(std::size_t i = 0; i < worms.size(); ++i)
-		{
-			if(worms[i]->flags >= settings->flagsToWin)
+		for (auto* w : worms)
+			if (w->timer >= settings->timeToLose)
 				return true;
-		}
 	}
-	
+
 	return false;
 }
 
@@ -510,9 +591,22 @@ bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x,
 	for(int i = minX; i != maxX; ++i)
 	for(int j = minY; j != maxY; ++j)
 	{
-		if(common.materials[game.level.pixel(i, j)].rock()) // TODO: The special rock respawn bug is here, consider an option to turn it off
+		if(game.level.mat(i, j).rock()) // TODO: The special rock respawn bug is here, consider an option to turn it off
 			return false;
 	}
 	
 	return true;
+}
+
+void Game::postClone(Game& original)
+{
+	statsRecorder.reset(new StatsRecorder);
+	soundPlayer.reset(new NullSoundPlayer);
+	viewports.clear(); // TODO: Preserve viewports. Must-have for e.g. MARF
+
+	for (size_t i = 0; i < worms.size(); ++i)
+	{
+		worms[i] = new Worm(*worms[i]);
+	}
+
 }

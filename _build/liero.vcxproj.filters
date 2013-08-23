@@ -4,14 +4,47 @@
     <Filter Include="gfx">
       <UniqueIdentifier>{48d78aa8-2a2d-4703-9311-fa22175a0005}</UniqueIdentifier>
     </Filter>
-    <Filter Include="controller">
-      <UniqueIdentifier>{3b0979c8-920d-49aa-80d0-0f7d28e28459}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="menu">
-      <UniqueIdentifier>{7fbfc1f9-dc93-4140-ba25-7091d835dcc7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="mixer">
       <UniqueIdentifier>{4f9ccdb9-4328-4466-8626-1b6f2bd12e7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl">
+      <UniqueIdentifier>{927b0729-0241-42ae-9b74-db8ebdb835d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\io">
+      <UniqueIdentifier>{b5bd135f-c679-4edd-8ab1-14418da34e04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\serialization">
+      <UniqueIdentifier>{6c4a7b28-59f6-4edf-ac8d-6630f133a635}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\math">
+      <UniqueIdentifier>{20b554de-0821-41aa-bdee-bccc32b7af01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\crypt">
+      <UniqueIdentifier>{287bf670-96c2-45aa-b3c9-7af2109f8649}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\support">
+      <UniqueIdentifier>{f78b0b20-a964-43ee-a9b6-6e5ae8402ab2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\system">
+      <UniqueIdentifier>{f259dd48-3c80-4dac-8cec-e76b5fd7c91c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\zlib">
+      <UniqueIdentifier>{e9feb328-7576-4336-8e49-2a18193c024b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\containers">
+      <UniqueIdentifier>{c105b71c-9207-452c-929d-796e58e34efb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ai">
+      <UniqueIdentifier>{c2a28227-b971-49e8-8dd2-5c2389078462}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="tl">
+      <UniqueIdentifier>{21b25386-61b3-4390-b8c5-e2197ddac3bb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\resman">
+      <UniqueIdentifier>{61b1cb02-707a-4120-883e-019197b13e74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\meta">
+      <UniqueIdentifier>{d1f9a6d8-afd3-4acd-99d6-49ecff5749f1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -27,39 +60,6 @@
     <ClCompile Include="..\gfx\sprite.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\controller\commonController.cpp">
-      <Filter>controller</Filter>
-    </ClCompile>
-    <ClCompile Include="..\controller\localController.cpp">
-      <Filter>controller</Filter>
-    </ClCompile>
-    <ClCompile Include="..\controller\replayController.cpp">
-      <Filter>controller</Filter>
-    </ClCompile>
-    <ClCompile Include="..\menu\booleanSwitchBehavior.cpp">
-      <Filter>menu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\menu\enumBehavior.cpp">
-      <Filter>menu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\menu\hiddenMenu.cpp">
-      <Filter>menu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\menu\integerBehavior.cpp">
-      <Filter>menu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\menu\itemBehavior.cpp">
-      <Filter>menu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\menu\menu.cpp">
-      <Filter>menu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\menu\menuItem.cpp">
-      <Filter>menu</Filter>
-    </ClCompile>
-    <ClCompile Include="..\menu\timeBehavior.cpp">
-      <Filter>menu</Filter>
-    </ClCompile>
     <ClCompile Include="..\bobject.cpp" />
     <ClCompile Include="..\bonus.cpp" />
     <ClCompile Include="..\common.cpp" />
@@ -67,8 +67,6 @@
     <ClCompile Include="..\constants.cpp" />
     <ClCompile Include="..\filesystem.cpp" />
     <ClCompile Include="..\game.cpp" />
-    <ClCompile Include="..\gfx.cpp" />
-    <ClCompile Include="..\keys.cpp" />
     <ClCompile Include="..\level.cpp" />
     <ClCompile Include="..\math.cpp" />
     <ClCompile Include="..\ninjarope.cpp" />
@@ -77,18 +75,94 @@
     <ClCompile Include="..\reader.cpp" />
     <ClCompile Include="..\replay.cpp" />
     <ClCompile Include="..\settings.cpp" />
-    <ClCompile Include="..\sfx.cpp" />
     <ClCompile Include="..\sobject.cpp" />
     <ClCompile Include="..\sys.cpp" />
     <ClCompile Include="..\text.cpp" />
     <ClCompile Include="..\viewport.cpp" />
     <ClCompile Include="..\weapon.cpp" />
-    <ClCompile Include="..\weapsel.cpp" />
     <ClCompile Include="..\worm.cpp" />
     <ClCompile Include="..\mixer\mixer.c">
       <Filter>mixer</Filter>
     </ClCompile>
     <ClCompile Include="..\stats_recorder.cpp" />
+    <ClCompile Include="..\gvl\io\convert.cpp">
+      <Filter>gvl\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\io\encoding.cpp">
+      <Filter>gvl\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\io\stream.cpp">
+      <Filter>gvl\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\adler32.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\compress.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\crc32.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\deflate.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\gzio.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\infback.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\inffast.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\inflate.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\inftrees.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\trees.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\uncompr.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\zutil.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\system\system.c">
+      <Filter>gvl\system</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\support\bits.c">
+      <Filter>gvl\support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\support\debug.cpp">
+      <Filter>gvl\support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\support\platform.cpp">
+      <Filter>gvl\support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\support\profile.cpp">
+      <Filter>gvl\support</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ai\predictive_ai.cpp">
+      <Filter>ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gfx\renderer.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ai\dijkstra.cpp">
+      <Filter>ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\mixer\player.cpp">
+      <Filter>mixer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\miniz.c">
+      <Filter>gvl\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\containers\list.cpp">
+      <Filter>gvl\containers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\gfx\blit.hpp">
@@ -109,57 +183,15 @@
     <ClInclude Include="..\gfx\sprite.hpp">
       <Filter>gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\controller\commonController.hpp">
-      <Filter>controller</Filter>
-    </ClInclude>
-    <ClInclude Include="..\controller\controller.hpp">
-      <Filter>controller</Filter>
-    </ClInclude>
-    <ClInclude Include="..\controller\localController.hpp">
-      <Filter>controller</Filter>
-    </ClInclude>
-    <ClInclude Include="..\controller\replayController.hpp">
-      <Filter>controller</Filter>
-    </ClInclude>
-    <ClInclude Include="..\menu\arrayEnumBehavior.hpp">
-      <Filter>menu</Filter>
-    </ClInclude>
-    <ClInclude Include="..\menu\booleanSwitchBehavior.hpp">
-      <Filter>menu</Filter>
-    </ClInclude>
-    <ClInclude Include="..\menu\enumBehavior.hpp">
-      <Filter>menu</Filter>
-    </ClInclude>
-    <ClInclude Include="..\menu\hiddenMenu.hpp">
-      <Filter>menu</Filter>
-    </ClInclude>
-    <ClInclude Include="..\menu\integerBehavior.hpp">
-      <Filter>menu</Filter>
-    </ClInclude>
-    <ClInclude Include="..\menu\itemBehavior.hpp">
-      <Filter>menu</Filter>
-    </ClInclude>
-    <ClInclude Include="..\menu\menu.hpp">
-      <Filter>menu</Filter>
-    </ClInclude>
-    <ClInclude Include="..\menu\menuItem.hpp">
-      <Filter>menu</Filter>
-    </ClInclude>
-    <ClInclude Include="..\menu\timeBehavior.hpp">
-      <Filter>menu</Filter>
-    </ClInclude>
     <ClInclude Include="..\bobject.hpp" />
     <ClInclude Include="..\bonus.hpp" />
     <ClInclude Include="..\common.hpp" />
     <ClInclude Include="..\console.hpp" />
     <ClInclude Include="..\constants.hpp" />
-    <ClInclude Include="..\controller.hpp" />
     <ClInclude Include="..\exactObjectList.hpp" />
     <ClInclude Include="..\fastObjectList.hpp" />
     <ClInclude Include="..\filesystem.hpp" />
     <ClInclude Include="..\game.hpp" />
-    <ClInclude Include="..\gfx.hpp" />
-    <ClInclude Include="..\keys.hpp" />
     <ClInclude Include="..\level.hpp" />
     <ClInclude Include="..\math.hpp" />
     <ClInclude Include="..\nobject.hpp" />
@@ -169,14 +201,12 @@
     <ClInclude Include="..\rect.hpp" />
     <ClInclude Include="..\replay.hpp" />
     <ClInclude Include="..\settings.hpp" />
-    <ClInclude Include="..\sfx.hpp" />
     <ClInclude Include="..\sobject.hpp" />
     <ClInclude Include="..\sys.hpp" />
     <ClInclude Include="..\text.hpp" />
     <ClInclude Include="..\version.hpp" />
     <ClInclude Include="..\viewport.hpp" />
     <ClInclude Include="..\weapon.hpp" />
-    <ClInclude Include="..\weapsel.hpp" />
     <ClInclude Include="..\worm.hpp" />
     <ClInclude Include="..\mixer\mixer.h">
       <Filter>mixer</Filter>
@@ -184,6 +214,185 @@
     <ClInclude Include="..\stats_recorder.hpp" />
     <ClInclude Include="..\gfx\bitmap.hpp">
       <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io\convert.hpp">
+      <Filter>gvl\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io\deflate_filter.hpp">
+      <Filter>gvl\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io\encoding.hpp">
+      <Filter>gvl\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io\encoding_compat.hpp">
+      <Filter>gvl\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io\fstream.hpp">
+      <Filter>gvl\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io\iostream.hpp">
+      <Filter>gvl\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io\stream.hpp">
+      <Filter>gvl\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io\unicode.hpp">
+      <Filter>gvl\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\math\cmwc.hpp">
+      <Filter>gvl\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\math\random.hpp">
+      <Filter>gvl\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\math\rect.hpp">
+      <Filter>gvl\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\crypt\gash.hpp">
+      <Filter>gvl\crypt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\crc32.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\deflate.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\inffast.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\inffixed.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\inflate.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\inftrees.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\trees.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zconf.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zconf.in.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zutil.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\system\memory.hpp">
+      <Filter>gvl\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\system\system.hpp">
+      <Filter>gvl\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\system\windows.hpp">
+      <Filter>gvl\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\bits.hpp">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\config.h">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\cstdint.hpp">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\debug.hpp">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\functional.hpp">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\macros.hpp">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\opt.hpp">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\platform.h">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\platform.hpp">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\profile.hpp">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support\type_info.hpp">
+      <Filter>gvl\support</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\serialization\archive.hpp">
+      <Filter>gvl\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\serialization\context.hpp">
+      <Filter>gvl\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\serialization\except.hpp">
+      <Filter>gvl\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\cstdint.hpp">
+      <Filter>gvl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\support.hpp">
+      <Filter>gvl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\containers\pairing_heap.hpp">
+      <Filter>gvl\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ai\astar.hpp">
+      <Filter>ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ai\predictive_ai.hpp">
+      <Filter>ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\stats.hpp" />
+    <ClInclude Include="..\gfx\renderer.hpp">
+      <Filter>gfx</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ai\dijkstra.hpp">
+      <Filter>ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mixer\player.hpp">
+      <Filter>mixer</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zlib__.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zlib.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tl\cstdint.h">
+      <Filter>tl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tl\memory.h">
+      <Filter>tl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tl\platform.h">
+      <Filter>tl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tl\vector.h">
+      <Filter>tl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\material.hpp" />
+    <ClInclude Include="..\gvl\math\vec.hpp">
+      <Filter>gvl\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\containers\list.h">
+      <Filter>gvl\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\containers\list.hpp">
+      <Filter>gvl\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\resman\shared.hpp">
+      <Filter>gvl\resman</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\resman\shared_ptr.hpp">
+      <Filter>gvl\resman</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\meta\as_unsigned.hpp">
+      <Filter>gvl\meta</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

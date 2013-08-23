@@ -4,7 +4,7 @@
 #include "worm.hpp"
 #include "text.hpp"
 #include "menu/menu.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "viewport.hpp"
 #include <SDL/SDL.h>
 
@@ -39,11 +39,13 @@ WeaponSelection::WeaponSelection(Game& game)
 			int x = vp.rect.center_x() - 31;
 			int y = vp.rect.center_y() - 51;
 			menus[i].place(x, y);
-		}	
+		}
+
+		bool randomWeapons = (ws.controller != 0 && game.settings->selectBotWeapons == 0);
 		
 		for(int j = 0; j < Settings::selectableWeapons; ++j)
 		{
-			if(ws.weapons[j] == 0)
+			if(ws.weapons[j] == 0 || randomWeapons)
 			{
 				ws.weapons[j] = gfx.rand(1, 41);
 			}
@@ -78,7 +80,7 @@ WeaponSelection::WeaponSelection(Game& game)
 		worm.currentWeapon = 0;
 		
 		menus[i].moveToFirstVisible();
-		isReady[i] = (ws.controller != 0); // AIs are ready immediately
+		isReady[i] = (ws.controller != 0 && game.settings->selectBotWeapons != 1);
 	}
 }
 	
@@ -92,11 +94,11 @@ void WeaponSelection::draw()
 			
 		if(game.settings->levelFile.empty())
 		{
-			common.font.drawText(common.texts.levelRandom, 0, 162, 50);
+			common.font.drawText(gfx.screenBmp, common.texts.levelRandom, 0, 162, 50);
 		}
 		else
 		{
-			common.font.drawText((common.texts.levelIs1 + game.settings->levelFile + common.texts.levelIs2), 0, 162, 50);
+			common.font.drawText(gfx.screenBmp, (common.texts.levelIs1 + game.settings->levelFile + common.texts.levelIs2), 0, 162, 50);
 		}
 		
 		std::memcpy(&gfx.frozenScreen[0], gfx.screenBmp.pixels, gfx.frozenScreen.size());
@@ -111,7 +113,7 @@ void WeaponSelection::draw()
 
 	drawRoundedBox(gfx.screenBmp, 114, 2, 0, 7, common.font.getDims(common.texts.selWeap));
 	
-	common.font.drawText(common.texts.selWeap, 116, 3, 50);
+	common.font.drawText(gfx.screenBmp, common.texts.selWeap, 116, 3, 50);
 		
 	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
@@ -124,7 +126,7 @@ void WeaponSelection::draw()
 		
 		int width = common.font.getDims(ws.name);
 		drawRoundedBox(gfx.screenBmp, weaponMenu.x + 29 - width/2, weaponMenu.y - 11, 0, 7, width);
-		common.font.drawText(ws.name, weaponMenu.x + 31 - width/2, weaponMenu.y - 10, ws.color + 1);
+		common.font.drawText(gfx.screenBmp, ws.name, weaponMenu.x + 31 - width/2, weaponMenu.y - 10, ws.color + 1);
 		
 		if(!isReady[i])
 		{
@@ -133,9 +135,10 @@ void WeaponSelection::draw()
 	}
 	
 	// TODO: This just uses the currently activated palette, which might well be wrong.
-	gfx.origpal.rotate(168, 174);
 	gfx.pal = gfx.origpal;
+	gfx.pal.rotateFrom(gfx.origpal, 168, 174, gfx.menuCycles);
 	gfx.pal.fade(gfx.fadeValue);
+	++gfx.menuCycles;
 }
 	
 bool WeaponSelection::processFrame()
@@ -269,7 +272,7 @@ void WeaponSelection::finalize()
 	{
 		Worm& worm = *game.worms[i];
 		
-		worm.initWeapons();
+		worm.initWeapons(game);
 		/*
 		for(int j = 0; j < 6; ++j)
 		{

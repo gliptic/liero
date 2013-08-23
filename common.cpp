@@ -2,7 +2,7 @@
 
 #include "reader.hpp"
 #include "rand.hpp"
-#include "gfx.hpp"
+#include "gfx/blit.hpp"
 
 int Common::fireConeOffset[2][7][2] =
 {
@@ -26,7 +26,7 @@ void Texts::loadFromEXE()
 	regenLevel = readPascalStringAt(exe, 0xD41A);
 	reloadLevel = readPascalStringAt(exe, 0xD42D);
 	
-	copyright1 = readPascalStringAt(exe, 0xFB60);
+	//copyright1 = readPascalStringAt(exe, 0xFB60);
 	copyright2 = readPascalStringAt(exe, 0xE693);
 	saveoptions = readPascalStringAt(exe, 0xE6BB);
 	loadoptions = readPascalStringAt(exe, 0xE6CC);
@@ -34,10 +34,11 @@ void Texts::loadFromEXE()
 	curOpt = readPascalStringAt(exe, 0xE6FA);
 	
 	exe.seekg(0x1B2BA);
-	for(int i = 0; i < 4; ++i)
+	for(int i = 0; i < 2; ++i)
 	{
 		gameModes[i] = readPascalString(exe, 17);
 	}
+	gameModes[2] = "Holdazone";
 	
 	gameModeSpec[0] = readPascalStringAt(exe, 0xD3EC);
 	gameModeSpec[1] = readPascalStringAt(exe, 0xD3F2);
@@ -48,6 +49,7 @@ void Texts::loadFromEXE()
 	
 	controllers[0] = readPascalStringAt(exe, 0x1B204);
 	controllers[1] = readPascalStringAt(exe, 0x1B20A);
+	controllers[2] = "AI";
 	
 	exe.seekg(0x1B2FE);
 	for(int i = 0; i < 3; ++i)
@@ -442,7 +444,55 @@ void Common::loadGfx()
 	}
 }
 
-void Common::drawTextSmall(char const* str, int x, int y)
+void Common::loadSfx()
+{
+	ReaderFile& snd = openLieroSND();
+		
+	int count = readUint16(snd);
+	
+	sounds.resize(count);
+	
+	long oldPos = snd.tellg();
+	
+	for(int i = 0; i < count; ++i)
+	{
+		snd.seekg(oldPos + 8);
+		
+		int offset = readUint32(snd);
+		int length = readUint32(snd);
+		
+		oldPos = snd.tellg();
+		
+		int byteLength = length * 4;
+
+		sounds[i] = sfx_new_sound(byteLength / 2);
+		
+		int16_t* ptr = reinterpret_cast<int16_t*>(sfx_sound_data(sounds[i]));
+		
+		std::vector<uint8_t> temp(length);
+		
+		if(length > 0)
+		{
+			snd.seekg(offset);
+			snd.get(&temp[0], length);
+
+			int prev = ((int8_t)temp[0]) * 30;
+			*ptr++ = prev;
+		
+			for(int j = 1; j < length; ++j)
+			{
+				int cur = (int8_t)temp[j] * 30;
+				*ptr++ = (prev + cur) / 2;
+				*ptr++ = cur;
+				prev = cur;
+			}
+		
+			*ptr++ = prev;
+		}
+	}
+}
+
+void Common::drawTextSmall(Bitmap& scr, char const* str, int x, int y)
 {
 	for(; *str; ++str)
 	{
@@ -450,7 +500,7 @@ void Common::drawTextSmall(char const* str, int x, int y)
 		
 		if(c < 26)
 		{
-			blitImage(gfx.screenBmp, textSprites.spritePtr(c), x, y, 4, 4);
+			blitImage(scr, textSprites[c], x, y);
 		}
 		
 		x += 4;

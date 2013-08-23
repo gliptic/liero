@@ -4,9 +4,10 @@
 #include "replay.hpp"
 #include "filesystem.hpp"
 #include "reader.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "game.hpp"
-#include "gfx.hpp"
+#include "gfx/renderer.hpp"
+#include "text.hpp"
 
 #include <gvl/io/fstream.hpp>
 #include <memory>
@@ -19,7 +20,6 @@ extern "C"
 }
 
 void replayToVideo(
-	Gfx& gfx,
 	gvl::shared_ptr<Common> const& common,
 	std::string const& fullPath,
 	std::string const& replayVideoName)
@@ -29,16 +29,19 @@ void replayToVideo(
 	Renderer renderer;
 
 	renderer.init();
+	renderer.loadPalette(*common);
 
 	std::string fullVideoPath = joinPath(lieroEXERoot, replayVideoName);
 
-	std::auto_ptr<Game> game(replayReader.beginPlayback(common));
-
 	sfx_mixer* mixer = sfx_mixer_create();
 
-	game->soundPlayer.reset(new RecordSoundPlayer(mixer));
+	std::auto_ptr<Game> game(
+		replayReader.beginPlayback(common,
+			gvl::shared_ptr<SoundPlayer>(new RecordSoundPlayer(*common, mixer))));
+
+	//game->soundPlayer.reset(new RecordSoundPlayer(*common, mixer));
 	game->startGame();
-	game->focus();
+	game->focus(renderer);
 
 	int w = 1280, h = 720;
 
@@ -70,15 +73,17 @@ void replayToVideo(
 	uint32_t scaleFilter = Settings::SfNearest;
 
 	int offsetX, offsetY;
-	int mag = Gfx::fitScreen(w, h, gfx.screenBmp.w, gfx.screenBmp.h, offsetX, offsetY, scaleFilter);
+	int mag = fitScreen(w, h, renderer.screenBmp.w, renderer.screenBmp.h, offsetX, offsetY, scaleFilter);
 
-	uint32_t prevShowFrameMs = SDL_GetTicks();
+	printf("\n");
+
 	int f = 0;
-	while(replayReader.playbackFrame())
+	while(replayReader.playbackFrame(renderer))
 	{
 		game->processFrame();
 		renderer.clear();
-		game->draw(renderer);
+		game->draw(renderer, true);
+		++f;
 		renderer.fadeValue = 33;
 
 		sampleDebt.num += 44100; // sampleDebt += 44100 / 70
@@ -107,7 +112,7 @@ void replayToVideo(
 			{
 				frameDebt = av_sub_q(frameDebt, framerate);
 
-				SDL_Color realPal[256];
+				Color realPal[256];
 				renderer.pal.activate(realPal);
 				PalIdx* src = renderer.screenBmp.pixels;
 				std::size_t destPitch = vidrec.tmp_picture->linesize[0];
@@ -115,9 +120,9 @@ void replayToVideo(
 				std::size_t srcPitch = renderer.screenBmp.pitch;
 								
 				uint32_t pal32[256];
-				Gfx::preparePaletteBgra(realPal, pal32);
+				preparePaletteBgra(realPal, pal32);
 
-				Gfx::scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, scaleFilter, pal32);
+				scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, scaleFilter, pal32);
 
 				vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
 			}
@@ -128,15 +133,10 @@ void replayToVideo(
 			soundBuffer.size = samplesLeft;
 		}
 
-#if 0
-		uint32_t nowMs = SDL_GetTicks();
-		if (prevShowFrameMs + 100 < nowMs)
+		if ((f % (70 * 5)) == 0)
 		{
-			prevShowFrameMs = SDL_GetTicks();
-			gfx.flip();
-			gfx.process(0);
+			printf("\r%s", timeToStringFrames(f));
 		}
-#endif
 	}
 
 	tl_vector_free(soundBuffer);

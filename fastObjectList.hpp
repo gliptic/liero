@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <gvl/support/debug.hpp>
 
-
 template<typename T>
 struct FastObjectList
 {
@@ -50,16 +49,15 @@ struct FastObjectList
 	
 	T* getFreeObject()
 	{
-		sassert(nextFree != &arr[0] + limit);
-		T* ptr = nextFree++;
-		++count;
+		sassert(count < limit);
+		T* ptr = &arr[count++];
 		return ptr;
 	}
 	
 	T* newObjectReuse()
 	{
 		T* ret;
-		if(nextFree == &arr[0] + limit)
+		if(count == limit)
 			ret = &arr[limit - 1];
 		else
 			ret = getFreeObject();
@@ -69,7 +67,7 @@ struct FastObjectList
 	
 	T* newObject()
 	{
-		if(nextFree == &arr[0] + limit)
+		if(nextFree >= limit)
 			return 0;
 			
 		T* ret = getFreeObject();
@@ -83,14 +81,13 @@ struct FastObjectList
 	
 	iterator end()
 	{
-		return iterator(nextFree);
+		return iterator(&arr[0] + count);
 	}
 		
 	void free(T* ptr)
 	{
-		sassert(ptr < nextFree && ptr >= &arr[0]);
-		*ptr = *--nextFree;
-		--count;
+		sassert(ptr < &arr[0] + count && ptr >= &arr[0]);
+		*ptr = arr[--count];
 	}
 	
 	void free(iterator i)
@@ -101,7 +98,6 @@ struct FastObjectList
 	void clear()
 	{
 		count = 0;
-		nextFree = &arr[0];
 	}
 	
 	void resize(std::size_t newLimit)
@@ -109,7 +105,6 @@ struct FastObjectList
 		limit = newLimit;
 		count = std::min(count, newLimit);
 		arr.resize(newLimit);
-		nextFree = &arr[0] + count;
 	}
 	
 	std::size_t size() const
@@ -119,7 +114,6 @@ struct FastObjectList
 	
 	std::size_t limit;
 	std::vector<T> arr;
-	T* nextFree;
 	std::size_t count;
 };
 

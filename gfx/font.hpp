@@ -4,6 +4,10 @@
 #include <vector>
 #include <string>
 
+#include <gvl/io/encoding.hpp>
+
+struct Bitmap;
+
 struct Font
 {
 	struct Char
@@ -18,13 +22,33 @@ struct Font
 	}
 	
 	void loadFromEXE();
-	void drawText(char const* str, std::size_t len, int x, int y, int color);
+	void drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color);
 	int getDims(char const* str, std::size_t len, int* height = 0);
-	void drawChar(unsigned char ch, int x, int y, int color);
+	void drawChar(Bitmap& scr, unsigned char ch, int x, int y, int color);
 	
-	void drawText(std::string const& str, int x, int y, int color)
+	void drawText(Bitmap& scr, std::string const& str, int x, int y, int color)
 	{
-		drawText(str.data(), str.size(), x, y, color);
+		drawText(scr, str.data(), str.size(), x, y, color);
+	}
+
+	void drawText(Bitmap& scr, gvl::cell const& str, int x, int y, int color)
+	{
+		if (str.buffer.empty())
+			return;
+
+		if (str.text_placement != gvl::cell::left)
+		{
+			int w = getDims(
+				reinterpret_cast<char const*>(&str.buffer[0]),
+				str.buffer.size());
+
+			if (str.text_placement == gvl::cell::center)
+				x -= w / 2;
+			else if (str.text_placement == gvl::cell::right)
+				x -= w;
+		}
+
+		drawText(scr, reinterpret_cast<char const*>(&str.buffer[0]), str.buffer.size(), x, y, color);
 	}
 	
 	int getDims(std::string const& str, int* height = 0)
@@ -32,7 +56,7 @@ struct Font
 		return getDims(str.data(), str.size(), height);
 	}
 	
-	void drawFramedText(std::string const& text, int x, int y, int color);
+	void drawFramedText(Bitmap& scr, std::string const& text, int x, int y, int color);
 	
 	std::vector<Char> chars;
 };

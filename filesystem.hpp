@@ -7,6 +7,7 @@
 
 std::string changeLeaf(std::string const& path, std::string const& newLeaf);
 std::string getRoot(std::string const& path);
+std::string getLeaf(std::string const& path);
 std::string getBasename(std::string const& path);
 std::string getExtension(std::string const& path);
 void toUpperCase(std::string& str);
@@ -17,6 +18,7 @@ bool fileExists(std::string const& path);
 FILE* tolerantFOpen(std::string const& name, char const* mode);
 
 std::size_t fileLength(FILE* f);
+bool create_directories(std::string const& dir);
 
 struct dir_itr_imp;
 typedef std::auto_ptr<dir_itr_imp> dir_itr_imp_ptr;
@@ -24,7 +26,6 @@ typedef std::auto_ptr<dir_itr_imp> dir_itr_imp_ptr;
 
 void dir_itr_init( dir_itr_imp_ptr & m_imp, char const* dir_path );
 std::string& dir_itr_dereference(dir_itr_imp_ptr const& m_imp );
-std::string& dir_itr_alt_dereference(dir_itr_imp_ptr const& m_imp );
 void dir_itr_increment( dir_itr_imp_ptr & m_imp );
 
 struct DirectoryIterator
@@ -42,11 +43,6 @@ struct DirectoryIterator
 	std::string const& operator*() const
 	{
 		return dir_itr_dereference( m_imp );
-	}
-	
-	std::string const& alt() const
-	{
-		return dir_itr_alt_dereference( m_imp );
 	}
 	
 	void operator++()

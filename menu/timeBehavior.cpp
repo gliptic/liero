@@ -9,6 +9,6 @@
 void TimeBehavior::onUpdate(Menu& menu, int item)
 {
 	MenuItem& i = menu.items[item];
-	i.value = timeToString(v);
+	i.value = frames ? timeToStringFrames(v) : timeToString(v);
 	i.hasValue = true;
 }

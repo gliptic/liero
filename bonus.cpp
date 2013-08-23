@@ -13,14 +13,14 @@ void Bonus::process(Game& game)
 	int ix = ftoi(x), iy = ftoi(y);
 	
 	if(game.level.inside(ix, iy + 1)
-	&& common.materials[game.level.pixel(ix, iy + 1)].background())
+	&& game.level.mat(ix, iy + 1).background())
 	{
 		velY += common.C[BonusGravity];
 	}
 		
 	int inewY = ftoi(y + velY);
 	if(inewY < 0 || inewY >= game.level.height - 1
-	|| common.materials[game.level.pixel(ix, inewY)].dirtRock())
+	|| game.level.mat(ix, inewY).dirtRock())
 	{
 		velY = -(velY * common.C[BonusBounceMul]) / common.C[BonusBounceDiv];
 		

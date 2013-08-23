@@ -5,6 +5,7 @@
 #include <gvl/io/encoding.hpp>
 #include <gvl/serialization/context.hpp>
 #include <gvl/crypt/gash.hpp>
+#include "mixer/player.hpp"
 #include <cstring>
 #include <map>
 #include <memory>
@@ -16,12 +17,9 @@ struct Game;
 
 struct GameSerializationContext : gvl::serialization_context<GameSerializationContext>
 {
-	
-	
 	GameSerializationContext()
 	: game(0)
-	, nextWormId(0)
-	, replayVersion(myGameVersion)
+	, replayVersion(myReplayVersion)
 	{
 	}
 	
@@ -41,28 +39,18 @@ struct GameSerializationContext : gvl::serialization_context<GameSerializationCo
 		return replayVersion;
 	}
 	
-	typedef std::map<int, Worm*> IdToWormMap;
 	typedef std::map<Worm*, WormData> WormDataMap;
-	
 	
 	Game* game;
 	WormDataMap wormData;
-	IdToWormMap idToWorm;
-	int nextWormId;
 	int replayVersion;
 };
 
 struct Replay
 {
-	
-	
 	Replay()
 	{
 	}
-	/*
-	virtual void unfocus() = 0;
-	virtual void focus() = 0;
-	*/
 	
 	GameSerializationContext context;
 	
@@ -87,6 +75,8 @@ private:
 	void endRecord();
 };
 
+struct Renderer;
+
 struct ReplayReader : Replay
 {
 	ReplayReader(gvl::stream_ptr str_init);
@@ -101,8 +91,8 @@ struct ReplayReader : Replay
 		// Nothing
 	}
 	
-	std::auto_ptr<Game> beginPlayback(gvl::shared_ptr<Common> common);
-	bool playbackFrame();
+	std::auto_ptr<Game> beginPlayback(gvl::shared_ptr<Common> common, gvl::shared_ptr<SoundPlayer> soundPlayer);
+	bool playbackFrame(Renderer& renderer);
 	
 	gvl::filter_ptr str;
 	gvl::octet_stream_reader reader;

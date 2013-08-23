@@ -12,6 +12,7 @@
 #include "gfx/blit.hpp"
 #include "gfx/color.hpp"
 #include "gfx/bitmap.hpp"
+#include "gfx/renderer.hpp"
 #include "menu/menu.hpp"
 #include "menu/hiddenMenu.hpp"
 #include "rect.hpp"
@@ -19,6 +20,7 @@
 #include "keys.hpp"
 #include "settings.hpp"
 #include "common.hpp"
+
 
 struct Key
 {
@@ -66,8 +68,11 @@ enum
 	MaResumeGame = 0,
 	MaNewGame = 1,
 	MaSettings = 2,
-	MaQuit = 3,
-	MaReplay = 4
+	MaPlayer1Settings = 3,
+	MaPlayer2Settings = 4,
+	MaAdvanced = 5,
+	MaQuit = 6,
+	MaReplay = 7
 };
 
 struct Joystick {
@@ -79,21 +84,6 @@ struct Joystick {
 	}
 };
 
-struct Renderer
-{
-	Renderer()
-	: fadeValue(0)
-	{
-	}
-
-	void init();
-	void clear();
-
-	Rand rand; // PRNG for things that don't affect the game
-	Bitmap screenBmp;
-	Palette pal, origpal;
-	int fadeValue;
-};
 
 struct Gfx : Renderer
 {
@@ -101,11 +91,11 @@ struct Gfx : Renderer
 		
 	void init();
 	void setVideoMode();
-	void loadPalette();
 	void loadMenus();
 	
 	void process(Controller* controller = 0);
 	void flip();
+	void menuFlip();
 	
 	void clearKeys();
 	
@@ -162,10 +152,12 @@ struct Gfx : Renderer
 	
 	SDL_keysym waitForKey();
 	uint32_t waitForKeyEx();
-	std::string getKeyName( uint32_t key );
+	std::string getKeyName(uint32_t key);
+	void setFullscreen(bool newFullscreen);
+	void setDoubleRes(bool newDoubleRes);
 	
-	void saveSettings();
-	bool loadSettings();
+	void saveSettings(std::string const& path);
+	bool loadSettings(std::string const& path);
 	
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 	
@@ -174,28 +166,23 @@ struct Gfx : Renderer
 	void mainLoop();
 	void drawBasicMenu(/*int curSel*/);
 	void playerSettings(int player);
+	void openHiddenMenu();
 
 	bool inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int) = 0, std::string const& prefix = "", bool centered = true);
 	void inputInteger(int& dest, int min, int max, std::size_t maxLen, int x, int y);
 	void selectLevel();
-	int  selectReplay(bool recordToVideo);
+	int  selectReplay();
 	void selectProfile(WormSettings& ws);
-	void updateExtensions(bool enabled);
+	void selectOptions();
 	void weaponOptions();
 	void infoBox(std::string const& text, int x = 320/2, int y = 200/2, bool clearScreen = true);
 
-	static int fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY, uint32_t scaleFilter);
-	static void preparePalette(SDL_PixelFormat* format, SDL_Color realPal[256], uint32_t (&pal32)[256]);
-	static void preparePaletteBgra(SDL_Color realPal[256], uint32_t (&pal32)[256]);
-
+	static void preparePalette(SDL_PixelFormat* format, Color realPal[256], uint32_t (&pal32)[256]);
+	
 	static void overlay(
 		SDL_PixelFormat* format,
 		uint8_t* src, int w, int h, std::size_t srcPitch,
 		uint8_t* dest, std::size_t destPitch, int mag);
-
-	static void scaleDraw(
-		PalIdx* src, int w, int h, std::size_t srcPitch, uint8_t* dest, std::size_t destPitch,
-		int mag, uint32_t scaleFilter, uint32_t* pal32);
 
 	Menu mainMenu;
 	SettingsMenu settingsMenu;
@@ -211,10 +198,10 @@ struct Gfx : Renderer
 	std::vector<PalIdx> frozenScreen;
 
 	bool running;
-	bool fullscreen;
+	bool fullscreen, doubleRes;
 	
 	Uint32 lastFrame;
-	int menuCyclic;
+	unsigned menuCycles;
 	int windowW, windowH;
 	int prevMag; // Previous magnification used for drawing
 	gvl::rect lastUpdateRect; // Last region that was updated when flipping
@@ -222,9 +209,11 @@ struct Gfx : Renderer
 	std::auto_ptr<Controller> controller;
 	
 	std::vector<Joystick> joysticks;
-	/*
-	Bitmap screenBmp;
-	Rand rand;*/
+
+	SDL_keysym keyBuf[32], *keyBufPtr;
+	
+	std::vector<std::pair<int, int>> debugPoints;
+	std::string debugInfo;
 };
 
 extern Gfx gfx;

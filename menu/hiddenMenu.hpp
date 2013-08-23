@@ -10,23 +10,36 @@ struct HiddenMenu : Menu
 {
 	enum
 	{
-		Extensions,
 		RecordReplays,
 		Replays,
-		ReplaysToVideo,
 		LoadPowerLevels,
 		ScalingFilter,
+		DoubleRes,
+		Fullscreen,
 		FullscreenW,
 		FullscreenH,
-		Depth32
+		AiFrames,
+		AiMutations,
+		PaletteSelect,
+		LoadOptions,
+		SaveOptions,
+		Shadows,
+		ScreenSync,
+		LoadChange,
+		SelectBotWeapons
 	};
 	
 	HiddenMenu(int x, int y)
 	: Menu(x, y)
+	, paletteColor(0)
 	{
 	}
 	
 	virtual ItemBehavior* getItemBehavior(Common& common, int item);
+
+	virtual void drawItemOverlay(Common& common, int item, int x, int y, bool selected, bool disabled);
+
+	int paletteColor;
 };
 
 #endif // UUID_C2D646F783444E7630AA27BB8F6C0B15

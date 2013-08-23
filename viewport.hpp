@@ -11,14 +11,13 @@ struct Renderer;
 
 struct Viewport
 {
-	Viewport(Rect rect, Worm* worm, int inGameX, int levwidth, int levheight, Game& game)
+	Viewport(Rect rect, Worm* worm, int inGameX, int levwidth, int levheight)
 	: worm(worm)
 	, bannerY(-8)
 	, inGameX(inGameX)
 	, rect(rect)
-	, game(game)
 	{
-		rand.seed((Uint32)std::clock());
+		rand.seed((uint32_t)std::clock());
 		maxX = levwidth - rect.width();
 		maxY = levheight - rect.height();
 		centerX = rect.width() >> 1;
@@ -28,8 +27,7 @@ struct Viewport
 		shake = 0;
 	}
 	
-	Viewport(Game& game)
-	: game(game)
+	Viewport()
 	{
 		
 	}
@@ -43,7 +41,6 @@ struct Viewport
 	int inGameX; // 0 for first, 218 for second
 	Rand rand;
 	Rect rect;
-	Game& game;
 
 	
 	void setCenter(int x, int y)
@@ -65,8 +62,8 @@ struct Viewport
 	}
 	
 	
-	void draw(Renderer& renderer, bool isReplay);
-	void process();
+	void draw(Game& game, Renderer& renderer, bool isReplay);
+	void process(Game& game);
 };
 
 #endif // LIERO_VIEWPORT_HPP

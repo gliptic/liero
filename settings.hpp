@@ -14,21 +14,27 @@
 // It can then easily reset the extensions if they fail to load.
 struct Extensions
 {
-	static int const myVersion = 2;
-	
+	static int const myVersion = 4;
+	static bool const extensions = true;
+
 	Extensions();
 	
 	// Extensions
-	bool extensions;
 	bool recordReplays;
 	bool loadPowerlevelPalette;
 	uint32_t scaleFilter;
-	bool depth32;
 	int bloodParticleMax;
+
+	int aiFrames, aiMutations;
 	
 	int fullscreenW;
 	int fullscreenH;
+
+	int zoneTimeout;
+	uint32_t selectBotWeapons;
 };
+
+struct Rand;
 
 struct Settings : gvl::shared, Extensions
 {
@@ -36,8 +42,7 @@ struct Settings : gvl::shared, Extensions
 	{
 		GMKillEmAll,
 		GMGameOfTag,
-		GMCtF,
-		GMSimpleCtF
+		GMHoldazone
 	};
 	
 	enum
@@ -45,6 +50,8 @@ struct Settings : gvl::shared, Extensions
 		SiGameMode,
 		SiLives,
 		SiTimeToLose, // Extra
+		SiTimeToWin,
+		SiZoneTimeout,
 		SiFlagsToWin, // Extra
 		SiLoadingTimes,
 		SiMaxBonuses,
@@ -53,11 +60,6 @@ struct Settings : gvl::shared, Extensions
 		SiAmountOfBlood,
 		SiLevel,
 		SiRegenerateLevel,
-		SiShadows,
-		SiScreenSync,
-		SiLoadChange,
-		SiPlayer1Options,
-		SiPlayer2Options,
 		SiWeaponOptions
 	};
 	
@@ -70,16 +72,17 @@ struct Settings : gvl::shared, Extensions
 	};
 	
 	static int const selectableWeapons = 5;
+	static int const zoneCaptureTime = 70;
 	
 	static int const wormAnimTab[];
 	
 	Settings();
 	
-	bool load(std::string const& path);
-	void save(std::string const& path);
+	bool load(std::string const& path, Rand& rand);
+	void save(std::string const& path, Rand& rand);
 	gvl::gash::value_type& updateHash();
 	
-	static void generateName(WormSettings& ws);
+	static void generateName(WormSettings& ws, Rand& rand);
 	
 	uint32_t weapTable[40];
 	int maxBonuses;
@@ -97,10 +100,8 @@ struct Settings : gvl::shared, Extensions
 	std::string levelFile;
 	bool map;
 	bool screenSync;
-	
+
 	gvl::shared_ptr<WormSettings> wormSettings[2];
-	
-	
 	
 	gvl::gash::value_type hash;
 };
@@ -117,14 +118,14 @@ inline int limit(int v)
 }
 
 template<typename Archive>
-void archive_liero(Archive ar, Settings& settings)
+void archive_liero(Archive ar, Settings& settings, Rand& rand)
 {
 	ar
 	.ui8(settings.maxBonuses)
 	.ui16_le(settings.loadingTime)
 	.ui16_le(settings.lives)
 	.ui16_le(settings.timeToLose)
-	.ui16_le(settings.flagsToWin)	
+	.ui16_le(settings.flagsToWin)
 	.b(settings.screenSync)
 	.b(settings.map)
 	.ui8(settings.wormSettings[0]->controller)
@@ -136,8 +137,8 @@ void archive_liero(Archive ar, Settings& settings)
 	.b(settings.regenerateLevel)
 	.b(settings.shadow);
 	
-	if(ar.in) settings.wormSettings[0]->controller &= 1;
-	if(ar.in) settings.wormSettings[1]->controller &= 1;
+	if(ar.in) settings.wormSettings[0]->controller %= 3;
+	if(ar.in) settings.wormSettings[1]->controller %= 3;
 	
 	for(int i = 0; i < 40; ++i)
 	{
@@ -176,7 +177,7 @@ void archive_liero(Archive ar, Settings& settings)
 			if(ar.in)
 			{
 				if(settings.wormSettings[i]->name.empty())
-					settings.generateName(*settings.wormSettings[i]);
+					settings.generateName(*settings.wormSettings[i], rand);
 				else
 					settings.wormSettings[i]->randomName = false;
 			}
@@ -219,15 +220,19 @@ void archive_liero(Archive ar, Settings& settings)
 		int fileExtensionVersion = myGameVersion;
 		ar.ui8(fileExtensionVersion);
 		
-		ar.b(settings.extensions);
+		bool extDummy = true;
+		ar.b(extDummy);
 		ar.b(settings.recordReplays);
 		ar.b(settings.loadPowerlevelPalette);
 		ar.ui8(settings.scaleFilter);
 		ar.ui16(settings.fullscreenW);
 		ar.ui16(settings.fullscreenH);
 		
-		gvl::enable_when(ar, fileExtensionVersion >= 2)
-			.b(settings.depth32, true);
+		if (fileExtensionVersion >= 4)
+			ar.str(settings.levelFile);
+		
+		if (fileExtensionVersion >= 2)
+			ar.b(extDummy);
 			
 		for(int i = 0; i < 2; ++i)
 		{
@@ -249,6 +254,12 @@ void archive_liero(Archive ar, Settings& settings)
 					.ui32(ws.controlsEx[c], ws.controls[c]);
 			}
 		}
+
+		gvl::enable_when(ar, fileExtensionVersion >= 4)
+			.ui16(settings.aiMutations, 2)
+			.ui16(settings.aiFrames, 140)
+			.ui8(settings.selectBotWeapons, uint32_t(0))
+			.ui16(settings.zoneTimeout, 30);
 	}
 	catch(gvl::stream_error&)
 	{
@@ -294,20 +305,24 @@ void archive(Archive ar, Settings& settings)
 	int fileExtensionVersion = Extensions::myVersion;
 			
 	ar.ui8(fileExtensionVersion);
+
+	bool extDummy = true;
 	
 	ar
-	.b(settings.extensions)
+	.b(extDummy)
 	.b(settings.recordReplays)
 	.b(settings.loadPowerlevelPalette)
 	.ui8(settings.scaleFilter)
 	.ui16(settings.fullscreenW)
 	.ui16(settings.fullscreenH);
 	
-	gvl::enable_when(ar, fileExtensionVersion >= 2)
-		.b(settings.depth32, true);
+	if (fileExtensionVersion >= 2)
+		ar.b(extDummy);
 
-	ar.check()
-	;
+	gvl::enable_when(ar, fileExtensionVersion >= 4)
+		.ui16(settings.zoneTimeout, 30);
+
+	ar.check();
 }
 
 #endif // LIERO_SETTINGS_HPP

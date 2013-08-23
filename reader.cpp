@@ -1,11 +1,9 @@
 #include "reader.hpp"
 #include "filesystem.hpp"
-#include <SDL/SDL.h>
 #include <map>
 #include <stdexcept>
 #include <vector>
 
-std::string lieroOPT;
 std::string lieroEXERoot;
 
 namespace
@@ -13,9 +11,9 @@ namespace
 
 typedef std::map<std::string, ReaderFile> ReaderFileMap;
 
-std::string lieroEXE;
+std::string lieroEXE;/*
 std::string lieroCHR;
-std::string lieroSND;
+std::string lieroSND;*/
 
 ReaderFileMap readerFiles;
 
@@ -58,12 +56,12 @@ ReaderFile& openLieroEXE()
 
 ReaderFile& openLieroSND()
 {
-	return openFile(lieroSND);
+	return openFile(changeLeaf(lieroEXE, "LIERO.SND"));
 }
 
 ReaderFile& openLieroCHR()
 {
-	return openFile(lieroCHR);
+	return openFile(changeLeaf(lieroEXE, "LIERO.CHR"));
 }
 
 void setLieroEXE(std::string const& path)
@@ -71,9 +69,9 @@ void setLieroEXE(std::string const& path)
 	//TODO: Close cached files
 	
 	lieroEXE = path;
+	/*
 	lieroCHR = changeLeaf(path, "LIERO.CHR");
-	lieroSND = changeLeaf(path, "LIERO.SND");
-	lieroOPT = changeLeaf(path, "LIERO.OPT");
+	lieroSND = changeLeaf(path, "LIERO.SND");*/
 	
 	lieroEXERoot = getRoot(lieroEXE);
 }

@@ -7,6 +7,12 @@
 
 struct ReaderFile;
 
+struct Sprite
+{
+	PalIdx* mem;
+	int width, height, pitch;
+};
+
 struct SpriteSet
 {
 	std::vector<PalIdx> data;
@@ -20,6 +26,12 @@ struct SpriteSet
 	PalIdx* spritePtr(int frame)
 	{
 		return &data[frame*spriteSize];
+	}
+
+	Sprite operator[](int frame)
+	{
+		Sprite s = {&data[frame*spriteSize], width, height, width};
+		return s;
 	}
 	
 	void allocate(int width, int height, int count);

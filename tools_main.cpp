@@ -1,48 +1,41 @@
 #ifndef UUID_8615289728154E2FB9B179C2745D5FA9
 #define UUID_8615289728154E2FB9B179C2745D5FA9
 
-#include <SDL/SDL.h>
-#if !SDL13
-#include <SDL/SDL_getenv.h>
-#endif
-
-#include "gfx.hpp"
-#include "sfx.hpp"
 #include "sys.hpp"
-#include "game.hpp"
-#include "viewport.hpp"
-#include "worm.hpp"
 #include "reader.hpp"
 #include "filesystem.hpp"
 #include "text.hpp"
-#include "keys.hpp"
 #include "constants.hpp"
 #include "math.hpp"
 #include "console.hpp"
 #include <gvl/support/platform.hpp>
 
-#include <iostream>
 #include <ctime>
 #include <exception>
-#include <gvl/math/ieee.hpp>
 
-#include <gvl/math/cmwc.hpp>
+#include "replay_to_video.hpp"
 
-//#include <gvl/support/profile.hpp> // TEMP
-//#include <gvl/support/log.hpp> // TEMP
+bool match(unsigned char const* str, unsigned char const* pat)
+{
+	if (*pat == '*') return match(str, pat + 1) || match(str + 1, pat);
+	if (!*str) return !*pat;
+	return (toupper(*str) == toupper(*pat) || *pat == '?') && match(str + 1, pat + 1);
+}
 
-int gameEntry(int argc, char* argv[])
+bool match(std::string const& str, std::string const& pat)
+{
+	return match((unsigned char const*)str.c_str(), (unsigned char const*)pat.c_str());
+}
+
+int main(int argc, char *argv[])
 try
 {
-	gvl_init_ieee();
-
-	// TODO: Better PRNG seeding
 	Console::init();
-	gfx.rand.seed(Uint32(std::time(0)));
-	
-	bool exeSet = false;
+
+	bool exeSet = false, dir = false;
 	gvl::shared_ptr<Common> common(new Common);
-	gfx.common = common;
+
+	std::string replayPath;
 	
 	for(int i = 1; i < argc; ++i)
 	{
@@ -50,14 +43,15 @@ try
 		{
 			switch(argv[i][1])
 			{
-			case 'v':
-				// SDL_putenv seems to take char* in linux, STOOPID
-				SDL_putenv(const_cast<char*>((std::string("SDL_VIDEODRIVER=") + &argv[i][2]).c_str()));
-			break;
-			/*
+			case 'd':
+				dir = true;
+				break;
+
 			case 'r':
-				common->loadPowerlevelPalette = false;
-			break;*/
+				++i;
+				if (i < argc)
+					replayPath = &argv[i][0];
+			break;
 			}
 		}
 		else
@@ -70,37 +64,49 @@ try
 	if(!exeSet)
 		setLieroEXE("LIERO.EXE");
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
-	
 	common->texts.loadFromEXE();
 
-	initKeys();
+	//initKeys();
 	common->loadConstantsFromEXE();
 	loadTablesFromEXE();
 
-	Console::clear();
-
 	common->font.loadFromEXE();
 	common->loadPalette();
-	gfx.loadPalette(); // This gets the palette from common
-	gfx.loadMenus();
 	common->loadGfx();
 	common->loadMaterials();
 	common->loadWeapons();
 	common->loadTextures();
 	common->loadOthers();
-	sfx.loadFromSND();
-	gfx.init();
-	
-	gfx.settingsFile = "LIERO";
+	common->loadSfx();
 
-	SDL_Quit();
-	
+	if (dir)
+	{
+		auto const& root = getRoot(replayPath);
+		DirectoryIterator di(root);
+
+		for (; di; ++di)
+		{
+			auto const& path = *di;
+			if (getExtension(path) == "lrp")
+			{
+				auto const& fullPath = joinPath(root, path);
+				if (match(fullPath, replayPath))
+				{
+					printf("Converting %s\n", fullPath.c_str());
+					replayToVideo(common, fullPath, fullPath + ".mp4");
+				}
+			}
+		}
+	}
+	else
+	{
+		replayToVideo(common, replayPath, replayPath + ".mp4");
+	}
+
 	return 0;
 }
 catch(std::exception& ex)
 {
-	SDL_Quit();
 	Console::setAttributes(0x2f);
 	Console::writeLine(std::string("EXCEPTION: ") + ex.what());
 	Console::writeLine("Press any key to quit");

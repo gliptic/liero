@@ -20,14 +20,15 @@ int const Settings::wormAnimTab[] =
 };
 
 Extensions::Extensions()
-: extensions(false)
-, recordReplays(true)
+: recordReplays(true)
 , loadPowerlevelPalette(true)
 , scaleFilter(Settings::SfNearest)
-, depth32(true)
 , bloodParticleMax(700)
 , fullscreenW(640)
 , fullscreenH(480)
+, aiFrames(70*2), aiMutations(2)
+, zoneTimeout(30)
+, selectBotWeapons(true)
 {
 }
 
@@ -38,7 +39,7 @@ Settings::Settings()
 , flagsToWin(20)
 , gameMode(0)
 , shadow(true)
-, loadChange(false)
+, loadChange(true)
 , namesOnBonuses(false)
 , regenerateLevel(false)
 , lives(15)
@@ -46,7 +47,6 @@ Settings::Settings()
 , randomLevel(true)
 , map(true)
 , screenSync(true)
-
 {
 	std::memset(weapTable, 0, sizeof(weapTable));
 	
@@ -82,7 +82,7 @@ Settings::Settings()
 	}
 }
 
-bool Settings::load(std::string const& path)
+bool Settings::load(std::string const& path, Rand& rand)
 {
 	FILE* opt = tolerantFOpen(path.c_str(), "rb");
 	
@@ -97,7 +97,7 @@ bool Settings::load(std::string const& path)
 	gvl::octet_stream_reader reader(gvl::stream_ptr(new gvl::fstream(opt)));
 	gvl::default_serialization_context context;
 	
-	archive_liero(gvl::in_archive<gvl::default_serialization_context>(reader, context), *this);
+	archive_liero(gvl::in_archive<gvl::default_serialization_context>(reader, context), *this, rand);
 	
 	
 	return true;
@@ -115,17 +115,17 @@ gvl::gash::value_type& Settings::updateHash()
 	return hash;
 }
 
-void Settings::save(std::string const& path)
+void Settings::save(std::string const& path, Rand& rand)
 {
 	FILE* opt = fopen(path.c_str(), "wb");
 	gvl::octet_stream_writer writer(gvl::stream_ptr(new gvl::fstream(opt)));
 
 	gvl::default_serialization_context context;
 	
-	archive_liero(gvl::out_archive<gvl::default_serialization_context>(writer, context), *this);
+	archive_liero(gvl::out_archive<gvl::default_serialization_context>(writer, context), *this, rand);
 }
 
-void Settings::generateName(WormSettings& ws)
+void Settings::generateName(WormSettings& ws, Rand& rand)
 {
 	ReaderFile f;
 
@@ -164,7 +164,7 @@ void Settings::generateName(WormSettings& ws)
 	
 	if(!names.empty())
 	{
-		ws.name = names[gfx.rand(Uint32(names.size()))];
+		ws.name = names[rand(Uint32(names.size()))];
 		ws.randomName = true;
 	}
 }

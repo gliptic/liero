@@ -6,40 +6,16 @@
 #include "sobject.hpp"
 #include "nobject.hpp"
 #include "constants.hpp"
+#include "material.hpp"
 #include "gfx/palette.hpp"
 #include "gfx/sprite.hpp"
 #include <string>
 #include <gvl/resman/shared_ptr.hpp>
-
+extern "C" {
+#include "mixer/mixer.h"
+}
 
 extern int stoneTab[3][4];
-
-struct Material
-{
-	enum
-	{
-		Dirt = 1<<0,
-		Dirt2 = 1<<1,
-		Rock = 1<<2,
-		Background = 1<<3,
-		SeeShadow = 1<<4,
-		WormM = 1<<5
-	};
-	
-	bool dirt() { return (flags & Dirt) != 0; }
-	bool dirt2() { return (flags & Dirt2) != 0; }
-	bool rock() { return (flags & Rock) != 0; }
-	bool background() { return (flags & Background) != 0; }
-	bool seeShadow() { return (flags & SeeShadow) != 0; }
-		
-	// Constructed
-	bool dirtRock() { return (flags & (Dirt | Dirt2 | Rock)) != 0; }
-	bool anyDirt() { return (flags & (Dirt | Dirt2)) != 0; }
-	bool dirtBack() { return (flags & (Dirt | Dirt2 | Background)) != 0; }
-	bool worm() { return (flags & WormM) != 0; }
-	
-	int flags;
-};
 
 struct Texture
 {
@@ -53,17 +29,17 @@ struct Texts
 {
 	void loadFromEXE();
 
-	std::string copyright1;	
+	//std::string copyright1;
 	std::string copyright2;
 	std::string loadoptions;
 	std::string saveoptions;
 	std::string curOptNoFile;
 	std::string curOpt;
 	
-	std::string gameModes[4];
+	std::string gameModes[3];
 	std::string gameModeSpec[3];
 	std::string onoff[2];
-	std::string controllers[2];
+	std::string controllers[3];
 	
 	std::string keyNames[177];
 	
@@ -107,11 +83,20 @@ struct AIParams
 	int k[2][7]; // 0x1AEEE, contiguous words
 };
 
+struct Bitmap;
+
 struct Common : gvl::shared
 {
 	Common()
 	{
 	}
+
+	~Common()
+	{
+		for(std::size_t i = 0; i < sounds.size(); ++i)
+			sfx_free_sound(sounds[i]);
+	}
+
 	
 	static int fireConeOffset[2][7][2];
 	
@@ -121,12 +106,18 @@ struct Common : gvl::shared
 	void loadOthers();
 	void loadConstantsFromEXE();
 	void loadGfx();
+	void loadSfx();
 	void loadPalette();
-	void drawTextSmall(char const* str, int x, int y);
+	void drawTextSmall(Bitmap& scr, char const* str, int x, int y);
 	
 	PalIdx* wormSprite(int f, int dir, int w)
 	{
 		return wormSprites.spritePtr(f + dir*7*3 + w*2*7*3);
+	}
+
+	Sprite wormSpriteObj(int f, int dir, int w)
+	{
+		return wormSprites[f + dir*7*3 + w*2*7*3];
 	}
 	
 	PalIdx* fireConeSprite(int f, int dir)
@@ -153,6 +144,7 @@ struct Common : gvl::shared
 	SpriteSet fireConeSprites;
 	Palette exepal;
 	Font font;
+	std::vector<sfx_sound*> sounds;
 	
 	int C[MaxC];
 	std::string S[MaxS];

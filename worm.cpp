@@ -1,8 +1,7 @@
 #include "worm.hpp"
 #include "game.hpp"
-#include "sfx.hpp"
-#include "gfx.hpp"
-//#include "viewport.hpp"
+#include "mixer/player.hpp"
+#include "gfx/renderer.hpp"
 #include "constants.hpp"
 #include "console.hpp"
 #include "reader.hpp" // TODO: For lieroEXERoot. We should move that into Common.
@@ -36,16 +35,17 @@ gvl::gash::value_type& WormSettings::updateHash()
 	return hash;
 }
 
-void WormSettings::saveProfile(std::string const& newProfileName)
+void WormSettings::saveProfile(std::string const& path)
 {
 	try
 	{
-		std::string path(joinPath(lieroEXERoot, newProfileName) + ".lpf");
-		gvl::stream_ptr str(new gvl::fstream(path.c_str(), "wb"));
+		auto const& fullPath = path + ".lpf";
+		create_directories(fullPath);
+		gvl::stream_ptr str(new gvl::fstream(fullPath.c_str(), "wb"));
 		
 		gvl::octet_stream_writer writer(str);
 		
-		profileName = newProfileName;
+		profilePath = path;
 		GameSerializationContext context;
 		archive(gvl::out_archive<GameSerializationContext>(writer, context), *this);
 	}
@@ -55,17 +55,17 @@ void WormSettings::saveProfile(std::string const& newProfileName)
 	}
 }
 
-void WormSettings::loadProfile(std::string const& newProfileName)
+void WormSettings::loadProfile(std::string const& path)
 {
 	int oldColor = color;
 	try
 	{
-		std::string path(joinPath(lieroEXERoot, newProfileName) + ".lpf");
-		gvl::stream_ptr str(new gvl::fstream(path.c_str(), "rb"));
+		auto const& fullPath = path + ".lpf";
+		gvl::stream_ptr str(new gvl::fstream(fullPath.c_str(), "rb"));
 		
 		gvl::octet_stream_reader reader(str);
 
-		profileName = newProfileName;
+		profilePath = path;
 		GameSerializationContext context;
 		archive(gvl::in_archive<GameSerializationContext>(reader, context), *this);
 	}
@@ -78,7 +78,7 @@ void WormSettings::loadProfile(std::string const& newProfileName)
 	color = oldColor;  // We preserve the color
 }
 
-void Worm::calculateReactionForce(int newX, int newY, int dir)
+void Worm::calculateReactionForce(Game& game, int newX, int newY, int dir)
 {
 	Common& common = *game.common;
 	
@@ -145,8 +145,7 @@ void Worm::calculateReactionForce(int newX, int newY, int dir)
 		|| !common.materials[game.level.pixel(colX, colY)].background())
 #else
 		// This should emulate Liero better
-		PalIdx pix = game.level.checkedPixelWrap(colX, colY);
-		if(!common.materials[pix].background())
+		if(!game.level.checkedMatWrap(colX, colY).background())
 #endif
 		{
 			++reacts[dir];
@@ -154,7 +153,7 @@ void Worm::calculateReactionForce(int newX, int newY, int dir)
 	}
 }
 
-void Worm::processPhysics()
+void Worm::processPhysics(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -257,7 +256,7 @@ void Worm::processPhysics()
 	}
 }
 
-void Worm::process()
+void Worm::process(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -281,7 +280,7 @@ void Worm::process()
 
 				for(int i = 0; i < 4; i++)
 				{
-					calculateReactionForce(iNextX, iNextY, i);
+					calculateReactionForce(game, iNextX, iNextY, i);
 					
 					// Yes, Liero does this in every iteration. Keep it this way.
 					
@@ -327,8 +326,8 @@ void Worm::process()
 							nextY = y + velY;
 							iNextY = ftoi(nextY);
 
-							calculateReactionForce(iNextX, iNextY, RFLeft);
-							calculateReactionForce(iNextX, iNextY, RFRight);
+							calculateReactionForce(game, iNextX, iNextY, RFLeft);
+							calculateReactionForce(game, iNextX, iNextY, RFRight);
 						}
 					}
 				}
@@ -347,8 +346,8 @@ void Worm::process()
 							nextY = y + velY;
 							iNextY = ftoi(nextY);
 
-							calculateReactionForce(iNextX, iNextY, RFLeft);
-							calculateReactionForce(iNextX, iNextY, RFRight);
+							calculateReactionForce(game, iNextX, iNextY, RFLeft);
+							calculateReactionForce(game, iNextX, iNextY, RFRight);
 						}
 					}
 				}
@@ -401,28 +400,28 @@ void Worm::process()
 							int bix = ftoi(i->x);
 							int biy = ftoi(i->y);
 							game.bonuses.free(i);
-							common.sobjectTypes[0].create(game, bix, biy, this, 0);
+							common.sobjectTypes[0].create(game, bix, biy, index, 0);
 						}
 					}
 				}
 			}
 
-			processSteerables();
+			processSteerables(game);
 			
 			if(!movable && !pressed(Left) && !pressed(Right)) // processSteerables sets movable to false, does this interfer?
 			{
 				movable = true;
 			} // 2FB1
 			
-			processAiming();
-			processTasks();
-			processWeapons();
+			processAiming(game);
+			processTasks(game);
+			processWeapons(game);
 			
 			if(pressed(Fire) && !pressed(Change)
 			&& weapons[currentWeapon].available
 			&& weapons[currentWeapon].delayLeft <= 0)
 			{
-				fire();
+				fire(game);
 			}
 			else
 			{
@@ -430,17 +429,17 @@ void Worm::process()
 					game.soundPlayer->stop(&weapons[currentWeapon]);
 			}
 
-			processPhysics();
-			processSight();
+			processPhysics(game);
+			processSight(game);
 			
 			if(pressed(Change))
 			{
-				processWeaponChange();
+				processWeaponChange(game);
 			}
 			else
 			{
 				keyChangePressed = false;
-				processMovement();
+				processMovement(game);
 			}
 
 
@@ -457,7 +456,7 @@ void Worm::process()
 						}
 					}
 					
-					common.nobjectTypes[6].create1(game, velX, velY, x, y, 0, this, 0);
+					common.nobjectTypes[6].create1(game, velX, velY, x, y, 0, index, 0);
 				}
 			}
 			
@@ -505,22 +504,23 @@ void Worm::process()
 				fireConeActive = 0;
 				ninjarope.out = false;
 				--lives;
-				Worm* oldLastKilled = game.lastKilled;
+
+				int oldLastKilled = game.lastKilledIdx;
 				// For GameOfTag, 'it' doesn't change if the killer
 				// was not 'it', itself, unknown or there were no 'it'.
 				if(game.settings->gameMode != Settings::GMGameOfTag
-				|| !game.lastKilled
-				|| !lastKilledBy
-				|| lastKilledBy == this
-				|| lastKilledBy == game.lastKilled)
+				|| game.lastKilledIdx < 0
+				|| lastKilledByIdx < 0
+				|| lastKilledByIdx == index
+				|| lastKilledByIdx == game.lastKilledIdx)
 				{
-					game.lastKilled = this;
+					game.lastKilledIdx = index;
 				}
-				game.gotChanged = (oldLastKilled != game.lastKilled);
+				game.gotChanged = (oldLastKilled != game.lastKilledIdx);
 				
-				if(lastKilledBy && lastKilledBy != this)
+				if(lastKilledByIdx >= 0 && lastKilledByIdx != index)
 				{
-					++lastKilledBy->kills;
+					++game.wormByIdx(lastKilledByIdx)->kills;
 				}
 				
 				visible = false;
@@ -538,7 +538,7 @@ void Worm::process()
 							velX / 3, velY / 3,
 							x, y,
 							0,
-							this, 0);
+							index, 0);
 					}
 				}
 				
@@ -551,7 +551,7 @@ void Worm::process()
 						velX / 3, velY / 3,
 						x, y,
 						0,
-						this, 0);
+						index, 0);
 				}
 #endif
 
@@ -578,11 +578,11 @@ void Worm::process()
 			if(killedTimer > 0)
 				--killedTimer;
 				
-			if(killedTimer == 0)
-				beginRespawn();
+			if(killedTimer == 0 && !game.quickSim) // Don't respawn in quicksim
+				beginRespawn(game);
 				
 			if(killedTimer < 0)
-				doRespawning();
+				doRespawning(game);
 		}
 	}
 	
@@ -613,11 +613,8 @@ int sqrVectorLength(int x, int y)
 	return x*x + y*y;
 }
 
-
-
-void DumbLieroAI::process()
+void DumbLieroAI::process(Game& game, Worm& worm)
 {
-	Game& game = worm.game;
 	Common& common = *game.common;
 	
 #if 0
@@ -890,7 +887,7 @@ void DumbLieroAI::process()
 	}
 }
 
-void Worm::initWeapons()
+void Worm::initWeapons(Game& game)
 {
 	Common& common = *game.common;
 	currentWeapon = 0; // It was 1 in OpenLiero A1
@@ -906,7 +903,7 @@ void Worm::initWeapons()
 	}
 }
 
-void Worm::beginRespawn()
+void Worm::beginRespawn(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -934,21 +931,16 @@ void Worm::beginRespawn()
 		// The original didn't have + 4 in both, which seems
 		// to be done in the exe and makes sense.
 		while(ftoi(y) + 4 < game.level.height
-		&& common.materials[game.level.pixel(ftoi(x), ftoi(y) + 4)].background())
+		&& game.level.mat(ftoi(x), ftoi(y) + 4).background())
 		{
 			y += itof(1);
 		}
 		
 		if(++trials >= 50000)
-		{
-			Console::writeWarning("Couldn't find a suitable spawn position in time");
 			break;
-		}
 	}
 	while(!checkRespawnPosition(game, enemyX, enemyY, tempX, tempY, ftoi(x), ftoi(y)));
-
-	game.statsRecorder->afterSpawn(this);
-			
+		
 	killedTimer = -1;
 }
 
@@ -965,7 +957,7 @@ void limitXY(int& x, int& y, int maxX, int maxY)
 		y = maxY;
 }
 
-void Worm::doRespawning()
+void Worm::doRespawning(Game& game)
 {
 	Common& common = *game.common;
 
@@ -988,7 +980,7 @@ void Worm::doRespawning()
 	&& logicRespawnX > destX - 5
 	&& logicRespawnY < destY + 5
 	&& logicRespawnY > destY - 5
-	&& ready)
+	&& ready) // Don't spawn in quicksim
 	{
 		int ix = ftoi(x), iy = ftoi(y);
 		drawDirtEffect(common, game.rand, game.level, 0, ix - 7, iy - 7);
@@ -1015,10 +1007,12 @@ void Worm::doRespawning()
 			aimingAngle = itof(96);
 			direction = 1;
 		}
+
+		game.statsRecorder->afterSpawn(this);
 	}
 }
 
-void Worm::processWeapons()
+void Worm::processWeapons(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -1062,12 +1056,12 @@ void Worm::processWeapons()
 	{
 		if(--leaveShellTimer <= 0)
 		{
-			common.nobjectTypes[7].create1(game, game.rand(16000) - 8000, -int(game.rand(20000)), x, y, 0, this, 0);
+			common.nobjectTypes[7].create1(game, game.rand(16000) - 8000, -int(game.rand(20000)), x, y, 0, index, 0);
 		}
 	}
 }
 
-void Worm::processMovement()
+void Worm::processMovement(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -1185,7 +1179,7 @@ void Worm::processMovement()
 	}
 }
 
-void Worm::processTasks()
+void Worm::processTasks(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -1240,7 +1234,7 @@ void Worm::processTasks()
 	}
 }
 
-void Worm::processAiming()
+void Worm::processAiming(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -1316,7 +1310,7 @@ void Worm::processAiming()
 	}
 }
 
-void Worm::processWeaponChange()
+void Worm::processWeaponChange(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -1358,7 +1352,7 @@ void Worm::processWeaponChange()
 	}
 }
 
-void Worm::fire()
+void Worm::fire(Game& game)
 {
 	Common& common = *game.common;
 	WormWeapon& ww = weapons[currentWeapon];
@@ -1390,16 +1384,6 @@ void Worm::fire()
 			{
 				game.soundPlayer->play(w.launchSound, &weapons[currentWeapon], -1);
 			}
-			/* TODO
-			if(FSOUND_IsPlaying(weapsettings.launchsound[this->weapons[this->currentweapon].id]))
-			{
-				playsound(
-					weapsettings.loopsound[this->weapons[this->currentweapon].id],
-					weapsettings.launchsound[this->weapons[this->currentweapon].id],
-					soundpointers[weapsettings.launchsound[this->weapons[this->currentweapon].id]]
-				);
-			}
-			*/
 		}
 		else
 		{
@@ -1429,7 +1413,7 @@ void Worm::fire()
 					speed,
 					firingX,
 					firingY,
-					this, &ww);
+					index, &ww);
 			}
 		}
 	}
@@ -1449,7 +1433,7 @@ void Worm::fire()
 					w.speed,
 					firingX,
 					firingY,
-					this, &ww);
+					index, &ww);
 			}
 		}
 	}
@@ -1463,26 +1447,23 @@ void Worm::fire()
 	velY -= (sinTable[ftoi(aimingAngle)] * recoil) / 100;
 }
 
-bool checkForWormHit(int x, int y, int dist, Worm* ownWorm)
+bool checkForWormHit(Game& game, int x, int y, int dist, Worm* ownWorm)
 {
-	Game& game = ownWorm->game;
-	
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
 		Worm& w = *game.worms[i];
 		
 		if(&w != ownWorm)
 		{
-			return checkForSpecWormHit(x, y, dist, w);
+			return checkForSpecWormHit(game, x, y, dist, w);
 		}
 	}
 	
 	return false;
 }
 
-bool checkForSpecWormHit(int x, int y, int dist, Worm& w)
+bool checkForSpecWormHit(Game& game, int x, int y, int dist, Worm& w)
 {
-	Game& game = w.game;
 	Common& common = *game.common;
 	
 	if(!w.visible)
@@ -1507,7 +1488,7 @@ bool checkForSpecWormHit(int x, int y, int dist, Worm& w)
 	return false;
 }
 
-void Worm::processSight()
+void Worm::processSight(Game& game)
 {
 	Common& common = *game.common;
 	
@@ -1526,14 +1507,14 @@ void Worm::processSight()
 		{
 			tempX += dirX;
 			tempY += dirY;
-			makeSightGreen = checkForWormHit(ftoi(tempX), ftoi(tempY), 0, this);
+			makeSightGreen = checkForWormHit(game, ftoi(tempX), ftoi(tempY), 0, this);
 		}
 		while(
 			tempX >= 0 &&
 			tempY >= 0 &&
 			tempX < itof(game.level.width) &&
 			tempY < itof(game.level.height) &&
-			common.materials[game.level.pixel(ftoi(tempX), ftoi(tempY))].background() &&
+			game.level.mat(ftoi(tempX), ftoi(tempY)).background() &&
 			!makeSightGreen);
 			
 		hotspotX = ftoi(tempX);
@@ -1543,16 +1524,20 @@ void Worm::processSight()
 		makeSightGreen = false;
 }
 
-void Worm::processSteerables()
+void Worm::processSteerables(Game& game)
 {
 	Common& common = *game.common;
+
+	steerableCount = 0;
+	steerableSumX = 0;
+	steerableSumY = 0;
 	
 	WormWeapon& ww = weapons[currentWeapon];
 	if(common.weapons[ww.id].shotType == Weapon::STSteerable)
 	{
 		for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
 		{
-			if(i->id == ww.id && i->owner == this)
+			if(i->id == ww.id && i->ownerIdx == index)
 			{
 				if(pressed(Left))
 					i->curFrame -= (game.cycles & 1) + 1;
@@ -1562,6 +1547,10 @@ void Worm::processSteerables()
 					
 				i->curFrame &= 127; // Wrap
 				movable = false;
+
+				steerableSumX += ftoi(i->x);
+				steerableSumY += ftoi(i->y);
+				++steerableCount;
 			}
 		}
 	}

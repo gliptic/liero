@@ -29,23 +29,23 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v110_xp</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v110_xp</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v110_xp</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v110_xp</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -54,18 +54,26 @@
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+    <Import Project="..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+    <Import Project="..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+    <Import Project="..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+    <Import Project="..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -104,7 +112,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -157,12 +165,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <Link>
       <AdditionalDependencies>
@@ -209,21 +218,100 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\ai\dijkstra.cpp" />
+    <ClCompile Include="..\ai\predictive_ai.cpp" />
     <ClCompile Include="..\gfx\blit.cpp" />
     <ClCompile Include="..\gfx\font.cpp" />
     <ClCompile Include="..\gfx\palette.cpp" />
+    <ClCompile Include="..\gfx\renderer.cpp" />
     <ClCompile Include="..\gfx\sprite.cpp" />
-    <ClCompile Include="..\controller\commonController.cpp" />
-    <ClCompile Include="..\controller\localController.cpp" />
-    <ClCompile Include="..\controller\replayController.cpp" />
-    <ClCompile Include="..\menu\booleanSwitchBehavior.cpp" />
-    <ClCompile Include="..\menu\enumBehavior.cpp" />
-    <ClCompile Include="..\menu\hiddenMenu.cpp" />
-    <ClCompile Include="..\menu\integerBehavior.cpp" />
-    <ClCompile Include="..\menu\itemBehavior.cpp" />
-    <ClCompile Include="..\menu\menu.cpp" />
-    <ClCompile Include="..\menu\menuItem.cpp" />
-    <ClCompile Include="..\menu\timeBehavior.cpp" />
+    <ClCompile Include="..\gvl\containers\list.cpp" />
+    <ClCompile Include="..\gvl\io\convert.cpp" />
+    <ClCompile Include="..\gvl\io\encoding.cpp" />
+    <ClCompile Include="..\gvl\io\stream.cpp" />
+    <ClCompile Include="..\gvl\support\bits.c" />
+    <ClCompile Include="..\gvl\support\debug.cpp" />
+    <ClCompile Include="..\gvl\support\platform.cpp" />
+    <ClCompile Include="..\gvl\support\profile.cpp" />
+    <ClCompile Include="..\gvl\system\system.c" />
+    <ClCompile Include="..\gvl\zlib\adler32.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\compress.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\crc32.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\deflate.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\gzio.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\infback.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\inffast.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\inflate.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\inftrees.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\miniz.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\trees.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\uncompr.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\gvl\zlib\zutil.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\bobject.cpp" />
     <ClCompile Include="..\bonus.cpp" />
     <ClCompile Include="..\common.cpp" />
@@ -231,63 +319,160 @@
     <ClCompile Include="..\constants.cpp" />
     <ClCompile Include="..\filesystem.cpp" />
     <ClCompile Include="..\game.cpp" />
-    <ClCompile Include="..\gfx.cpp" />
-    <ClCompile Include="..\keys.cpp" />
     <ClCompile Include="..\level.cpp" />
     <ClCompile Include="..\math.cpp" />
     <ClCompile Include="..\mixer\mixer.c" />
+    <ClCompile Include="..\mixer\player.cpp" />
     <ClCompile Include="..\ninjarope.cpp" />
     <ClCompile Include="..\nobject.cpp" />
     <ClCompile Include="..\rand.cpp" />
     <ClCompile Include="..\reader.cpp" />
     <ClCompile Include="..\replay.cpp" />
     <ClCompile Include="..\settings.cpp" />
-    <ClCompile Include="..\sfx.cpp" />
     <ClCompile Include="..\sobject.cpp" />
     <ClCompile Include="..\stats_recorder.cpp" />
     <ClCompile Include="..\sys.cpp" />
     <ClCompile Include="..\text.cpp" />
     <ClCompile Include="..\viewport.cpp" />
     <ClCompile Include="..\weapon.cpp" />
-    <ClCompile Include="..\weapsel.cpp" />
     <ClCompile Include="..\worm.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ai\astar.hpp" />
+    <ClInclude Include="..\ai\dijkstra.hpp" />
+    <ClInclude Include="..\ai\predictive_ai.hpp" />
     <ClInclude Include="..\gfx\bitmap.hpp" />
     <ClInclude Include="..\gfx\blit.hpp" />
     <ClInclude Include="..\gfx\color.hpp" />
     <ClInclude Include="..\gfx\font.hpp" />
     <ClInclude Include="..\gfx\macros.hpp" />
     <ClInclude Include="..\gfx\palette.hpp" />
+    <ClInclude Include="..\gfx\renderer.hpp" />
     <ClInclude Include="..\gfx\sprite.hpp" />
-    <ClInclude Include="..\controller\commonController.hpp" />
-    <ClInclude Include="..\controller\controller.hpp" />
-    <ClInclude Include="..\controller\localController.hpp" />
-    <ClInclude Include="..\controller\replayController.hpp" />
-    <ClInclude Include="..\menu\arrayEnumBehavior.hpp" />
-    <ClInclude Include="..\menu\booleanSwitchBehavior.hpp" />
-    <ClInclude Include="..\menu\enumBehavior.hpp" />
-    <ClInclude Include="..\menu\hiddenMenu.hpp" />
-    <ClInclude Include="..\menu\integerBehavior.hpp" />
-    <ClInclude Include="..\menu\itemBehavior.hpp" />
-    <ClInclude Include="..\menu\menu.hpp" />
-    <ClInclude Include="..\menu\menuItem.hpp" />
-    <ClInclude Include="..\menu\timeBehavior.hpp" />
+    <ClInclude Include="..\gvl\containers\list.h" />
+    <ClInclude Include="..\gvl\containers\list.hpp" />
+    <ClInclude Include="..\gvl\containers\pairing_heap.hpp" />
+    <ClInclude Include="..\gvl\crypt\gash.hpp" />
+    <ClInclude Include="..\gvl\cstdint.hpp" />
+    <ClInclude Include="..\gvl\io\convert.hpp" />
+    <ClInclude Include="..\gvl\io\deflate_filter.hpp" />
+    <ClInclude Include="..\gvl\io\encoding.hpp" />
+    <ClInclude Include="..\gvl\io\encoding_compat.hpp" />
+    <ClInclude Include="..\gvl\io\fstream.hpp" />
+    <ClInclude Include="..\gvl\io\iostream.hpp" />
+    <ClInclude Include="..\gvl\io\stream.hpp" />
+    <ClInclude Include="..\gvl\io\unicode.hpp" />
+    <ClInclude Include="..\gvl\math\cmwc.hpp" />
+    <ClInclude Include="..\gvl\math\random.hpp" />
+    <ClInclude Include="..\gvl\math\rect.hpp" />
+    <ClInclude Include="..\gvl\math\vec.hpp" />
+    <ClInclude Include="..\gvl\meta\as_unsigned.hpp" />
+    <ClInclude Include="..\gvl\resman\shared.hpp" />
+    <ClInclude Include="..\gvl\resman\shared_ptr.hpp" />
+    <ClInclude Include="..\gvl\serialization\archive.hpp" />
+    <ClInclude Include="..\gvl\serialization\context.hpp" />
+    <ClInclude Include="..\gvl\serialization\except.hpp" />
+    <ClInclude Include="..\gvl\support.hpp" />
+    <ClInclude Include="..\gvl\support\bits.hpp" />
+    <ClInclude Include="..\gvl\support\config.h" />
+    <ClInclude Include="..\gvl\support\cstdint.hpp" />
+    <ClInclude Include="..\gvl\support\debug.hpp" />
+    <ClInclude Include="..\gvl\support\functional.hpp" />
+    <ClInclude Include="..\gvl\support\macros.hpp" />
+    <ClInclude Include="..\gvl\support\opt.hpp" />
+    <ClInclude Include="..\gvl\support\platform.h" />
+    <ClInclude Include="..\gvl\support\platform.hpp" />
+    <ClInclude Include="..\gvl\support\profile.hpp" />
+    <ClInclude Include="..\gvl\support\type_info.hpp" />
+    <ClInclude Include="..\gvl\system\memory.hpp" />
+    <ClInclude Include="..\gvl\system\system.hpp" />
+    <ClInclude Include="..\gvl\system\windows.hpp" />
+    <ClInclude Include="..\gvl\zlib\crc32.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\deflate.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\inffast.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\inffixed.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\inflate.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\inftrees.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\trees.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zconf.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zconf.in.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zlib__.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zlib.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zutil.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="..\bobject.hpp" />
     <ClInclude Include="..\bonus.hpp" />
     <ClInclude Include="..\common.hpp" />
     <ClInclude Include="..\console.hpp" />
     <ClInclude Include="..\constants.hpp" />
-    <ClInclude Include="..\controller.hpp" />
     <ClInclude Include="..\exactObjectList.hpp" />
     <ClInclude Include="..\fastObjectList.hpp" />
     <ClInclude Include="..\filesystem.hpp" />
     <ClInclude Include="..\game.hpp" />
-    <ClInclude Include="..\gfx.hpp" />
-    <ClInclude Include="..\keys.hpp" />
     <ClInclude Include="..\level.hpp" />
+    <ClInclude Include="..\material.hpp" />
     <ClInclude Include="..\math.hpp" />
     <ClInclude Include="..\mixer\mixer.h" />
+    <ClInclude Include="..\mixer\player.hpp" />
     <ClInclude Include="..\nobject.hpp" />
     <ClInclude Include="..\objectList.hpp" />
     <ClInclude Include="..\rand.hpp" />
@@ -295,28 +480,22 @@
     <ClInclude Include="..\rect.hpp" />
     <ClInclude Include="..\replay.hpp" />
     <ClInclude Include="..\settings.hpp" />
-    <ClInclude Include="..\sfx.hpp" />
     <ClInclude Include="..\sobject.hpp" />
+    <ClInclude Include="..\stats.hpp" />
     <ClInclude Include="..\stats_recorder.hpp" />
     <ClInclude Include="..\sys.hpp" />
     <ClInclude Include="..\text.hpp" />
+    <ClInclude Include="..\tl\cstdint.h" />
+    <ClInclude Include="..\tl\memory.h" />
+    <ClInclude Include="..\tl\platform.h" />
+    <ClInclude Include="..\tl\vector.h" />
     <ClInclude Include="..\version.hpp" />
     <ClInclude Include="..\viewport.hpp" />
     <ClInclude Include="..\weapon.hpp" />
-    <ClInclude Include="..\weapsel.hpp" />
     <ClInclude Include="..\worm.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Jamfile" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\gvl\_build\gvl.vcxproj">
-      <Project>{57addf43-2fac-4c85-8d88-72dee580a3c9}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="..\..\tl\_build\tl.vcxproj">
-      <Project>{7fc0a21b-7780-470b-960e-38294e4ba0ab}</Project>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

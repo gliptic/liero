@@ -12,9 +12,9 @@ bool EnumBehavior::onLeftRight(Menu& menu, int item, int dir)
 	if(brokenLeftRight)
 		return false; // Left/right doesn't work for this item
 	if(dir > 0)
-		sfx.play(25);
+		sfx.play(common, 25);
 	else
-		sfx.play(26);
+		sfx.play(common, 26);
 		
 	change(menu, item, dir);
 		
@@ -23,7 +23,7 @@ bool EnumBehavior::onLeftRight(Menu& menu, int item, int dir)
 
 int EnumBehavior::onEnter(Menu& menu, int item)
 {
-	sfx.play(27);
+	sfx.play(common, 27);
 	
 	change(menu, item, 1);
 	return -1;

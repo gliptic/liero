@@ -3,10 +3,11 @@
 
 #include "math.hpp"
 #include "rand.hpp"
-#include <SDL/SDL.h>
 #include <string>
 #include <cstring>
 #include <memory>
+#include <numeric>
+#include <functional>
 #include <gvl/resman/shared_ptr.hpp>
 #include "version.hpp"
 #include <gvl/serialization/archive.hpp> // For gvl::enable_when
@@ -34,7 +35,7 @@ struct Ninjarope
 	// Not needed as far as I can tell: fixed forceX, forceY;
 	int length, curLen;
 	
-	void process(Worm& owner);
+	void process(Worm& owner, Game& game);
 };
 
 /*
@@ -94,8 +95,8 @@ struct WormSettings : gvl::shared, WormSettingsExtensions
 	
 	gvl::gash::value_type& updateHash();
 	
-	void saveProfile(std::string const& newProfileName);
-	void loadProfile(std::string const& newProfileName);
+	void saveProfile(std::string const& profilePath);
+	void loadProfile(std::string const& profilePath);
 	
 	int health;
 	uint32_t controller; // CPU / Human
@@ -107,7 +108,7 @@ struct WormSettings : gvl::shared, WormSettingsExtensions
 	
 	int color;
 	
-	std::string profileName;
+	std::string profilePath;
 	
 	gvl::gash::value_type hash;
 };
@@ -120,7 +121,7 @@ void archive(Archive ar, WormSettings& ws)
 	.ui32(ws.health)
 	.ui16(ws.controller);
 	for(int i = 0; i < WormSettings::MaxControl; ++i)
-		ar.ui16(ws.controls[i]);
+		ar.ui16(ws.controls[i]); // TODO: Initialize controlsEx from this earlier
 	for(int i = 0; i < 5; ++i)
 		ar.ui16(ws.weapons[i]);
 	for(int i = 0; i < 3; ++i)
@@ -151,57 +152,21 @@ void archive(Archive ar, WormSettings& ws)
 	}
 }
 
-/*
-typedef struct _settings
-{
- long m_iHealth[2];
- char m_iController[2];
-	char m_iWeapTable[40];
- long m_iMaxBonuses;
- long m_iBlood;
- long m_iTimeToLose;
- long m_iFlagsToWin;
- char m_iGameMode;
- bool m_bShadow;
- bool m_bLoadChange;
- bool m_bNamesOnBonuses;
- bool m_bRegenerateLevel;
- BYTE m_iControls[2][7];
- BYTE m_iWeapons[2][5];
-	long m_iLives;
- long m_iLoadingTime;
-	bool m_bRandomLevel;
- char m_bWormName[2][21];
- char m_bLevelFile[13];
- BYTE m_iWormRGB[2][3];
- bool m_bRandomName[2];
- bool m_bMap;
- bool m_bScreenSync;
-} SETTINGS, *PSETTINGS;
-*/
-
 struct Viewport;
+struct Renderer;
 
-struct WormAI
+struct WormAI : gvl::shared
 {
-	WormAI(Worm& worm)
-	: worm(worm)
+	virtual void process(Game& game, Worm& worm) = 0;
+
+	virtual void drawDebug(Game& game, Worm const& worm, Renderer& renderer, int offsX, int offsY)
 	{
 	}
-	
-	virtual void process() = 0;
-	
-	Worm& worm;
 };
 
 struct DumbLieroAI : WormAI
-{
-	DumbLieroAI(Worm& worm)
-	: WormAI(worm)
-	{
-	}
-	
-	void process();
+{	
+	void process(Game& game, Worm& worm);
 	
 	Rand rand;
 };
@@ -218,10 +183,10 @@ struct Worm : gvl::shared
 	
 	enum Control
 	{
-		Left = WormSettings::Left,
-		Right = WormSettings::Right,
 		Up = WormSettings::Up,
 		Down = WormSettings::Down,
+		Left = WormSettings::Left,
+		Right = WormSettings::Right,
 		Fire = WormSettings::Fire,
 		Change = WormSettings::Change,
 		Jump = WormSettings::Jump,
@@ -270,11 +235,16 @@ struct Worm : gvl::shared
 			else
 				istate &= ~(uint32_t(1u) << n);
 		}
+
+		void toggle(std::size_t n)
+		{
+			istate ^= 1 << n;
+		}
 		
 		uint32_t istate;
 	};
 		
-	Worm(/*gvl::shared_ptr<WormSettings> settings, int index, int wormSoundID, */Game& game)
+	Worm()
 	: x(0), y(0), velX(0), velY(0)
 	, hotspotX(0), hotspotY(0)
 	, aimingAngle(0), aimingSpeed(0)
@@ -295,16 +265,13 @@ struct Worm : gvl::shared
 	, flags(0)                   //How many flags does this worm have?
 	, currentWeapon(0)
 	, fireConeActive(false)
-	, lastKilledBy(0)
+	, lastKilledByIdx(-1)
 	, fireCone(0)
 	, leaveShellTimer(0)
-//	, viewport(0)
 	, index(index)
 	, direction(0)
-	, game(game)
+	, steerableCount(0)
 	{
-		//std::memset(controlStates, 0, sizeof(controlStates));
-		
 		makeSightGreen = false;
 		
 		ready = true;
@@ -313,8 +280,6 @@ struct Worm : gvl::shared
 		//health = settings->health;
 		visible = false;
 		killedTimer = 150;
-		
-		//currentWeapon = 1; // This is later changed to 0, why is it here?
 	}
 	
 	bool pressed(Control control) const
@@ -348,21 +313,26 @@ struct Worm : gvl::shared
 	{
 		controlStates.set(control, !controlStates[control]);
 	}
-	
-	void beginRespawn();
-	void doRespawning();
-	void process();
-	void processWeapons();
-	void processPhysics();
-	void processMovement();
-	void processTasks();
-	void processAiming();
-	void processWeaponChange();
-	void processSteerables();
-	void fire();
-	void processSight();
-	void calculateReactionForce(int newX, int newY, int dir);
-	void initWeapons();
+
+	int minimapColor() const
+	{
+		return 129 + index * 4;
+	}
+		
+	void beginRespawn(Game& game);
+	void doRespawning(Game& game);
+	void process(Game& game);
+	void processWeapons(Game& game);
+	void processPhysics(Game& game);
+	void processMovement(Game& game);
+	void processTasks(Game& game);
+	void processAiming(Game& game);
+	void processWeaponChange(Game& game);
+	void processSteerables(Game& game);
+	void fire(Game& game);
+	void processSight(Game& game);
+	void calculateReactionForce(Game& game, int newX, int newY, int dir);
+	void initWeapons(Game& game);
 	int angleFrame() const;
 	
 	fixed x, y;                    //Worm position    
@@ -397,27 +367,31 @@ struct Worm : gvl::shared
 	
 	int currentWeapon;           //The selected weapon
 	bool fireConeActive;          //Is the firecone showing
-	Worm* lastKilledBy;          // What worm that last killed this worm
+	int lastKilledByIdx;          // What worm that last killed this worm
 	int fireCone;                //How much is left of the firecone
 	int leaveShellTimer;         //Time until next shell drop
 	
 	gvl::shared_ptr<WormSettings> settings; // !CLONING
 	int index; // 0 or 1
 	
-	std::auto_ptr<WormAI> ai;
+	gvl::shared_ptr<WormAI> ai;
 	
 	int reacts[4];
 	WormWeapon weapons[5];
 	int direction;
 	ControlState controlStates;
 	ControlState prevControlStates;
-	Game& game; // !CLONING
+
+	// Temporary state for steerables
+	int steerableSumX, steerableSumY, steerableCount;
 	
 	// Data for LocalController
 	ControlState cleanControlStates; // This contains the real state of real and extended controls
 };
 
-bool checkForWormHit(int x, int y, int dist, Worm* ownWorm);
-bool checkForSpecWormHit(int x, int y, int dist, Worm& w);
+bool checkForWormHit(Game& game, int x, int y, int dist, Worm* ownWorm);
+bool checkForSpecWormHit(Game& game, int x, int y, int dist, Worm& w);
+int sqrVectorLength(int x, int y);
+
 
 #endif // LIERO_WORM_HPP

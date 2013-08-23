@@ -10,22 +10,20 @@
 
 void Level::generateDirtPattern(Common& common, Rand& rand)
 {
-	width = 504;
-	height = 350;
-	data.resize(width * height);
+	resize(504, 350);
 	
-	pixel(0, 0) = rand(7) + 12;
+	setPixel(0, 0, rand(7) + 12, common);
 	
 	for(int y = 1; y < height; ++y)
-		pixel(0, y) = ((rand(7) + 12) + pixel(0, y - 1)) >> 1;
+		setPixel(0, y, ((rand(7) + 12) + pixel(0, y - 1)) >> 1, common);
 		
 	for(int x = 1; x < width; ++x)
-		pixel(x, 0) = ((rand(7) + 12) + pixel(x - 1, 0)) >> 1;
+		setPixel(x, 0, ((rand(7) + 12) + pixel(x - 1, 0)) >> 1, common);
 		
 	for(int y = 1; y < height; ++y)
 	for(int x = 1; x < width; ++x)
 	{
-		pixel(x, y) = (pixel(x - 1, y) + pixel(x, y - 1) + rand(8) + 12) / 3;
+		setPixel(x, y, (pixel(x - 1, y) + pixel(x, y - 1) + rand(8) + 12) / 3, common);
 	}
 	
 	// TODO: Optimize the following
@@ -62,11 +60,11 @@ void Level::generateDirtPattern(Common& common, Rand& rand)
 				PalIdx srcPix = image[(cy << 4) + cx];
 				if(srcPix > 0)
 				{
-					PalIdx& pix = pixel(mx, my);
+					PalIdx pix = pixel(mx, my);
 					if(pix > 176 && pix < 180)
-						pix = (srcPix + pix) / 2;
+						setPixel(mx, my, (srcPix + pix) / 2, common);
 					else
-						pix = srcPix;
+						setPixel(mx, my, srcPix, common);
 				}
 			}
 		}
@@ -94,7 +92,7 @@ bool isNoRock(Common& common, Level& level, int size, int x, int y)
 	for(int y = rect.y1; y < rect.y2; ++y)
 	for(int x = rect.x1; x < rect.x2; ++x)
 	{
-		if(common.materials[level.pixel(x, y)].rock())
+		if(level.mat(x, y).rock())
 			return false;
 	}
 	
@@ -103,11 +101,6 @@ bool isNoRock(Common& common, Level& level, int size, int x, int y)
 
 void Level::generateRandom(Common& common, Settings const& settings, Rand& rand)
 {
-	// TODO: Skipping this is a minor deviation of liero behavior
-	/*
-	gfx.settings.levelFile.clear();
-	gfx.settings.randomLevel = true;*/
-	//gfx.resetPalette(common.exepal); // TODO: Palette should be in Game (or Level?) and Game should transfer it to Gfx when needed
 	origpal.resetPalette(common.exepal, settings);
 	
 	generateDirtPattern(common, rand);
@@ -191,27 +184,27 @@ void Level::makeShadow(Common& common)
 	for(int x = 0; x < width - 3; ++x)
 	for(int y = 3; y < height; ++y)
 	{
-		if(common.materials[pixel(x, y)].seeShadow()
-		&& common.materials[pixel(x + 3, y - 3)].dirtRock())
+		if(mat(x, y).seeShadow()
+		&& mat(x + 3, y - 3).dirtRock())
 		{
-			pixel(x, y) += 4;
+			setPixel(x, y, pixel(x, y) + 4, common);
 		}
 		
 		if(pixel(x, y) >= 12
 		&& pixel(x, y) <= 18
-		&& common.materials[pixel(x + 3, y - 3)].rock())
+		&& mat(x + 3, y - 3).rock())
 		{
-			pixel(x, y) -= 2;
+			setPixel(x, y, pixel(x, y) - 2, common);
 			if(pixel(x, y) < 12)
-				pixel(x, y) = 12;
+				setPixel(x, y, 12, common);
 		}
 	}
 	
 	for(int x = 0; x < width; ++x)
 	{
-		if(common.materials[pixel(x, height - 1)].background())
+		if(mat(x, height - 1).background())
 		{
-			pixel(x, height - 1) = 13;
+			setPixel(x, height - 1, 13, common);
 		}
 	}
 }
@@ -221,6 +214,7 @@ void Level::resize(int width_new, int height_new)
 	width = width_new;
 	height = height_new;
 	data.resize(width * height);
+	materials.resize(width * height);
 }
 
 bool Level::load(Common& common, Settings const& settings, std::string const& path)
@@ -239,6 +233,7 @@ bool Level::load(Common& common, Settings const& settings, std::string const& pa
 	}
 
 	std::size_t len = f.len;
+	bool resetPalette = true;
 	
 	if(len >= 504*350 + 10 + 256*3
 	&& (settings.extensions && settings.loadPowerlevelPalette))
@@ -254,15 +249,18 @@ bool Level::load(Common& common, Settings const& settings, std::string const& pa
 			pal.read(f);
 			origpal.resetPalette(pal, settings);
 			
-			f.seekg(0);
-			f.get(reinterpret_cast<uint8_t*>(&data[0]), width * height);
-			return true;
+			resetPalette = false;
 		}
 	}
 	
 	f.seekg(0);
 	f.get(reinterpret_cast<uint8_t*>(&data[0]), width * height);
-	origpal.resetPalette(common.exepal, settings);
+
+	for (std::size_t i = 0; i < data.size(); ++i)
+		materials[i] = common.materials[data[i]];
+
+	if (resetPalette)
+		origpal.resetPalette(common.exepal, settings);
 	
 	return true;
 }
@@ -288,4 +286,69 @@ void Level::generateFromSettings(Common& common, Settings const& settings, Rand&
 	{
 		makeShadow(common);
 	}
+}
+
+using std::vector;
+
+inline bool free(Material m)
+{
+	return m.background() || m.anyDirt();
+}
+
+bool Level::selectSpawn(Rand& rand, int w, int h, gvl::ivec2& selected)
+{
+	vector<int> vruns(width - w + 1);
+
+	Material* m = &materials[0];
+
+	uint32_t i = 0;
+
+	for (int y = 0; y < height; ++y)
+	{
+		int hrun = 0;
+		int filled = 0;
+
+		for (int x = 0; x < width; ++x)
+		{
+			if (free(*m))
+			{
+				++hrun;
+			}
+			else
+			{
+				hrun = 0;
+				++filled;
+			}
+			++m;
+
+			int cx = x - (w - 1);
+			if (cx < 0)
+				continue;
+
+			int& vrun = vruns[cx];
+
+			if (hrun >= w)
+			{
+				++vrun;
+			}
+			else
+			{
+				if (vrun >= h && filled > w / 4)
+				{
+					// We have a supported square at (x + 1 - w, y - h)
+					++i;
+					if (rand(i) < 1)
+					{
+						selected.x = cx;
+						selected.y = y - h;
+					}
+				}
+				vrun = 0;
+			}
+
+			filled -= !free(m[-w]);
+		}
+	}
+
+	return i > 0;
 }

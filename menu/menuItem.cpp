@@ -18,9 +18,9 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 	}
 	else
 	{
-		common.font.drawText(string, x + 3, y + 2, 0);
+		common.font.drawText(gfx.screenBmp, string, x + 3, y + 2, 0);
 		if(hasValue)
-			common.font.drawText(value, x + valueOffsetX - (valueWid >> 1) + 3, y + 2, 0);
+			common.font.drawText(gfx.screenBmp, value, x + valueOffsetX - (valueWid >> 1) + 3, y + 2, 0);
 	}
 	
 	PalIdx c;
@@ -32,8 +32,8 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 	else
 		c = color;
 		
-	common.font.drawText(string, x + 2, y + 1, c);
+	common.font.drawText(gfx.screenBmp, string, x + 2, y + 1, c);
 	if(hasValue)
-		common.font.drawText(value, x + valueOffsetX - (valueWid >> 1) + 2, y + 1, c);
+		common.font.drawText(gfx.screenBmp, value, x + valueOffsetX - (valueWid >> 1) + 2, y + 1, c);
 }
 

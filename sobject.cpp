@@ -3,8 +3,8 @@
 #include "worm.hpp"
 #include "game.hpp"
 #include "viewport.hpp"
-#include "gfx.hpp"
-#include "sfx.hpp"
+#include "gfx/renderer.hpp"
+#include "mixer/player.hpp"
 #include "console.hpp"
 #include "text.hpp"
 #include <cmath>
@@ -12,7 +12,7 @@
 #include <cassert>
 #include <iostream> // TEMP
 
-void SObjectType::create(Game& game, int x, int y, Worm* owner, WormWeapon* firedBy, WObject* from)
+void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* firedBy, WObject* from)
 {
 	Common& common = *game.common;
 	SObject& obj = *game.sobjects.newObjectReuse();
@@ -46,6 +46,8 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner, WormWeapon* fire
 	{
 		game.screenFlash = flash;
 	}
+
+	Worm* owner = game.wormByIdx(ownerIdx);
 
 	game.statsRecorder->damagePotential(owner, firedBy, damage);
 		
@@ -103,7 +105,7 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner, WormWeapon* fire
 					game.statsRecorder->damageDealt(owner, firedBy, &w, z, false);
 					
 					if(w.health <= 0)
-						w.lastKilledBy = owner;
+						w.lastKilledByIdx = ownerIdx;
 						
 					int bloodAmount = game.settings->blood * powerSum / 100;
 					
@@ -118,7 +120,7 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner, WormWeapon* fire
 								w.velX / 3, w.velY / 3,
 								w.x, w.y,
 								0,
-								&w,
+								w.index,
 								firedBy);
 						}
 					}
@@ -174,7 +176,7 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner, WormWeapon* fire
 					// Is it a booby trap?
 					if(i->id == 34) // TODO: Read from EXE
 					{
-						i->blowUpObject(game, owner);
+						i->blowUpObject(game, ownerIdx);
 					}
 				}
 			} // if( ... affectByExplosions ...
@@ -227,17 +229,17 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner, WormWeapon* fire
 			for(int y = rect.y1; y < rect.y2; ++y)
 			for(int x = rect.x1; x < rect.x2; ++x)
 			{
-				PalIdx pix = game.level.pixel(x, y);
-				if(common.materials[pix].anyDirt()
+				if(game.level.mat(x, y).anyDirt()
 				&& game.rand(8) == 0)
 				{
+					PalIdx pix = game.level.pixel(x, y);
 					int angle = game.rand(128);
 					common.nobjectTypes[2].create2(
 						game,
 						angle,
 						0, 0,
 						itof(x), itof(y),
-						pix, owner, firedBy);
+						pix, ownerIdx, firedBy);
 				}
 			}
 		}
@@ -262,7 +264,7 @@ void SObjectType::create(Game& game, int x, int y, Worm* owner, WormWeapon* fire
 		&& iy < y + detectRange)
 		{
 			game.bonuses.free(i);
-			common.sobjectTypes[0].create(game, ix, iy, owner, firedBy);
+			common.sobjectTypes[0].create(game, ix, iy, ownerIdx, firedBy);
 		}
 	} // for( ... bonuses ...
 }

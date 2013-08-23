@@ -1,6 +1,7 @@
 #include "sfx.hpp"
 #include "reader.hpp"
 #include "console.hpp"
+#include "common.hpp"
 #include <vector>
 #include <cassert>
 #if !DISABLE_SOUND
@@ -66,7 +67,7 @@ void Sfx::deinit()
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 #endif
 }
-
+/*
 void Sfx::loadFromSND()
 {
 #if !DISABLE_SOUND
@@ -115,15 +116,16 @@ void Sfx::loadFromSND()
 		*ptr++ = prev;
 	}
 #endif
-}
 
-void Sfx::play(int sound, void* id, int loops)
+}*/
+
+void Sfx::play(Common& common, int sound, void* id, int loops)
 {
 #if !DISABLE_SOUND
 	if(!initialized)
 		return;
 
-	sfx_mixer_add(mixer, sounds[sound], sfx_mixer_now(mixer), id, loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
+	sfx_mixer_add(mixer, common.sounds[sound], sfx_mixer_now(mixer), id, loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
 #endif
 }
 
@@ -134,16 +136,6 @@ void Sfx::stop(void* id)
 		return;
 
 	sfx_mixer_stop(mixer, id);
-
-	// TODO
-	/*
-	for(int i = 0; i < 8; ++i)
-	{
-		if(Mix_Playing(i) && channelInfo[i].id == id)
-		{
-			Mix_HaltChannel(i);
-		}
-	}*/
 #endif
 }
 
@@ -154,12 +146,6 @@ bool Sfx::isPlaying(void* id)
 		return false;
 
 	return sfx_is_playing(mixer, id) != 0;
-	/* TODO
-	for(int i = 0; i < 8; ++i)
-	{
-		if(Mix_Playing(i) && channelInfo[i].id == id)
-			return true;
-	}*/
 #else
 	return false;
 #endif
@@ -170,9 +156,10 @@ Sfx::~Sfx()
 	deinit();
 
 #if !DISABLE_SOUND
+/*
 	for(std::size_t i = 0; i < sounds.size(); ++i)
 	{
 		sfx_free_sound(sounds[i]);
-	}
+	}*/
 #endif
 }

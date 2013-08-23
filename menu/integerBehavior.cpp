@@ -10,7 +10,8 @@
 
 bool IntegerBehavior::onLeftRight(Menu& menu, int item, int dir)
 {
-	if(gfx.menuCyclic != 0)
+	//if(gfx.menuCyclic != 0)
+	if ((gfx.menuCycles % scrollInterval) == 0)
 		return true;
 		
 	int newV = v;
@@ -31,7 +32,7 @@ bool IntegerBehavior::onLeftRight(Menu& menu, int item, int dir)
 
 int IntegerBehavior::onEnter(Menu& menu, int item)
 {
-	sfx.play(27);
+	sfx.play(common, 27);
 	
 	if(!allowEntry)
 		return -1; // Not allowed

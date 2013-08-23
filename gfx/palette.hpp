@@ -1,8 +1,9 @@
 #ifndef UUID_74C8EE76D5564F2D8C7BBC9B26C16192
 #define UUID_74C8EE76D5564F2D8C7BBC9B26C16192
 
-#include <SDL/SDL.h>
+#include <gvl/cstdint.hpp>
 #include <gvl/support/debug.hpp>
+#include "color.hpp"
 
 struct Settings;
 struct WormSettings;
@@ -10,13 +11,14 @@ struct ReaderFile;
 
 struct Palette
 {
-	SDL_Color entries[256];
+	static int const wormColourIndexes[2];
+
+	Color entries[256];
 	
-	// TODO: Move definitions of these from gfx.cpp to palette.cpp
-	void activate(SDL_Color realPal[256]);
+	void activate(Color realPal[256]);
 	void fade(int amount);
 	void lightUp(int amount);
-	void rotate(int from, int to);
+	void rotateFrom(Palette& source, int from, int to, unsigned dist);
 	void read(ReaderFile& f);
 	
 	void scaleAdd(int dest, int const(&c)[3], int scale, int add)

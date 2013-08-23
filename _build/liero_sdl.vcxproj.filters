@@ -3,5 +3,104 @@
   <ItemGroup>
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\sdlmain.cpp" />
+    <ClCompile Include="..\controller\commonController.cpp">
+      <Filter>controller</Filter>
+    </ClCompile>
+    <ClCompile Include="..\controller\localController.cpp">
+      <Filter>controller</Filter>
+    </ClCompile>
+    <ClCompile Include="..\controller\replayController.cpp">
+      <Filter>controller</Filter>
+    </ClCompile>
+    <ClCompile Include="..\menu\booleanSwitchBehavior.cpp">
+      <Filter>menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\menu\enumBehavior.cpp">
+      <Filter>menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\menu\hiddenMenu.cpp">
+      <Filter>menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\menu\integerBehavior.cpp">
+      <Filter>menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\menu\itemBehavior.cpp">
+      <Filter>menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\menu\menu.cpp">
+      <Filter>menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\menu\menuItem.cpp">
+      <Filter>menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\menu\timeBehavior.cpp">
+      <Filter>menu</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gfx.cpp" />
+    <ClCompile Include="..\controller\stats_presenter.cpp">
+      <Filter>controller</Filter>
+    </ClCompile>
+    <ClCompile Include="..\keys.cpp" />
+    <ClCompile Include="..\sfx.cpp" />
+    <ClCompile Include="..\weapsel.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="controller">
+      <UniqueIdentifier>{f2e3ffb6-95c3-4aa8-bc86-c42cc975f046}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="menu">
+      <UniqueIdentifier>{2f83187c-a2b9-4c35-961d-e08740dffc39}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\controller\commonController.hpp">
+      <Filter>controller</Filter>
+    </ClInclude>
+    <ClInclude Include="..\controller\controller.hpp">
+      <Filter>controller</Filter>
+    </ClInclude>
+    <ClInclude Include="..\controller\localController.hpp">
+      <Filter>controller</Filter>
+    </ClInclude>
+    <ClInclude Include="..\controller\replayController.hpp">
+      <Filter>controller</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\arrayEnumBehavior.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\booleanSwitchBehavior.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\enumBehavior.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\hiddenMenu.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\integerBehavior.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\itemBehavior.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\menu.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\menuItem.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\timeBehavior.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gfx.hpp" />
+    <ClInclude Include="..\controller\stats_presenter.hpp">
+      <Filter>controller</Filter>
+    </ClInclude>
+    <ClInclude Include="..\keys.hpp" />
+    <ClInclude Include="..\sfx.hpp" />
+    <ClInclude Include="..\weapsel.hpp" />
+    <ClInclude Include="..\menu\fileSelector.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

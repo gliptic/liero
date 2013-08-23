@@ -9,8 +9,8 @@
 #include "nobject.hpp"
 #include "bobject.hpp"
 #include "rand.hpp"
+#include "mixer/player.hpp"
 #include "bonus.hpp"
-#include "sfx.hpp"
 #include "constants.hpp"
 #include <string>
 #include <gvl/resman/shared_ptr.hpp>
@@ -21,18 +21,38 @@ struct Viewport;
 struct Worm;
 struct Renderer;
 
+struct Holdazone
+{
+	Holdazone()
+	: holderIdx(-1)
+	, contenderIdx(-1)
+	, contenderFrames(0)
+	, timeoutLeft(0)
+	, zoneWidth(50), zoneHeight(34)
+	{
+	}
+
+	Rect rect;
+	int holderIdx;
+
+	int contenderIdx, contenderFrames;
+
+	int timeoutLeft;
+
+	int zoneWidth, zoneHeight;
+};
+
 struct Game
 {
-	Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings);
+	Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings, gvl::shared_ptr<SoundPlayer> soundPlayer);
 	~Game();
 	
-	void onKey(Uint32 key, bool state);
+	void onKey(uint32_t key, bool state);
 	Worm* findControlForKey(uint32_t key, Worm::Control& control);
 	void releaseControls();
 	void processFrame();
-	void gameLoop();
-	void focus();
-	void updateSettings();
+	void focus(Renderer& renderer);
+	void updateSettings(Renderer& renderer);
 	
 	void createBObject(fixed x, fixed y, fixed velX, fixed velY);
 	void createBonus();
@@ -48,10 +68,20 @@ struct Game
 	void startGame();
 	bool isGameOver();
 	void createDefaults();
+
+	void postClone(Game& original);
+
+	void spawnZone();
 		
 	Material pixelMat(int x, int y)
 	{
 		return common->materials[level.pixel(x, y)];
+	}
+
+	Worm* wormByIdx(int idx)
+	{
+		if (idx < 0) return 0;
+		return worms[idx];
 	}
 	
 	Level level;
@@ -62,10 +92,12 @@ struct Game
 	gvl::shared_ptr<StatsRecorder> statsRecorder;
 	int screenFlash;
 	bool gotChanged;
-	Worm* lastKilled; // Last killed worm  !CLONING
+	int lastKilledIdx;
 	bool paused;
 	int cycles;
 	Rand rand;
+
+	Holdazone holdazone;
 	
 	std::vector<Viewport*> viewports;
 	std::vector<Worm*> worms;
@@ -80,6 +112,8 @@ struct Game
 	SObjectList sobjects;
 	NObjectList nobjects;
 	BObjectList bobjects;
+
+	bool quickSim;
 };
 
 bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x, int y);

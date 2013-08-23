@@ -22,6 +22,15 @@ std::string getRoot(std::string const& path)
 	return path.substr(0, lastSep);
 }
 
+std::string getLeaf(std::string const& path)
+{
+	std::size_t lastSep = path.find_last_of("\\/");
+	
+	if(lastSep == std::string::npos)
+		return path;
+	return path.substr(lastSep + 1);
+}
+
 std::string getBasename(std::string const& path)
 {
 	std::size_t lastSep = path.find_last_of(".");
@@ -138,12 +147,12 @@ namespace
 struct filename_result
 {
 	filename_result()
-	: name(0), alt_name(0)
+	: name(0)
 	{
 	}
 	
-	filename_result(char const* name, char const* alt_name)
-	: name(name), alt_name(alt_name)
+	filename_result(char const* name)
+	: name(name)
 	{
 	
 	}
@@ -154,7 +163,6 @@ struct filename_result
 	}
 	
 	char const* name;
-	char const* alt_name;
 };
 
 #if GVL_LINUX
@@ -169,7 +177,7 @@ BOOST_HANDLE & handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
 {
 	const char * dummy_first_name = ".";
 	return ( (handle = ::opendir( dir ))
-		== BOOST_INVALID_HANDLE_VALUE ) ? filename_result() : filename_result(dummy_first_name, dummy_first_name);
+		== BOOST_INVALID_HANDLE_VALUE ) ? filename_result() : filename_result(dummy_first_name);
 }  
 
 inline void find_close( BOOST_HANDLE handle )
@@ -197,7 +205,7 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
 		}
 		else { return filename_result(); } // end reached
 	}
-	return filename_result(dp->d_name, dp->d_name);
+	return filename_result(dp->d_name);
 }
 #elif GVL_WINDOWS
 
@@ -217,9 +225,7 @@ BOOST_HANDLE & handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 	if(fail)
 		return filename_result();
 	
-	return filename_result(
-		data.cFileName,
-		data.cAlternateFileName[0] ? data.cAlternateFileName : data.cFileName);
+	return filename_result(data.cFileName);
 }  
 
 inline void find_close( BOOST_HANDLE handle )
@@ -243,16 +249,42 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 		else { return filename_result(); } // end reached
 	}
 	
-	return filename_result(
-		data.cFileName,
-		data.cAlternateFileName[0] ? data.cAlternateFileName : data.cFileName);
+	return filename_result(data.cFileName);
 }
+
 #else
 
 #error "Not supported"
 #endif
 
 }
+
+#if GVL_WINDOWS
+
+bool create_directories(std::string const& dir)
+{
+	for (std::size_t i = 0; i < dir.size(); ++i)
+	{
+		if (dir[i] == '\\' || dir[i] == '/')
+		{
+			std::string path = dir.substr(0, i);
+			DWORD attr = GetFileAttributesA(path.c_str());
+
+			if (attr == INVALID_FILE_ATTRIBUTES)
+			{
+				CreateDirectoryA(path.c_str(), NULL);
+			}
+			else if (!(attr & FILE_ATTRIBUTE_DIRECTORY))
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+#endif
 
 struct dir_itr_imp
 {
@@ -263,7 +295,6 @@ public:
 	}
 	
 	std::string       entry_path;
-	std::string       entry_alt_path;
 	BOOST_HANDLE      handle;
 
 	~dir_itr_imp()
@@ -275,7 +306,7 @@ public:
 
 DirectoryIterator::DirectoryIterator(std::string const& dir)
 {
-	dir_itr_init( m_imp, dir.c_str() );
+	dir_itr_init( m_imp, dir.empty() ? "." : dir.c_str() );
 }
 
 DirectoryIterator::~DirectoryIterator()
@@ -307,7 +338,6 @@ void dir_itr_init( dir_itr_imp_ptr & m_imp,
 		if ( !dot_or_dot_dot( name.name ) )
 		{ 
 			m_imp->entry_path = name.name;
-			m_imp->entry_alt_path = name.alt_name;
 		}
 		else
 		{
@@ -328,13 +358,6 @@ std::string & dir_itr_dereference(
 	return m_imp->entry_path;
 }
 
-std::string & dir_itr_alt_dereference(
-	const dir_itr_imp_ptr & m_imp )
-{
-	assert( m_imp.get() ); // fails if dereference end iterator
-	return m_imp->entry_alt_path;
-}
-
 void dir_itr_increment( dir_itr_imp_ptr & m_imp )
 {
 	assert( m_imp.get() ); // fails on increment end iterator
@@ -349,7 +372,6 @@ void dir_itr_increment( dir_itr_imp_ptr & m_imp )
 		if ( !dot_or_dot_dot( name.name ) )
 		{
 			m_imp->entry_path = name.name;
-			m_imp->entry_alt_path = name.alt_name;
 			return;
 		}
 	}

@@ -1,16 +1,16 @@
 #include "nobject.hpp"
 #include "game.hpp"
-#include "gfx.hpp"
-#include "sfx.hpp"
+#include "gfx/renderer.hpp"
+#include "mixer/player.hpp"
 #include "bobject.hpp"
 #include <iostream>
 
-void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int color, Worm* owner, WormWeapon* firedBy)
+void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int color, int ownerIdx, WormWeapon* firedBy)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
 	
 	obj.id = id;
-	obj.owner = owner;
+	obj.ownerIdx = ownerIdx;
 	obj.x = x;
 	obj.y = y;
 	
@@ -20,6 +20,8 @@ void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int 
 	// STATS
 	obj.firedBy = firedBy;
 	obj.hasHit = false;
+
+	Worm* owner = game.wormByIdx(ownerIdx);
 	game.statsRecorder->damagePotential(owner, firedBy, hitDamage);
 	
 	if(distribution)
@@ -48,18 +50,20 @@ void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int 
 	
 }
 
-void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int color, Worm* owner, WormWeapon* firedBy)
+void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int color, int ownerIdx, WormWeapon* firedBy)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
 	
 	obj.id = id;
-	obj.owner = owner;
+	obj.ownerIdx = ownerIdx;
 	obj.x = x;
 	obj.y = y;
 
 	// STATS
 	obj.firedBy = firedBy;
 	obj.hasHit = false;
+
+	Worm* owner = game.wormByIdx(ownerIdx);
 	game.statsRecorder->damagePotential(owner, firedBy, hitDamage);
 	
 	int realSpeed = speed - game.rand(speedV);
@@ -188,7 +192,7 @@ void NObject::process(Game& game)
 		&& t.leaveObj >= 0 // NOTE: AFAIK, this doesn't exist in Liero, but some TCs seem to forget to set leaveObjDelay to 0 when not using this trail
 		&& (game.cycles % t.leaveObjDelay) == 0)
 		{
-			common.sobjectTypes[t.leaveObj].create(game, ftoi(x), ftoi(y), owner, firedBy);
+			common.sobjectTypes[t.leaveObj].create(game, ftoi(x), ftoi(y), ownerIdx, firedBy);
 		}
 		
 		velY += t.gravity;
@@ -228,76 +232,19 @@ void NObject::process(Game& game)
 			{
 				Worm& w = *game.worms[i];
 				
-				if(checkForSpecWormHit(ftoi(x), ftoi(y), t.detectDistance, w))
+				if(checkForSpecWormHit(game, ftoi(x), ftoi(y), t.detectDistance, w))
 				{
 					w.velX += t.blowAway * velX / 100;
 					w.velY += t.blowAway * velY / 100;
 
 					w.health -= t.hitDamage;
+
+					Worm* owner = game.wormByIdx(ownerIdx);
 					game.statsRecorder->damageDealt(owner, firedBy, &w, t.hitDamage, hasHit);
 					hasHit = true;
 					
-					if(game.settings->gameMode == Settings::GMCtF)
-					{
-						/* TODO
-						if(objnum == 21)
-						{
-						if(o == 1)
-						{
-						if(lastkilled == 0)
-						{
-						if(cGame::cWorm[1].flag == false)
-						{
-							cGame::cObject[w].m_iObjectNum = -1;
-							cGame::cWorm[1].flag = true;
-						} // 5BEC
-						}
-						}
-						} else if(objnum == 22)
-						{
-						if(o == 0)
-						{
-						if(lastkilled == 1)
-						{
-						if(cGame::cWorm[0].flag == false)
-						{
-							cGame::cObject[w].m_iObjectNum = -1;
-							cGame::cWorm[0].flag = true;
-						} // 5C1D
-						}
-						}
-						}
-						*/
-					}
-					else if(game.settings->gameMode == Settings::GMSimpleCtF)
-					{
-						/*
-						if(objnum == 21)
-						{
-						if(o == 1)
-						{
-						if(cGame::cWorm[1].flag == 0)
-						{
-						cGame::cObject[w].m_iObjectNum = -1;
-						cGame::cWorm[1].flag = 1;
-						} // 5C4E
-						}
-						} else if(objnum == 22)
-						{
-						if(o == 0)
-						{
-						if(cGame::cWorm[0].flag == 0)
-						{
-						cGame::cObject[w].m_iObjectNum = -1;
-						cGame::cWorm[0].flag = 1;
-						} // 5C78
-						}
-						}
-						*/
-					}
-					
 					if(w.health <= 0)
-						w.lastKilledBy = owner;
+						w.lastKilledByIdx = ownerIdx;
 						
 					if(t.hitDamage > 0)
 					{
@@ -323,7 +270,7 @@ void NObject::process(Game& game)
 							velX / 3, velY / 3,
 							x, y,
 							0,
-							owner,
+							ownerIdx,
 							0);
 					}
 										
@@ -345,7 +292,7 @@ void NObject::process(Game& game)
 	{
 		if(t.createOnExp >= 0)
 		{
-			common.sobjectTypes[t.createOnExp].create(game, ftoi(x), ftoi(y), owner, firedBy);
+			common.sobjectTypes[t.createOnExp].create(game, ftoi(x), ftoi(y), ownerIdx, firedBy);
 		}
 		
 		if(t.dirtEffect >= 0)
@@ -368,7 +315,7 @@ void NObject::process(Game& game)
 					0, 0,
 					x, y,
 					t.splinterColour - colorSub,
-					owner,
+					ownerIdx,
 					0);
 			}
 		}

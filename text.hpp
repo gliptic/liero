@@ -13,6 +13,7 @@ inline std::string toString(int v)
 
 char const* timeToString(int sec);
 char const* timeToStringEx(int ms);
+char const* timeToStringFrames(int frames);
 
 inline void rtrim(std::string& str)
 {

@@ -34,11 +34,10 @@ void Font::loadFromEXE()
 	}
 }
 
-void Font::drawChar(unsigned char c, int x, int y, int color)
+void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color)
 {
 	if(c >= 2 && c < 252) // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since drawText subtracts 2?
 	{
-		Bitmap& scr = gfx.screenBmp;
 		uint8_t* mem = chars[c].data;
 		int width = 7;
 		int height = 8;
@@ -68,7 +67,7 @@ void Font::drawChar(unsigned char c, int x, int y, int color)
 	}
 }
 
-void Font::drawText(char const* str, std::size_t len, int x, int y, int color)
+void Font::drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color)
 {
 	int orgX = x;
 	
@@ -85,17 +84,17 @@ void Font::drawText(char const* str, std::size_t len, int x, int y, int color)
 		{
 			c -= 2;
 			
-			drawChar(c, x, y, color);
+			drawChar(scr, c, x, y, color);
 			
 			x += chars[c].width;
 		}
 	}
 }
 
-void Font::drawFramedText(std::string const& text, int x, int y, int color)
+void Font::drawFramedText(Bitmap& scr, std::string const& text, int x, int y, int color)
 {
-	drawRoundedBox(gfx.screenBmp, x, y, 0, 7, getDims(text));
-	drawText(text, x + 2, y + 1, color);
+	drawRoundedBox(scr, x, y, 0, 7, getDims(text));
+	drawText(scr, text, x + 2, y + 1, color);
 }
 
 int Font::getDims(char const* str, std::size_t len, int* height)

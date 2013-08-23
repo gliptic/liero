@@ -11,7 +11,7 @@ struct WormCreator
 {
 	Worm* operator()(GameSerializationContext& context)
 	{
-		return new Worm(*context.game);
+		return new Worm();
 	}
 };
 
@@ -19,36 +19,28 @@ struct ViewportCreator
 {
 	Viewport* operator()(GameSerializationContext& context)
 	{
-		return new Viewport(*context.game);
+		return new Viewport();
 	}
 };
 
-
-/*
-void read(gvl::stream_reader& reader, Settings& settings)
+struct WormIdxRefCreator
 {
-	
-	WormWeapon
-	
-	int id;
-	int ammo;
-	int delayLeft;
-	int loadingLeft;
-	bool available;	
+	Worm* operator()(int idx, GameSerializationContext& context)
+	{
+		if (idx < 0) return 0;
+		return context.game->worms.at(idx);
+	}
 
-}
-	*/
-	
-
+	int operator()(Worm* w, GameSerializationContext&)
+	{
+		if (!w) return -1;
+		return w->index;
+	}
+};
 
 template<typename Archive>
 void archive(Archive ar, Worm::ControlState& cs)
 {
-/*
-	for(int i = 0; i < Worm::MaxControl; ++i)
-	{
-		ar.b(cs.state[i]);
-	}*/
 	ar.ui8(cs.istate);
 }
 
@@ -94,7 +86,7 @@ void archive(Archive ar, Worm& worm)
 	.i32(worm.ninjarope.y)
 	.i32(worm.currentWeapon)
 	.b(worm.fireConeActive)
-	.obj(worm.lastKilledBy, WormCreator())
+	.obj<Worm>(worm.lastKilledByIdx, WormCreator(), WormIdxRefCreator())
 	.i32(worm.fireCone)
 	.i32(worm.leaveShellTimer);
 	ar.fobj(worm.settings)
@@ -202,11 +194,13 @@ void archive(gvl::in_archive<GameSerializationContext> ar, Level& level)
 	if(ar.context.replayVersion > 1)
 		archive(ar, level.origpal);
 
+	Common& common = *ar.context.game->common;
+
 #if 1
 	for(unsigned int y = 0; y < h; ++y)
 	for(unsigned int x = 0; x < w; ++x)
 	{
-		level.data[y*w + x] = ar.reader.get();
+		level.setPixel(x, y, ar.reader.get(), common);
 	}
 #else
 	mtf level_mtf;
@@ -267,7 +261,7 @@ void archive_worms(gvl::in_archive<GameSerializationContext> ar, Game& game)
 	uint8_t cont;
 	while(ar.ui8(cont), cont)
 	{
-		int wormId = ar.context.nextWormId++;
+		//int wormId = ar.context.nextWormId++;
 		
 		Worm* worm;
 		ar.obj(worm, WormCreator());
@@ -277,7 +271,7 @@ void archive_worms(gvl::in_archive<GameSerializationContext> ar, Game& game)
 		//GameSerializationContext::WormData& data = ar.context.wormData[worm];
 
 		game.addWorm(worm);
-		ar.context.idToWorm[wormId] = worm;
+		//ar.context.idToWorm[wormId] = worm;
 	}
 	
 	while(ar.ui8(cont), cont)
@@ -292,6 +286,7 @@ void archive_worms(gvl::in_archive<GameSerializationContext> ar, Game& game)
 template<typename Writer>
 void archive_worms(gvl::out_archive<GameSerializationContext, Writer> ar, Game& game)
 {
+/*
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
 		Worm& worm = *game.worms[i];
@@ -300,13 +295,14 @@ void archive_worms(gvl::out_archive<GameSerializationContext, Writer> ar, Game& 
 		
 		//printf("Worm from game, ID %d: %s\n", wormId, worm.settings->name.c_str());
 		ar.context.idToWorm[wormId] = &worm;
-	}
+	}*/
 	
-	for(GameSerializationContext::IdToWormMap::iterator i = ar.context.idToWorm.begin(); i != ar.context.idToWorm.end(); ++i)
+	//for(GameSerializationContext::IdToWormMap::iterator i = ar.context.idToWorm.begin(); i != ar.context.idToWorm.end(); ++i)
+	for (auto* worm : game.worms)
 	{
 		ar.writer.put(1);
 		
-		Worm* worm = i->second;
+		//Worm* worm = i->second;
 		GameSerializationContext::WormData& data = ar.context.wormData[worm];
 		
 		ar.obj(worm, WormCreator());
@@ -336,7 +332,7 @@ void archive(Archive ar, Game& game)
 	.fobj(game.settings)
 	.i32(game.cycles)
 	.b(game.gotChanged)
-	.obj(game.lastKilled, WormCreator())
+	.obj<Worm>(game.lastKilledIdx, WormCreator(), WormIdxRefCreator())
 	.i32(game.screenFlash);
 	archive(ar, game.rand);
 	
@@ -369,6 +365,7 @@ gvl::gash::value_type hash(T& x)
 	return ha.final();
 }
 
+/*
 template<typename Archive>
 void archive(Archive ar, gvl::gash::value_type& x)
 {
@@ -381,6 +378,7 @@ void archive(Archive ar, gvl::gash::value_type& x)
 		x.value[i] = (uint64_t(h) << 32) | l;
 	}
 }
+*/
 
 ReplayWriter::ReplayWriter(gvl::stream_ptr str_init)
 : settingsExpired(true)
@@ -414,18 +412,18 @@ ReplayReader::ReplayReader(gvl::stream_ptr str_init)
 
 uint32_t const replayMagic = ('L' << 24) | ('R' << 16) | ('P' << 8) | 'F';
 
-std::auto_ptr<Game> ReplayReader::beginPlayback(gvl::shared_ptr<Common> common)
+std::auto_ptr<Game> ReplayReader::beginPlayback(gvl::shared_ptr<Common> common, gvl::shared_ptr<SoundPlayer> soundPlayer)
 {
 	uint32_t readMagic = gvl::read_uint32(reader);
 	if(readMagic != replayMagic)
 		throw gvl::archive_check_error("File does not appear to be a replay");
 	context.replayVersion = reader.get();
-	if(context.replayVersion > myGameVersion)
+	if(context.replayVersion > myReplayVersion)
 		throw gvl::archive_check_error("Replay version is too recent");
 	
 	gvl::shared_ptr<Settings> settings(new Settings);
 
-	std::auto_ptr<Game> game(new Game(common, settings));
+	std::auto_ptr<Game> game(new Game(common, settings, soundPlayer));
 
 	read(reader, context, *game);
 #ifdef DEBUG_REPLAYS
@@ -474,7 +472,7 @@ uint32_t fastGameChecksum(Game& game)
 	return checksum;
 }
 
-bool ReplayReader::playbackFrame()
+bool ReplayReader::playbackFrame(Renderer& renderer)
 {
 	Game& game = *context.game;
 	
@@ -494,10 +492,13 @@ bool ReplayReader::playbackFrame()
 		else if(first == 0x82)
 		{
 			uint32_t wormId = gvl::read_uint32(reader);
-			GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.find(wormId);
-			if(i != context.idToWorm.end())
+			//GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.find(wormId);
+			Worm* w = game.wormByIdx(wormId);
+			//if(i != context.idToWorm.end())
+			if (w)
 			{
-				read(reader, context, *i->second->settings);
+				//read(reader, context, *i->second->settings);
+				read(reader, context, *w->settings);
 				settingsChanged = true;
 			}
 		}
@@ -509,18 +510,16 @@ bool ReplayReader::playbackFrame()
 		else if(first < 0x80)
 		{
 			uint8_t state = first;
-			for(GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.begin(); ;)
+			bool hasState = true;
+
+			for (auto* worm : game.worms)
 			{
-				Worm* worm = i->second;
-				//GameSerializationContext::WormData& data = context.wormData[worm];
-				
+				if (!hasState)
+					state = reader.get();
+				else
+					hasState = false;
+
 				worm->controlStates.unpack(state ^ worm->prevControlStates.pack());
-				
-				++i;
-				if(i == context.idToWorm.end())
-					break;
-				
-				state = reader.get();
 			}
 			
 			break; // Read frame
@@ -531,7 +530,7 @@ bool ReplayReader::playbackFrame()
 	
 	if(settingsChanged)
 	{
-		game.updateSettings();
+		game.updateSettings(renderer);
 	}
 	
 	if((game.cycles % (70 * 15)) == 0)
@@ -575,15 +574,12 @@ void ReplayWriter::recordFrame()
 	
 	bool writeStates = false;
 	
-	if(context.idToWorm.size() <= 3) // TODO: What limit do we want here? None?
+	if(game.worms.size() <= 3) // TODO: What limit do we want here? None?
 		writeStates = true;
 	else
 	{
-		for(GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.begin();
-			i != context.idToWorm.end();
-			++i)
+		for (auto* worm : game.worms)
 		{
-			Worm* worm = i->second;
 			GameSerializationContext::WormData& data = context.wormData[worm];
 			if(worm->controlStates != worm->prevControlStates)
 			{
@@ -593,7 +589,7 @@ void ReplayWriter::recordFrame()
 			if(data.settingsExpired)
 			{
 				writer.put(0x82);
-				gvl::write_uint32(writer, i->first);
+				gvl::write_uint32(writer, worm->index);
 				write(writer, context, *worm->settings);
 				data.settingsExpired = false;
 			}
@@ -602,13 +598,8 @@ void ReplayWriter::recordFrame()
 	
 	if(writeStates)
 	{
-		for(GameSerializationContext::IdToWormMap::iterator i = context.idToWorm.begin();
-			i != context.idToWorm.end();
-			++i)
+		for (auto* worm : game.worms)
 		{
-			Worm* worm = i->second;
-			//GameSerializationContext::WormData& data = context.wormData[worm];
-			
 			uint8_t state = worm->controlStates.pack() ^ worm->prevControlStates.pack();
 			
 			sassert(state < 0x80);
@@ -648,9 +639,6 @@ void ReplayWriter::unfocus()
 
 void ReplayWriter::focus()
 {
-	// TODO: Check hash of settings for game and all worms,
-	// mark differing ones for reserialization.
-	
 	for(GameSerializationContext::WormDataMap::iterator i = context.wormData.begin();
 		i != context.wormData.end();
 		++i)
