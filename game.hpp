@@ -67,9 +67,8 @@ struct Game
 	void draw(Renderer& renderer, bool isReplay = false);
 	void startGame();
 	bool isGameOver();
-	void createDefaults();
 
-	void postClone(Game& original);
+	void postClone(Game& original, bool complete = false);
 
 	void spawnZone();
 		

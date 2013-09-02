@@ -15,12 +15,12 @@
 #include "gfx/renderer.hpp"
 #include "menu/menu.hpp"
 #include "menu/hiddenMenu.hpp"
+#include "menu/mainMenu.hpp"
 #include "rect.hpp"
 #include "rand.hpp"
 #include "keys.hpp"
 #include "settings.hpp"
 #include "common.hpp"
-
 
 struct Key
 {
@@ -33,8 +33,6 @@ struct Key
 	char ch;
 };
 
-
-
 struct Game;
 struct Controller;
 struct Gfx;
@@ -45,34 +43,66 @@ struct PlayerMenu : Menu
 	: Menu(x, y)
 	{
 	}
+
+	enum
+	{
+		PlName,
+		PlHealth,
+		PlRed, PlGreen, PlBlue,
+		PlUp,
+		PlDown,
+		PlLeft,
+		PlRight,
+		PlFire,
+		PlChange,
+		PlJump,
+		PlDig,
+		PlWeap0,
+		PlController = PlWeap0 + 5,
+		PlSaveProfile,
+		PlSaveProfileAs,
+		PlLoadProfile,
+		PlLoadedProfile,
+	};
 	
-	virtual void drawItemOverlay(Common& common, int item, int x, int y, bool selected, bool disabled);
+	virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected, bool disabled);
 	
-	virtual ItemBehavior* getItemBehavior(Common& common, int item);
+	virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item);
 	
 	gvl::shared_ptr<WormSettings> ws;
 };
 
 struct SettingsMenu : Menu
 {
+	enum
+	{
+		SiGameMode,
+		SiLives,
+		SiTimeToLose, // Extra
+		SiTimeToWin,
+		SiZoneTimeout,
+		SiFlagsToWin, // Extra
+		SiLoadingTimes,
+		SiMaxBonuses,
+		SiNamesOnBonuses,
+		SiMap,
+		SiAmountOfBlood,
+		SiLevel,
+		SiRegenerateLevel,
+		SiWeaponOptions,
+		LoadOptions,
+		SaveOptions,
+		LoadChange,
+	};
+
 	SettingsMenu(int x, int y)
 	: Menu(x, y)
 	{
 	}
 	
-	virtual ItemBehavior* getItemBehavior(Common& common, int item);
-};
+	virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item);
 
-enum
-{
-	MaResumeGame = 0,
-	MaNewGame = 1,
-	MaSettings = 2,
-	MaPlayer1Settings = 3,
-	MaPlayer2Settings = 4,
-	MaAdvanced = 5,
-	MaQuit = 6,
-	MaReplay = 7
+	virtual void onUpdate();
 };
 
 struct Joystick {
@@ -161,7 +191,6 @@ struct Gfx : Renderer
 	
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 	
-	void updateSettingsMenu();
 	int menuLoop();
 	void mainLoop();
 	void drawBasicMenu(/*int curSel*/);
@@ -184,12 +213,13 @@ struct Gfx : Renderer
 		uint8_t* src, int w, int h, std::size_t srcPitch,
 		uint8_t* dest, std::size_t destPitch, int mag);
 
-	Menu mainMenu;
+	MainMenu mainMenu;
 	SettingsMenu settingsMenu;
 	PlayerMenu playerMenu;
 	HiddenMenu hiddenMenu;
 	
 	Menu* curMenu;
+	std::string prevSelectedReplayPath;
 	std::string settingsFile; // Currently loaded settings file
 	gvl::shared_ptr<Settings> settings;
 	

@@ -13,21 +13,19 @@ struct BooleanSwitchBehavior : ItemBehavior
 	: common(common), v(v)
 	, set([&](bool newV) { v = newV; })
 	{
-		
 	}
 
 	BooleanSwitchBehavior(Common& common, bool& v, std::function<void(bool)> set)
 	: common(common), v(v)
 	, set(set)
 	{
-		
 	}
 
 	std::function<void(bool)> set;
 	
-	bool onLeftRight(Menu& menu, int item, int dir);
-	int onEnter(Menu& menu, int item);
-	void onUpdate(Menu& menu, int item);
+	bool onLeftRight(Menu& menu, MenuItem& item, int dir);
+	int onEnter(Menu& menu, MenuItem& item);
+	void onUpdate(Menu& menu, MenuItem& item);
 	
 	Common& common;
 	bool& v;

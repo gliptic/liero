@@ -11,8 +11,8 @@ struct Renderer;
 
 struct Viewport
 {
-	Viewport(Rect rect, Worm* worm, int inGameX, int levwidth, int levheight)
-	: worm(worm)
+	Viewport(Rect rect, int wormIdx, int inGameX, int levwidth, int levheight)
+	: wormIdx(wormIdx)
 	, bannerY(-8)
 	, inGameX(inGameX)
 	, rect(rect)
@@ -36,7 +36,7 @@ struct Viewport
 	int shake;
 	int maxX, maxY;
 	int centerX, centerY;
-	Worm* worm;
+	int wormIdx;
 	int bannerY;
 	int inGameX; // 0 for first, 218 for second
 	Rand rand;

@@ -47,20 +47,7 @@ struct Settings : gvl::shared, Extensions
 	
 	enum
 	{
-		SiGameMode,
-		SiLives,
-		SiTimeToLose, // Extra
-		SiTimeToWin,
-		SiZoneTimeout,
-		SiFlagsToWin, // Extra
-		SiLoadingTimes,
-		SiMaxBonuses,
-		SiNamesOnBonuses,
-		SiMap,
-		SiAmountOfBlood,
-		SiLevel,
-		SiRegenerateLevel,
-		SiWeaponOptions
+		
 	};
 	
 	enum

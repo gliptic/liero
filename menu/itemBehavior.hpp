@@ -5,20 +5,25 @@
 #include <vector>
 
 struct Menu;
+struct MenuItem;
 
 struct ItemBehavior
 {
-	virtual bool onLeftRight(Menu& menu, int item, int dir)
+	ItemBehavior()
+	{
+	}
+
+	virtual bool onLeftRight(Menu& menu, MenuItem& item, int dir)
 	{
 		return true;
 	}
 	
-	virtual int onEnter(Menu& menu, int item)
+	virtual int onEnter(Menu& menu, MenuItem& item)
 	{
 		return -1;
 	}
 	
-	virtual void onUpdate(Menu& menu, int item)
+	virtual void onUpdate(Menu& menu, MenuItem& item)
 	{
 	}
 };

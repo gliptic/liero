@@ -30,7 +30,7 @@ struct ReplayController : CommonController
 		StateGameEnded
 	};
 	
-	ReplayController(gvl::shared_ptr<Common> common, gvl::stream_ptr source);
+	ReplayController(gvl::shared_ptr<Common> common, gvl::source source);
 	
 	void onKey(int key, bool keyState);
 	// Called when the controller loses focus. When not focused, it will not receive key events among other things.
@@ -46,6 +46,12 @@ struct ReplayController : CommonController
 	bool running();
 	
 	std::auto_ptr<Game> game;
+
+
+	std::auto_ptr<Game> initialGame;
+	gvl::octet_reader initialReader;
+
+
 	State state;
 	int fadeValue;
 	bool goingToMenu;

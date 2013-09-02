@@ -30,31 +30,32 @@ struct PreserveClipRect
 void Viewport::process(Game& game)
 {
 	Common& common = *game.common;
-	if(worm->killedTimer <= 0)
+	Worm& worm = *game.wormByIdx(wormIdx);
+	if(worm.killedTimer <= 0)
 	{
-		if(worm->visible)
+		if(worm.visible)
 		{
-			WormWeapon const& ww = worm->weapons[worm->currentWeapon];
+			WormWeapon const& ww = worm.weapons[worm.currentWeapon];
 
-			if(worm->steerableCount > 0)
+			if(worm.steerableCount > 0)
 			{
-				setCenter(worm->steerableSumX / worm->steerableCount, worm->steerableSumY / worm->steerableCount);
+				setCenter(worm.steerableSumX / worm.steerableCount, worm.steerableSumY / worm.steerableCount);
 			}
 			else
 			{
-				setCenter(ftoi(worm->x), ftoi(worm->y));
+				setCenter(ftoi(worm.x), ftoi(worm.y));
 			}
 		}
 		else
 		{
-			scrollTo(ftoi(worm->x), ftoi(worm->y), 4);
+			scrollTo(ftoi(worm.x), ftoi(worm.y), 4);
 		}
 	}
-	else if(worm->health < 0)
+	else if(worm.health < 0)
 	{
-		setCenter(ftoi(worm->x), ftoi(worm->y));
+		setCenter(ftoi(worm.x), ftoi(worm.y));
 		
-		if(worm->killedTimer == 150) // TODO: This depends on what is the starting killedTimer
+		if(worm.killedTimer == 150) // TODO: This depends on what is the starting killedTimer
 			bannerY = -8;
 	}
 	
@@ -93,28 +94,27 @@ void Viewport::process(Game& game)
 void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 {
 	Common& common = *game.common;
-	if(worm) // Should not be necessary further on
+	Worm& worm = *game.wormByIdx(wormIdx);
+
+	if(worm.visible)
 	{
-		if(worm->visible)
+		int lifebarWidth = worm.health * 100 / worm.settings->health;
+		drawBar(renderer.screenBmp, inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
+	}
+	else
+	{
+		int lifebarWidth = 100 - (worm.killedTimer * 25) / 37;
+		if(lifebarWidth > 0)
 		{
-			int lifebarWidth = worm->health * 100 / worm->settings->health;
+			if(lifebarWidth > 100)
+				lifebarWidth = 100;
 			drawBar(renderer.screenBmp, inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
-		}
-		else
-		{
-			int lifebarWidth = 100 - (worm->killedTimer * 25) / 37;
-			if(lifebarWidth > 0)
-			{
-				if(lifebarWidth > 100)
-					lifebarWidth = 100;
-				drawBar(renderer.screenBmp, inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
-			}
 		}
 	}
 	
 	// Draw kills status
 	
-	WormWeapon const& ww = worm->weapons[worm->currentWeapon];
+	WormWeapon const& ww = worm.weapons[worm.currentWeapon];
 	
 	if(ww.available)
 	{
@@ -144,17 +144,17 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			drawBar(renderer.screenBmp, inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
 		
 		if((game.cycles % 20) > 10
-		&& worm->visible)
+		&& worm.visible)
 		{
 			common.font.drawText(renderer.screenBmp, common.texts.reloading, inGameX, 164, 50);
 		}
 	}
 	
-	common.font.drawText(renderer.screenBmp, (common.texts.kills + toString(worm->kills)), inGameX, 171, 10);
+	common.font.drawText(renderer.screenBmp, (common.texts.kills + toString(worm.kills)), inGameX, 171, 10);
 	
 	if(isReplay)
 	{
-		common.font.drawText(renderer.screenBmp, worm->settings->name, inGameX, 192, 4);
+		common.font.drawText(renderer.screenBmp, worm.settings->name, inGameX, 192, 4);
 		common.font.drawText(renderer.screenBmp, timeToStringEx(game.cycles * 14), 95, 185, 7);
 	}
 
@@ -164,7 +164,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	{
 	case Settings::GMKillEmAll:
 	{
-		common.font.drawText(renderer.screenBmp, (common.texts.lives + toString(worm->lives)), inGameX, 178, 6);
+		common.font.drawText(renderer.screenBmp, (common.texts.lives + toString(worm.lives)), inGameX, 178, 6);
 	}
 	break;
 
@@ -173,12 +173,12 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		int state = 0;
 		
 		for (auto* w : game.worms)
-			if (w != worm && w->timer <= worm->timer)
+			if (w != &worm && w->timer <= worm.timer)
 				state = 1;
 		
-		int color = stateColours[game.holdazone.holderIdx != worm->index][state];
+		int color = stateColours[game.holdazone.holderIdx != worm.index][state];
 		
-		common.font.drawText(renderer.screenBmp, timeToString(worm->timer), 5, 106 + 84*worm->index, 161, color);
+		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5, 106 + 84*worm.index, 161, color);
 	}
 	break;
 	
@@ -187,12 +187,12 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		int state = 0;
 		
 		for (auto* w : game.worms)
-			if (w != worm && w->timer >= worm->timer)
+			if (w != &worm && w->timer >= worm.timer)
 				state = 1;
 
-		int color = stateColours[game.lastKilledIdx != worm->index][state];
+		int color = stateColours[game.lastKilledIdx != worm.index][state];
 		
-		common.font.drawText(renderer.screenBmp, timeToString(worm->timer), 5, 106 + 84*worm->index, 161, color);
+		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5, 106 + 84*worm.index, 161, color);
 	}
 	break;
 	}	
@@ -238,16 +238,16 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				game.holdazone.rect.height(), game.cycles / 10);
 		}
 	
-		if(!worm->visible
-		&& worm->killedTimer <= 0
-		&& !worm->ready)
+		if(!worm.visible
+		&& worm.killedTimer <= 0
+		&& !worm.ready)
 		{
 			common.font.drawText(renderer.screenBmp, common.texts.pressFire, rect.center_x() - 30, 76, 0);
 			common.font.drawText(renderer.screenBmp, common.texts.pressFire, rect.center_x() - 31, 75, 50);
 		}
 
 		if(bannerY > -8
-		&& worm->health <= 0)
+		&& worm.health <= 0)
 		{	
 			if(game.settings->gameMode == Settings::GMGameOfTag
 			&& game.gotChanged)
@@ -260,19 +260,20 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		for(std::size_t i = 0; i < game.viewports.size(); ++i)
 		{
 			Viewport* v = game.viewports[i];
+			Worm& otherWorm = *game.wormByIdx(v->wormIdx);
 			if(v != this
-			&& v->worm->health <= 0
+			&& otherWorm.health <= 0
 			&& v->bannerY > -8)
 			{
-				if(v->worm->lastKilledByIdx == worm->index)
+				if(otherWorm.lastKilledByIdx == worm.index)
 				{
-					std::string msg(common.S[KilledMsg] + v->worm->settings->name);
+					std::string msg(common.S[KilledMsg] + otherWorm.settings->name);
 					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
 					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 2, v->bannerY, 50);
 				}
 				else
 				{
-					std::string msg(v->worm->settings->name + common.S[CommittedSuicideMsg]);
+					std::string msg(otherWorm.settings->name + common.S[CommittedSuicideMsg]);
 					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
 					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 2, v->bannerY, 50);
 				}
@@ -575,12 +576,12 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				renderer.screenBmp.getPixel(x, y) = 0;
 		}*/
 	
-		if(worm->visible)
+		if(worm.visible)
 		{
-			int tempX = ftoi(worm->x) - x - 1 + ftoi(cosTable[ftoi(worm->aimingAngle)] * 16) + rect.x1;
-			int tempY = ftoi(worm->y) - y - 2 + ftoi(sinTable[ftoi(worm->aimingAngle)] * 16) + rect.y1;
+			int tempX = ftoi(worm.x) - x - 1 + ftoi(cosTable[ftoi(worm.aimingAngle)] * 16) + rect.x1;
+			int tempY = ftoi(worm.y) - y - 2 + ftoi(sinTable[ftoi(worm.aimingAngle)] * 16) + rect.y1;
 		
-			if(worm->makeSightGreen)
+			if(worm.makeSightGreen)
 			{
 				blitImage(
 					renderer.screenBmp,
@@ -609,9 +610,9 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				common.font.drawText(":O", 50 + rect.x1, 10, 10);
 			}
 	#endif
-			if(worm->pressed(Worm::Change))
+			if(worm.pressed(Worm::Change))
 			{
-				int id = worm->weapons[worm->currentWeapon].id;
+				int id = worm.weapons[worm.currentWeapon].id;
 				std::string const& name = common.weapons[id].name;
 			
 				int len = int(name.size()) * 4; // TODO: Read 4 from exe? (SW_CHARWID)
@@ -619,8 +620,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				common.drawTextSmall(
 					renderer.screenBmp,
 					name.c_str(),
-					ftoi(worm->x) - x - len/2 + 1 + rect.x1,
-					ftoi(worm->y) - y - 10 + rect.y1);
+					ftoi(worm.x) - x - len/2 + 1 + rect.x1,
+					ftoi(worm.y) - y - 10 + rect.y1);
 			}
 		}
 	

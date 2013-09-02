@@ -28,7 +28,7 @@ gvl::gash::value_type& WormSettings::updateHash()
 	gvl::hash_accumulator<gvl::gash> ha;
 	
 	
-	archive(gvl::out_archive<GameSerializationContext, gvl::hash_accumulator<gvl::gash> >(ha, context), *this);
+	archive(gvl::out_archive<gvl::hash_accumulator<gvl::gash>, GameSerializationContext>(ha, context), *this);
 	
 	ha.flush();
 	hash = ha.final();
@@ -47,7 +47,7 @@ void WormSettings::saveProfile(std::string const& path)
 		
 		profilePath = path;
 		GameSerializationContext context;
-		archive(gvl::out_archive<GameSerializationContext>(writer, context), *this);
+		archive(gvl::out_archive<gvl::octet_stream_writer, GameSerializationContext>(writer, context), *this);
 	}
 	catch(gvl::stream_error& e)
 	{
@@ -67,7 +67,7 @@ void WormSettings::loadProfile(std::string const& path)
 
 		profilePath = path;
 		GameSerializationContext context;
-		archive(gvl::in_archive<GameSerializationContext>(reader, context), *this);
+		archive(gvl::in_archive<gvl::octet_stream_reader, GameSerializationContext>(reader, context), *this);
 	}
 	catch(gvl::stream_error& e)
 	{

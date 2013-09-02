@@ -49,18 +49,7 @@ struct octet_stream_reader : gvl::shared
 	, source_()
 	{
 	}
-	
-/*
-	// Different naming to avoid infinite recursion if
-	// not defined in DerivedT.
-	bucket_source* get_source()
-	{ return derived()->source(); }
-	*/
-	
-	/*
-	shared_ptr<stream> get_source()
-	{ return source_; }*/
-	
+
 	uint8_t get()
 	{
 		// We keep this function small to encourage

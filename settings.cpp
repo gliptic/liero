@@ -82,6 +82,9 @@ Settings::Settings()
 	}
 }
 
+typedef gvl::in_archive<gvl::octet_stream_reader> in_archive_t;
+typedef gvl::out_archive<gvl::octet_stream_writer> out_archive_t;
+
 bool Settings::load(std::string const& path, Rand& rand)
 {
 	FILE* opt = tolerantFOpen(path.c_str(), "rb");
@@ -97,7 +100,7 @@ bool Settings::load(std::string const& path, Rand& rand)
 	gvl::octet_stream_reader reader(gvl::stream_ptr(new gvl::fstream(opt)));
 	gvl::default_serialization_context context;
 	
-	archive_liero(gvl::in_archive<gvl::default_serialization_context>(reader, context), *this, rand);
+	archive_liero(in_archive_t(reader, context), *this, rand);
 	
 	
 	return true;
@@ -108,7 +111,7 @@ gvl::gash::value_type& Settings::updateHash()
 	gvl::default_serialization_context context;
 	gvl::hash_accumulator<gvl::gash> ha;
 	
-	archive(gvl::out_archive<gvl::default_serialization_context, gvl::hash_accumulator<gvl::gash> >(ha, context), *this);
+	archive(gvl::out_archive<gvl::hash_accumulator<gvl::gash>, gvl::default_serialization_context>(ha, context), *this);
 	
 	ha.flush();
 	hash = ha.final();
@@ -122,7 +125,7 @@ void Settings::save(std::string const& path, Rand& rand)
 
 	gvl::default_serialization_context context;
 	
-	archive_liero(gvl::out_archive<gvl::default_serialization_context>(writer, context), *this, rand);
+	archive_liero(out_archive_t(writer, context), *this, rand);
 }
 
 void Settings::generateName(WormSettings& ws, Rand& rand)

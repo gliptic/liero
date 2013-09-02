@@ -21,7 +21,9 @@ struct FileNode : gvl::shared
 	, id(0)
 	, selectedChild(0)
 	, parent(0)
+	, menu(178, 28)
 	{
+		menu.setHeight(14);
 	}
 
 	FileNode(string const& name, string const& fullPath, bool folder, FileNode* parent)
@@ -30,11 +32,26 @@ struct FileNode : gvl::shared
 	, id(0)
 	, selectedChild(0)
 	, parent(parent)
+	, menu(178, 28)
 	{
+		menu.setHeight(14);
 	}
 
 	template<typename Filter>
 	void fill(string const& path, Filter filter);
+
+	Menu& getMenu()
+	{
+		if (menu.items.empty())
+		{
+			for (auto& c : children)
+				menu.addItem(MenuItem(c->folder ? 47 : 48, 7, c->name));
+	
+			menu.moveToFirstVisible();
+		}
+
+		return menu;
+	}
 
 	FileNode* find(string const& path)
 	{
@@ -57,6 +74,8 @@ struct FileNode : gvl::shared
 	FileNode* selectedChild;
 	FileNode* parent;
 	vector<shared_ptr<FileNode> > children;
+
+	Menu menu;
 };
 
 struct ChildSort
@@ -99,15 +118,16 @@ void FileNode::fill(string const& path, Filter filter)
 	}
 
 	std::sort(children.begin(), children.end(), ChildSort());
+
+	
 }
 
 struct FileSelector
 {
 	FileSelector(Common& common, int x = 178)
 	: common(common)
-	, menu(x, 28)
 	{
-		menu.setHeight(14);
+		
 	}
 
 	template<typename Filter>
@@ -116,29 +136,32 @@ struct FileSelector
 		rootNode.fill(path, filter);
 	}
 
+	void draw()
+	{
+		if (currentNode && currentNode->parent)
+		{
+			common.font.drawFramedText(gfx.screenBmp, "Parent directory", 28, 20, 50);
+			currentNode->parent->getMenu().draw(common, true, 28, true);
+		}
+		menu().draw(common, false, 178);
+	}
+
+	Menu& menu()
+	{
+		return currentNode->getMenu();
+	}
+
 	void setFolder(FileNode& fn)
 	{
 		currentNode = &fn;
-		menu.clear();
-
-		for (auto& c : fn.children)
-			menu.addItem(MenuItem(c->folder ? 47 : 48, 7, c->name));
-	
-		menu.moveToFirstVisible();
-
-		for (std::size_t i = 0; i < currentNode->children.size(); ++i)
-		{
-			if (currentNode->selectedChild == currentNode->children[i].get())
-				menu.moveTo(i);
-		}
 	}
 
-	void select(string const& path)
+	bool select(string const& path)
 	{
 		FileNode* fn = rootNode.find(path);
 
 		if (!fn)
-			return;
+			return false;
 
 		FileNode* parent = fn->parent;
 		if (parent)
@@ -146,8 +169,15 @@ struct FileSelector
 			FileNode* p = fn;
 			while (p->parent)
 			{
-				p->parent->selectedChild = fn;
+				FileNode* ch = p;
 				p = p->parent;
+				p->selectedChild = fn;
+
+				for (std::size_t i = 0; i < p->children.size(); ++i)
+				{
+					if (ch == p->children[i].get())
+						p->getMenu().moveTo(i);
+				}
 			}
 
 			if (fn->folder)
@@ -155,14 +185,16 @@ struct FileSelector
 			else
 				setFolder(*parent);
 		}
+
+		return true;
 	}
 
 	FileNode* enter()
 	{
-		if (!menu.isSelectionValid())
+		if (!menu().isSelectionValid())
 			return 0;
 
-		auto& c = currentNode->children[menu.selection()];
+		auto& c = currentNode->children[menu().selection()];
 		if (c->folder)
 		{
 			currentNode->selectedChild = c.get();
@@ -189,37 +221,46 @@ struct FileSelector
 		{
 			sfx.play(common, 26);
 			
-			menu.movement(-1);
+			menu().movement(-1);
 		}
 		
 		if(gfx.testSDLKeyOnce(SDLK_DOWN))
 		{
 			sfx.play(common, 25);
 			
-			menu.movement(1);
+			menu().movement(1);
 		}
 
 		if(gfx.testSDLKeyOnce(SDLK_PAGEUP))
 		{
 			sfx.play(common, 26);
 				
-			menu.movementPage(-1);
+			menu().movementPage(-1);
 		}
 			
 		if(gfx.testSDLKeyOnce(SDLK_PAGEDOWN))
 		{
 			sfx.play(common, 25);
 				
-			menu.movementPage(1);
+			menu().movementPage(1);
 		}
 
 		if (gfx.testSDLKeyOnce(SDLK_ESCAPE))
 		{
-			if (!exit())
-				return false;
+			return false;
 		}
 
-		menu.onKeys(gfx.keyBuf, gfx.keyBufPtr, true);
+		if (gfx.testSDLKeyOnce(SDLK_LEFT))
+		{
+			exit();
+		}
+
+		if (gfx.testSDLKeyOnce(SDLK_RIGHT))
+		{
+			enter();
+		}
+
+		menu().onKeys(gfx.keyBuf, gfx.keyBufPtr, true);
 
 		return true;
 	}
@@ -230,7 +271,7 @@ struct FileSelector
 	FileNode rootNode;
 	FileNode* currentNode;
 
-	Menu menu;
+	//Menu menu;
 };
 
 #endif // LIERO_MENU_FILESELECTOR_HPP

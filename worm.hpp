@@ -101,7 +101,7 @@ struct WormSettings : gvl::shared, WormSettingsExtensions
 	int health;
 	uint32_t controller; // CPU / Human
 	uint32_t controls[MaxControl];
-	int weapons[5]; // TODO: Adjustable
+	uint32_t weapons[5]; // TODO: Adjustable
 	std::string name;
 	int rgb[3];
 	bool randomName;

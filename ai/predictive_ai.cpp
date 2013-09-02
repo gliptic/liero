@@ -39,6 +39,21 @@ double totalAmmoWorth(Game& game, Worm* w)
 	return ammoWorth;
 }
 
+int readyWeapons(Game& game, Worm* w)
+{
+	int count = 0;
+	for (int i = 0; i < 5; ++i)
+	{
+		WormWeapon& weap = w->weapons[i];
+		Weapon& winfo = game.common->weapons[weap.id];
+
+		if (weap.loadingLeft == 0 && weap.delayLeft < 70)
+			++count;
+	}
+
+	return count;
+}
+
 bool hasUsableWeapon(Game& game, Worm* w)
 {
 	for (int i = 0; i < 5; ++i)
@@ -100,41 +115,41 @@ double aimingDiff(Worm* from, Worm* to)
 	return std::max(aimDiff - tolerance, 0.0) / 6.0;
 }
 
-double aimingDiff(AiContext& context, Worm* from, level_cell* cell)
+
+int obstacles(Game& game, gvl::ivec2 from, gvl::ivec2 to)
 {
-	if (!cell || !cell->parent)
-		return 1.0;
+	typedef gvl::basic_vec<double, 2> dvec2;
 
-	auto org = context.dlevel.coords(cell);
+	dvec2 org(from.x, from.y);
+	dvec2 dir(to.x, to.y);
+	dir -= org;
+	
+	double l = length(dir);
+	dir /= l;
 
-	double dirx = 0, diry = 0;
-	auto* c = cell;
-	int count = 10;
-	while (count-- > 0)
+	int obst = 0;
+
+	for (double d = 0; d < l; d += 2.0)
 	{
-		c = (level_cell*)c->parent;
-		if (!c)
-			break;
+		dvec2 p = org + dir * d;
+		
+		auto m = game.common->materials[
+			game.level.checkedPixelWrap((int)p.x, (int)p.y)];
 
-		auto path = context.dlevel.coords(c);
-
-		int xdiff = std::abs(path.first - org.first);
-		int ydiff = path.second - org.second;
-
-		double len = std::sqrt(xdiff*xdiff + ydiff*ydiff);
-		dirx += xdiff / len;
-		diry += ydiff / len;
+		if (!m.background())
+		{
+			if (m.dirt())
+				obst += 2;
+			else
+				obst += 3;
+		}
+		else
+		{
+			obst += 0;
+		}
 	}
 
-	int aim = normalizedLangle(from->aimingAngle);
-	double currentAim = langleToRadians(aim);
-
-	double angleToTarget = std::atan2(diry, dirx);
-
-	double tolerance = pi / 8;
-	double aimDiff = std::abs(radianDiff(angleToTarget, currentAim));
-
-	return std::max(aimDiff - tolerance, 0.0) / 6.0;
+	return obst;
 }
 
 int obstacles(Game& game, Worm* from, Worm* to)
@@ -172,6 +187,67 @@ int obstacles(Game& game, Worm* from, Worm* to)
 	}
 
 	return obst;
+}
+
+double aimingDiff(AiContext& context, Game& game, Worm* from, level_cell* cell)
+{
+	if (!cell || !cell->parent)
+		return 1.0;
+
+	auto org = context.dlevel.coords(cell);
+	auto orgl = context.dlevel.coords_level(cell);
+
+	double dirx = 0, diry = 0;
+	auto* c = cell;
+	
+	//if (from->index == 0)
+	if (true)
+	{
+		int count = 15;
+		dirx = 1;
+		while (c->parent && count-- > 0)
+		{
+			c = (level_cell*)c->parent;
+			auto path = context.dlevel.coords_level(c);
+
+			if ((path.x != orgl.x && path.y != orgl.y) 
+			 && obstacles(game, orgl, path) > 4)
+				break;
+
+			dirx = std::abs(path.x - orgl.x);
+			diry = path.y - orgl.y;
+		}
+	}
+	else
+	{
+		int count = 10;
+
+		while (count-- > 0)
+		{
+			c = (level_cell*)c->parent;
+			if (!c)
+				break;
+
+			auto path = context.dlevel.coords(c);
+
+			int xdiff = std::abs(path.x - org.x);
+			int ydiff = path.y - org.y;
+
+			double len = std::sqrt(xdiff*xdiff + ydiff*ydiff);
+			dirx += xdiff / len;
+			diry += ydiff / len;
+		}
+	}
+
+	int aim = normalizedLangle(from->aimingAngle);
+	double currentAim = langleToRadians(aim);
+
+	double angleToTarget = std::atan2(diry, dirx);
+
+	double tolerance = pi / 8;
+	double aimDiff = std::abs(radianDiff(angleToTarget, currentAim));
+
+	return std::max(aimDiff - tolerance, 0.0) / 6.0;
 }
 
 struct MutationStrategy
@@ -215,20 +291,6 @@ level_cell* AiContext::pathFind(int x, int y)
 	return path ? cell : 0;
 }
 
-struct Weights
-{
-	Weights()
-	: healthWeight(1.0)
-	, aimWeight(1.0)
-	, distanceWeight(1.0)
-	, ammoWeight(1.0)
-	, missileWeight(1.0)
-	{
-	}
-
-	double healthWeight, aimWeight, distanceWeight, ammoWeight, missileWeight;
-};
-
 double evaluateState(
 	FollowAI& ai,
 	Worm* me,
@@ -240,11 +302,11 @@ double evaluateState(
 {
 	double score = 0;
 
-	Weights weights;
+	Weights weights = ai.weights;
 
 	int posx = ftoi(me->x), posy = ftoi(me->y);
-
 	auto* wormCell = ai.pathFind(posx, posy);
+	Worm* meOrg = orgGame.wormByIdx(me->index);
 
 	double len = 200.0;
 	if (wormCell)
@@ -253,18 +315,26 @@ double evaluateState(
 		double meNormHealth = orgGame.wormByIdx(me->index)->health * 100.0 / me->settings->health;
 		double targetNormHealth = orgGame.wormByIdx(target->index)->health * 100.0 / target->settings->health;
 
-		double ratio = (1 + targetNormHealth) / (1 + meNormHealth);
-
-		if (game.settings->gameMode != Settings::GMHoldazone)
+		if (me->index == 0
+		 && readyWeapons(orgGame, orgGame.wormByIdx(me->index)) <= 1)
 		{
-			optimalDist = std::max(std::min(15.0 * ratio, 60.0), 10.0);
+			optimalDist = 50.0;
+		}
+		else
+		{
+			double ratio = (1 + targetNormHealth) / (1 + meNormHealth);
+
+			if (game.settings->gameMode != Settings::GMHoldazone)
+			{
+				optimalDist = std::max(std::min(15.0 * ratio, 60.0), 10.0);
+			}
 		}
 
-		double d = std::abs(wormCell->g / 256.0 - optimalDist);
+		double d = std::max(std::abs(wormCell->g / 256.0 - optimalDist) - 10.0, 0.0) * weights.distanceWeight;
 		len *= psigmoid(d / 100.0);
 	}
 
-	if (me->steerableCount == 1)
+	if (meOrg->steerableCount == 1)
 	{
 		auto* missileCell = ai.dlevel.cell_from_px(me->steerableSumX, me->steerableSumY);
 		bool missilePath = ai.dlevel.run(
@@ -281,7 +351,7 @@ double evaluateState(
 	double meHealth = totalHealthNorm(me);
 	double targetHealth = totalHealthNorm(target);
 
-	score += meHealth * weights.healthWeight * 1.3;
+	score += meHealth * weights.healthWeight * weights.defenseWeight;
 	score -= targetHealth * weights.healthWeight;
 
 	if (game.settings->gameMode == Settings::GMHoldazone
@@ -292,7 +362,7 @@ double evaluateState(
 	}
 	else
 	{
-		double aimDiff = aimingDiff(ai, me, wormCell);
+		double aimDiff = aimingDiff(ai, game, me, wormCell);
 		score -= aimDiff * 2.0 * weights.aimWeight;
 	}
 
@@ -308,18 +378,18 @@ double evaluateState(
 		if (game.holdazone.holderIdx != me->index)
 			scale = 1.0;
 
-		score -= len * weights.distanceWeight * scale;
+		score -= len * scale;
 	}
 	else if (game.settings->gameMode == Settings::GMGameOfTag)
 	{
 		if (game.lastKilledIdx >= 0 && game.lastKilledIdx != me->index)
-			score += len * weights.distanceWeight;
+			score += len;
 		else
-			score -= len * weights.distanceWeight;
+			score -= len;
 	}
 	else
 	{
-		score -= len * weights.distanceWeight;
+		score -= len;
 	}
 
 	if (!me->visible && !me->ready)
@@ -635,25 +705,26 @@ void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int o
 		Worm const* from = &worm;
 		if (!cell || !cell->parent)
 			return;
-		auto org = context.dlevel.coords(cell);
+
+		auto orgl = context.dlevel.coords_level(cell);
 
 		double dirx = 0, diry = 0;
 		auto* c = cell;
-		int count = 10;
-		while (count-- > 0)
+	
+		//if (from->index == 0)
 		{
-			c = (level_cell*)c->parent;
-			if (!c)
-				break;
+			dirx = 1;
+			while (c->parent)
+			{
+				c = (level_cell*)c->parent;
+				auto path = context.dlevel.coords_level(c);
 
-			auto path = context.dlevel.coords(c);
+				if (obstacles(game, orgl, path) > 4)
+					break;
 
-			int xdiff = std::abs(path.first - org.first);
-			int ydiff = path.second - org.second;
-
-			double len = std::sqrt(xdiff*xdiff + ydiff*ydiff);
-			dirx += xdiff / len;
-			diry += ydiff / len;
+				dirx = std::abs(path.x - orgl.x);
+				diry = path.y - orgl.y;
+			}
 		}
 
 		int aim = normalizedLangle(from->aimingAngle);
@@ -676,12 +747,6 @@ void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int o
 			ftoi(worm.x) + offsX + (int)(std::cos(angleToTarget) * 20.0),
 			ftoi(worm.y) + offsY + (int)(std::sin(angleToTarget) * 20.0),
 			7);
-			/*
-		drawLine(renderer.screenBmp,
-			ftoi(worm.x) + offsX, ftoi(worm.y) + offsY,
-			ftoi(worm.x) + offsX + (int)(std::cos(currentAim) * 10.0),
-			ftoi(worm.y) + offsY + (int)(std::sin(currentAim) * 10.0),
-			3);*/
 	}
 #endif
 
@@ -701,6 +766,38 @@ void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int o
 	}
 #endif
 }
+
+#if AI_THREADS
+
+struct MutateWork : Work
+{
+	int evaluations;
+	int maxEvaluations;
+	Plan best;
+	Worm* worm;
+	Game game;
+
+	virtual void run()
+	{
+		while (evaluations < maxEvaluations) // game.settings->aiMutations + 1
+		{
+			auto candidate = best;
+			EvaluateResult result(mutate(*this, game, worm, target, candidate, 1, prevResult));
+			++evaluations;
+
+			double weightedScore = result.weightedScore();
+			if (weightedScore >= bestScore)
+			{
+				best = candidate;
+				bestScore = weightedScore;
+				prevResult = std::move(result);
+				prevResultAge = 0;
+			}
+		}
+	}
+};
+
+#endif
 
 void FollowAI::process(Game& game, Worm& worm)
 {
@@ -867,7 +964,7 @@ Worm::ControlState InputContext::update(InputState newState, Game& game, Worm* w
 	return cs;
 }
 
-void transToM(double& p,
+void transToM(Weights& weights, double& p,
 	int pa, int pb, int pc, int facingEnemy, int ninjaropeOut,
 	int pa2, int pb2, int pc2)
 {
@@ -889,7 +986,9 @@ void transToM(double& p,
 	if (pb == 3) p *= select(pb2, 0.1,   0.35, 0.35, 0.2);   // Digging
 
 	// Fire
-	double startShootP = facingEnemy ? 0.15 : 0.03;
+	double startShootFacingP = 0.15 * weights.firingWeight;
+	double startShootUnfacingP = 0.03 * weights.firingWeight;
+	double startShootP = facingEnemy ? startShootFacingP : startShootUnfacingP;
 	p *= select((pc & 2)        | ((pc2 & 2) >> 1),
 		1.0 - startShootP, startShootP,
 		0.4, 0.6);
@@ -901,7 +1000,7 @@ void transToM(double& p,
 		0.999, 0.001);              // 1 -> 0, 1 -> 1
 }
 
-TransModel::TransModel(bool testing)
+TransModel::TransModel(Weights& weights, bool testing)
 {
 	for (int i = 0; i < this->states; ++i)
 	{
@@ -937,7 +1036,7 @@ TransModel::TransModel(bool testing)
 				if (type2 == InputState::MoveJumpFire)
 				{
 					p *= m;
-					transToM(p, pa, pb, pc, facingEnemy, ninjaropeOut, pa2, pb2, pc2);
+					transToM(weights, p, pa, pb, pc, facingEnemy, ninjaropeOut, pa2, pb2, pc2);
 				}
 				else if (type2 == InputState::ChangeWeapon)
 				{
@@ -956,7 +1055,7 @@ TransModel::TransModel(bool testing)
 				{
 					// Same as from the idle m-state
 					p *= 0.97;
-					transToM(p, 0, 0, 0, facingEnemy, ninjaropeOut, pa2, pb2, pc2);
+					transToM(weights, p, 0, 0, 0, facingEnemy, ninjaropeOut, pa2, pb2, pc2);
 				}
 				else if (type2 == InputState::ChangeWeapon)
 				{
@@ -975,7 +1074,7 @@ TransModel::TransModel(bool testing)
 				{
 					// Same as from the idle state
 					p *= 0.95;
-					transToM(p, 0, 0, 0, facingEnemy, ninjaropeOut, pa2, pb2, pc2);
+					transToM(weights, p, 0, 0, 0, facingEnemy, ninjaropeOut, pa2, pb2, pc2);
 				}
 				else if (type2 == InputState::ChangeWeapon)
 				{

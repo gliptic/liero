@@ -81,10 +81,13 @@ void Menu::onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains)
 	}
 }
 
-void Menu::draw(Common& common/*, int x, int y*/, bool disabled)
+void Menu::draw(Common& common, bool disabled, int x, bool showDisabledSelection)
 {
 	int itemsLeft = height;
 	int curY = y;
+
+	if (x < 0)
+		x = this->x;
 	
 	for(int c = itemFromVisibleIndex(topItem); itemsLeft > 0 && c < (int)items.size(); ++c)
 	{
@@ -94,10 +97,10 @@ void Menu::draw(Common& common/*, int x, int y*/, bool disabled)
 			
 		--itemsLeft;
 			
-		bool selected = (c == selection_) && !disabled;
+		bool selected = (c == selection_) && (!disabled || showDisabledSelection);
 			
 		item.draw(common, x, curY, selected, disabled, centered, valueOffsetX);
-		drawItemOverlay(common, c, x, curY, selected, disabled);
+		drawItemOverlay(common, item, x, curY, selected, disabled);
 		
 		curY += itemHeight;
 	}
@@ -123,11 +126,16 @@ void Menu::draw(Common& common/*, int x, int y*/, bool disabled)
 	}
 }
 
+void Menu::moveToId(int id)
+{
+	moveTo(indexFromId(id));
+}
+
 void Menu::moveTo(int newSelection)
 {
 	newSelection = std::max(newSelection, 0);
 	newSelection = std::min(newSelection, (int)items.size()-1);
-	selection_ = newSelection;
+	selection_ = firstVisibleFrom(newSelection);
 	ensureInView(selection_);
 }
 
@@ -142,12 +150,13 @@ bool Menu::isInView(int item)
 	return visibleIndex >= topItem && visibleIndex < bottomItem;
 }
 
-bool Menu::itemPosition(int item, int& x, int& y)
+bool Menu::itemPosition(MenuItem& item, int& x, int& y)
 {
-	if(!isInView(item))
+	int index = &item - &items[0];
+	if(!isInView(index))
 		return false;
 		
-	int visIdx = visibleItemIndex(item);
+	int visIdx = visibleItemIndex(index);
 	x = this->x;
 	y = this->y + (visIdx - topItem) * itemHeight;
 	return true;
@@ -171,7 +180,7 @@ int Menu::firstVisibleFrom(int item)
 {
 	for(std::size_t i = item; i < items.size(); ++i)
 	{
-		if(items[i].visible)
+		if(items[i].visible && items[i].selectable)
 		{
 			return i;
 		}
@@ -184,7 +193,7 @@ int Menu::lastVisibleFrom(int item)
 {
 	for(std::size_t i = item; i-- > 0;)
 	{
-		if(items[i].visible)
+		if(items[i].visible && items[i].selectable)
 		{
 			return i + 1;
 		}
@@ -236,8 +245,15 @@ void Menu::setTop(int newTopVisIdx)
 	bottomItem = std::min(topItem + height, visibleItemCount);
 }
 
-void Menu::setVisibility(int item, bool state)
+void Menu::setVisibility(int id, bool state)
 {
+	int item = indexFromId(id);
+	if (item < 0)
+	{
+		sassert(false);
+		return;
+	}
+
 	if(items[item].visible && !state)
 		--visibleItemCount;
 	else if(!items[item].visible && state)
@@ -280,7 +296,7 @@ void Menu::movement(int direction)
 	{
 		for(int i = selection_ - 1; i >= 0; --i)
 		{
-			if(items[i].visible)
+			if(items[i].visible && items[i].selectable)
 			{
 				moveTo(i);
 				return;
@@ -289,7 +305,7 @@ void Menu::movement(int direction)
 		
 		for(int i = (int)items.size() - 1; i > selection_; --i)
 		{
-			if(items[i].visible)
+			if(items[i].visible && items[i].selectable)
 			{
 				moveTo(i);
 				return;
@@ -300,7 +316,7 @@ void Menu::movement(int direction)
 	{
 		for(int i = selection_ + 1; i < (int)items.size(); ++i)
 		{
-			if(items[i].visible)
+			if(items[i].visible && items[i].selectable)
 			{
 				moveTo(i);
 				return;
@@ -309,7 +325,7 @@ void Menu::movement(int direction)
 		
 		for(int i = 0; i < selection_; ++i)
 		{
-			if(items[i].visible)
+			if(items[i].visible && items[i].selectable)
 			{
 				moveTo(i);
 				return;
@@ -350,6 +366,14 @@ int Menu::addItem(MenuItem item)
 	if(item.visible)
 		++visibleItemCount;
 	return idx;
+}
+
+void Menu::print(char const* name)
+{
+	for (auto& i : items)
+	{
+		printf("%s.addItem(MenuItem(%d, %d, \"%s\"));\n", name, i.color, i.disColour, i.string.c_str());
+	}
 }
 
 void Menu::clear()

@@ -6,9 +6,8 @@
 #include "../common.hpp"
 #include "../text.hpp"
 
-void TimeBehavior::onUpdate(Menu& menu, int item)
+void TimeBehavior::onUpdate(Menu& menu, MenuItem& item)
 {
-	MenuItem& i = menu.items[item];
-	i.value = frames ? timeToStringFrames(v) : timeToString(v);
-	i.hasValue = true;
+	item.value = frames ? timeToStringFrames(v) : timeToString(v);
+	item.hasValue = true;
 }

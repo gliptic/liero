@@ -11,51 +11,12 @@
 #include <ctime>
 #include "ai/predictive_ai.hpp"
 
-gvl::shared_ptr<WormAI> createAi(int controller, Worm& worm)
-{
-	if (controller == 1)
-		//return gvl::shared_ptr<WormAI>(new DumbLieroAI());
-		return gvl::shared_ptr<WormAI>(new SimpleAI());
-	else if (controller == 2)
-		return gvl::shared_ptr<WormAI>(new FollowAI(worm.index == 0));
 
-	return gvl::shared_ptr<WormAI>();
-}
-
+/*
 void Game::createDefaults()
 {
-	Worm* worm1 = new Worm();
-	worm1->settings = settings->wormSettings[0];
-	worm1->health = worm1->settings->health;
-	worm1->index = 0;
-	worm1->ai = createAi(worm1->settings->controller, *worm1);
-	
-	Worm* worm2 = new Worm();
-	worm2->settings = settings->wormSettings[1];
-	worm2->health = worm2->settings->health;
-	worm2->index = 1;
-	worm2->ai = createAi(worm2->settings->controller, *worm2);
-		
-#if 0
-	for(int i = 0; i < 10; ++i)
-	{
-		Worm* worm2 = new Worm(*this);
-		worm2->settings = settings->wormSettings[1];
-		worm2->health = worm2->settings->health;
-		worm2->index = 1;
-		if(worm2->settings->controller == 1)
-			worm2->ai.reset(new DumbLieroAI(*worm2));
-			
-		addWorm(worm2);
-	}
-#endif
-	
-	addViewport(new Viewport(Rect(0, 0, 158, 158), worm1, 0, 504, 350));
-	addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2, 218, 504, 350));
-	
-	addWorm(worm1);
-	addWorm(worm2);
-}
+
+}*/
 
 Game::Game(
 	gvl::shared_ptr<Common> common,
@@ -308,7 +269,7 @@ void Game::processFrame()
 			
 			bool down = false;
 			
-			if(v.worm->killedTimer > 16)
+			if(wormByIdx(v.wormIdx)->killedTimer > 16)
 				down = true;
 				
 			if(down)
@@ -598,15 +559,27 @@ bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x,
 	return true;
 }
 
-void Game::postClone(Game& original)
+void Game::postClone(Game& original, bool complete)
 {
-	statsRecorder.reset(new StatsRecorder);
-	soundPlayer.reset(new NullSoundPlayer);
-	viewports.clear(); // TODO: Preserve viewports. Must-have for e.g. MARF
-
-	for (size_t i = 0; i < worms.size(); ++i)
+	if (!complete)
 	{
-		worms[i] = new Worm(*worms[i]);
+		statsRecorder.reset(new StatsRecorder);
+		soundPlayer.reset(new NullSoundPlayer);
+		viewports.clear();
+	}
+	else
+	{
+		statsRecorder.reset(new NormalStatsRecorder(static_cast<NormalStatsRecorder&>(*statsRecorder)));
+
+		for (auto& vp : viewports)
+		{
+			vp = new Viewport(*vp);
+		}
+	}
+
+	for (auto& w : worms)
+	{
+		w = new Worm(*w);
 	}
 
 }

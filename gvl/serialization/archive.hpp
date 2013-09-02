@@ -2,8 +2,9 @@
 #define UUID_8FD050E2BE0F4345A60D1A8646927047
 
 #include <stdexcept>
-#include <gvl/io/stream.hpp>
-#include <gvl/io/encoding.hpp>
+//#include <gvl/io/stream.hpp>
+//#include <gvl/io/encoding.hpp>
+#include "coding.hpp"
 #include <gvl/serialization/context.hpp>
 #include <gvl/support/cstdint.hpp>
 #include <gvl/support/bits.hpp>
@@ -12,14 +13,14 @@
 namespace gvl
 {
 
-template<typename Context = default_serialization_context>
+template<typename Reader, typename Context = default_serialization_context>
 struct in_archive
 {
 	static bool const in = true;
 	static bool const out = false;
 	static bool const reread = false;
 	
-	in_archive(gvl::octet_stream_reader& reader, Context& context)
+	in_archive(Reader& reader, Context& context)
 	: reader(reader), context(context)
 	{
 	}
@@ -188,13 +189,13 @@ struct in_archive
 		return *this;
 	}
 	
-	gvl::octet_stream_reader& reader;
+	Reader& reader;
 	Context& context;
 };
 
 template<
+	typename Writer,
 	typename Context = default_serialization_context,
-	typename Writer = gvl::octet_stream_writer,
 	bool Reread = true>
 struct out_archive
 {

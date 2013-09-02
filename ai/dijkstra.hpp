@@ -2,6 +2,7 @@
 #define LIERO_AI_DIJKSTRA_HPP
 
 #include <gvl/containers/pairing_heap.hpp>
+#include <gvl/math/vec.hpp>
 
 #include "../level.hpp"
 #include "../common.hpp"
@@ -196,12 +197,17 @@ struct dijkstra_level : dijkstra_state<level_cell*, dijkstra_level>
 		return &cells[(y + 1) * pitch + x + 1];
 	}
 
-	std::pair<int, int> coords(level_cell* c)
+	gvl::ivec2 coords(level_cell* c)
 	{
 		int offset = c - cells;
 		int y = offset / pitch;
 		int x = offset % pitch;
-		return std::make_pair(x - 1, y - 1);
+		return gvl::ivec2(x - 1, y - 1);
+	}
+
+	gvl::ivec2 coords_level(level_cell* c)
+	{
+		return coords(c) * factor + gvl::ivec2(factor / 2, factor / 2);
 	}
 
 	level_cell* cell_from_px(int x, int y)

@@ -30,7 +30,7 @@ WeaponSelection::WeaponSelection(Game& game)
 		
 		Viewport& vp = *game.viewports[i];
 		
-		Worm& worm = *vp.worm;
+		Worm& worm = *game.wormByIdx(vp.wormIdx);
 		WormSettings& ws = *worm.settings;
 		
 		menus[i].items.push_back(MenuItem(57, 57, common.texts.randomize));
@@ -52,15 +52,18 @@ WeaponSelection::WeaponSelection(Game& game)
 			
 			bool enoughWeapons = (enabledWeaps >= Settings::selectableWeapons);
 			
-			while(true)
+			if (game.settings->weapTable[common.weapOrder[ws.weapons[j]]] > 0)
 			{
-				int w = common.weapOrder[ws.weapons[j]];
-				
-				if((!enoughWeapons || !weapUsed[w])
-				&& game.settings->weapTable[w] <= 0)
-					break;
-					
-				ws.weapons[j] = gfx.rand(1, 41);
+				while (true)
+				{
+					ws.weapons[j] = gfx.rand(1, 41);
+
+					int w = common.weapOrder[ws.weapons[j]];
+
+					if((!enoughWeapons || !weapUsed[w])
+					&& game.settings->weapTable[w] <= 0)
+						break;
+				}
 			}
 			
 			int w = common.weapOrder[ws.weapons[j]];
@@ -121,7 +124,7 @@ void WeaponSelection::draw()
 		
 		Viewport& vp = *game.viewports[i];
 		
-		Worm& worm = *vp.worm;
+		Worm& worm = *game.wormByIdx(vp.wormIdx);
 		WormSettings& ws = *worm.settings;
 		
 		int width = common.font.getDims(ws.name);
@@ -152,7 +155,7 @@ bool WeaponSelection::processFrame()
 		int weapID = menus[i].selection() - 1;
 		
 		Viewport& vp = *game.viewports[i];
-		Worm& worm = *vp.worm;
+		Worm& worm = *game.wormByIdx(vp.wormIdx);
 		
 		WormSettings& ws = *worm.settings;
 		
@@ -178,7 +181,7 @@ bool WeaponSelection::processFrame()
 					
 					int w = common.weapOrder[ws.weapons[weapID]];
 					worm.weapons[weapID].id = w;
-					menus[i].items[menus[i].selection()].string = common.weapons[w].name;
+					menus[i].selected()->string = common.weapons[w].name;
 				}
 				
 				if(worm.pressed(Worm::Right))
@@ -197,7 +200,7 @@ bool WeaponSelection::processFrame()
 					
 					int w = common.weapOrder[ws.weapons[weapID]];
 					worm.weapons[weapID].id = w;
-					menus[i].items[menus[i].selection()].string = common.weapons[w].name;
+					menus[i].selected()->string = common.weapons[w].name;
 				}
 			}
 			

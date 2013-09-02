@@ -28,7 +28,7 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 	if(disabled)
 		c = disColour;
 	else if(selected)
-		c = 168;
+		c = disabled ? 7 : 168;
 	else
 		c = color;
 		

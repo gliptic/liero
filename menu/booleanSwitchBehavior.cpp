@@ -6,7 +6,7 @@
 #include "../sfx.hpp"
 #include "../common.hpp"
 
-bool BooleanSwitchBehavior::onLeftRight(Menu& menu, int item, int dir)
+bool BooleanSwitchBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir)
 {
 	if(dir > 0)
 		sfx.play(common, 25);
@@ -18,7 +18,7 @@ bool BooleanSwitchBehavior::onLeftRight(Menu& menu, int item, int dir)
 	return false;
 }
 
-int BooleanSwitchBehavior::onEnter(Menu& menu, int item)
+int BooleanSwitchBehavior::onEnter(Menu& menu, MenuItem& item)
 {
 	sfx.play(common, 27);
 	set(!v);
@@ -26,9 +26,8 @@ int BooleanSwitchBehavior::onEnter(Menu& menu, int item)
 	return -1;
 }
 
-void BooleanSwitchBehavior::onUpdate(Menu& menu, int item)
+void BooleanSwitchBehavior::onUpdate(Menu& menu, MenuItem& item)
 {
-	MenuItem& i = menu.items[item];
-	i.value = common.texts.onoff[v];
-	i.hasValue = true;
+	item.value = common.texts.onoff[v];
+	item.hasValue = true;
 }

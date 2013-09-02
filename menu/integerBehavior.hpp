@@ -17,11 +17,9 @@ struct IntegerBehavior : ItemBehavior
 	{
 	}
 	
-	bool onLeftRight(Menu& menu, int item, int dir);
-	int onEnter(Menu& menu, int item);
-	void onUpdate(Menu& menu, int item);
-	
-	
+	bool onLeftRight(Menu& menu, MenuItem& item, int dir);
+	int onEnter(Menu& menu, MenuItem& item);
+	void onUpdate(Menu& menu, MenuItem& item);
 	
 	Common& common;
 	int& v;

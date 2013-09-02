@@ -8,7 +8,22 @@
 #include "../reader.hpp"
 #include "../filesystem.hpp"
 
+#include "../ai/predictive_ai.hpp"
+#include "../worm.hpp"
+#include "../viewport.hpp"
+
 #include <cctype>
+
+gvl::shared_ptr<WormAI> createAi(int controller, Worm& worm)
+{
+	if (controller == 1)
+		return gvl::shared_ptr<WormAI>(new DumbLieroAI());
+	else if (controller == 2)
+		return gvl::shared_ptr<WormAI>(new FollowAI(
+			Weights(), worm.index == 0));
+
+	return gvl::shared_ptr<WormAI>();
+}
 
 LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings)
 : game(common, settings, gvl::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)))
@@ -16,7 +31,37 @@ LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr
 , fadeValue(0)
 , goingToMenu(false)
 {
-	game.createDefaults();
+	Worm* worm1 = new Worm();
+	worm1->settings = settings->wormSettings[0];
+	worm1->health = worm1->settings->health;
+	worm1->index = 0;
+	worm1->ai = createAi(worm1->settings->controller, *worm1);
+	
+	Worm* worm2 = new Worm();
+	worm2->settings = settings->wormSettings[1];
+	worm2->health = worm2->settings->health;
+	worm2->index = 1;
+	worm2->ai = createAi(worm2->settings->controller, *worm2);
+
+#if 0
+	for(int i = 0; i < 10; ++i)
+	{
+		Worm* worm2 = new Worm(*this);
+		worm2->settings = settings->wormSettings[1];
+		worm2->health = worm2->settings->health;
+		worm2->index = 1;
+		if(worm2->settings->controller == 1)
+			worm2->ai.reset(new DumbLieroAI(*worm2));
+			
+		addWorm(worm2);
+	}
+#endif
+	
+	game.addViewport(new Viewport(Rect(0, 0, 158, 158), worm1->index, 0, 504, 350));
+	game.addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2->index, 218, 504, 350));
+	
+	game.addWorm(worm1);
+	game.addWorm(worm2);
 }
 
 LocalController::~LocalController()

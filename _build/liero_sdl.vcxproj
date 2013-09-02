@@ -94,6 +94,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\ai\dijkstra.cpp" />
+    <ClCompile Include="..\ai\predictive_ai.cpp" />
     <ClCompile Include="..\controller\commonController.cpp" />
     <ClCompile Include="..\controller\localController.cpp" />
     <ClCompile Include="..\controller\replayController.cpp" />
@@ -106,6 +108,7 @@
     <ClCompile Include="..\menu\hiddenMenu.cpp" />
     <ClCompile Include="..\menu\integerBehavior.cpp" />
     <ClCompile Include="..\menu\itemBehavior.cpp" />
+    <ClCompile Include="..\menu\mainMenu.cpp" />
     <ClCompile Include="..\menu\menu.cpp" />
     <ClCompile Include="..\menu\menuItem.cpp" />
     <ClCompile Include="..\menu\timeBehavior.cpp" />
@@ -119,6 +122,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\ai\astar.hpp" />
+    <ClInclude Include="..\ai\dijkstra.hpp" />
+    <ClInclude Include="..\ai\predictive_ai.hpp" />
+    <ClInclude Include="..\ai\work_queue.hpp" />
     <ClInclude Include="..\controller\commonController.hpp" />
     <ClInclude Include="..\controller\controller.hpp" />
     <ClInclude Include="..\controller\localController.hpp" />
@@ -133,6 +140,7 @@
     <ClInclude Include="..\menu\hiddenMenu.hpp" />
     <ClInclude Include="..\menu\integerBehavior.hpp" />
     <ClInclude Include="..\menu\itemBehavior.hpp" />
+    <ClInclude Include="..\menu\mainMenu.hpp" />
     <ClInclude Include="..\menu\menu.hpp" />
     <ClInclude Include="..\menu\menuItem.hpp" />
     <ClInclude Include="..\menu\timeBehavior.hpp" />

@@ -298,6 +298,7 @@ inline bool free(Material m)
 bool Level::selectSpawn(Rand& rand, int w, int h, gvl::ivec2& selected)
 {
 	vector<int> vruns(width - w + 1);
+	vector<int> vdists(width - w + 1);
 
 	Material* m = &materials[0];
 
@@ -326,14 +327,22 @@ bool Level::selectSpawn(Rand& rand, int w, int h, gvl::ivec2& selected)
 				continue;
 
 			int& vrun = vruns[cx];
+			int& vdist = vdists[cx];
 
 			if (hrun >= w)
 			{
+				if (vdist > 0)
+				{
+					vrun = 0;
+					vdist = 0;
+				}
 				++vrun;
 			}
 			else
 			{
-				if (vrun >= h && filled > w / 4)
+				if (vrun >= h
+				&& vdist <= 8
+				&& filled > w / 4)
 				{
 					// We have a supported square at (x + 1 - w, y - h)
 					++i;
@@ -343,7 +352,7 @@ bool Level::selectSpawn(Rand& rand, int w, int h, gvl::ivec2& selected)
 						selected.y = y - h;
 					}
 				}
-				vrun = 0;
+				++vdist;
 			}
 
 			filled -= !free(m[-w]);

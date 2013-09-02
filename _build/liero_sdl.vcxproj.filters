@@ -43,6 +43,15 @@
     <ClCompile Include="..\keys.cpp" />
     <ClCompile Include="..\sfx.cpp" />
     <ClCompile Include="..\weapsel.cpp" />
+    <ClCompile Include="..\ai\dijkstra.cpp">
+      <Filter>ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ai\predictive_ai.cpp">
+      <Filter>ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\menu\mainMenu.cpp">
+      <Filter>menu</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="controller">
@@ -50,6 +59,9 @@
     </Filter>
     <Filter Include="menu">
       <UniqueIdentifier>{2f83187c-a2b9-4c35-961d-e08740dffc39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ai">
+      <UniqueIdentifier>{8f56fa94-9861-4c4b-a8a4-39f75b862710}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -100,6 +112,21 @@
     <ClInclude Include="..\sfx.hpp" />
     <ClInclude Include="..\weapsel.hpp" />
     <ClInclude Include="..\menu\fileSelector.hpp">
+      <Filter>menu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ai\astar.hpp">
+      <Filter>ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ai\dijkstra.hpp">
+      <Filter>ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ai\predictive_ai.hpp">
+      <Filter>ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ai\work_queue.hpp">
+      <Filter>ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\menu\mainMenu.hpp">
       <Filter>menu</Filter>
     </ClInclude>
   </ItemGroup>

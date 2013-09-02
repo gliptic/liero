@@ -8,7 +8,7 @@
 #include "../common.hpp"
 #include "../text.hpp"
 
-bool IntegerBehavior::onLeftRight(Menu& menu, int item, int dir)
+bool IntegerBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir)
 {
 	//if(gfx.menuCyclic != 0)
 	if ((gfx.menuCycles % scrollInterval) == 0)
@@ -30,7 +30,7 @@ bool IntegerBehavior::onLeftRight(Menu& menu, int item, int dir)
 	return true;
 }
 
-int IntegerBehavior::onEnter(Menu& menu, int item)
+int IntegerBehavior::onEnter(Menu& menu, MenuItem& item)
 {
 	sfx.play(common, 27);
 	
@@ -48,11 +48,10 @@ int IntegerBehavior::onEnter(Menu& menu, int item)
 	return -1;
 }
 
-void IntegerBehavior::onUpdate(Menu& menu, int item)
+void IntegerBehavior::onUpdate(Menu& menu, MenuItem& item)
 {
-	MenuItem& i = menu.items[item];
-	i.value = toString(v);
-	i.hasValue = true;
+	item.value = toString(v);
+	item.hasValue = true;
 	if(percentage)
-		i.value += "%";
+		item.value += "%";
 }

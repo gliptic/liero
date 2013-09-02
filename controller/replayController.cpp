@@ -5,7 +5,7 @@
 #include "../sfx.hpp"
 
 ReplayController::ReplayController(
-	gvl::shared_ptr<Common> common, gvl::stream_ptr source)
+	gvl::shared_ptr<Common> common, gvl::source source)
 : state(StateInitial)
 , fadeValue(0)
 , goingToMenu(false)
@@ -63,6 +63,13 @@ bool ReplayController::process()
 {
 	if(state == StateGame || state == StateGameEnded)
 	{
+		if(gfx.testSDLKeyOnce(SDLK_r))
+		{
+			*game = *initialGame;
+			game->postClone(*initialGame, true);
+			replay->reader = initialReader;
+		}
+
 		int realFrameSkip = inverseFrameSkip ? !(cycles % frameSkip) : frameSkip;
 		for(int i = 0; i < realFrameSkip && (state == StateGame || state == StateGameEnded); ++i)
 		{
@@ -151,6 +158,9 @@ void ReplayController::changeState(State newState)
 	if(newState == StateGame)
 	{
 		game->startGame();
+		initialGame.reset(new Game(*game));
+		initialGame->postClone(*game, true);
+		initialReader = replay->reader;
 	}
 	else if(newState == StateGameEnded)
 	{

@@ -16,6 +16,8 @@
 #include <cstdio>
 #include <memory>
 
+#include <gvl/io2/fstream.hpp>
+
 #include "controller/replayController.hpp"
 #include "controller/localController.hpp"
 #include "controller/controller.hpp"
@@ -37,7 +39,7 @@ struct KeyBehavior : ItemBehavior
 	{
 	}
 	
-	int onEnter(Menu& menu, int item)
+	int onEnter(Menu& menu, MenuItem& item)
 	{
 		sfx.play(common, 27);
 		uint32_t k;
@@ -62,9 +64,10 @@ struct KeyBehavior : ItemBehavior
 		return -1;
 	}
 	
-	void onUpdate(Menu& menu, int item)
+	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		menu.items[item].value = gfx.getKeyName(extended ? keyEx : key);
+		item.value = gfx.getKeyName(extended ? keyEx : key);
+		item.hasValue = true;
 	}
 	
 	Common& common;
@@ -81,12 +84,19 @@ struct WormNameBehavior : ItemBehavior
 	{
 	}
 	
-	int onEnter(Menu& menu, int item)
+	int onEnter(Menu& menu, MenuItem& item)
 	{
 		sfx.play(common, 27);
 		
 		ws.randomName = false;
-		gfx.inputString(ws.name, 20, 275, 20);
+
+		int x, y;
+		if(!menu.itemPosition(item, x, y))
+			return -1;
+			
+		x += menu.valueOffsetX + 2;
+
+		gfx.inputString(ws.name, 20, x, y);
 		
 		if(ws.name.empty())
 		{
@@ -97,9 +107,10 @@ struct WormNameBehavior : ItemBehavior
 		return -1;
 	}
 	
-	void onUpdate(Menu& menu, int item)
+	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		menu.items[item].value = ws.name;
+		item.value = ws.name;
+		item.hasValue = true;
 	}
 	
 	Common& common;
@@ -116,7 +127,7 @@ struct ProfileSaveBehavior : ItemBehavior
 	{
 	}
 	
-	int onEnter(Menu& menu, int item)
+	int onEnter(Menu& menu, MenuItem& item)
 	{
 		sfx.play(common, 27);
 		
@@ -143,16 +154,11 @@ struct ProfileSaveBehavior : ItemBehavior
 		return -1;
 	}
 	
-	void onUpdate(Menu& menu, int item)
+	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		if(saveAs)
+		if(!saveAs)
 		{
-			menu.items[item].value = getLeaf(ws.profilePath);
-			menu.items[item].hasValue = true;
-		}
-		else
-		{
-			menu.items[item].visible = !ws.profilePath.empty();
+			item.visible = !ws.profilePath.empty();
 		}
 	}
 	
@@ -161,6 +167,38 @@ struct ProfileSaveBehavior : ItemBehavior
 	bool saveAs;
 };
 
+struct ProfileLoadedBehavior : ItemBehavior
+{
+	ProfileLoadedBehavior(Common& common, WormSettings& ws)
+	: common(common)
+	, ws(ws)
+	{
+	}
+	
+	void onUpdate(Menu& menu, MenuItem& item)
+	{
+		item.value = getLeaf(ws.profilePath);
+		item.hasValue = true;
+		item.visible = !ws.profilePath.empty();
+	}
+	
+	Common& common;
+	WormSettings& ws;
+};
+
+struct WeaponEnumBehavior : EnumBehavior
+{
+	WeaponEnumBehavior(Common& common, uint32_t& v)
+	: EnumBehavior(common, v, 1, 40, false)
+	{
+	}
+		
+	void onUpdate(Menu& menu, MenuItem& item)
+	{
+		item.value = common.weapons[common.weapOrder[v]].name;
+		item.hasValue = true;
+	}
+};
 
 Gfx::Gfx()
 : mainMenu(53, 20)
@@ -233,97 +271,74 @@ void Gfx::loadMenus()
 {
 	ReaderFile& exe = openLieroEXE();
 
-	hiddenMenu.addItem(MenuItem(48, 7, "RECORD REPLAYS"));
-	hiddenMenu.addItem(MenuItem(48, 7, "LOAD REPLAY..."));
-	hiddenMenu.addItem(MenuItem(48, 7, "POWERLEVEL PALETTES"));
-	hiddenMenu.addItem(MenuItem(48, 7, "SCALING FILTER"));
-	hiddenMenu.addItem(MenuItem(48, 7, "DOUBLE RES (F6)"));
-	hiddenMenu.addItem(MenuItem(48, 7, "FULLSCREEN (F5)"));
-	hiddenMenu.addItem(MenuItem(48, 7, "FULLSCREEN WIDTH"));
-	hiddenMenu.addItem(MenuItem(48, 7, "FULLSCREEN HEIGHT"));
-	hiddenMenu.addItem(MenuItem(48, 7, "AI FRAMES"));
-	hiddenMenu.addItem(MenuItem(48, 7, "AI MUTATIONS"));
-	hiddenMenu.addItem(MenuItem(48, 7, "PALETTE"));
-	hiddenMenu.addItem(MenuItem(48, 7, "LOAD OPTIONS..."));
-	hiddenMenu.addItem(MenuItem(48, 7, "SAVE OPTIONS..."));
-	
-	exe.seekg(0x1B08A);
-	mainMenu.readItems(exe, 14, 3, true);
-	int p = exe.tellg();
+	hiddenMenu.addItem(MenuItem(48, 7, "FULLSCREEN (F5)", HiddenMenu::Fullscreen));
+	hiddenMenu.addItem(MenuItem(48, 7, "DOUBLE SIZE (F6)", HiddenMenu::DoubleRes));
+	hiddenMenu.addItem(MenuItem(48, 7, "SET FULLSCREEN WIDTH", HiddenMenu::FullscreenW));
+	hiddenMenu.addItem(MenuItem(48, 7, "SET FULLSCREEN HEIGHT", HiddenMenu::FullscreenH));
+	hiddenMenu.addItem(MenuItem(48, 7, "POWERLEVEL PALETTES", HiddenMenu::LoadPowerLevels));
+	hiddenMenu.addItem(MenuItem(48, 7, "SHADOWS", HiddenMenu::Shadows));
+	hiddenMenu.addItem(MenuItem(48, 7, "SCALING FILTER", HiddenMenu::ScalingFilter));
+	hiddenMenu.addItem(MenuItem(48, 7, "SCREEN SYNC.", HiddenMenu::ScreenSync));
+	hiddenMenu.addItem(MenuItem(48, 7, "AUTO-RECORD REPLAYS", HiddenMenu::RecordReplays));
+	hiddenMenu.addItem(MenuItem(48, 7, "AI FRAMES", HiddenMenu::AiFrames));
+	hiddenMenu.addItem(MenuItem(48, 7, "AI MUTATIONS", HiddenMenu::AiMutations));
+	hiddenMenu.addItem(MenuItem(48, 7, "PALETTE", HiddenMenu::PaletteSelect));
+	hiddenMenu.addItem(MenuItem(48, 7, "BOT WEAPONS", HiddenMenu::SelectBotWeapons));
 
-	exe.seekg(0x1B0C2);
-	settingsMenu.readItems(exe, 21, 9, false, 48, 7);
-	hiddenMenu.readItems(exe, 21, 3, false, 48, 7); // Shadows, ScreenSync, LoadChange
-	mainMenu.readItems(exe, 21, 2, false, 48, 48); // Player settings
-	settingsMenu.readItems(exe, 21, 1, false, 48, 7);
+	playerMenu.addItem(MenuItem(3, 7, "PROFILE LOADED", PlayerMenu::PlLoadedProfile));
+	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE", PlayerMenu::PlSaveProfile));
+	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE AS...", PlayerMenu::PlSaveProfileAs));
+	playerMenu.addItem(MenuItem(3, 7, "LOAD PROFILE", PlayerMenu::PlLoadProfile));
+	playerMenu.addItem(MenuItem(48, 7, "NAME", PlayerMenu::PlName));
+	playerMenu.addItem(MenuItem(48, 7, "HEALTH", PlayerMenu::PlHealth));
+	playerMenu.addItem(MenuItem(48, 7, "Red", PlayerMenu::PlRed));
+	playerMenu.addItem(MenuItem(48, 7, "Green", PlayerMenu::PlGreen));
+	playerMenu.addItem(MenuItem(48, 7, "Blue", PlayerMenu::PlBlue));
+	playerMenu.addItem(MenuItem(48, 7, "AIM UP", PlayerMenu::PlUp));
+	playerMenu.addItem(MenuItem(48, 7, "AIM DOWN", PlayerMenu::PlDown));
+	playerMenu.addItem(MenuItem(48, 7, "MOVE LEFT", PlayerMenu::PlLeft));
+	playerMenu.addItem(MenuItem(48, 7, "MOVE RIGHT", PlayerMenu::PlRight));
+	playerMenu.addItem(MenuItem(48, 7, "FIRE", PlayerMenu::PlFire));
+	playerMenu.addItem(MenuItem(48, 7, "CHANGE", PlayerMenu::PlChange));
+	playerMenu.addItem(MenuItem(48, 7, "JUMP", PlayerMenu::PlJump));
+	playerMenu.addItem(MenuItem(48, 7, "DIG", PlayerMenu::PlDig));
 
-	mainMenu.addItem(MenuItem(48, 48, "ADVANCED"));
+	for (int i = 0; i < 5; ++i)
+		playerMenu.addItem(MenuItem(48, 7, std::string("WEAPON ") + (char)(i + '1'), PlayerMenu::PlWeap0 + i));
 
-	exe.seekg(p);
-	mainMenu.readItems(exe, 14, 1, true); // QUIT TO OS
-	
+	playerMenu.addItem(MenuItem(48, 7, "CONTROLLER", PlayerMenu::PlController));
+
+	settingsMenu.addItem(MenuItem(48, 7, "GAME MODE", SettingsMenu::SiGameMode));
+	settingsMenu.addItem(MenuItem(48, 7, "TIME TO LOSE", SettingsMenu::SiTimeToLose));
+	settingsMenu.addItem(MenuItem(48, 7, "TIME TO WIN", SettingsMenu::SiTimeToWin));
+	settingsMenu.addItem(MenuItem(48, 7, "ZONE TIMEOUT", SettingsMenu::SiZoneTimeout));
+	settingsMenu.addItem(MenuItem(48, 7, "FLAGS TO WIN", SettingsMenu::SiFlagsToWin));
+	settingsMenu.addItem(MenuItem(48, 7, "LIVES", SettingsMenu::SiLives));
+	settingsMenu.addItem(MenuItem(48, 7, "LEVEL", SettingsMenu::SiLevel));
+	settingsMenu.addItem(MenuItem(48, 7, "LOADING TIMES", SettingsMenu::SiLoadingTimes));
+	settingsMenu.addItem(MenuItem(48, 7, "WEAPON OPTIONS", SettingsMenu::SiWeaponOptions));
+	settingsMenu.addItem(MenuItem(48, 7, "MAX BONUSES", SettingsMenu::SiMaxBonuses));
+	settingsMenu.addItem(MenuItem(48, 7, "NAMES ON BONUSES", SettingsMenu::SiNamesOnBonuses));
+	settingsMenu.addItem(MenuItem(48, 7, "MAP", SettingsMenu::SiMap));
+	settingsMenu.addItem(MenuItem(48, 7, "AMOUNT OF BLOOD", SettingsMenu::SiAmountOfBlood));
+	settingsMenu.addItem(MenuItem(48, 7, "LOAD+CHANGE", SettingsMenu::LoadChange));
+	settingsMenu.addItem(MenuItem(48, 7, "REGENERATE LEVEL", SettingsMenu::SiRegenerateLevel));
+	settingsMenu.addItem(MenuItem(48, 7, "SAVE SETUP AS...", SettingsMenu::SaveOptions));
+	settingsMenu.addItem(MenuItem(48, 7, "LOAD SETUP", SettingsMenu::LoadOptions));
+
+	mainMenu.addItem(MenuItem(10, 10, "RESUME GAME", MainMenu::MaResumeGame));
+	mainMenu.addItem(MenuItem(10, 10, "NEW GAME (F1)", MainMenu::MaNewGame));
+	mainMenu.addItem(MenuItem(48, 48, "OPTIONS (F2)", MainMenu::MaAdvanced));
+	mainMenu.addItem(MenuItem(48, 48, "REPLAYS (F3)", MainMenu::MaReplays));
+	mainMenu.addItem(MenuItem(6, 6, "QUIT TO OS (F10)", MainMenu::MaQuit));
+	mainMenu.addItem(MenuItem::space());
+	mainMenu.addItem(MenuItem(48, 48, "LEFT PLAYER (1)", MainMenu::MaPlayer1Settings));
+	mainMenu.addItem(MenuItem(48, 48, "RIGHT PLAYER (2)", MainMenu::MaPlayer2Settings));
+	mainMenu.addItem(MenuItem(48, 48, "MATCH SETUP (3)", MainMenu::MaSettings));
+
 	settingsMenu.valueOffsetX = 100;
-	
-	settingsMenu.items[Settings::SiLives].string = common->texts.gameModeSpec[0];
-	settingsMenu.addItem(MenuItem(48, 7, common->texts.gameModeSpec[1]), Settings::SiTimeToLose);
-	settingsMenu.addItem(MenuItem(48, 7, "TIME TO WIN"), Settings::SiTimeToWin);
-	settingsMenu.addItem(MenuItem(48, 7, "ZONE TIMEOUT"), Settings::SiZoneTimeout);
-	settingsMenu.addItem(MenuItem(48, 7, common->texts.gameModeSpec[2]), Settings::SiFlagsToWin);
-	
-	for(int i = 0; i < Settings::SiWeaponOptions; ++i)
-	{
-		settingsMenu.items[i].hasValue = true;
-	}
-	
-	exe.seekg(0x1B210);
-	playerMenu.readItems(exe, 13, 12, false, 48, 7);
-	
-	// Extra control settings:
-	playerMenu.addItem(MenuItem(48, 7, "DIG"));
-	
-	// Finish reading liero menus:
-	playerMenu.readItems(exe, 13, 1, false, 48, 7);
 	playerMenu.valueOffsetX = 95;
-	
-	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE"));
-	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE AS..."));
-	playerMenu.addItem(MenuItem(3, 7, "LOAD PROFILE"));
-	
-	for(int i = 0; i < 14; ++i)
-	{
-		playerMenu.items[i].hasValue = true;
-	}
-	
-	hiddenMenu.addItem(MenuItem(48, 7, "BOT WEAPONS"));
-	
 	hiddenMenu.valueOffsetX = 120;
-}
-
-void Gfx::updateSettingsMenu()
-{
-	settingsMenu.items[Settings::SiGameMode].value = common->texts.gameModes[settings->gameMode];
-	
-	settingsMenu.setVisibility(Settings::SiLives, false);
-	settingsMenu.setVisibility(Settings::SiTimeToLose, false);
-	settingsMenu.setVisibility(Settings::SiTimeToWin, false);
-	settingsMenu.setVisibility(Settings::SiZoneTimeout, false);
-	settingsMenu.setVisibility(Settings::SiFlagsToWin, false);
-	
-	switch(settings->gameMode)
-	{
-		case Settings::GMKillEmAll:
-			settingsMenu.setVisibility(Settings::SiLives, true);
-		break;
-		
-		case Settings::GMGameOfTag:
-			settingsMenu.setVisibility(Settings::SiTimeToLose, true);
-		break;
-
-		case Settings::GMHoldazone:
-			settingsMenu.setVisibility(Settings::SiTimeToWin, true);
-			settingsMenu.setVisibility(Settings::SiZoneTimeout, true);
-		break;
-	}
 }
 
 void Gfx::setFullscreen(bool newFullscreen)
@@ -384,8 +399,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			std::cout << "v " << s << ", " << std::hex << ev.key.keysym.mod << ", " << std::dec << int(ev.key.keysym.scancode) << std::endl;
 #endif
 			
-			if(((ev.key.keysym.mod & KMOD_ALT) && s == SDLK_RETURN)
-			|| s == SDLK_F5)
+			if(s == SDLK_F5)
 			{
 				setFullscreen(!fullscreen);
 			}
@@ -483,6 +497,11 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			js.btnState[jbtn] = (ev.jbutton.state == SDL_PRESSED);
 			if(controller)
 				controller->onKey(joyButtonToExKey(ev.jbutton.which, jbtn), js.btnState[jbtn]);
+		}
+		break;
+
+		case SDL_ACTIVEEVENT:
+		{
 		}
 		break;
 	}
@@ -720,39 +739,6 @@ void changeVariable(T& var, T change, T min, T max, T scale)
 	}
 }
 
-struct LevelSelectBehavior : ItemBehavior
-{
-	LevelSelectBehavior(Common& common)
-	: common(common)
-	{
-	}
-	
-	int onEnter(Menu& menu, int item)
-	{
-		sfx.play(common, 27);
-		gfx.selectLevel();
-		sfx.play(common, 27);
-		onUpdate(menu, item);
-		return -1;
-	}
-	
-	void onUpdate(Menu& menu, int item)
-	{
-		if(!gfx.settings->randomLevel)
-		{
-			menu.items[Settings::SiLevel].value = '"' + getLeaf(gfx.settings->levelFile) + '"';
-			menu.items[Settings::SiRegenerateLevel].string = common.texts.reloadLevel; // Not string?
-		}
-		else
-		{
-			menu.items[Settings::SiLevel].value = common.texts.random2;
-			menu.items[Settings::SiRegenerateLevel].string = common.texts.regenLevel;
-		}
-	}
-	
-	Common& common;
-};
-
 struct ProfileLoadBehavior : ItemBehavior
 {
 	ProfileLoadBehavior(Common& common, WormSettings& ws)
@@ -761,7 +747,7 @@ struct ProfileLoadBehavior : ItemBehavior
 	{
 	}
 	
-	int onEnter(Menu& menu, int item)
+	int onEnter(Menu& menu, MenuItem& item)
 	{
 		sfx.play(common, 27);
 		gfx.selectProfile(ws);
@@ -774,23 +760,7 @@ struct ProfileLoadBehavior : ItemBehavior
 	WormSettings& ws;
 };
 
-struct WeaponOptionsBehavior : ItemBehavior
-{
-	WeaponOptionsBehavior(Common& common)
-	: common(common)
-	{
-	}
 
-	int onEnter(Menu& menu, int item)
-	{
-		sfx.play(common, 27);
-		gfx.weaponOptions();
-		sfx.play(common, 27);
-		return -1;
-	}
-
-	Common& common;
-};
 
 struct PlayerSettingsBehavior : ItemBehavior
 {
@@ -800,7 +770,7 @@ struct PlayerSettingsBehavior : ItemBehavior
 	{
 	}
 	
-	int onEnter(Menu& menu, int item)
+	int onEnter(Menu& menu, MenuItem& item)
 	{
 		sfx.play(common, 27);
 		gfx.playerSettings(player);
@@ -811,47 +781,186 @@ struct PlayerSettingsBehavior : ItemBehavior
 	int player;
 };
 
-ItemBehavior* SettingsMenu::getItemBehavior(Common& common, int item)
+struct LevelSelectBehavior : ItemBehavior
 {
-	switch(item)
+	LevelSelectBehavior(Common& common)
+	: common(common)
 	{
-		case Settings::SiNamesOnBonuses:
+	}
+	
+	int onEnter(Menu& menu, MenuItem& item)
+	{
+		sfx.play(common, 27);
+		gfx.selectLevel();
+		sfx.play(common, 27);
+		onUpdate(menu, item);
+		return -1;
+	}
+	
+	void onUpdate(Menu& menu, MenuItem& item)
+	{
+		item.hasValue = true;
+		if(!gfx.settings->randomLevel)
+		{
+			item.value = '"' + getLeaf(gfx.settings->levelFile) + '"';
+			menu.itemFromId(SettingsMenu::SiRegenerateLevel)->string = common.texts.reloadLevel; // Not string?
+		}
+		else
+		{
+			item.value = common.texts.random2;
+			menu.itemFromId(SettingsMenu::SiRegenerateLevel)->string = common.texts.regenLevel;
+		}
+	}
+	
+	Common& common;
+};
+
+struct WeaponOptionsBehavior : ItemBehavior
+{
+	WeaponOptionsBehavior(Common& common)
+	: common(common)
+	{
+	}
+
+	int onEnter(Menu& menu, MenuItem& item)
+	{
+		sfx.play(common, 27);
+		gfx.weaponOptions();
+		sfx.play(common, 27);
+		return -1;
+	}
+
+	Common& common;
+};
+
+struct OptionsSaveBehavior : ItemBehavior
+{
+	OptionsSaveBehavior(Common& common)
+	: common(common)
+	{
+	}
+	
+	int onEnter(Menu& menu, MenuItem& item)
+	{
+		sfx.play(common, 27);
+		
+		int x, y;
+		if(!menu.itemPosition(item, x, y))
+			return -1;
+			
+		x += menu.valueOffsetX + 2;
+		
+		std::string name = gfx.settingsFile;
+		if(gfx.inputString(name, 30, x, y) && !name.empty())
+		{
+			gfx.saveSettings(name);
+		}
+				
+		sfx.play(common, 27);
+		
+		onUpdate(menu, item);
+		return -1;
+	}
+	
+	void onUpdate(Menu& menu, MenuItem& item)
+	{
+		item.value = getLeaf(gfx.settingsFile);
+		item.hasValue = true;
+	}
+	
+	Common& common;
+};
+
+struct OptionsSelectBehavior : ItemBehavior
+{
+	OptionsSelectBehavior(Common& common)
+	: common(common)
+	{
+	}
+
+	int onEnter(Menu& menu, MenuItem& item)
+	{
+		sfx.play(common, 27);
+		gfx.selectOptions();
+		sfx.play(common, 27);
+		menu.updateItems(common);
+		return -1;
+	}
+
+	Common& common;
+};
+
+ItemBehavior* SettingsMenu::getItemBehavior(Common& common, MenuItem& item)
+{
+	switch(item.id)
+	{
+		case SiNamesOnBonuses:
 			return new BooleanSwitchBehavior(common, gfx.settings->namesOnBonuses);
-		case Settings::SiMap:
+		case SiMap:
 			return new BooleanSwitchBehavior(common, gfx.settings->map);
-		case Settings::SiRegenerateLevel:
+		case SiRegenerateLevel:
 			return new BooleanSwitchBehavior(common, gfx.settings->regenerateLevel);
-		case Settings::SiLoadingTimes:
+		case SiLoadingTimes:
 			return new IntegerBehavior(common, gfx.settings->loadingTime, 0, 9999, 1, true);
-		case Settings::SiMaxBonuses:
+		case SiMaxBonuses:
 			return new IntegerBehavior(common, gfx.settings->maxBonuses, 0, 99, 1);
-		case Settings::SiAmountOfBlood:
+		case SiAmountOfBlood:
 		{
 			IntegerBehavior* ret = new IntegerBehavior(common, gfx.settings->blood, 0, common.C[BloodLimit], common.C[BloodStepUp], true);
 			ret->allowEntry = false;
 			return ret;
 		}
 		
-		case Settings::SiLives:
+		case SiLives:
 			return new IntegerBehavior(common, gfx.settings->lives, 1, 999, 1);
-		case Settings::SiTimeToLose:
-		case Settings::SiTimeToWin:
+		case SiTimeToLose:
+		case SiTimeToWin:
 			return new TimeBehavior(common, gfx.settings->timeToLose, 60, 3600, 10);
-		case Settings::SiZoneTimeout:
+		case SiZoneTimeout:
 			return new TimeBehavior(common, gfx.settings->zoneTimeout, 10, 3600, 10);
-		case Settings::SiFlagsToWin:
+		case SiFlagsToWin:
 			return new IntegerBehavior(common, gfx.settings->flagsToWin, 1, 999, 1);
 		
-		case Settings::SiLevel:
+		case SiLevel:
 			return new LevelSelectBehavior(common);
 			
-		case Settings::SiGameMode:
+		case SiGameMode:
 			return new ArrayEnumBehavior(common, gfx.settings->gameMode, common.texts.gameModes);
-		case Settings::SiWeaponOptions:
+		case SiWeaponOptions:
 			return new WeaponOptionsBehavior(common);
-		
+		case LoadOptions:
+			return new OptionsSelectBehavior(common);
+		case SaveOptions:
+			return new OptionsSaveBehavior(common);
+		case LoadChange:
+			return new BooleanSwitchBehavior(common, gfx.settings->loadChange);
 		default:
 			return Menu::getItemBehavior(common, item);
+	}
+}
+
+void SettingsMenu::onUpdate()
+{
+	setVisibility(SiLives, false);
+	setVisibility(SiTimeToLose, false);
+	setVisibility(SiTimeToWin, false);
+	setVisibility(SiZoneTimeout, false);
+	setVisibility(SiFlagsToWin, false);
+	
+	switch(gfx.settings->gameMode)
+	{
+		case Settings::GMKillEmAll:
+			setVisibility(SiLives, true);
+		break;
+		
+		case Settings::GMGameOfTag:
+			setVisibility(SiTimeToLose, true);
+		break;
+
+		case Settings::GMHoldazone:
+			setVisibility(SiTimeToWin, true);
+			setVisibility(SiZoneTimeout, true);
+		break;
 	}
 }
 
@@ -892,7 +1001,7 @@ void Gfx::selectLevel()
 	{
 		std::memcpy(screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
 		
-		drawBasicMenu();
+		//drawBasicMenu();
 		
 		string title = common->texts.selLevel;
 		if (!levSel.currentNode->fullPath.empty())
@@ -906,7 +1015,7 @@ void Gfx::selectLevel()
 		drawRoundedBox(screenBmp, 178, 20, 0, 7, wid);
 		common->font.drawText(screenBmp, title, 180, 21, 50);
 
-		levSel.menu.draw(*common, false);
+		levSel.draw();
 		
 		if (!levSel.process())
 			break;
@@ -962,9 +1071,9 @@ void Gfx::selectProfile(WormSettings& ws)
 			title += profileSel.currentNode->fullPath;
 		}
 
-		common->font.drawFramedText(screenBmp, title, 28, 20, 50);
+		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
 
-		profileSel.menu.draw(*common, false);
+		profileSel.draw();
 
 		if (!profileSel.process())
 			break;
@@ -997,7 +1106,11 @@ int Gfx::selectReplay()
 		replaySel.fill(lieroEXERoot, [](string const& name, string const& ext) { return ciCompare(ext, "LRP"); });
 
 		replaySel.setFolder(replaySel.rootNode);
-		replaySel.select(joinPath(lieroEXERoot, "Replays"));
+		if (prevSelectedReplayPath.empty()
+		  || !replaySel.select(prevSelectedReplayPath))
+		{
+			replaySel.select(joinPath(lieroEXERoot, "Replays"));
+		}
 	}
 	
 	do
@@ -1011,9 +1124,9 @@ int Gfx::selectReplay()
 			title += replaySel.currentNode->fullPath;
 		}
 		
-		common->font.drawFramedText(screenBmp, title, 28, 20, 50);
+		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
 
-		replaySel.menu.draw(*common, false);
+		replaySel.draw();
 		
 		if (!replaySel.process())
 			break;
@@ -1027,16 +1140,17 @@ int Gfx::selectReplay()
 			{
 				std::string fullPath = sel->fullPath + ".lrp";
 
-				{
-					// Reset controller before opening the replay, since we may be recording it
-					controller.reset();
-				
-					gvl::stream_ptr replay(new gvl::fstream(std::fopen(fullPath.c_str(), "rb")));
+				prevSelectedReplayPath = sel->fullPath;
 
-					controller.reset(new ReplayController(common, replay));
+				// Reset controller before opening the replay, since we may be recording it
+				controller.reset();
 				
-					return MaReplay;
-				}
+				auto replay(
+					gvl::to_source(new gvl::file_bucket_source(fullPath.c_str(), "rb")));
+
+				controller.reset(new ReplayController(common, replay));
+				
+				return MainMenu::MaReplay;
 			}
 		}
 		menuFlip();
@@ -1070,9 +1184,9 @@ void Gfx::selectOptions()
 			title += optionsSel.currentNode->fullPath;
 		}
 		
-		common->font.drawFramedText(screenBmp, title, 28, 20, 50);
+		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
 
-		optionsSel.menu.draw(*common, false);
+		optionsSel.draw();
 		
 		if (!optionsSel.process())
 			break;
@@ -1101,9 +1215,9 @@ struct WeaponMenu : Menu
 	{
 	}
 	
-	ItemBehavior* getItemBehavior(Common& common, int item)
+	ItemBehavior* getItemBehavior(Common& common, MenuItem& item)
 	{
-		int index = common.weapOrder[item + 1];
+		int index = common.weapOrder[item.id + 1];
 		return new ArrayEnumBehavior(common, gfx.settings->weapTable[index], common.texts.weapStates);
 	}
 };
@@ -1118,7 +1232,7 @@ void Gfx::weaponOptions()
 	for(int i = 1; i < 41; ++i)
 	{
 		int index = common->weapOrder[i];
-		weaponMenu.addItem(MenuItem(48, 7, common->weapons[index].name));
+		weaponMenu.addItem(MenuItem(48, 7, common->weapons[index].name, i - 1));
 	}
 	
 	weaponMenu.moveToFirstVisible();
@@ -1308,11 +1422,11 @@ void Gfx::inputInteger(int& dest, int min, int max, std::size_t maxLen, int x, i
 	}
 }
 
-void PlayerMenu::drawItemOverlay(Common& common, int item, int x, int y, bool selected, bool disabled)
+void PlayerMenu::drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected, bool disabled)
 {
-	if(item >= 2 && item <= 4) //Color settings
+	if(item.id >= PlayerMenu::PlRed && item.id <= PlayerMenu::PlBlue) //Color settings
 	{
-		int rgbcol = item - 2;
+		int rgbcol = item.id - PlayerMenu::PlRed;
 
 		if(selected)
 		{
@@ -1327,57 +1441,58 @@ void PlayerMenu::drawItemOverlay(Common& common, int item, int x, int y, bool se
 	} // CED9
 }
 
-
-
-ItemBehavior* PlayerMenu::getItemBehavior(Common& common, int item)
+ItemBehavior* PlayerMenu::getItemBehavior(Common& common, MenuItem& item)
 {
-	switch(item)
+	if (item.id >= PlWeap0 && item.id < PlWeap0 + 5)
+		return new WeaponEnumBehavior(common, ws->weapons[item.id - PlWeap0]);
+
+	switch(item.id)
 	{
-		case 0:
+		case PlName:
 			return new WormNameBehavior(common, *ws);
-		case 1:
+		case PlHealth:
 		{
 			auto* b = new IntegerBehavior(common, ws->health, 1, 10000, 1, true);
 			b->scrollInterval = 4;
 			return b;
 		}
 
-		case 2:
-		case 3:
-		case 4:
+		case PlRed:
+		case PlGreen:
+		case PlBlue:
 		{
-			auto* b = new IntegerBehavior(common, ws->rgb[item - 2], 0, 63, 1, false);
+			auto* b = new IntegerBehavior(common, ws->rgb[item.id - PlRed], 0, 63, 1, false);
 			b->scrollInterval = 4;
 			return b;
 		}
 			
-		case 5: // D2AB
-		case 6:
-		case 7:
-		case 8:
-		case 9:
-		case 10:
-		case 11:
-			return new KeyBehavior(common, ws->controls[item - 5], ws->controlsEx[item - 5], gfx.settings->extensions );
+		case PlUp: // D2AB
+		case PlDown:
+		case PlLeft:
+		case PlRight:
+		case PlFire:
+		case PlChange:
+		case PlJump:
+			return new KeyBehavior(common, ws->controls[item.id - PlUp], ws->controlsEx[item.id - PlUp], gfx.settings->extensions);
 		
-		case 12: // Controls Extension
-			return new KeyBehavior(common, ws->controlsEx[item - 5], ws->controlsEx[item - 5], gfx.settings->extensions );
+		case PlDig: // Controls Extension
+			return new KeyBehavior(common, ws->controlsEx[item.id - PlUp], ws->controlsEx[item.id - PlUp], gfx.settings->extensions);
 
 			
-		case 13: // Controller
-		{
-			// Controller cannot be changed with Enter
-			return new ArrayEnumBehavior(common, ws->controller, common.texts.controllers, true);
-		}
+		case PlController: // Controller
+			return new ArrayEnumBehavior(common, ws->controller, common.texts.controllers);
 		
-		case 14: // Save profile
+		case PlSaveProfile: // Save profile
 			return new ProfileSaveBehavior(common, *ws, false);
 			
-		case 15: // Save profile as
+		case PlSaveProfileAs: // Save profile as
 			return new ProfileSaveBehavior(common, *ws, true);
 			
-		case 16:
+		case PlLoadProfile:
 			return new ProfileLoadBehavior(common, *ws);
+
+		case PlLoadedProfile:
+			return new ProfileLoadedBehavior(common, *ws);
 			
 		default:
 			return Menu::getItemBehavior(common, item);
@@ -1416,7 +1531,7 @@ void Gfx::mainLoop()
 		mainMenu.setVisibility(0, controller->running());
 		int selection = menuLoop();
 		
-		if(selection == MaNewGame)
+		if(selection == MainMenu::MaNewGame)
 		{
 			std::auto_ptr<Controller> newController(new LocalController(common, settings));
 			
@@ -1439,15 +1554,15 @@ void Gfx::mainLoop()
 			
 			controller = newController;
 		}
-		else if(selection == MaResumeGame)
+		else if(selection == MainMenu::MaResumeGame)
 		{
 			
 		}
-		else if(selection == MaQuit) // QUIT TO OS
+		else if(selection == MainMenu::MaQuit) // QUIT TO OS
 		{
 			break;
 		}
-		else if(selection == MaReplay)
+		else if(selection == MainMenu::MaReplay)
 		{
 			//controller.reset(new ReplayController(common/*, settings*/));
 		}
@@ -1468,23 +1583,6 @@ void Gfx::mainLoop()
 		controller->unfocus();
 		
 		clearKeys();
-		
-		
-		/*
-		game->shutDown = false;
-	
-		do
-		{
-			game->processFrame();
-			clear();
-			game->draw();
-			
-			flip();
-			process(game.get());
-		}
-		while(fadeValue > 0);*/
-		
-		
 	}
 
 	controller.reset();
@@ -1493,40 +1591,21 @@ void Gfx::mainLoop()
 void Gfx::saveSettings(std::string const& path)
 {
 	settingsFile = path;
-	settings->save(settingsFile + ".DAT", rand);
+	settings->save(settingsFile + ".dat", rand);
 }
 
 bool Gfx::loadSettings(std::string const& path)
 {
 	settingsFile = path;
 	settings.reset(new Settings);
-	return settings->load(settingsFile + ".DAT", rand);
+	return settings->load(settingsFile + ".dat", rand);
 }
 
 void Gfx::drawBasicMenu(/*int curSel*/)
 {
 	std::memcpy(screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
-#if 0	
-	common->font.drawText(screenBmp, common->texts.saveoptions, 36, 54+20, 0);
-	common->font.drawText(screenBmp, common->texts.loadoptions, 36, 61+20, 0);
-	
-	common->font.drawText(screenBmp, common->texts.saveoptions, 36, 53+20, 10);
-	common->font.drawText(screenBmp, common->texts.loadoptions, 36, 60+20, 10);
-	
 
-	if(settingsFile.empty())
-	{
-		common->font.drawText(screenBmp, common->texts.curOptNoFile, 36, 46+20, 0);
-		common->font.drawText(screenBmp, common->texts.curOptNoFile, 35, 45+20, 147);
-	}
-	else
-	{
-		common->font.drawText(screenBmp, common->texts.curOpt + settingsFile, 36, 46+20, 0);
-		common->font.drawText(screenBmp, common->texts.curOpt + settingsFile, 35, 45+20, 147);
-	}
-#endif
-	
-	mainMenu.draw(*common, curMenu != &mainMenu);
+	mainMenu.draw(*common, curMenu != &mainMenu, -1, true);
 }
 
 int upperCaseOnly(int k)
@@ -1568,8 +1647,6 @@ int Gfx::menuLoop()
 
 	std::memcpy(&frozenScreen[0], screenBmp.pixels, frozenScreen.size());
 
-	updateSettingsMenu();
-	
 	menuCycles = 0;
 	int selected = -1;
 		
@@ -1585,7 +1662,7 @@ int Gfx::menuLoop()
 		if(testSDLKeyOnce(SDLK_ESCAPE))
 		{
 			if(curMenu == &mainMenu)
-				mainMenu.moveTo(MaQuit);
+				mainMenu.moveToId(MainMenu::MaQuit);
 			else
 				curMenu = &mainMenu;
 		}
@@ -1609,28 +1686,44 @@ int Gfx::menuLoop()
 			{
 				sfx.play(*common, 27);
 				
-				if(mainMenu.selection() == MaSettings)
+				int s = mainMenu.selectedId();
+				switch (s)
 				{
-					curMenu = &settingsMenu; // Go into settings menu
-				}
-				else if (mainMenu.selection() == MaPlayer1Settings || mainMenu.selection() == MaPlayer2Settings)
-				{
-					playerSettings(mainMenu.selection() - MaPlayer1Settings);
-				}
-				else if (mainMenu.selection() == MaAdvanced)
-				{
-					openHiddenMenu();
-				}
-				else
-				{
-					curMenu = &mainMenu;
-					selected = mainMenu.selection();
+					case MainMenu::MaSettings:
+					{
+						curMenu = &settingsMenu; // Go into settings menu
+						break;
+					}
+
+					case MainMenu::MaPlayer1Settings:
+					case MainMenu::MaPlayer2Settings:
+					{
+						playerSettings(s - MainMenu::MaPlayer1Settings);
+						break;
+					}
+
+					case MainMenu::MaAdvanced:
+					{
+						openHiddenMenu();
+						break;
+					}
+
+					case MainMenu::MaReplays:
+					{
+						selected = curMenu->onEnter(*common);
+						break;
+					}
+
+					default:
+					{
+						curMenu = &mainMenu;
+						selected = s;
+					}
 				}
 			}
 			else if(curMenu == &settingsMenu)
 			{
 				settingsMenu.onEnter(*common);
-				updateSettingsMenu();
 			}
 			else
 			{
@@ -1640,17 +1733,33 @@ int Gfx::menuLoop()
 		
 		if(testSDLKeyOnce(SDLK_F1))
 		{
+			curMenu = &mainMenu;
+			mainMenu.moveToId(MainMenu::MaNewGame);
+			selected = MainMenu::MaNewGame;
+		}
+		if(testSDLKeyOnce(SDLK_F2))
+		{
+			mainMenu.moveToId(MainMenu::MaAdvanced);
 			openHiddenMenu();
 		}
+		if(testSDLKeyOnce(SDLK_F3))
+		{
+			curMenu = &mainMenu;
+			curMenu->moveToId(MainMenu::MaReplays);
+			selected = curMenu->onEnter(*common);
+		}
+		if(testSDLKeyOnce(SDLK_F10))
+		{
+			curMenu = &mainMenu;
+			selected = MainMenu::MaQuit;
+		}
 
-		if(testSDLKeyOnce(SDLK_1))
-		{
+		if (testSDLKeyOnce(SDLK_1))
 			playerSettings(0);
-		}
-		if(testSDLKeyOnce(SDLK_2))
-		{
+		if (testSDLKeyOnce(SDLK_2))
 			playerSettings(1);
-		}
+		if (testSDLKeyOnce(SDLK_3))
+			curMenu = &settingsMenu; // Go into settings menu
 		
 #if 0
 		if(testSDLKeyOnce(SDLK_s)) // TODO: Check for the real 's' here?
@@ -1682,14 +1791,12 @@ int Gfx::menuLoop()
 				//settingLeftRight(-1, settingsMenu.selection());
 				if(!settingsMenu.onLeftRight(*common, -1))
 					resetLeftRight();
-				updateSettingsMenu();
 			} // EDAE
 			if(testSDLKey(SDLK_RIGHT))
 			{
 				//settingLeftRight(1, settingsMenu.selection());
 				if(!settingsMenu.onLeftRight(*common, 1))
 					resetLeftRight();
-				updateSettingsMenu();
 			} // EDBF
 		}
 		else // if(curMenu == &playerMenu)

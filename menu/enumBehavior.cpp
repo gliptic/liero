@@ -7,7 +7,7 @@
 #include "../text.hpp"
 #include "../sfx.hpp"
 
-bool EnumBehavior::onLeftRight(Menu& menu, int item, int dir)
+bool EnumBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir)
 {
 	if(brokenLeftRight)
 		return false; // Left/right doesn't work for this item
@@ -21,7 +21,7 @@ bool EnumBehavior::onLeftRight(Menu& menu, int item, int dir)
 	return false;
 }
 
-int EnumBehavior::onEnter(Menu& menu, int item)
+int EnumBehavior::onEnter(Menu& menu, MenuItem& item)
 {
 	sfx.play(common, 27);
 	
@@ -29,7 +29,7 @@ int EnumBehavior::onEnter(Menu& menu, int item)
 	return -1;
 }
 
-void EnumBehavior::change(Menu& menu, int item, int dir)
+void EnumBehavior::change(Menu& menu, MenuItem& item, int dir)
 {
 	uint32_t range = max - min + 1;
 	uint32_t newV = ((v + dir + range - min) % range) + min;
@@ -37,13 +37,12 @@ void EnumBehavior::change(Menu& menu, int item, int dir)
 	if(newV != v)
 	{
 		v = newV;
-		onUpdate(menu, item);
+		menu.updateItems(common);
 	}
 }
 
-void EnumBehavior::onUpdate(Menu& menu, int item)
+void EnumBehavior::onUpdate(Menu& menu, MenuItem& item)
 {
-	MenuItem& i = menu.items[item];
-	i.value = toString(v);
-	i.hasValue = true;
+	item.value = toString(v);
+	item.hasValue = true;
 }

@@ -57,30 +57,39 @@ struct Menu
 		searchTime = 0;
 	}
 	
-	void draw(Common& common/*, int x, int y*/, bool disabled);
+	void draw(Common& common, bool disabled, int x = -1, bool showDisabledSelection = false);
 	void process();
 	
-	virtual void drawItemOverlay(Common& common, int item, int x, int y, bool selected, bool disabled)
+	virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected, bool disabled)
 	{
 		// Nothing by default
 	}
 	
-	virtual ItemBehavior* getItemBehavior(Common& common, int item)
+	virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item)
 	{
 		// Dummy item behavior by default
 		return new ItemBehavior;
 	}
+
+	virtual void onUpdate()
+	{
+		// Nothing by default
+	}
 	
 	bool onLeftRight(Common& common, int dir)
 	{
-		std::auto_ptr<ItemBehavior> b(getItemBehavior(common, selection()));
-		return b->onLeftRight(*this, selection(), dir);
+		auto* s = selected();
+		if (!s) return false;
+		std::auto_ptr<ItemBehavior> b(getItemBehavior(common, *s));
+		return b->onLeftRight(*this, *s, dir);
 	}
 	
 	int onEnter(Common& common)
 	{
-		std::auto_ptr<ItemBehavior> b(getItemBehavior(common, selection()));
-		return b->onEnter(*this, selection());
+		auto* s = selected();
+		if (!s) return false;
+		std::auto_ptr<ItemBehavior> b(getItemBehavior(common, *s));
+		return b->onEnter(*this, *s);
 	}
 
 	void onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains = false);
@@ -89,10 +98,12 @@ struct Menu
 	{
 		for(std::size_t i = 0; i < items.size(); ++i)
 		{
-			std::auto_ptr<ItemBehavior> b(getItemBehavior(common, i));
+			std::auto_ptr<ItemBehavior> b(getItemBehavior(common, items[i]));
 			
-			b->onUpdate(*this, i);
+			b->onUpdate(*this, items[i]);
 		}
+
+		onUpdate();
 	}
 	
 	void place(int newX, int newY)
@@ -114,7 +125,7 @@ struct Menu
 	int addItem(MenuItem item, int pos);
 	void clear();
 	
-	bool itemPosition(int item, int& x, int& y);
+	bool itemPosition(MenuItem& item, int& x, int& y);
 	
 	int visibleItemIndex(int item);
 	int itemFromVisibleIndex(int idx);
@@ -129,16 +140,54 @@ struct Menu
 	{
 		return selection_;
 	}
+
+	MenuItem* selected()
+	{
+		if (!isSelectionValid())
+			return 0;
+		return &items[selection_];
+	}
+
+	int selectedId()
+	{
+		MenuItem* s = selected();
+		return s ? s->id : -1;
+	}
+
+	int indexFromId(int id)
+	{
+		for (int i = 0; i < (int)items.size(); ++i)
+		{
+			if (items[i].id == id)
+				return i;
+		}
+
+		return -1;
+	}
+
+	MenuItem* itemFromId(int id)
+	{
+		for (int i = 0; i < (int)items.size(); ++i)
+		{
+			if (items[i].id == id)
+				return &items[i];
+		}
+
+		return 0;
+	}
 	
-	void setVisibility(int item, bool state);
+	void setVisibility(int id, bool state);
 	int firstVisibleFrom(int item);
 	int lastVisibleFrom(int item);
 	void moveTo(int newSelection);
+	void moveToId(int id);
 	bool isInView(int item);
 	void ensureInView(int item);
 	void setBottom(int newBottomVisIdx);
 	void setTop(int newTopVisIdx);
 	void scroll(int amount);
+
+	void print(char const* name); // TEMP
 
 	std::string searchPrefix;
 	Uint32 searchTime;

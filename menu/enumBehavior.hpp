@@ -17,11 +17,11 @@ struct EnumBehavior : ItemBehavior
 	{
 	}
 	
-	bool onLeftRight(Menu& menu, int item, int dir);
-	int onEnter(Menu& menu, int item);
-	void onUpdate(Menu& menu, int item);
+	bool onLeftRight(Menu& menu, MenuItem& item, int dir);
+	int onEnter(Menu& menu, MenuItem& item);
+	void onUpdate(Menu& menu, MenuItem& item);
 	
-	void change(Menu& menu, int item, int dir);
+	void change(Menu& menu, MenuItem& item, int dir);
 	
 	Common& common;
 	uint32_t& v;

@@ -17,11 +17,10 @@ struct ArrayEnumBehavior : EnumBehavior
 	{
 	}
 		
-	void onUpdate(Menu& menu, int item)
+	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		MenuItem& i = menu.items[item];
-		i.value = arr[v];
-		i.hasValue = true;
+		item.value = arr[v];
+		item.hasValue = true;
 	}
 	
 	std::string const* arr;

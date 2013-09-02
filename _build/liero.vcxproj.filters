@@ -34,9 +34,6 @@
     <Filter Include="gvl\containers">
       <UniqueIdentifier>{c105b71c-9207-452c-929d-796e58e34efb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ai">
-      <UniqueIdentifier>{c2a28227-b971-49e8-8dd2-5c2389078462}</UniqueIdentifier>
-    </Filter>
     <Filter Include="tl">
       <UniqueIdentifier>{21b25386-61b3-4390-b8c5-e2197ddac3bb}</UniqueIdentifier>
     </Filter>
@@ -45,6 +42,9 @@
     </Filter>
     <Filter Include="gvl\meta">
       <UniqueIdentifier>{d1f9a6d8-afd3-4acd-99d6-49ecff5749f1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gvl\io2">
+      <UniqueIdentifier>{29a97361-f720-4e11-8b5b-cfea5f85126b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -94,42 +94,6 @@
     <ClCompile Include="..\gvl\io\stream.cpp">
       <Filter>gvl\io</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\zlib\adler32.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\compress.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\crc32.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\deflate.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\gzio.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\infback.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\inffast.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\inflate.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\inftrees.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\trees.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\uncompr.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\zlib\zutil.c">
-      <Filter>gvl\zlib</Filter>
-    </ClCompile>
     <ClCompile Include="..\gvl\system\system.c">
       <Filter>gvl\system</Filter>
     </ClCompile>
@@ -145,14 +109,8 @@
     <ClCompile Include="..\gvl\support\profile.cpp">
       <Filter>gvl\support</Filter>
     </ClCompile>
-    <ClCompile Include="..\ai\predictive_ai.cpp">
-      <Filter>ai</Filter>
-    </ClCompile>
     <ClCompile Include="..\gfx\renderer.cpp">
       <Filter>gfx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\ai\dijkstra.cpp">
-      <Filter>ai</Filter>
     </ClCompile>
     <ClCompile Include="..\mixer\player.cpp">
       <Filter>mixer</Filter>
@@ -162,6 +120,9 @@
     </ClCompile>
     <ClCompile Include="..\gvl\containers\list.cpp">
       <Filter>gvl\containers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\gvl\io2\stream.cpp">
+      <Filter>gvl\io2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -236,9 +197,6 @@
     <ClInclude Include="..\gvl\io\stream.hpp">
       <Filter>gvl\io</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\io\unicode.hpp">
-      <Filter>gvl\io</Filter>
-    </ClInclude>
     <ClInclude Include="..\gvl\math\cmwc.hpp">
       <Filter>gvl\math</Filter>
     </ClInclude>
@@ -250,36 +208,6 @@
     </ClInclude>
     <ClInclude Include="..\gvl\crypt\gash.hpp">
       <Filter>gvl\crypt</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\crc32.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\deflate.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\inffast.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\inffixed.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\inflate.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\inftrees.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\trees.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\zconf.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\zconf.in.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\zutil.h">
-      <Filter>gvl\zlib</Filter>
     </ClInclude>
     <ClInclude Include="..\gvl\system\memory.hpp">
       <Filter>gvl\system</Filter>
@@ -335,33 +263,15 @@
     <ClInclude Include="..\gvl\cstdint.hpp">
       <Filter>gvl</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support.hpp">
-      <Filter>gvl</Filter>
-    </ClInclude>
     <ClInclude Include="..\gvl\containers\pairing_heap.hpp">
       <Filter>gvl\containers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ai\astar.hpp">
-      <Filter>ai</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ai\predictive_ai.hpp">
-      <Filter>ai</Filter>
     </ClInclude>
     <ClInclude Include="..\stats.hpp" />
     <ClInclude Include="..\gfx\renderer.hpp">
       <Filter>gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\ai\dijkstra.hpp">
-      <Filter>ai</Filter>
-    </ClInclude>
     <ClInclude Include="..\mixer\player.hpp">
       <Filter>mixer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\zlib__.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\zlib\zlib.h">
-      <Filter>gvl\zlib</Filter>
     </ClInclude>
     <ClInclude Include="..\tl\cstdint.h">
       <Filter>tl</Filter>
@@ -394,8 +304,23 @@
     <ClInclude Include="..\gvl\meta\as_unsigned.hpp">
       <Filter>gvl\meta</Filter>
     </ClInclude>
+    <ClInclude Include="..\gvl\io2\stream.hpp">
+      <Filter>gvl\io2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\serialization\coding.hpp">
+      <Filter>gvl\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io2\deflate_filter.hpp">
+      <Filter>gvl\io2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\io2\fstream.hpp">
+      <Filter>gvl\io2</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Jamfile" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\todo.txt" />
   </ItemGroup>
 </Project>

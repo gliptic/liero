@@ -6,6 +6,8 @@
 #include <gvl/support/type_info.hpp>
 #include <gvl/serialization/archive.hpp>
 #include <gvl/io/deflate_filter.hpp>
+#include <gvl/io2/deflate_filter.hpp>
+#include <gvl/io/cache_stream.hpp>
 
 struct WormCreator
 {
@@ -125,7 +127,7 @@ void archive(Archive ar, Viewport& vp)
 	.i32(vp.maxY)
 	.i32(vp.centerX)
 	.i32(vp.centerY)
-	.obj(vp.worm, WormCreator())
+	.obj<Worm>(vp.wormIdx, WormCreator(), WormIdxRefCreator())
 	.i32(vp.bannerY)
 	.i32(vp.inGameX)
 	.i32(vp.rect.x1)
@@ -185,7 +187,12 @@ void archive(Archive ar, Palette& pal)
 	}
 }
 
-void archive(gvl::in_archive<GameSerializationContext> ar, Level& level)
+typedef gvl::octet_reader reader_t;
+
+typedef gvl::in_archive<reader_t, GameSerializationContext> in_archive_t;
+//typedef gvl::out_archive<gvl::octet_stream_reader, GameSerializationContext> out_archive_t;
+
+void archive(in_archive_t ar, Level& level)
 {
 	unsigned int w = gvl::read_uint16(ar.reader);
 	unsigned int h = gvl::read_uint16(ar.reader);
@@ -223,7 +230,7 @@ void archive(gvl::in_archive<GameSerializationContext> ar, Level& level)
 }
 
 template<typename Writer>
-void archive(gvl::out_archive<GameSerializationContext, Writer> ar, Level& level)
+void archive(gvl::out_archive<Writer, GameSerializationContext> ar, Level& level)
 {
 	ar.ui16(level.width);
 	ar.ui16(level.height);
@@ -256,7 +263,7 @@ void archive(gvl::out_archive<GameSerializationContext, Writer> ar, Level& level
 	}
 }
 
-void archive_worms(gvl::in_archive<GameSerializationContext> ar, Game& game)
+void archive_worms(in_archive_t ar, Game& game)
 {
 	uint8_t cont;
 	while(ar.ui8(cont), cont)
@@ -284,7 +291,7 @@ void archive_worms(gvl::in_archive<GameSerializationContext> ar, Game& game)
 }
 
 template<typename Writer>
-void archive_worms(gvl::out_archive<GameSerializationContext, Writer> ar, Game& game)
+void archive_worms(gvl::out_archive<Writer, GameSerializationContext> ar, Game& game)
 {
 /*
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
@@ -341,16 +348,16 @@ void archive(Archive ar, Game& game)
 	archive(ar, game.level);
 }
 
-template<typename T>
-void read(gvl::octet_stream_reader& reader, GameSerializationContext& context, T& x)
+template<typename Reader, typename T>
+void read(Reader& reader, GameSerializationContext& context, T& x)
 {
-	archive(gvl::in_archive<GameSerializationContext>(reader, context), x);
+	archive(gvl::in_archive<Reader, GameSerializationContext>(reader, context), x);
 }
 
 template<typename T>
 void write(gvl::octet_stream_writer& writer, GameSerializationContext& context, T& x)
 {
-	archive(gvl::out_archive<GameSerializationContext>(writer, context), x);
+	archive(gvl::out_archive<gvl::octet_stream_writer, GameSerializationContext>(writer, context), x);
 }
 
 template<typename T>
@@ -383,12 +390,9 @@ void archive(Archive ar, gvl::gash::value_type& x)
 ReplayWriter::ReplayWriter(gvl::stream_ptr str_init)
 : settingsExpired(true)
 {
-#if 1
 	str.reset(new gvl::deflate_filter(true));
 	str->attach_sink(str_init);
-#else
-	str = str_init;
-#endif
+
 	writer.attach(str);
 }
 
@@ -397,16 +401,23 @@ ReplayWriter::~ReplayWriter()
 	endRecord();
 }
 
+#if 0
 ReplayReader::ReplayReader(gvl::stream_ptr str_init)
 {
-#if 1
-	str.reset(new gvl::deflate_filter(false));
-	str->attach_source(str_init);
-#else
-	str = str_init;
-#endif
+	gvl::shared_ptr<gvl::deflate_filter> df(new gvl::deflate_filter(false));
+
+	df->attach_source(str_init);
+
+	str.reset(new gvl::cache_stream(df));
+
 	reader.attach(str);
 }
+#else
+ReplayReader::ReplayReader(gvl::source str_init)
+{
+	reader.attach(gvl::to_source(new gvl::deflate_source(str_init, false)));
+}
+#endif
 
 //#define DEBUG_REPLAYS
 

@@ -8,6 +8,8 @@
 #include <functional>
 #include <algorithm>
 #include "dijkstra.hpp"
+#include "work_queue.hpp"
+#include <SDL/SDL.h>
 
 struct InputState
 {
@@ -219,10 +221,27 @@ struct Model
 	}
 };
 
+struct Weights
+{
+	Weights()
+	: healthWeight(1.0)
+	, aimWeight(1.0)
+	, distanceWeight(1.0)
+	, ammoWeight(1.0)
+	, missileWeight(1.0)
+	, defenseWeight(1.3)
+	, firingWeight(1.0)
+	{
+	}
+
+	double healthWeight, aimWeight, distanceWeight, ammoWeight, missileWeight;
+	double defenseWeight, firingWeight;
+};
+
 struct TransModel : Model<InputContext::Size, 56>
 {
 
-	TransModel(bool testing);
+	TransModel(Weights& weights, bool testing);
 
 #if 1
 	void update(InputContext context, InputState v)
@@ -321,21 +340,39 @@ struct SimpleAI : WormAI
 	Worm::ControlState initial;
 };
 
+struct AIThread
+{
+	AIThread()
+	: th(0)
+	{
+	}
+
+	SDL_Thread* th;
+};
+
 struct FollowAI : WormAI, AiContext
 {
-	FollowAI(bool testing, FollowAI* targetAiInit = 0)
+	FollowAI(Weights weights, bool testing, FollowAI* targetAiInit = 0)
 	: frame(0)
 	, prevResultAge(0)
-	, model(testing)
+	, model(weights, testing)
 	, targetAi(targetAiInit)
 	, effectScaler(0)
+	, weights(weights)
+#if AI_THREADS
+	, workQueue(2)
+#endif
 	{
 #if 0
 		if (!targetAi)
 			targetAi = new FollowAI(this);
 #endif
 	}
-	
+
+	~FollowAI()
+	{
+	}
+
 	void process(Game& game, Worm& worm);
 
 	void drawDebug(Game& game, Worm const& worm, Renderer& renderer, int offsX, int offsY);
@@ -346,13 +383,18 @@ struct FollowAI : WormAI, AiContext
 	EvaluateResult prevResult;
 	int prevResultAge;
 	InputContext currentContext;
-	//AiContext aiContext;
 	TransModel model;
 
 	std::vector<double> negEffect, posEffect;
 	int effectScaler;
 
 	FollowAI* targetAi;
+
+#if AI_THREADS
+	WorkQueue workQueue;
+#endif
+
+	Weights weights;
 };
 
 #endif // LIERO_PREDICTIVE_AI_HPP
