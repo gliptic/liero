@@ -316,6 +316,9 @@
     <ClInclude Include="..\gvl\io2\fstream.hpp">
       <Filter>gvl\io2</Filter>
     </ClInclude>
+    <ClInclude Include="..\gvl\zlib\zlib2.h">
+      <Filter>gvl\zlib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Jamfile" />

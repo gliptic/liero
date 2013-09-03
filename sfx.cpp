@@ -7,9 +7,9 @@
 #if !DISABLE_SOUND
 #include <SDL/SDL.h>
 #endif
-#include <iostream>
+//#include <iostream>
 
-#include <cmath> // TEMP
+//#include <cmath> // TEMP
 
 Sfx sfx;
 

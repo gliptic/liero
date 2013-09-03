@@ -187,8 +187,6 @@ struct Menu
 	void setTop(int newTopVisIdx);
 	void scroll(int amount);
 
-	void print(char const* name); // TEMP
-
 	std::string searchPrefix;
 	Uint32 searchTime;
 		

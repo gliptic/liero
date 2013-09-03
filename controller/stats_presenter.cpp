@@ -209,12 +209,12 @@ struct StatsRenderer
 		}
 	}
 
-	void graph(vector<double> const& data, int height, int color, int negColor)
+	void graph(vector<double> const& data, int height, int color, int negColor, bool balanced)
 	{
 		y += 2;
 		hblock(height, [&, this] {
 			int start = 20 + offsX;
-			drawGraph(renderer.screenBmp, data, height, start, y, color, negColor);
+			drawGraph(renderer.screenBmp, data, height, start, y, color, negColor, balanced);
 		});
 		y += 7;
 	}
@@ -352,7 +352,8 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 					wormTotalHpDiff,
 					100,
 					Palette::wormColourIndexes[0],
-					Palette::wormColourIndexes[1]);
+					Palette::wormColourIndexes[1],
+					true);
 
 			renderer.section(cell() << "Presence", 0);
 			renderer.heatmap(recorder.presence);
@@ -367,7 +368,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 				renderer.weaponStats(weaponStats[i]);
 
 				renderer.section(cell() << "Damage over time", 0);
-				renderer.graph(wormDamages[i], 50, Palette::wormColourIndexes[i], 0);
+				renderer.graph(wormDamages[i], 50, Palette::wormColourIndexes[i], 0, false);
 
 				renderer.section(cell() << "Presence", 0);
 				renderer.heatmap(wormStats.presence);

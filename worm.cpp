@@ -7,7 +7,7 @@
 #include "reader.hpp" // TODO: For lieroEXERoot. We should move that into Common.
 #include "filesystem.hpp" // For joinPath
 #include <cstdlib>
-#include <iostream>
+//#include <iostream>
 
 
 #include <gvl/serialization/context.hpp>

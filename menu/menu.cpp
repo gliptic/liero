@@ -368,14 +368,6 @@ int Menu::addItem(MenuItem item)
 	return idx;
 }
 
-void Menu::print(char const* name)
-{
-	for (auto& i : items)
-	{
-		printf("%s.addItem(MenuItem(%d, %d, \"%s\"));\n", name, i.color, i.disColour, i.string.c_str());
-	}
-}
-
 void Menu::clear()
 {
 	items.clear();

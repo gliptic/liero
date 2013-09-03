@@ -4,7 +4,7 @@
 #include "math.hpp"
 #include "gfx/renderer.hpp"
 #include "constants.hpp"
-#include <iostream>
+//#include <iostream>
 
 int Weapon::computedLoadingTime(Settings& settings)
 {

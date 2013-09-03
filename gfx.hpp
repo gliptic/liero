@@ -125,7 +125,7 @@ struct Gfx : Renderer
 	
 	void process(Controller* controller = 0);
 	void flip();
-	void menuFlip();
+	void menuFlip(bool quitting = false);
 	
 	void clearKeys();
 	

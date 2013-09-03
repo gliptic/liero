@@ -8,7 +8,7 @@
 #include "gfx/renderer.hpp"
 #include "gfx/blit.hpp"
 
-#include <iostream>
+//#include <iostream>
 
 struct PreserveClipRect
 {
@@ -597,19 +597,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 					tempX,
 					tempY);
 			}
-		
-	#ifdef TEMP
-			common.font.drawText(toString(worm->reacts[0]), 10 + rect.x1, 10, 10);
-			common.font.drawText(toString(worm->reacts[1]), 20 + rect.x1, 10, 10);
-			common.font.drawText(toString(worm->reacts[2]), 30 + rect.x1, 10, 10);
-			common.font.drawText(toString(worm->reacts[3]), 40 + rect.x1, 10, 10);
-		
-			if(ftoi(worm->x) < 4 && worm->velX < 0 && worm->reacts[Worm::RFRight] < 2)
-			{
-				std::cout << worm->reacts[Worm::RFRight] << ", " << worm->velX << ", " << worm->x << std::endl;
-				common.font.drawText(":O", 50 + rect.x1, 10, 10);
-			}
-	#endif
+
 			if(worm.pressed(Worm::Change))
 			{
 				int id = worm.weapons[worm.currentWeapon].id;

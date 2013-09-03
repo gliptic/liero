@@ -10,7 +10,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cassert>
-#include <iostream> // TEMP
+//#include <iostream> // TEMP
 
 void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* firedBy, WObject* from)
 {

@@ -3,7 +3,7 @@
 #include "../gfx.hpp"
 #include "macros.hpp"
 #include "color.hpp"
-#include <iostream>
+//#include <iostream>
 
 void Font::loadFromEXE()
 {

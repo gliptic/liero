@@ -322,6 +322,7 @@
     <ClInclude Include="..\fastObjectList.hpp" />
     <ClInclude Include="..\filesystem.hpp" />
     <ClInclude Include="..\game.hpp" />
+    <ClInclude Include="..\gvl\zlib\zlib2.h" />
     <ClInclude Include="..\level.hpp" />
     <ClInclude Include="..\material.hpp" />
     <ClInclude Include="..\math.hpp" />

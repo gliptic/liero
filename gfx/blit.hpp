@@ -41,7 +41,8 @@ void drawGraph(Bitmap& scr,
 	int startX,
 	int startY,
 	int color,
-	int negColor);
+	int negColor,
+	bool balanced);
 
 void scaleDraw(
 	PalIdx* src, int w, int h, std::size_t srcPitch,

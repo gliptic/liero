@@ -326,8 +326,8 @@ void Gfx::loadMenus()
 	settingsMenu.addItem(MenuItem(48, 7, "SAVE SETUP AS...", SettingsMenu::SaveOptions));
 	settingsMenu.addItem(MenuItem(48, 7, "LOAD SETUP", SettingsMenu::LoadOptions));
 
-	mainMenu.addItem(MenuItem(10, 10, "RESUME GAME", MainMenu::MaResumeGame));
-	mainMenu.addItem(MenuItem(10, 10, "NEW GAME (F1)", MainMenu::MaNewGame));
+	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaResumeGame)); // string set in menuLoop
+	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaNewGame)); // string set in menuLoop
 	mainMenu.addItem(MenuItem(48, 48, "OPTIONS (F2)", MainMenu::MaAdvanced));
 	mainMenu.addItem(MenuItem(48, 48, "REPLAYS (F3)", MainMenu::MaReplays));
 	mainMenu.addItem(MenuItem(6, 6, "QUIT TO OS (F10)", MainMenu::MaQuit));
@@ -394,11 +394,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 				if(controller)
 					controller->onKey(dosScan, true);
 			}
-				
-#if 0
-			std::cout << "v " << s << ", " << std::hex << ev.key.keysym.mod << ", " << std::dec << int(ev.key.keysym.scancode) << std::endl;
-#endif
-			
+
 			if(s == SDLK_F5)
 			{
 				setFullscreen(!fullscreen);
@@ -421,10 +417,6 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 				if(controller)
 					controller->onKey(dosScan, false);
 			}
-				
-#if 0
-			std::cout << "^ " << s << ", " << std::hex << ev.key.keysym.mod << ", " << std::dec << int(ev.key.keysym.scancode) << std::endl;
-#endif
 		}
 		break;
 		
@@ -632,8 +624,11 @@ void Gfx::overlay(
 	}
 }
 
-void Gfx::menuFlip()
+void Gfx::menuFlip(bool quitting)
 {
+	if (fadeValue < 32 && !quitting)
+		++fadeValue;
+
 	++menuCycles;
 	pal = origpal;
 	pal.rotateFrom(origpal, 168, 174, menuCycles);
@@ -1528,7 +1523,6 @@ void Gfx::mainLoop()
 		clear();
 		controller->draw(*this);
 		
-		mainMenu.setVisibility(0, controller->running());
 		int selection = menuLoop();
 		
 		if(selection == MainMenu::MaNewGame)
@@ -1637,6 +1631,21 @@ int Gfx::menuLoop()
 	
 	fillRect(screenBmp, 0, 151, 160, 7, 0);
 	common->font.drawText(screenBmp, common->texts.copyright2, 2, 152, 19);
+
+	int startItemId;
+	if (controller->running())
+	{
+		mainMenu.setVisibility(MainMenu::MaResumeGame, true);
+		mainMenu.itemFromId(MainMenu::MaResumeGame)->string = "RESUME GAME (F1)";
+		mainMenu.itemFromId(MainMenu::MaNewGame)->string = "NEW GAME";
+		startItemId = MainMenu::MaResumeGame;
+	}
+	else
+	{
+		mainMenu.setVisibility(MainMenu::MaResumeGame, false);
+		mainMenu.itemFromId(MainMenu::MaNewGame)->string = "NEW GAME (F1)";
+		startItemId = MainMenu::MaNewGame;
+	}
 	
 	mainMenu.moveToFirstVisible();
 	settingsMenu.moveToFirstVisible();
@@ -1734,8 +1743,8 @@ int Gfx::menuLoop()
 		if(testSDLKeyOnce(SDLK_F1))
 		{
 			curMenu = &mainMenu;
-			mainMenu.moveToId(MainMenu::MaNewGame);
-			selected = MainMenu::MaNewGame;
+			mainMenu.moveToId(startItemId);
+			selected = startItemId;
 		}
 		if(testSDLKeyOnce(SDLK_F2))
 		{
@@ -1745,7 +1754,7 @@ int Gfx::menuLoop()
 		if(testSDLKeyOnce(SDLK_F3))
 		{
 			curMenu = &mainMenu;
-			curMenu->moveToId(MainMenu::MaReplays);
+			mainMenu.moveToId(MainMenu::MaReplays);
 			selected = curMenu->onEnter(*common);
 		}
 		if(testSDLKeyOnce(SDLK_F10))
@@ -1755,62 +1764,30 @@ int Gfx::menuLoop()
 		}
 
 		if (testSDLKeyOnce(SDLK_1))
+		{
+			mainMenu.moveToId(MainMenu::MaPlayer1Settings);
 			playerSettings(0);
+		}
 		if (testSDLKeyOnce(SDLK_2))
+		{
+			mainMenu.moveToId(MainMenu::MaPlayer2Settings);
 			playerSettings(1);
+		}
 		if (testSDLKeyOnce(SDLK_3))
+		{
+			mainMenu.moveToId(MainMenu::MaSettings);
 			curMenu = &settingsMenu; // Go into settings menu
-		
-#if 0
-		if(testSDLKeyOnce(SDLK_s)) // TODO: Check for the real 's' here?
-		{
-			if(inputString(settingsFile, 8, 35, 65, upperCaseOnly, "Filename: ", false))
-			{
-				saveSettings();
-			}
 		}
-		
-		if(testSDLKeyOnce(SDLK_l)) // TODO: Check if inputString should make a sound even when loading fails
-		{
-			while(inputString(settingsFile, 8, 35, 65, upperCaseOnly, "Filename: ", false))
-			{
-				if(loadSettings())
-				{
-					updateSettingsMenu();
-					settingsMenu.updateItems(*common);
-					break;
-				}
-			}
-		}
-#endif
 
-		if(curMenu == &settingsMenu)
+		if(testSDLKey(SDLK_LEFT))
 		{
-			if(testSDLKey(SDLK_LEFT))
-			{
-				//settingLeftRight(-1, settingsMenu.selection());
-				if(!settingsMenu.onLeftRight(*common, -1))
-					resetLeftRight();
-			} // EDAE
-			if(testSDLKey(SDLK_RIGHT))
-			{
-				//settingLeftRight(1, settingsMenu.selection());
-				if(!settingsMenu.onLeftRight(*common, 1))
-					resetLeftRight();
-			} // EDBF
+			if(!curMenu->onLeftRight(*common, -1))
+				resetLeftRight();
 		}
-		else // if(curMenu == &playerMenu)
+		if(testSDLKey(SDLK_RIGHT))
 		{
-			if(testSDLKey(SDLK_LEFT))
-			{
-				if(!curMenu->onLeftRight(*common, -1))
-					resetLeftRight();
-			}
-			if(testSDLKey(SDLK_RIGHT))
-			{
-				if(!curMenu->onLeftRight(*common, 1))
-					resetLeftRight();
-			}
+			if(!curMenu->onLeftRight(*common, 1))
+				resetLeftRight();
 		}
 		
 		if(testSDLKeyOnce(SDLK_PAGEUP))
@@ -1827,28 +1804,6 @@ int Gfx::menuLoop()
 			curMenu->movementPage(1);
 		}
 
-		/*
-		// TODO: Fix hidden menu palette
-		if(curMenu != &hiddenMenu)
-		{
-			//origpal.setWormColours(*settings);
-			//origpal.rotate(168, 174);
-			pal = origpal;
-			pal.setWormColours(*settings);
-			pal.rotateFrom(origpal, 168, 174, menuCycles);
-		}
-		else
-		{
-			pal = common->exepal;
-		}
-		*/
-
-		if(fadeValue < 32)
-		{
-			fadeValue += 1;
-			//pal.fade(fadeValue);
-		}
-		
 		menuFlip();
 		process();
 	}
@@ -1856,11 +1811,9 @@ int Gfx::menuLoop()
 
 	for(fadeValue = 32; fadeValue > 0; --fadeValue)
 	{
-		menuFlip();
-		//pal = origpal;
-		//pal.fade(fadeValue);
-		//flip(); // TODO: We should just screen sync and set the palette here
-	} // EE36
+		menuFlip(true);
+		process();
+	}
 	
 	return selected;
 }

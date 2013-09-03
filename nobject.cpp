@@ -3,7 +3,7 @@
 #include "gfx/renderer.hpp"
 #include "mixer/player.hpp"
 #include "bobject.hpp"
-#include <iostream>
+//#include <iostream>
 
 void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int color, int ownerIdx, WormWeapon* firedBy)
 {

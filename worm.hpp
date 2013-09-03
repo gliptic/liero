@@ -13,9 +13,6 @@
 #include <gvl/serialization/archive.hpp> // For gvl::enable_when
 #include <gvl/crypt/gash.hpp>
 
-
-#include <iostream> // TEMP
-
 struct Worm;
 struct Game;
 
@@ -74,6 +71,11 @@ struct WormSettingsExtensions
 		MaxControlEx
 	};
 	//static const int MaxControl = Dig;
+
+	WormSettingsExtensions()
+	{
+		std::memset(controlsEx, 0, sizeof(controlsEx));
+	}
 	
 	uint32_t controlsEx[MaxControlEx];
 };
@@ -91,6 +93,7 @@ struct WormSettings : gvl::shared, WormSettingsExtensions
 		rgb[2] = 62;
 		
 		std::memset(weapons, 0, sizeof(weapons));
+		std::memset(controls, 0, sizeof(controls));
 	}
 	
 	gvl::gash::value_type& updateHash();

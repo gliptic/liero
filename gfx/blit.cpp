@@ -611,17 +611,14 @@ void drawGraph(Bitmap& scr,
 	int startX,
 	int startY,
 	int color,
-	int negColor)
+	int negColor,
+	bool balanced)
 {
 	if (!data.empty())
 	{
 		int x = startX;
 
-		int min = (int)std::floor(*std::min_element(data.begin(), data.end()));
-
-		min = std::min(min, 0);
-
-		int baseY = startY + height + min;
+		int baseY = startY + (balanced ? height/2 : height);
 
 		for (double v : data)
 		{
