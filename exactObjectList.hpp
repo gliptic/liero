@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cassert>
 #include <gvl/support/bits.hpp>
+#include <cstring>
 
 #if 0
 #include <gvl/containers/pairing_heap.hpp>
@@ -298,7 +299,7 @@ struct ExactObjectList
 		assert(ptr->used);
 		if(ptr->used)
 		{
-			uint32_t index = (ptr - arr);
+			uint32_t index = uint32_t(ptr - arr);
 			freeList[index >> 5] |= (uint32_t(1) << (index & 31));
 
 			ptr->used = false;

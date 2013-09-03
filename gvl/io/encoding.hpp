@@ -528,9 +528,9 @@ inline D& operator<<(basic_text_writer<D>& self_, char ch)
 }
 
 template<typename D>
-inline D& operator<<(basic_text_writer<D>& self_, std::string const& str)
+inline D& operator<<(basic_text_writer<D> const& self_, std::string const& str)
 {
-	D& self = self_.derived();
+	D& self = const_cast<basic_text_writer<D>&>(self_).derived();
 	self.put(reinterpret_cast<uint8_t const*>(str.data()), str.size());
 	return self;
 }
@@ -542,14 +542,14 @@ inline D& operator<<(basic_text_writer<D>& self_, gvl::string const& str)
 	D& self = self_.derived();
 	self.put(reinterpret_cast<uint8_t const*>(str.data()), str.size());
 	return self;
-}*/
+}
 
 template<typename D>
 inline D& operator<<(basic_text_writer<D>& self_, void const* ptr)
 {
 	// TODO: Very TEMP
 	return (self_ << uint32_t(ptr));
-}
+}*/
 
 #if 0
 template<typename T, typename Format>

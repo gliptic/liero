@@ -5,6 +5,7 @@
 #include "gfx/renderer.hpp"
 #include "stats.hpp"
 #include <sstream>
+#include <cfloat>
 
 double totalHealth(Worm* w)
 {
@@ -45,7 +46,6 @@ int readyWeapons(Game& game, Worm* w)
 	for (int i = 0; i < 5; ++i)
 	{
 		WormWeapon& weap = w->weapons[i];
-		Weapon& winfo = game.common->weapons[weap.id];
 
 		if (weap.loadingLeft == 0 && weap.delayLeft < 70)
 			++count;
@@ -59,7 +59,6 @@ bool hasUsableWeapon(Game& game, Worm* w)
 	for (int i = 0; i < 5; ++i)
 	{
 		WormWeapon& weap = w->weapons[i];
-		Weapon& winfo = game.common->weapons[weap.id];
 
 		if (weap.loadingLeft <= 0)
 			return true;
@@ -416,8 +415,9 @@ double evaluateState(
 	}
 
 
-	auto& c = ai.cell(me->x, me->y);
+
 #if 0
+	auto& c = ai.cell(me->x, me->y);
 	if (ai.maxPresence > 0.1)
 		score -= (c.presence * 4.0) / ai.maxPresence;
 	if (ai.maxDamage > 0.1)
@@ -443,7 +443,6 @@ double evaluateState(
 double EvaluateResult::weightedScore()
 {
 	double r = 0.0;
-	double fallOff = 0.995;
 
 	for (std::size_t i = 1; i < scoreOverTime.size(); ++i)
 	{
@@ -980,7 +979,6 @@ void transToM(Weights& weights, double& p,
 
 	if (pb == 0) p *= select(pb2, 0.05,  0.4,  0.4,  0.15);  // Not moving
 
-	double swapBias = 0.0; // Probability that direction would switch without prompting
 	if (pb == 1) p *= select(pb2, 0.005, 0.965,  0.005,  0.025); // Moving right
 	if (pb == 2) p *= select(pb2, 0.005, 0.005,  0.965,  0.025); // Moving left
 	if (pb == 3) p *= select(pb2, 0.1,   0.35, 0.35, 0.2);   // Digging

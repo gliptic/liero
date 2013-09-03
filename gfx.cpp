@@ -269,8 +269,6 @@ void Gfx::setVideoMode()
 
 void Gfx::loadMenus()
 {
-	ReaderFile& exe = openLieroEXE();
-
 	hiddenMenu.addItem(MenuItem(48, 7, "FULLSCREEN (F5)", HiddenMenu::Fullscreen));
 	hiddenMenu.addItem(MenuItem(48, 7, "DOUBLE SIZE (F6)", HiddenMenu::DoubleRes));
 	hiddenMenu.addItem(MenuItem(48, 7, "SET FULLSCREEN WIDTH", HiddenMenu::FullscreenW));

@@ -165,7 +165,7 @@ struct filename_result
 	char const* name;
 };
 
-#if GVL_LINUX
+#if GVL_LINUX || __APPLE__ 
 
 # define BOOST_HANDLE DIR *
 # define BOOST_INVALID_HANDLE_VALUE 0
@@ -281,6 +281,29 @@ bool create_directories(std::string const& dir)
 		}
 	}
 
+	return true;
+}
+
+#else
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+bool create_directories(std::string const& dir)
+{
+	for (std::size_t i = 1; i < dir.size(); ++i)
+	{
+		if (dir[i] == '/')
+		{
+			std::string path = dir.substr(0, i);
+            struct stat s;
+            if (!stat(path.c_str(), &s))
+            {
+                mkdir(path.c_str(), 0666);
+            }
+		}
+	}
+    
 	return true;
 }
 

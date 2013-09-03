@@ -13,7 +13,7 @@
 
 Sfx sfx;
 
-extern "C" static void SDLCALL Sfx_callback(void *userdata, Uint8 *stream, int len)
+extern "C" void SDLCALL Sfx_callback(void *userdata, Uint8 *stream, int len)
 {
 	uint32 frame_count = len / 2;
 

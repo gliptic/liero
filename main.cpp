@@ -29,6 +29,10 @@
 //#include <gvl/support/profile.hpp> // TEMP
 //#include <gvl/support/log.hpp> // TEMP
 
+#if __APPLE__
+#define gameEntry SDL_main
+#endif
+
 int gameEntry(int argc, char* argv[])
 try
 {

@@ -268,7 +268,7 @@ struct Worm : gvl::shared
 	, lastKilledByIdx(-1)
 	, fireCone(0)
 	, leaveShellTimer(0)
-	, index(index)
+	, index(0)
 	, direction(0)
 	, steerableCount(0)
 	{

@@ -157,7 +157,6 @@ struct deflate_source : bucket_pipe, octet_reader
 			{
 				cur_out->size_ = str.next_out - cur_out->data;
 				
-				sassert(bucket->size_ > 0);
 				return source_result::ok;
 			}
 

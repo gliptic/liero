@@ -103,7 +103,7 @@ void write_aint(Writer& writer, unsigned int v)
 template<typename Reader>
 unsigned int read_aint(Reader& reader)
 {
-	v = 0;
+	int v = 0;
 
 	for(int i = 0; i < 5; ++i)
 	{
@@ -204,7 +204,7 @@ inline int read_sint32(Reader& reader)
 {
 	return read_uint32(reader) - 0x80000000;
 }
-
+/*
 template<typename Reader>
 void read_string16(Reader& reader, std::string& dest)
 {
@@ -213,7 +213,7 @@ void read_string16(Reader& reader, std::string& dest)
 	reader.get(reinterpret_cast<uint8_t*>(&buf[0]), len);
 
 	dest.assign(&buf[0], len);
-}
+}*/
 
 }
 

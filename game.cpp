@@ -173,8 +173,6 @@ void Game::draw(Renderer& renderer, bool isReplay)
 
 bool checkBonusSpawnPosition(Game& game, int x, int y)
 {
-	Common& common = *game.common;
-	
 	Rect rect(x - 2, y - 2, x + 3, y + 3);
 	
 	rect.intersect(game.level.rect());
