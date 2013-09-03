@@ -7,7 +7,6 @@
 #include <gvl/serialization/archive.hpp>
 #include <gvl/io/deflate_filter.hpp>
 #include <gvl/io2/deflate_filter.hpp>
-#include <gvl/io/cache_stream.hpp>
 
 struct WormCreator
 {
@@ -88,7 +87,7 @@ void archive(Archive ar, Worm& worm)
 	.i32(worm.ninjarope.y)
 	.i32(worm.currentWeapon)
 	.b(worm.fireConeActive)
-	.obj<Worm>(worm.lastKilledByIdx, WormCreator(), WormIdxRefCreator())
+	.template obj<Worm>(worm.lastKilledByIdx, WormCreator(), WormIdxRefCreator())
 	.i32(worm.fireCone)
 	.i32(worm.leaveShellTimer);
 	ar.fobj(worm.settings)
@@ -127,7 +126,7 @@ void archive(Archive ar, Viewport& vp)
 	.i32(vp.maxY)
 	.i32(vp.centerX)
 	.i32(vp.centerY)
-	.obj<Worm>(vp.wormIdx, WormCreator(), WormIdxRefCreator())
+	.template obj<Worm>(vp.wormIdx, WormCreator(), WormIdxRefCreator())
 	.i32(vp.bannerY)
 	.i32(vp.inGameX)
 	.i32(vp.rect.x1)
@@ -339,7 +338,7 @@ void archive(Archive ar, Game& game)
 	.fobj(game.settings)
 	.i32(game.cycles)
 	.b(game.gotChanged)
-	.obj<Worm>(game.lastKilledIdx, WormCreator(), WormIdxRefCreator())
+	.template obj<Worm>(game.lastKilledIdx, WormCreator(), WormIdxRefCreator())
 	.i32(game.screenFlash);
 	archive(ar, game.rand);
 	
@@ -360,6 +359,7 @@ void write(gvl::octet_stream_writer& writer, GameSerializationContext& context, 
 	archive(gvl::out_archive<gvl::octet_stream_writer, GameSerializationContext>(writer, context), x);
 }
 
+/*
 template<typename T>
 gvl::gash::value_type hash(T& x)
 {
@@ -371,6 +371,7 @@ gvl::gash::value_type hash(T& x)
 	ha.flush();
 	return ha.final();
 }
+ */
 
 /*
 template<typename Archive>

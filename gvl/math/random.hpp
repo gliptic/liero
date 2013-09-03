@@ -43,7 +43,7 @@ struct prng_common
 	// Number in [min, max)
 	uint32_t operator()(uint32_t min, uint32_t max)
 	{
-		sassert(min < max);
+		sassert(min <= max);
 		return operator()(max - min) + min;
 	}
 };

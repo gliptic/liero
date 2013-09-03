@@ -24,14 +24,14 @@ struct bucket;
 struct brigade;
 
 
-
 struct stream_error : std::runtime_error
 {
-	stream_error(std::string const& msg)
-	: std::runtime_error(msg)
-	{
-	}
+    stream_error(std::string const& msg)
+    : std::runtime_error(msg)
+    {
+    }
 };
+
 
 
 

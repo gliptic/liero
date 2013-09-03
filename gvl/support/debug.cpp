@@ -1,6 +1,7 @@
 #include "debug.hpp"
 
 #include <string>
+#include <cstdlib>
 
 void gvl::passert_fail(char const* cond, char const* file, int line, char const* msg)
 {

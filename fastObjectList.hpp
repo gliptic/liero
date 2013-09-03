@@ -67,7 +67,7 @@ struct FastObjectList
 	
 	T* newObject()
 	{
-		if(nextFree >= limit)
+		if(count == limit)
 			return 0;
 			
 		T* ret = getFreeObject();

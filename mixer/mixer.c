@@ -2,7 +2,7 @@
 #include "tl/vector.h"
 #include "tl/memory.h"
 #include <string.h>
-#include <malloc.h>
+#include <stdlib.h>
 
 typedef struct channel
 {
@@ -27,7 +27,7 @@ typedef struct channel
 	*/
 } channel;
 
-typedef struct sfx_mixer
+struct sfx_mixer
 {
 	channel channel_states[CHANNEL_COUNT];
 	
@@ -35,12 +35,12 @@ typedef struct sfx_mixer
 	int initialized;
 	double output_latency;
 	double sample_rate;
-} sfx_mixer;
+};
 
-typedef struct sfx_sound 
+struct sfx_sound 
 {
 	tl_vector samples;
-} sfx_sound;
+};
 
 int32_t sfx_mixer_now(sfx_mixer* mixer)
 {

@@ -57,7 +57,25 @@ void gvl_sleep(uint32_t ms)
 
 #include <unistd.h>
 
-#if defined(_POSIX_MONOTONIC_CLOCK)
+#if __APPLE__
+
+// STUBBS
+uint32_t gvl_get_ticks()
+{
+    return 0;
+}
+
+uint64_t gvl_get_hires_ticks()
+{
+	return 0;
+}
+
+uint64_t gvl_hires_ticks_per_sec()
+{
+	return 1;
+}
+
+#elif defined(_POSIX_MONOTONIC_CLOCK)
 
 #include <time.h>
 
@@ -114,8 +132,9 @@ void gvl_sleep(uint32_t ms)
 	}
 }
 #else // !GVL_LINUX
-void gvl_sleep(uint32_t)
+void gvl_sleep(uint32_t ms)
 {
+    (void)ms;
 	//passert(false, "STUB");
 }
 #endif // !GVL_LINUX

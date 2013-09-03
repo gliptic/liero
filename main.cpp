@@ -25,7 +25,11 @@
 #include <exception>
 #include <gvl/math/cmwc.hpp>
 
-int gameEntry(int argc, char *argv[])
+#if __APPLE__
+#define gameEntry SDL_main
+#endif
+
+int gameEntry(int argc, char* argv[])
 try
 {
 	// TODO: Better PRNG seeding

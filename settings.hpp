@@ -8,6 +8,7 @@
 #include <gvl/support/cstdint.hpp>
 #include <gvl/crypt/gash.hpp>
 #include <gvl/serialization/archive.hpp> // For gvl::enable_when
+#include <stdexcept>
 #include "version.hpp"
 
 // We isolate extensions for the benefit of the .dat loader.
@@ -43,11 +44,6 @@ struct Settings : gvl::shared, Extensions
 		GMKillEmAll,
 		GMGameOfTag,
 		GMHoldazone
-	};
-	
-	enum
-	{
-		
 	};
 	
 	enum
@@ -248,7 +244,7 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 			.ui8(settings.selectBotWeapons, uint32_t(0))
 			.ui16(settings.zoneTimeout, 30);
 	}
-	catch(gvl::stream_error&)
+	catch(std::runtime_error&)
 	{
 		// Reset to default state
 		settings.Extensions::operator=(Extensions());

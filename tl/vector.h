@@ -2,7 +2,8 @@
 #define UUID_C8B889F6B0254CE3F7AE58B920794A20
 
 #include <stddef.h>
-#include <malloc.h>
+//#include <malloc.h>
+#include <stdlib.h>
 #include <assert.h>
 #include "cstdint.h"
 #include "platform.h"
