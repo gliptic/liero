@@ -235,7 +235,8 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 
 int vidrec_finalize(video_recorder* self)
 {
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	while (1)
 	{

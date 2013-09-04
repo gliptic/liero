@@ -9,7 +9,8 @@
 #include "gfx/renderer.hpp"
 #include "text.hpp"
 
-#include <gvl/io/fstream.hpp>
+//#include <gvl/io/fstream.hpp>
+#include <gvl/io2/fstream.hpp>
 #include <memory>
 
 extern "C"
@@ -24,7 +25,8 @@ void replayToVideo(
 	std::string const& fullPath,
 	std::string const& replayVideoName)
 {
-	gvl::stream_ptr replay(new gvl::fstream(std::fopen(fullPath.c_str(), "rb")));
+	auto replay(
+		gvl::to_source(new gvl::file_bucket_source(fullPath.c_str(), "rb")));
 	ReplayReader replayReader(replay);
 	Renderer renderer;
 

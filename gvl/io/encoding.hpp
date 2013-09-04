@@ -528,9 +528,9 @@ inline D& operator<<(basic_text_writer<D>& self_, char ch)
 }
 
 template<typename D>
-inline D& operator<<(basic_text_writer<D> const& self_, std::string const& str)
+inline D& operator<<(basic_text_writer<D>& self_, std::string const& str)
 {
-	D& self = const_cast<basic_text_writer<D>&>(self_).derived();
+	D& self = self_.derived();
 	self.put(reinterpret_cast<uint8_t const*>(str.data()), str.size());
 	return self;
 }
@@ -625,6 +625,11 @@ struct cell : basic_text_writer<cell>
 		{
 			buffer.push_back(p[i]);
 		}
+	}
+
+	cell& ref()
+	{
+		return *this;
 	}
 	
 	std::vector<uint8_t> buffer;

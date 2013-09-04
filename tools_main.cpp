@@ -30,8 +30,6 @@ bool match(std::string const& str, std::string const& pat)
 int main(int argc, char *argv[])
 try
 {
-	Console::init();
-
 	bool exeSet = false, dir = false;
 	gvl::shared_ptr<Common> common(new Common);
 
@@ -107,10 +105,9 @@ try
 }
 catch(std::exception& ex)
 {
-	Console::setAttributes(0x2f);
 	Console::writeLine(std::string("EXCEPTION: ") + ex.what());
-	Console::writeLine("Press any key to quit");
-	Console::waitForAnyKey();
+	//Console::writeLine("Press any key to quit");
+	//Console::waitForAnyKey();
 	return 1;
 }
 

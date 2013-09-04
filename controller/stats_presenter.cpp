@@ -81,9 +81,10 @@ struct StatsRenderer
 				int x = 160 + (i == 0 ? -1 : 1) * (160 / 2) + offsX;
 				blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
+				cell c(i == 0 ? cell::right : cell::left);
 				common.font.drawText(
 					renderer.screenBmp,
-					cell(i == 0 ? cell::right : cell::left) << game.worms[i]->settings->name,
+					c << game.worms[i]->settings->name,
 					x + (i == 0 ? -16 : 16),
 					y + 2,
 					textColor);
@@ -96,9 +97,11 @@ struct StatsRenderer
 		bool visible = hblock(20, [this, i] {
 			int x = 160 + offsX;
 			blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
+
+			cell c(i == 0 ? cell::right : cell::left);
 			common.font.drawText(
 				renderer.screenBmp,
-				cell(i == 0 ? cell::right : cell::left) << game.worms[i]->settings->name,
+				c << game.worms[i]->settings->name,
 				x + (i == 0 ? -16 : 16),
 				y + 2,
 				textColor);
@@ -117,7 +120,7 @@ struct StatsRenderer
 		hblock(11, [this, name, &wormStat] {
 			common.font.drawText(
 				renderer.screenBmp,
-				cell(cell::center) << name, 160 + offsX, y, textColor);
+				cell(cell::center).ref() << name, 160 + offsX, y, textColor);
 
 			for (int i = 0; i < 2; ++i)
 			{
@@ -140,7 +143,7 @@ struct StatsRenderer
 		hblock(11, [this, name, &stat] {
 			common.font.drawText(
 				renderer.screenBmp,
-				cell(cell::right) << name, 160 + offsX, y, textColor);
+				cell(cell::right).ref() << name, 160 + offsX, y, textColor);
 
 			int x = 160 + 10 + offsX;
 
@@ -186,7 +189,7 @@ struct StatsRenderer
 		{
 			if (ws.totalHp > 0)
 			{
-				section(gvl::cell() << common.weapons[ws.index].name);
+				section(cell().ref() << common.weapons[ws.index].name);
 				drawStat("hits", [ws](cell& c) {
 					c << ws.actualHits << "/" << ws.potentialHits
 						<< " (" << percent(ws.actualHits, ws.potentialHits) << ")";
@@ -346,7 +349,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 			renderer.weaponStats(combinedWeaponStats);
 
-			renderer.section(cell() << "Total health difference", 0);
+			renderer.section(cell().ref() << "Total health difference", 0);
 			
 			renderer.graph(
 					wormTotalHpDiff,
@@ -355,7 +358,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 					Palette::wormColourIndexes[1],
 					true);
 
-			renderer.section(cell() << "Presence", 0);
+			renderer.section(cell().ref() << "Presence", 0);
 			renderer.heatmap(recorder.presence);
 		});
 
@@ -367,12 +370,12 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 				renderer.weaponStats(weaponStats[i]);
 
-				renderer.section(cell() << "Damage over time", 0);
+				renderer.section(cell().ref() << "Damage over time", 0);
 				renderer.graph(wormDamages[i], 50, Palette::wormColourIndexes[i], 0, false);
 
-				renderer.section(cell() << "Presence", 0);
+				renderer.section(cell().ref() << "Presence", 0);
 				renderer.heatmap(wormStats.presence);
-				renderer.section(cell() << "Damage", 0);
+				renderer.section(cell().ref() << "Damage", 0);
 				renderer.heatmap(wormStats.damageHm);
 			});
 		}
