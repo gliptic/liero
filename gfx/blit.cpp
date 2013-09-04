@@ -379,6 +379,7 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 			}
 
 			dest += level.width;
+			matdest += level.width;
 			mem += pitch;
 		}
 	}
