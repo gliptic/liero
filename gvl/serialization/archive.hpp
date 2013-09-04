@@ -261,7 +261,7 @@ struct out_archive
 	template<typename T>
 	out_archive& str(T const& v)
 	{
-		gvl::write_uint32(writer, v.size());
+		gvl::write_uint32(writer, (uint32_t)v.size());
 		for(uint32_t i = 0; i < v.size(); ++i)
 		{
 			writer.put((uint8_t)v[i]);

@@ -91,7 +91,7 @@ static int add_channel(int16_t* out, unsigned long frame_count, uint32_t now, ch
 	// TODO: Get rid of undefined cast
 	int32_t diff = (int32_t)(pos - now);
 	int32_t relbegin = diff;
-	uint32_t soundlen = tl_vector_size(sound->samples);
+	uint32_t soundlen = (uint32_t)tl_vector_size(sound->samples);
 	uint32_t flags = ch->flags;
 
 	if(relbegin < 0)

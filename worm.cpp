@@ -80,8 +80,6 @@ void WormSettings::loadProfile(std::string const& path)
 
 void Worm::calculateReactionForce(Game& game, int newX, int newY, int dir)
 {
-	Common& common = *game.common;
-	
 	static Point const colPoints[4][7] =
 	{
 		{ //DOWN reaction points
@@ -140,13 +138,7 @@ void Worm::calculateReactionForce(Game& game, int newX, int newY, int dir)
 		int colX = newX + colPoints[dir][i].x;
 		int colY = newY + colPoints[dir][i].y;
 		
-#if 0
-		if(!game.level.inside(colX, colY) // TODO: Liero seems to not make any check here, checking garbage pixels
-		|| !common.materials[game.level.pixel(colX, colY)].background())
-#else
-		// This should emulate Liero better
 		if(!game.level.checkedMatWrap(colX, colY).background())
-#endif
 		{
 			++reacts[dir];
 		}

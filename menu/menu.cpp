@@ -37,7 +37,7 @@ void Menu::onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains)
 
 				for (std::size_t offs = skip; offs < items.size(); ++offs)
 				{
-					int i = (selection_ + offs) % items.size();
+					int i = (selection_ + offs) % (int)items.size();
 					auto const& menuString = items[i].string;
 					
 					if (items[i].visible
@@ -152,7 +152,7 @@ bool Menu::isInView(int item)
 
 bool Menu::itemPosition(MenuItem& item, int& x, int& y)
 {
-	int index = &item - &items[0];
+	int index = int(&item - &items[0]);
 	if(!isInView(index))
 		return false;
 		
@@ -182,11 +182,11 @@ int Menu::firstVisibleFrom(int item)
 	{
 		if(items[i].visible && items[i].selectable)
 		{
-			return i;
+			return (int)i;
 		}
 	}
 	
-	return items.size();
+	return (int)items.size();
 }
 
 int Menu::lastVisibleFrom(int item)
@@ -195,7 +195,7 @@ int Menu::lastVisibleFrom(int item)
 	{
 		if(items[i].visible && items[i].selectable)
 		{
-			return i + 1;
+			return (int)i + 1;
 		}
 	}
 	
@@ -228,7 +228,7 @@ int Menu::itemFromVisibleIndex(int idx)
 			return i;
 		--idx;
 	}
-	return items.size();
+	return (int)items.size();
 }
 
 void Menu::setBottom(int newBottomVisIdx)

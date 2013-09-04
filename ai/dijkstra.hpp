@@ -199,7 +199,7 @@ struct dijkstra_level : dijkstra_state<level_cell*, dijkstra_level>
 
 	gvl::ivec2 coords(level_cell* c)
 	{
-		int offset = c - cells;
+		int offset = (int)(c - cells);
 		int y = offset / pitch;
 		int x = offset % pitch;
 		return gvl::ivec2(x - 1, y - 1);

@@ -49,7 +49,7 @@ struct ReaderFile
 		return data[pos++];
 	}
 
-	void get(uint8_t* p, unsigned int l)
+	void get(uint8_t* p, size_t l)
 	{
 		if (pos + l > len)
 			throw gvl::stream_read_error(gvl::stream::read_eos, "EOF in get()");

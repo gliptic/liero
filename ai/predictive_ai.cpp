@@ -251,7 +251,7 @@ double aimingDiff(AiContext& context, Game& game, Worm* from, level_cell* cell)
 
 struct MutationStrategy
 {
-	MutationStrategy(int type, std::size_t start = 0, std::size_t stop = 0)
+	MutationStrategy(int type, uint32_t start = 0, uint32_t stop = 0)
 	: type(type)
 	, start(start)
 	, stop(stop)
@@ -259,8 +259,8 @@ struct MutationStrategy
 	}
 
 	int type;
-	std::size_t start;
-	std::size_t stop;
+	uint32_t start;
+	uint32_t stop;
 };
 
 InputState generate(FollowAI& ai, Rand& rand, InputContext& prev)
@@ -297,7 +297,7 @@ double evaluateState(
 	InputContext& context,
 	Worm* target,
 	Game& orgGame,
-	int index)
+	std::size_t index)
 {
 	double score = 0;
 
@@ -613,7 +613,7 @@ EvaluateResult mutate(
 {
 	//auto candidate = best;
 
-	MutationStrategy ms(1, 0, candidate.size());
+	MutationStrategy ms(1, 0, (uint32_t)candidate.size());
 
 	if (i == 0)
 	{
@@ -630,7 +630,7 @@ EvaluateResult mutate(
 	else
 	{
 		// Find the minimum suffix sum
-		std::size_t j = prevResult.scoreOverTime.size() - 1;
+		uint32_t j = uint32_t(prevResult.scoreOverTime.size() - 1);
 
 		double sum = prevResult.scoreOverTime[j];
 		double min = sum;
@@ -649,12 +649,12 @@ EvaluateResult mutate(
 		if (ai.rand(8) < 7)
 		{
 			ms.stop = ai.rand(minj);
-			ms.start = ai.rand(std::max(ms.stop, std::size_t(10)) - 10, ms.stop);
+			ms.start = ai.rand(std::max(ms.stop, uint32_t(10)) - 10, ms.stop);
 		}
 		else
 		{
-			ms.start = ai.rand(0, candidate.size());
-			ms.stop = ai.rand(ms.start, std::min(ms.start + 10, candidate.size()));
+			ms.start = ai.rand(0, (uint32_t)candidate.size());
+			ms.stop = ai.rand(ms.start, std::min(ms.start + 10, (uint32_t)candidate.size()));
 		}
 	}
 		

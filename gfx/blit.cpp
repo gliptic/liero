@@ -631,7 +631,7 @@ void drawGraph(Bitmap& scr,
 		}
 	}
 
-	drawRoundedLineBox(scr, startX, startY, 7, data.size(), height);
+	drawRoundedLineBox(scr, startX, startY, 7, (int)data.size(), height);
 }
 
 void drawHeatmap(Bitmap& scr, int x, int y, Heatmap& hm)
@@ -661,7 +661,7 @@ void drawHeatmap(Bitmap& scr, int x, int y, Heatmap& hm)
 
 	for (auto& v : counts)
 	{
-		mapping[v.first] = 104 + int64_t(cum) * maxIdx / totalPixels;
+		mapping[v.first] = int(104 + int64_t(cum) * maxIdx / totalPixels);
 		cum += v.second;
 	}
 	

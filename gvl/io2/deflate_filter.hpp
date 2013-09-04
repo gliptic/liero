@@ -143,7 +143,7 @@ struct deflate_source : bucket_pipe, octet_reader
 				auto s = next_piece_();
 				if (s == source_result::ok)
 				{
-					str.avail_in = buf_left();
+					str.avail_in = (unsigned int)buf_left();
 					sassert(str.avail_in > 0);
 					str.next_in = (unsigned char*)cur_;
 				}

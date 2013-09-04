@@ -589,39 +589,6 @@ void Gfx::preparePalette(SDL_PixelFormat* format, Color realPal[256], uint32_t (
 	}
 }
 
-void Gfx::overlay(
-	SDL_PixelFormat* format,
-	uint8_t* src, int w, int h, std::size_t srcPitch,
-	uint8_t* dest, std::size_t destPitch, int mag)
-{
-	uint32_t transparent = SDL_MapRGB(format, 255, 0, 255);
-
-	for(int y = 0; y < h; ++y)
-	{
-		uint8_t* line = src + y*srcPitch;
-		int destMagPitch = mag*destPitch;
-		uint8_t* destLine = dest + y*destMagPitch;
-						
-		for(int x = 0; x < w; ++x)
-		{
-			uint32_t pix = *reinterpret_cast<uint32_t*>(line);
-			line += 4;
-
-			if (pix == transparent)
-				continue;
-
-			for(int dx = 0; dx < mag; ++dx)
-			{
-				for(int dy = 0; dy < destMagPitch; dy += destPitch)
-				{
-					*reinterpret_cast<uint32_t*>(destLine + dy) = pix;
-				}
-				destLine += 4;
-			}
-		}
-	}
-}
-
 void Gfx::menuFlip(bool quitting)
 {
 	if (fadeValue < 32 && !quitting)

@@ -29,14 +29,11 @@ struct PreserveClipRect
 
 void Viewport::process(Game& game)
 {
-	Common& common = *game.common;
 	Worm& worm = *game.wormByIdx(wormIdx);
 	if(worm.killedTimer <= 0)
 	{
 		if(worm.visible)
 		{
-			WormWeapon const& ww = worm.weapons[worm.currentWeapon];
-
 			if(worm.steerableCount > 0)
 			{
 				setCenter(worm.steerableSumX / worm.steerableCount, worm.steerableSumY / worm.steerableCount);
