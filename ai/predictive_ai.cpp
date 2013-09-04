@@ -834,11 +834,7 @@ void FollowAI::process(Game& game, Worm& worm)
 	if (targetAi)
 		targetAi->update(*targetAi, *target);
 
-#if NDEBUG
 	if ((frame % 1) == 0)
-#else
-	if ((frame % 20) == 0)
-#endif
 	{
 		Plan best = plan;
 

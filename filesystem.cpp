@@ -297,9 +297,12 @@ bool create_directories(std::string const& dir)
 		{
 			std::string path = dir.substr(0, i);
             struct stat s;
-            if (!stat(path.c_str(), &s))
+            if (stat(path.c_str(), &s) < 0)
             {
-                mkdir(path.c_str(), 0666);
+                if (mkdir(path.c_str(), 0777) < 0)
+                {
+                    return false;
+                }
             }
 		}
 	}
