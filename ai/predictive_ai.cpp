@@ -314,8 +314,7 @@ double evaluateState(
 		double meNormHealth = orgGame.wormByIdx(me->index)->health * 100.0 / me->settings->health;
 		double targetNormHealth = orgGame.wormByIdx(target->index)->health * 100.0 / target->settings->health;
 
-		if (me->index == 0
-		 && readyWeapons(orgGame, orgGame.wormByIdx(me->index)) <= 1)
+		if (readyWeapons(orgGame, orgGame.wormByIdx(me->index)) <= 1)
 		{
 			optimalDist = 50.0;
 		}
@@ -611,8 +610,6 @@ EvaluateResult mutate(
 	Game& game, Worm& worm, Worm* target, Plan& candidate,
 	int i, EvaluateResult const& prevResult)
 {
-	//auto candidate = best;
-
 	MutationStrategy ms(1, 0, (uint32_t)candidate.size());
 
 	if (i == 0)
