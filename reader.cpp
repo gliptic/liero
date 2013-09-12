@@ -11,9 +11,7 @@ namespace
 
 typedef std::map<std::string, ReaderFile> ReaderFileMap;
 
-std::string lieroEXE;/*
-std::string lieroCHR;
-std::string lieroSND;*/
+//std::string lieroEXE;
 
 ReaderFileMap readerFiles;
 
@@ -49,17 +47,17 @@ ReaderFile& openFile(std::string const& name)
 	return rf;
 }
 
-ReaderFile& openLieroEXE()
+ReaderFile& openLieroEXE(std::string const& lieroEXE)
 {
 	return openFile(lieroEXE);
 }
 
-ReaderFile& openLieroSND()
+ReaderFile& openLieroSND(std::string const& lieroEXE)
 {
 	return openFile(changeLeaf(lieroEXE, "LIERO.SND"));
 }
 
-ReaderFile& openLieroCHR()
+ReaderFile& openLieroCHR(std::string const& lieroEXE)
 {
 	return openFile(changeLeaf(lieroEXE, "LIERO.CHR"));
 }
@@ -68,10 +66,7 @@ void setLieroEXE(std::string const& path)
 {
 	//TODO: Close cached files
 	
-	lieroEXE = path;
-	/*
-	lieroCHR = changeLeaf(path, "LIERO.CHR");
-	lieroSND = changeLeaf(path, "LIERO.SND");*/
-	
-	lieroEXERoot = getRoot(lieroEXE);
+	//lieroEXE = path;
+
+	lieroEXERoot = getRoot(path);
 }

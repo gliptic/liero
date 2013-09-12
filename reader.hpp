@@ -62,9 +62,9 @@ struct ReaderFile
 ReaderFile& openFile(std::string const& name);
 void openFileUncached(ReaderFile& rf, std::string const& name);
 
-ReaderFile& openLieroEXE();
-ReaderFile& openLieroSND();
-ReaderFile& openLieroCHR();
+ReaderFile& openLieroEXE(std::string const& lieroExe);
+ReaderFile& openLieroSND(std::string const& lieroExe);
+ReaderFile& openLieroCHR(std::string const& lieroExe);
 
 inline std::string readPascalString(ReaderFile& f)
 {

@@ -143,11 +143,11 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		if((game.cycles % 20) > 10
 		&& worm.visible)
 		{
-			common.font.drawText(renderer.screenBmp, common.texts.reloading, inGameX, 164, 50);
+			common.font.drawText(renderer.screenBmp, LS(Reloading), inGameX, 164, 50);
 		}
 	}
 	
-	common.font.drawText(renderer.screenBmp, (common.texts.kills + toString(worm.kills)), inGameX, 171, 10);
+	common.font.drawText(renderer.screenBmp, (LS(Kills) + toString(worm.kills)), inGameX, 171, 10);
 	
 	if(isReplay)
 	{
@@ -161,7 +161,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	{
 	case Settings::GMKillEmAll:
 	{
-		common.font.drawText(renderer.screenBmp, (common.texts.lives + toString(worm.lives)), inGameX, 178, 6);
+		common.font.drawText(renderer.screenBmp, (LS(Lives) + toString(worm.lives)), inGameX, 178, 6);
 	}
 	break;
 
@@ -239,8 +239,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		&& worm.killedTimer <= 0
 		&& !worm.ready)
 		{
-			common.font.drawText(renderer.screenBmp, common.texts.pressFire, rect.center_x() - 30, 76, 0);
-			common.font.drawText(renderer.screenBmp, common.texts.pressFire, rect.center_x() - 31, 75, 50);
+			common.font.drawText(renderer.screenBmp, LS(PressFire), rect.center_x() - 30, 76, 0);
+			common.font.drawText(renderer.screenBmp, LS(PressFire), rect.center_x() - 31, 75, 50);
 		}
 
 		if(bannerY > -8
@@ -249,8 +249,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			if(game.settings->gameMode == Settings::GMGameOfTag
 			&& game.gotChanged)
 			{
-				common.font.drawText(renderer.screenBmp, common.S[YoureIt], rect.x1 + 3, bannerY + 1, 0);
-				common.font.drawText(renderer.screenBmp, common.S[YoureIt], rect.x1 + 2, bannerY, 50);
+				common.font.drawText(renderer.screenBmp, LS(YoureIt), rect.x1 + 3, bannerY + 1, 0);
+				common.font.drawText(renderer.screenBmp, LS(YoureIt), rect.x1 + 2, bannerY, 50);
 			}
 		}
 	
@@ -264,13 +264,13 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			{
 				if(otherWorm.lastKilledByIdx == worm.index)
 				{
-					std::string msg(common.S[KilledMsg] + otherWorm.settings->name);
+					std::string msg(LS(KilledMsg) + otherWorm.settings->name);
 					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
 					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 2, v->bannerY, 50);
 				}
 				else
 				{
-					std::string msg(otherWorm.settings->name + common.S[CommittedSuicideMsg]);
+					std::string msg(otherWorm.settings->name + LS(CommittedSuicideMsg));
 					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
 					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 2, v->bannerY, 50);
 				}
@@ -279,7 +279,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 		for(Game::BonusList::iterator i = game.bonuses.begin(); i != game.bonuses.end(); ++i)
 		{
-			if(i->timer > common.C[BonusFlickerTime] || (game.cycles & 3) == 0)
+			if(i->timer > LC(BonusFlickerTime) || (game.cycles & 3) == 0)
 			{
 				int f = common.bonusFrames[i->frame];
 			
@@ -513,7 +513,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 						drawLaserSight(renderer.screenBmp, renderer.rand, hotspotX, hotspotY, tempX + 7, tempY + 4);
 					}
 				
-					if(ww.id == common.C[LaserWeapon] - 1 && w.pressed(Worm::Fire))
+					if(ww.id == LC(LaserWeapon) - 1 && w.pressed(Worm::Fire))
 					{
 						drawLine(renderer.screenBmp, hotspotX, hotspotY, tempX + 7, tempY + 4, weapon.colorBullets);
 					}

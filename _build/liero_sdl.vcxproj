@@ -63,7 +63,7 @@
       <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>sdl.lib;avcodec.lib;avformat.lib;avresample.lib;avutil.lib;avfilter.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>

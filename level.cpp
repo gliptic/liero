@@ -273,8 +273,11 @@ void Level::generateFromSettings(Common& common, Settings const& settings, Rand&
 	}
 	else
 	{
-		// TODO: Check .LEV as well as .lev
-		if(!load(common, settings, settings.levelFile + ".lev"))
+		std::string path = settings.levelFile;
+		if (path.find('.', 0) == std::string::npos)
+			path += ".LEV";
+
+		if(!load(common, settings, path))
 			generateRandom(common, settings, rand);
 
 	}

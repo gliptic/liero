@@ -3,6 +3,10 @@
 #include "reader.hpp"
 #include "rand.hpp"
 #include "gfx/blit.hpp"
+#include "filesystem.hpp"
+#include <gvl/io/convert.hpp>
+#include <gvl/io2/fstream.hpp>
+#include <map>
 
 int Common::fireConeOffset[2][7][2] =
 {
@@ -17,79 +21,208 @@ int stoneTab[3][4] =
 	{89, 90, 97, 96}
 };
 
-void Texts::loadFromEXE()
-{
-	ReaderFile& exe = openLieroEXE();
+char const* Texts::keyNames[177] = {
+	"",
+	"Esc",
+	"1",
+	"2",
+	"3",
+	"4",
+	"5",
+	"6",
+	"7",
+	"8",
+	"9",
+	"0",
+	"+",
+	"`",
+	"Backspace",
+	"Tab",
+	"Q",
+	"W",
+	"E",
+	"R",
+	"T",
+	"Y",
+	"U",
+	"I",
+	"O",
+	"P",
+	"Å",
+	"^",
+	"Enter",
+	"Left Crtl",
+	"A",
+	"S",
+	"D",
+	"F",
+	"G",
+	"H",
+	"J",
+	"K",
+	"L",
+	"Ö",
+	"Ä",
+	"½",
+	"Left Shift",
+	"'",
+	"Z",
+	"X",
+	"C",
+	"V",
+	"B",
+	"N",
+	"M",
+	",",
+	".",
+	"-",
+	"Right Shift",
+	"* (Pad)",
+	"Left Alt",
+	"",
+	"Caps Lock",
+	"F1",
+	"F2",
+	"F3",
+	"F4",
+	"F5",
+	"F6",
+	"F7",
+	"F8",
+	"F9",
+	"F10",
+	"Num Lock",
+	"Scroll Lock",
+	"7 (Pad)",
+	"8 (Pad)",
+	"9 (Pad)",
+	"- (Pad)",
+	"4 (Pad)",
+	"5 (Pad)",
+	"6 (Pad)",
+	"+ (Pad)",
+	"1 (Pad)",
+	"2 (Pad)",
+	"3 (Pad)",
+	"0 (Pad)",
+	", (Pad)",
+	"",
+	"",
+	"<",
+	"F11",
+	"F12",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"Enter (Pad)",
+	"Right Ctrl",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"Print Screen",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"/ (Pad)",
+	"",
+	"Print Screen",
+	"Right Alt",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"",
+	"Home",
+	"Up",
+	"Page Up",
+	"",
+	"Left",
+	"",
+	"Right",
+	"",
+	"End",
+	"Down",
+	"Page Down",
+	"Insert",
+	"Delete",
+	"",
+	"",
+	"",
+	"",
+	"",
+};
 
-	random = readPascalStringAt(exe, 0xD6E3);
-	random2 = readPascalStringAt(exe, 0xD413);
-	regenLevel = readPascalStringAt(exe, 0xD41A);
-	reloadLevel = readPascalStringAt(exe, 0xD42D);
-	
-	//copyright1 = readPascalStringAt(exe, 0xFB60);
-	copyright2 = readPascalStringAt(exe, 0xE693);
-	saveoptions = readPascalStringAt(exe, 0xE6BB);
-	loadoptions = readPascalStringAt(exe, 0xE6CC);
-	curOptNoFile = readPascalStringAt(exe, 0xE6DD);
-	curOpt = readPascalStringAt(exe, 0xE6FA);
-	
-	exe.seekg(0x1B2BA);
-	for(int i = 0; i < 2; ++i)
-	{
-		gameModes[i] = readPascalString(exe, 17);
-	}
+Texts::Texts()
+{
+	gameModes[0] = "Kill'em All";
+	gameModes[1] = "Game of Tag";
 	gameModes[2] = "Holdazone";
 	
-	gameModeSpec[0] = readPascalStringAt(exe, 0xD3EC);
-	gameModeSpec[1] = readPascalStringAt(exe, 0xD3F2);
-	gameModeSpec[2] = readPascalStringAt(exe, 0xD3FF);
+	onoff[0] = "OFF";
+	onoff[1] = "ON";
 	
-	onoff[0] = readPascalStringAt(exe, 0x1AE84);
-	onoff[1] = readPascalStringAt(exe, 0x1AE88);
-	
-	controllers[0] = readPascalStringAt(exe, 0x1B204);
-	controllers[1] = readPascalStringAt(exe, 0x1B20A);
+	controllers[0] = "Human";
+	controllers[1] = "CPU";
 	controllers[2] = "AI";
 	
-	exe.seekg(0x1B2FE);
-	for(int i = 0; i < 3; ++i)
-	{
-		weapStates[i] = readPascalString(exe, 13);
-	}
-		
-	exe.seekg(0x209A6);
-	for(int i = 1; i < 177; ++i) // First key starts at 1
-	{
-		keyNames[i] = readPascalString(exe, 13);
-	}
-	
-	selWeap = readPascalStringAt(exe, 0xA9C0);
-	levelRandom = readPascalStringAt(exe, 0xA9D5);
-	levelIs1 = readPascalStringAt(exe, 0xA9E3);
-	levelIs2 = readPascalStringAt(exe, 0xA9EC);
-	randomize = readPascalStringAt(exe, 0xA9F4);
-	done = readPascalStringAt(exe, 0xA9EE);
-	
-	reloading = readPascalStringAt(exe, 0x7583);
-	pressFire = readPascalStringAt(exe, 0x7590);
-	
-	kills = readPascalStringAt(exe, 0x75A4);
-	lives = readPascalStringAt(exe, 0x75AC);
-	
-	selLevel = readPascalStringAt(exe, 0xD6F2);
-	
-	weapon = readPascalStringAt(exe, 0xD700);
-	availability = readPascalStringAt(exe, 0xD707);
-	noWeaps = readPascalStringAt(exe, 0xD714);
-	
-	exe.seekg(0xFC5B);
-	copyrightBarFormat = readUint8(exe);
+	weapStates[0] = "Menu";
+	weapStates[1] = "Bonus";
+	weapStates[2] = "Banned";
+
+	copyrightBarFormat = 64;
 }
 
-void Common::loadPalette()
+void Common::loadPalette(ReaderFile& exe)
 {
-	ReaderFile& exe = openLieroEXE();
-	
 	exe.seekg(132774);
 	
 	exepal.read(exe);
@@ -103,10 +236,8 @@ void Common::loadPalette()
 }
 
 
-void Common::loadMaterials()
+void Common::loadMaterials(ReaderFile& exe)
 {
-	ReaderFile& exe = openLieroEXE();
-	
 	exe.seekg(0x01C2E0);
 	
 	for(int i = 0; i < 256; ++i)
@@ -188,10 +319,8 @@ inline void readMembers(ReaderFile& f, T(&arr)[N], U (T::*mem))
 	}
 }
 
-void Common::loadWeapons()
+void Common::loadWeapons(ReaderFile& exe)
 {
-	ReaderFile& exe = openLieroEXE();
-	
 	exe.seekg(112806);
 	
 	readMembers<Read8>(exe, weapons, &Weapon::detectDistance);
@@ -325,10 +454,8 @@ void Common::loadWeapons()
 	}
 }
 
-void Common::loadTextures()
+void Common::loadTextures(ReaderFile& exe)
 {
-	ReaderFile& exe = openLieroEXE();
-	
 	exe.seekg(0x1C208);
 	readMembers<ReadBool>(exe, textures, &Texture::nDrawBack);
 	exe.seekg(0x1C1EA);
@@ -339,10 +466,8 @@ void Common::loadTextures()
 	readMembers<Read8>(exe, textures, &Texture::rFrame);
 }
 
-void Common::loadOthers()
+void Common::loadOthers(ReaderFile& exe)
 {
-	ReaderFile& exe = openLieroEXE();
-	
 	exe.seekg(0x1C1E2);
 	
 	for(int i = 0; i < 2; ++i)
@@ -361,15 +486,11 @@ void Common::loadOthers()
 		bonusSObjects[i] = readUint8(exe) - 1;
 }
 
-void Common::loadGfx()
+void Common::loadGfx(ReaderFile& exe, ReaderFile& gfx)
 {
-	ReaderFile& exe = openLieroEXE();
-	
 	exe.seekg(0x1C1DE);
 	bonusFrames[0] = readUint8(exe);
 	bonusFrames[1] = readUint8(exe);
-	
-	ReaderFile& gfx = openLieroCHR();
 	
 	gfx.seekg(10); // Skip some header
 	
@@ -444,10 +565,8 @@ void Common::loadGfx()
 	}
 }
 
-void Common::loadSfx()
+void Common::loadSfx(ReaderFile& snd)
 {
-	ReaderFile& snd = openLieroSND();
-		
 	int count = readUint16(snd);
 	
 	sounds.resize(count);
@@ -504,5 +623,792 @@ void Common::drawTextSmall(Bitmap& scr, char const* str, int x, int y)
 		}
 		
 		x += 4;
+	}
+}
+
+#include <gvl/io/encoding.hpp>
+
+template<typename Writer>
+struct TextWriter
+{
+	TextWriter(Writer& writer)
+	: writer(writer)
+	, first(true)
+	, indent(0)
+	{
+	}
+
+	bool first;
+	int indent;
+
+	void windent()
+	{
+		writer << '\n';
+		for (int i = 0; i < indent; ++i)
+		{
+			writer << "  ";
+		}
+	}
+
+	void f(char const* name)
+	{
+		if (!first)
+			writer << ',';
+		else
+			first = false;
+		windent();
+		if (name)
+			writer << '"' << name << "\": ";
+	}
+
+	template<typename F>
+	void object(char const* name, F func)
+	{
+		f(name);
+		writer << '{';
+		++indent;
+		first = true;
+		func();
+		--indent;
+		windent();
+		writer << "}";
+		first = false;
+	}
+
+	template<typename A, typename F>
+	void array(char const* name, A& arr, F func)
+	{
+		f(name);
+		writer << '[';
+		++indent;
+		first = true;
+		for (auto& e : arr)
+		{
+			func(e);
+		}
+		--indent;
+		windent();
+		writer << "]";
+		first = false;
+	}
+
+	void i32(int v)
+	{
+		writer << v;
+	}
+
+	void i32(char const* name, int v)
+	{
+		f(name);
+		i32(v);
+	}
+
+	void b(bool v)
+	{
+		writer << (v ? "true" : "false");
+	}
+
+	void b(char const* name, bool v)
+	{
+		f(name);
+		b(v);
+	}
+
+	template<typename T, typename ValueToRef, typename RefToValue>
+	void ref(char const* name, T const& v, ValueToRef v2r, RefToValue /*r2v*/)
+	{
+		f(name);
+		v2r(*this, v);
+	}
+
+	void str(std::string& s)
+	{
+		writer << '"';
+		for (char c : s)
+		{
+			if (c >= 0x20 && c <= 0x7e)
+			{
+				if (c == '"' || c == '\\')
+					writer << '\\';
+				writer << c;
+			}
+			else
+			{
+				writer << "\\u";
+				gvl::uint_to_ascii_base<16>(writer, (uint8_t)c, 4);
+			}
+			// TODO: Handle non-printable
+		}
+		writer << '"';
+	}
+
+	void str(char const* name, std::string& s)
+	{
+		f(name);
+		str(s);
+	}
+
+	Writer& writer;
+};
+
+enum Type
+{
+	TNull,
+	TBool,
+	TInteger,
+	TString,
+	TObject,
+	TArray
+};
+
+struct Object;
+struct Array;
+struct String;
+
+using gvl::shared;
+using std::vector;
+using std::string;
+using std::map;
+using std::move;
+
+struct Value
+{
+	Type tt;
+	union
+	{
+		int i;
+		shared* s;
+	} u;
+
+	Value()
+	: tt(TNull)
+	{
+	}
+
+	Value(int v)
+	: tt(TInteger)
+	{
+		u.i = v;
+	}
+
+	Value(bool v)
+	: tt(TBool)
+	{
+		u.i = v;
+	}
+
+	Value(Value const& other)
+	: tt(other.tt), u(other.u)
+	{
+		if (tt >= TString)
+			u.s->add_ref();
+	}
+
+	Value(Value&& other)
+	: tt(other.tt), u(other.u)
+	{
+		other.tt = TNull;
+	}
+
+	inline Value(Object&& o);
+	inline Value(Array&& a);
+	inline Value(String&& s);
+
+	Value& operator=(Value const& other)
+	{
+		shared* old = tt >= TString ? u.s : 0;
+		tt = other.tt;
+		u = other.u;
+		if (tt >= TString)
+			u.s->add_ref();
+		if (old) old->release();
+		return *this;
+	}
+
+	Value& operator=(Value&& other)
+	{
+		shared* old = tt >= TString ? u.s : 0;
+		tt = other.tt;
+		u = other.u;
+		other.tt = TNull;
+		if (old) old->release();
+		return *this;
+	}
+
+	~Value()
+	{
+		if (tt >= TString)
+			u.s->release();
+	}
+};
+
+struct String : shared
+{
+	string s;
+};
+
+struct Array : shared
+{
+	vector<Value> v;
+};
+
+struct Object : shared
+{
+	map<string, Value> f;
+};
+
+inline Value::Value(Object&& o)
+: tt(TObject)
+{
+	u.s = new Object(o);
+}
+
+inline Value::Value(Array&& a)
+: tt(TArray)
+{
+	u.s = new Array(a);
+}
+
+inline Value::Value(String&& s)
+: tt(TString)
+{
+	u.s = new String(s);
+}
+
+struct ParseError
+{
+};
+
+template<typename Reader>
+struct TextReader
+{
+	TextReader(Reader& reader)
+	: reader(reader)
+	{
+	}
+
+	Value root, cur;
+
+	void start()
+	{
+		cur = value();
+		check(0);
+	}
+
+	Value f(char const* name)
+	{
+		if (name)
+		{
+			if (cur.tt != TObject)
+				throw ParseError();
+			return ((Object*)cur.u.s)->f.at(name);
+		}
+		else
+		{
+			return cur;
+		}
+	}
+
+	template<typename F>
+	void object(char const* name, F func)
+	{
+		Value parent(cur);
+		cur = f(name);
+		func();
+		cur = move(parent);
+	}
+
+	template<typename A, typename F>
+	void array(char const* name, A& arr, F func)
+	{
+		Value parent(cur);
+		Value a(f(name));
+		if (a.tt != TArray)
+			throw ParseError();
+		Array& ja = *(Array*)cur.u.s;
+		// TODO: arr.resize(ja.v.size());
+
+		auto i = ja.v.begin();
+		for (auto& e : arr)
+		{
+			cur = *i++;
+			func(e);
+		}
+
+		cur = move(parent);
+	}
+
+	void i32(char const* name, int& v)
+	{
+		Value jv(f(name));
+		if (jv.tt != TInteger) throw ParseError();
+		v = jv.u.i;
+	}
+
+	void b(char const* name, bool& v)
+	{
+		Value jv(f(name));
+		if (jv.tt != TBool) throw ParseError();
+		v = jv.u.i != 0;
+	}
+
+	template<typename T, typename ValueToRef, typename RefToValue>
+	void ref(char const* name, T const& v, ValueToRef /*v2r*/, RefToValue r2v)
+	{
+		f();
+		r2v();
+	}
+
+	void str(char const* name, std::string& s)
+	{
+		Value jv(f(name));
+		if (jv.tt != TString) throw ParseError();
+		s = ((String*)jv.u.s)->s;
+	}
+
+	//
+
+	void next()
+	{
+		do
+			c = reader.get_def();
+		while (c == ' ' || c == '\r' || c == '\n' || c == '\t');
+	}
+
+	void check(uint8_t e)
+	{
+		if (c != e)
+			throw ParseError();
+		next();
+	}
+
+	String val_str()
+	{
+		String s;
+
+		check('"');
+		while (c != '"')
+		{
+			if (c == '\"')
+			{
+				next();
+				if (c == '\\' || c == '/' || c == '"')
+				{
+					s.s.push_back(c);
+				}
+				else if (c == 'u')
+				{
+					uint8_t c0 = reader.get_def();
+					uint8_t c1 = reader.get_def();
+					uint8_t c2 = reader.get_def();
+					uint8_t c3 = reader.get_def();
+
+					// TODO: Make char
+				}
+				else
+				{
+					throw ParseError();
+				}
+			}
+			else
+			{
+				s.s.push_back(c);
+			}
+		}
+		check('"');
+
+		return move(s);
+	}
+
+	Value value()
+	{
+		if (c == '[')
+		{
+			Array a;
+
+			next();
+			
+			if (c != ']')
+			{
+				a.v.emplace_back(value());
+				if (c || c == ']')
+					break;
+				check(',');
+			}
+
+			check(']');
+
+			return Value(move(a));
+		}
+		else if (c == '{')
+		{
+			Object o;
+
+			next();
+			
+			if (c != '}')
+			{
+				string name(str());
+				check(':');
+				
+				o.f.emplace(move(name), value());
+				if (c || c == '}')
+					break;
+				check(',');
+			}
+
+			check('}');
+
+			return Value(move(o));
+		}
+		else if (c == 't')
+		{
+			next();
+			check('r');
+			check('u');
+			check('e');
+			return Value(true);
+		}
+		else if (c == 'f')
+		{
+			next();
+			check('a');
+			check('l');
+			check('s');
+			check('e');
+			return Value(false);
+		}
+		else if (c == 'n')
+		{
+			next();
+			check('u');
+			check('l');
+			check('l');
+			return Value();
+		}
+		else if (c == '"')
+		{
+			return Value(str());
+		}
+		else if (c == '-' || (c >= '0' && c <= '9'))
+		{
+			bool neg = false;
+			if (c == '-')
+			{
+				neg = true;
+				next();
+			}
+
+			int v = 0;
+
+			while (c >= '0' && c <= '9')
+			{
+				v = (v * 10) + (c - '0');
+			}
+
+			return Value(neg ? -v : v);
+		}
+
+		throw ParseError();
+	}
+
+	Reader& reader;
+	uint8_t c;
+};
+
+char const* sobjectNames[14] = {
+	"Large explosion",
+	"Medium explosion",
+	"Small explosion",
+	"Hellraider smoke",
+	"Zimm flash",
+	"Nuke smoke",
+	"Flashing pixel",
+	"Teleport flash",
+	"Small explosion, silent",
+	"Very small explosion, silent",
+	"Medium explosion, smaller",
+	"Large explosion, smaller",
+	"Medium explosion, bigger",
+	"Unknown"
+};
+
+char const* nobjectNames[24] = {
+	"Worm 1 parts",
+	"Worm 2 parts",
+	"Particle (disappearing)",
+	"Particle (small damage)",
+	"Particle (medium damage)",
+	"Particle (larger damage)",
+	"Blood",
+	"Shells",
+	"Clusterbomb bombs",
+	"Large nukes",
+	"Hellraider bullets",
+	"Small nukes",
+	"Napalm fireballs",
+	"Dirt",
+	"Chiquitabomb bombs",
+	"Grasshopper 1",
+	"Grasshopper 2",
+	"Grasshopper 3",
+	"Grasshopper 4",
+	"Grasshopper 5",
+	"Flag 1",
+	"Flag 2",
+	"Grasshopper 6",
+	"Grasshopper 7"
+};
+
+template<typename Archive>
+void archive_text(NObjectType& nobject, Archive& ar)
+{
+	ar.object(0, [&] {
+		#define I(n) ar.i32(#n, nobject.n);
+		#define B(n) ar.b(#n, nobject.n);
+		#define S(n) ar.str(#n, nobject.n);
+
+		B(wormExplode)
+		B(explGround)
+		B(wormDestroy)
+		B(drawOnMap)
+		B(affectByExplosions)
+		B(bloodTrail)
+
+		I(detectDistance)
+		I(gravity)
+		I(speed)
+		I(speedV)
+		I(distribution)
+		I(blowAway)
+		I(bounce)
+		I(hitDamage)
+		I(bloodOnHit)
+		I(startFrame)
+		I(numFrames)
+		I(colorBullets)
+		I(createOnExp)	
+		I(dirtEffect)
+		I(splinterAmount)
+		I(splinterColour)
+		I(splinterType)
+		I(bloodTrailDelay)
+		I(leaveObj)
+		I(leaveObjDelay)
+		I(timeToExplo)
+		I(timeToExploV)
+	
+		#undef I
+		#undef B
+		#undef S
+	});
+}
+
+template<typename Archive>
+void archive_text(SObjectType& sobject, Archive& ar)
+{
+	ar.object(0, [&] {
+		#define I(n) ar.i32(#n, sobject.n);
+		#define B(n) ar.b(#n, sobject.n);
+		#define S(n) ar.str(#n, sobject.n);
+
+		B(shadow)
+
+		I(startSound)
+		I(numSounds)
+		I(animDelay)
+		I(startFrame)
+		I(numFrames)
+		I(detectRange)
+		I(damage)
+		I(blowAway)
+		I(shake)
+		I(flash)
+		I(dirtEffect)
+
+		#undef I
+		#undef B
+		#undef S
+	});
+}
+
+template<typename Archive>
+void archive_text(Weapon& weapon, Archive& ar)
+{
+	ar.object(0, [&] {
+		#define I(n) ar.i32(#n, weapon.n);
+		#define B(n) ar.b(#n, weapon.n);
+		#define S(n) ar.str(#n, weapon.n);
+
+		S(name)
+
+		B(affectByWorm)
+		B(shadow)
+		B(laserSight)
+		B(playReloadSound)
+		B(wormExplode)
+		B(explGround)
+		B(wormCollide)
+		B(collideWithObjects)
+		B(affectByExplosions)
+		B(loopAnim)
+
+		I(detectDistance)
+		I(blowAway)
+		I(gravity)
+		I(launchSound)
+		I(loopSound)
+		I(exploSound)
+		I(speed)
+		I(addSpeed)
+		I(distribution)
+		I(parts)
+		I(recoil)
+		I(multSpeed)
+		I(delay)
+		I(loadingTime)
+		I(ammo)
+		I(dirtEffect)
+		I(leaveShells)
+		I(leaveShellDelay)
+		I(fireCone)
+		I(bounce)
+		I(timeToExplo)
+		I(timeToExploV)
+		I(hitDamage)
+		I(bloodOnHit)
+		I(startFrame)
+		I(numFrames)
+		I(shotType)
+		I(colorBullets)
+		I(splinterAmount)
+		I(splinterColour)
+		I(splinterType)
+		I(splinterScatter)
+		I(objTrailType)
+		I(objTrailDelay)
+		I(partTrailType)
+		I(partTrailObj)
+		I(partTrailDelay)
+
+		I(createOnExp)
+
+		#undef I
+		#undef B
+		#undef S
+	});
+}
+
+template<typename Archive>
+void archive_text(Common& common, Archive& ar)
+{
+	ar.object(0, [&] {
+		ar.object("constants", [&] {
+			#define A(n) ar.i32(#n, common.C[C##n]);
+			LIERO_CDEFS(A)
+			#undef A
+		});
+
+		ar.object("texts", [&] {
+			#define A(n) ar.str(#n, common.S[S##n]);
+			LIERO_SDEFS(A)
+			#undef A
+		});
+
+		ar.object("hacks", [&] {
+			#define A(n) ar.b(#n, common.H[H##n]);
+			LIERO_HDEFS(A)
+			#undef A
+		});
+
+		ar.array("weapons", common.weapons, [&] (Weapon& w) {
+			//archive_text(w, ar);
+			ar.str(0, w.name);
+			// TODO: Set id
+		});
+
+		ar.array("nobjects", common.nobjectTypes, [&] (NObjectType& n) {
+			//archive_text(n, ar);
+			ar.str(0, n.name);
+			// TODO: Set id
+		});
+
+		ar.array("sobjects", common.sobjectTypes, [&] (SObjectType& s) {
+			//archive_text(s, ar);
+			ar.str(0, s.name);
+			// TODO: Set id
+		});
+	});
+}
+
+struct OctetTextWriter : gvl::octet_writer
+{
+	OctetTextWriter(string const& path)
+	: gvl::octet_writer(gvl::sink(new gvl::file_bucket_source(path.c_str(), "wb")))
+	, w(*this)
+	{
+	}
+
+	TextWriter<gvl::octet_writer> w;
+};
+
+struct OctetTextReader : gvl::octet_reader
+{
+	OctetTextReader(string const& path)
+	: gvl::octet_reader(gvl::to_source(new gvl::file_bucket_source(path.c_str(), "rb")))
+	, r(*this)
+	{
+	}
+
+	TextReader<gvl::octet_reader> r;
+};
+
+void Common::save(std::string const& path)
+{
+	{
+		OctetTextWriter textWriter(joinPath(path, "tc.txt"));
+		archive_text(*this, textWriter.w);
+
+		for (auto& w : weapons)
+		{
+			OctetTextWriter wWriter(joinPath(path, w.name + ".txt"));
+			archive_text(w, wWriter.w);
+		}
+	}
+
+	{
+		OctetTextReader textReader(joinPath(path, "tc.txt"));
+		archive_text(*this, textReader.r);
+	}
+}
+
+
+Common::Common(std::string const& lieroExe)
+{
+	ReaderFile& exe = openLieroEXE(lieroExe);
+	ReaderFile& gfx = openLieroCHR(lieroExe);
+	ReaderFile& snd = openLieroSND(lieroExe);
+
+	for (int i = 0; i < 14; ++i)
+		sobjectTypes[i].name = sobjectNames[i];
+
+	for (int i = 0; i < 24; ++i)
+		nobjectTypes[i].name = nobjectNames[i];
+
+	loadConstantsFromEXE(exe);
+	font.loadFromEXE(exe);
+	loadPalette(exe);
+	loadMaterials(exe);
+	loadWeapons(exe);
+	loadTextures(exe);
+	loadOthers(exe);
+
+	loadGfx(exe, gfx);
+	loadSfx(snd);
+
+	{
+		auto path = changeLeaf(lieroExe, "");
+		
+		save(path);
 	}
 }

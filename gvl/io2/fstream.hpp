@@ -65,12 +65,17 @@ struct file_bucket_source : bucket_pipe
 
 	virtual sink_result write(unique_ptr<bucket_data_mem>&& data)
 	{
-		auto write_bytes = std::fwrite(data->begin(), 1, data->size(), f);
+		auto write_bytes = std::fwrite(data->begin(), data->size(), 1, f);
 
 		if (write_bytes == 0)
 			return sink_result(sink_result::error);
-		if (write_bytes != data->size())
-			return sink_result(sink_result::part);
+		data.reset();
+		return sink_result(sink_result::ok);
+	}
+
+	virtual sink_result flush()
+	{
+		// Everything is flushed
 		return sink_result(sink_result::ok);
 	}
 	

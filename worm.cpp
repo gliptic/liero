@@ -60,8 +60,7 @@ void WormSettings::loadProfile(std::string const& path)
 	int oldColor = color;
 	try
 	{
-		auto const& fullPath = path + ".lpf";
-		gvl::stream_ptr str(new gvl::fstream(fullPath.c_str(), "rb"));
+		gvl::stream_ptr str(new gvl::fstream(path.c_str(), "rb"));
 		
 		gvl::octet_stream_reader reader(str);
 
@@ -151,17 +150,17 @@ void Worm::processPhysics(Game& game)
 	
 	if(reacts[RFUp] > 0)
 	{
-		velX = (velX * common.C[WormFricMult]) / common.C[WormFricDiv];
+		velX = (velX * LC(WormFricMult)) / LC(WormFricDiv);
 	}
 	
 	if(velX > 0)
 	{
 		if(reacts[RFLeft] > 0)
 		{
-			if(velX > common.C[MinBounceRight])
+			if(velX > LC(MinBounceRight))
 			{
 				if(common.H[HFallDamage])
-					health -= common.C[FallDamageRight];
+					health -= LC(FallDamageRight);
 				else
 					game.soundPlayer->play(14);
 				velX = -velX / 3;
@@ -174,10 +173,10 @@ void Worm::processPhysics(Game& game)
 	{
 		if(reacts[RFRight])
 		{
-			if(velX < common.C[MinBounceLeft])
+			if(velX < LC(MinBounceLeft))
 			{
 				if(common.H[HFallDamage])
-					health -= common.C[FallDamageLeft];
+					health -= LC(FallDamageLeft);
 				else
 					game.soundPlayer->play(14);
 				velX = -velX / 3;
@@ -191,10 +190,10 @@ void Worm::processPhysics(Game& game)
 	{
 		if(reacts[RFUp] > 0)
 		{
-			if(velY > common.C[MinBounceDown])
+			if(velY > LC(MinBounceDown))
 			{
 				if(common.H[HFallDamage])
-					health -= common.C[FallDamageDown];
+					health -= LC(FallDamageDown);
 				else
 					game.soundPlayer->play(14);
 				velY = -velY / 3;
@@ -207,10 +206,10 @@ void Worm::processPhysics(Game& game)
 	{
 		if(reacts[RFDown])
 		{
-			if(velY < common.C[MinBounceUp])
+			if(velY < LC(MinBounceUp))
 			{
 				if(common.H[HFallDamage])
-					health -= common.C[FallDamageUp];
+					health -= LC(FallDamageUp);
 				else
 					game.soundPlayer->play(14);
 				velY = -velY / 3;
@@ -222,7 +221,7 @@ void Worm::processPhysics(Game& game)
 	
 	if(reacts[RFUp] == 0)
 	{
-		velY += common.C[WormGravity];
+		velY += LC(WormGravity);
 	}
 	
 	if(velX >= 0)
@@ -294,8 +293,8 @@ void Worm::process(Game& game)
 					{
 						if(common.H[HWormFloat])
 						{
-							if(iNextY > common.C[WormFloatLevel])
-								velY -= common.C[WormFloatPower];
+							if(iNextY > LC(WormFloatLevel))
+								velY -= LC(WormFloatPower);
 						}
 						else if(iNextY > game.level.height - 6)
 						{
@@ -360,14 +359,14 @@ void Worm::process(Game& game)
 						if(health < settings->health)
 						{
 							game.bonuses.free(i);
-							health += (game.rand(common.C[BonusHealthVar]) + common.C[BonusMinHealth]) * settings->health / 100; // TODO: Read from EXE
+							health += (game.rand(LC(BonusHealthVar)) + LC(BonusMinHealth)) * settings->health / 100; // TODO: Read from EXE
 							if(health > settings->health)
 								health = settings->health;
 						}
 					}
 					else if(i->frame == 0)
 					{
-						if(game.rand(common.C[BonusExplodeRisk]) > 1)
+						if(game.rand(LC(BonusExplodeRisk)) > 1)
 						{
 							WormWeapon& ww = weapons[currentWeapon];
 							
@@ -917,8 +916,8 @@ void Worm::beginRespawn(Game& game)
 	int trials = 0;
 	do
 	{
-		x = itof(common.C[WormSpawnRectX] + game.rand(common.C[WormSpawnRectW]));
-		y = itof(common.C[WormSpawnRectY] + game.rand(common.C[WormSpawnRectH]));
+		x = itof(LC(WormSpawnRectX) + game.rand(LC(WormSpawnRectW)));
+		y = itof(LC(WormSpawnRectY) + game.rand(LC(WormSpawnRectH)));
 
 		// The original didn't have + 4 in both, which seems
 		// to be done in the exe and makes sense.
@@ -1064,8 +1063,8 @@ void Worm::processMovement(Game& game)
 		
 		if(left && !right)
 		{
-			if(velX > common.C[MaxVelLeft])
-				velX -= common.C[WalkVelLeft];
+			if(velX > LC(MaxVelLeft))
+				velX -= LC(WalkVelLeft);
 				
 			if(direction != 0)
 			{
@@ -1080,8 +1079,8 @@ void Worm::processMovement(Game& game)
 		
 		if(!left && right)
 		{
-			if(velX < common.C[MaxVelRight])
-				velX += common.C[WalkVelRight];
+			if(velX < LC(MaxVelRight))
+				velX += LC(WalkVelRight);
 				
 			if(direction != 1)
 			{
@@ -1180,14 +1179,14 @@ void Worm::processTasks(Game& game)
 		if(ninjarope.out)
 		{
 			if(pressed(Up))
-				ninjarope.length -= common.C[NRPullVel]; 
+				ninjarope.length -= LC(NRPullVel); 
 			if(pressed(Down))
-				ninjarope.length += common.C[NRReleaseVel];
+				ninjarope.length += LC(NRReleaseVel);
 				
-			if(ninjarope.length < common.C[NRMinLength])
-				ninjarope.length = common.C[NRMinLength];
-			if(ninjarope.length > common.C[NRMaxLength])
-				ninjarope.length = common.C[NRMaxLength];
+			if(ninjarope.length < LC(NRMinLength))
+				ninjarope.length = LC(NRMinLength);
+			if(ninjarope.length > LC(NRMaxLength))
+				ninjarope.length = LC(NRMaxLength);
 		}
 		
 		if(pressedOnce(Jump))
@@ -1200,10 +1199,10 @@ void Worm::processTasks(Game& game)
 			ninjarope.x = x;
 			ninjarope.y = y;
 			
-			ninjarope.velX = cosTable[ftoi(aimingAngle)] << common.C[NRThrowVelX];
-			ninjarope.velY = sinTable[ftoi(aimingAngle)] << common.C[NRThrowVelY];
+			ninjarope.velX = cosTable[ftoi(aimingAngle)] << LC(NRThrowVelX);
+			ninjarope.velY = sinTable[ftoi(aimingAngle)] << LC(NRThrowVelY);
 									
-			ninjarope.length = common.C[NRInitialLength];
+			ninjarope.length = LC(NRInitialLength);
 		}
 	}
 	else
@@ -1217,7 +1216,7 @@ void Worm::processTasks(Game& game)
 			if((reacts[RFUp] > 0 || common.H[HAirJump])
 			&& (ableToJump || common.H[HMultiJump]))
 			{
-				velY -= common.C[JumpForce];
+				velY -= LC(JumpForce);
 				ableToJump = false;
 			}
 		}
@@ -1239,33 +1238,33 @@ void Worm::processAiming(Game& game)
 				
 		if(!up && !down)
 		{
-			aimingSpeed = (aimingSpeed * common.C[AimFricMult]) / common.C[AimFricDiv];
+			aimingSpeed = (aimingSpeed * LC(AimFricMult)) / LC(AimFricDiv);
 		}
 		
 		if(direction == 1)
 		{
-			if(ftoi(aimingAngle) > common.C[AimMaxRight])
+			if(ftoi(aimingAngle) > LC(AimMaxRight))
 			{
 				aimingSpeed = 0;
-				aimingAngle = itof(common.C[AimMaxRight]);
+				aimingAngle = itof(LC(AimMaxRight));
 			}
-			if(ftoi(aimingAngle) < common.C[AimMinRight])
+			if(ftoi(aimingAngle) < LC(AimMinRight))
 			{
 				aimingSpeed = 0;
-				aimingAngle = itof(common.C[AimMinRight]);
+				aimingAngle = itof(LC(AimMinRight));
 			}
 		}
 		else
 		{
-			if(ftoi(aimingAngle) < common.C[AimMaxLeft])
+			if(ftoi(aimingAngle) < LC(AimMaxLeft))
 			{
 				aimingSpeed = 0;
-				aimingAngle = itof(common.C[AimMaxLeft]);
+				aimingAngle = itof(LC(AimMaxLeft));
 			}
-			if(ftoi(aimingAngle) > common.C[AimMinLeft])
+			if(ftoi(aimingAngle) > LC(AimMinLeft))
 			{
 				aimingSpeed = 0;
-				aimingAngle = itof(common.C[AimMinLeft]);
+				aimingAngle = itof(LC(AimMinLeft));
 			}
 		}
 	}
@@ -1276,13 +1275,13 @@ void Worm::processAiming(Game& game)
 		{
 			if(direction == 0)
 			{
-				if(aimingSpeed < common.C[MaxAimVelLeft])
-					aimingSpeed += common.C[AimAccLeft];
+				if(aimingSpeed < LC(MaxAimVelLeft))
+					aimingSpeed += LC(AimAccLeft);
 			}
 			else
 			{
-				if(aimingSpeed > common.C[MaxAimVelRight])
-					aimingSpeed -= common.C[AimAccRight];
+				if(aimingSpeed > LC(MaxAimVelRight))
+					aimingSpeed -= LC(AimAccRight);
 			}
 		}
 		
@@ -1290,13 +1289,13 @@ void Worm::processAiming(Game& game)
 		{
 			if(direction == 1)
 			{
-				if(aimingSpeed < common.C[MaxAimVelLeft])
-					aimingSpeed += common.C[AimAccLeft];
+				if(aimingSpeed < LC(MaxAimVelLeft))
+					aimingSpeed += LC(AimAccLeft);
 			}
 			else
 			{
-				if(aimingSpeed > common.C[MaxAimVelRight])
-					aimingSpeed -= common.C[AimAccRight];
+				if(aimingSpeed > LC(MaxAimVelRight))
+					aimingSpeed -= LC(AimAccRight);
 			}
 		}
 	}
@@ -1488,7 +1487,7 @@ void Worm::processSight(Game& game)
 	Weapon& w = common.weapons[ww.id];
 	
 	if(ww.available
-	&& (w.laserSight || ww.id == common.C[LaserWeapon] - 1))
+	&& (w.laserSight || ww.id == LC(LaserWeapon) - 1))
 	{
 		fixed dirX = cosTable[ftoi(aimingAngle)];
 		fixed dirY = sinTable[ftoi(aimingAngle)];

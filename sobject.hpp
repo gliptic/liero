@@ -4,6 +4,7 @@
 #include "math.hpp"
 #include "objectList.hpp"
 #include "exactObjectList.hpp"
+#include <string>
 
 struct Worm;
 struct Game;
@@ -28,6 +29,7 @@ struct SObjectType
 	int dirtEffect;
 	
 	int id;
+	std::string name;
 };
 
 struct SObject : ExactObjectListBase

@@ -6,9 +6,11 @@
 
 void Game::createBObject(fixed x, fixed y, fixed velX, fixed velY)
 {
+	Common& common = *this->common;
+
 	BObject& obj = *bobjects.newObjectReuse();
 	
-	obj.color = rand(common->C[NumBloodColours]) + common->C[FirstBloodColour];
+	obj.color = rand(LC(NumBloodColours)) + LC(FirstBloodColour);
 	obj.x = x;
 	obj.y = y;
 	obj.velX = velX;
@@ -36,7 +38,7 @@ bool BObject::process(Game& game)
 		Material m = game.level.mat(ix, iy);
 		
 		if(m.background())
-			velY += common.C[BObjGravity];
+			velY += LC(BObjGravity);
 			
 		if((c >= 1 && c <= 2)
 		|| (c >= 77 && c <= 79)) // TODO: Read from EXE

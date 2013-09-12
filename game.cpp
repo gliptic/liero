@@ -189,6 +189,8 @@ bool checkBonusSpawnPosition(Game& game, int x, int y)
 
 void Game::createBonus()
 {
+	Common& common = *this->common;
+
 	if(int(bonuses.size()) >= settings->maxBonuses)
 		return;
 		
@@ -198,22 +200,22 @@ void Game::createBonus()
 	
 	for(std::size_t i = 0; i < 50000; ++i)
 	{
-		int ix = rand(common->C[BonusSpawnRectW]);
-		int iy = rand(common->C[BonusSpawnRectH]);
+		int ix = rand(LC(BonusSpawnRectW));
+		int iy = rand(LC(BonusSpawnRectH));
 		
-		if(common->H[HBonusSpawnRect])
+		if(common.H[HBonusSpawnRect])
 		{
-			ix += common->C[BonusSpawnRectX];
-			iy += common->C[BonusSpawnRectY];
+			ix += LC(BonusSpawnRectX);
+			iy += LC(BonusSpawnRectY);
 		}
 		
 		if(checkBonusSpawnPosition(*this, ix, iy))
 		{
 			int frame;
 			
-			if(common->H[HBonusOnlyHealth])
+			if(common.H[HBonusOnlyHealth])
 				frame = 1;
-			else if(common->H[HBonusOnlyWeapon])
+			else if(common.H[HBonusOnlyWeapon])
 				frame = 0;
 			else
 				frame = rand(2);
@@ -222,7 +224,7 @@ void Game::createBonus()
 			bonus->y = itof(iy);
 			bonus->velY = 0;
 			bonus->frame = frame;
-			bonus->timer = rand(common->bonusRandTimer[frame][1]) + common->bonusRandTimer[frame][0];
+			bonus->timer = rand(common.bonusRandTimer[frame][1]) + common.bonusRandTimer[frame][0];
 			
 			if(frame == 0)
 			{
@@ -233,7 +235,7 @@ void Game::createBonus()
 				while(settings->weapTable[bonus->weapon] == 2);
 			}
 			
-			common->sobjectTypes[7].create(*this, ix, iy, 0, 0);
+			common.sobjectTypes[7].create(*this, ix, iy, 0, 0);
 			return;
 		}
 	} // 234F
@@ -312,7 +314,7 @@ void Game::processFrame()
 	
 	if(!common->H[HBonusDisable]
 	&& settings->maxBonuses > 0
-	&& rand(common->C[BonusDropChance]) == 0)
+	&& rand(common->C[CBonusDropChance]) == 0)
 	{
 		createBonus();
 	}
@@ -533,8 +535,8 @@ bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x,
 	int enemyDX = x2 - x;
 	int enemyDY = y2 - y;
 	
-	if((std::abs(deltaX) <= common.C[WormMinSpawnDistLast] && std::abs(deltaY) <= common.C[WormMinSpawnDistLast])
-	|| (std::abs(enemyDX) <= common.C[WormMinSpawnDistEnemy] && std::abs(enemyDY) <= common.C[WormMinSpawnDistEnemy]))
+	if((std::abs(deltaX) <= LC(WormMinSpawnDistLast) && std::abs(deltaY) <= LC(WormMinSpawnDistLast))
+	|| (std::abs(enemyDX) <= LC(WormMinSpawnDistEnemy) && std::abs(enemyDY) <= LC(WormMinSpawnDistEnemy)))
 		return false;
 		
 	int maxX = x + 3;

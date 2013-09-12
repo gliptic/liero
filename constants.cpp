@@ -6,158 +6,179 @@
 
 int CSint32desc[][3] =
 {
-	{NRInitialLength, 0x32D7, 0x32DD},
-	{NRAttachLength, 0xA679, 0xA67F},
+	{CNRInitialLength, 0x32D7, 0x32DD},
+	{CNRAttachLength, 0xA679, 0xA67F},
 	
 	{0, -1, -1}
 };
 
 int CSint24desc[][3] =
 {
-	{MinBounceUp, 0x3B7D, 0x3B74},
-	{MinBounceDown, 0x3B00, 0x3AF7},
-	{MinBounceLeft, 0x3A83, 0x3A7A},
-	{MinBounceRight, 0x3A06, 0x39FD},
-	{WormGravity, 0x3BDE, 0x3BD7},
-	{WalkVelLeft, 0x3F97, 0x3F9D},
-	{MaxVelLeft, 0x3F8C, 0x3F83},
-	{WalkVelRight, 0x4018, 0x401E},
-	{MaxVelRight, 0x400D, 0x4004},
-	{JumpForce, 0x3327, 0x332D},
-	{MaxAimVelLeft, 0x30F2, 0x30E9},
-	{AimAccLeft, 0x30FD, 0x3103},
-	{MaxAimVelRight, 0x311A, 0x3111},
-	{AimAccRight, 0x3125, 0x312B},
-	{NinjaropeGravity, 0xA895, 0xA89B},
-	{NRMinLength, 0x3206, 0x31FD},
-	{NRMaxLength, 0x3229, 0x3220},
+	{CMinBounceUp, 0x3B7D, 0x3B74},
+	{CMinBounceDown, 0x3B00, 0x3AF7},
+	{CMinBounceLeft, 0x3A83, 0x3A7A},
+	{CMinBounceRight, 0x3A06, 0x39FD},
+	{CWormGravity, 0x3BDE, 0x3BD7},
+	{CWalkVelLeft, 0x3F97, 0x3F9D},
+	{CMaxVelLeft, 0x3F8C, 0x3F83},
+	{CWalkVelRight, 0x4018, 0x401E},
+	{CMaxVelRight, 0x400D, 0x4004},
+	{CJumpForce, 0x3327, 0x332D},
+	{CMaxAimVelLeft, 0x30F2, 0x30E9},
+	{CAimAccLeft, 0x30FD, 0x3103},
+	{CMaxAimVelRight, 0x311A, 0x3111},
+	{CAimAccRight, 0x3125, 0x312B},
+	{CNinjaropeGravity, 0xA895, 0xA89B},
+	{CNRMinLength, 0x3206, 0x31FD},
+	{CNRMaxLength, 0x3229, 0x3220},
 	
-	{BonusGravity, 0x72C3, 0x72C9},
-	{BObjGravity, 0x744A, 0x7450},
+	{CBonusGravity, 0x72C3, 0x72C9},
+	{CBObjGravity, 0x744A, 0x7450},
 	
 	
 	
 	// WormFloat hack
-	{WormFloatPower, 0x29DB, 0x29E1},
+	{CWormFloatPower, 0x29DB, 0x29E1},
 	
 	{0, -1, -1}
 };
 
 int CUint16desc[][2] =
 {
-	{BloodLimit, 0xE686},
+	{CBloodLimit, 0xE686},
 	
 	{0, -1}
 };
 
 int CSint16desc[][2] =
 {
-	{WormFricMult, 0x39BD},
-	{WormFricDiv, 0x39C7},
-	{WormMinSpawnDistLast, 0x242E},
-	{WormMinSpawnDistEnemy, 0x244B},
-	{WormSpawnRectX, 0x4913},
-	{WormSpawnRectY, 0x4925},
-	{WormSpawnRectW, 0x490B},
-	{WormSpawnRectH, 0x491D},
-	{AimFricMult, 0x3003},
-	{AimFricDiv, 0x300D},
+	{CWormFricMult, 0x39BD},
+	{CWormFricDiv, 0x39C7},
+	{CWormMinSpawnDistLast, 0x242E},
+	{CWormMinSpawnDistEnemy, 0x244B},
+	{CWormSpawnRectX, 0x4913},
+	{CWormSpawnRectY, 0x4925},
+	{CWormSpawnRectW, 0x490B},
+	{CWormSpawnRectH, 0x491D},
+	{CAimFricMult, 0x3003},
+	{CAimFricDiv, 0x300D},
 	
-	{NRThrowVelX, 0x329B},
-	{NRThrowVelY, 0x32BF},
-	{NRForceShlX, 0xA8AD},
-	{NRForceDivX, 0xA8B7},
-	{NRForceShlY, 0xA8DA},
-	{NRForceDivY, 0xA8E4},
-	{NRForceLenShl, 0xA91E},
+	{CNRThrowVelX, 0x329B},
+	{CNRThrowVelY, 0x32BF},
+	{CNRForceShlX, 0xA8AD},
+	{CNRForceDivX, 0xA8B7},
+	{CNRForceShlY, 0xA8DA},
+	{CNRForceDivY, 0xA8E4},
+	{CNRForceLenShl, 0xA91E},
 	
-	{BonusBounceMul, 0x731F},
-	{BonusBounceDiv, 0x7329},
-	{BonusFlickerTime, 0x87B8},
+	{CBonusBounceMul, 0x731F},
+	{CBonusBounceDiv, 0x7329},
+	{CBonusFlickerTime, 0x87B8},
 	
-	{BonusDropChance, 0xBECA},
-	{SplinterLarpaVelDiv, 0x677D},
-	{SplinterCracklerVelDiv, 0x67D0},
+	{CBonusDropChance, 0xBECA},
+	{CSplinterLarpaVelDiv, 0x677D},
+	{CSplinterCracklerVelDiv, 0x67D0},
 	
 	
 	// WormFloat hack
-	{WormFloatLevel, 0x29D3},
+	{CWormFloatLevel, 0x29D3},
 	
 	// BonusSpawnRect hack
-	{BonusSpawnRectX, 0x2319},
-	{BonusSpawnRectY, 0x2327},
-	{BonusSpawnRectW, 0x2311}, // This is used even when the hack isn't enabled
-	{BonusSpawnRectH, 0x231F}, // -==-
+	{CBonusSpawnRectX, 0x2319},
+	{CBonusSpawnRectY, 0x2327},
+	{CBonusSpawnRectW, 0x2311}, // This is used even when the hack isn't enabled
+	{CBonusSpawnRectH, 0x231F}, // -==-
 	
 	{0, -1}
 };
 
 int CUint8desc[][2] =
 {
-	{AimMaxRight, 0x3030},
-	{AimMinRight, 0x304A},
-	{AimMaxLeft, 0x3066},
-	{AimMinLeft, 0x3080},
-	{NRColourBegin, 0x10FD2},
-	{NRColourEnd, 0x11069},
-	{BonusExplodeRisk, 0x2DB2},
-	{BonusHealthVar, 0x2D56},
-	{BonusMinHealth, 0x2D5D},
-	{LaserWeapon, 0x7255},
+	{CAimMaxRight, 0x3030},
+	{CAimMinRight, 0x304A},
+	{CAimMaxLeft, 0x3066},
+	{CAimMinLeft, 0x3080},
+	{CNRColourBegin, 0x10FD2},
+	{CNRColourEnd, 0x11069},
+	{CBonusExplodeRisk, 0x2DB2},
+	{CBonusHealthVar, 0x2D56},
+	{CBonusMinHealth, 0x2D5D},
+	{CLaserWeapon, 0x7255},
 	
-	{FirstBloodColour, 0x2388},
-	{NumBloodColours, 0x2381},
+	{CFirstBloodColour, 0x2388},
+	{CNumBloodColours, 0x2381},
 	
-	{RemExpObject, 0x8F8B},
+	{CRemExpObject, 0x8F8B},
 
 	{0, -1}
 };
 
 int CSint8desc[][2] =
 {
-	{NRPullVel, 0x31D0},
-	{NRReleaseVel, 0x31F0},
+	{CNRPullVel, 0x31D0},
+	{CNRReleaseVel, 0x31F0},
 	
 	// FallDamage hack
-	{FallDamageRight, 0x3A0E},
-	{FallDamageLeft, 0x3A8B},
-	{FallDamageDown, 0x3B08},
-	{FallDamageUp, 0x3B85},
+	{CFallDamageRight, 0x3A0E},
+	{CFallDamageLeft, 0x3A8B},
+	{CFallDamageDown, 0x3B08},
+	{CFallDamageUp, 0x3B85},
 	
-	{BloodStepUp, 0xE67B},
-	{BloodStepDown, 0xE68E},
+	{CBloodStepUp, 0xE67B},
+	{CBloodStepDown, 0xE68E},
 	
 	{0, -1}
 };
 
 int Sstringdesc[][2] =
 {
-	{InitSound, 0x177F},
-	{LoadingSounds, 0x18F2},
+	{SInitSound, 0x177F},
+	{SLoadingSounds, 0x18F2},
 	
-	{Init_BaseIO, 0x17DD},
-	{Init_IRQ, 0x17E5},
-	{Init_DMA8, 0x17EE},
-	{Init_DMA16, 0x17F8},
+	{SInit_BaseIO, 0x17DD},
+	{SInit_IRQ, 0x17E5},
+	{SInit_DMA8, 0x17EE},
+	{SInit_DMA16, 0x17F8},
 	
-	{Init_DSPVersion, 0x181E},
-	{Init_Colon, 0x182B},
-	{Init_16bit, 0x182F},
-	{Init_Autoinit, 0x1840},
+	{SInit_DSPVersion, 0x181E},
+	{SInit_Colon, 0x182B},
+	{SInit_16bit, 0x182F},
+	{SInit_Autoinit, 0x1840},
 	
-	{Init_XMSSucc, 0x189D},
+	{SInit_XMSSucc, 0x189D},
 	
-	{Init_FreeXMS, 0x18C5},
-	{Init_k, 0x18D8},
+	{SInit_FreeXMS, 0x18C5},
+	{SInit_k, 0x18D8},
 	
-	{LoadingAndThinking, 0xFB92},
-	{OK, 0xFBA8},
-	{OK2, 0x190E},
-	{PressAnyKey, 0xFBAB},
+	{SLoadingAndThinking, 0xFB92},
+	{SOK, 0xFBA8},
+	{SOK2, 0x190E},
+	{SPressAnyKey, 0xFBAB},
 	
-	{CommittedSuicideMsg, 0xE70C},
-	{KilledMsg, 0xE71F},
-	{YoureIt, 0x75C5},
+	{SCommittedSuicideMsg, 0xE70C},
+	{SKilledMsg, 0xE71F},
+	{SYoureIt, 0x75C5},
+
+	// Pascal strings
+	{SRandom, 0xD6E3},
+	{SRandom2, 0xD413},
+	{SRegenLevel, 0xD41A},
+	{SReloadLevel, 0xD42D},
+	{SCopyright2, 0xE693},
+	{SSelWeap, 0xA9C0},
+	{SLevelRandom, 0xA9D5},
+	{SLevelIs1, 0xA9E3},
+	{SLevelIs2, 0xA9EC},
+	{SRandomize, 0xA9F4},
+	{SDone, 0xA9EE},
+	{SReloading, 0x7583},
+	{SPressFire, 0x7590},
+	{SKills, 0x75A4},
+	{SLives, 0x75AC},
+	{SSelLevel, 0xD6F2},
+	{SWeapon, 0xD700},
+	{SAvailability, 0xD707},
+	{SNoWeaps, 0xD714},
 	
 	{0, -1}
 };
@@ -269,10 +290,8 @@ HackDesc Hhackdesc[] =
 	{0, 0}
 };
 
-void Common::loadConstantsFromEXE()
+void Common::loadConstantsFromEXE(ReaderFile& exe)
 {
-	ReaderFile& exe = openLieroEXE();
-	
 	for(int i = 0; CSint32desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint32desc[i][1]);

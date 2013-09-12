@@ -4,6 +4,7 @@
 #include "math.hpp"
 #include "objectList.hpp"
 #include "exactObjectList.hpp"
+#include <string>
 
 struct Worm;
 struct Game;
@@ -44,6 +45,7 @@ struct NObjectType
 	int timeToExploV;
 	
 	int id;
+	std::string name;
 };
 
 struct NObject : ExactObjectListBase

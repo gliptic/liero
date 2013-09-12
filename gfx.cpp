@@ -177,7 +177,7 @@ struct ProfileLoadedBehavior : ItemBehavior
 	
 	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		item.value = getLeaf(ws.profilePath);
+		item.value = getBasename(getLeaf(ws.profilePath));
 		item.hasValue = true;
 		item.visible = !ws.profilePath.empty();
 	}
@@ -762,13 +762,13 @@ struct LevelSelectBehavior : ItemBehavior
 		item.hasValue = true;
 		if(!gfx.settings->randomLevel)
 		{
-			item.value = '"' + getLeaf(gfx.settings->levelFile) + '"';
-			menu.itemFromId(SettingsMenu::SiRegenerateLevel)->string = common.texts.reloadLevel; // Not string?
+			item.value = '"' + getBasename(getLeaf(gfx.settings->levelFile)) + '"';
+			menu.itemFromId(SettingsMenu::SiRegenerateLevel)->string = LS(ReloadLevel); // Not string?
 		}
 		else
 		{
-			item.value = common.texts.random2;
-			menu.itemFromId(SettingsMenu::SiRegenerateLevel)->string = common.texts.regenLevel;
+			item.value = LS(Random2);
+			menu.itemFromId(SettingsMenu::SiRegenerateLevel)->string = LS(RegenLevel);
 		}
 	}
 	
@@ -824,7 +824,7 @@ struct OptionsSaveBehavior : ItemBehavior
 	
 	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		item.value = getLeaf(gfx.settingsFile);
+		item.value = getBasename(getLeaf(gfx.settingsFile));
 		item.hasValue = true;
 	}
 	
@@ -866,7 +866,7 @@ ItemBehavior* SettingsMenu::getItemBehavior(Common& common, MenuItem& item)
 			return new IntegerBehavior(common, gfx.settings->maxBonuses, 0, 99, 1);
 		case SiAmountOfBlood:
 		{
-			IntegerBehavior* ret = new IntegerBehavior(common, gfx.settings->blood, 0, common.C[BloodLimit], common.C[BloodStepUp], true);
+			IntegerBehavior* ret = new IntegerBehavior(common, gfx.settings->blood, 0, LC(BloodLimit), LC(BloodStepUp), true);
 			ret->allowEntry = false;
 			return ret;
 		}
@@ -943,13 +943,14 @@ using gvl::shared_ptr;
 
 void Gfx::selectLevel()
 {
-	FileSelector levSel(*common);
+	Common& common = *this->common;
+	FileSelector levSel(common);
 
 	{
 		levSel.fill(lieroEXERoot, [](string const& name, string const& ext) { return ciCompare(ext, "LEV"); });
 
 		shared_ptr<FileNode> random(new FileNode(
-					common->texts.random, "", false, &levSel.rootNode));
+					LS(Random), "", false, &levSel.rootNode));
 
 		random->id = 1;
 		levSel.rootNode.children.insert(levSel.rootNode.children.begin(), random);
@@ -961,19 +962,17 @@ void Gfx::selectLevel()
 	{
 		std::memcpy(screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
 		
-		//drawBasicMenu();
-		
-		string title = common->texts.selLevel;
+		string title = LS(SelLevel);
 		if (!levSel.currentNode->fullPath.empty())
 		{
 			title += ' ';
 			title += levSel.currentNode->fullPath;
 		}
 		
-		int wid = common->font.getDims(title);
+		int wid = common.font.getDims(title);
 
 		drawRoundedBox(screenBmp, 178, 20, 0, 7, wid);
-		common->font.drawText(screenBmp, title, 180, 21, 50);
+		common.font.drawText(screenBmp, title, 180, 21, 50);
 
 		levSel.draw();
 		
@@ -983,7 +982,7 @@ void Gfx::selectLevel()
 		if(testSDLKeyOnce(SDLK_RETURN)
 		|| testSDLKeyOnce(SDLK_KP_ENTER))
 		{
-			sfx.play(*common, 27);
+			sfx.play(common, 27);
 			
 			auto* sel = levSel.enter();
 
@@ -1098,15 +1097,13 @@ int Gfx::selectReplay()
 
 			if (sel)
 			{
-				std::string fullPath = sel->fullPath + ".lrp";
-
 				prevSelectedReplayPath = sel->fullPath;
 
 				// Reset controller before opening the replay, since we may be recording it
 				controller.reset();
 				
 				auto replay(
-					gvl::to_source(new gvl::file_bucket_source(fullPath.c_str(), "rb")));
+					gvl::to_source(new gvl::file_bucket_source(sel->fullPath.c_str(), "rb")));
 
 				controller.reset(new ReplayController(common, replay));
 				
@@ -1184,6 +1181,7 @@ struct WeaponMenu : Menu
 
 void Gfx::weaponOptions()
 {
+	Common& common = *this->common;
 	WeaponMenu weaponMenu(179, 28);
 			
 	weaponMenu.setHeight(14);
@@ -1191,12 +1189,12 @@ void Gfx::weaponOptions()
 	
 	for(int i = 1; i < 41; ++i)
 	{
-		int index = common->weapOrder[i];
-		weaponMenu.addItem(MenuItem(48, 7, common->weapons[index].name, i - 1));
+		int index = common.weapOrder[i];
+		weaponMenu.addItem(MenuItem(48, 7, common.weapons[index].name, i - 1));
 	}
 	
 	weaponMenu.moveToFirstVisible();
-	weaponMenu.updateItems(*common);
+	weaponMenu.updateItems(common);
 	
 	while(true)
 	{
@@ -1204,47 +1202,47 @@ void Gfx::weaponOptions()
 		
 		drawBasicMenu();
 		
-		drawRoundedBox(screenBmp, 179, 20, 0, 7, common->font.getDims(common->texts.weapon));
-		drawRoundedBox(screenBmp, 249, 20, 0, 7, common->font.getDims(common->texts.availability));
+		drawRoundedBox(screenBmp, 179, 20, 0, 7, common.font.getDims(LS(Weapon)));
+		drawRoundedBox(screenBmp, 249, 20, 0, 7, common.font.getDims(LS(Availability)));
 		
-		common->font.drawText(screenBmp, common->texts.weapon, 181, 21, 50);
-		common->font.drawText(screenBmp, common->texts.availability, 251, 21, 50);
+		common.font.drawText(screenBmp, LS(Weapon), 181, 21, 50);
+		common.font.drawText(screenBmp, LS(Availability), 251, 21, 50);
 		
-		weaponMenu.draw(*common, false);
+		weaponMenu.draw(common, false);
 						
 		if(testSDLKeyOnce(SDLK_UP))
 		{
-			sfx.play(*common, 26);
+			sfx.play(common, 26);
 			weaponMenu.movement(-1);
 		}
 		
 		if(testSDLKeyOnce(SDLK_DOWN))
 		{
-			sfx.play(*common, 25);
+			sfx.play(common, 25);
 			weaponMenu.movement(1);
 		}
 		
 		if(testSDLKeyOnce(SDLK_LEFT))
 		{
-			weaponMenu.onLeftRight(*common, -1);
+			weaponMenu.onLeftRight(common, -1);
 		}
 		if(testSDLKeyOnce(SDLK_RIGHT))
 		{
-			weaponMenu.onLeftRight(*common, 1);
+			weaponMenu.onLeftRight(common, 1);
 		}
 		
 		if(settings->extensions)
 		{
 			if(testSDLKeyOnce(SDLK_PAGEUP))
 			{
-				sfx.play(*common, 26);
+				sfx.play(common, 26);
 				
 				weaponMenu.movementPage(-1);
 			}
 			
 			if(testSDLKeyOnce(SDLK_PAGEDOWN))
 			{
-				sfx.play(*common, 25);
+				sfx.play(common, 25);
 				
 				weaponMenu.movementPage(1);
 			}
@@ -1268,7 +1266,7 @@ void Gfx::weaponOptions()
 			if(count > 0)
 				break; // Enough weapons available
 				
-			infoBox(common->texts.noWeaps, 223, 68, false);
+			infoBox(LS(NoWeaps), 223, 68, false);
 		}
 	}
 }
@@ -1549,15 +1547,15 @@ void Gfx::mainLoop()
 
 void Gfx::saveSettings(std::string const& path)
 {
-	settingsFile = path;
-	settings->save(settingsFile + ".dat", rand);
+	settingsFile = path + ".dat";
+	settings->save(settingsFile, rand);
 }
 
 bool Gfx::loadSettings(std::string const& path)
 {
 	settingsFile = path;
 	settings.reset(new Settings);
-	return settings->load(settingsFile + ".dat", rand);
+	return settings->load(settingsFile, rand);
 }
 
 void Gfx::drawBasicMenu(/*int curSel*/)
@@ -1590,12 +1588,13 @@ void Gfx::openHiddenMenu()
 
 int Gfx::menuLoop()
 {
+	Common& common = *this->common;
 	std::memset(pal.entries, 0, sizeof(pal.entries));
 	flip();
 	process();
 	
 	fillRect(screenBmp, 0, 151, 160, 7, 0);
-	common->font.drawText(screenBmp, common->texts.copyright2, 2, 152, 19);
+	common.font.drawText(screenBmp, LS(Copyright2), 2, 152, 19);
 
 	int startItemId;
 	if (controller->running())
@@ -1614,7 +1613,7 @@ int Gfx::menuLoop()
 	
 	mainMenu.moveToFirstVisible();
 	settingsMenu.moveToFirstVisible();
-	settingsMenu.updateItems(*common);
+	settingsMenu.updateItems(common);
 	
 	fadeValue = 0;
 	curMenu = &mainMenu;
@@ -1629,9 +1628,9 @@ int Gfx::menuLoop()
 		drawBasicMenu();
 		
 		if(curMenu == &mainMenu)
-			settingsMenu.draw(*common, true);
+			settingsMenu.draw(common, true);
 		else
-			curMenu->draw(*common, false);
+			curMenu->draw(common, false);
 		
 		if(testSDLKeyOnce(SDLK_ESCAPE))
 		{
@@ -1643,13 +1642,13 @@ int Gfx::menuLoop()
 		
 		if(testSDLKeyOnce(SDLK_UP))
 		{
-			sfx.play(*common, 26);
+			sfx.play(common, 26);
 			curMenu->movement(-1);
 		}
 		
 		if(testSDLKeyOnce(SDLK_DOWN))
 		{
-			sfx.play(*common, 25);
+			sfx.play(common, 25);
 			curMenu->movement(1);
 		}
 
@@ -1658,7 +1657,7 @@ int Gfx::menuLoop()
 		{
 			if(curMenu == &mainMenu)
 			{
-				sfx.play(*common, 27);
+				sfx.play(common, 27);
 				
 				int s = mainMenu.selectedId();
 				switch (s)
@@ -1684,7 +1683,7 @@ int Gfx::menuLoop()
 
 					case MainMenu::MaReplays:
 					{
-						selected = curMenu->onEnter(*common);
+						selected = curMenu->onEnter(common);
 						break;
 					}
 
@@ -1697,11 +1696,11 @@ int Gfx::menuLoop()
 			}
 			else if(curMenu == &settingsMenu)
 			{
-				settingsMenu.onEnter(*common);
+				settingsMenu.onEnter(common);
 			}
 			else
 			{
-				selected = curMenu->onEnter(*common);
+				selected = curMenu->onEnter(common);
 			}
 		}
 		
@@ -1720,7 +1719,7 @@ int Gfx::menuLoop()
 		{
 			curMenu = &mainMenu;
 			mainMenu.moveToId(MainMenu::MaReplays);
-			selected = curMenu->onEnter(*common);
+			selected = curMenu->onEnter(common);
 		}
 		if(testSDLKeyOnce(SDLK_F10))
 		{
@@ -1746,25 +1745,25 @@ int Gfx::menuLoop()
 
 		if(testSDLKey(SDLK_LEFT))
 		{
-			if(!curMenu->onLeftRight(*common, -1))
+			if(!curMenu->onLeftRight(common, -1))
 				resetLeftRight();
 		}
 		if(testSDLKey(SDLK_RIGHT))
 		{
-			if(!curMenu->onLeftRight(*common, 1))
+			if(!curMenu->onLeftRight(common, 1))
 				resetLeftRight();
 		}
 		
 		if(testSDLKeyOnce(SDLK_PAGEUP))
 		{
-			sfx.play(*common, 26);
+			sfx.play(common, 26);
 				
 			curMenu->movementPage(-1);
 		}
 			
 		if(testSDLKeyOnce(SDLK_PAGEDOWN))
 		{
-			sfx.play(*common, 25);
+			sfx.play(common, 25);
 				
 			curMenu->movementPage(1);
 		}

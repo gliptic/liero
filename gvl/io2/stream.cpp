@@ -76,55 +76,91 @@ source_result::status octet_reader::next_piece_(uint32_t amount)
 
 //
 
-#if 0
-sink_result octet_writer::flush(bucket_size new_buffer_size)
+#if 1
+sink_result octet_writer::flush()
 {
-	auto res = flush_buffer(new_buffer_size);
-	if(res.s != sink_result::ok)
+	auto res = flush_buffer(default_initial_bucket_size);
+	if(res.s == sink_result::error)
 		return res;
 		
-	if(sink_)
+	if (sink_)
 		return sink_->flush();
 	// If flush_buffer succeeded, we're ok without a sink
 	return sink_result(sink_result::ok);
 }
 
+sink_result octet_writer::flush_buffer(bucket_size new_buffer_size)
+{
+	std::size_t size = buffer_size_();
+
+	sink_result res = sink_result(sink_result::ok);
+
+	if (size > 0)
+	{
+		if(!sink_) return sink_result(sink_result::error);
+
+		correct_buffer_();
+		res = sink_->write(std::move(buffer_));
+
+		if (res.s != sink_result::ok
+		 && res.s != sink_result::would_block)
+			return res;
+	}
+
+	new_buffer_size = std::max(new_buffer_size, default_initial_bucket_size);
+
+	if (!buffer_)
+	{
+		buffer_.reset(bucket_data_mem::create(new_buffer_size, new_buffer_size));
+		read_in_buffer_();
+	}
+	else
+	{
+		auto old_size = std::size_t(cur_ - end_);
+		auto new_size = std::max(old_size + new_buffer_size, old_size * 2);
+		buffer_.reset(buffer_->enlarge(new_size));
+		buffer_->size_ = new_size;
+		cur_ = buffer_->data + old_size;
+		end_ = buffer_->data + buffer_->size_;
+	}
+
+	sassert(left() >= new_buffer_size);
+	
+	return res;
+}
+
 sink_result octet_writer::overflow_put_(uint8_t b)
 {
-	auto ret = weak_flush();
+	auto ret = flush_buffer(default_initial_bucket_size);
 	sassert(cur_ != end_);
 	*cur_++ = b;
 	return ret;
 }
-	
-	
+
 sink_result octet_writer::overflow_put_(uint8_t const* p, std::size_t len)
 {
 	check_sink();
-		
-	// As long as fitting in the current buffer would make it
-	// too large, write as much as possible and flush.
-	while((cur_ - buffer_->data) + len >= max_bucket_size)
+
+	sink_result ret(sink_result::ok);
+
+	while (len > left())
 	{
-		std::size_t left = end_ - cur_;
+		std::size_t l = left();
 		// Copy as much as we can
-		std::memcpy(cur_, p, left);
-		cur_ += left;
-		p += left;
-		len -= left;
+		std::memcpy(cur_, p, l);
+		cur_ += l;
+		p += l;
+		len -= l;
 			
 		// Flush and try to allocate a buffer large enough for the rest of the data
-		stream::write_status ret = weak_flush(len);
-		if(ret != stream::write_ok)
+		ret = flush_buffer(len);
+		if (ret.s == sink_result::error)
 			return ret;
 	}
-		
-	// Write the rest
-	ensure_cap_((cur_ - buffer_->data) + len);
-		
+
 	std::memcpy(cur_, p, len);
 	cur_ += len;
-	return stream::write_ok;
+	return ret;
 }
 #endif
 

@@ -34,10 +34,10 @@ void Ninjarope::process(Worm& owner, Game& game)
 		fixed diffX = x - owner.x;
 		fixed diffY = y - owner.y;
 		
-		forceX = (diffX << common.C[NRForceShlX]) / common.C[NRForceDivX];
-		forceY = (diffY << common.C[NRForceShlY]) / common.C[NRForceDivY];
+		forceX = (diffX << LC(NRForceShlX)) / LC(NRForceDivX);
+		forceY = (diffY << LC(NRForceShlY)) / LC(NRForceDivY);
 		
-		curLen = (vectorLength(ftoi(diffX), ftoi(diffY)) + 1) << common.C[NRForceLenShl];
+		curLen = (vectorLength(ftoi(diffX), ftoi(diffY)) + 1) << LC(NRForceLenShl);
 		
 		if(ix <= 0
 		|| ix >= game.level.width - 1
@@ -47,7 +47,7 @@ void Ninjarope::process(Worm& owner, Game& game)
 		{
 			if(!attached)
 			{
-				length = common.C[NRAttachLength];
+				length = LC(NRAttachLength);
 				attached = true;
 				
 				if(game.level.inside(ix, iy))
@@ -78,7 +78,7 @@ void Ninjarope::process(Worm& owner, Game& game)
 		{
 			if(!attached)
 			{
-				length = common.C[NRAttachLength]; // TODO: Should this value be separate from the non-worm attaching?
+				length = LC(NRAttachLength); // TODO: Should this value be separate from the non-worm attaching?
 				attached = true;
 			}
 			
@@ -110,7 +110,7 @@ void Ninjarope::process(Worm& owner, Game& game)
 		}
 		else
 		{
-			velY += common.C[NinjaropeGravity];
+			velY += LC(NinjaropeGravity);
 
 			if(curLen > length)
 			{

@@ -36,8 +36,8 @@ try
 	gfx.rand.seed(Uint32(std::time(0)));
 	
 	bool exeSet = false;
-	gvl::shared_ptr<Common> common(new Common);
-	gfx.common = common;
+	
+	std::string exePath;
 	
 	for(int i = 1; i < argc; ++i)
 	{
@@ -53,33 +53,27 @@ try
 		}
 		else
 		{
-			setLieroEXE(argv[i]);
+			exePath = argv[i];
 			exeSet = true;
 		}
 	}
 	
 	if(!exeSet)
-		setLieroEXE("LIERO.EXE");
+		exePath = "LIERO.EXE";
+
+	setLieroEXE(exePath);
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
 	
-	common->texts.loadFromEXE();
-
 	initKeys();
-	common->loadConstantsFromEXE();
+	
 	loadTablesFromEXE();
 
-	common->font.loadFromEXE();
-	common->loadPalette();
+	gvl::shared_ptr<Common> common(new Common(exePath));
+	gfx.common = common;
+	
 	gfx.loadPalette(*common); // This gets the palette from common
 	gfx.loadMenus();
-	common->loadGfx();
-	common->loadMaterials();
-	common->loadWeapons();
-	common->loadTextures();
-	common->loadOthers();
-
-	common->loadSfx();
 
 	gfx.init();
 	

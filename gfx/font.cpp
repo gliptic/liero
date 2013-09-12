@@ -5,14 +5,12 @@
 #include "color.hpp"
 //#include <iostream>
 
-void Font::loadFromEXE()
+void Font::loadFromEXE(ReaderFile& exe)
 {
 	chars.resize(250);
 	
 	std::size_t const FontSize = 250 * 8 * 8 + 1;
 	std::vector<unsigned char> temp(FontSize);
-	
-	ReaderFile& exe = openLieroEXE();
 	
 	exe.seekg(0x1C825);
 	

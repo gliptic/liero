@@ -15,14 +15,14 @@ void Bonus::process(Game& game)
 	if(game.level.inside(ix, iy + 1)
 	&& game.level.mat(ix, iy + 1).background())
 	{
-		velY += common.C[BonusGravity];
+		velY += LC(BonusGravity);
 	}
 		
 	int inewY = ftoi(y + velY);
 	if(inewY < 0 || inewY >= game.level.height - 1
 	|| game.level.mat(ix, inewY).dirtRock())
 	{
-		velY = -(velY * common.C[BonusBounceMul]) / common.C[BonusBounceDiv];
+		velY = -(velY * LC(BonusBounceMul)) / LC(BonusBounceDiv);
 		
 		if(std::abs(velY) < 100) // TODO: Read from EXE
 			velY = 0;

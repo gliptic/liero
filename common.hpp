@@ -11,6 +11,7 @@
 #include "gfx/sprite.hpp"
 #include <string>
 #include <gvl/resman/shared_ptr.hpp>
+#include <gvl/io2/stream.hpp>
 extern "C" {
 #include "mixer/mixer.h"
 }
@@ -27,46 +28,15 @@ struct Texture
 
 struct Texts
 {
-	void loadFromEXE();
+	Texts();
 
-	//std::string copyright1;
-	std::string copyright2;
-	std::string loadoptions;
-	std::string saveoptions;
-	std::string curOptNoFile;
-	std::string curOpt;
-	
 	std::string gameModes[3];
-	std::string gameModeSpec[3];
 	std::string onoff[2];
 	std::string controllers[3];
 	
-	std::string keyNames[177];
-	
-	std::string random;
-	std::string random2;
-	std::string reloadLevel;
-	std::string regenLevel;
-	std::string selWeap;
-	std::string levelRandom;
-	std::string levelIs1;
-	std::string levelIs2;
-	std::string randomize;
-	std::string done;
-	
-	std::string kills;
-	std::string lives;
-	
-	std::string suicide;
-	std::string reloading;
-	std::string pressFire;
-	std::string selLevel;
-	
-	std::string noWeaps;
-	std::string weapon;
-	std::string availability;
+	static char const* Texts::keyNames[177];
+
 	std::string weapStates[3];
-	
 	
 	int copyrightBarFormat;
 	
@@ -87,9 +57,7 @@ struct Bitmap;
 
 struct Common : gvl::shared
 {
-	Common()
-	{
-	}
+	Common(std::string const& lieroExe);
 
 	~Common()
 	{
@@ -99,15 +67,17 @@ struct Common : gvl::shared
 
 	
 	static int fireConeOffset[2][7][2];
+
+	void save(std::string const& path);
 	
-	void loadMaterials();
-	void loadWeapons();
-	void loadTextures();
-	void loadOthers();
-	void loadConstantsFromEXE();
-	void loadGfx();
-	void loadSfx();
-	void loadPalette();
+	void loadMaterials(ReaderFile& exe);
+	void loadWeapons(ReaderFile& exe);
+	void loadTextures(ReaderFile& exe);
+	void loadOthers(ReaderFile& exe);
+	void loadConstantsFromEXE(ReaderFile& exe);
+	void loadGfx(ReaderFile& exe, ReaderFile& gfx);
+	void loadSfx(ReaderFile& snd);
+	void loadPalette(ReaderFile& exe);
 	void drawTextSmall(Bitmap& scr, char const* str, int x, int y);
 	
 	PalIdx* wormSprite(int f, int dir, int w)

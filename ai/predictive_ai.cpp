@@ -331,6 +331,10 @@ double evaluateState(
 		double d = std::max(std::abs(wormCell->g / 256.0 - optimalDist) - 10.0, 0.0) * weights.distanceWeight;
 		len *= psigmoid(d / 100.0);
 	}
+	else
+	{
+		len += wormDistance(me, target) / 10.0;
+	}
 
 	if (meOrg->steerableCount == 1)
 	{

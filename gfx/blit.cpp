@@ -541,7 +541,7 @@ if(dx > dy) { \
 
 void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY)
 {
-	int color = common.C[NRColourBegin];
+	int color = LC(NRColourBegin);
 	
 	Rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
@@ -549,8 +549,8 @@ void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, i
 	
 	
 	DO_LINE({
-		if(++color == common.C[NRColourEnd])
-			color = common.C[NRColourBegin];
+		if(++color == LC(NRColourEnd))
+			color = LC(NRColourBegin);
 			
 		if(clip.inside(cx, cy))
 			ptr[cy*pitch + cx] = color;

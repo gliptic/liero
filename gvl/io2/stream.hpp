@@ -4,6 +4,7 @@
 #include "../resman/shared_ptr.hpp"
 #include "../containers/bucket.hpp"
 #include "../support/debug.hpp"
+#include "../io/convert.hpp"
 #include <memory>
 
 namespace gvl
@@ -80,6 +81,11 @@ struct bucket_pipe : shared
 	{
 		return sink_result(sink_result::would_block);
 	}
+
+	virtual sink_result flush()
+	{
+		return sink_result(sink_result::would_block);
+	}
 };
 
 struct stream_piece : shared
@@ -123,6 +129,7 @@ struct stream_piece : shared
 };
 
 typedef shared_ptr<stream_piece> source;
+typedef shared_ptr<bucket_pipe> sink;
 
 inline source to_source(bucket_pipe* src)
 {
@@ -151,6 +158,20 @@ struct octet_reader
 	{
 		// We keep this function small to encourage inlining
 		return (cur_ != end_) ? (*cur_++) : underflow_get_();
+	}
+
+	uint8_t get_def(uint8_t def = 0)
+	{
+		// We keep this function small to encourage inlining
+		if (cur_ != end_)
+		{
+			return *cur_++;
+		}
+		else
+		{
+			underflow_get_(def);
+			return def;
+		}
 	}
 	
 	void get(uint8_t* dest, std::size_t len)
@@ -187,16 +208,16 @@ struct octet_reader
 
 	}
 	
-	source_result::status try_get(uint8_t& ret)
+	bool try_get(uint8_t& ret)
 	{
 		if(cur_ != end_)
 		{
 			ret = *cur_++;
-			return source_result::ok;
+			return true;
 		}
 		else
 		{
-			return underflow_get_(ret);
+			return underflow_get_(ret) == source_result::ok;
 		}
 	}
 	
@@ -282,15 +303,12 @@ protected:
 
 //
 
-#if 0
+#if 1
 
-struct octet_writer
+struct octet_writer : basic_text_writer<octet_writer>
 {
-	enum
-	{
-		default_initial_bucket_size = 512,
-		default_max_bucket_size = 32768
-	};
+	
+	static std::size_t const default_initial_bucket_size = 4096;
 	
 	octet_writer(shared_ptr<bucket_pipe> sink)
 	: sink_()
@@ -309,7 +327,7 @@ struct octet_writer
 	
 	~octet_writer()
 	{
-		if(sink_)
+		if (sink_)
 			flush();
 	}
 	
@@ -326,7 +344,7 @@ struct octet_writer
 	{
 		// We keep this function small to encourage
 		// inlining of the common case
-		if(std::size_t(end_ - cur_) >= len)
+		if(left() >= len)
 		{
 #if GVL_X86 || GVL_X86_64 // TODO: A define that says whether unaligned access is allowed
 			if(len < 64) // TODO: Tweak this limit
@@ -353,23 +371,10 @@ struct octet_writer
 			return overflow_put_(p, len);
 		}
 	}
-	/*
-	sink_result put(uint32_t const* p, std::size_t len)
+	
+	shared_ptr<bucket_pipe> detach()
 	{
-		stream::write_status res = stream::write_ok;
-		for(std::size_t i = 0; i < len; ++i)
-		{
-			res = stream::combine_write_status(res, put(*p++));
-		}
-		return res;	
-	}
-		
-	stream::write_status put_bucket(bucket* buf);
-	*/
-
-	shared_ptr<stream> detach()
-	{
-		if(has_sink())
+		if (has_sink())
 		{
 			flush_buffer();
 		
@@ -388,17 +393,17 @@ struct octet_writer
 	
 	void attach(shared_ptr<bucket_pipe> new_sink)
 	{
-		if(sink_)
-			throw stream_error("A sink is already attached to the octet_stream_writer");
+		if (sink_)
+			throw runtime_error("A sink is already attached to the octet_writer");
 		sink_ = new_sink;
-		buffer_.reset(bucket_data_mem::create(default_initial_bucket_size, 0));
+		buffer_.reset(bucket_data_mem::create(default_initial_bucket_size, default_initial_bucket_size));
 		read_in_buffer_();
 	}
 	
 	void check_sink()
 	{
 		if(!sink_)
-			throw stream_write_error(stream::write_error, "No sink assigned to octet_writer");
+			throw runtime_error("No sink assigned to octet_writer");
 	}
 	
 	void swap(octet_writer& b)
@@ -423,11 +428,16 @@ struct octet_writer
 	}*/
 		
 private:
-	stream::write_status flush_buffer(bucket_size new_buffer_size = 0);
+	sink_result flush_buffer(bucket_size new_buffer_size = 0);
 	
 	std::size_t buffer_size_()
 	{
 		return (cur_ - buffer_->data);
+	}
+
+	std::size_t left() const
+	{
+		return end_ - cur_;
 	}
 	
 	void correct_buffer_()

@@ -167,7 +167,7 @@ void WObject::process(Game& game)
 	
 	// As liero would do this while rendering, we try to do it as early as possible
 	if(common.H[HRemExp]
-	&& id == common.C[RemExpObject] - 1)
+	&& id == LC(RemExpObject) - 1)
 	{
 		if(owner->pressed(Worm::Change)
 		&& owner->pressed(Worm::Fire))
@@ -270,7 +270,7 @@ void WObject::process(Game& game)
 			{
 				common.nobjectTypes[w.partTrailObj].create1(
 					game,
-					velX / common.C[SplinterLarpaVelDiv], velY / common.C[SplinterLarpaVelDiv],
+					velX / LC(SplinterLarpaVelDiv), velY / LC(SplinterLarpaVelDiv),
 					x, y,
 					0,
 					ownerIdx,
@@ -282,7 +282,7 @@ void WObject::process(Game& game)
 				common.nobjectTypes[w.partTrailObj].create2(
 					game,
 					angle,
-					velX / common.C[SplinterCracklerVelDiv], velY / common.C[SplinterCracklerVelDiv],
+					velX / LC(SplinterCracklerVelDiv), velY / LC(SplinterCracklerVelDiv),
 					x, y,
 					0,
 					ownerIdx,

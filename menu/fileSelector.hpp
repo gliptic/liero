@@ -113,7 +113,7 @@ void FileNode::fill(string const& path, Filter filter)
 		else if (filter(name, ext))
 		{
 			children.push_back(shared_ptr<FileNode>(new FileNode(
-				getBasename(name), getBasename(fullPath), false, this)));
+				getBasename(name), fullPath, false, this)));
 		}
 	}
 

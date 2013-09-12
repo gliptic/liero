@@ -8,6 +8,8 @@
 
 struct Bitmap;
 
+struct ReaderFile;
+
 struct Font
 {
 	struct Char
@@ -21,7 +23,7 @@ struct Font
 	{
 	}
 	
-	void loadFromEXE();
+	void loadFromEXE(ReaderFile& exe);
 	void drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color);
 	int getDims(char const* str, std::size_t len, int* height = 0);
 	void drawChar(Bitmap& scr, unsigned char ch, int x, int y, int color);

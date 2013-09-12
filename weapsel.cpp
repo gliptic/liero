@@ -33,7 +33,7 @@ WeaponSelection::WeaponSelection(Game& game)
 		Worm& worm = *game.wormByIdx(vp.wormIdx);
 		WormSettings& ws = *worm.settings;
 		
-		menus[i].items.push_back(MenuItem(57, 57, common.texts.randomize));
+		menus[i].items.push_back(MenuItem(57, 57, LS(Randomize)));
 		
 		{
 			int x = vp.rect.center_x() - 31;
@@ -78,7 +78,7 @@ WeaponSelection::WeaponSelection(Game& game)
 			menus[i].items.push_back(MenuItem(48, 48, common.weapons[w].name));
 		}
 		
-		menus[i].items.push_back(MenuItem(10, 10, common.texts.done));
+		menus[i].items.push_back(MenuItem(10, 10, LS(Done)));
 		
 		worm.currentWeapon = 0;
 		
@@ -97,11 +97,11 @@ void WeaponSelection::draw()
 			
 		if(game.settings->levelFile.empty())
 		{
-			common.font.drawText(gfx.screenBmp, common.texts.levelRandom, 0, 162, 50);
+			common.font.drawText(gfx.screenBmp, LS(LevelRandom), 0, 162, 50);
 		}
 		else
 		{
-			common.font.drawText(gfx.screenBmp, (common.texts.levelIs1 + game.settings->levelFile + common.texts.levelIs2), 0, 162, 50);
+			common.font.drawText(gfx.screenBmp, (LS(LevelIs1) + game.settings->levelFile + LS(LevelIs2)), 0, 162, 50);
 		}
 		
 		std::memcpy(&gfx.frozenScreen[0], gfx.screenBmp.pixels, gfx.frozenScreen.size());
@@ -114,9 +114,9 @@ void WeaponSelection::draw()
 		return;
 		
 
-	drawRoundedBox(gfx.screenBmp, 114, 2, 0, 7, common.font.getDims(common.texts.selWeap));
+	drawRoundedBox(gfx.screenBmp, 114, 2, 0, 7, common.font.getDims(LS(SelWeap)));
 	
-	common.font.drawText(gfx.screenBmp, common.texts.selWeap, 116, 3, 50);
+	common.font.drawText(gfx.screenBmp, LS(SelWeap), 116, 3, 50);
 		
 	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
