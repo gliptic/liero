@@ -1,0 +1,13 @@
+{
+	"folders": [{
+		"path": "..",
+		"file_include_patterns": ["*.cpp", "*.hpp", "*.c", "*.h", "*.m"]
+	}],
+	"build_systems": [{
+		"name": "CppProj",
+		"working_dir": "_build",
+		"cmd": ["make"],
+		"file_regex": "^[ ]*([^0-9]*?):([0-9]*)",
+		"selector": "source.cpp"
+	}]
+}

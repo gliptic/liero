@@ -354,6 +354,7 @@ void dir_itr_init( dir_itr_imp_ptr & m_imp,
 	m_imp.reset( new dir_itr_imp() );
 	BOOST_SYSTEM_DIRECTORY_TYPE scratch;
 	filename_result name;  // initialization quiets compiler warnings
+
 	if ( !dir_path[0] )
 		m_imp->handle = BOOST_INVALID_HANDLE_VALUE;
 	else
@@ -373,7 +374,7 @@ void dir_itr_init( dir_itr_imp_ptr & m_imp,
 	}
 	else
 	{
-		throw std::runtime_error("Directory iterator ctor");
+		m_imp.reset();
 	}  
 }
 

@@ -74,6 +74,8 @@ if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     set(SOURCES ${SOURCES} SDLmain.m)
     set_source_files_properties(SDLmain.m PROPERTIES COMPILE_FLAGS "-std=c99")
+else(APPLE)
+    set(SOURCES ${SOURCES} sdlmain.cpp)
 endif(APPLE)
 
 add_executable(openliero ${SOURCES})

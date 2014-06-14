@@ -6,6 +6,7 @@
 #include "../meta/as_unsigned.hpp"
 #include <vector>
 #include <string>
+#include <cstring>
 
 namespace gvl
 {
