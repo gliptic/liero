@@ -308,7 +308,7 @@ protected:
 struct octet_writer : basic_text_writer<octet_writer>
 {
 	
-	static std::size_t const default_initial_bucket_size = 4096;
+	enum { default_initial_bucket_size = 4096 };
 	
 	octet_writer(shared_ptr<bucket_pipe> sink)
 	: sink_()

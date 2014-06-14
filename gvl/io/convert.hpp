@@ -5,6 +5,7 @@
 #include "../support/opt.hpp"
 #include "../meta/as_unsigned.hpp"
 #include <vector>
+#include <string>
 
 namespace gvl
 {

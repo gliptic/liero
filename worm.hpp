@@ -92,7 +92,9 @@ struct WormSettings : gvl::shared, WormSettingsExtensions
 		rgb[1] = 26;
 		rgb[2] = 62;
 		
-		std::memset(weapons, 0, sizeof(weapons));
+        for (int i = 0; i < 5; ++i) {
+            weapons[i] = 1;
+        }
 		std::memset(controls, 0, sizeof(controls));
 	}
 	

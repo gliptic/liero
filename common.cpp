@@ -1028,7 +1028,7 @@ struct TextReader
 
 			next();
 			
-			if (c != ']')
+			while (c != ']')
 			{
 				a.v.emplace_back(value());
 				if (c || c == ']')
@@ -1046,7 +1046,7 @@ struct TextReader
 
 			next();
 			
-			if (c != '}')
+			while (c != '}')
 			{
 				string name(str());
 				check(':');
@@ -1406,6 +1406,7 @@ Common::Common(std::string const& lieroExe)
 	loadGfx(exe, gfx);
 	loadSfx(snd);
 
+    if (false)
 	{
 		auto path = changeLeaf(lieroExe, "");
 		

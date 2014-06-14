@@ -107,7 +107,7 @@ sink_result octet_writer::flush_buffer(bucket_size new_buffer_size)
 			return res;
 	}
 
-	new_buffer_size = std::max(new_buffer_size, default_initial_bucket_size);
+	new_buffer_size = std::max(new_buffer_size, std::size_t(default_initial_bucket_size));
 
 	if (!buffer_)
 	{

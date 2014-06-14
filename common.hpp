@@ -34,7 +34,7 @@ struct Texts
 	std::string onoff[2];
 	std::string controllers[3];
 	
-	static char const* Texts::keyNames[177];
+	static char const* keyNames[177];
 
 	std::string weapStates[3];
 	
