@@ -80,7 +80,7 @@ struct Menu
 	{
 		auto* s = selected();
 		if (!s) return false;
-		std::auto_ptr<ItemBehavior> b(getItemBehavior(common, *s));
+		std::unique_ptr<ItemBehavior> b(getItemBehavior(common, *s));
 		return b->onLeftRight(*this, *s, dir);
 	}
 	
@@ -88,7 +88,7 @@ struct Menu
 	{
 		auto* s = selected();
 		if (!s) return false;
-		std::auto_ptr<ItemBehavior> b(getItemBehavior(common, *s));
+		std::unique_ptr<ItemBehavior> b(getItemBehavior(common, *s));
 		return b->onEnter(*this, *s);
 	}
 
@@ -98,7 +98,7 @@ struct Menu
 	{
 		for(std::size_t i = 0; i < items.size(); ++i)
 		{
-			std::auto_ptr<ItemBehavior> b(getItemBehavior(common, items[i]));
+			std::unique_ptr<ItemBehavior> b(getItemBehavior(common, items[i]));
 			
 			b->onUpdate(*this, items[i]);
 		}

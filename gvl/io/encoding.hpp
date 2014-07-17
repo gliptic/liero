@@ -267,7 +267,7 @@ private:
 	
 	uint8_t const* cur_; // Pointer into first_
 	uint8_t const* end_; // End of data in first_
-	std::auto_ptr<bucket> first_;
+	std::unique_ptr<bucket> first_;
 	shared_ptr<stream> source_;
 };
 
@@ -411,11 +411,8 @@ struct octet_stream_writer
 		std::swap(end_, b.end_);
 		std::swap(cap_, b.cap_);
 		
-		{ // auto_ptr doesn't have swap, so we need to do this
-			std::auto_ptr<bucket_data_mem> tmp = buffer_;
-			buffer_ = b.buffer_;
-			b.buffer_ = tmp;
-		}
+		buffer_.swap(b.buffer_);
+		
 		std::swap(estimated_needed_buffer_size_, b.estimated_needed_buffer_size_);
 	}
 	
@@ -461,7 +458,7 @@ private:
 	uint8_t* end_; // End of capacity in buffer_
 	bucket_size cap_;
 	//list<bucket> mem_buckets_;
-	std::auto_ptr<bucket_data_mem> buffer_;
+	std::unique_ptr<bucket_data_mem> buffer_;
 	bucket_size estimated_needed_buffer_size_;
 	bucket_size max_bucket_size;
 };

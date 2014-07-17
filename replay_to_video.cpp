@@ -37,7 +37,7 @@ void replayToVideo(
 
 	sfx_mixer* mixer = sfx_mixer_create();
 
-	std::auto_ptr<Game> game(
+	std::unique_ptr<Game> game(
 		replayReader.beginPlayback(common,
 			gvl::shared_ptr<SoundPlayer>(new RecordSoundPlayer(*common, mixer))));
 

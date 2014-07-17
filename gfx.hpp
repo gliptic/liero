@@ -236,7 +236,7 @@ struct Gfx : Renderer
 	int prevMag; // Previous magnification used for drawing
 	gvl::rect lastUpdateRect; // Last region that was updated when flipping
 	gvl::shared_ptr<Common> common;
-	std::auto_ptr<Controller> controller;
+	std::unique_ptr<Controller> controller;
 	
 	std::vector<Joystick> joysticks;
 

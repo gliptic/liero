@@ -45,17 +45,17 @@ struct ReplayController : CommonController
 	Game* currentGame();
 	bool running();
 	
-	std::auto_ptr<Game> game;
+	std::unique_ptr<Game> game;
 
 
-	std::auto_ptr<Game> initialGame;
+	std::unique_ptr<Game> initialGame;
 	gvl::octet_reader initialReader;
 
 
 	State state;
 	int fadeValue;
 	bool goingToMenu;
-	std::auto_ptr<ReplayReader> replay;
+	std::unique_ptr<ReplayReader> replay;
 	gvl::shared_ptr<Common> common;
 
 };

@@ -171,8 +171,8 @@ struct deflate_filter : filter
 	}
 	
 	mz_stream str;
-	std::auto_ptr<bucket_data_mem> buffer;
-	std::auto_ptr<bucket> in_bucket;
+	std::unique_ptr<bucket_data_mem> buffer;
+	std::unique_ptr<bucket> in_bucket;
 	
 	bool compress;
 	bool ended; // TODO: The stream should have some state for closed

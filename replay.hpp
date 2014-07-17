@@ -105,7 +105,7 @@ struct ReplayReader : Replay
 
 	void restoreStreamState(gvl::cache_stream_state_ptr& state);*/
 	
-	std::auto_ptr<Game> beginPlayback(gvl::shared_ptr<Common> common, gvl::shared_ptr<SoundPlayer> soundPlayer);
+	std::unique_ptr<Game> beginPlayback(gvl::shared_ptr<Common> common, gvl::shared_ptr<SoundPlayer> soundPlayer);
 	bool playbackFrame(Renderer& renderer);
 	
 #if 0

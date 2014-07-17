@@ -45,11 +45,11 @@ struct LocalController : CommonController
 	bool running();
 	
 	Game game;
-	std::auto_ptr<WeaponSelection> ws;
+	std::unique_ptr<WeaponSelection> ws;
 	State state;
 	int fadeValue;
 	bool goingToMenu;
-	std::auto_ptr<ReplayWriter> replay;
+	std::unique_ptr<ReplayWriter> replay;
 };
 
 #endif // LIERO_CONTROLLER_LOCAL_CONTROLLER_HPP
