@@ -32,6 +32,7 @@ struct Level
 	void makeShadow(Common& common);
 	void generateFromSettings(Common& common, Settings const& settings, Rand& rand);
 	bool selectSpawn(Rand& rand, int w, int h, gvl::ivec2& selected);
+	void drawMiniature(Bitmap& dest, int mapX, int mapY, int step);
 		
 	unsigned char pixel(int x, int y)
 	{

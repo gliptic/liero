@@ -364,3 +364,22 @@ bool Level::selectSpawn(Rand& rand, int w, int h, gvl::ivec2& selected)
 
 	return i > 0;
 }
+
+void Level::drawMiniature(Bitmap& dest, int mapX, int mapY, int step)
+{
+	int my = step / 2;
+
+	int mapEndY = mapY + ((height + step / 2) / step);
+	int mapEndX = mapX + ((width + step / 2) / step);
+
+	for (int y = mapY; y < mapEndY; ++y)
+	{
+		int mx = step / 2;
+		for (int x = mapX; x < mapEndX; ++x)
+		{
+			dest.getPixel(x, y) = checkedPixelWrap(mx, my);
+			mx += step;
+		}
+		my += step;
+	}
+}

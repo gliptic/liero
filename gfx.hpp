@@ -225,7 +225,8 @@ struct Gfx : Renderer
 	
 	bool dosKeys[177];
 	SDL_Surface* back;
-	std::vector<PalIdx> frozenScreen;
+	//std::vector<PalIdx> frozenScreen;
+	Bitmap frozenScreen;
 
 	bool running;
 	bool fullscreen, doubleRes;

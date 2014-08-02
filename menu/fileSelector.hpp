@@ -189,20 +189,38 @@ struct FileSelector
 		return true;
 	}
 
-	FileNode* enter()
+	FileNode* curSel()
 	{
 		if (!menu().isSelectionValid())
 			return 0;
 
-		auto& c = currentNode->children[menu().selection()];
+		auto* c = currentNode->children[menu().selection()].get();
 		if (c->folder)
 		{
-			currentNode->selectedChild = c.get();
+			currentNode->selectedChild = c;
 			setFolder(*c);
 			return 0;
 		}
 
-		return c.get();
+		return c;
+	}
+
+	FileNode* enter()
+	{
+		auto* c = curSel();
+		if (!c)
+		{
+			return 0;
+		}
+
+		if (c->folder)
+		{
+			currentNode->selectedChild = c;
+			setFolder(*c);
+			return 0;
+		}
+
+		return c;
 	}
 
 	bool exit()

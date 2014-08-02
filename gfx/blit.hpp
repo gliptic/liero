@@ -5,6 +5,7 @@
 #include "../rect.hpp"
 #include "sprite.hpp"
 #include <vector>
+#include <algorithm>
 
 struct Level;
 struct Common;

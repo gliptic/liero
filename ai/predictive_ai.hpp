@@ -4,6 +4,7 @@
 #include "../worm.hpp"
 #include "../math.hpp"
 #include "../rand.hpp"
+#include <gvl/math/vec.hpp>
 #include <numeric>
 #include <functional>
 #include <algorithm>
@@ -219,6 +220,13 @@ struct Model
 
 		return FreeStates - 1;
 	}
+	/*
+	void update(int context, int result)
+	{
+		assert(context < States);
+		assert(result < FreeStates);
+		trans[context][result] += 0.05f;
+	}*/
 };
 
 struct Weights
@@ -246,7 +254,7 @@ struct TransModel : Model<InputContext::Size, 56>
 #if 1
 	void update(InputContext context, InputState v)
 	{
-		trans[context.pack()][v.idx] += 0.0005;
+		trans[context.pack()][v.idx] += 0.005;
 	}
 #endif
 
@@ -327,7 +335,7 @@ struct EvaluateResult
 	{
 	}
 
-	double weightedScore();
+	double weightedScore() const;
 
 	std::vector<double> scoreOverTime;
 	double futureScore;
@@ -350,23 +358,32 @@ struct AIThread
 	SDL_Thread* th;
 };
 
+struct CandPlan
+{
+	CandPlan()
+	: prevResultAge(0)
+	{
+	}
+
+	Plan plan;
+	EvaluateResult prevResult;
+	int prevResultAge;
+};
+
 struct FollowAI : WormAI, AiContext
 {
 	FollowAI(Weights weights, bool testing, FollowAI* targetAiInit = 0)
 	: frame(0)
-	, prevResultAge(0)
 	, model(weights, testing)
 	, targetAi(targetAiInit)
 	, effectScaler(0)
 	, weights(weights)
+	, candPlan(3)
+	, best(0)
 #if AI_THREADS
 	, workQueue(2)
 #endif
 	{
-#if 0
-		if (!targetAi)
-			targetAi = new FollowAI(this);
-#endif
 	}
 
 	~FollowAI()
@@ -379,22 +396,25 @@ struct FollowAI : WormAI, AiContext
 	
 	Rand rand;
 	int frame;
-	Plan plan;
-	EvaluateResult prevResult;
-	int prevResultAge;
 	InputContext currentContext;
 	TransModel model;
+
+	std::vector<std::tuple<gvl::ivec2, PalIdx>> evaluatePositions;
 
 	std::vector<double> negEffect, posEffect;
 	int effectScaler;
 
 	FollowAI* targetAi;
 
+	std::vector<CandPlan> candPlan;
+	CandPlan* best;
+
 #if AI_THREADS
 	WorkQueue workQueue;
 #endif
 
 	Weights weights;
+	
 };
 
 #endif // LIERO_PREDICTIVE_AI_HPP

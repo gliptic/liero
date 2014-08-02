@@ -443,7 +443,7 @@ double evaluateState(
 	return score;
 }
 
-double EvaluateResult::weightedScore()
+double EvaluateResult::weightedScore() const
 {
 	double r = 0.0;
 
@@ -552,8 +552,10 @@ EvaluateResult evaluate(
 
 	simpleAi.initial = targetCopy->controlStates;
 
-	result.scoreOverTime.push_back(evaluateState(ai, meCopy, copy, context, targetCopy, game, 0));
+	double prevS = evaluateState(ai, meCopy, copy, context, targetCopy, game, 0);
+	result.scoreOverTime.push_back(prevS);
 
+	
 	for (std::size_t i = 0; i < planSize; ++i)
 	{
 		if (plan.size() <= i)
@@ -583,16 +585,27 @@ EvaluateResult evaluate(
 			}
 		}
 
+		
+
 		meCopy->controlStates = context.update(plan[i], copy, meCopy, ai);
 
-		if (targetAi && i < targetAi->plan.size())
-			targetCopy->controlStates = targetContext.update(targetAi->plan[i], copy, targetCopy, *targetAi);
+		if (targetAi && targetAi->best && i < targetAi->best->plan.size())
+			targetCopy->controlStates = targetContext.update(targetAi->best->plan[i], copy, targetCopy, *targetAi);
 		else
 			simpleAi.process(copy, *targetCopy);
-
+		
 		copy.processFrame();
 
 		double s = evaluateState(ai, meCopy, copy, context, targetCopy, game, i + 1);
+
+		if (game.settings->aiTraces)
+		{
+			int t = 119 - i * (119 - 104 + 1) / planSize;
+
+			ai.evaluatePositions.push_back(std::make_tuple(gvl::ivec2(meCopy->x, meCopy->y), t));
+		}
+
+		prevS = s;
 
 		result.scoreOverTime.push_back(s);
 	}
@@ -620,14 +633,6 @@ EvaluateResult mutate(
 	{
 		ms.type = 0;
 	}
-#if 0
-	else if (i == 1)
-	{
-		ms.type = 2;
-		ms.start = 10;
-		ms.stop = ms.start + 1;
-	}
-#endif
 	else
 	{
 		// Find the minimum suffix sum
@@ -661,39 +666,21 @@ EvaluateResult mutate(
 		
 	EvaluateResult result(evaluate(ai, &worm, game, target, candidate, game.settings->aiFrames, ms));
 
-#if 0
-	if (ms.type == 2
-	&& prevResult.scoreOverTime.size() == result.scoreOverTime.size())
-	{
-		ai.negEffect.resize(prevResult.scoreOverTime.size());
-		ai.posEffect.resize(prevResult.scoreOverTime.size());
-
-		for (std::size_t i = 0; i < prevResult.scoreOverTime.size(); ++i)
-		{
-			double diff = result.scoreOverTime[i] - prevResult.scoreOverTime[i];
-			if (diff < 0.0)
-				ai.negEffect[i] += -diff;
-			else
-				ai.posEffect[i] += diff;
-		}
-		++ai.effectScaler;
-
-		if ((game.cycles % 70) == 1)
-		{
-			for (std::size_t i = 8; i < 8 + 15; ++i)
-			{
-				printf("%4.02f ", ai.posEffect[i] / ai.effectScaler);
-			}
-			printf("\n");
-		}
-	}
-#endif
-
 	return std::move(result);
 }
 
 void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int offsX, int offsY)
 {
+
+#if 1
+	for (auto& p : evaluatePositions)
+	{
+		gvl::ivec2 v;
+		PalIdx t;
+		std::tie(v, t) = p;
+		renderer.screenBmp.setPixel(ftoi(v.x) + offsX, ftoi(v.y) + offsY, t);
+	}
+#endif
 
 #if 0
 	auto* cell = pathFind(ftoi(worm.x), ftoi(worm.y));
@@ -832,69 +819,103 @@ void FollowAI::process(Game& game, Worm& worm)
 #endif
 
 	update(*this, worm);
+	/*
 	if (targetAi)
 		targetAi->update(*targetAi, *target);
+		*/
 
-	if ((frame % 1) == 0)
+	double bestScore = -DBL_MAX;
+	evaluatePositions.clear();
+
 	{
-		Plan best = plan;
-
-		double bestScore = -DBL_MAX;
 
 		int evaluations = 0;
+		int candIdx;
 
-		if (prevResultAge < 3
-		&& !prevResult.scoreOverTime.empty())
+		std::vector<std::pair<double, int>> prio;
+
+		for (candIdx = 0; candIdx < candPlan.size(); ++candIdx)
 		{
-			// Shift result
-			prevResult.scoreOverTime.erase(prevResult.scoreOverTime.begin());
-			prevResult.scoreOverTime.push_back(0.0);
+			auto& cand = candPlan[candIdx];
+			if (cand.prevResultAge < 4
+			&& !cand.prevResult.scoreOverTime.empty())
+			{
+					
+			}
+			else
+			{
+				EvaluateResult result(mutate(*this, game, worm, target, cand.plan, 0, cand.prevResult));
+				++evaluations;
 
-			bestScore = prevResult.weightedScore();
-			++prevResultAge;
+				cand.prevResult = std::move(result);
+				cand.prevResultAge = 0;
+			}
+
+			double weightedScore = cand.prevResult.weightedScore();
+			if (weightedScore >= bestScore)
+			{
+				bestScore = weightedScore;
+				best = &cand;
+			}
+
+			prio.push_back(std::make_pair(weightedScore, candIdx));
 		}
-		else
-		{
-			EvaluateResult result(mutate(*this, game, worm, target, best, 0, prevResult));
-			++evaluations;
 
-			bestScore = result.weightedScore();
-			prevResult = std::move(result);
-			prevResultAge = 0;
-		}
+		std::sort(prio.begin(), prio.end(), [](std::pair<double, int> const& a, std::pair<double, int> const& b) {
+			return a.first > b.first;
+		} );
 
-		while (evaluations < game.settings->aiMutations + 1)
+		for (candIdx = 0; evaluations < game.settings->aiMutations + 1; )
 		{
-			auto candidate = best;
-			EvaluateResult result(mutate(*this, game, worm, target, candidate, 1, prevResult));
+			auto& cand = candPlan[prio[candIdx].second];
+			auto candidate = cand.plan;
+			EvaluateResult result(mutate(*this, game, worm, target, candidate, 1, cand.prevResult));
 			++evaluations;
 
 			double weightedScore = result.weightedScore();
-			if (weightedScore >= bestScore)
+			if (weightedScore > bestScore)
 			{
-				best = candidate;
+				cand.plan = std::move(candidate);
+				best = &cand;
 				bestScore = weightedScore;
-				prevResult = std::move(result);
-				prevResultAge = 0;
+				cand.prevResult = std::move(result);
+				cand.prevResultAge = 0;
+			}
+			else
+			{
+				candIdx = (candIdx + 1) % candPlan.size();
 			}
 		}
-		
-		plan = best;
 	}
 
-	worm.controlStates = currentContext.update(plan[0], game, &worm, *this);
-	
-	plan.erase(plan.begin());
+	auto prevContext = currentContext;
 
+	worm.controlStates = currentContext.update(best->plan[0], game, &worm, *this);
+	model.update(currentContext, best->plan[0]);
+
+	for (auto& p : candPlan)
+	{
+		p.plan.erase(p.plan.begin());
+
+		// Shift result
+		p.prevResult.scoreOverTime.erase(p.prevResult.scoreOverTime.begin());
+		p.prevResult.scoreOverTime.push_back(0.0);
+		++p.prevResultAge;
+	}
+
+	/* TEMP
 	if (targetAi)
 	{
 		targetAi->currentContext.update(targetAi->plan[0], game, target, *targetAi);
 		targetAi->plan.erase(targetAi->plan.begin());
 	}
+	*/
 
 	++frame;
+	/*
 	if (targetAi)
 		++targetAi->frame;
+	*/
 }
 
 Worm::ControlState InputContext::update(InputState newState, Game& game, Worm* worm, AiContext& aiContext)

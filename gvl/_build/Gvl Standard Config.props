@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <OutDir>_bin\$(PlatformName)\$(Configuration)\</OutDir>
-    <IntDir>_trash\$(PlatformName)\$(Configuration)\</IntDir>
+    <IntDir>$(ProjectName)\_trash\$(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

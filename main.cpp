@@ -77,10 +77,10 @@ try
 
 	gfx.init();
 	
-	if(!gfx.loadSettings(joinPath(lieroEXERoot, "LIERO")))
+	if(!gfx.loadSettings(joinPath(lieroEXERoot, "LIERO.DAT")))
 	{
 		gfx.settings.reset(new Settings);
-		gfx.saveSettings(joinPath(lieroEXERoot, "LIERO"));
+		gfx.saveSettings(joinPath(lieroEXERoot, "LIERO.DAT"));
 	}
 	
 	gfx.setVideoMode();

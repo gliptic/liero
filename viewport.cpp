@@ -635,17 +635,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	if(game.settings->map)
 	{
 		int const mapX = 134, mapY = 162;
-		int my = 5;
-		for(int y = mapY; y < 197; ++y)
-		{
-			int mx = 5;
-			for(int x = mapX; x < 185; ++x)
-			{
-				renderer.screenBmp.getPixel(x, y) = game.level.checkedPixelWrap(mx, my);
-				mx += 10;
-			}
-			my += 10;
-		}
+
+		game.level.drawMiniature(renderer.screenBmp, mapX, mapY, 10);
 		
 		for(std::size_t i = 0; i < game.worms.size(); ++i)
 		{

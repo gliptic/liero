@@ -29,6 +29,7 @@ Extensions::Extensions()
 , aiFrames(70*2), aiMutations(2)
 , zoneTimeout(30)
 , selectBotWeapons(true)
+, aiTraces(false)
 {
 }
 

@@ -628,6 +628,7 @@ void Common::drawTextSmall(Bitmap& scr, char const* str, int x, int y)
 
 #include <gvl/io/encoding.hpp>
 
+
 template<typename Writer>
 struct TextWriter
 {

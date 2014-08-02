@@ -15,7 +15,7 @@
 // It can then easily reset the extensions if they fail to load.
 struct Extensions
 {
-	static int const myVersion = 4;
+	static int const myVersion = 5;
 	static bool const extensions = true;
 
 	Extensions();
@@ -27,6 +27,7 @@ struct Extensions
 	int bloodParticleMax;
 
 	int aiFrames, aiMutations;
+	bool aiTraces;
 	
 	int fullscreenW;
 	int fullscreenH;
@@ -243,6 +244,9 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 			.ui16(settings.aiFrames, 140)
 			.ui8(settings.selectBotWeapons, uint32_t(0))
 			.ui16(settings.zoneTimeout, 30);
+
+		gvl::enable_when(ar, fileExtensionVersion >= 5)
+			.b(settings.aiTraces, false);
 	}
 	catch(std::runtime_error&)
 	{

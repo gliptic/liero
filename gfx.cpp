@@ -207,7 +207,7 @@ Gfx::Gfx()
 , hiddenMenu(178, 20)
 , curMenu(0)
 , back(0)
-, frozenScreen(320 * 200)
+//, frozenScreen(320 * 200)
 , running(true)
 , fullscreen(false)
 , menuCycles(0)
@@ -282,6 +282,7 @@ void Gfx::loadMenus()
 	hiddenMenu.addItem(MenuItem(48, 7, "AI MUTATIONS", HiddenMenu::AiMutations));
 	hiddenMenu.addItem(MenuItem(48, 7, "PALETTE", HiddenMenu::PaletteSelect));
 	hiddenMenu.addItem(MenuItem(48, 7, "BOT WEAPONS", HiddenMenu::SelectBotWeapons));
+	hiddenMenu.addItem(MenuItem(48, 7, "AI TRACES", HiddenMenu::AiTraces));
 
 	playerMenu.addItem(MenuItem(3, 7, "PROFILE LOADED", PlayerMenu::PlLoadedProfile));
 	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE", PlayerMenu::PlSaveProfile));
@@ -958,9 +959,11 @@ void Gfx::selectLevel()
 		levSel.select(settings->levelFile);
 	}
 
+	FileNode* previewNode = 0;
+
 	do
 	{
-		std::memcpy(screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
+		screenBmp.copy(frozenScreen);
 		
 		string title = LS(SelLevel);
 		if (!levSel.currentNode->fullPath.empty())
@@ -973,6 +976,18 @@ void Gfx::selectLevel()
 
 		drawRoundedBox(screenBmp, 178, 20, 0, 7, wid);
 		common.font.drawText(screenBmp, title, 180, 21, 50);
+
+		FileNode* sel = levSel.curSel();
+		if (previewNode != sel)
+		{
+			Level level(common);
+			if (level.load(common, *settings, sel->fullPath))
+			{
+				level.drawMiniature(frozenScreen, 134, 162, 10);
+			}
+
+			previewNode = sel;
+		}
 
 		levSel.draw();
 		
@@ -1021,7 +1036,7 @@ void Gfx::selectProfile(WormSettings& ws)
 	
 	do
 	{
-		std::memcpy(screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
+		screenBmp.copy(frozenScreen);
 
 		string title = "Select profile:";
 		if (!profileSel.currentNode->fullPath.empty())
@@ -1074,7 +1089,7 @@ int Gfx::selectReplay()
 	
 	do
 	{
-		std::memcpy(screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
+		screenBmp.copy(frozenScreen);
 		
 		string title = "Select replay:";
 		if (!replaySel.currentNode->fullPath.empty())
@@ -1132,7 +1147,7 @@ void Gfx::selectOptions()
 	
 	do
 	{
-		std::memcpy(screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
+		screenBmp.copy(frozenScreen);
 		
 		string title = "Select options:";
 		if (!optionsSel.currentNode->fullPath.empty())
@@ -1198,7 +1213,7 @@ void Gfx::weaponOptions()
 	
 	while(true)
 	{
-		std::memcpy(gfx.screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
+		screenBmp.copy(frozenScreen);
 		
 		drawBasicMenu();
 		
@@ -1316,9 +1331,9 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 		
 		int clrX = x - 10 - adjust;
 		
-		int offset = clrX + y*320; // TODO: Unhardcode 320
+		//int offset = clrX + y*320; // TODO: Unhardcode 320
 		
-		blitImageNoKeyColour(screenBmp, &frozenScreen[offset], clrX, y, clrX + 10 + width, 8, 320);
+		blitImageNoKeyColour(screenBmp, &frozenScreen.getPixel(clrX, y), clrX, y, clrX + 10 + width, 8, frozenScreen.pitch);
 		
 		drawRoundedBox(screenBmp, x - 2 - adjust, y, 0, 7, width);
 		
@@ -1560,7 +1575,7 @@ bool Gfx::loadSettings(std::string const& path)
 
 void Gfx::drawBasicMenu(/*int curSel*/)
 {
-	std::memcpy(screenBmp.pixels, &frozenScreen[0], frozenScreen.size());
+	screenBmp.copy(frozenScreen);
 
 	mainMenu.draw(*common, curMenu != &mainMenu, -1, true);
 }
@@ -1618,7 +1633,7 @@ int Gfx::menuLoop()
 	fadeValue = 0;
 	curMenu = &mainMenu;
 
-	std::memcpy(&frozenScreen[0], screenBmp.pixels, frozenScreen.size());
+	frozenScreen.copy(screenBmp);
 
 	menuCycles = 0;
 	int selected = -1;

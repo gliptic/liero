@@ -31,8 +31,8 @@ int main(int argc, char *argv[])
 try
 {
 	bool exeSet = false, dir = false;
-	gvl::shared_ptr<Common> common(new Common);
-
+	
+	std::string exePath;
 	std::string replayPath;
 	
 	for(int i = 1; i < argc; ++i)
@@ -54,20 +54,23 @@ try
 		}
 		else
 		{
-			setLieroEXE(argv[i]);
+			exePath = argv[i];
 			exeSet = true;
 		}
 	}
 	
 	if(!exeSet)
-		setLieroEXE("LIERO.EXE");
+		exePath = "LIERO.EXE";
 
-	common->texts.loadFromEXE();
+	gvl::shared_ptr<Common> common(new Common(exePath));
+
+	//common->texts.loadFromEXE();
 
 	//initKeys();
-	common->loadConstantsFromEXE();
-	loadTablesFromEXE();
+	//common->loadConstantsFromEXE();
+	//loadTablesFromEXE();
 
+	/*
 	common->font.loadFromEXE();
 	common->loadPalette();
 	common->loadGfx();
@@ -76,6 +79,7 @@ try
 	common->loadTextures();
 	common->loadOthers();
 	common->loadSfx();
+	*/
 
 	if (dir)
 	{

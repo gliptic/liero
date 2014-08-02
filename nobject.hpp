@@ -55,6 +55,7 @@ struct NObject : ExactObjectListBase
 	fixed x, y;
 	fixed velX, velY;
 	int timeLeft;
+	int frameToExplo;
 	int id;
 	int ownerIdx;
 	int curFrame;

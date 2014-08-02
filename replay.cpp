@@ -402,23 +402,10 @@ ReplayWriter::~ReplayWriter()
 	endRecord();
 }
 
-#if 0
-ReplayReader::ReplayReader(gvl::stream_ptr str_init)
-{
-	gvl::shared_ptr<gvl::deflate_filter> df(new gvl::deflate_filter(false));
-
-	df->attach_source(str_init);
-
-	str.reset(new gvl::cache_stream(df));
-
-	reader.attach(str);
-}
-#else
 ReplayReader::ReplayReader(gvl::source str_init)
 {
 	reader.attach(gvl::to_source(new gvl::deflate_source(str_init, false)));
 }
-#endif
 
 //#define DEBUG_REPLAYS
 

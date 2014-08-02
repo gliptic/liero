@@ -23,6 +23,7 @@ struct HiddenMenu : Menu
 		Shadows,
 		ScreenSync,
 		SelectBotWeapons,
+		AiTraces
 	};
 	
 	HiddenMenu(int x, int y)

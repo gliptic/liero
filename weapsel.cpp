@@ -104,11 +104,11 @@ void WeaponSelection::draw()
 			common.font.drawText(gfx.screenBmp, (LS(LevelIs1) + game.settings->levelFile + LS(LevelIs2)), 0, 162, 50);
 		}
 		
-		std::memcpy(&gfx.frozenScreen[0], gfx.screenBmp.pixels, gfx.frozenScreen.size());
+		gfx.frozenScreen.copy(gfx.screenBmp);
 		cachedBackground = true;
 	}
 	
-	std::memcpy(gfx.screenBmp.pixels, &gfx.frozenScreen[0], gfx.frozenScreen.size());
+	gfx.screenBmp.copy(gfx.frozenScreen);
 
 	if(!focused)
 		return;
