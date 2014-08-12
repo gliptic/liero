@@ -206,6 +206,7 @@ Texts::Texts()
 	gameModes[0] = "Kill'em All";
 	gameModes[1] = "Game of Tag";
 	gameModes[2] = "Holdazone";
+	gameModes[3] = "Scales of Justice";
 	
 	onoff[0] = "OFF";
 	onoff[1] = "ON";

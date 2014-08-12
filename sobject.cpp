@@ -101,11 +101,8 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 					
 				if(w.health > 0)
 				{
-					w.health -= z;
+					game.doDamage(w, z, ownerIdx);
 					game.statsRecorder->damageDealt(owner, firedBy, &w, z, false);
-					
-					if(w.health <= 0)
-						w.lastKilledByIdx = ownerIdx;
 						
 					int bloodAmount = game.settings->blood * powerSum / 100;
 					

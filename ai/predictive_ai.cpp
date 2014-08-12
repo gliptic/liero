@@ -249,16 +249,40 @@ double aimingDiff(AiContext& context, Game& game, Worm* from, level_cell* cell)
 	return std::max(aimDiff - tolerance, 0.0) / 6.0;
 }
 
+inline int weaponChangeOffset(int wantedWeapon, int currentWeapon)
+{
+	int offset = wantedWeapon - currentWeapon;
+	offset = ((offset + 2 + 5) % 5) - 2;
+	return offset;
+}
+
+enum MutationType
+{
+	MtIdentity,
+	MtRange,
+	MtOptimize
+};
+
 struct MutationStrategy
 {
-	MutationStrategy(int type, uint32_t start = 0, uint32_t stop = 0)
+	MutationStrategy(MutationType type, uint32_t start = 0, uint32_t stop = 0)
 	: type(type)
 	, start(start)
 	, stop(stop)
 	{
 	}
 
-	int type;
+	static MutationStrategy identity()
+	{
+		return MutationStrategy(MtIdentity);
+	}
+
+	static MutationStrategy optimize()
+	{
+		return MutationStrategy(MtOptimize);
+	}
+
+	MutationType type;
 	uint32_t start;
 	uint32_t stop;
 };
@@ -520,7 +544,8 @@ void SimpleAI::process(Game& game, Worm& worm)
 	worm.controlStates = cs;
 }
 
-EvaluateResult evaluate(
+void evaluate(
+	EvaluateResult& result,
 	FollowAI& ai,
 	Worm* me,
 	Game& game,
@@ -538,7 +563,7 @@ EvaluateResult evaluate(
 
 	FollowAI* targetAi = 0;
 
-#if 1
+#if 0
 	targetAi = dynamic_cast<FollowAI*>(target->ai.get());
 #endif
 
@@ -547,14 +572,34 @@ EvaluateResult evaluate(
 	if (targetAi)
 		targetContext = targetAi->currentContext;
 
-	EvaluateResult result;
 	SimpleAI simpleAi;
 
 	simpleAi.initial = targetCopy->controlStates;
 
 	double prevS = evaluateState(ai, meCopy, copy, context, targetCopy, game, 0);
-	result.scoreOverTime.push_back(prevS);
 
+	if (result.scoreOverTime.size() < planSize + 1)
+		result.scoreOverTime.resize(planSize + 1);
+	result.scoreOverTime[0] = 0.0;
+
+	std::vector<int> weaponChangesLeft;
+	if (ms.type == MtOptimize)
+	{
+		weaponChangesLeft.resize(planSize);
+		int changesLeft = 0;
+		for (std::size_t j = std::min(planSize, plan.size()); j-- > 0; )
+		{
+			if (plan[j].isFiring())
+			{
+				changesLeft = 0;
+			}
+			else if (plan[j].isNeutral())
+			{
+				++changesLeft;
+			}
+			weaponChangesLeft[j] = changesLeft;
+		}
+	}
 	
 	for (std::size_t i = 0; i < planSize; ++i)
 	{
@@ -563,17 +608,53 @@ EvaluateResult evaluate(
 			plan.push_back(generate(ai, ai.rand, context));
 		}
 
-		if (ms.type == 0)
+		if (ms.type == MtIdentity)
 		{
 			// Do nothing
 		}
-		else if (ms.type == 1)
+		else if (ms.type == MtRange)
 		{
 			if (i >= ms.start && i < ms.stop)
 			{
 				plan[i] = generate(ai, ai.rand, context);
 			}
 		}
+		else if (ms.type == MtOptimize)
+		{
+			// If current InputState is move/jump/fire neutral, make it change weapon to a loading weapon
+			// as long as there's time to change back
+
+			if (plan[i].isNeutral()
+			 && meCopy->weapons[meCopy->currentWeapon].loadingLeft == 0)
+			{
+				// Out of all loading weapons that are at most weaponChangesLeft[i] - 1 away from
+				// a loaded weapon, pick the one that is closest to loaded.
+				for (std::size_t w = 0; w < 5; ++w)
+				{
+					if (meCopy->weapons[w].loadingLeft > 0)
+					{
+						int distanceFromCurrent = std::abs(weaponChangeOffset(w, meCopy->currentWeapon));
+						int loadedDistance = 5;
+						for (std::size_t lw = 0; lw < 5; ++lw)
+						{
+							if (meCopy->weapons[lw].loadingLeft == 0)
+							{
+								loadedDistance = std::min(loadedDistance, std::abs(weaponChangeOffset(lw, w)));
+							}
+						}
+
+						int totalDistance = distanceFromCurrent + loadedDistance;
+						if (totalDistance <= weaponChangesLeft[i])
+						{
+							plan[i] = InputState::compose(InputState::ChangeWeapon, w, 0, 0);
+							break;
+						}
+					}
+				}
+				
+			}
+		}
+		/*
 		else if (ms.type == 2)
 		{
 			if (i >= ms.start && i < ms.stop)
@@ -583,9 +664,7 @@ EvaluateResult evaluate(
 					plan[i] = generate(ai, ai.rand, context);
 				while (plan[i].idx == old.idx);
 			}
-		}
-
-		
+		}*/
 
 		meCopy->controlStates = context.update(plan[i], copy, meCopy, ai);
 
@@ -605,35 +684,21 @@ EvaluateResult evaluate(
 			ai.evaluatePositions.push_back(std::make_tuple(gvl::ivec2(meCopy->x, meCopy->y), t));
 		}
 
+		result.scoreOverTime[i + 1] = s - prevS;
+
 		prevS = s;
-
-		result.scoreOverTime.push_back(s);
 	}
-	
-	double prev = result.scoreOverTime[0];
-	result.scoreOverTime[0] = 0.0;
-	for (std::size_t i = 1; i < result.scoreOverTime.size(); ++i)
-	{
-		double score = result.scoreOverTime[i];
-		result.scoreOverTime[i] = score - prev;
-		prev = score;
-	}
-
-	return std::move(result);
 }
 
-EvaluateResult mutate(
+void mutate(
+	EvaluateResult& result,
 	FollowAI& ai,
 	Game& game, Worm& worm, Worm* target, Plan& candidate,
-	int i, EvaluateResult const& prevResult)
+	EvaluateResult const& prevResult)
 {
-	MutationStrategy ms(1, 0, (uint32_t)candidate.size());
+	MutationStrategy ms(MtRange, 0, (uint32_t)candidate.size());
 
-	if (i == 0)
-	{
-		ms.type = 0;
-	}
-	else
+	
 	{
 		// Find the minimum suffix sum
 		uint32_t j = uint32_t(prevResult.scoreOverTime.size() - 1);
@@ -663,10 +728,8 @@ EvaluateResult mutate(
 			ms.stop = ai.rand(ms.start, std::min(ms.start + 10, (uint32_t)candidate.size()));
 		}
 	}
-		
-	EvaluateResult result(evaluate(ai, &worm, game, target, candidate, game.settings->aiFrames, ms));
 
-	return std::move(result);
+	evaluate(result, ai, &worm, game, target, candidate, game.settings->aiFrames, ms);
 }
 
 void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int offsX, int offsY)
@@ -828,28 +891,33 @@ void FollowAI::process(Game& game, Worm& worm)
 	evaluatePositions.clear();
 
 	{
-
-		int evaluations = 0;
 		int candIdx;
+
+		evaluationBudget += (game.settings->aiMutations + 1) * game.settings->aiFrames;
 
 		std::vector<std::pair<double, int>> prio;
 
 		for (candIdx = 0; candIdx < candPlan.size(); ++candIdx)
 		{
 			auto& cand = candPlan[candIdx];
-			if (cand.prevResultAge < 4
+
+			if (cand.prevResultAge < 2
 			&& !cand.prevResult.scoreOverTime.empty())
 			{
-					
+			}
+			else if (cand.prevResult.scoreOverTime.empty())
+			{
+				evaluate(cand.prevResult, *this, &worm, game, target, cand.plan, game.settings->aiFrames, testing ? MutationStrategy::optimize() : MutationStrategy::identity());
+				evaluationBudget -= game.settings->aiFrames;
+				cand.prevResultAge = 0;
 			}
 			else
 			{
-				EvaluateResult result(mutate(*this, game, worm, target, cand.plan, 0, cand.prevResult));
-				++evaluations;
-
-				cand.prevResult = std::move(result);
+				evaluate(cand.prevResult, *this, &worm, game, target, cand.plan, game.settings->aiFrames / 2, testing ? MutationStrategy::optimize() : MutationStrategy::identity());
+				evaluationBudget -= game.settings->aiFrames / 2;
 				cand.prevResultAge = 0;
 			}
+			
 
 			double weightedScore = cand.prevResult.weightedScore();
 			if (weightedScore >= bestScore)
@@ -865,12 +933,13 @@ void FollowAI::process(Game& game, Worm& worm)
 			return a.first > b.first;
 		} );
 
-		for (candIdx = 0; evaluations < game.settings->aiMutations + 1; )
+		for (candIdx = 0; evaluationBudget > 0;)
 		{
 			auto& cand = candPlan[prio[candIdx].second];
 			auto candidate = cand.plan;
-			EvaluateResult result(mutate(*this, game, worm, target, candidate, 1, cand.prevResult));
-			++evaluations;
+			EvaluateResult result;
+			mutate(result, *this, game, worm, target, candidate, cand.prevResult);
+			evaluationBudget -= game.settings->aiFrames;
 
 			double weightedScore = result.weightedScore();
 			if (weightedScore > bestScore)
@@ -891,7 +960,11 @@ void FollowAI::process(Game& game, Worm& worm)
 	auto prevContext = currentContext;
 
 	worm.controlStates = currentContext.update(best->plan[0], game, &worm, *this);
-	model.update(currentContext, best->plan[0]);
+
+	if (frame < 70 * 2 * 60)
+	{
+		model.update(currentContext, best->plan[0]);
+	}
 
 	for (auto& p : candPlan)
 	{
@@ -918,14 +991,15 @@ void FollowAI::process(Game& game, Worm& worm)
 	*/
 }
 
+
+
 Worm::ControlState InputContext::update(InputState newState, Game& game, Worm* worm, AiContext& aiContext)
 {
 	Worm::ControlState cs;
 
 	if (worm->visible && wantedWeapon != worm->currentWeapon)
 	{
-		int offset = wantedWeapon - worm->currentWeapon;
-		offset = ((offset + 2 + 5) % 5) - 2;
+		int offset = weaponChangeOffset(wantedWeapon, worm->currentWeapon);
 		cs.set(Worm::Left, offset < 0);
 		cs.set(Worm::Right, offset > 0);
 		cs.set(Worm::Change, true);
@@ -1037,6 +1111,9 @@ TransModel::TransModel(Weights& weights, bool testing)
 			if (type == InputState::MoveJumpFire)
 			{
 				double m = 0.95, c = 0.03, r = 0.02;
+
+				c += 0.07;
+				m -= 0.07;
 
 #if 0 // Doesn't seem to help
 				if (testing)

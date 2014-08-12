@@ -254,7 +254,7 @@ void Worm::process(Game& game)
 	if(health > settings->health)
 		health = settings->health;
 	
-	if(game.settings->gameMode != Settings::GMKillEmAll
+	if((game.settings->gameMode != Settings::GMKillEmAll && game.settings->gameMode != Settings::GMScalesOfJustice)
 	|| lives > 0)
 	{
 		if(visible)
@@ -359,9 +359,9 @@ void Worm::process(Game& game)
 						if(health < settings->health)
 						{
 							game.bonuses.free(i);
-							health += (game.rand(LC(BonusHealthVar)) + LC(BonusMinHealth)) * settings->health / 100; // TODO: Read from EXE
-							if(health > settings->health)
-								health = settings->health;
+							
+							game.doHealing(*this, (game.rand(LC(BonusHealthVar)) + LC(BonusMinHealth)) * settings->health / 100);
+							
 						}
 					}
 					else if(i->frame == 0)
@@ -495,6 +495,8 @@ void Worm::process(Game& game)
 				fireConeActive = 0;
 				ninjarope.out = false;
 				--lives;
+				if (game.settings->gameMode == Settings::GMScalesOfJustice)
+					health = settings->health;
 
 				int oldLastKilled = game.lastKilledIdx;
 				// For GameOfTag, 'it' doesn't change if the killer
@@ -560,6 +562,7 @@ void Worm::process(Game& game)
 		else
 		{
 			// Worm is dead
+			steerableCount = 0;
 			
 			if(pressedOnce(Fire))
 			{
@@ -985,7 +988,8 @@ void Worm::doRespawning(Game& game)
 		fireConeActive = 0;
 		velX = 0;
 		velY = 0;
-		health = settings->health;
+		if (game.settings->gameMode != Settings::GMScalesOfJustice)
+			health = settings->health;
 		
 		// NOTE: This was done at death before, but doing it here seems to make more sense
 		if(game.rand() & 1)

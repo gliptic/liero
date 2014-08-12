@@ -43,6 +43,11 @@ void StatsRecorder::tick(Game& game)
 {
 
 }
+
+void StatsRecorder::aiProcessTime(Worm* worm, uint64_t time)
+{
+}
+
 /*
 void StatsRecorder::write(Common& common, gvl::stream_ptr sink)
 {
@@ -157,6 +162,18 @@ void NormalStatsRecorder::tick(Game& game)
 		{
 			presence.inc(ftoi(w->x), ftoi(w->y));
 			ws.presence.inc(ftoi(w->x), ftoi(w->y));
+
+			bool ok = true;
+			if (!w->controlStates[Worm::Control::Fire]
+			 && (!w->controlStates[Worm::Control::Change] || (!w->controlStates[Worm::Control::Left] && !w->controlStates[Worm::Control::Right]))
+			 && w->weapons[w->currentWeapon].loadingLeft == 0
+			 && std::find_if(w->weapons, w->weapons + 5, [](WormWeapon& ww) { return ww.loadingLeft > 0; }) != w->weapons + 5)
+			{
+				ok = false;
+			}
+			
+			ws.weaponChangeGood += ok;
+			ws.weaponChangeBad += !ok;
 		}
 	}
 
@@ -181,6 +198,13 @@ void NormalStatsRecorder::finish(Game& game)
 
 	gameTime = frame;
 }
+
+void NormalStatsRecorder::aiProcessTime(Worm* worm, uint64_t time)
+{
+	WormStats& w = worms[worm->index];
+	w.aiProcessTime += time;
+}
+
 /*
 void NormalStatsRecorder::write(Common& common, gvl::stream_ptr sink)
 {

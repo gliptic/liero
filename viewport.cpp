@@ -160,6 +160,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	switch(game.settings->gameMode)
 	{
 	case Settings::GMKillEmAll:
+	case Settings::GMScalesOfJustice:
 	{
 		common.font.drawText(renderer.screenBmp, (LS(Lives) + toString(worm.lives)), inGameX, 178, 6);
 	}

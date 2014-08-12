@@ -1,6 +1,7 @@
 
 #include "localController.hpp"
 
+#include <gvl/system/system.hpp>
 #include "stats_presenter.hpp"
 #include "../keys.hpp"
 #include "../gfx.hpp"
@@ -14,13 +15,13 @@
 
 #include <cctype>
 
-gvl::shared_ptr<WormAI> createAi(int controller, Worm& worm)
+gvl::shared_ptr<WormAI> createAi(int controller, Worm& worm, Settings& settings)
 {
 	if (controller == 1)
 		return gvl::shared_ptr<WormAI>(new DumbLieroAI());
 	else if (controller == 2)
 		return gvl::shared_ptr<WormAI>(new FollowAI(
-			Weights(), worm.index == 0));
+			Weights(), settings.aiParallels, worm.index == 0));
 
 	return gvl::shared_ptr<WormAI>();
 }
@@ -35,13 +36,13 @@ LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr
 	worm1->settings = settings->wormSettings[0];
 	worm1->health = worm1->settings->health;
 	worm1->index = 0;
-	worm1->ai = createAi(worm1->settings->controller, *worm1);
+	worm1->ai = createAi(worm1->settings->controller, *worm1, *settings);
 	
 	Worm* worm2 = new Worm();
 	worm2->settings = settings->wormSettings[1];
 	worm2->health = worm2->settings->health;
 	worm2->index = 1;
-	worm2->ai = createAi(worm2->settings->controller, *worm2);
+	worm2->ai = createAi(worm2->settings->controller, *worm2, *settings);
 
 #if 0
 	for(int i = 0; i < 10; ++i)
@@ -150,7 +151,12 @@ bool LocalController::process()
 			{
 				Worm& worm = *game.worms[(i + phase) % game.worms.size()];
 				if(worm.ai.get())
+				{
+					uint64_t time = gvl::get_hires_ticks();
 					worm.ai->process(game, worm);
+					time = gvl::get_hires_ticks() - time;
+					game.statsRecorder->aiProcessTime(&worm, time);
+				}
 			}
 			if(replay.get())
 			{

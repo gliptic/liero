@@ -30,7 +30,7 @@ struct Texts
 {
 	Texts();
 
-	std::string gameModes[3];
+	std::string gameModes[4];
 	std::string onoff[2];
 	std::string controllers[3];
 	

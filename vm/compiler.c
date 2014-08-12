@@ -2,6 +2,8 @@
 
 #include "tyvm.h"
 #include "asm.h"
+#include <string.h>
+#include <tl/vector.h>
 
 void dump_asm(u8* beg, u8* end);
 
@@ -275,6 +277,14 @@ enum {
 	T_EOF
 };
 
+typedef struct parse_label {
+	char const *name, *name_end;
+	int is_code;
+	uint32_t value;
+} parse_label;
+
+tl_def_vector(label_vec, parse_label)
+
 typedef struct parser {
 	int token, line;
 	char const* cur;
@@ -282,9 +292,12 @@ typedef struct parser {
 	char const* tok_data;
 	char const* tok_data_end;
 	u32 tok_int_data;
+	u8 tok_cnd;
 
 	u8* dest;
 	u8* dest_end;
+
+	label_vec labels;
 } parser;
 
 #define KW4(a,b,c,d) (((a)<<24)+((b)<<16)+((c)<<8)+(d))
@@ -334,6 +347,7 @@ repeat:
 				switch (kw) {
 				case KW3('S', 'E', 'T'): P->token = T_SET; break;
 				case KW3('A', 'D', 'D'): P->token = OP_ADD; break;
+				case KW2('J', 'L'): P->token = OP_JCND; P->tok_cnd = JCND_JL; break;
 				//case KW3('S', 'U', 'B'): P->token = OP_SUB; break;
 				//case KW3('J', 'S', 'R'): P->token = T_JSR; break;
 				//case KW3('I', 'F', 'E'): P->token = OP_IFE; break;
@@ -455,6 +469,41 @@ static u16 r_operand(parser* P) {
 	}
 }*/
 
+typedef struct pending_label_parse {
+	u8* loc;
+	char const *name, *name_end;
+	int kind;
+} pending_label_parse;
+
+// TODO: Check that addr-labels are aligned
+
+#define FLUSH_LABELS_PARSE() do { \
+	struct pending_label_parse* p = pending_labels; \
+	for (; p != pending_labels_next; ) { \
+		tl_vector_foreach(P->labels.v, parse_label, l, { \
+			if (l->name_end - l->name == p->name_end - p->name \
+			 && memcmp(l->name, p->name, p->name_end - p->name)) { \
+				((u32*)p->loc)[-1] = l->value; \
+				--pending_labels_next; \
+				*p = *pending_labels_next; \
+				--p; \
+				break; \
+			} \
+		}); \
+		++p; \
+	} \
+} while (0)
+
+#define PENDING_LABEL_PARSE(_name, _name_end) do { \
+	pending_labels_next->loc = P->dest; \
+	pending_labels_next->name = (_name); \
+	pending_labels_next->name_end = (_name_end); \
+	pending_labels_next->kind = LABEL_JUMP; \
+	if (++pending_labels_next == pending_labels_end) { \
+		FLUSH_LABELS_PARSE(); \
+	} \
+} while (0)
+
 int r_reg(parser* P) {
 	int t = P->token;
 	if (t >= T_A && t <= T_J) {
@@ -465,16 +514,19 @@ int r_reg(parser* P) {
 }
 
 void r_file(parser* P) {
-	while (P->token < 256 || P->token == T_NL || P->token == T_COLON) {
+	pending_label_parse pending_labels[1024], *pending_labels_next = pending_labels, *pending_labels_end = pending_labels + 1024;
+
+	uint32_t pos = 0;
+	while (P->token < 256 || P->token == T_NL || P->token == T_COLON || P->token == T_IDENT) {
 		switch (P->token) {
 		case T_SET: {
 			int r;
 			lex(P);
 			r = r_reg(P);
 			expect(P, T_COMMA);
+			*P->dest++ = OP_LOADK32;
+			*P->dest++ = r;
 			if (P->token == T_INT) {
-				*P->dest++ = OP_LOADK32;
-				*P->dest++ = r;
 				*P->dest++ = (u8)P->tok_int_data;
 				*P->dest++ = (u8)(P->tok_int_data >> 8);
 				*P->dest++ = (u8)(P->tok_int_data >> 16);
@@ -484,6 +536,36 @@ void r_file(parser* P) {
 				// TODO: Labels/constants
 				parse_error(P);
 			}
+			++pos;
+			break;
+		}
+		case T_IDENT: {
+			parse_label l;
+			l.name = P->tok_data;
+			l.name_end = P->tok_data_end;
+			l.value = pos;
+			l.is_code = 1;
+			label_vec_pushback(&P->labels, l);
+			lex(P);
+			expect(P, T_COLON);
+			break;
+		}
+		case OP_JCND: {
+			int r, sr;
+			u32 op;
+			*P->dest++ = OP_JCND;
+			op = P->tok_cnd;
+			lex(P);
+			
+			// TODO: emit
+			r = r_reg(P);
+			expect(P, T_COMMA);
+			sr = r_reg(P);
+			expect(P, T_COMMA);
+			if (P->token == T_IDENT) {
+				PENDING_LABEL_PARSE(P->tok_data, P->tok_data_end);
+			}
+			
 			break;
 		}
 		case OP_ADD: {
@@ -495,6 +577,7 @@ void r_file(parser* P) {
 			sr = r_reg(P);
 			*P->dest++ = op;
 			*P->dest++ = r | (sr << 4);
+			++pos;
 			break;
 		}
 		case T_NL:
@@ -509,6 +592,8 @@ void r_file(parser* P) {
 
 	*P->dest++ = 127;
 
+	FLUSH_LABELS_PARSE();
+
 	expect(P, T_EOF);
 }
 
@@ -521,6 +606,7 @@ u8* parse(char const* str) {
 	P.cur = str;
 	P.dest = buf;
 	P.dest_end = buf + 4096;
+	label_vec_init_empty(&P.labels);
 
 	lex(&P);
 
@@ -561,7 +647,9 @@ int main() {
 	};*/
 	u8* instr = parse(
 		"SET A, 10\n"
-		"ADD A, B\n");
+		"a: SET B, 20\n"
+		"ADD A, B\n"
+		"JL A, B, a\n");
 	tyvm_compile(&m, instr, instr + 4096);
 	return 0;
 }

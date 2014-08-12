@@ -28,6 +28,7 @@ struct Extensions
 
 	int aiFrames, aiMutations;
 	bool aiTraces;
+	int aiParallels;
 	
 	int fullscreenW;
 	int fullscreenH;
@@ -44,7 +45,8 @@ struct Settings : gvl::shared, Extensions
 	{
 		GMKillEmAll,
 		GMGameOfTag,
-		GMHoldazone
+		GMHoldazone,
+		GMScalesOfJustice
 	};
 	
 	enum
@@ -246,7 +248,8 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 			.ui16(settings.zoneTimeout, 30);
 
 		gvl::enable_when(ar, fileExtensionVersion >= 5)
-			.b(settings.aiTraces, false);
+			.b(settings.aiTraces, false)
+			.ui16(settings.aiParallels, 3);
 	}
 	catch(std::runtime_error&)
 	{

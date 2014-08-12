@@ -205,7 +205,6 @@
   <ItemGroup>
     <ClInclude Include="..\ai\astar.hpp" />
     <ClInclude Include="..\ai\dijkstra.hpp" />
-    <ClInclude Include="..\ai\markov_model.hpp" />
     <ClInclude Include="..\ai\predictive_ai.hpp" />
     <ClInclude Include="..\ai\work_queue.hpp" />
     <ClInclude Include="..\controller\commonController.hpp" />

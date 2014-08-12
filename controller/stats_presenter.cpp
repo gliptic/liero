@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <type_traits>
 #include <gvl/io/encoding.hpp>
+#include <gvl/system/system.hpp>
 #include "text.hpp"
 #include "stats.hpp"
 #include "game.hpp"
@@ -317,6 +318,15 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 			renderer.y = oldy;
 
+			{
+				uint64_t ticks_per_sec = gvl::hires_ticks_per_sec();
+
+				renderer.drawWormStat("ai processing", [&](WormStats& w, cell& c) {
+					c << (int)(w.aiProcessTime * 1000 / ticks_per_sec) << "ms";
+				});
+			}
+			
+
 			if (game.settings->gameMode == Settings::GMHoldazone
 			 || game.settings->gameMode == Settings::GMGameOfTag)
 			{
@@ -343,6 +353,10 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 				int min, max;
 				w.lifeStats(min, max);
 				c << timeToStringFrames(max);
+			});
+
+			renderer.drawWormStat("loading efficiency", [](WormStats& w, cell& c) {
+				c << percent(w.weaponChangeGood, w.weaponChangeGood + w.weaponChangeBad);
 			});
 
 			renderer.gap();

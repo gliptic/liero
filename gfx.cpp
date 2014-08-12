@@ -186,6 +186,51 @@ struct ProfileLoadedBehavior : ItemBehavior
 	WormSettings& ws;
 };
 
+#define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
+ 
+int levenshtein(char const *s1, char const *s2) {
+    unsigned int x, y, s1len, s2len;
+    s1len = strlen(s1);
+    s2len = strlen(s2);
+	unsigned w = s1len+1;
+	std::vector<unsigned> matrix(w * (s2len + 1));
+    matrix[0] = 0;
+    for (x = 1; x <= s2len; x++)
+        matrix[x*w] = matrix[(x-1)*w] + 1;
+    for (y = 1; y <= s1len; y++)
+        matrix[y] = matrix[y-1] + 1;
+    for (x = 1; x <= s2len; x++)
+        for (y = 1; y <= s1len; y++)
+		{
+			int c = std::tolower(s1[y-1]) == std::tolower(s2[x-1]) ? 0 : 1;
+            matrix[x*w + y] = MIN3(matrix[(x-1)*w + y] + 1, matrix[x*w + y - 1] + 1, matrix[(x-1)*w + y - 1] + c);
+		}
+ 
+    return(matrix[s2len*w + s1len]);
+}
+/*
+
+#define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
+ 
+int levenshtein(char const *s1, char const *s2) {
+    unsigned int s1len, s2len, x, y, lastdiag, olddiag;
+    s1len = strlen(s1);
+    s2len = strlen(s2);
+    std::vector<unsigned int> column(s1len+1);
+    for (y = 1; y <= s1len; y++)
+        column[y] = y;
+    for (x = 1; x <= s2len; x++) {
+        column[0] = x;
+        for (y = 1, lastdiag = x-1; y <= s1len; y++) {
+            olddiag = column[y];
+			int c = std::tolower(s1[y-1]) == std::tolower(s2[x-1]) ? 0 : 1;
+            column[y] = MIN3(column[y] + 1, column[y-1] + 1, lastdiag + c);
+            lastdiag = olddiag;
+        }
+    }
+    return(column[s1len]);
+}*/
+
 struct WeaponEnumBehavior : EnumBehavior
 {
 	WeaponEnumBehavior(Common& common, uint32_t& v)
@@ -198,6 +243,40 @@ struct WeaponEnumBehavior : EnumBehavior
 		item.value = common.weapons[common.weapOrder[v]].name;
 		item.hasValue = true;
 	}
+
+	int onEnter(Menu& menu, MenuItem& item)
+	{
+		sfx.play(common, 27);
+
+		int x, y;
+		if(!menu.itemPosition(item, x, y))
+			return -1;
+			
+		x += menu.valueOffsetX + 2;
+
+		std::string search;
+		if (gfx.inputString(search, 10, x, y))
+		{
+			uint32_t minimumi;
+			double minimum = DBL_MAX;
+			for (uint32_t i = min; i <= max; ++i)
+			{
+				std::string& name = common.weapons[common.weapOrder[i]].name;
+
+				double dist = levenshtein(name.c_str(), search.c_str()) / (double)name.length();
+				if (dist < minimum)
+				{
+					minimumi = i;
+					minimum = dist;
+				}
+			}
+
+			v = minimumi;
+			menu.updateItems(common);
+		}
+
+		return -1;
+	}
 };
 
 Gfx::Gfx()
@@ -207,7 +286,6 @@ Gfx::Gfx()
 , hiddenMenu(178, 20)
 , curMenu(0)
 , back(0)
-//, frozenScreen(320 * 200)
 , running(true)
 , fullscreen(false)
 , menuCycles(0)
@@ -224,7 +302,7 @@ void Gfx::init()
 {
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
 	SDL_EnableUNICODE(1);
-	SDL_WM_SetCaption("Liero 1.36", 0);
+	SDL_WM_SetCaption("Liero 1.37", 0);
 	SDL_ShowCursor(SDL_DISABLE);
 	lastFrame = SDL_GetTicks();
 
@@ -280,10 +358,11 @@ void Gfx::loadMenus()
 	hiddenMenu.addItem(MenuItem(48, 7, "AUTO-RECORD REPLAYS", HiddenMenu::RecordReplays));
 	hiddenMenu.addItem(MenuItem(48, 7, "AI FRAMES", HiddenMenu::AiFrames));
 	hiddenMenu.addItem(MenuItem(48, 7, "AI MUTATIONS", HiddenMenu::AiMutations));
+	hiddenMenu.addItem(MenuItem(48, 7, "AI PARALLELS", HiddenMenu::AiParallels));
+	hiddenMenu.addItem(MenuItem(48, 7, "AI TRACES", HiddenMenu::AiTraces));
 	hiddenMenu.addItem(MenuItem(48, 7, "PALETTE", HiddenMenu::PaletteSelect));
 	hiddenMenu.addItem(MenuItem(48, 7, "BOT WEAPONS", HiddenMenu::SelectBotWeapons));
-	hiddenMenu.addItem(MenuItem(48, 7, "AI TRACES", HiddenMenu::AiTraces));
-
+	
 	playerMenu.addItem(MenuItem(3, 7, "PROFILE LOADED", PlayerMenu::PlLoadedProfile));
 	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE", PlayerMenu::PlSaveProfile));
 	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE AS...", PlayerMenu::PlSaveProfileAs));
@@ -911,6 +990,7 @@ void SettingsMenu::onUpdate()
 	switch(gfx.settings->gameMode)
 	{
 		case Settings::GMKillEmAll:
+		case Settings::GMScalesOfJustice:
 			setVisibility(SiLives, true);
 		break;
 		

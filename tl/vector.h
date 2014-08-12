@@ -40,7 +40,7 @@
 	t* e_ = ((t*)var + fv_->size); \
 	for(; var != e_; ++var) \
 		body \
-} while(0)x
+} while(0)
 
 #define tl_vector_filtereach(v, t, var, body) do { \
 	tl_vector* fi_v_##var = &(v); \
@@ -113,6 +113,8 @@ TL_INLINE t* name##_idx(name* V, size_t i) { return tl_vector_idx(V->v, t, i); }
 TL_INLINE size_t name##_size(name* V) { return tl_vector_size(V->v); } \
 TL_INLINE void name##_destroy(name* V) { tl_vector_free(V->v); } \
 TL_INLINE void name##_pushback(name* V, t e) { tl_vector_pushback(V->v, t, e); } \
-TL_INLINE tl_vector* name##_super(name* V, t e) { return &V->v; }
+TL_INLINE void name##_enlarge(name* V, size_t extra) { tl_vector_enlarge(V->v, t, extra); } \
+TL_INLINE void name##_post_enlarge(name* V, size_t extra) { tl_vector_post_enlarge(V->v, t, extra); } \
+TL_INLINE tl_vector* name##_super(name* V) { return &V->v; }
 
 #endif // UUID_C8B889F6B0254CE3F7AE58B920794A20

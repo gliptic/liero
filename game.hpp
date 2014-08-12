@@ -67,7 +67,10 @@ struct Game
 	void draw(Renderer& renderer, bool isReplay = false);
 	void startGame();
 	bool isGameOver();
-
+	void doDamageDirect(Worm& w, int amount, int byIdx);
+	void doHealingDirect(Worm& w, int amount);
+	void doDamage(Worm& w, int amount, int byIdx);
+	void doHealing(Worm& w, int amount);
 	void postClone(Game& original, bool complete = false);
 
 	void spawnZone();

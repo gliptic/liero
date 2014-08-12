@@ -129,8 +129,5 @@
     <ClInclude Include="..\menu\mainMenu.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\ai\markov_model.hpp">
-      <Filter>ai</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

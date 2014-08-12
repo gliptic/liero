@@ -402,17 +402,12 @@ void WObject::process(Game& game)
 				worm.velX += (velX * w.blowAway) / 100;
 				worm.velY += (velY * w.blowAway) / 100;
 				
-				worm.health -= w.hitDamage;
+				game.doDamage(worm, w.hitDamage, ownerIdx);
 				game.statsRecorder->damageDealt(owner, firedBy, &worm, w.hitDamage, hasHit);
 				if (!hasHit)
 					game.statsRecorder->hit(owner, firedBy, &worm);
 				hasHit = true;
 
-				if(worm.health <= 0)
-				{
-					worm.lastKilledByIdx = ownerIdx;
-				}
-				
 				int bloodAmount = w.bloodOnHit * game.settings->blood / 100;
 				
 				for(int i = 0; i < bloodAmount; ++i)

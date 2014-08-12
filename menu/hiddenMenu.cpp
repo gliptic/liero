@@ -76,6 +76,8 @@ ItemBehavior* HiddenMenu::getItemBehavior(Common& common, MenuItem& item)
 			return new ArrayEnumBehavior(common, gfx.settings->selectBotWeapons, botWeaponSel);
 		case AiTraces:
 			return new BooleanSwitchBehavior(common, gfx.settings->aiTraces);
+		case AiParallels:
+			return new IntegerBehavior(common, gfx.settings->aiParallels, 1, 16);
 
 		default:
 			return Menu::getItemBehavior(common, item);

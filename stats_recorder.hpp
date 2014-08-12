@@ -21,6 +21,8 @@ struct StatsRecorder : gvl::shared
 	virtual void tick(Game& game);
 	virtual void finish(Game& game);
 
+	virtual void aiProcessTime(Worm* worm, uint64_t time);
+
 	//virtual void write(Common& common, gvl::stream_ptr sink);
 };
 
@@ -68,6 +70,9 @@ struct WormStats
 	, damageHm(504 / 2, 350 / 2, 504, 350)
 	, presence(504 / 2, 350 / 2, 504, 350)
 	, lives(0), timer(0), kills(0)
+	, aiProcessTime(0)
+	, weaponChangeGood(0)
+	, weaponChangeBad(0)
 	{
 		for (int i = 0; i < 40; ++i)
 			weapons[i].index = i;
@@ -96,13 +101,15 @@ struct WormStats
 	WeaponStats weapons[40];
 	int damage, damageDealt, selfDamage;
 	Heatmap damageHm, presence;
-
+	int weaponChangeGood, weaponChangeBad;
+	
 	std::vector<WormFrameStats> wormFrameStats;
 
 	int spawnTime;
 	int index;
 
 	int lives, timer, kills;
+	uint64_t aiProcessTime;
 };
 
 struct NormalStatsRecorder : StatsRecorder
@@ -138,6 +145,8 @@ struct NormalStatsRecorder : StatsRecorder
 	void tick(Game& game);
 
 	void finish(Game& game);
+	void aiProcessTime(Worm* worm, uint64_t time);
+	
 
 	//void write(Common& common, gvl::stream_ptr sink);
 };

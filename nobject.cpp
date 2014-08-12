@@ -237,15 +237,12 @@ void NObject::process(Game& game)
 					w.velX += t.blowAway * velX / 100;
 					w.velY += t.blowAway * velY / 100;
 
-					w.health -= t.hitDamage;
+					game.doDamage(w, t.hitDamage, ownerIdx);
 
 					Worm* owner = game.wormByIdx(ownerIdx);
 					game.statsRecorder->damageDealt(owner, firedBy, &w, t.hitDamage, hasHit);
 					hasHit = true;
 					
-					if(w.health <= 0)
-						w.lastKilledByIdx = ownerIdx;
-						
 					if(t.hitDamage > 0)
 					{
 						if(w.health > 0

@@ -57,7 +57,7 @@ struct WormWeapon
 	int ammo;
 	int delayLeft;
 	int loadingLeft;
-	bool available;			
+	bool available;	// TODO: This is unnecessary, available == loadingLeft == 0
 };
 
 struct WormSettingsExtensions
@@ -282,7 +282,6 @@ struct Worm : gvl::shared
 		ready = true;
 		movable = true;
 		
-		//health = settings->health;
 		visible = false;
 		killedTimer = 150;
 	}

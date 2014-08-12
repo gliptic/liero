@@ -30,6 +30,7 @@ Extensions::Extensions()
 , zoneTimeout(30)
 , selectBotWeapons(true)
 , aiTraces(false)
+, aiParallels(3)
 {
 }
 

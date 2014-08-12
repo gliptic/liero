@@ -500,7 +500,7 @@ void Game::startGame()
 
 bool Game::isGameOver()
 {
-	if(settings->gameMode == Settings::GMKillEmAll)
+	if(settings->gameMode == Settings::GMKillEmAll || settings->gameMode == Settings::GMScalesOfJustice)
 	{
 		for(std::size_t i = 0; i < worms.size(); ++i)
 		{
@@ -524,6 +524,100 @@ bool Game::isGameOver()
 	}
 
 	return false;
+}
+
+void Game::doDamageDirect(Worm& w, int amount, int byIdx)
+{
+	if (amount > 0)
+	{
+		if (settings->gameMode == Settings::GMScalesOfJustice)
+			amount = std::min(amount, w.health);
+		w.health -= amount;
+		if (w.health <= 0)
+		{
+			w.lastKilledByIdx = byIdx;
+		}
+	}
+}
+
+void Game::doHealingDirect(Worm& w, int amount)
+{
+	w.health += amount;
+	if (settings->gameMode == Settings::GMScalesOfJustice)
+	{
+		while (w.health > w.settings->health)
+		{
+			w.lives += 1;
+			w.health -= w.settings->health;
+		}
+	}
+	else
+	{
+		if (w.health > w.settings->health)
+		{
+			w.health = w.settings->health;
+		}
+	}
+}
+
+void Game::doDamage(Worm& w, int amount, int byIdx)
+{
+	doDamageDirect(w, amount, byIdx);
+
+	if (amount > 0)
+	{
+		if (settings->gameMode == Settings::GMScalesOfJustice)
+		{
+			if (byIdx < 0)
+			{
+				int parts = worms.size() - 1;
+				int left = amount;
+
+				for (Worm* other : worms)
+				{
+					if (other != &w)
+					{
+						int k = left / parts;
+						doHealingDirect(*other, k);
+						parts -= 1;
+						left -= k;
+					}
+				}
+			}
+			else if (byIdx != w.index)
+			{
+				doHealingDirect(*worms[byIdx], amount);
+			}
+		}
+	}
+}
+
+void Game::doHealing(Worm& w, int amount)
+{
+	doHealingDirect(w, amount);
+	
+	if (settings->gameMode == Settings::GMScalesOfJustice)
+	{
+		int parts = worms.size() - 1;
+		int left = amount;
+
+		for (Worm* other : worms)
+		{
+			if (other != &w)
+			{
+				int k = left / parts;
+				doDamageDirect(*other, k, w.index);
+				parts -= 1;
+				left -= k;
+			}
+		}
+	}
+	else
+	{
+		if(w.health > w.settings->health)
+			w.health = w.settings->health;
+	}
+	
 }
 
 bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x, int y)

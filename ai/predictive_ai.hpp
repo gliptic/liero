@@ -56,7 +56,21 @@ struct InputState
 
 	int idx; // 0..56
 
-	Type decompose(int& pa, int& pb, int& pc)
+	bool isNeutral() const
+	{
+		int pa, pb, pc;
+		auto type = decompose(pa, pb, pc);
+		return type == ChangeWeapon
+		    /*|| (type == MoveJumpFire && pc == 0)*/;
+	}
+
+	bool isFiring() const
+	{
+		int dummy, pc;
+		return decompose(dummy, dummy, pc) == MoveJumpFire && ((pc >> 1) & 1);
+	}
+
+	Type decompose(int& pa, int& pb, int& pc) const
 	{
 		int i = idx;
 		if (i < 48)
@@ -372,14 +386,16 @@ struct CandPlan
 
 struct FollowAI : WormAI, AiContext
 {
-	FollowAI(Weights weights, bool testing, FollowAI* targetAiInit = 0)
+	FollowAI(Weights weights, int candPopSize, bool testing, FollowAI* targetAiInit = 0)
 	: frame(0)
 	, model(weights, testing)
+	, evaluationBudget(0)
 	, targetAi(targetAiInit)
 	, effectScaler(0)
 	, weights(weights)
-	, candPlan(3)
+	, candPlan(candPopSize)
 	, best(0)
+	, testing(testing)
 #if AI_THREADS
 	, workQueue(2)
 #endif
@@ -398,6 +414,7 @@ struct FollowAI : WormAI, AiContext
 	int frame;
 	InputContext currentContext;
 	TransModel model;
+	int evaluationBudget;
 
 	std::vector<std::tuple<gvl::ivec2, PalIdx>> evaluatePositions;
 
@@ -408,6 +425,8 @@ struct FollowAI : WormAI, AiContext
 
 	std::vector<CandPlan> candPlan;
 	CandPlan* best;
+
+	bool testing;
 
 #if AI_THREADS
 	WorkQueue workQueue;
