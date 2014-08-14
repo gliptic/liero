@@ -17,9 +17,9 @@ struct deflate_source : bucket_pipe, octet_reader
 	shared_ptr<bucket_pipe> sink;
 	std::unique_ptr<bucket_data_mem> cur_out;
 
-	deflate_source(source const& src, bool compress)
+	deflate_source(source const& src, bool compress, bool pull = true)
 	: octet_reader(src)
-	, pull(true)
+	, pull(pull)
 	, compress(compress)
 	{
 		str.zalloc = 0;
@@ -39,6 +39,14 @@ struct deflate_source : bucket_pipe, octet_reader
 
 	~deflate_source()
 	{
+		if (compress)
+		{
+			while (drive(MZ_FINISH) == source_result::ok)
+			{
+				try_write_cur();
+			}
+		}
+
 		mz_inflateEnd(&str);
 	}
 
@@ -75,6 +83,9 @@ struct deflate_source : bucket_pipe, octet_reader
 #if 1
 	sink_result try_write_cur()
 	{
+		if (cur_out->size() == 0)
+			return sink_result::ok;
+
 		auto r = sink->write(std::move(cur_out));
 		if (!r)
 		{
@@ -116,6 +127,9 @@ struct deflate_source : bucket_pipe, octet_reader
 			else
 			{
 				set_bucket_(shared_ptr<bucket_data_mem>(data.release()));
+				str.avail_in = (unsigned int)buf_left();
+				sassert(str.avail_in > 0);
+				str.next_in = (unsigned char*)cur_;
 
 				auto s = drive();
 				if (s != source_result::ok)
@@ -128,28 +142,33 @@ struct deflate_source : bucket_pipe, octet_reader
 	}
 #endif
 
-	source_result::status drive(bool flush = false)
+	source_result::status drive(int deflate_flags = MZ_NO_FLUSH)
 	{
 		if (empty())
 			return source_result::eos;
 			
-		int deflate_flags = flush ? MZ_SYNC_FLUSH : MZ_NO_FLUSH;
-
 		while (true)
 		{
-			if (str.avail_in == 0 && pull)
+			if (str.avail_in == 0)
 			{
-				cur_ = end_;
-				auto s = next_piece_();
-				if (s == source_result::ok)
+				if (pull)
 				{
-					str.avail_in = (unsigned int)buf_left();
-					sassert(str.avail_in > 0);
-					str.next_in = (unsigned char*)cur_;
+					cur_ = end_;
+					auto s = next_piece_();
+					if (s == source_result::ok)
+					{
+						str.avail_in = (unsigned int)buf_left();
+						sassert(str.avail_in > 0);
+						str.next_in = (unsigned char*)cur_;
+					}
+					else if (s != source_result::eos)
+					{
+						return s;
+					}
 				}
-				else if (s != source_result::eos)
+				else if (deflate_flags != MZ_FINISH) // If MZ_FINISH, we wait until mz reports the stream to be done
 				{
-					return s;
+					return source_result::ok;
 				}
 			}
 

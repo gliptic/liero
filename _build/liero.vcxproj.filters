@@ -88,12 +88,6 @@
     <ClCompile Include="..\gvl\io\convert.cpp">
       <Filter>gvl\io</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\io\encoding.cpp">
-      <Filter>gvl\io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\gvl\io\stream.cpp">
-      <Filter>gvl\io</Filter>
-    </ClCompile>
     <ClCompile Include="..\gvl\system\system.c">
       <Filter>gvl\system</Filter>
     </ClCompile>
@@ -177,24 +171,6 @@
       <Filter>gfx</Filter>
     </ClInclude>
     <ClInclude Include="..\gvl\io\convert.hpp">
-      <Filter>gvl\io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\io\deflate_filter.hpp">
-      <Filter>gvl\io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\io\encoding.hpp">
-      <Filter>gvl\io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\io\encoding_compat.hpp">
-      <Filter>gvl\io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\io\fstream.hpp">
-      <Filter>gvl\io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\io\iostream.hpp">
-      <Filter>gvl\io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\io\stream.hpp">
       <Filter>gvl\io</Filter>
     </ClInclude>
     <ClInclude Include="..\gvl\math\cmwc.hpp">

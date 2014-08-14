@@ -1,8 +1,6 @@
 #ifndef UUID_4CF92C398C724F883A02E8A68FE1584F
 #define UUID_4CF92C398C724F883A02E8A68FE1584F
 
-#include <gvl/io/stream.hpp>
-#include <gvl/io/encoding.hpp>
 #include <gvl/io2/stream.hpp>
 #include <gvl/serialization/context.hpp>
 #include <gvl/crypt/gash.hpp>
@@ -59,14 +57,15 @@ struct Replay
 
 struct ReplayWriter : Replay
 {
-	ReplayWriter(gvl::stream_ptr str_init);
+	ReplayWriter(gvl::sink str_init);
 	~ReplayWriter();
 	
 	void unfocus();
 	void focus();
 	
-	gvl::filter_ptr str;
-	gvl::octet_stream_writer writer;
+	//gvl::filter_ptr str;
+	//gvl::octet_stream_writer writer;
+	gvl::octet_writer writer;
 	gvl::gash::value_type lastSettingsHash;
 	bool settingsExpired;
 	

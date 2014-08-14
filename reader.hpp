@@ -6,7 +6,8 @@
 #include <stdexcept>
 #include <vector>
 #include <gvl/cstdint.hpp>
-#include <gvl/io/stream.hpp>
+#include <gvl/io2/stream.hpp>
+#include <gvl/serialization/coding.hpp>
 
 extern std::string lieroEXERoot;
 
@@ -28,7 +29,7 @@ struct ReaderFile
 	void seekg(size_t newPos)
 	{
 		if (newPos > len)
-			throw gvl::stream_read_error(gvl::stream::read_eos, "EOF in seekg()");
+			throw gvl::stream_read_error(gvl::source_result::eos, "EOF in seekg()");
 		pos = newPos;
 	}
 
@@ -45,14 +46,14 @@ struct ReaderFile
 	uint8_t get()
 	{
 		if (pos >= len)
-			throw gvl::stream_read_error(gvl::stream::read_eos, "EOF in get()");
+			throw gvl::stream_read_error(gvl::source_result::eos, "EOF in get()");
 		return data[pos++];
 	}
 
 	void get(uint8_t* p, size_t l)
 	{
 		if (pos + l > len)
-			throw gvl::stream_read_error(gvl::stream::read_eos, "EOF in get()");
+			throw gvl::stream_read_error(gvl::source_result::eos, "EOF in get()");
 		std::memcpy(p, data + pos, l);
 		pos += l;
 	}

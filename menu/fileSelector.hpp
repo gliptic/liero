@@ -195,12 +195,6 @@ struct FileSelector
 			return 0;
 
 		auto* c = currentNode->children[menu().selection()].get();
-		if (c->folder)
-		{
-			currentNode->selectedChild = c;
-			setFolder(*c);
-			return 0;
-		}
 
 		return c;
 	}

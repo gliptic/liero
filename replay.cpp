@@ -5,7 +5,6 @@
 #include "viewport.hpp"
 #include <gvl/support/type_info.hpp>
 #include <gvl/serialization/archive.hpp>
-#include <gvl/io/deflate_filter.hpp>
 #include <gvl/io2/deflate_filter.hpp>
 
 struct WormCreator
@@ -353,10 +352,10 @@ void read(Reader& reader, GameSerializationContext& context, T& x)
 	archive(gvl::in_archive<Reader, GameSerializationContext>(reader, context), x);
 }
 
-template<typename T>
-void write(gvl::octet_stream_writer& writer, GameSerializationContext& context, T& x)
+template<typename Writer, typename T>
+void write(Writer& writer, GameSerializationContext& context, T& x)
 {
-	archive(gvl::out_archive<gvl::octet_stream_writer, GameSerializationContext>(writer, context), x);
+	archive(gvl::out_archive<Writer, GameSerializationContext>(writer, context), x);
 }
 
 /*
@@ -388,13 +387,14 @@ void archive(Archive ar, gvl::gash::value_type& x)
 }
 */
 
-ReplayWriter::ReplayWriter(gvl::stream_ptr str_init)
+ReplayWriter::ReplayWriter(gvl::sink str_init)
 : settingsExpired(true)
 {
-	str.reset(new gvl::deflate_filter(true));
-	str->attach_sink(str_init);
+	gvl::deflate_source* ds(new gvl::deflate_source(gvl::source(), true, false));
 
-	writer.attach(str);
+	ds->sink = str_init;
+
+	writer.attach(gvl::sink(ds));
 }
 
 ReplayWriter::~ReplayWriter()

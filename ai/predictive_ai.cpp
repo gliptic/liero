@@ -344,12 +344,14 @@ double evaluateState(
 		}
 		else
 		{
+			/*
 			double ratio = (1 + targetNormHealth) / (1 + meNormHealth);
 
 			if (game.settings->gameMode != Settings::GMHoldazone)
 			{
 				optimalDist = std::max(std::min(15.0 * ratio, 60.0), 10.0);
 			}
+			*/
 		}
 
 		double d = std::max(std::abs(wormCell->g / 256.0 - optimalDist) - 10.0, 0.0) * weights.distanceWeight;
@@ -1112,8 +1114,8 @@ TransModel::TransModel(Weights& weights, bool testing)
 			{
 				double m = 0.95, c = 0.03, r = 0.02;
 
-				c += 0.07;
-				m -= 0.07;
+				c += 0.03;
+				m -= 0.03;
 
 #if 0 // Doesn't seem to help
 				if (testing)

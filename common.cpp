@@ -627,8 +627,166 @@ void Common::drawTextSmall(Bitmap& scr, char const* str, int x, int y)
 	}
 }
 
-#include <gvl/io/encoding.hpp>
+#include <gvl/io/convert.hpp>
 
+template<typename Writer>
+struct TextWriter2
+{
+	TextWriter2(Writer& writer)
+	: writer(writer)
+	{
+	}
+
+	std::vector<char const*> chain;
+
+	void beginf(char const* name)
+	{
+		if (name && chain.empty())
+		{
+			writer << "\n\n[" << name << "]\n";
+		}
+
+		chain.push_back(name);
+	}
+
+	void f()
+	{
+		bool first = true;
+		for (std::size_t i = 1; i < chain.size(); ++i)
+		{
+			if (chain[i])
+			{
+				if (first)
+				{
+					writer << '\n';
+					first = false;
+				}
+				else
+					writer << '.';
+				writer << chain[i];
+			}
+		}
+		writer << " = ";
+	}
+
+	void f(char const* name)
+	{
+		beginf(name);
+		f();
+		endf();
+	}
+
+	void endf()
+	{
+		chain.pop_back();
+	}
+
+	template<typename F>
+	void object(char const* name, F func)
+	{
+		beginf(name);
+
+		func();
+		
+		endf();
+	}
+
+	template<typename A, typename F>
+	void array(char const* name, A& arr, F func)
+	{
+		// TODO: If the array contains objects, we must wrap them as "arrays of tables"
+		f(name);
+		writer << '[';
+		bool first = true;
+		for (auto& e : arr)
+		{
+			if (first)
+				first = false;
+			else
+				writer << ", ";
+			func(e);
+		}
+		writer << "]";
+	}
+
+	/*
+	template<typename A, typename F>
+	void array(char const* name, A& arr, F func)
+	{
+		beginf(name);
+		f();
+		writer << '[';
+		bool first = true;
+		for (auto& e : arr)
+		{
+			if (first)
+				first = false;
+			else
+				writer << ", ";
+			func(e);
+		}
+		writer << "]";
+		endf();
+	}*/
+
+	void i32(int v)
+	{
+		writer << v;
+	}
+
+	void i32(char const* name, int v)
+	{
+		f(name);
+		i32(v);
+	}
+
+	void b(bool v)
+	{
+		writer << (v ? "true" : "false");
+	}
+
+	void b(char const* name, bool v)
+	{
+		f(name);
+		b(v);
+	}
+
+	template<typename T, typename ValueToRef, typename RefToValue>
+	void ref(char const* name, T const& v, ValueToRef v2r, RefToValue /*r2v*/)
+	{
+		f(name);
+		v2r(*this, v);
+	}
+
+	void str(std::string& s)
+	{
+		writer << '"';
+		for (char c : s)
+		{
+			if (c >= 0x20 && c <= 0x7e)
+			{
+				if (c == '"' || c == '\\')
+					writer << '\\';
+				writer << c;
+			}
+			else
+			{
+				writer << "\\u";
+				gvl::uint_to_ascii_base<16>(writer, (uint8_t)c, 4);
+			}
+			// TODO: Handle non-printable
+		}
+		writer << '"';
+	}
+
+	void str(char const* name, std::string& s)
+	{
+		f(name);
+		str(s);
+	}
+
+	Writer& writer;
+};
 
 template<typename Writer>
 struct TextWriter
@@ -1304,42 +1462,40 @@ void archive_text(Weapon& weapon, Archive& ar)
 template<typename Archive>
 void archive_text(Common& common, Archive& ar)
 {
-	ar.object(0, [&] {
-		ar.object("constants", [&] {
-			#define A(n) ar.i32(#n, common.C[C##n]);
-			LIERO_CDEFS(A)
-			#undef A
-		});
+	ar.object("constants", [&] {
+		#define A(n) ar.i32(#n, common.C[C##n]);
+		LIERO_CDEFS(A)
+		#undef A
+	});
 
-		ar.object("texts", [&] {
-			#define A(n) ar.str(#n, common.S[S##n]);
-			LIERO_SDEFS(A)
-			#undef A
-		});
+	ar.object("texts", [&] {
+		#define A(n) ar.str(#n, common.S[S##n]);
+		LIERO_SDEFS(A)
+		#undef A
+	});
 
-		ar.object("hacks", [&] {
-			#define A(n) ar.b(#n, common.H[H##n]);
-			LIERO_HDEFS(A)
-			#undef A
-		});
+	ar.object("hacks", [&] {
+		#define A(n) ar.b(#n, common.H[H##n]);
+		LIERO_HDEFS(A)
+		#undef A
+	});
 
-		ar.array("weapons", common.weapons, [&] (Weapon& w) {
-			//archive_text(w, ar);
-			ar.str(0, w.name);
-			// TODO: Set id
-		});
+	ar.array("weapons", common.weapons, [&] (Weapon& w) {
+		//archive_text(w, ar);
+		ar.str(0, w.name);
+		// TODO: Set id
+	});
 
-		ar.array("nobjects", common.nobjectTypes, [&] (NObjectType& n) {
-			//archive_text(n, ar);
-			ar.str(0, n.name);
-			// TODO: Set id
-		});
+	ar.array("nobjects", common.nobjectTypes, [&] (NObjectType& n) {
+		//archive_text(n, ar);
+		ar.str(0, n.name);
+		// TODO: Set id
+	});
 
-		ar.array("sobjects", common.sobjectTypes, [&] (SObjectType& s) {
-			//archive_text(s, ar);
-			ar.str(0, s.name);
-			// TODO: Set id
-		});
+	ar.array("sobjects", common.sobjectTypes, [&] (SObjectType& s) {
+		//archive_text(s, ar);
+		ar.str(0, s.name);
+		// TODO: Set id
 	});
 }
 
@@ -1351,7 +1507,7 @@ struct OctetTextWriter : gvl::octet_writer
 	{
 	}
 
-	TextWriter<gvl::octet_writer> w;
+	TextWriter2<gvl::octet_writer> w;
 };
 
 struct OctetTextReader : gvl::octet_reader
@@ -1378,6 +1534,7 @@ void Common::save(std::string const& path)
 		}
 	}
 
+	if (false)
 	{
 		OctetTextReader textReader(joinPath(path, "tc.txt"));
 		archive_text(*this, textReader.r);
@@ -1408,7 +1565,7 @@ Common::Common(std::string const& lieroExe)
 	loadGfx(exe, gfx);
 	loadSfx(snd);
 
-    if (false)
+    if (true)
 	{
 		auto path = changeLeaf(lieroExe, "");
 		

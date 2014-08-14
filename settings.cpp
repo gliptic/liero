@@ -5,7 +5,7 @@
 #include "gfx.hpp"
 #include "filesystem.hpp"
 
-#include <gvl/io/fstream.hpp>
+#include <gvl/io2/fstream.hpp>
 #include <gvl/serialization/context.hpp>
 #include <gvl/serialization/archive.hpp>
 
@@ -84,8 +84,8 @@ Settings::Settings()
 	}
 }
 
-typedef gvl::in_archive<gvl::octet_stream_reader> in_archive_t;
-typedef gvl::out_archive<gvl::octet_stream_writer> out_archive_t;
+typedef gvl::in_archive<gvl::octet_reader> in_archive_t;
+typedef gvl::out_archive<gvl::octet_writer> out_archive_t;
 
 bool Settings::load(std::string const& path, Rand& rand)
 {
@@ -99,7 +99,7 @@ bool Settings::load(std::string const& path, Rand& rand)
 	if(size < 155)
 		return false; // .dat is too short
 	
-	gvl::octet_stream_reader reader(gvl::stream_ptr(new gvl::fstream(opt)));
+	gvl::octet_reader reader(gvl::to_source(new gvl::file_bucket_source(opt)));
 	gvl::default_serialization_context context;
 	
 	archive_liero(in_archive_t(reader, context), *this, rand);
@@ -123,7 +123,7 @@ gvl::gash::value_type& Settings::updateHash()
 void Settings::save(std::string const& path, Rand& rand)
 {
 	FILE* opt = fopen(path.c_str(), "wb");
-	gvl::octet_stream_writer writer(gvl::stream_ptr(new gvl::fstream(opt)));
+	gvl::octet_writer writer(gvl::sink(new gvl::file_bucket_source(opt)));
 
 	gvl::default_serialization_context context;
 	

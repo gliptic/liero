@@ -15,7 +15,7 @@
 #include "replay.hpp"
 
 #include <gvl/crypt/gash.hpp>
-#include <gvl/io/fstream.hpp>
+#include <gvl/io2/fstream.hpp>
 
 struct Point
 {
@@ -41,13 +41,13 @@ void WormSettings::saveProfile(std::string const& path)
 	{
 		auto const& fullPath = path + ".lpf";
 		create_directories(fullPath);
-		gvl::stream_ptr str(new gvl::fstream(fullPath.c_str(), "wb"));
+		gvl::sink str(new gvl::file_bucket_source(fullPath.c_str(), "wb"));
 		
-		gvl::octet_stream_writer writer(str);
+		gvl::octet_writer writer(str);
 		
 		profilePath = path;
 		GameSerializationContext context;
-		archive(gvl::out_archive<gvl::octet_stream_writer, GameSerializationContext>(writer, context), *this);
+		archive(gvl::out_archive<gvl::octet_writer, GameSerializationContext>(writer, context), *this);
 	}
 	catch(gvl::stream_error& e)
 	{
@@ -60,13 +60,13 @@ void WormSettings::loadProfile(std::string const& path)
 	int oldColor = color;
 	try
 	{
-		gvl::stream_ptr str(new gvl::fstream(path.c_str(), "rb"));
+		gvl::source str(gvl::to_source(new gvl::file_bucket_source(path.c_str(), "rb")));
 		
-		gvl::octet_stream_reader reader(str);
+		gvl::octet_reader reader(str);
 
 		profilePath = path;
 		GameSerializationContext context;
-		archive(gvl::in_archive<gvl::octet_stream_reader, GameSerializationContext>(reader, context), *this);
+		archive(gvl::in_archive<gvl::octet_reader, GameSerializationContext>(reader, context), *this);
 	}
 	catch(gvl::stream_error& e)
 	{
@@ -494,9 +494,19 @@ void Worm::process(Game& game)
 				
 				fireConeActive = 0;
 				ninjarope.out = false;
-				--lives;
+				
 				if (game.settings->gameMode == Settings::GMScalesOfJustice)
-					health = settings->health;
+				{
+					while (health <= 0)
+					{
+						health += settings->health;
+						--lives;
+					}
+				}
+				else
+				{
+					--lives;
+				}
 
 				int oldLastKilled = game.lastKilledIdx;
 				// For GameOfTag, 'it' doesn't change if the killer

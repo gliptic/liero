@@ -48,7 +48,7 @@ void Viewport::process(Game& game)
 			scrollTo(ftoi(worm.x), ftoi(worm.y), 4);
 		}
 	}
-	else if(worm.health < 0)
+	else if(worm.health <= 0)
 	{
 		setCenter(ftoi(worm.x), ftoi(worm.y));
 		

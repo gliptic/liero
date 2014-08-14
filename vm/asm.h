@@ -364,6 +364,7 @@ typedef int8_t   i8;
 #define c_dec16(modrm) do { u32 REXT = 1; c_op16(); c_rex_modex##modrm; c_byte(0xFF); c_modex##modrm; } while(0)
 
 #define c_add_k(modrm, k) do { u32 REXT = 0; c_rex_modex##modrm; c_byte(0x81); c_modex##modrm; c_dword(k); } while(0)
+#define c_and_k(modrm, k) do { u32 REXT = 4; c_rex_modex##modrm; c_byte(0x81); c_modex##modrm; c_dword(k); } while(0)
 #define c_sub_k(modrm, k) do { u32 REXT = 5; c_rex_modex##modrm; c_byte(0x81); c_modex##modrm; c_dword(k); } while(0)
 #define c_cmp_k(modrm, k) do { u32 REXT = 7; c_rex_modex##modrm; c_byte(0x81); c_modex##modrm; c_dword(k); } while(0)
 #define c_mov_k(modrm, k) do { u32 REXT = 0; c_rex_modex##modrm; c_byte(0xC7); c_modex##modrm; c_dword(k); } while(0)
@@ -404,6 +405,8 @@ typedef int8_t   i8;
 		c_jcnd_far(cnd, _pos); \
 	} \
 } while(0)
+
+#define c_jmp8(o) do { c_byte(0xEB); c_byte(o); } while(0)
 
 #define c_jmp(pos) do { \
 	u8* _pos = (u8*)(pos); \

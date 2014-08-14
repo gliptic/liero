@@ -2,8 +2,6 @@
 #define UUID_8FD050E2BE0F4345A60D1A8646927047
 
 #include <stdexcept>
-//#include <gvl/io/stream.hpp>
-//#include <gvl/io/encoding.hpp>
 #include "coding.hpp"
 #include <gvl/serialization/context.hpp>
 #include <gvl/support/cstdint.hpp>

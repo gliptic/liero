@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <type_traits>
-#include <gvl/io/encoding.hpp>
+#include <gvl/io/convert.hpp>
 #include <gvl/system/system.hpp>
 #include "text.hpp"
 #include "stats.hpp"

@@ -131,6 +131,34 @@ struct stream_piece : shared
 typedef shared_ptr<stream_piece> source;
 typedef shared_ptr<bucket_pipe> sink;
 
+struct stream_error : std::runtime_error
+{
+    stream_error(std::string const& msg)
+    : std::runtime_error(msg)
+    {
+    }
+};
+
+struct stream_read_error : stream_error
+{
+	stream_read_error(source_result::status s, std::string const& msg)
+	: stream_error(msg), s(s)
+	{
+	}
+	
+	source_result::status s;
+};
+
+struct stream_write_error : stream_error
+{
+	stream_write_error(sink_result::status s, std::string const& msg)
+	: stream_error(msg), s(s)
+	{
+	}
+	
+	sink_result::status s;
+};
+
 inline source to_source(bucket_pipe* src)
 {
 	return source(new stream_piece(shared_ptr<bucket_pipe>(src)));

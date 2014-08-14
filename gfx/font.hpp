@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-#include <gvl/io/encoding.hpp>
+#include <gvl/io/convert.hpp>
 
 struct Bitmap;
 

@@ -2,6 +2,7 @@
 #include "localController.hpp"
 
 #include <gvl/system/system.hpp>
+#include <gvl/io2/fstream.hpp>
 #include "stats_presenter.hpp"
 #include "../keys.hpp"
 #include "../gfx.hpp"
@@ -279,7 +280,7 @@ void LocalController::changeState(State newState)
 				std::string path = joinPath(joinPath(lieroEXERoot, "Replays"), prefix + buf);
 				create_directories(path);
 
-				replay.reset(new ReplayWriter(gvl::stream_ptr(new gvl::fstream(path.c_str(), "wb"))));
+				replay.reset(new ReplayWriter(gvl::sink(new gvl::file_bucket_source(path.c_str(), "wb"))));
 				replay->beginRecord(game);
 			}
 			catch(std::runtime_error& e)

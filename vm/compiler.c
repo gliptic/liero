@@ -11,17 +11,25 @@ typedef struct tyvm_module {
 	u8* org_stack_ptr;
 } tyvm_module;
 
-/*
+#define MAX_INSTR (16)
 
-*/
-
-#define MAX_INSTR (4)
-
-#define ALIGN_MC() do { while (((int)LOC) & 31) { c_nop(); } } while(0)
+u8* align_mc(u8* LOC) {
+	u8 *p = LOC, *end;
+	while (((int)LOC) & 31) {
+		c_nop();
+	}
+	if (LOC - p > 3) {
+		end = LOC;
+		LOC = p;
+		c_jmp8(end - (p + 2));
+		LOC = end;
+	}
+	return LOC;
+}
 
 #define WRITE_INSTR(instr) do { u8* _p = LOC; instr; \
 	if ((((int)_p) ^ ((int)LOC - 1)) & ~31) { \
-		LOC = _p; ALIGN_MC(); \
+		LOC = align_mc(_p); \
 	} else { break; } \
 } while(1)
 
@@ -47,6 +55,7 @@ enum {
 	OP_STOREINDIR32,
 	OP_ADD,
 	OP_JCND,
+	OP_JMP,
 	OP_LOADIP
 };
 
@@ -57,6 +66,8 @@ static int REG(int n) {
 #define READ_REGOPS() u8 _opr = *code++; \
 	u8 R = _opr & 0x7; \
 	u8 SR = (_opr >> 4) & 0x7;
+
+#define WRITE_REGOPS(r, sr) (*P->dest++ = ((sr) << 4) | (r))
 
 struct pending_label {
 	u8* loc;
@@ -82,7 +93,7 @@ struct pending_label {
 			if (p->kind == LABEL_JUMP) { \
 				c_label32_to(p->loc, any_labels[p->to]); \
 			} else { \
-				((u32*)p->loc)[-1] = (u32)(any_labels[p->to] - mem) >> 5; \
+				((u32*)p->loc)[-1] = (u32)(any_labels[p->to] - mem); \
 			} \
 			--pending_labels; \
 			*p = *pending_labels; \
@@ -124,21 +135,21 @@ void tyvm_compile(tyvm_module* M, u8 const* code, u8 const* code_end) {
 		*pending_labels_end = pending_labels_arr + 1024;
 	int i;
 
-	c_push_q(R12);
-	c_push_q(RBX);
-	c_push_q(RSI);
+	WRITE_INSTR(c_push_q(R12));
+	WRITE_INSTR(c_push_q(RBX));
+	WRITE_INSTR(c_push_q(RSI));
 
-	c_mov_rk64(MEMBASE, 0);
+	WRITE_INSTR(c_mov_rk64(MEMBASE, 0));
 	data_ptr = LOC;
 	
-	c_mov_rk64(RCX, (u64)&M->org_stack_ptr);
-	c_wide(); c_mov_r(m_si_d32(RSP, RCX, SS_1, 0));
+	WRITE_INSTR(c_mov_rk64(RCX, (u64)&M->org_stack_ptr));
+	WRITE_INSTR(c_wide(); c_mov_r(m_si_d32(RSP, RCX, SS_1, 0)));
 
 	for (i = 0; i < 8; ++i) {
-		c_xor(rq(REG(i), REG(i)));
+		WRITE_INSTR(c_xor(rq(REG(i), REG(i))));
 	}
 	
-	c_mov_rk64(RSP, (u64)mem);
+	WRITE_INSTR(c_mov_rk64(RSP, (u64)mem));
 
 	for (; code + MAX_INSTR <= code_end; ) {
 		u8 op = *code++;
@@ -146,7 +157,7 @@ void tyvm_compile(tyvm_module* M, u8 const* code, u8 const* code_end) {
 		op = op & 0x7f;
 		if (label) {
 			// Align to 32-byte
-			ALIGN_MC();
+			LOC = align_mc(LOC);
 		}
 		*any_label_next++ = LOC;
 		switch (op) {
@@ -180,13 +191,36 @@ void tyvm_compile(tyvm_module* M, u8 const* code, u8 const* code_end) {
 			PENDING_ADDR(k);
 			break;
 		}
+		case OP_JMP: {
+			u32 k, addr_reg;
+			i32 op = *code++;
+			int indirect = (op >> 4) & 1;
+
+			if (indirect) {
+				addr_reg = op >> 5;
+			} else {
+				code = read_const(code, &k);
+			}
+
+			if (indirect) {
+				WRITE_INSTR(c_and_k(r(addr_reg), 0xffffff80));
+				WRITE_INSTR(c_lea(mq_sib(RSI, MEMBASE, addr_reg, SS_1)));
+				WRITE_INSTR(c_jmp_ind(r(RSI)));
+			} else if (k < any_label_next - any_labels) {
+				WRITE_INSTR(c_jmp(any_labels[k]));
+			} else {
+				WRITE_INSTR(c_jmp_far(0));
+				PENDING_LABEL(k);
+			}
+			break;
+		}
 		case OP_JCND: {
 			u32 k, addr_reg;
 			i32 op = *code++;
 			int indirect = (op >> 4) & 1;
 			READ_REGOPS();
 
-			c_cmp(r(REG(R), REG(SR)));
+			WRITE_INSTR(c_cmp(r(REG(R), REG(SR))));
 
 			if (indirect) {
 				addr_reg = op >> 5;
@@ -198,16 +232,16 @@ void tyvm_compile(tyvm_module* M, u8 const* code, u8 const* code_end) {
 
 			if (indirect) {
 				u8* patch;
-				c_jcnd8(JCND_JO + (op ^ 1), 0);
+				WRITE_INSTR(c_jcnd8(JCND_JO + (op ^ 1), 0));
 				patch = LOC;
-				c_shr_k(r(addr_reg), 5);
-				c_lea(mq_sib(RSI, MEMBASE, addr_reg, SS_1));
-				c_jmp_ind(r(RSI));
+				WRITE_INSTR(c_and_k(r(addr_reg), 0xffffff80));
+				WRITE_INSTR(c_lea(mq_sib(RSI, MEMBASE, addr_reg, SS_1)));
+				WRITE_INSTR(c_jmp_ind(r(RSI)));
 				c_label8(patch);
 			} else if (k < any_label_next - any_labels) {
-				c_jcnd(JCND_JO + op, any_labels[k]);
+				WRITE_INSTR(c_jcnd(JCND_JO + op, any_labels[k]));
 			} else {
-				c_jcnd_far(JCND_JO + op, 0);
+				WRITE_INSTR(c_jcnd_far(JCND_JO + op, 0));
 				PENDING_LABEL(k);
 			}
 			break;
@@ -218,11 +252,11 @@ void tyvm_compile(tyvm_module* M, u8 const* code, u8 const* code_end) {
 	}
 end_instr:
 
-	c_mov_rk64(RCX, (u64)&M->org_stack_ptr);
-	c_wide(); c_mov(m_si_d32(RSP, RCX, SS_1, 0));
-	c_pop_q(RSI);
-	c_pop_q(RBX);
-	c_pop_q(R12);
+	WRITE_INSTR(c_mov_rk64(RCX, (u64)&M->org_stack_ptr));
+	WRITE_INSTR(c_wide(); c_mov(m_si_d32(RSP, RCX, SS_1, 0)));
+	WRITE_INSTR(c_pop_q(RSI));
+	WRITE_INSTR(c_pop_q(RBX));
+	WRITE_INSTR(c_pop_q(R12));
 
 	WRITE_INSTR(c_retn());
 
@@ -242,6 +276,7 @@ end_instr:
 	dump_asm(c, LOC);
 	printf("DONE\n");
 
+	if (0)
 	{
 		int v = ((int(*)())c)();
 
@@ -253,15 +288,6 @@ end_instr:
 #include <stdlib.h>
 
 enum {
-	/*
-	T_POP = VAL_POP,
-	T_PEEK = VAL_PEEK,
-	T_PUSH = VAL_PUSH,
-	T_SP = VAL_SP,
-	T_PC = VAL_PC,
-	T_O = VAL_O,
-	T_JSR,
-	*/
 	T_SET = 128,
 
 
@@ -283,6 +309,12 @@ typedef struct parse_label {
 	uint32_t value;
 } parse_label;
 
+typedef struct pending_label_parse {
+	u8* loc;
+	char const *name, *name_end;
+	int kind;
+} pending_label_parse;
+
 tl_def_vector(label_vec, parse_label)
 
 typedef struct parser {
@@ -298,6 +330,10 @@ typedef struct parser {
 	u8* dest_end;
 
 	label_vec labels;
+
+	struct pending_label_parse pending_labels[1024],
+		*pending_labels_next,
+		*pending_labels_end;
 } parser;
 
 #define KW4(a,b,c,d) (((a)<<24)+((b)<<16)+((c)<<8)+(d))
@@ -308,10 +344,6 @@ static void lex(parser* P) {
 	char c;
 repeat:
 	c = *P->cur;
-	if (!c) {
-		P->token = T_EOF;
-		return;
-	}
 
 	switch (c) {
 	case '\0':
@@ -348,16 +380,7 @@ repeat:
 				case KW3('S', 'E', 'T'): P->token = T_SET; break;
 				case KW3('A', 'D', 'D'): P->token = OP_ADD; break;
 				case KW2('J', 'L'): P->token = OP_JCND; P->tok_cnd = JCND_JL; break;
-				//case KW3('S', 'U', 'B'): P->token = OP_SUB; break;
-				//case KW3('J', 'S', 'R'): P->token = T_JSR; break;
-				//case KW3('I', 'F', 'E'): P->token = OP_IFE; break;
-				//case KW3('I', 'F', 'G'): P->token = OP_IFG; break;
-				//case KW4('P', 'U', 'S', 'H'): P->token = T_PUSH; break;
-				//case KW4('P', 'E', 'E', 'K'): P->token = T_PEEK; break;
-				//case KW3('P', 'O', 'P'): P->token = T_POP; break;
-				//case KW2('P', 'C'): P->token = T_PC; break;
-				//case KW2('S', 'P'): P->token = T_SP; break;
-				//case 'O': P->token = T_O; break;
+				case KW3('J', 'M', 'P'): P->token = OP_JMP; break;
 
 				case 'A': P->token = T_A; break;
 				case 'B': P->token = T_B; break;
@@ -412,97 +435,40 @@ static void expect(parser* P, int tok) {
 	lex(P);
 }
 
-/*
-static u16 r_operand(parser* P) {
-	u16 v = (u16)P->token;
-	switch (v) {
-	case T_INT: {
-		u16 i = (u16)P->tok_int_data;
-		lex(P);
-		if (i < 0x20) {
-			return i + 0x20;
-		} else {
-			W16(i);
-			return VAL_LIT;
-		}
-	}
-
-	case T_POP: case T_PEEK: case T_PUSH:
-	case T_SP: case T_PC: case T_O:
-		lex(P);
-		return v;
-
-	case T_LBRACKET: {
-		int used = 0;
-
-		lex(P);
-		v = 0x1e;
-
-		do {
-			if (!(used & 1) && P->token >= T_A && P->token <= T_J) {
-				used |= 1;
-				v = 0x8 + P->token - T_A;
-				lex(P);
-			} else if (!(used & 2) && P->token == T_INT) {
-				used |= 2;
-				W16((u16)P->tok_int_data);
-				lex(P);
-			} else {
-				parse_error(P);
-			}
-		} while (test(P, T_PLUS));
-
-		expect(P, T_RBRACKET);
-		return (used == 3) ? v + 0x8 : v;
-	}
-
-	default: {
-		if (v >= T_A && v <= T_J) {
-			lex(P);
-			return v - T_A;
-		} else {
-			printf("Invalid operand\n");
-			parse_error(P);
-			return 0;
-		}
-	}
-	}
-}*/
-
-typedef struct pending_label_parse {
-	u8* loc;
-	char const *name, *name_end;
-	int kind;
-} pending_label_parse;
-
 // TODO: Check that addr-labels are aligned
 
-#define FLUSH_LABELS_PARSE() do { \
-	struct pending_label_parse* p = pending_labels; \
-	for (; p != pending_labels_next; ) { \
-		tl_vector_foreach(P->labels.v, parse_label, l, { \
-			if (l->name_end - l->name == p->name_end - p->name \
-			 && memcmp(l->name, p->name, p->name_end - p->name)) { \
-				((u32*)p->loc)[-1] = l->value; \
-				--pending_labels_next; \
-				*p = *pending_labels_next; \
-				--p; \
-				break; \
-			} \
-		}); \
-		++p; \
+#define PENDING_LABEL_PARSE(_name, _name_end) do { \
+	P->pending_labels_next->loc = P->dest; \
+	P->pending_labels_next->name = (_name); \
+	P->pending_labels_next->name_end = (_name_end); \
+	P->pending_labels_next->kind = LABEL_JUMP; \
+	if (++P->pending_labels_next == P->pending_labels_end) { \
+		flush_labels_parse(P); \
 	} \
 } while (0)
 
-#define PENDING_LABEL_PARSE(_name, _name_end) do { \
-	pending_labels_next->loc = P->dest; \
-	pending_labels_next->name = (_name); \
-	pending_labels_next->name_end = (_name_end); \
-	pending_labels_next->kind = LABEL_JUMP; \
-	if (++pending_labels_next == pending_labels_end) { \
-		FLUSH_LABELS_PARSE(); \
-	} \
-} while (0)
+#define WRITE_OP(n) (*P->dest++ = ((n) | ((next_label_pos == pos) << 7)))
+
+void flush_labels_parse(parser* P) {
+	struct pending_label_parse* p = P->pending_labels;
+	for (; p != P->pending_labels_next; ) {
+		tl_vector_foreach(P->labels.v, parse_label, l, {
+			printf("len %d, first %c\n", l->name_end - l->name, l->name[0]);
+			printf("len %d, first %c\n", p->name_end - p->name, p->name[0]);
+
+			if (l->name_end - l->name == p->name_end - p->name
+			 && memcmp(l->name, p->name, p->name_end - p->name) == 0) {
+				printf("write %d\n", l->value);
+				((u32*)p->loc)[-1] = l->value;
+				--P->pending_labels_next;
+				*p = *P->pending_labels_next;
+				--p;
+				break;
+			}
+		});
+		++p;
+	}
+}
 
 int r_reg(parser* P) {
 	int t = P->token;
@@ -514,9 +480,10 @@ int r_reg(parser* P) {
 }
 
 void r_file(parser* P) {
-	pending_label_parse pending_labels[1024], *pending_labels_next = pending_labels, *pending_labels_end = pending_labels + 1024;
+	
 
 	uint32_t pos = 0;
+	uint32_t next_label_pos = 0xffffffff;
 	while (P->token < 256 || P->token == T_NL || P->token == T_COLON || P->token == T_IDENT) {
 		switch (P->token) {
 		case T_SET: {
@@ -524,16 +491,25 @@ void r_file(parser* P) {
 			lex(P);
 			r = r_reg(P);
 			expect(P, T_COMMA);
-			*P->dest++ = OP_LOADK32;
-			*P->dest++ = r;
+
 			if (P->token == T_INT) {
+				WRITE_OP(OP_LOADK32);
+				*P->dest++ = r;
+
 				*P->dest++ = (u8)P->tok_int_data;
 				*P->dest++ = (u8)(P->tok_int_data >> 8);
 				*P->dest++ = (u8)(P->tok_int_data >> 16);
 				*P->dest++ = (u8)(P->tok_int_data >> 24);
 				lex(P);
+			} else if (P->token == T_IDENT) {
+				WRITE_OP(OP_LOADIP);
+				*P->dest++ = r;
+				P->dest += 4;
+				PENDING_LABEL_PARSE(P->tok_data, P->tok_data_end);
+				lex(P);
+
+				// TODO: Constants
 			} else {
-				// TODO: Labels/constants
 				parse_error(P);
 			}
 			++pos;
@@ -548,22 +524,50 @@ void r_file(parser* P) {
 			label_vec_pushback(&P->labels, l);
 			lex(P);
 			expect(P, T_COLON);
+			next_label_pos = pos;
+			break;
+		}
+		case OP_JMP: {
+			u32 op;
+			
+			WRITE_OP(OP_JMP);
+			op = 0;
+			lex(P);
+			
+			if (P->token == T_IDENT) {
+				*P->dest++ = op;
+				P->dest += 4;
+				PENDING_LABEL_PARSE(P->tok_data, P->tok_data_end);
+				lex(P);
+			} else {
+				int jr = r_reg(P);
+				*P->dest++ = (jr << 5) | (1 << 4) | op;
+			}
+			
 			break;
 		}
 		case OP_JCND: {
 			int r, sr;
 			u32 op;
-			*P->dest++ = OP_JCND;
-			op = P->tok_cnd;
+			
+			WRITE_OP(OP_JCND);
+			op = P->tok_cnd - JCND_JO;
 			lex(P);
 			
-			// TODO: emit
 			r = r_reg(P);
 			expect(P, T_COMMA);
 			sr = r_reg(P);
 			expect(P, T_COMMA);
 			if (P->token == T_IDENT) {
+				*P->dest++ = op;
+				WRITE_REGOPS(r, sr);
+				P->dest += 4;
 				PENDING_LABEL_PARSE(P->tok_data, P->tok_data_end);
+				lex(P);
+			} else {
+				int jr = r_reg(P);
+				*P->dest++ = (jr << 5) | (1 << 4) | op;
+				WRITE_REGOPS(r, sr);
 			}
 			
 			break;
@@ -575,7 +579,7 @@ void r_file(parser* P) {
 			r = r_reg(P);
 			expect(P, T_COMMA);
 			sr = r_reg(P);
-			*P->dest++ = op;
+			WRITE_OP(op);
 			*P->dest++ = r | (sr << 4);
 			++pos;
 			break;
@@ -592,7 +596,11 @@ void r_file(parser* P) {
 
 	*P->dest++ = 127;
 
-	FLUSH_LABELS_PARSE();
+	flush_labels_parse(P);
+
+	if (P->pending_labels_next != P->pending_labels) {
+		printf("%d labels unresolved\n", P->pending_labels_next - P->pending_labels);
+	}
 
 	expect(P, T_EOF);
 }
@@ -607,6 +615,9 @@ u8* parse(char const* str) {
 	P.dest = buf;
 	P.dest_end = buf + 4096;
 	label_vec_init_empty(&P.labels);
+
+	P.pending_labels_next = P.pending_labels;
+	P.pending_labels_end = P.pending_labels + 1024;
 
 	lex(&P);
 
@@ -633,23 +644,14 @@ void dump_asm(u8* beg, u8* end) {
 
 int main() {
 	tyvm_module m;
-	/*
-	u8 instr[128] = {
-		OP_LOADK32, 0, 1, 0, 0, 1,
-		OP_LOADINDIR32, 3 + (4 << 4),
-		OP_STOREINDIR32, 3 + (4 << 4),
-		OP_LOADIP, 1, 4, 0, 0, 0,
-		OP_ADD + 128, 4 + (5 << 4),
-		OP_JCND, 4 + (5 << 4), 16 + 0xc + (1 << 5),
-		OP_ADD, 0 + (0 << 4),
-		OP_ADD, 1 + (1 << 4),
-		127
-	};*/
+
 	u8* instr = parse(
 		"SET A, 10\n"
 		"a: SET B, 20\n"
 		"ADD A, B\n"
-		"JL A, B, a\n");
+		"JL A, B, a\n"
+		"SET C, a\n"
+		"JMP C\n");
 	tyvm_compile(&m, instr, instr + 4096);
 	return 0;
 }

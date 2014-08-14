@@ -1058,7 +1058,7 @@ void Gfx::selectLevel()
 		common.font.drawText(screenBmp, title, 180, 21, 50);
 
 		FileNode* sel = levSel.curSel();
-		if (previewNode != sel)
+		if (previewNode != sel && sel)
 		{
 			Level level(common);
 			if (level.load(common, *settings, sel->fullPath))

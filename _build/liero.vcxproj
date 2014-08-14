@@ -220,8 +220,6 @@
     <ClCompile Include="..\gvl\containers\list.cpp" />
     <ClCompile Include="..\gvl\io2\stream.cpp" />
     <ClCompile Include="..\gvl\io\convert.cpp" />
-    <ClCompile Include="..\gvl\io\encoding.cpp" />
-    <ClCompile Include="..\gvl\io\stream.cpp" />
     <ClCompile Include="..\gvl\support\bits.c" />
     <ClCompile Include="..\gvl\support\debug.cpp" />
     <ClCompile Include="..\gvl\support\platform.cpp" />
@@ -276,12 +274,6 @@
     <ClInclude Include="..\gvl\io2\fstream.hpp" />
     <ClInclude Include="..\gvl\io2\stream.hpp" />
     <ClInclude Include="..\gvl\io\convert.hpp" />
-    <ClInclude Include="..\gvl\io\deflate_filter.hpp" />
-    <ClInclude Include="..\gvl\io\encoding.hpp" />
-    <ClInclude Include="..\gvl\io\encoding_compat.hpp" />
-    <ClInclude Include="..\gvl\io\fstream.hpp" />
-    <ClInclude Include="..\gvl\io\iostream.hpp" />
-    <ClInclude Include="..\gvl\io\stream.hpp" />
     <ClInclude Include="..\gvl\math\cmwc.hpp" />
     <ClInclude Include="..\gvl\math\random.hpp" />
     <ClInclude Include="..\gvl\math\rect.hpp" />

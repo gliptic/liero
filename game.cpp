@@ -530,8 +530,6 @@ void Game::doDamageDirect(Worm& w, int amount, int byIdx)
 {
 	if (amount > 0)
 	{
-		if (settings->gameMode == Settings::GMScalesOfJustice)
-			amount = std::min(amount, w.health);
 		w.health -= amount;
 		if (w.health <= 0)
 		{
@@ -568,7 +566,7 @@ void Game::doDamage(Worm& w, int amount, int byIdx)
 	{
 		if (settings->gameMode == Settings::GMScalesOfJustice)
 		{
-			if (byIdx < 0)
+			if (byIdx < 0 || byIdx == w.index)
 			{
 				int parts = worms.size() - 1;
 				int left = amount;
@@ -584,7 +582,7 @@ void Game::doDamage(Worm& w, int amount, int byIdx)
 					}
 				}
 			}
-			else if (byIdx != w.index)
+			else
 			{
 				doHealingDirect(*worms[byIdx], amount);
 			}

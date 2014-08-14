@@ -46,7 +46,6 @@ struct astar_state
 	typedef path_node path_node_t;
 
 	// open_list contains elements of nodes, so it's important that open_list is last
-	//vl::hash_set<path_node_t, node_hash<NodeT>, node_compare<NodeT> > nodes;
 	gvl::pairing_heap<path_node_t, std::less<path_node_t>, gvl::dummy_delete> open_list;
 	
 	void add_open(path_node_t* node)
