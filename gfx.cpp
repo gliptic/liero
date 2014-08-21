@@ -15,6 +15,7 @@
 #include <SDL/SDL.h>
 #include <cstdio>
 #include <memory>
+#include <limits>
 
 #include <gvl/io2/fstream.hpp>
 
@@ -258,7 +259,7 @@ struct WeaponEnumBehavior : EnumBehavior
 		if (gfx.inputString(search, 10, x, y))
 		{
 			uint32_t minimumi;
-			double minimum = DBL_MAX;
+			double minimum = std::numeric_limits<double>::max();
 			for (uint32_t i = min; i <= max; ++i)
 			{
 				std::string& name = common.weapons[common.weapOrder[i]].name;
