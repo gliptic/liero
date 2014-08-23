@@ -1644,7 +1644,14 @@ void Gfx::mainLoop()
 
 void Gfx::saveSettings(std::string const& path)
 {
-	settingsFile = path + ".dat";
+	std::string extension = getExtension(path);
+	settingsFile = path;
+	// this won't catch stuff like DaT or dAT, but standard C++ has no case
+	// insensitive compare
+	if (!(extension.compare("dat") == 0 || extension.compare("DAT") == 0))
+	{
+		settingsFile = path + ".dat";
+	}
 	settings->save(settingsFile, rand);
 }
 
