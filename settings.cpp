@@ -31,6 +31,7 @@ Extensions::Extensions()
 , selectBotWeapons(true)
 , aiTraces(false)
 , aiParallels(3)
+, allowViewingSpawnPoint(false)
 {
 }
 

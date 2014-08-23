@@ -24,7 +24,8 @@ struct HiddenMenu : Menu
 		ScreenSync,
 		SelectBotWeapons,
 		AiTraces,
-		AiParallels
+		AiParallels,
+		AllowViewingSpawnPoint,
 	};
 	
 	HiddenMenu(int x, int y)
