@@ -242,6 +242,14 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		{
 			common.font.drawText(renderer.screenBmp, LS(PressFire), rect.center_x() - 30, 76, 0);
 			common.font.drawText(renderer.screenBmp, LS(PressFire), rect.center_x() - 31, 75, 50);
+
+			if (worm.pressed(Worm::Change))
+			{
+				int tempX = ftoi(worm.x) - 7 + offsX;
+				int tempY = ftoi(worm.y) - 5 + offsY;
+
+				blitImage(renderer.screenBmp, common.wormSpriteObj(worm.currentFrame, worm.direction, worm.index), tempX, tempY);
+			}
 		}
 
 		if(bannerY > -8
