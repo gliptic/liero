@@ -1,0 +1,6 @@
+#include "bitstream.c"
+#include "model.c"
+#include "polar_code.c"
+#include "polar_model.c"
+#include "prefix_code.c"
+#include "test_codec.c"
