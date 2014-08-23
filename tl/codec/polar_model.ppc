@@ -1,0 +1,6 @@
+def define_polar_model(module_context* ctx, int maxsym, string_literal str)
+{
+	(# type (# str #) {
+		
+	} #)
+}
