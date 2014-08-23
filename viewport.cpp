@@ -248,7 +248,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				int tempX = ftoi(worm.x) - 7 + offsX;
 				int tempY = ftoi(worm.y) - 5 + offsY;
 
-				blitImage(renderer.screenBmp, common.wormSpriteObj(worm.currentFrame, worm.direction, worm.index), tempX, tempY);
+				blitImageTrans(renderer.screenBmp, common.wormSpriteObj(worm.currentFrame, worm.direction, worm.index), tempX, tempY, game.cycles);
 			}
 		}
 

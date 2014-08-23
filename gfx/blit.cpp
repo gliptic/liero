@@ -157,6 +157,33 @@ void blitImage(Bitmap& scr, Sprite spr, int x, int y)
 	}
 }
 
+void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase)
+{
+	UNPACK_SPRITE(spr);
+	
+	CLIP_IMAGE(scr.clip_rect);
+
+	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
+
+	for(int y = 0; y < height; ++y)
+	{
+		PalIdx* rowdest = scrptr;
+		PalIdx* rowsrc = mem;
+		
+		for(int x = 0; x < width; ++x)
+		{
+			PalIdx c = *rowsrc;
+			if(c && ((x ^ y ^ phase) & 1))
+				*rowdest = c;
+			++rowsrc;
+			++rowdest;
+		}
+
+		scrptr += scr.pitch;
+		mem += pitch;
+	}
+}
+
 #define BLIT(body) do { \
 	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x; \
 	for(int y = 0; y < height; ++y)	{ \

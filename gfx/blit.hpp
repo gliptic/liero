@@ -23,6 +23,7 @@ void blitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int
 //void blitImage(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height);
 void blitImage(Bitmap& scr, Sprite spr, int x, int y);
 void blitImageR(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height);
+void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase);
 void blitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int width, int height);
 void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y);
 void blitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y);
