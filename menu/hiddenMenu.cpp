@@ -78,6 +78,8 @@ ItemBehavior* HiddenMenu::getItemBehavior(Common& common, MenuItem& item)
 			return new BooleanSwitchBehavior(common, gfx.settings->aiTraces);
 		case AiParallels:
 			return new IntegerBehavior(common, gfx.settings->aiParallels, 1, 16);
+		case AllowViewingSpawnPoint:
+			return new BooleanSwitchBehavior(common, gfx.settings->allowViewingSpawnPoint);
 
 		default:
 			return Menu::getItemBehavior(common, item);

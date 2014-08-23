@@ -15,7 +15,7 @@
 // It can then easily reset the extensions if they fail to load.
 struct Extensions
 {
-	static int const myVersion = 5;
+	static int const myVersion = 6;
 	static bool const extensions = true;
 
 	Extensions();
@@ -29,12 +29,14 @@ struct Extensions
 	int aiFrames, aiMutations;
 	bool aiTraces;
 	int aiParallels;
-	
+
 	int fullscreenW;
 	int fullscreenH;
 
 	int zoneTimeout;
 	uint32_t selectBotWeapons;
+
+	bool allowViewingSpawnPoint;
 };
 
 struct Rand;
@@ -250,6 +252,9 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 		gvl::enable_when(ar, fileExtensionVersion >= 5)
 			.b(settings.aiTraces, false)
 			.ui16(settings.aiParallels, 3);
+
+		gvl::enable_when(ar, fileExtensionVersion >= 6)
+			.b(settings.allowViewingSpawnPoint, false);
 	}
 	catch(std::runtime_error&)
 	{
@@ -312,6 +317,8 @@ void archive(Archive ar, Settings& settings)
 	gvl::enable_when(ar, fileExtensionVersion >= 4)
 		.ui16(settings.zoneTimeout, 30);
 
+	gvl::enable_when(ar, fileExtensionVersion >= 6)
+		.b(settings.allowViewingSpawnPoint, false);
 	ar.check();
 }
 
