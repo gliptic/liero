@@ -6,6 +6,7 @@
 #include "stats.hpp"
 #include <sstream>
 #include <cfloat>
+#include <limits>
 
 double totalHealth(Worm* w)
 {
@@ -889,7 +890,7 @@ void FollowAI::process(Game& game, Worm& worm)
 		targetAi->update(*targetAi, *target);
 		*/
 
-	double bestScore = -DBL_MAX;
+	double bestScore = std::numeric_limits<double>::min();
 	evaluatePositions.clear();
 
 	{
