@@ -230,7 +230,7 @@ void Game::createBonus()
 			{
 				do
 				{
-					bonus->weapon = rand(40); // TODO: Unhardcode
+					bonus->weapon = rand((uint32_t)common.weapons.size());
 				}
 				while(settings->weapTable[bonus->weapon] == 2);
 			}

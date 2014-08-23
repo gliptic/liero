@@ -29,7 +29,7 @@ double totalAmmoWorth(Game& game, Worm* w)
 	for (int i = 0; i < 5; ++i)
 	{
 		WormWeapon& weap = w->weapons[i];
-		Weapon& winfo = game.common->weapons[weap.id];
+		Weapon const& winfo = *weap.type;
 
 		if (weap.loadingLeft > 0)
 			ammoWorth += 3.0 - (weap.loadingLeft * 3.0) / winfo.loadingTime;

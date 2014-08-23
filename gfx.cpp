@@ -234,13 +234,13 @@ int levenshtein(char const *s1, char const *s2) {
 struct WeaponEnumBehavior : EnumBehavior
 {
 	WeaponEnumBehavior(Common& common, uint32_t& v)
-	: EnumBehavior(common, v, 1, 40, false)
+	: EnumBehavior(common, v, 1, (uint32_t)common.weapons.size(), false)
 	{
 	}
 		
 	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		item.value = common.weapons[common.weapOrder[v]].name;
+		item.value = common.weapons[common.weapOrder[v - 1]].name;
 		item.hasValue = true;
 	}
 
@@ -261,7 +261,7 @@ struct WeaponEnumBehavior : EnumBehavior
 			double minimum = DBL_MAX;
 			for (uint32_t i = min; i <= max; ++i)
 			{
-				std::string& name = common.weapons[common.weapOrder[i]].name;
+				std::string& name = common.weapons[common.weapOrder[i - 1]].name;
 
 				double dist = levenshtein(name.c_str(), search.c_str()) / (double)name.length();
 				if (dist < minimum)
@@ -1269,7 +1269,7 @@ struct WeaponMenu : Menu
 	
 	ItemBehavior* getItemBehavior(Common& common, MenuItem& item)
 	{
-		int index = common.weapOrder[item.id + 1];
+		int index = common.weapOrder[item.id];
 		return new ArrayEnumBehavior(common, gfx.settings->weapTable[index], common.texts.weapStates);
 	}
 };
@@ -1282,10 +1282,10 @@ void Gfx::weaponOptions()
 	weaponMenu.setHeight(14);
 	weaponMenu.valueOffsetX = 89;
 	
-	for(int i = 1; i < 41; ++i)
+	for(int i = 0; i < (uint32_t)common.weapons.size(); ++i)
 	{
 		int index = common.weapOrder[i];
-		weaponMenu.addItem(MenuItem(48, 7, common.weapons[index].name, i - 1));
+		weaponMenu.addItem(MenuItem(48, 7, common.weapons[index].name, i));
 	}
 	
 	weaponMenu.moveToFirstVisible();

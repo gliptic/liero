@@ -138,7 +138,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		
 		for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
 		{
-			Weapon& weapon = common.weapons[i->id];
+			Weapon const& weapon = *i->type;
 			
 			if(weapon.affectByExplosions)
 			{
@@ -171,7 +171,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 					}
 					
 					// Is it a booby trap?
-					if(i->id == 34) // TODO: Read from EXE
+					if(i->type - &common.weapons[0] == 34) // TODO: Read from EXE
 					{
 						i->blowUpObject(game, ownerIdx);
 					}
@@ -181,7 +181,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		
 		for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
 		{
-			NObjectType& t = common.nobjectTypes[i->id];
+			NObjectType const& t = *i->type;
 		
 			if(t.affectByExplosions)
 			{

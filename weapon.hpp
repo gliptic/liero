@@ -22,7 +22,7 @@ struct Weapon
 		STLaser
 	};
 	
-	void fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, int ownerIdx, WormWeapon* ww);
+	void fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, int ownerIdx, WormWeapon* ww) const;
 
 	int detectDistance;
 	bool affectByWorm;
@@ -73,11 +73,12 @@ struct Weapon
 	int partTrailObj;
 	int partTrailDelay;
 	
-	int computedLoadingTime(Settings& settings);
+	int computedLoadingTime(Settings& settings) const;
 	
 	int id;
 	//int computedLoadingTime;
 	std::string name;
+	std::string idStr;
 };
 
 struct WObject : ExactObjectListBase
@@ -87,7 +88,8 @@ struct WObject : ExactObjectListBase
 	
 	fixed x, y;
 	fixed velX, velY;
-	int id;
+	//int id;
+	Weapon const* type;
 	int ownerIdx;
 	int curFrame;
 	int timeLeft;

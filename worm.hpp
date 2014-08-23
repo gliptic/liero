@@ -15,6 +15,7 @@
 
 struct Worm;
 struct Game;
+struct Weapon;
 
 struct Ninjarope
 {
@@ -45,15 +46,15 @@ struct Controls
 struct WormWeapon
 {
 	WormWeapon()
-	: id(0)
-	, ammo(0)
+	: ammo(0)
 	, delayLeft(0)
 	, loadingLeft(0)
 	, available(true)
 	{
 	}
 	
-	int id;
+	//int id;
+	Weapon const* type;
 	int ammo;
 	int delayLeft;
 	int loadingLeft;

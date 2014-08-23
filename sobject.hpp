@@ -29,7 +29,7 @@ struct SObjectType
 	int dirtEffect;
 	
 	int id;
-	std::string name;
+	std::string idStr;
 };
 
 struct SObject : ExactObjectListBase

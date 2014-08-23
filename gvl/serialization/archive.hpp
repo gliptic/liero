@@ -148,6 +148,13 @@ struct in_archive
 	{
 		return obj(v, gvl::new_creator<T>());
 	}
+
+	template<typename Ref, typename RefCreator>
+	in_archive& objref(Ref& v, RefCreator refCreator)
+	{
+		v = refCreator(*this, context);
+		return *this;
+	}
 	
 	template<typename T, typename Creator>
 	in_archive& fobj(T*& v, Creator creator)
@@ -317,6 +324,13 @@ struct out_archive
 	out_archive& obj(gvl::shared_ptr<T>& v)
 	{
 		return obj(v, 0);
+	}
+
+	template<typename Ref, typename RefCreator>
+	out_archive& objref(Ref& v, RefCreator refCreator)
+	{
+		refCreator(v, *this, context);
+		return *this;
 	}
 	
 	template<typename T, typename Creator>

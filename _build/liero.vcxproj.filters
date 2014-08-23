@@ -64,7 +64,6 @@
     <ClCompile Include="..\bonus.cpp" />
     <ClCompile Include="..\common.cpp" />
     <ClCompile Include="..\console.cpp" />
-    <ClCompile Include="..\constants.cpp" />
     <ClCompile Include="..\filesystem.cpp" />
     <ClCompile Include="..\game.cpp" />
     <ClCompile Include="..\level.cpp" />
@@ -85,9 +84,6 @@
       <Filter>mixer</Filter>
     </ClCompile>
     <ClCompile Include="..\stats_recorder.cpp" />
-    <ClCompile Include="..\gvl\io\convert.cpp">
-      <Filter>gvl\io</Filter>
-    </ClCompile>
     <ClCompile Include="..\gvl\system\system.c">
       <Filter>gvl\system</Filter>
     </ClCompile>
@@ -118,6 +114,10 @@
     <ClCompile Include="..\gvl\io2\stream.cpp">
       <Filter>gvl\io2</Filter>
     </ClCompile>
+    <ClCompile Include="..\gvl\io2\convert.cpp">
+      <Filter>gvl\io2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\common_exereader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\gfx\blit.hpp">
@@ -169,9 +169,6 @@
     <ClInclude Include="..\stats_recorder.hpp" />
     <ClInclude Include="..\gfx\bitmap.hpp">
       <Filter>gfx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\io\convert.hpp">
-      <Filter>gvl\io</Filter>
     </ClInclude>
     <ClInclude Include="..\gvl\math\cmwc.hpp">
       <Filter>gvl\math</Filter>
@@ -295,6 +292,13 @@
     <ClInclude Include="..\gvl\zlib\zlib2.h">
       <Filter>gvl\zlib</Filter>
     </ClInclude>
+    <ClInclude Include="..\gvl\io2\convert.hpp">
+      <Filter>gvl\io2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\gvl\serialization\toml.hpp">
+      <Filter>gvl\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\common_exereader.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\Jamfile" />

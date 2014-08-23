@@ -55,6 +55,8 @@ struct AIParams
 
 struct Bitmap;
 
+using std::vector;
+
 struct Common : gvl::shared
 {
 	Common(std::string const& lieroExe);
@@ -69,16 +71,8 @@ struct Common : gvl::shared
 	static int fireConeOffset[2][7][2];
 
 	void save(std::string const& path);
-	
-	void loadMaterials(ReaderFile& exe);
-	void loadWeapons(ReaderFile& exe);
-	void loadTextures(ReaderFile& exe);
-	void loadOthers(ReaderFile& exe);
-	void loadConstantsFromEXE(ReaderFile& exe);
-	void loadGfx(ReaderFile& exe, ReaderFile& gfx);
-	void loadSfx(ReaderFile& snd);
-	void loadPalette(ReaderFile& exe);
 	void drawTextSmall(Bitmap& scr, char const* str, int x, int y);
+	void precompute();
 	
 	PalIdx* wormSprite(int f, int dir, int w)
 	{
@@ -94,19 +88,20 @@ struct Common : gvl::shared
 	{
 		return fireConeSprites.spritePtr(f + dir*7);
 	}
+
+	Texts texts; // OK, not saved
 	
 	Material materials[256];
-	Texts texts;
-	Texture textures[9];
-	Weapon weapons[40];
-	SObjectType sobjectTypes[14];
-	NObjectType nobjectTypes[24];
-	int weapOrder[41]; // 1-based!
-	int bonusRandTimer[2][2];
-	int bonusSObjects[2];
+	Texture textures[9]; // OK
+	vector<Weapon> weapons; // OK
+	vector<SObjectType> sobjectTypes; // OK
+	vector<NObjectType> nobjectTypes; // OK
+	vector<int> weapOrder;
+	int bonusRandTimer[2][2]; // OK
+	int bonusSObjects[2]; // OK
 	AIParams aiParams;
 	ColourAnim colorAnim[4];
-	int bonusFrames[2];
+	int bonusFrames[2]; // OK
 	SpriteSet smallSprites;
 	SpriteSet largeSprites;
 	SpriteSet textSprites;
@@ -114,11 +109,11 @@ struct Common : gvl::shared
 	SpriteSet fireConeSprites;
 	Palette exepal;
 	Font font;
-	std::vector<sfx_sound*> sounds;
+	vector<sfx_sound*> sounds;
 	
-	int C[MaxC];
-	std::string S[MaxS];
-	bool H[MaxH];
+	int C[MaxC]; // OK
+	std::string S[MaxS]; // OK
+	bool H[MaxH]; // OK
 };
 
 #endif // UUID_9E238CFB9F074A3A432E22AE5B8EE5FB

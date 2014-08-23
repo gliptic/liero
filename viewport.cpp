@@ -117,7 +117,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	{
 		if(ww.ammo > 0)
 		{
-			int ammoBarWidth = ww.ammo * 100 / common.weapons[ww.id].ammo;
+			int ammoBarWidth = ww.ammo * 100 / ww.type->ammo;
 			
 			if(ammoBarWidth > 0)
 				drawBar(renderer.screenBmp, inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
@@ -127,9 +127,9 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	{
 		int ammoBarWidth = 0;
 		
-		if(common.weapons[ww.id].loadingTime != 0)
+		if(ww.type->loadingTime != 0)
 		{
-			int computedLoadingTime = common.weapons[ww.id].computedLoadingTime(*game.settings);
+			int computedLoadingTime = ww.type->computedLoadingTime(*game.settings);
 			ammoBarWidth = 100 - ww.loadingLeft * 100 / computedLoadingTime;
 		}
 		else
@@ -343,7 +343,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 		for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
 		{
-			Weapon const& w = common.weapons[i->id];
+			Weapon const& w = *i->type;
 		
 			if(w.startFrame > -1)
 			{
@@ -415,11 +415,11 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			
 			}
 		
-			if(!common.H[HRemExp] && i->id == 34 && game.settings->namesOnBonuses) // TODO: Read from EXE
+			if(!common.H[HRemExp] && i->type - &common.weapons[0] == 34 && game.settings->namesOnBonuses) // TODO: Read from EXE
 			{
 				if(i->curFrame == 0)
 				{
-					int nameNum = int(&*i - game.wobjects.arr) % 40; // TODO: Something nicer maybe
+					int nameNum = int(&*i - game.wobjects.arr) % (int)common.weapons.size(); // TODO: Something nicer maybe
 				
 					std::string const& name = common.weapons[nameNum].name;
 					int width = int(name.size()) * 4;
@@ -435,19 +435,21 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	
 		for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
 		{
-			NObjectType const& t = common.nobjectTypes[i->id];
+			NObjectType const& t = *i->type;
 		
 			if(t.startFrame > 0)
 			{
 				int posX = ftoi(i->x) - 3;
 				int posY = ftoi(i->y) - 3;
 			
+#if 0
 				if(i->id >= 20 && i->id <= 21)
 				{
 					// Flag special case
 					posY -= 2;
 					posX += 3;
 				}
+#endif
 			
 				if(game.settings->shadow)
 				{
@@ -507,14 +509,14 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 					int hotspotY = w.hotspotY + offsY;
 				
 					WormWeapon const& ww = w.weapons[w.currentWeapon];
-					Weapon& weapon = common.weapons[ww.id];
+					Weapon const& weapon = *ww.type;
 				
 					if(weapon.laserSight)
 					{
 						drawLaserSight(renderer.screenBmp, renderer.rand, hotspotX, hotspotY, tempX + 7, tempY + 4);
 					}
 				
-					if(ww.id == LC(LaserWeapon) - 1 && w.pressed(Worm::Fire))
+					if(ww.type - &common.weapons[0] == LC(LaserWeapon) - 1 && w.pressed(Worm::Fire))
 					{
 						drawLine(renderer.screenBmp, hotspotX, hotspotY, tempX + 7, tempY + 4, weapon.colorBullets);
 					}
@@ -537,7 +539,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				
 				}
 			
-				if(common.weapons[w.weapons[w.currentWeapon].id].fireCone > -1
+				if(w.weapons[w.currentWeapon].type->fireCone > -1
 				&& w.fireConeActive)
 				{
 					/* TODO
@@ -598,8 +600,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 			if(worm.pressed(Worm::Change))
 			{
-				int id = worm.weapons[worm.currentWeapon].id;
-				std::string const& name = common.weapons[id].name;
+				std::string const& name = worm.weapons[worm.currentWeapon].type->name;
 			
 				int len = int(name.size()) * 4; // TODO: Read 4 from exe? (SW_CHARWID)
 			

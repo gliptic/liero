@@ -45,7 +45,7 @@ struct NObjectType
 	int timeToExploV;
 	
 	int id;
-	std::string name;
+	std::string idStr;
 };
 
 struct NObject : ExactObjectListBase
@@ -56,7 +56,8 @@ struct NObject : ExactObjectListBase
 	fixed velX, velY;
 	int timeLeft;
 	int frameToExplo;
-	int id;
+	//int id;
+	NObjectType const* type;
 	int ownerIdx;
 	int curFrame;
 

@@ -375,8 +375,8 @@ void Worm::process(Game& game)
 								fireConeActive = false;
 								fireCone = -1;
 								
-								ww.id = i->weapon;
-								ww.ammo = common.weapons[ww.id].ammo;
+								ww.type = &common.weapons[i->weapon];
+								ww.ammo = ww.type->ammo;
 							}
 							
 							game.soundPlayer->play(24);
@@ -416,7 +416,7 @@ void Worm::process(Game& game)
 			}
 			else
 			{
-				if(common.weapons[weapons[currentWeapon].id].loopSound)
+				if(weapons[currentWeapon].type->loopSound)
 					game.soundPlayer->stop(&weapons[currentWeapon]);
 			}
 
@@ -483,7 +483,7 @@ void Worm::process(Game& game)
 				// TODO: cGame::cWorm[w^1].makesightgreen = 0;
 				
 				
-				Weapon& w = common.weapons[weapons[currentWeapon].id];
+				Weapon const& w = *weapons[currentWeapon].type;
 				if(w.loopSound)
 				{
 					game.soundPlayer->stop(&weapons[currentWeapon]);
@@ -654,7 +654,7 @@ void DumbLieroAI::process(Game& game, Worm& worm)
 	int maxDist;
 	
 	WormWeapon& ww = worm.weapons[worm.currentWeapon];
-	Weapon& w = common.weapons[ww.id];
+	Weapon const& w = *ww.type;
 	
 	if(w.timeToExplo > 0 && w.timeToExplo < 500)
 	{
@@ -899,8 +899,8 @@ void Worm::initWeapons(Game& game)
 	for(int j = 0; j < Settings::selectableWeapons; ++j)
 	{
 		WormWeapon& ww = weapons[j];
-		ww.id = common.weapOrder[settings->weapons[j]];
-		ww.ammo = common.weapons[weapons[j].id].ammo;
+		ww.type = &common.weapons[common.weapOrder[settings->weapons[j] - 1]];
+		ww.ammo = ww.type->ammo;
 		ww.delayLeft = 0;
 		ww.loadingLeft = 0;
 		ww.available = true;
@@ -1028,7 +1028,7 @@ void Worm::processWeapons(Game& game)
 	}
 	
 	WormWeapon& ww = weapons[currentWeapon];
-	Weapon& w = common.weapons[ww.id];
+	Weapon const& w = *ww.type;
 	
 	if(ww.ammo <= 0)
 	{
@@ -1330,7 +1330,7 @@ void Worm::processWeaponChange(Game& game)
 	fireConeActive = 0;
 	animate = false;
 	
-	if(common.weapons[weapons[currentWeapon].id].loopSound)
+	if(weapons[currentWeapon].type->loopSound)
 	{
 		game.soundPlayer->stop(&weapons[currentWeapon]);
 	}
@@ -1361,7 +1361,7 @@ void Worm::fire(Game& game)
 {
 	Common& common = *game.common;
 	WormWeapon& ww = weapons[currentWeapon];
-	Weapon& w = common.weapons[ww.id];
+	Weapon const& w = *ww.type;
 	
 	--ww.ammo;
 	ww.delayLeft = w.delay;
@@ -1498,10 +1498,10 @@ void Worm::processSight(Game& game)
 	Common& common = *game.common;
 	
 	WormWeapon& ww = weapons[currentWeapon];
-	Weapon& w = common.weapons[ww.id];
+	Weapon const& w = *ww.type;
 	
 	if(ww.available
-	&& (w.laserSight || ww.id == LC(LaserWeapon) - 1))
+	&& (w.laserSight || ww.type - &common.weapons[0] == LC(LaserWeapon) - 1))
 	{
 		fixed dirX = cosTable[ftoi(aimingAngle)];
 		fixed dirY = sinTable[ftoi(aimingAngle)];
@@ -1538,11 +1538,11 @@ void Worm::processSteerables(Game& game)
 	steerableSumY = 0;
 	
 	WormWeapon& ww = weapons[currentWeapon];
-	if(common.weapons[ww.id].shotType == Weapon::STSteerable)
+	if(ww.type->shotType == Weapon::STSteerable)
 	{
 		for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
 		{
-			if(i->id == ww.id && i->ownerIdx == index)
+			if(i->type == ww.type && i->ownerIdx == index)
 			{
 				if(pressed(Left))
 					i->curFrame -= (game.cycles & 1) + 1;

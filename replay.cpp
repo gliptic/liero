@@ -38,6 +38,24 @@ struct WormIdxRefCreator
 	}
 };
 
+struct WeaponIdxRefCreator
+{
+	template<typename Archive>
+	Weapon* operator()(Archive& ar, GameSerializationContext& context)
+	{
+		int idx;
+		ar.i32(idx);
+		return &context.game->common->weapons[idx];
+	}
+
+	template<typename Archive>
+	void operator()(Weapon const* w, Archive& ar, GameSerializationContext& context)
+	{
+		int idx = w - &context.game->common->weapons[0];
+		ar.i32(idx);
+	}
+};
+
 template<typename Archive>
 void archive(Archive ar, Worm::ControlState& cs)
 {
@@ -102,7 +120,8 @@ void archive(Archive ar, Worm& worm)
 		.i32(worm.weapons[i].ammo)
 		.b(worm.weapons[i].available)
 		.i32(worm.weapons[i].delayLeft)
-		.i32(worm.weapons[i].id)
+		.objref(worm.weapons[i].type, WeaponIdxRefCreator())
+		
 		.i32(worm.weapons[i].loadingLeft);
 	}
 	

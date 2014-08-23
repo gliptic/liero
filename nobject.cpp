@@ -9,7 +9,7 @@ void NObjectType::create1(Game& game, fixed velX, fixed velY, int x, int y, int 
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
 	
-	obj.id = id;
+	obj.type = this;
 	obj.ownerIdx = ownerIdx;
 	obj.x = x;
 	obj.y = y;
@@ -54,7 +54,7 @@ void NObjectType::create2(Game& game, int angle, fixed velX, fixed velY, fixed x
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
 	
-	obj.id = id;
+	obj.type = this;
 	obj.ownerIdx = ownerIdx;
 	obj.x = x;
 	obj.y = y;
@@ -115,10 +115,12 @@ void NObject::process(Game& game)
 	int ix = ftoi(x);
 	int iy = ftoi(y);
 	
+#if 0
 	if(id >= 20 && id <= 21)
 		inewY += 2; // Special flag exception, TODO: Check indexes of flags
+#endif
 		
-	NObjectType& t = common.nobjectTypes[id];
+	NObjectType const& t = *type;
 		
 	if(t.bounce > 0)
 	{
@@ -152,8 +154,10 @@ void NObject::process(Game& game)
 	inewX = ftoi(x + velX);
 	inewY = ftoi(y + velY);
 	
+#if 0
 	if(id >= 20 && id <= 21)
 		inewY += 2; // Special flag exception, TODO: Check indexes of flags
+#endif
 	
 	if(inewX < 0) x = 0;
 	if(inewY < 0) y = 0;
@@ -225,8 +229,10 @@ void NObject::process(Game& game)
 	
 	if(!doExplode)
 	{
-		if(t.hitDamage > 0
+		if(t.hitDamage > 0)
+#if 0
 		|| (id >= 20 && id <= 21)) // Flags
+#endif
 		{
 			for(std::size_t i = 0; i < game.worms.size(); ++i)
 			{

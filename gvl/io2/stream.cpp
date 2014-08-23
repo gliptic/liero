@@ -116,7 +116,7 @@ sink_result octet_writer::flush_buffer(bucket_size new_buffer_size)
 	}
 	else
 	{
-		auto old_size = std::size_t(cur_ - end_);
+		auto old_size = std::size_t(end_ - cur_);
 		auto new_size = std::max(old_size + new_buffer_size, old_size * 2);
 		buffer_.reset(buffer_->enlarge(new_size));
 		buffer_->size_ = new_size;

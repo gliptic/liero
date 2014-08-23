@@ -9,6 +9,7 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 set(SOURCES
     bobject.cpp
     bonus.cpp
+    common_exereader.cpp
     common.cpp
     console.cpp
     constants.cpp

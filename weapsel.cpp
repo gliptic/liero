@@ -52,13 +52,13 @@ WeaponSelection::WeaponSelection(Game& game)
 			
 			bool enoughWeapons = (enabledWeaps >= Settings::selectableWeapons);
 			
-			if (game.settings->weapTable[common.weapOrder[ws.weapons[j]]] > 0)
+			if (game.settings->weapTable[common.weapOrder[ws.weapons[j] - 1]] > 0)
 			{
 				while (true)
 				{
 					ws.weapons[j] = gfx.rand(1, 41);
 
-					int w = common.weapOrder[ws.weapons[j]];
+					int w = common.weapOrder[ws.weapons[j] - 1];
 
 					if((!enoughWeapons || !weapUsed[w])
 					&& game.settings->weapTable[w] <= 0)
@@ -66,14 +66,14 @@ WeaponSelection::WeaponSelection(Game& game)
 				}
 			}
 			
-			int w = common.weapOrder[ws.weapons[j]];
+			int w = common.weapOrder[ws.weapons[j] - 1];
 			
 			weapUsed[w] = true;
 			
 			WormWeapon& ww = worm.weapons[j];
 			
 			ww.ammo = 0;
-			ww.id = w;
+			ww.type = &common.weapons[w];
 			
 			menus[i].items.push_back(MenuItem(48, 48, common.weapons[w].name));
 		}
@@ -175,12 +175,12 @@ bool WeaponSelection::processFrame()
 					{
 						--ws.weapons[weapID];
 						if(ws.weapons[weapID] < 1)
-							ws.weapons[weapID] = 40; // TODO: Unhardcode
+							ws.weapons[weapID] = (uint32_t)common.weapons.size();
 					}
-					while(game.settings->weapTable[common.weapOrder[ws.weapons[weapID]]] != 0);
+					while(game.settings->weapTable[common.weapOrder[ws.weapons[weapID] - 1]] != 0);
 					
-					int w = common.weapOrder[ws.weapons[weapID]];
-					worm.weapons[weapID].id = w;
+					int w = common.weapOrder[ws.weapons[weapID] - 1];
+					worm.weapons[weapID].type = &common.weapons[w];
 					menus[i].selected()->string = common.weapons[w].name;
 				}
 				
@@ -193,13 +193,13 @@ bool WeaponSelection::processFrame()
 					do
 					{
 						++ws.weapons[weapID];
-						if(ws.weapons[weapID] > 40)
-							ws.weapons[weapID] = 1; // TODO: Unhardcode
+						if(ws.weapons[weapID] > (uint32_t)common.weapons.size())
+							ws.weapons[weapID] = 1;
 					}
-					while(game.settings->weapTable[common.weapOrder[ws.weapons[weapID]]] != 0);
+					while(game.settings->weapTable[common.weapOrder[ws.weapons[weapID] - 1]] != 0);
 					
-					int w = common.weapOrder[ws.weapons[weapID]];
-					worm.weapons[weapID].id = w;
+					int w = common.weapOrder[ws.weapons[weapID] - 1];
+					worm.weapons[weapID].type = &common.weapons[w];
 					menus[i].selected()->string = common.weapons[w].name;
 				}
 			}
@@ -237,14 +237,14 @@ bool WeaponSelection::processFrame()
 						{
 							ws.weapons[j] = gfx.rand(1, 41);
 							
-							int w = common.weapOrder[ws.weapons[j]];
+							int w = common.weapOrder[ws.weapons[j] - 1];
 							
 							if((!enoughWeapons || !weapUsed[w])
 							&& game.settings->weapTable[w] <= 0)
 								break;
 						}
 						
-						int w = common.weapOrder[ws.weapons[j]];
+						int w = common.weapOrder[ws.weapons[j] - 1];
 						
 						weapUsed[w] = true;
 						

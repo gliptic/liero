@@ -59,7 +59,7 @@ void NormalStatsRecorder::damagePotential(Worm* byWorm, WormWeapon* weapon, int 
 		return;
 
 	WormStats& ws = worms[byWorm->index];
-	WeaponStats& weap = ws.weapons[weapon->id];
+	WeaponStats& weap = ws.weapons[weapon->type->id];
 	weap.potentialHp += hp;
 }
 
@@ -86,7 +86,7 @@ void NormalStatsRecorder::damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* to
 	if(byWorm != toWorm) // Don't count if projectile already hit
 	{
 		WormStats& ws = worms[byWorm->index];
-		WeaponStats& weap = ws.weapons[weapon->id];
+		WeaponStats& weap = ws.weapons[weapon->type->id];
 		if (!hasHit)
 			weap.actualHp += hp;
 		weap.totalHp += hp;
@@ -99,7 +99,7 @@ void NormalStatsRecorder::shot(Worm* byWorm, WormWeapon* weapon)
 		return;
 
 	WormStats& ws = worms[byWorm->index];
-	WeaponStats& weap = ws.weapons[weapon->id];
+	WeaponStats& weap = ws.weapons[weapon->type->id];
 	weap.potentialHits += 1;
 }
 
@@ -113,7 +113,7 @@ void NormalStatsRecorder::hit(Worm* byWorm, WormWeapon* weapon, Worm* toWorm)
 	if (byWorm != toWorm)
 	{
 		WormStats& ws = worms[byWorm->index];
-		WeaponStats& weap = ws.weapons[weapon->id];
+		WeaponStats& weap = ws.weapons[weapon->type->id];
 		weap.actualHits += 1;
 	}
 }

@@ -6,7 +6,7 @@
 #include "constants.hpp"
 //#include <iostream>
 
-int Weapon::computedLoadingTime(Settings& settings)
+int Weapon::computedLoadingTime(Settings& settings) const
 {
 	int ret = (settings.loadingTime * loadingTime) / 100;
 	if(ret == 0)
@@ -14,11 +14,11 @@ int Weapon::computedLoadingTime(Settings& settings)
 	return ret;
 }
 
-void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, int ownerIdx, WormWeapon* ww)
+void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, int ownerIdx, WormWeapon* ww) const
 {
 	WObject* obj = game.wobjects.newObjectReuse();
 	
-	obj->id = id;
+	obj->type = this;
 	obj->x = x;
 	obj->y = y;
 	obj->ownerIdx = ownerIdx;
@@ -89,7 +89,7 @@ void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixe
 void WObject::blowUpObject(Game& game, int causeIdx)
 {
 	Common& common = *game.common;
-	Weapon& w = common.weapons[id];
+	Weapon const& w = *type;
 	
 	fixed x = this->x;
 	fixed y = this->y;
@@ -161,13 +161,13 @@ void WObject::process(Game& game)
 	bool doRemove = false;
 	
 	Common& common = *game.common;
-	Weapon& w = common.weapons[id];
+	Weapon const& w = *type;
 
 	Worm* owner = game.wormByIdx(ownerIdx);
 	
 	// As liero would do this while rendering, we try to do it as early as possible
 	if(common.H[HRemExp]
-	&& id == LC(RemExpObject) - 1)
+	&& type - &common.weapons[0] == LC(RemExpObject) - 1)
 	{
 		if(owner->pressed(Worm::Change)
 		&& owner->pressed(Worm::Fire))
@@ -294,7 +294,7 @@ void WObject::process(Game& game)
 		{
 			for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
 			{
-				if(i->id != id
+				if(i->type != type
 				|| i->ownerIdx != ownerIdx)
 				{
 					if(x >= i->x - itof(2)
@@ -310,8 +310,10 @@ void WObject::process(Game& game)
 			
 			for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
 			{
-				if(i->id != id
-				|| i->ownerIdx != ownerIdx)
+				if(i->ownerIdx != ownerIdx)
+#if 0
+				|| i->id != id)
+#endif
 				{
 					if(x >= i->x - itof(2)
 					&& x <= i->x + itof(2)
