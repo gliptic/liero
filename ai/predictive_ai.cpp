@@ -958,8 +958,6 @@ void FollowAI::process(Game& game, Worm& worm)
 		}
 	}
 
-	auto prevContext = currentContext;
-
 	worm.controlStates = currentContext.update(best->plan[0], game, &worm, *this);
 
 	if (frame < 70 * 2 * 60)
