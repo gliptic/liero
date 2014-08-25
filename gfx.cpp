@@ -348,8 +348,8 @@ void Gfx::setVideoMode()
 
 void Gfx::loadMenus()
 {
-	hiddenMenu.addItem(MenuItem(48, 7, "FULLSCREEN (F5)", HiddenMenu::Fullscreen));
-	hiddenMenu.addItem(MenuItem(48, 7, "DOUBLE SIZE (F6)", HiddenMenu::DoubleRes));
+	hiddenMenu.addItem(MenuItem(48, 7, "FULLSCREEN (F11)", HiddenMenu::Fullscreen));
+	hiddenMenu.addItem(MenuItem(48, 7, "DOUBLE SIZE", HiddenMenu::DoubleRes));
 	hiddenMenu.addItem(MenuItem(48, 7, "SET FULLSCREEN WIDTH", HiddenMenu::FullscreenW));
 	hiddenMenu.addItem(MenuItem(48, 7, "SET FULLSCREEN HEIGHT", HiddenMenu::FullscreenH));
 	hiddenMenu.addItem(MenuItem(48, 7, "POWERLEVEL PALETTES", HiddenMenu::LoadPowerLevels));
@@ -409,11 +409,11 @@ void Gfx::loadMenus()
 	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaNewGame)); // string set in menuLoop
 	mainMenu.addItem(MenuItem(48, 48, "OPTIONS (F2)", MainMenu::MaAdvanced));
 	mainMenu.addItem(MenuItem(48, 48, "REPLAYS (F3)", MainMenu::MaReplays));
-	mainMenu.addItem(MenuItem(6, 6, "QUIT TO OS (F10)", MainMenu::MaQuit));
+	mainMenu.addItem(MenuItem(6, 6, "QUIT TO OS", MainMenu::MaQuit));
 	mainMenu.addItem(MenuItem::space());
-	mainMenu.addItem(MenuItem(48, 48, "LEFT PLAYER (1)", MainMenu::MaPlayer1Settings));
-	mainMenu.addItem(MenuItem(48, 48, "RIGHT PLAYER (2)", MainMenu::MaPlayer2Settings));
-	mainMenu.addItem(MenuItem(48, 48, "MATCH SETUP (3)", MainMenu::MaSettings));
+	mainMenu.addItem(MenuItem(48, 48, "LEFT PLAYER (F5)", MainMenu::MaPlayer1Settings));
+	mainMenu.addItem(MenuItem(48, 48, "RIGHT PLAYER (F6)", MainMenu::MaPlayer2Settings));
+	mainMenu.addItem(MenuItem(48, 48, "MATCH SETUP (F7)", MainMenu::MaSettings));
 
 	settingsMenu.valueOffsetX = 100;
 	playerMenu.valueOffsetX = 95;
@@ -474,13 +474,9 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 					controller->onKey(dosScan, true);
 			}
 
-			if(s == SDLK_F5)
+			if(s == SDLK_F11)
 			{
 				setFullscreen(!fullscreen);
-			}
-			else if(s == SDLK_F6)
-			{
-				setDoubleRes(!doubleRes);
 			}
 		}
 		break;
@@ -1824,23 +1820,18 @@ int Gfx::menuLoop()
 			mainMenu.moveToId(MainMenu::MaReplays);
 			selected = curMenu->onEnter(common);
 		}
-		if(testSDLKeyOnce(SDLK_F10))
-		{
-			curMenu = &mainMenu;
-			selected = MainMenu::MaQuit;
-		}
 
-		if (testSDLKeyOnce(SDLK_1))
+		if (testSDLKeyOnce(SDLK_F5))
 		{
 			mainMenu.moveToId(MainMenu::MaPlayer1Settings);
 			playerSettings(0);
 		}
-		if (testSDLKeyOnce(SDLK_2))
+		if (testSDLKeyOnce(SDLK_F6))
 		{
 			mainMenu.moveToId(MainMenu::MaPlayer2Settings);
 			playerSettings(1);
 		}
-		if (testSDLKeyOnce(SDLK_3))
+		if (testSDLKeyOnce(SDLK_F7))
 		{
 			mainMenu.moveToId(MainMenu::MaSettings);
 			curMenu = &settingsMenu; // Go into settings menu

@@ -6,6 +6,7 @@
 #include "menu/menu.hpp"
 #include "mixer/player.hpp"
 #include "viewport.hpp"
+#include "filesystem.hpp"
 #include <SDL/SDL.h>
 
 WeaponSelection::WeaponSelection(Game& game)
@@ -101,7 +102,8 @@ void WeaponSelection::draw()
 		}
 		else
 		{
-			common.font.drawText(gfx.screenBmp, (LS(LevelIs1) + game.settings->levelFile + LS(LevelIs2)), 0, 162, 50);
+			auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
+			common.font.drawText(gfx.screenBmp, (LS(LevelIs1) + levelName + LS(LevelIs2)), 0, 162, 50);
 		}
 		
 		gfx.frozenScreen.copy(gfx.screenBmp);
