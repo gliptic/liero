@@ -892,7 +892,7 @@ void FollowAI::process(Game& game, Worm& worm)
 	evaluatePositions.clear();
 
 	{
-		int candIdx;
+		unsigned int candIdx;
 
 		evaluationBudget += (game.settings->aiMutations + 1) * game.settings->aiFrames;
 
@@ -957,8 +957,6 @@ void FollowAI::process(Game& game, Worm& worm)
 			}
 		}
 	}
-
-	auto prevContext = currentContext;
 
 	worm.controlStates = currentContext.update(best->plan[0], game, &worm, *this);
 

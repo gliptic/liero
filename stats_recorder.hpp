@@ -65,14 +65,14 @@ struct WormFrameStats
 struct WormStats
 {
 	WormStats()
-	: damage(0), damageDealt(0)
-	, selfDamage(0), spawnTime(-1)
+	: damage(0), damageDealt(0), selfDamage(0)
 	, damageHm(504 / 2, 350 / 2, 504, 350)
 	, presence(504 / 2, 350 / 2, 504, 350)
-	, lives(0), timer(0), kills(0)
-	, aiProcessTime(0)
 	, weaponChangeGood(0)
 	, weaponChangeBad(0)
+	, spawnTime(-1)
+	, lives(0), timer(0), kills(0)
+	, aiProcessTime(0)
 	{
 		for (int i = 0; i < 40; ++i)
 			weapons[i].index = i;
@@ -116,8 +116,8 @@ struct NormalStatsRecorder : StatsRecorder
 {
 	NormalStatsRecorder()
 	: frame(0), frameStart(0), processTimeTotal(0)
-	, presence(504 / 2, 350 / 2, 504, 350)
 	, gameTime(0)
+	, presence(504 / 2, 350 / 2, 504, 350)
 	{
 		for (int i = 0; i < 2; ++i)
 		{

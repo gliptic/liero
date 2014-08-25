@@ -4,7 +4,7 @@ project (openliero)
 Find_Package (SDL REQUIRED)
 include_directories("${PROJECT_SOURCE_DIR}")
 
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
 
 set(SOURCES
     bobject.cpp

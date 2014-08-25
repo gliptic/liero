@@ -8,3 +8,7 @@ CMakeFiles/
 CMakeCache.txt
 Makefile
 cmake_install.cmake
+
+# created by running Liero
+Replays/
+Profiles/

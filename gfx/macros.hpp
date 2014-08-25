@@ -66,10 +66,7 @@ inline uint8_t choose(uint8_t this_, uint8_t if_this, uint8_t is_different_from_
 #define FILTER_X(dest, destPitch, src, srcPitch, width, height, srcSize, destSize, FUNC, ATTRIB, READER, WRITER) do { \
     uint8_t* dest_ = (dest); \
     uint8_t const* src_ = (src); \
-    int destPitch_ = (destPitch); \
     int srcPitch_ = (srcPitch); \
-    int width_ = (width); \
-    int height_ = (height); \
     int srcSize_ = (srcSize); \
     int destSize_ = (destSize); \
     ATTRIB; \

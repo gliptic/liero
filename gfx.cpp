@@ -289,12 +289,12 @@ Gfx::Gfx()
 , back(0)
 , running(true)
 , fullscreen(false)
+, doubleRes(true)
 , menuCycles(0)
 , windowW(320 * 2)
 , windowH(200 * 2)
 , prevMag(0)
 , keyBufPtr(keyBuf)
-, doubleRes(true)
 {
 	clearKeys();
 }
@@ -807,8 +807,8 @@ struct ProfileLoadBehavior : ItemBehavior
 struct PlayerSettingsBehavior : ItemBehavior
 {
 	PlayerSettingsBehavior(Common& common, int player)
-	: player(player)
-	, common(common)
+	: common(common)
+	, player(player)
 	{
 	}
 	
@@ -1644,7 +1644,14 @@ void Gfx::mainLoop()
 
 void Gfx::saveSettings(std::string const& path)
 {
-	settingsFile = path + ".dat";
+	std::string extension = getExtension(path);
+	settingsFile = path;
+	// this won't catch stuff like DaT or dAT, but standard C++ has no case
+	// insensitive compare
+	if (!(extension.compare("dat") == 0 || extension.compare("DAT") == 0))
+	{
+		settingsFile = path + ".dat";
+	}
 	settings->save(settingsFile, rand);
 }
 

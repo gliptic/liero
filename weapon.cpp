@@ -156,7 +156,6 @@ void WObject::blowUpObject(Game& game, int causeIdx)
 void WObject::process(Game& game)
 {
 	int iter = 0;
-	bool bounced = false;
 	bool doExplode = false;
 	bool doRemove = false;
 	
@@ -234,8 +233,6 @@ void WObject::process(Game& game)
 				}
 				else
 					velX = -velX;
-					
-				bounced = true;
 			}
 			
 			if(!game.level.inside(ix, inewY)
@@ -248,8 +245,6 @@ void WObject::process(Game& game)
 				}
 				else
 					velY = -velY;
-					
-				bounced = true;
 			}
 		}
 		

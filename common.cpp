@@ -634,9 +634,9 @@ template<typename Writer>
 struct TextWriter
 {
 	TextWriter(Writer& writer)
-	: writer(writer)
-	, first(true)
+	: first(true)
 	, indent(0)
+	, writer(writer)
 	{
 	}
 
