@@ -85,13 +85,14 @@ struct Game
 		if (idx < 0) return 0;
 		return worms[idx];
 	}
-	
-	Level level;
-	
+
 	gvl::shared_ptr<Common> common;
 	gvl::shared_ptr<SoundPlayer> soundPlayer;
 	gvl::shared_ptr<Settings> settings;
 	gvl::shared_ptr<StatsRecorder> statsRecorder;
+
+	Level level;
+
 	int screenFlash;
 	bool gotChanged;
 	int lastKilledIdx;
@@ -100,10 +101,10 @@ struct Game
 	Rand rand;
 
 	Holdazone holdazone;
-	
+
 	std::vector<Viewport*> viewports;
 	std::vector<Worm*> worms;
-	
+
 	typedef ExactObjectList<Bonus, 99> BonusList;
 	typedef ExactObjectList<WObject, 600> WObjectList;
 	typedef ExactObjectList<SObject, 700> SObjectList;

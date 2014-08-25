@@ -262,7 +262,7 @@ struct ObjectResolver
 			auto& n = vec[i];
 			if (n.idStr == str)
 			{
-				v = i;
+				v = (int)i;
 				return;
 			}
 		}

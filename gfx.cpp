@@ -190,10 +190,10 @@ struct ProfileLoadedBehavior : ItemBehavior
 #define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
  
 int levenshtein(char const *s1, char const *s2) {
-    unsigned int x, y, s1len, s2len;
+    std::size_t x, y, s1len, s2len;
     s1len = strlen(s1);
     s2len = strlen(s2);
-	unsigned w = s1len+1;
+	std::size_t w = s1len+1;
 	std::vector<unsigned> matrix(w * (s2len + 1));
     matrix[0] = 0;
     for (x = 1; x <= s2len; x++)
@@ -289,12 +289,12 @@ Gfx::Gfx()
 , back(0)
 , running(true)
 , fullscreen(false)
+, doubleRes(true)
 , menuCycles(0)
 , windowW(320 * 2)
 , windowH(200 * 2)
 , prevMag(0)
 , keyBufPtr(keyBuf)
-, doubleRes(true)
 {
 	clearKeys();
 }
@@ -354,7 +354,6 @@ void Gfx::loadMenus()
 	hiddenMenu.addItem(MenuItem(48, 7, "SET FULLSCREEN HEIGHT", HiddenMenu::FullscreenH));
 	hiddenMenu.addItem(MenuItem(48, 7, "POWERLEVEL PALETTES", HiddenMenu::LoadPowerLevels));
 	hiddenMenu.addItem(MenuItem(48, 7, "SHADOWS", HiddenMenu::Shadows));
-	hiddenMenu.addItem(MenuItem(48, 7, "SCALING FILTER", HiddenMenu::ScalingFilter));
 	hiddenMenu.addItem(MenuItem(48, 7, "SCREEN SYNC.", HiddenMenu::ScreenSync));
 	hiddenMenu.addItem(MenuItem(48, 7, "AUTO-RECORD REPLAYS", HiddenMenu::RecordReplays));
 	hiddenMenu.addItem(MenuItem(48, 7, "AI FRAMES", HiddenMenu::AiFrames));
@@ -692,7 +691,7 @@ void Gfx::flip()
 
 	{
 		int offsetX, offsetY;
-		int mag = fitScreen(back->w, back->h, screenBmp.w, screenBmp.h, offsetX, offsetY, settings->scaleFilter);
+		int mag = fitScreen(back->w, back->h, screenBmp.w, screenBmp.h, offsetX, offsetY);
 		
 		gvl::rect newRect(offsetX, offsetY, screenBmp.w * mag, screenBmp.h * mag);
 		
@@ -719,7 +718,7 @@ void Gfx::flip()
 
 			preparePalette(back->format, realPal, pal32);
 		
-			scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, settings->scaleFilter, pal32);
+			scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, pal32);
 		}
 	}
 	
@@ -807,8 +806,8 @@ struct ProfileLoadBehavior : ItemBehavior
 struct PlayerSettingsBehavior : ItemBehavior
 {
 	PlayerSettingsBehavior(Common& common, int player)
-	: player(player)
-	, common(common)
+	: common(common)
+	, player(player)
 	{
 	}
 	
@@ -1284,7 +1283,7 @@ void Gfx::weaponOptions()
 	weaponMenu.setHeight(14);
 	weaponMenu.valueOffsetX = 89;
 	
-	for(int i = 0; i < (uint32_t)common.weapons.size(); ++i)
+	for(int i = 0; i < (int)common.weapons.size(); ++i)
 	{
 		int index = common.weapOrder[i];
 		weaponMenu.addItem(MenuItem(48, 7, common.weapons[index].name, i));
@@ -1644,7 +1643,14 @@ void Gfx::mainLoop()
 
 void Gfx::saveSettings(std::string const& path)
 {
-	settingsFile = path + ".dat";
+	std::string extension = getExtension(path);
+	settingsFile = path;
+	// this won't catch stuff like DaT or dAT, but standard C++ has no case
+	// insensitive compare
+	if (!(extension.compare("dat") == 0 || extension.compare("DAT") == 0))
+	{
+		settingsFile = path + ".dat";
+	}
 	settings->save(settingsFile, rand);
 }
 

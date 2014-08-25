@@ -71,10 +71,8 @@ void replayToVideo(
 	frameDebt.num = 0;
 	frameDebt.den = 1;
 
-	uint32_t scaleFilter = Settings::SfNearest;
-
 	int offsetX, offsetY;
-	int mag = fitScreen(w, h, renderer.screenBmp.w, renderer.screenBmp.h, offsetX, offsetY, scaleFilter);
+	int mag = fitScreen(w, h, renderer.screenBmp.w, renderer.screenBmp.h, offsetX, offsetY);
 
 	printf("\n");
 
@@ -123,7 +121,7 @@ void replayToVideo(
 				uint32_t pal32[256];
 				preparePaletteBgra(realPal, pal32);
 
-				scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, scaleFilter, pal32);
+				scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, pal32);
 
 				vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
 			}

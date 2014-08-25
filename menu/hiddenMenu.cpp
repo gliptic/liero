@@ -7,36 +7,6 @@
 #include "../sfx.hpp"
 #include "../filesystem.hpp"
 
-/*
-struct Depth32Behavior : BooleanSwitchBehavior
-{
-	Depth32Behavior(Common& common, bool& v)
-	: BooleanSwitchBehavior(common, v)
-	{
-	}
-	
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		BooleanSwitchBehavior::onEnter(menu, item);
-		gfx.setVideoMode();
-		return -1;
-	}
-	
-	bool onLeftRight(Menu& menu, MenuItem& item, int dir)
-	{
-		BooleanSwitchBehavior::onLeftRight(menu, item, dir);
-		gfx.setVideoMode();
-		return true;
-	}
-};*/
-
-
-static std::string const scaleFilterNames[Settings::SfMax] =
-{
-	"Nearest",
-	"Scale2X"
-};
-
 static std::string const botWeaponSel[3] =
 {
 	"RANDOM",
@@ -52,8 +22,6 @@ ItemBehavior* HiddenMenu::getItemBehavior(Common& common, MenuItem& item)
 			return new BooleanSwitchBehavior(common, gfx.settings->recordReplays);
 		case LoadPowerLevels:
 			return new BooleanSwitchBehavior(common, gfx.settings->loadPowerlevelPalette);
-		case ScalingFilter:
-			return new ArrayEnumBehavior(common, gfx.settings->scaleFilter, scaleFilterNames);
 		case DoubleRes:
 			return new BooleanSwitchBehavior(common, gfx.doubleRes, [](bool v) { gfx.setDoubleRes(v); });
 		case Fullscreen:

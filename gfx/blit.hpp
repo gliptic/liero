@@ -48,10 +48,10 @@ void drawGraph(Bitmap& scr,
 
 void scaleDraw(
 	PalIdx* src, int w, int h, std::size_t srcPitch,
-	uint8_t* dest, std::size_t destPitch, int mag, uint32_t scaleFilter, uint32_t* pal32);
+	uint8_t* dest, std::size_t destPitch, int mag, uint32_t* pal32);
 
 void preparePaletteBgra(Color realPal[256], uint32_t (&pal32)[256]);
-int fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY, uint32_t scaleFilter);
+int fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY);
 
 inline void blitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height)
 {

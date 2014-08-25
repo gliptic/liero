@@ -767,7 +767,7 @@ void loadSfx(std::vector<sfx_sound*>& sounds, ReaderFile& snd)
 	// TODO: Destroy old sounds to avoid leak
 	sounds.resize(count);
 	
-	long oldPos = snd.tellg();
+	long oldPos = (long)snd.tellg();
 	
 	for(int i = 0; i < count; ++i)
 	{
@@ -776,7 +776,7 @@ void loadSfx(std::vector<sfx_sound*>& sounds, ReaderFile& snd)
 		int offset = readUint32(snd);
 		int length = readUint32(snd);
 		
-		oldPos = snd.tellg();
+		oldPos = (long)snd.tellg();
 		
 		int byteLength = length * 4;
 

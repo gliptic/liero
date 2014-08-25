@@ -632,13 +632,13 @@ void evaluate(
 			{
 				// Out of all loading weapons that are at most weaponChangesLeft[i] - 1 away from
 				// a loaded weapon, pick the one that is closest to loaded.
-				for (std::size_t w = 0; w < 5; ++w)
+				for (int w = 0; w < 5; ++w)
 				{
 					if (meCopy->weapons[w].loadingLeft > 0)
 					{
 						int distanceFromCurrent = std::abs(weaponChangeOffset(w, meCopy->currentWeapon));
 						int loadedDistance = 5;
-						for (std::size_t lw = 0; lw < 5; ++lw)
+						for (int lw = 0; lw < 5; ++lw)
 						{
 							if (meCopy->weapons[lw].loadingLeft == 0)
 							{
@@ -682,7 +682,7 @@ void evaluate(
 
 		if (game.settings->aiTraces)
 		{
-			int t = 119 - i * (119 - 104 + 1) / planSize;
+			int t = 119 - (int)(i * (119 - 104 + 1) / planSize);
 
 			ai.evaluatePositions.push_back(std::make_tuple(gvl::ivec2(meCopy->x, meCopy->y), t));
 		}
@@ -894,7 +894,7 @@ void FollowAI::process(Game& game, Worm& worm)
 	evaluatePositions.clear();
 
 	{
-		int candIdx;
+		unsigned int candIdx;
 
 		evaluationBudget += (game.settings->aiMutations + 1) * game.settings->aiFrames;
 
@@ -959,8 +959,6 @@ void FollowAI::process(Game& game, Worm& worm)
 			}
 		}
 	}
-
-	auto prevContext = currentContext;
 
 	worm.controlStates = currentContext.update(best->plan[0], game, &worm, *this);
 

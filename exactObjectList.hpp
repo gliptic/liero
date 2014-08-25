@@ -322,7 +322,7 @@ struct ExactObjectList
 		for(std::size_t i = 0; i < Limit; ++i)
 			arr[i].used = false;
 
-		arr[Limit].used = false;
+		arr[Limit].used = true;
 
 		// Mark padding as used
 		for(uint32_t index = Limit; index < FreeListSize * 32; ++index)
@@ -333,7 +333,7 @@ struct ExactObjectList
 	{
 		return count;
 	}
-	
+
 	T arr[Limit + 1]; // Sentinel
 
 	static uint32_t const FreeListSize = (Limit + 31) / 32;

@@ -26,11 +26,11 @@ Game::Game(
 , soundPlayer(soundPlayer)
 , settings(settingsInit)
 , statsRecorder(new NormalStatsRecorder)
+, level(*common)
 , screenFlash(0)
 , gotChanged(false)
 , lastKilledIdx(-1)
 , paused(true)
-, level(*common)
 , quickSim(false)
 {
 	rand.seed(uint32_t(std::time(0)));
@@ -568,7 +568,7 @@ void Game::doDamage(Worm& w, int amount, int byIdx)
 		{
 			if (byIdx < 0 || byIdx == w.index)
 			{
-				int parts = worms.size() - 1;
+				int parts = (int)worms.size() - 1;
 				int left = amount;
 
 				for (Worm* other : worms)
@@ -596,7 +596,7 @@ void Game::doHealing(Worm& w, int amount)
 	
 	if (settings->gameMode == Settings::GMScalesOfJustice)
 	{
-		int parts = worms.size() - 1;
+		int parts = (int)worms.size() - 1;
 		int left = amount;
 
 		for (Worm* other : worms)

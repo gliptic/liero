@@ -23,7 +23,6 @@ struct Extensions
 	// Extensions
 	bool recordReplays;
 	bool loadPowerlevelPalette;
-	uint32_t scaleFilter;
 	int bloodParticleMax;
 
 	int aiFrames, aiMutations;
@@ -49,14 +48,6 @@ struct Settings : gvl::shared, Extensions
 		GMGameOfTag,
 		GMHoldazone,
 		GMScalesOfJustice
-	};
-	
-	enum
-	{
-		SfNearest,
-		SfScale2X,
-		
-		SfMax
 	};
 	
 	static int const selectableWeapons = 5;
@@ -209,10 +200,11 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 		ar.ui8(fileExtensionVersion);
 		
 		bool extDummy = true;
+		uint8 extDummy8 = 0;
 		ar.b(extDummy);
 		ar.b(settings.recordReplays);
 		ar.b(settings.loadPowerlevelPalette);
-		ar.ui8(settings.scaleFilter);
+		ar.ui8(extDummy8);
 		ar.ui16(settings.fullscreenW);
 		ar.ui16(settings.fullscreenH);
 		
@@ -302,12 +294,13 @@ void archive(Archive ar, Settings& settings)
 	ar.ui8(fileExtensionVersion);
 
 	bool extDummy = true;
+	uint8 extDummy8 = 0;
 	
 	ar
 	.b(extDummy)
 	.b(settings.recordReplays)
 	.b(settings.loadPowerlevelPalette)
-	.ui8(settings.scaleFilter)
+	.ui8(extDummy8)
 	.ui16(settings.fullscreenW)
 	.ui16(settings.fullscreenH);
 	

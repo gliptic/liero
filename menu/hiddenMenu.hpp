@@ -12,7 +12,7 @@ struct HiddenMenu : Menu
 	{
 		RecordReplays,
 		LoadPowerLevels,
-		ScalingFilter,
+		//ScalingFilter,
 		DoubleRes,
 		Fullscreen,
 		FullscreenW,

@@ -31,7 +31,7 @@ struct Bitmap : noncopyable
 		alloc(w, h, w);
 	}
 
-	void alloc(int newW, int newH, int newPitch)
+	void alloc(int newW, int newH, unsigned int newPitch)
 	{
 		if (!pixels || w != newW || h != newH || pitch != newPitch)
 		{

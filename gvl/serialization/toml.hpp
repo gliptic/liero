@@ -13,8 +13,8 @@ template<typename Writer>
 struct writer
 {
 	writer(Writer& w)
-	: w(w), inObject(false)
-	, indent(0)
+	: indent(0), inObject(false)
+	, w(w)
 	{
 	}
 
@@ -30,6 +30,7 @@ struct writer
 	int indent;
 	std::vector<char const*> chain;
 	bool inObject;
+	Writer& w;
 
 	void beginf(char const* name)
 	{
@@ -192,7 +193,7 @@ struct writer
 		str(s);
 	}
 
-	Writer& w;
+	
 };
 
 enum type
@@ -355,13 +356,15 @@ template<typename Reader>
 struct reader
 {
 	reader(Reader& r)
-	: r(r)
-	, root(object())
+	: root(object())
+	, r(r)
 	{
 		start();
 	}
 
 	value root, cur;
+	Reader& r;
+	uint8_t c;
 
 	value find(value const& o, vector<std::string> const& path, bool makeArray, bool assign = false)
 	{
@@ -763,9 +766,6 @@ struct reader
 
 		throw parse_error();
 	}
-
-	Reader& r;
-	uint8_t c;
 };
 
 }

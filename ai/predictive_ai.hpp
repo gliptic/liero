@@ -390,12 +390,12 @@ struct FollowAI : WormAI, AiContext
 	: frame(0)
 	, model(weights, testing)
 	, evaluationBudget(0)
-	, targetAi(targetAiInit)
 	, effectScaler(0)
-	, weights(weights)
+	, targetAi(targetAiInit)
 	, candPlan(candPopSize)
 	, best(0)
 	, testing(testing)
+	, weights(weights)
 #if AI_THREADS
 	, workQueue(2)
 #endif

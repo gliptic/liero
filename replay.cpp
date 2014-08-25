@@ -51,7 +51,7 @@ struct WeaponIdxRefCreator
 	template<typename Archive>
 	void operator()(Weapon const* w, Archive& ar, GameSerializationContext& context)
 	{
-		int idx = w - &context.game->common->weapons[0];
+		int idx = (int)(w - &context.game->common->weapons[0]);
 		ar.i32(idx);
 	}
 };
