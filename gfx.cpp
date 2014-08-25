@@ -892,10 +892,10 @@ struct OptionsSaveBehavior : ItemBehavior
 			
 		x += menu.valueOffsetX + 2;
 		
-		std::string name = gfx.settingsFile;
+		std::string name = getBasename(getLeaf(gfx.settingsFile));
 		if(gfx.inputString(name, 30, x, y) && !name.empty())
 		{
-			gfx.saveSettings(name);
+			gfx.saveSettings(joinPath(lieroEXERoot, name));
 		}
 				
 		sfx.play(common, 27);
