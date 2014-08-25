@@ -892,7 +892,7 @@ void FollowAI::process(Game& game, Worm& worm)
 	evaluatePositions.clear();
 
 	{
-		int candIdx;
+		unsigned int candIdx;
 
 		evaluationBudget += (game.settings->aiMutations + 1) * game.settings->aiFrames;
 
