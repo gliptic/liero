@@ -26,11 +26,11 @@ Game::Game(
 , soundPlayer(soundPlayer)
 , settings(settingsInit)
 , statsRecorder(new NormalStatsRecorder)
+, level(*common)
 , screenFlash(0)
 , gotChanged(false)
 , lastKilledIdx(-1)
 , paused(true)
-, level(*common)
 , quickSim(false)
 {
 	rand.seed(uint32_t(std::time(0)));

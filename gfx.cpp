@@ -289,12 +289,12 @@ Gfx::Gfx()
 , back(0)
 , running(true)
 , fullscreen(false)
+, doubleRes(true)
 , menuCycles(0)
 , windowW(320 * 2)
 , windowH(200 * 2)
 , prevMag(0)
 , keyBufPtr(keyBuf)
-, doubleRes(true)
 {
 	clearKeys();
 }
@@ -807,8 +807,8 @@ struct ProfileLoadBehavior : ItemBehavior
 struct PlayerSettingsBehavior : ItemBehavior
 {
 	PlayerSettingsBehavior(Common& common, int player)
-	: player(player)
-	, common(common)
+	: common(common)
+	, player(player)
 	{
 	}
 	
