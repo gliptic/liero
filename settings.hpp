@@ -201,7 +201,7 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 		ar.ui8(fileExtensionVersion);
 		
 		bool extDummy = true;
-		uint8 extDummy8 = 0;
+		uint8_t extDummy8 = 0;
 		ar.b(extDummy);
 		ar.b(settings.recordReplays);
 		ar.b(settings.loadPowerlevelPalette);
@@ -295,8 +295,8 @@ void archive(Archive ar, Settings& settings)
 	ar.ui8(fileExtensionVersion);
 
 	bool extDummy = true;
-	uint8 extDummy8 = 0;
-	
+	uint8_t extDummy8 = 0;
+
 	ar
 	.b(extDummy)
 	.b(settings.recordReplays)

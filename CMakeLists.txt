@@ -66,9 +66,7 @@ set(SOURCES
     gvl/support/profile.cpp
     gvl/resman/shared.cpp
     gvl/io2/stream.cpp
-    gvl/io/convert.cpp
-    gvl/io/encoding.cpp
-    gvl/io/stream.cpp
+    gvl/io2/convert.cpp
     gvl/containers/list.cpp
 	tl/utf8.c
     )
