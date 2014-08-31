@@ -15,6 +15,11 @@ struct Sprite
 
 struct SpriteSet
 {
+	SpriteSet()
+	: width(0), height(0), spriteSize(0), count(0)
+	{
+	}
+
 	std::vector<PalIdx> data;
 	int width;
 	int height;

@@ -5,7 +5,7 @@
 #include "gfx/color.hpp"
 #include "filesystem.hpp"
 
-#include "reader.hpp" // TODO: For lieroEXERoot. We should move that into Common.
+#include "reader.hpp" // TODO: For configRoot. We should move that into Common.
 #include <cstring>
 
 void Level::generateDirtPattern(Common& common, Rand& rand)
@@ -217,20 +217,9 @@ void Level::resize(int width_new, int height_new)
 	materials.resize(width * height);
 }
 
-bool Level::load(Common& common, Settings const& settings, std::string const& path)
+bool Level::load(Common& common, Settings const& settings, ReaderFile f)
 {
 	resize(504, 350);
-
-	ReaderFile f;
-
-	try
-	{
-		openFileUncached(f, path);
-	}
-	catch (std::runtime_error&)
-	{
-		return false;
-	}
 
 	std::size_t len = f.len;
 	bool resetPalette = true;
@@ -277,7 +266,7 @@ void Level::generateFromSettings(Common& common, Settings const& settings, Rand&
 		if (path.find('.', 0) == std::string::npos)
 			path += ".LEV";
 
-		if(!load(common, settings, path))
+		if(!load(common, settings, FsNode(path).read()))
 			generateRandom(common, settings, rand);
 
 	}

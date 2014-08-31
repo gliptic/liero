@@ -10,4 +10,23 @@
 #define GVL_MOVE(x) (x)
 #endif
 
+#ifdef __cplusplus
+
+namespace gvl
+{
+
+struct noncopyable
+{
+protected:
+	noncopyable() {}
+    ~noncopyable() {}
+private:
+	noncopyable(const noncopyable&);
+	noncopyable& operator=(const noncopyable&);
+};
+
+}
+
+#endif
+
 #endif // UUID_E256FC00B8C44EBE85C8738284C064F6

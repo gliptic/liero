@@ -3,7 +3,7 @@
 
 #include "common.hpp"
 
-void loadFromExe(Common& common, std::string const& lieroExe);
+void loadFromExe(Common& common, ReaderFile& exe, ReaderFile& gfx, ReaderFile& snd);
 void loadSfx(std::vector<sfx_sound*>& sounds, ReaderFile& snd);
 
 #endif // LIERO_COMMON_EXEREADER_HPP

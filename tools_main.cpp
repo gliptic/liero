@@ -68,7 +68,7 @@ try
 
 	//initKeys();
 	//common->loadConstantsFromEXE();
-	//loadTablesFromEXE();
+	//precomputeTables();
 
 	/*
 	common->font.loadFromEXE();

@@ -8,6 +8,7 @@
 #include <gvl/io2/fstream.hpp>
 #include <gvl/serialization/context.hpp>
 #include <gvl/serialization/archive.hpp>
+#include <gvl/serialization/toml.hpp>
 
 #include <gvl/crypt/gash.hpp>
 
@@ -75,8 +76,9 @@ Settings::Settings()
 		for(int j = 0; j < 7; ++j)
 		{
 			wormSettings[i]->controls[j] = defControls[i][j];
+			wormSettings[i]->controlsEx[j] = defControls[i][j];
 		}
-		
+
 		for(int j = 0; j < 3; ++j)
 		{
 			wormSettings[i]->rgb[j] = defRGB[i][j];
@@ -93,13 +95,30 @@ bool Settings::load(std::string const& path, Rand& rand)
 	
 	if(!opt)
 		return false;
+
+	gvl::octet_reader reader(gvl::to_source(new gvl::file_bucket_pipe(opt)));
+	gvl::default_serialization_context context;
+	
+	gvl::toml::reader<gvl::octet_reader> ar(reader);
+
+	archive_text(*this, ar);
+	
+	return true;
+}
+
+bool Settings::loadLegacy(std::string const& path, Rand& rand)
+{
+	FILE* opt = tolerantFOpen(path.c_str(), "rb");
+	
+	if(!opt)
+		return false;
 		
 	std::size_t size = fileLength(opt);
 	
 	if(size < 155)
 		return false; // .dat is too short
 	
-	gvl::octet_reader reader(gvl::to_source(new gvl::file_bucket_source(opt)));
+	gvl::octet_reader reader(gvl::to_source(new gvl::file_bucket_pipe(opt)));
 	gvl::default_serialization_context context;
 	
 	archive_liero(in_archive_t(reader, context), *this, rand);
@@ -123,53 +142,52 @@ gvl::gash::value_type& Settings::updateHash()
 void Settings::save(std::string const& path, Rand& rand)
 {
 	FILE* opt = fopen(path.c_str(), "wb");
-	gvl::octet_writer writer(gvl::sink(new gvl::file_bucket_source(opt)));
+	gvl::octet_writer writer(gvl::sink(new gvl::file_bucket_pipe(opt)));
 
-	gvl::default_serialization_context context;
-	
-	archive_liero(out_archive_t(writer, context), *this, rand);
+	gvl::toml::writer<gvl::octet_writer> ar(writer);
+
+	archive_text(*this, ar);
 }
 
 void Settings::generateName(WormSettings& ws, Rand& rand)
 {
-	ReaderFile f;
-
 	try
 	{
-		openFileUncached(f, joinPath(lieroEXERoot, "NAMES.DAT"));
+		ReaderFile f(FsNode(joinPath(configRoot, "NAMES.DAT")).read());
+	
+		std::vector<std::string> names;
+	
+		std::size_t len = f.len;
+	
+		// TODO: This is a bit silly since we switched to ReaderFile
+		std::vector<char> chars(len);
+	
+		f.get(reinterpret_cast<uint8_t*>(&chars[0]), len);
+	
+		std::size_t begin = 0;
+		for(std::size_t i = 0; i < len; ++i)
+		{
+			if(chars[i] == '\r'
+			|| chars[i] == '\n')
+			{
+				if(i > begin)
+				{
+					names.push_back(std::string(chars.begin() + begin, chars.begin() + i));
+				}
+			
+				begin = i + 1;
+			}
+		}
+	
+		if(!names.empty())
+		{
+			ws.name = names[rand(uint32_t(names.size()))];
+			ws.randomName = true;
+		}
 	}
 	catch (std::runtime_error)
 	{
 		return;
 	}
 	
-	std::vector<std::string> names;
-	
-	std::size_t len = f.len;
-	
-	// TODO: This is a bit silly since we switched to ReaderFile
-	std::vector<char> chars(len);
-	
-	f.get(reinterpret_cast<uint8_t*>(&chars[0]), len);
-	
-	std::size_t begin = 0;
-	for(std::size_t i = 0; i < len; ++i)
-	{
-		if(chars[i] == '\r'
-		|| chars[i] == '\n')
-		{
-			if(i > begin)
-			{
-				names.push_back(std::string(chars.begin() + begin, chars.begin() + i));
-			}
-			
-			begin = i + 1;
-		}
-	}
-	
-	if(!names.empty())
-	{
-		ws.name = names[rand(Uint32(names.size()))];
-		ws.randomName = true;
-	}
 }

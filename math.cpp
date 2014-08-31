@@ -32,18 +32,78 @@ int vectorLength(int x, int y)
 	return int(sqr(x*x + y*y));
 }
 
-void loadTablesFromEXE()
+struct FP
 {
+	FP(int64_t s, int bits)
+	: s(s), bits(bits)
+	{
+	}
+
+	void reduce(int tobits)
+	{
+		int64_t lim = (1ll << tobits);
+
+		while (s < (-lim - 1) || s > lim)
+		{
+			s >>= 1;
+			--bits;
+		}
+	}
+
+	int64_t reducedfrac(int tobits)
+	{
+		int64_t rs = s;
+		int rbits = bits;
+		while (rbits > 60)
+		{
+			rs >>= 1;
+			--rbits;
+		}
+
+		return rs << (tobits - rbits);
+	}
+
+	int64_t s;
+	int bits;
+};
+
+void precomputeTables()
+{
+	int scalebits = 28;
+	int32_t scale = 13176795; // (2pi / 128) << scalebits
+
 	for(int i = 0; i < 128; ++i)
 	{
-		fixed c, s;
-		double a = i * 0.04908738521234051935097880286374 + 1.5707963267948966192313216916398;
-		double cf = std::cos(a) * 65536;
-		double sf = std::sin(a) * 65536;
-		c = int(cf > 0.0 ? std::floor(cf + 0.5) : std::ceil(cf - 0.5));
-		s = int(sf > 0.0 ? std::floor(sf + 0.5) : std::ceil(sf - 0.5));
+		int64_t rf = 0;
+		int32_t c = -1;
+		int32_t xf = i * scale;
 
-		cosTable[i] = c;
-		sinTable[i] = s;
+		// Simple Taylor series. Performance is not important.
+		FP num(xf, scalebits);
+		for(int t = 1; t < 26; )
+		{
+			rf += c * num.reducedfrac(60);
+
+			num.s /= ++t;
+			num.reduce(31);
+			num.s = num.s * xf;
+			num.bits += scalebits;
+
+			num.s /= ++t;
+			num.reduce(31);
+			num.s = num.s * xf;
+			num.bits += scalebits;
+
+			c = -c;
+		}
+
+		int shift = 60 - 16;
+
+		rf += (1LL << (shift - 1)); // Correct rounding
+
+		int32_t r = (int32_t)(rf >> shift);
+
+		cosTable[i] = r;
+		sinTable[(i + 32) & 0x7f] = r;
 	}
 }

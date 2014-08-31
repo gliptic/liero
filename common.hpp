@@ -12,6 +12,7 @@
 #include <string>
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/io2/stream.hpp>
+#include <gvl/support/platform.hpp>
 extern "C" {
 #include "mixer/mixer.h"
 }
@@ -53,26 +54,72 @@ struct AIParams
 	int k[2][7]; // 0x1AEEE, contiguous words
 };
 
+struct SfxSample : gvl::noncopyable
+{
+	//SfxSample(SfxSample const&) = delete;
+	//SfxSample& operator=(SfxSample const&) = delete;
+
+	SfxSample()
+	: sound(0)
+	{
+	}
+
+	SfxSample(SfxSample&& other)
+	: name(std::move(other.name)), sound(other.sound), originalData(std::move(other.originalData))
+	{
+		other.sound = 0;
+	}
+
+	SfxSample& operator=(SfxSample&& other)
+	{
+		name = std::move(other.name);
+		sound = other.sound;
+		sound = 0;
+		originalData = std::move(other.originalData);
+	}
+
+	SfxSample(std::string name, int length)
+	: name(std::move(name)), originalData(length)
+	{
+		sound = sfx_new_sound(length * 2);
+	}
+
+	~SfxSample()
+	{
+		if (sound)
+			sfx_free_sound(sound);
+	}
+
+	void createSound();
+
+	std::string name;
+	sfx_sound* sound;
+	std::vector<uint8_t> originalData;
+};
+
 struct Bitmap;
+struct FsNode;
 
 using std::vector;
 
 struct Common : gvl::shared
 {
-	Common(std::string const& lieroExe);
+	Common();
+	//Common(std::string const& lieroExe);
+	Common(FsNode const& path, std::string const& exeName);
 
 	~Common()
 	{
-		for(std::size_t i = 0; i < sounds.size(); ++i)
-			sfx_free_sound(sounds[i]);
 	}
-
 	
 	static int fireConeOffset[2][7][2];
 
 	void save(std::string const& path);
+	void load(std::string const& path);
 	void drawTextSmall(Bitmap& scr, char const* str, int x, int y);
 	void precompute();
+
+	std::string guessName() const;
 	
 	PalIdx* wormSprite(int f, int dir, int w)
 	{
@@ -90,26 +137,26 @@ struct Common : gvl::shared
 	}
 
 	Texts texts; // OK, not saved
-	
-	Material materials[256];
+	vector<int> weapOrder; // OK, not saved
+	SpriteSet wormSprites; // OK, not saved
+	SpriteSet fireConeSprites; // OK, not saved
+
+	Material materials[256]; // OK
 	Texture textures[9]; // OK
 	vector<Weapon> weapons; // OK
 	vector<SObjectType> sobjectTypes; // OK
 	vector<NObjectType> nobjectTypes; // OK
-	vector<int> weapOrder;
 	int bonusRandTimer[2][2]; // OK
 	int bonusSObjects[2]; // OK
-	AIParams aiParams;
-	ColourAnim colorAnim[4];
+	AIParams aiParams; // OK
+	ColourAnim colorAnim[4]; // OK
 	int bonusFrames[2]; // OK
-	SpriteSet smallSprites;
-	SpriteSet largeSprites;
-	SpriteSet textSprites;
-	SpriteSet wormSprites;
-	SpriteSet fireConeSprites;
-	Palette exepal;
-	Font font;
-	vector<sfx_sound*> sounds;
+	SpriteSet smallSprites; // OK
+	SpriteSet largeSprites; // OK
+	SpriteSet textSprites; // OK
+	Palette exepal; // OK
+	Font font; // OK
+	vector<SfxSample> sounds; // OK
 	
 	int C[MaxC]; // OK
 	std::string S[MaxS]; // OK

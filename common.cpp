@@ -4,6 +4,7 @@
 #include "rand.hpp"
 #include "gfx/blit.hpp"
 #include "filesystem.hpp"
+#include "worm.hpp"
 #include <gvl/io2/convert.hpp>
 #include <gvl/io2/fstream.hpp>
 #include <map>
@@ -431,6 +432,10 @@ void archive_text(Common& common, Archive& ar)
 {
 	ar.obj("types", [&] {
 
+		ar.arr("sounds", common.sounds, [&] (SfxSample& s) {
+			ar.str(0, s.name);
+		});
+
 		ar.arr("weapons", common.weapons, [&] (Weapon& w) {
 			ar.str(0, w.idStr);
 		});
@@ -442,6 +447,7 @@ void archive_text(Common& common, Archive& ar)
 		ar.arr("sobjects", common.sobjectTypes, [&] (SObjectType& s) {
 			ar.str(0, s.idStr);
 		});
+
 	});
 
 	ar.obj("constants", [&] {
@@ -460,6 +466,33 @@ void archive_text(Common& common, Archive& ar)
 			ar.i32("sframe", tx.sFrame);
 			ar.b("ndrawback", tx.nDrawBack);
 		});
+
+		ar.array_obj("colorAnim", common.colorAnim, [&] (ColourAnim& ca) {
+			ar.i32("from", ca.from);
+			ar.i32("to", ca.to);
+		});
+
+		ar.arr("materials", common.materials, [&] (Material& m) {
+			int f = m.flags;
+			ar.i32(0, f);
+			m.flags = (uint8_t)(f & 0xff);
+		});
+
+		char const* names[7] = {
+			"up", "down", "left", "right",
+			"fire", "change", "jump"
+		};
+
+		ar.obj("aiparams", [&] () {
+			for (int i = 0; i < 7; ++i)
+			{
+				ar.obj(names[i], [&] () {
+					ar.i32("on", common.aiParams.k[1][i]);
+					ar.i32("off", common.aiParams.k[0][i]);
+				});
+			}
+		});
+		
 
 		#define A(n) ar.i32(#n, common.C[C##n]);
 		LIERO_CDEFS(A)
@@ -484,7 +517,7 @@ void archive_text(Common& common, Archive& ar)
 struct OctetTextWriter : gvl::octet_writer
 {
 	OctetTextWriter(std::string const& path)
-	: gvl::octet_writer(gvl::sink(new gvl::file_bucket_source(path.c_str(), "wb")))
+	: gvl::octet_writer(gvl::sink(new gvl::file_bucket_pipe(path.c_str(), "wb")))
 	, w(*this)
 	{
 	}
@@ -495,7 +528,7 @@ struct OctetTextWriter : gvl::octet_writer
 struct OctetTextReader : gvl::octet_reader
 {
 	OctetTextReader(std::string const& path)
-	: gvl::octet_reader(gvl::to_source(new gvl::file_bucket_source(path.c_str(), "rb")))
+	: gvl::octet_reader(gvl::to_source(new gvl::file_bucket_pipe(path.c_str(), "rb")))
 	, r(*this)
 	{
 	}
@@ -503,69 +536,359 @@ struct OctetTextReader : gvl::octet_reader
 	gvl::toml::reader<gvl::octet_reader> r;
 };
 
+void writeSpriteTga(
+	gvl::octet_writer& w,
+	int imageWidth,
+	int imageHeight,
+	uint8_t* data,
+	Palette& pal)
+{
+	w.put(0);
+	w.put(1);
+	w.put(1);
+
+	// Palette spec
+	gvl::write_uint16_le(w, 0);
+	gvl::write_uint16_le(w, 256);
+	w.put(24);
+
+	gvl::write_uint16_le(w, 0);
+	gvl::write_uint16_le(w, 0);
+	gvl::write_uint16_le(w, imageWidth);
+	gvl::write_uint16_le(w, imageHeight);
+	w.put(8); // Bits per pixel
+	w.put(0); // Descriptor
+
+	for (auto const& entry : pal.entries)
+	{
+		w.put(entry.b << 2);
+		w.put(entry.g << 2);
+		w.put(entry.r << 2);
+	}
+
+	// Bottom to top
+	for (std::size_t y = (std::size_t)imageHeight; y-- > 0; )
+	{
+		auto const* src = &data[y * imageWidth];
+		w.put((uint8_t const*)src, imageWidth);
+	}
+}
+
+void writeSpriteTga(
+	gvl::octet_writer& w,
+	SpriteSet& ss,
+	Palette& pal)
+{
+	writeSpriteTga(w, ss.width, ss.count * ss.height, &ss.data[0], pal);
+}
+
+
+#define CHECK(c) if(!(c)) goto fail
+
+int readSpriteTga(
+	gvl::octet_reader& r,
+	int destImageWidth,
+	int destImageHeight,
+	int destCount,
+	uint8_t* data,
+	Palette* pal)
+{
+	auto idLen = r.get();
+	CHECK(r.get() == 1);
+	CHECK(r.get() == 1);
+
+	// Palette spec
+	CHECK(gvl::read_uint16_le(r) == 0);
+	CHECK(gvl::read_uint16_le(r) == 256);
+	CHECK(r.get() == 24);
+
+	int imageWidth, imageHeight;
+
+	CHECK(gvl::read_uint16_le(r) == 0);
+	CHECK(gvl::read_uint16_le(r) == 0);
+	
+	imageWidth = gvl::read_uint16_le(r);
+	imageHeight = gvl::read_uint16_le(r);
+	CHECK(r.get() == 8);
+	CHECK(r.get() == 0);
+
+	// TODO: Support more sprites?
+	CHECK(imageWidth == destImageWidth);
+	CHECK(imageHeight == destImageHeight);
+	
+	if (pal)
+	{
+		for (auto& entry : pal->entries)
+		{
+			entry.b = r.get() >> 2;
+			entry.g = r.get() >> 2;
+			entry.r = r.get() >> 2;
+		}
+	}
+	else
+	{
+		r.try_skip(256 * 3); // Ignore palette
+	}
+
+	// Bottom to top
+	for (std::size_t y = (std::size_t)imageHeight; y-- > 0; )
+	{
+		auto* src = &data[y * imageWidth];
+		r.get((uint8_t*)src, imageWidth);
+	}
+
+	return 1;
+
+fail:
+	return 0;
+}
+
+int readSpriteTga(
+	gvl::octet_reader& r,
+	SpriteSet& ss,
+	Palette* pal)
+{
+	return readSpriteTga(r, ss.width, ss.count * ss.height, ss.count, &ss.data[0], pal);
+}
+
+#undef CHECK
+
 void Common::save(std::string const& path)
 {
+	OctetTextWriter textWriter(joinPath(path, "tc.txt"));
+	archive_text(*this, textWriter.w);
+
+	for (auto& s : sounds)
 	{
-		OctetTextWriter textWriter(joinPath(path, "tc.txt"));
-		archive_text(*this, textWriter.w);
+		std::string dir(joinPath(path, "sounds/"));
+		create_directories(dir);
 
-		for (auto& w : weapons)
+		gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, s.name + ".wav").c_str(), "wb")));
+
+		auto roundedSize = (s.originalData.size() + 1) & ~1;
+
+		w.put((uint8_t const*)"RIFF", 4);
+		gvl::write_uint32_le(w, (uint32_t)roundedSize - 8);
+		w.put((uint8_t const*)"WAVE", 4);
+
+		w.put((uint8_t const*)"fmt ", 4);
+		gvl::write_uint32_le(w, 16); // PCM header size
+		gvl::write_uint16_le(w, 1); // PCM
+		gvl::write_uint16_le(w, 1); // Mono
+		gvl::write_uint32_le(w, 22050); // Sample rate
+		gvl::write_uint32_le(w, 22050 * 1 * 1);
+		gvl::write_uint16_le(w, 1 * 1);
+		gvl::write_uint16_le(w, 8);
+
+		w.put((uint8_t const*)"data", 4);
+		gvl::write_uint32_le(w, (uint32_t)s.originalData.size() * 1 * 1); // Data size
+
+		auto curSize = s.originalData.size();
+			
+		for (auto& s : s.originalData)
+			w.put(s + 128);
+			
+		while (curSize < roundedSize)
 		{
-			std::string dir(joinPath(path, "weapons/"));
-			create_directories(dir);
-
-			OctetTextWriter wWriter(joinPath(dir, w.idStr + ".txt"));
-			archive_text(*this, w, wWriter.w);
-		}
-
-		for (auto& w : nobjectTypes)
-		{
-			std::string dir(joinPath(path, "nobjects/"));
-			create_directories(dir);
-
-			OctetTextWriter nWriter(joinPath(dir, w.idStr + ".txt"));
-			archive_text(*this, w, nWriter.w);
-		}
-
-		for (auto& w : sobjectTypes)
-		{
-			std::string dir(joinPath(path, "sobjects/"));
-			create_directories(dir);
-
-			OctetTextWriter sWriter(joinPath(dir, w.idStr + ".txt"));
-			archive_text(*this, w, sWriter.w);
+			w.put(0); // Padding
+			++curSize;
 		}
 	}
 
-	if (true)
 	{
-		OctetTextReader textReader(joinPath(path, "tc.txt"));
-		archive_text(*this, textReader.r);
+		std::string dir(joinPath(path, "sprites/"));
+		create_directories(dir);
 
-		for (auto& w : weapons)
 		{
-			std::string dir(joinPath(path, "weapons/"));
-
-			OctetTextReader wReader(joinPath(dir, w.idStr + ".txt"));
-			archive_text(*this, w, wReader.r);
+			gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, "small.tga").c_str(), "wb")));
+			writeSpriteTga(w, smallSprites, exepal);
 		}
 
-		for (auto& w : nobjectTypes)
 		{
-			std::string dir(joinPath(path, "nobjects/"));
-
-			OctetTextReader nReader(joinPath(dir, w.idStr + ".txt"));
-			archive_text(*this, w, nReader.r);
+			gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, "large.tga").c_str(), "wb")));
+			writeSpriteTga(w, largeSprites, exepal);
 		}
 
-		for (auto& w : sobjectTypes)
 		{
-			std::string dir(joinPath(path, "sobjects/"));
+			gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, "text.tga").c_str(), "wb")));
+			writeSpriteTga(w, textSprites, exepal);
+		}
 
-			OctetTextReader sReader(joinPath(dir, w.idStr + ".txt"));
-			archive_text(*this, w, sReader.r);
+		{
+			gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, "font.tga").c_str(), "wb")));
+
+			std::vector<uint8_t> data(font.chars.size() * 7 * 8, 10);
+			for (std::size_t i = 0; i < font.chars.size(); ++i)
+			{
+				Font::Char& ch = font.chars[i];
+				uint8_t* dest = &data[i * 7 * 8];
+
+				for (std::size_t y = 0; y < 8; ++y)
+				for (std::size_t x = 0; x < ch.width; ++x)
+				{
+					dest[y * 7 + x] = ch.data[y * 7 + x] ? 50 : 0;
+				}
+			}
+			writeSpriteTga(w, 7, (int)font.chars.size() * 8, &data[0], exepal);
 		}
 	}
+
+	for (auto& w : weapons)
+	{
+		std::string dir(joinPath(path, "weapons/"));
+		create_directories(dir);
+
+		OctetTextWriter wWriter(joinPath(dir, w.idStr + ".txt"));
+		archive_text(*this, w, wWriter.w);
+	}
+
+	for (auto& w : nobjectTypes)
+	{
+		std::string dir(joinPath(path, "nobjects/"));
+		create_directories(dir);
+
+		OctetTextWriter nWriter(joinPath(dir, w.idStr + ".txt"));
+		archive_text(*this, w, nWriter.w);
+	}
+
+	for (auto& w : sobjectTypes)
+	{
+		std::string dir(joinPath(path, "sobjects/"));
+		create_directories(dir);
+
+		OctetTextWriter sWriter(joinPath(dir, w.idStr + ".txt"));
+		archive_text(*this, w, sWriter.w);
+	}
+}
+
+inline uint32_t quad(char a, char b, char c, char d)
+{
+	return (uint32_t)a + ((uint32_t)b << 8) + ((uint32_t)c << 16) + ((uint32_t)d << 24);
+}
+
+void Common::load(std::string const& path)
+{
+	OctetTextReader textReader(joinPath(path, "tc.txt"));
+	archive_text(*this, textReader.r);
+
+	for (auto& s : sounds)
+	{
+		std::string dir(joinPath(path, "sounds/"));
+
+		gvl::octet_reader r(gvl::to_source(new gvl::file_bucket_pipe(joinPath(dir, s.name + ".wav").c_str(), "rb")));
+
+		if (gvl::read_uint32_le(r) == quad('R', 'I', 'F', 'F'))
+		{
+			std::size_t roundedSize = gvl::read_uint32_le(r) + 8;
+
+			if (gvl::read_uint32_le(r) == quad('W', 'A', 'V', 'E')
+			 && gvl::read_uint32_le(r) == quad('f', 'm', 't', ' ')
+			 && gvl::read_uint32_le(r) == 16
+			 && gvl::read_uint16_le(r) == 1
+			 && gvl::read_uint16_le(r) == 1
+			 && gvl::read_uint32_le(r) == 22050
+			 && gvl::read_uint32_le(r) == 22050 * 1 * 1
+			 && gvl::read_uint16_le(r) == 1 * 1
+			 && gvl::read_uint16_le(r) == 8
+			 && gvl::read_uint32_le(r) == quad('d', 'a', 't', 'a'))
+			{
+				std::size_t dataSize = gvl::read_uint32_le(r);
+
+				s.originalData.resize(dataSize);
+		
+				for (auto& s : s.originalData)
+					s = r.get() - 128;
+
+				s.sound = sfx_new_sound(dataSize * 2);
+
+				s.createSound();
+			}
+		}
+	}
+
+	{
+		std::string dir(joinPath(path, "sprites/"));
+
+		largeSprites.allocate(16, 16, 110);
+		smallSprites.allocate(7, 7, 130);
+		textSprites.allocate(4, 4, 26);
+
+		{
+			gvl::octet_reader r(gvl::to_source(new gvl::file_bucket_pipe(joinPath(dir, "small.tga").c_str(), "rb")));
+			readSpriteTga(r, smallSprites, &exepal);
+		}
+
+		{
+			gvl::octet_reader r(gvl::to_source(new gvl::file_bucket_pipe(joinPath(dir, "large.tga").c_str(), "rb")));
+			readSpriteTga(r, largeSprites, 0);
+		}
+
+		{
+			gvl::octet_reader r(gvl::to_source(new gvl::file_bucket_pipe(joinPath(dir, "text.tga").c_str(), "rb")));
+			readSpriteTga(r, textSprites, 0);
+		}
+
+		{
+			gvl::octet_reader r(gvl::to_source(new gvl::file_bucket_pipe(joinPath(dir, "font.tga").c_str(), "rb")));
+
+			std::vector<uint8_t> data(font.chars.size() * 7 * 8, 10);
+			
+			readSpriteTga(r, 7, (int)font.chars.size() * 8, (int)font.chars.size(), &data[0], 0);
+
+			for (std::size_t i = 0; i < font.chars.size(); ++i)
+			{
+				Font::Char& ch = font.chars[i];
+				uint8_t* dest = &data[i * 7 * 8];
+
+				ch.width = 0;
+
+				for (std::size_t y = 0; y < 8; ++y)
+				for (std::size_t x = 0; x < 7; ++x)
+				{
+					auto p = dest[y * 7 + x];
+					if (p == 0)
+					{
+						ch.data[y * 7 + x] = 0;
+					}
+					else if (p == 50)
+					{
+						ch.data[y * 7 + x] = 8;
+					}
+					else
+					{
+						ch.width = (int)x;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	for (auto& w : weapons)
+	{
+		std::string dir(joinPath(path, "weapons/"));
+
+		OctetTextReader wReader(joinPath(dir, w.idStr + ".txt"));
+		archive_text(*this, w, wReader.r);
+	}
+
+	for (auto& w : nobjectTypes)
+	{
+		std::string dir(joinPath(path, "nobjects/"));
+
+		OctetTextReader nReader(joinPath(dir, w.idStr + ".txt"));
+		archive_text(*this, w, nReader.r);
+	}
+
+	for (auto& w : sobjectTypes)
+	{
+		std::string dir(joinPath(path, "sobjects/"));
+
+		OctetTextReader sReader(joinPath(dir, w.idStr + ".txt"));
+		archive_text(*this, w, sReader.r);
+	}
+
+	precompute();
 }
 
 #include "common_exereader.hpp"
@@ -573,26 +896,119 @@ void Common::save(std::string const& path)
 void Common::precompute()
 {
 	weapOrder.resize(weapons.size());
-	for (int i = 0; i < weapons.size(); ++i)
+	for (int i = 0; i < (int)weapons.size(); ++i)
 	{
 		weapOrder[i] = i;
+		weapons[i].id = i;
 	}
 
 	std::sort(weapOrder.begin(), weapOrder.end(), [&](int a, int b) {
 		return this->weapons[a].name < this->weapons[b].name;
 	});
+
+	for (int i = 0; i < (int)nobjectTypes.size(); ++i)
+	{
+		nobjectTypes[i].id = i;
+	}
+
+	for (int i = 0; i < (int)sobjectTypes.size(); ++i)
+	{
+		sobjectTypes[i].id = i;
+	}
+
+	// Precompute sprites
+	wormSprites.allocate(16, 16, 2 * 2 * 21);
+	
+	for(int i = 0; i < 21; ++i)
+	{
+		for(int y = 0; y < 16; ++y)
+		for(int x = 0; x < 16; ++x)
+		{
+			PalIdx pix = (largeSprites.spritePtr(16 + i) + y*16)[x];
+			
+			(wormSprite(i, 1, 0) + y*16)[x] = pix;
+			if(x == 15)
+				(wormSprite(i, 0, 0) + y*16)[15] = 0;
+			else
+				(wormSprite(i, 0, 0) + y*16)[14 - x] = pix;
+			
+			if(pix >= 30 && pix <= 34)
+				pix += 9; // Change worm color
+				
+			(wormSprite(i, 1, 1) + y*16)[x] = pix;
+			
+			if(x == 15)
+				(wormSprite(i, 0, 1) + y*16)[15] = 0; // A bit haxy, but works
+			else
+				(wormSprite(i, 0, 1) + y*16)[14 - x] = pix;
+		}
+	}
+	
+	fireConeSprites.allocate(16, 16, 2 * 7);
+	
+	for(int i = 0; i < 7; ++i)
+	{
+		for(int y = 0; y < 16; ++y)
+		for(int x = 0; x < 16; ++x)
+		{
+			PalIdx pix = (largeSprites.spritePtr(9 + i) + y*16)[x];
+			
+			(fireConeSprite(i, 1) + y*16)[x] = pix;
+			
+			if(x == 15)
+				(fireConeSprite(i, 0) + y*16)[15] = 0;
+			else
+				(fireConeSprite(i, 0) + y*16)[14 - x] = pix;
+			
+		}
+	}
 }
 
-Common::Common(std::string const& lieroExe)
+Common::Common()
 {
-	loadFromExe(*this, lieroExe);
+}
+
+Common::Common(FsNode const& path, std::string const& exeName)
+{
+	ReaderFile exe = (path / exeName).read();
+
+	// TODO: Some TCs change the name of the .SND or .CHR for some reason.
+	// We could read that name from the exe to make them work.
+	ReaderFile gfx = (path / "LIERO.CHR").read();
+	ReaderFile snd = (path / "LIERO.SND").read();
+
+	loadFromExe(*this, exe, gfx, snd);
 
 	precompute();
+}
 
-	if (false)
-	{
-		auto path = changeLeaf(lieroExe, "");
+std::string Common::guessName() const
+{
+	std::string const& cp = S[SCopyright2];
+	auto p = cp.find('(');
+	if (p == std::string::npos)
+		p = cp.size();
+
+	while (p > 0 && cp[p] == ' ')
+		--p;
+
+	return cp.substr(0, p);
+}
+
+void SfxSample::createSound()
+{
+	int16_t* ptr = reinterpret_cast<int16_t*>(sfx_sound_data(sound));
+
+	int prev = ((int8_t)originalData[0]) * 30;
+	*ptr++ = prev;
 		
-		save(path);
+	for(std::size_t j = 1; j < originalData.size(); ++j)
+	{
+		int cur = (int8_t)originalData[j] * 30;
+		*ptr++ = (prev + cur) / 2;
+		*ptr++ = cur;
+		prev = cur;
 	}
+		
+	*ptr++ = prev;
 }

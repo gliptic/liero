@@ -67,7 +67,7 @@ struct shared
 		std::swap(_ref_count, b._ref_count);
 		std::swap(_first, b._first);
 	}
-	
+
 	int ref_count() const
 	{ return _ref_count; }
 

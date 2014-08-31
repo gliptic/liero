@@ -104,6 +104,12 @@ struct stream_piece : shared
 		
 	}
 
+	stream_piece(shared_ptr<bucket_data_mem> data)
+	: data(std::move(data))
+	{
+		
+	}
+
 	source_result::status ensure_data(size_t amount = 0)
 	{
 		if (data)
@@ -171,8 +177,16 @@ struct octet_reader
 	octet_reader(source head)
 	: cur_(0)
 	, end_(0)
-	, head_(head)
+	, head_(std::move(head))
 	{
+	}
+
+	octet_reader(shared_ptr<bucket_data_mem> data)
+	: cur_(0)
+	, end_(0)
+	, head_()
+	{
+		set_bucket_(std::move(data));
 	}
 	
 	octet_reader()
@@ -180,6 +194,25 @@ struct octet_reader
 	, end_(0)
 	, head_()
 	{
+	}
+
+	octet_reader(octet_reader&& other)
+	: cur_(other.cur_)
+	, end_(other.end_)
+	, head_(std::move(other.head_))
+	, cur_data(std::move(other.cur_data))
+	{
+		other.cur_ = other.end_ = 0;
+	}
+
+	octet_reader& operator=(octet_reader&& other)
+	{
+		cur_ = other.cur_;
+		end_ = other.end_;
+		head_ = std::move(other.head_);
+		cur_data = std::move(other.cur_data);
+		other.cur_ = other.end_ = 0;
+		return *this;
 	}
 
 	uint8_t get()
@@ -493,3 +526,4 @@ private:
 }
 
 #endif // GVL_IO2_STREAM_HPP
+

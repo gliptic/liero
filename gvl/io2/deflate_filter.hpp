@@ -80,7 +80,6 @@ struct deflate_source : bucket_pipe, octet_reader
 
 	*/
 
-#if 1
 	sink_result try_write_cur()
 	{
 		if (cur_out->size() == 0)
@@ -140,7 +139,6 @@ struct deflate_source : bucket_pipe, octet_reader
 			}
 		}
 	}
-#endif
 
 	source_result::status drive(int deflate_flags = MZ_NO_FLUSH)
 	{

@@ -143,7 +143,7 @@ struct ProfileSaveBehavior : ItemBehavior
 			std::string name;
 			if(gfx.inputString(name, 30, x, y) && !name.empty())
 			{
-				ws.saveProfile(joinPath(joinPath(lieroEXERoot, "Profiles"), name));
+				ws.saveProfile(joinPath(joinPath(configRoot, "Profiles"), name));
 			}
 				
 			sfx.play(common, 27);
@@ -890,7 +890,7 @@ struct OptionsSaveBehavior : ItemBehavior
 		std::string name = getBasename(getLeaf(gfx.settingsFile));
 		if(gfx.inputString(name, 30, x, y) && !name.empty())
 		{
-			gfx.saveSettings(joinPath(lieroEXERoot, name));
+			gfx.saveSettings(joinPath(configRoot, name + ".cfg"));
 		}
 				
 		sfx.play(common, 27);
@@ -1025,10 +1025,10 @@ void Gfx::selectLevel()
 	FileSelector levSel(common);
 
 	{
-		levSel.fill(lieroEXERoot, [](string const& name, string const& ext) { return ciCompare(ext, "LEV"); });
+		levSel.fill(configRoot, [](string const& name, string const& ext) { return ciCompare(ext, "LEV"); });
 
 		shared_ptr<FileNode> random(new FileNode(
-					LS(Random), "", false, &levSel.rootNode));
+					LS(Random), "", "", false, &levSel.rootNode));
 
 		random->id = 1;
 		levSel.rootNode.children.insert(levSel.rootNode.children.begin(), random);
@@ -1058,9 +1058,19 @@ void Gfx::selectLevel()
 		if (previewNode != sel && sel)
 		{
 			Level level(common);
-			if (level.load(common, *settings, sel->fullPath))
+
+			ReaderFile f;
+
+			try
 			{
-				level.drawMiniature(frozenScreen, 134, 162, 10);
+				if (level.load(common, *settings, sel->getFsNode().read()))
+				{
+					level.drawMiniature(frozenScreen, 134, 162, 10);
+				}
+			}
+			catch (std::runtime_error&)
+			{
+				// Ignore
 			}
 
 			previewNode = sel;
@@ -1105,10 +1115,10 @@ void Gfx::selectProfile(WormSettings& ws)
 	FileSelector profileSel(*common, 28);
 
 	{
-		profileSel.fill(lieroEXERoot, [](string const& name, string const& ext) { return ciCompare(ext, "LPF"); });
+		profileSel.fill(configRoot, [](string const& name, string const& ext) { return ciCompare(ext, "LPF"); });
 
 		profileSel.setFolder(profileSel.rootNode);
-		profileSel.select(joinPath(lieroEXERoot, "Profiles"));
+		profileSel.select(joinPath(configRoot, "Profiles"));
 	}
 	
 	do
@@ -1154,13 +1164,13 @@ int Gfx::selectReplay()
 	FileSelector replaySel(*common, 28);
 
 	{
-		replaySel.fill(lieroEXERoot, [](string const& name, string const& ext) { return ciCompare(ext, "LRP"); });
+		replaySel.fill(configRoot, [](string const& name, string const& ext) { return ciCompare(ext, "LRP"); });
 
 		replaySel.setFolder(replaySel.rootNode);
 		if (prevSelectedReplayPath.empty()
 		  || !replaySel.select(prevSelectedReplayPath))
 		{
-			replaySel.select(joinPath(lieroEXERoot, "Replays"));
+			replaySel.select(joinPath(configRoot, "Replays"));
 		}
 	}
 	
@@ -1194,10 +1204,12 @@ int Gfx::selectReplay()
 				// Reset controller before opening the replay, since we may be recording it
 				controller.reset();
 				
-				auto replay(
-					gvl::to_source(new gvl::file_bucket_source(sel->fullPath.c_str(), "rb")));
+				//auto replay(
+				//	gvl::to_source(new gvl::file_bucket_pipe(sel->fullPath.c_str(), "rb")));
 
-				controller.reset(new ReplayController(common, replay));
+
+
+				controller.reset(new ReplayController(common, sel->getFsNode().toSource()));
 				
 				return MainMenu::MaReplay;
 			}
@@ -1215,8 +1227,8 @@ void Gfx::selectOptions()
 	FileSelector optionsSel(*common, 28);
 
 	{
-		optionsSel.fill(lieroEXERoot, [](string const& name, string const& ext) {
-			return ciCompare(ext, "DAT") && !ciCompare(getLeaf(name), "NAMES.DAT");
+		optionsSel.fill(configRoot, [](string const& name, string const& ext) {
+			return ciCompare(ext, "CFG");
 		});
 
 		optionsSel.setFolder(optionsSel.rootNode);
@@ -1641,12 +1653,6 @@ void Gfx::saveSettings(std::string const& path)
 {
 	std::string extension = getExtension(path);
 	settingsFile = path;
-	// this won't catch stuff like DaT or dAT, but standard C++ has no case
-	// insensitive compare
-	if (!(extension.compare("dat") == 0 || extension.compare("DAT") == 0))
-	{
-		settingsFile = path + ".dat";
-	}
 	settings->save(settingsFile, rand);
 }
 
@@ -1655,6 +1661,13 @@ bool Gfx::loadSettings(std::string const& path)
 	settingsFile = path;
 	settings.reset(new Settings);
 	return settings->load(settingsFile, rand);
+}
+
+bool Gfx::loadSettingsLegacy(std::string const& path)
+{
+	settingsFile = path;
+	settings.reset(new Settings);
+	return settings->loadLegacy(settingsFile, rand);
 }
 
 void Gfx::drawBasicMenu(/*int curSel*/)

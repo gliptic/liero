@@ -3,18 +3,9 @@
 
 #include <cstring>
 #include "../rect.hpp"
+#include <gvl/support/platform.hpp>
 
-struct noncopyable
-{
-protected:
-	noncopyable() {}
-    ~noncopyable() {}
-private:
-	noncopyable(const noncopyable&);
-	noncopyable& operator=(const noncopyable&);
-};
-
-struct Bitmap : noncopyable
+struct Bitmap : gvl::noncopyable
 {
 	int w, h;
 	unsigned int pitch;

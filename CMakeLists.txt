@@ -10,6 +10,7 @@ set(SOURCES
     bobject.cpp
     bonus.cpp
     common_exereader.cpp
+	common_writer.cpp
     common.cpp
     console.cpp
     constants.cpp
@@ -69,6 +70,7 @@ set(SOURCES
     gvl/io/encoding.cpp
     gvl/io/stream.cpp
     gvl/containers/list.cpp
+	tl/utf8.c
     )
 
 if(APPLE)

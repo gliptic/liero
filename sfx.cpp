@@ -125,7 +125,7 @@ void Sfx::play(Common& common, int sound, void* id, int loops)
 	if(!initialized)
 		return;
 
-	sfx_mixer_add(mixer, common.sounds[sound], sfx_mixer_now(mixer), id, loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
+	sfx_mixer_add(mixer, common.sounds[sound].sound, sfx_mixer_now(mixer), id, loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
 #endif
 }
 

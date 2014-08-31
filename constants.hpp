@@ -102,6 +102,7 @@
 	_(Random2) \
 	_(RegenLevel) \
 	_(ReloadLevel) \
+	_(Copyright) \
 	_(Copyright2) \
 	_(SelWeap) \
 	_(LevelRandom) \
@@ -116,7 +117,7 @@
 	_(SelLevel) \
 	_(Weapon) \
 	_(Availability) \
-	_(NoWeaps)
+	_(NoWeaps) \
 
 #define LIERO_HDEFS(_) \
 	_(FallDamage) \

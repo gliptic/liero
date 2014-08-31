@@ -4,7 +4,7 @@
 #include "gfx/renderer.hpp"
 #include "constants.hpp"
 #include "console.hpp"
-#include "reader.hpp" // TODO: For lieroEXERoot. We should move that into Common.
+#include "reader.hpp" // TODO: For configRoot. We should move that into Common.
 #include "filesystem.hpp" // For joinPath
 #include <cstdlib>
 //#include <iostream>
@@ -41,7 +41,7 @@ void WormSettings::saveProfile(std::string const& path)
 	{
 		auto const& fullPath = path + ".lpf";
 		create_directories(fullPath);
-		gvl::sink str(new gvl::file_bucket_source(fullPath.c_str(), "wb"));
+		gvl::sink str(new gvl::file_bucket_pipe(fullPath.c_str(), "wb"));
 		
 		gvl::octet_writer writer(str);
 		
@@ -60,7 +60,7 @@ void WormSettings::loadProfile(std::string const& path)
 	int oldColor = color;
 	try
 	{
-		gvl::source str(gvl::to_source(new gvl::file_bucket_source(path.c_str(), "rb")));
+		gvl::source str(gvl::to_source(new gvl::file_bucket_pipe(path.c_str(), "rb")));
 		
 		gvl::octet_reader reader(str);
 

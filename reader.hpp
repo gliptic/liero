@@ -2,25 +2,33 @@
 #define LIERO_READER_HPP
 
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <stdexcept>
 #include <vector>
 #include <gvl/cstdint.hpp>
 #include <gvl/io2/stream.hpp>
 #include <gvl/serialization/coding.hpp>
+#include <gvl/support/platform.hpp>
 
-extern std::string lieroEXERoot;
+extern std::string configRoot;
 
-struct ReaderFile
+struct ReaderFile : gvl::noncopyable
 {
 	ReaderFile()
 	: data(0), pos(0), len(0)
 	{
 	}
 
+	ReaderFile(ReaderFile&& other)
+	: data(other.data), pos(other.pos), len(other.len)
+	{
+		other.data = 0;
+	}
+
 	~ReaderFile()
 	{
-		delete[] data;
+		std::free(data);
 	}
 
 	uint8_t* data;
@@ -58,14 +66,6 @@ struct ReaderFile
 		pos += l;
 	}
 };
-
-// Return an opened file
-ReaderFile& openFile(std::string const& name);
-void openFileUncached(ReaderFile& rf, std::string const& name);
-
-ReaderFile& openLieroEXE(std::string const& lieroExe);
-ReaderFile& openLieroSND(std::string const& lieroExe);
-ReaderFile& openLieroCHR(std::string const& lieroExe);
 
 inline std::string readPascalString(ReaderFile& f)
 {
@@ -121,6 +121,6 @@ inline int32_t readSint32(ReaderFile& f)
 	return (int32_t)gvl::read_uint32_le(f);
 }
 
-void setLieroEXE(std::string const& path);
+void setConfigPath(std::string const& path);
 
 #endif // LIERO_READER_HPP

@@ -277,10 +277,10 @@ void LocalController::changeState(State newState)
 							prefix.push_back(ch);
 					}
 				}
-				std::string path = joinPath(joinPath(lieroEXERoot, "Replays"), prefix + buf);
+				std::string path = joinPath(joinPath(configRoot, "Replays"), prefix + buf);
 				create_directories(path);
 
-				replay.reset(new ReplayWriter(gvl::sink(new gvl::file_bucket_source(path.c_str(), "wb"))));
+				replay.reset(new ReplayWriter(gvl::sink(new gvl::file_bucket_pipe(path.c_str(), "wb"))));
 				replay->beginRecord(game);
 			}
 			catch(std::runtime_error& e)

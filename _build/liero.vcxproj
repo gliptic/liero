@@ -107,7 +107,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MINIZ_NO_ARCHIVE_APIS;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;TL_STATIC;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -133,7 +133,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MINIZ_NO_ARCHIVE_APIS;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;TL_STATIC;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -160,7 +160,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MINIZ_NO_ARCHIVE_APIS;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;TL_STATIC;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -192,7 +192,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;MINIZ_NO_ARCHIVE_APIS;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;TL_STATIC;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;DISABLE_MAINHACK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
@@ -213,6 +213,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\common_exereader.cpp" />
+    <ClCompile Include="..\common_writer.cpp" />
     <ClCompile Include="..\gfx\blit.cpp" />
     <ClCompile Include="..\gfx\font.cpp" />
     <ClCompile Include="..\gfx\palette.cpp" />
@@ -252,6 +253,7 @@
     <ClCompile Include="..\stats_recorder.cpp" />
     <ClCompile Include="..\sys.cpp" />
     <ClCompile Include="..\text.cpp" />
+    <ClCompile Include="..\tl\utf8.c" />
     <ClCompile Include="..\viewport.cpp" />
     <ClCompile Include="..\weapon.cpp" />
     <ClCompile Include="..\worm.cpp" />
@@ -328,20 +330,16 @@
     <ClInclude Include="..\stats_recorder.hpp" />
     <ClInclude Include="..\sys.hpp" />
     <ClInclude Include="..\text.hpp" />
+    <ClInclude Include="..\tl\config.h" />
     <ClInclude Include="..\tl\cstdint.h" />
     <ClInclude Include="..\tl\memory.h" />
     <ClInclude Include="..\tl\platform.h" />
+    <ClInclude Include="..\tl\utf8.h" />
     <ClInclude Include="..\tl\vector.h" />
     <ClInclude Include="..\version.hpp" />
     <ClInclude Include="..\viewport.hpp" />
     <ClInclude Include="..\weapon.hpp" />
     <ClInclude Include="..\worm.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Jamfile" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\todo.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

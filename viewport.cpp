@@ -328,8 +328,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		{
 			SObjectType const& t = common.sobjectTypes[i->id];
 			int frame = i->curFrame + t.startFrame;
-		
-			// TODO: Check that blitImageR is the correct one to use (probably)
+
 			blitImageR(
 				renderer.screenBmp,
 				common.largeSprites.spritePtr(frame),

@@ -118,6 +118,10 @@
       <Filter>gvl\io2</Filter>
     </ClCompile>
     <ClCompile Include="..\common_exereader.cpp" />
+    <ClCompile Include="..\common_writer.cpp" />
+    <ClCompile Include="..\tl\utf8.c">
+      <Filter>tl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\gfx\blit.hpp">
@@ -299,11 +303,11 @@
       <Filter>gvl\serialization</Filter>
     </ClInclude>
     <ClInclude Include="..\common_exereader.hpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Jamfile" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\todo.txt" />
+    <ClInclude Include="..\tl\utf8.h">
+      <Filter>tl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tl\config.h">
+      <Filter>tl</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

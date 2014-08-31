@@ -34,10 +34,55 @@ try
 {
 	// TODO: Better PRNG seeding
 	gfx.rand.seed(Uint32(std::time(0)));
+
+#if 0
+	std::string const& path = "D:\\cpp\\liero\\tc";
+	FsNode node(path);
+
+	for (DirectoryIterator dir = node.iter(); dir; ++dir)
+	{
+		auto d = *dir;
+
+		try
+		{
+			auto zipNode = node / d;
+
+			bool found = false;
+
+			for (DirectoryIterator zipDir = zipNode.iter(); zipDir; ++zipDir)
+			{
+				auto e = *zipDir;
+				auto upper = e;
+				toUpperCase(upper);
+
+				if (upper.find(".EXE") != std::string::npos && upper != "LEVEDIT.EXE")
+				{
+					found = true;
+					Common common(zipNode, e);
+
+					printf("N: %s\n", common.guessName().c_str());
+					//printf("N: %s ||| %s\n", common.S[SCopyright2].c_str(), common.S[SCopyright].c_str() + 4);
+					break;
+				}
+			}
+
+			if (!found)
+				printf("** No exe found for %s\n", d.c_str());
+		}
+		catch (std::runtime_error& e)
+		{
+			//printf("Failed to load: %s\n", d.c_str());
+			//printf("%s\n", e.what());
+		}
+	}
+
+	return 0;
+#endif
 	
 	bool exeSet = false;
 	
 	std::string exePath;
+	std::string configPath; // Default to current dir
 	
 	for(int i = 1; i < argc; ++i)
 	{
@@ -48,7 +93,14 @@ try
 			case 'v':
 				// SDL_putenv seems to take char* in linux, STOOPID
 				SDL_putenv(const_cast<char*>((std::string("SDL_VIDEODRIVER=") + &argv[i][2]).c_str()));
-			break;
+				break;
+			case '-':
+				if (std::strcmp(argv[i] + 2, "config-root") == 0 && i + 1 < argc)
+				{
+					++i;
+					configPath = argv[i];
+				}
+				break;
 			}
 		}
 		else
@@ -61,15 +113,33 @@ try
 	if(!exeSet)
 		exePath = "LIERO.EXE";
 
-	setLieroEXE(exePath);
+	setConfigPath(configPath);
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
 	
 	initKeys();
 	
-	loadTablesFromEXE();
+	precomputeTables();
 
-	gvl::shared_ptr<Common> common(new Common(exePath));
+	FsNode lieroRoot(getRoot(exePath));
+
+	gvl::shared_ptr<Common> common(new Common(lieroRoot, getLeaf(exePath)));
+
+	if (false)
+	{
+		auto path = changeLeaf(exePath, "");
+		
+		common->save(path);
+
+		if (true)
+		{
+			gvl::shared_ptr<Common> commonNew(new Common());
+
+			commonNew->load(path);
+			common.swap(commonNew);
+		}
+	}
+
 	gfx.common = common;
 	
 	gfx.loadPalette(*common); // This gets the palette from common
@@ -77,10 +147,13 @@ try
 
 	gfx.init();
 	
-	if(!gfx.loadSettings(joinPath(lieroEXERoot, "LIERO.DAT")))
+	if(!gfx.loadSettings(joinPath(configRoot, "liero.cfg")))
 	{
-		gfx.settings.reset(new Settings);
-		gfx.saveSettings(joinPath(lieroEXERoot, "LIERO.DAT"));
+		if(!gfx.loadSettingsLegacy(joinPath(configRoot, "LIERO.DAT")))
+		{
+			gfx.settings.reset(new Settings);
+			gfx.saveSettings(joinPath(configRoot, "liero.cfg"));
+		}
 	}
 	
 	gfx.setVideoMode();
@@ -88,7 +161,7 @@ try
 	
 	gfx.mainLoop();
 	
-	gfx.settings->save(joinPath(lieroEXERoot, "LIERO.DAT"), gfx.rand);
+	gfx.settings->save(joinPath(configRoot, "liero.cfg"), gfx.rand);
 	
 	sfx.deinit();
 	SDL_Quit();

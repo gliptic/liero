@@ -188,6 +188,7 @@ struct Gfx : Renderer
 	
 	void saveSettings(std::string const& path);
 	bool loadSettings(std::string const& path);
+	bool loadSettingsLegacy(std::string const& path);
 	
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 	

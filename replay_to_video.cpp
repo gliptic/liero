@@ -25,14 +25,14 @@ void replayToVideo(
 	std::string const& replayVideoName)
 {
 	auto replay(
-		gvl::to_source(new gvl::file_bucket_source(fullPath.c_str(), "rb")));
+		gvl::to_source(new gvl::file_bucket_pipe(fullPath.c_str(), "rb")));
 	ReplayReader replayReader(replay);
 	Renderer renderer;
 
 	renderer.init();
 	renderer.loadPalette(*common);
 
-	std::string fullVideoPath = joinPath(lieroEXERoot, replayVideoName);
+	std::string fullVideoPath = joinPath(configRoot, replayVideoName);
 
 	sfx_mixer* mixer = sfx_mixer_create();
 

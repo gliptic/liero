@@ -12,6 +12,9 @@ namespace toml
 template<typename Writer>
 struct writer
 {
+	static bool const in = false;
+	static bool const out = true;
+
 	writer(Writer& w)
 	: indent(0), inObject(false)
 	, w(w)
@@ -81,7 +84,7 @@ struct writer
 	}
 
 	template<typename F>
-	void obj(char const* name, F func)
+	writer& obj(char const* name, F func)
 	{
 		if (name)
 			beginf(name);
@@ -90,10 +93,12 @@ struct writer
 		
 		if (name)
 			endf();
+
+		return *this;
 	}
 
 	template<typename A, typename F>
-	void arr(char const* name, A& arr, F func)
+	writer& arr(char const* name, A& arr, F func)
 	{
 		f(name);
 		w << '[';
@@ -107,10 +112,11 @@ struct writer
 			func(e);
 		}
 		w << "]";
+		return *this;
 	}
 
 	template<typename A, typename F>
-	void array_obj(char const* name, A& arr, F func)
+	writer& array_obj(char const* name, A& arr, F func)
 	{
 		beginf(name);
 
@@ -129,44 +135,65 @@ struct writer
 		}
 
 		endf();
+
+		return *this;
 	}
 
-	void i32(int v)
+	writer& i32(int32_t v)
 	{
 		w << v;
+		return *this;
 	}
 
-	void i32(char const* name, int v)
+	writer& i32(char const* name, int32_t v)
 	{
 		f(name);
 		i32(v);
+		return *this;
 	}
 
-	void b(bool v)
+	writer& u32(int32_t v)
+	{
+		w << v;
+		return *this;
+	}
+
+	writer& u32(char const* name, uint32_t v)
+	{
+		f(name);
+		u32(v);
+		return *this;
+	}
+
+	writer& b(bool v)
 	{
 		w << (v ? "true" : "false");
+		return *this;
 	}
 
-	void b(char const* name, bool v)
+	writer& b(char const* name, bool v)
 	{
 		f(name);
 		b(v);
+		return *this;
 	}
 
-	void null(char const* name)
+	writer& null(char const* name)
 	{
 		f(name);
 		w << "null";
+		return *this;
 	}
 
 	template<typename T, typename Resolver>
-	void ref(char const* name, T const& v, Resolver resolver)
+	writer& ref(char const* name, T const& v, Resolver resolver)
 	{
 		f(name);
 		resolver.v2r(*this, v);
+		return *this;
 	}
 
-	void str(std::string& s)
+	writer& str(std::string& s)
 	{
 		w << '"';
 		for (char c : s)
@@ -185,12 +212,14 @@ struct writer
 			// TODO: Handle non-printable
 		}
 		w << '"';
+		return *this;
 	}
 
-	void str(char const* name, std::string& s)
+	writer& str(char const* name, std::string& s)
 	{
 		f(name);
 		str(s);
+		return *this;
 	}
 
 	
@@ -355,6 +384,9 @@ inline void resize(T(&arr)[N], std::size_t s)
 template<typename Reader>
 struct reader
 {
+	static bool const in = true;
+	static bool const out = false;
+
 	reader(Reader& r)
 	: root(object())
 	, r(r)
@@ -541,16 +573,17 @@ struct reader
 	}
 
 	template<typename F>
-	void obj(char const* name, F func)
+	reader& obj(char const* name, F func)
 	{
 		value parent(cur);
 		cur = f(name);
 		func();
 		cur = move(parent);
+		return *this;
 	}
 
 	template<typename A, typename F>
-	void arr(char const* name, A& arr, F func)
+	reader& arr(char const* name, A& arr, F func)
 	{
 		value parent(cur);
 		value v(f(name));
@@ -567,30 +600,42 @@ struct reader
 		}
 
 		cur = move(parent);
+		return *this;
 	}
 
 	template<typename A, typename F>
-	void array_obj(char const* name, A& a, F func)
+	reader& array_obj(char const* name, A& a, F func)
 	{
 		arr(name, a, move(func));
+		return *this;
 	}
 
-	void i32(char const* name, int& v)
+	reader& i32(char const* name, int32_t& v)
 	{
 		value jv(f(name));
 		if (jv.tt != t_integer) throw parse_error();
 		v = jv.u.i;
+		return *this;
 	}
 
-	void b(char const* name, bool& v)
+	reader& u32(char const* name, uint32_t& v)
+	{
+		value jv(f(name));
+		if (jv.tt != t_integer) throw parse_error();
+		v = (uint32_t)jv.u.i;
+		return *this;
+	}
+
+	reader& b(char const* name, bool& v)
 	{
 		value jv(f(name));
 		if (jv.tt != t_bool) throw parse_error();
 		v = jv.u.i != 0;
+		return *this;
 	}
 
 	template<typename T, typename Resolver>
-	void ref(char const* name, T& v, Resolver resolver)
+	reader& ref(char const* name, T& v, Resolver resolver)
 	{
 		value jv(f(name));
 		if (jv.tt == t_null)
@@ -602,13 +647,15 @@ struct reader
 			if (jv.tt != t_string) throw parse_error();
 			resolver.r2v(v, ((string*)jv.u.s)->s);
 		}
+		return *this;
 	}
 
-	void str(char const* name, std::string& s)
+	reader& str(char const* name, std::string& s)
 	{
 		value jv(f(name));
 		if (jv.tt != t_string) throw parse_error();
 		s = ((string*)jv.u.s)->s;
+		return *this;
 	}
 
 	//

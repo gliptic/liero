@@ -9,20 +9,20 @@
 namespace gvl
 {
 
-struct file_bucket_source : bucket_pipe
+struct file_bucket_pipe : bucket_pipe
 {
-	file_bucket_source()
+	file_bucket_pipe()
 	: f(0)
 	{
 	}
 
-	file_bucket_source(char const* path, char const* mode)
+	file_bucket_pipe(char const* path, char const* mode)
 	{
 		FILE* f_init = std::fopen(path, mode);
 		init(f_init);
 	}
 	
-	file_bucket_source(FILE* f_init)
+	file_bucket_pipe(FILE* f_init)
 	{
 		init(f_init);
 	}
@@ -43,7 +43,7 @@ struct file_bucket_source : bucket_pipe
 		}
 	}
 	
-	~file_bucket_source()
+	~file_bucket_pipe()
 	{
 		close();
 	}
@@ -53,9 +53,11 @@ struct file_bucket_source : bucket_pipe
 		if (!f)
 			return std::unique_ptr<bucket_data_mem>();
 
-		unique_ptr<bucket_data_mem> r(bucket_data_mem::create(4096));
+		std::size_t file_buf_size = 1 << 16;
 
-		auto read_bytes = std::fread(r->begin(), 1, 4096, f);
+		unique_ptr<bucket_data_mem> r(bucket_data_mem::create(file_buf_size));
+
+		auto read_bytes = std::fread(r->begin(), 1, file_buf_size, f);
 		if(read_bytes == 0)
 			return source_result(source_result::eos);
 

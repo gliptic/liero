@@ -3433,7 +3433,7 @@ int mz_zip_reader_locate_file(mz_zip_archive *pZip, const char *pName, const cha
   mz_uint file_index; size_t name_len, comment_len;
   if ((!pZip) || (!pZip->m_pState) || (!pName) || (pZip->m_zip_mode != MZ_ZIP_MODE_READING))
     return -1;
-  if (((flags & (MZ_ZIP_FLAG_IGNORE_PATH | MZ_ZIP_FLAG_CASE_SENSITIVE)) == 0) && (!pComment) && (pZip->m_pState->m_sorted_central_dir_offsets.m_p))
+  if (((flags & (MZ_ZIP_FLAG_IGNORE_PATH | MZ_ZIP_FLAG_CASE_SENSITIVE | MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY)) == 0) && (!pComment) && (pZip->m_pState->m_sorted_central_dir_offsets.m_p))
     return mz_zip_reader_locate_file_binary_search(pZip, pName);
   name_len = strlen(pName); if (name_len > 0xFFFF) return -1;
   comment_len = pComment ? strlen(pComment) : 0; if (comment_len > 0xFFFF) return -1;
@@ -4784,7 +4784,7 @@ void *mz_zip_extract_archive_file_to_heap(const char *pZip_filename, const char 
     return NULL;
 
   MZ_CLEAR_OBJ(zip_archive);
-  if (!mz_zip_reader_init_file(&zip_archive, pZip_filename, flags | MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY))
+  if (!mz_zip_reader_init_file(&zip_archive, pZip_filename, flags/* | MZ_ZIP_FLAG_DO_NOT_SORT_CENTRAL_DIRECTORY*/))
     return NULL;
 
   if ((file_index = mz_zip_reader_locate_file(&zip_archive, pArchive_name, NULL, flags)) >= 0)

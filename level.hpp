@@ -25,7 +25,7 @@ struct Level
 		zeroMaterial = common.materials[0];
 	}
 	
-	bool load(Common& common, Settings const& settings, std::string const& path);
+	bool load(Common& common, Settings const& settings, ReaderFile f);
 	
 	void generateDirtPattern(Common& common, Rand& rand);
 	void generateRandom(Common& common, Settings const& settings, Rand& rand);

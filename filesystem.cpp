@@ -1,5 +1,7 @@
 #include "filesystem.hpp"
+#include "text.hpp"
 #include <gvl/support/platform.hpp>
+#include <gvl/io2/fstream.hpp>
 #include <stdexcept>
 #include <cassert>
 #include <cctype>
@@ -89,20 +91,6 @@ FILE* tolerantFOpen(std::string const& name, char const* mode)
 		return f;
 		
 	return 0;
-}
-
-std::string joinPath(std::string const& root, std::string const& leaf)
-{
-	if(!root.empty()
-	&& root[root.size() - 1] != '\\'
-	&& root[root.size() - 1] != '/')
-	{
-		return root + '/' + leaf;
-	}
-	else
-	{
-		return root + leaf;
-	}
 }
 
 bool fileExists(std::string const& path)
@@ -261,11 +249,18 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 
 #if GVL_WINDOWS
 
+inline char isDirSep(char c)
+{
+	return c == '\\' || c == '/';
+}
+
+static char const dirSep = '\\';
+
 bool create_directories(std::string const& dir)
 {
 	for (std::size_t i = 0; i < dir.size(); ++i)
 	{
-		if (dir[i] == '\\' || dir[i] == '/')
+		if (isDirSep(dir[i]))
 		{
 			std::string path = dir.substr(0, i);
 			DWORD attr = GetFileAttributesA(path.c_str());
@@ -286,6 +281,13 @@ bool create_directories(std::string const& dir)
 
 #else
 
+inline char isDirSep(char c)
+{
+	return c == '/';
+}
+
+static char const dirSep = '/';
+
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -293,7 +295,7 @@ bool create_directories(std::string const& dir)
 {
 	for (std::size_t i = 1; i < dir.size(); ++i)
 	{
-		if (dir[i] == '/')
+		if (isDirSep(dir[i]))
 		{
 			std::string path = dir.substr(0, i);
             struct stat s;
@@ -312,33 +314,233 @@ bool create_directories(std::string const& dir)
 
 #endif
 
-struct dir_itr_imp
+std::string joinPath(std::string const& root, std::string const& leaf)
 {
-public:
-	dir_itr_imp()
+	if(!root.empty()
+	&& root[root.size() - 1] != '\\'
+	&& root[root.size() - 1] != '/')
 	{
-		
+		return root + '/' + leaf;
 	}
-	
-	std::string       entry_path;
-	BOOST_HANDLE      handle;
+	else
+	{
+		return root + leaf;
+	}
+}
 
-	~dir_itr_imp()
-	{
-		if ( handle != BOOST_INVALID_HANDLE_VALUE )
-			find_close( handle );
-	}
-};
+void dir_filesystem_itr_imp_init(dir_itr_imp_ptr& m_imp, char const* dir_path);
+void dir_zip_archive_itr_imp_init(dir_itr_imp_ptr& m_imp, gvl::shared_ptr<FsNodeZipFile> dir);
 
 DirectoryIterator::DirectoryIterator(std::string const& dir)
 {
-	dir_itr_init( m_imp, dir.empty() ? "." : dir.c_str() );
+	dir_filesystem_itr_imp_init(m_imp, dir.empty() ? "." : dir.c_str());
+}
+
+DirectoryIterator::DirectoryIterator(dir_itr_imp_ptr&& imp)
+: m_imp(std::move(imp))
+{
 }
 
 DirectoryIterator::~DirectoryIterator()
 {
 }
 
+FsNodeZipArchive::FsNodeZipArchive(std::string const& path)
+{
+	memset(&archive, 0, sizeof(archive));
+	mz_zip_reader_init_file(&archive, path.c_str(), 0);
+}
+
+// TODO: Free archive
+
+FsNodeZipFile::FsNodeZipFile(std::string const& path)
+: archive(new FsNodeZipArchive(path))
+, path(path)
+, fileIndex(-1)
+{
+	archive->root = this;
+
+	auto fileCount = mz_zip_reader_get_num_files(&archive->archive);
+		
+	for (mz_uint fileIndex = 0; fileIndex < fileCount; ++fileIndex)
+	{
+		char buf[260];
+		mz_zip_reader_get_filename(&archive->archive, fileIndex, buf, 260);
+
+		std::string filepath(buf);
+
+		FsNodeZipFile* cur = this;
+
+		std::size_t beg = 0;
+		std::size_t i = 0;
+
+		for (; i < filepath.size(); ++i)
+		{
+			if (isDirSep(filepath[i]))
+			{
+				std::string const& part = filepath.substr(beg, i - beg);
+				
+				auto& c = cur->children[part];
+				if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), -1));
+				cur = c.get();
+
+				beg = i + 1;
+			}
+		}
+
+		if (beg != i)
+		{
+			std::string const& part = filepath.substr(beg, i - beg);
+			
+			auto& c = cur->children[part];
+			if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), (int)fileIndex));
+			cur = c.get();
+		}
+	}
+}
+
+FsNodeZipFile::FsNodeZipFile(gvl::shared_ptr<FsNodeZipArchive> archive, std::string const& fullPath, std::string const& relPath, int fileIndex)
+: archive(std::move(archive))
+, path(fullPath)
+, relPath(relPath)
+, fileIndex(fileIndex)
+{
+}
+
+std::string const& FsNodeZipFile::fullPath()
+{
+	return path;
+}
+
+DirectoryIterator FsNodeZipFile::iter()
+{
+	dir_itr_imp_ptr imp;
+ 	dir_zip_archive_itr_imp_init(imp, gvl::shared_ptr<FsNodeZipFile>(this, gvl::shared_ownership()));
+	return DirectoryIterator(std::move(imp));
+}
+
+gvl::shared_ptr<FsNodeImp> FsNodeZipFile::go(std::string const& name)
+{
+	//return std::unique_ptr<FsNodeImp>(new FsNodeZipFile(archive, joinPath(path, name), joinPath(relPath, name)));
+
+	auto i = children.find(name);
+	if (i != children.end())
+		return i->second;
+	return gvl::shared_ptr<FsNodeImp>();
+}
+
+ReaderFile FsNodeZipFile::read()
+{
+	if (fileIndex < 0)
+		throw std::runtime_error("Could not find '" + relPath + "\' in zip file");
+
+	std::size_t size;
+	auto* ptr = mz_zip_reader_extract_to_heap(&archive->archive, (mz_uint)fileIndex, &size, 0);
+
+	if (!ptr)
+		throw std::runtime_error("Could not open '" + relPath + "\' in zip file");
+
+	ReaderFile rf;
+	rf.data = (uint8_t*)ptr;
+	rf.len = size;
+	return std::move(rf);
+}
+
+gvl::source FsNodeZipFile::toSource()
+{
+	if (fileIndex < 0)
+		throw std::runtime_error("Could not find '" + relPath + "\' in zip file");
+
+	std::size_t size;
+	auto* ptr = mz_zip_reader_extract_to_heap(&archive->archive, (mz_uint)fileIndex, &size, 0);
+
+	if (!ptr)
+		throw std::runtime_error("Could not open '" + relPath + "\' in zip file");
+
+	gvl::source s(gvl::make_shared(new gvl::stream_piece(
+		gvl::make_shared(gvl::bucket_data_mem::create_from((uint8_t const*)ptr, (uint8_t const*)ptr + size, size)))));
+	free(ptr);
+	
+	return std::move(s);
+}
+
+std::string const& FsNodeFilesystem::fullPath()
+{
+	return path;
+}
+
+DirectoryIterator FsNodeFilesystem::iter()
+{
+	return DirectoryIterator(path);
+}
+
+gvl::shared_ptr<FsNodeImp> FsNodeFilesystem::go(std::string const& name)
+{
+	if (name.size() > 4 && name.find(".zip") == name.size() - 4)
+		return gvl::shared_ptr<FsNodeImp>(new FsNodeZipFile(joinPath(path, name)));
+	else
+		return gvl::shared_ptr<FsNodeImp>(new FsNodeFilesystem(joinPath(path, name)));
+}
+
+ReaderFile FsNodeFilesystem::read()
+{
+	FILE* f = tolerantFOpen(path.c_str(), "rb");
+	if(!f)
+		throw std::runtime_error("Could not open '" + path + '\'');
+	fseek(f, 0, SEEK_END);
+	long len = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
+	ReaderFile rf;
+	rf.data = (uint8_t*)std::malloc(len);
+	rf.len = len;
+	fread(rf.data, 1, len, f);
+	fclose(f);
+	return std::move(rf);
+}
+
+gvl::source FsNodeFilesystem::toSource()
+{
+	FILE* f = tolerantFOpen(path.c_str(), "rb");
+	if(!f)
+		throw std::runtime_error("Could not open '" + path + '\'');
+
+	return gvl::to_source(new gvl::file_bucket_pipe(f));
+}
+
+FsNode::FsNode(std::string const& path)
+{
+	if (path.empty())
+	{
+		imp.reset(new FsNodeFilesystem(path));
+		return;
+	}
+
+	std::size_t beg = 0;
+	std::size_t i = 0;
+
+	for (; i < path.size(); ++i)
+	{
+		if (isDirSep(path[i]))
+		{
+			std::string const& part = path.substr(beg, i - beg);
+			if (!imp)
+				imp.reset(new FsNodeFilesystem(part));
+			else
+				imp = imp->go(part);
+			beg = i + 1;
+		}
+	}
+
+	if (beg != i)
+	{
+		std::string const& part = path.substr(beg, i - beg);
+		if (!imp)
+			imp.reset(new FsNodeFilesystem(part));
+		else
+			imp = imp->go(part);
+	}
+}
 
 inline bool dot_or_dot_dot( char const * name )
 {
@@ -348,60 +550,114 @@ inline bool dot_or_dot_dot( char const * name )
 
 //  directory_iterator implementation  ---------------------------------------//
 
-void dir_itr_init( dir_itr_imp_ptr & m_imp,
-	char const* dir_path )
+struct dir_filesystem_itr_imp : dir_itr_imp
 {
-	m_imp.reset( new dir_itr_imp() );
+	dir_filesystem_itr_imp()
+	{
+	}
+	
+	std::string       entry_path;
+	BOOST_HANDLE      handle;
+
+	std::string const& deref();
+	bool inc();
+
+	~dir_filesystem_itr_imp()
+	{
+		if ( handle != BOOST_INVALID_HANDLE_VALUE )
+			find_close( handle );
+	}
+};
+
+void dir_filesystem_itr_imp_init(dir_itr_imp_ptr& m_imp, char const* dir_path)
+{
+	std::unique_ptr<dir_filesystem_itr_imp> imp(new dir_filesystem_itr_imp);
+	
 	BOOST_SYSTEM_DIRECTORY_TYPE scratch;
 	filename_result name;  // initialization quiets compiler warnings
 
 	if ( !dir_path[0] )
-		m_imp->handle = BOOST_INVALID_HANDLE_VALUE;
+		imp->handle = BOOST_INVALID_HANDLE_VALUE;
 	else
-		name = find_first_file( dir_path, m_imp->handle, scratch );  // sets handle
+		name = find_first_file( dir_path, imp->handle, scratch );  // sets handle
 
-	if ( m_imp->handle != BOOST_INVALID_HANDLE_VALUE )
+	if ( imp->handle != BOOST_INVALID_HANDLE_VALUE )
 	{
 		if ( !dot_or_dot_dot( name.name ) )
 		{ 
-			m_imp->entry_path = name.name;
+			imp->entry_path = name.name;
 		}
 		else
 		{
-			//m_imp->entry_path.m_path_append( "dummy", no_check );
-			dir_itr_increment( m_imp );
+			if (!imp->inc())
+				return;
 		}
+
+		m_imp.reset(imp.release());
 	}
-	else
-	{
-		m_imp.reset();
-	}  
 }
 
-std::string & dir_itr_dereference(
-	const dir_itr_imp_ptr & m_imp )
+std::string const& dir_filesystem_itr_imp::deref()
 {
-	assert( m_imp.get() ); // fails if dereference end iterator
-	return m_imp->entry_path;
+	return entry_path;
 }
 
-void dir_itr_increment( dir_itr_imp_ptr & m_imp )
+bool dir_filesystem_itr_imp::inc()
 {
-	assert( m_imp.get() ); // fails on increment end iterator
-	assert( m_imp->handle != BOOST_INVALID_HANDLE_VALUE ); // reality check
+	assert( handle != BOOST_INVALID_HANDLE_VALUE ); // reality check
 
 	BOOST_SYSTEM_DIRECTORY_TYPE scratch;
 	filename_result name;
 
-	while ( (name = find_next_file( m_imp->handle, scratch )) )
+	while ( (name = find_next_file( handle, scratch )) )
 	{
 		// append name, except ignore "." or ".."
 		if ( !dot_or_dot_dot( name.name ) )
 		{
-			m_imp->entry_path = name.name;
-			return;
+			entry_path = name.name;
+			return true;
 		}
 	}
 	
-	m_imp.reset(); // make base() the end iterator
+	return false;
+}
+
+// zip archive iterator
+
+struct dir_zip_archive_itr_imp : dir_itr_imp
+{
+	dir_zip_archive_itr_imp(gvl::shared_ptr<FsNodeZipFile> dirInit)
+	: dir(std::move(dirInit))
+	{
+		cur = dir->children.begin();
+		end = dir->children.end();
+	}
+	
+	gvl::shared_ptr<FsNodeZipFile> dir;
+	std::map<std::string, gvl::shared_ptr<FsNodeZipFile>>::iterator cur, end;
+
+	std::string const& deref();
+	bool inc();
+
+	~dir_zip_archive_itr_imp()
+	{
+	}
+};
+
+void dir_zip_archive_itr_imp_init(dir_itr_imp_ptr& m_imp, gvl::shared_ptr<FsNodeZipFile> dir)
+{
+	std::unique_ptr<dir_zip_archive_itr_imp> imp(new dir_zip_archive_itr_imp(std::move(dir)));
+
+	if (imp->cur != imp->end)
+		m_imp.reset(imp.release());
+}
+
+std::string const& dir_zip_archive_itr_imp::deref()
+{
+	return cur->first;
+}
+
+bool dir_zip_archive_itr_imp::inc()
+{
+	return (cur != end && ++cur != end);
 }

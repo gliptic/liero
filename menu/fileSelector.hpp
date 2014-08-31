@@ -14,6 +14,8 @@ using std::vector;
 using std::pair;
 using gvl::shared_ptr;
 
+typedef bool (*FileFilter)(string const& name, string const& ext);
+
 struct FileNode : gvl::shared
 {
 	FileNode()
@@ -22,26 +24,32 @@ struct FileNode : gvl::shared
 	, selectedChild(0)
 	, parent(0)
 	, menu(178, 28)
+	, filter(0)
+	, filled(false)
 	{
 		menu.setHeight(14);
 	}
 
-	FileNode(string const& name, string const& fullPath, bool folder, FileNode* parent)
+	FileNode(string const& name, string const& pathName, string const& fullPath, bool folder, FileNode* parent, FileFilter filter = 0)
 	: name(name), fullPath(fullPath)
 	, folder(folder)
 	, id(0)
 	, selectedChild(0)
 	, parent(parent)
 	, menu(178, 28)
+	, filter(filter)
+	, pathName(pathName)
+	, filled(false)
 	{
 		menu.setHeight(14);
 	}
 
-	template<typename Filter>
-	void fill(string const& path, Filter filter);
+	void fill();
 
 	Menu& getMenu()
 	{
+		ensureFilled();
+
 		if (menu.items.empty())
 		{
 			for (auto& c : children)
@@ -57,6 +65,10 @@ struct FileNode : gvl::shared
 	{
 		if (ciCompare(fullPath, path))
 			return this;
+		if (!ciStartsWith(path, fullPath))
+			return 0;
+
+		ensureFilled();
 
 		for (auto& c : children)
 		{
@@ -67,6 +79,27 @@ struct FileNode : gvl::shared
 		return 0;
 	}
 
+	FsNode& getFsNode()
+	{
+		if (!fsNode)
+		{
+			assert(parent);
+			assert(parent->fsNode);
+			fsNode = parent->fsNode / pathName;
+		}
+
+		return fsNode;
+	}
+
+	void ensureFilled()
+	{
+		if (!filled && parent)
+		{
+			getFsNode();
+			fill();
+		}
+	}
+
 	string name;
 	string fullPath;
 	bool folder;
@@ -74,8 +107,12 @@ struct FileNode : gvl::shared
 	FileNode* selectedChild;
 	FileNode* parent;
 	vector<shared_ptr<FileNode> > children;
-
+	bool (*filter)(std::string const& name, std::string const& ext);
 	Menu menu;
+	
+	string pathName;
+	bool filled;
+	FsNode fsNode; // Starts out invalid
 };
 
 struct ChildSort
@@ -90,36 +127,34 @@ struct ChildSort
 	}
 };
 
-template<typename Filter>
-void FileNode::fill(string const& path, Filter filter)
+void FileNode::fill()
 {
-	DirectoryIterator di(path);
+	assert(fsNode);
+	DirectoryIterator di(fsNode.iter());
 
 	for(; di; ++di)
 	{
 		string const& name = *di;
-		string const& fullPath = joinPath(path, name);
+		string const& fullPath = joinPath(this->fullPath, name);
 		auto const& ext = getExtension(name);
 
-		if (ext.empty())
+		if (ext.empty() || ciCompare(ext, "zip"))
 		{
 			shared_ptr<FileNode> node(new FileNode(
-				name, fullPath, true, this));
+				name, name, fullPath, true, this, filter));
 
-			node->fill(fullPath, filter);
-			if (!node->children.empty())
-				children.push_back(node);
+			children.push_back(node);
 		}
-		else if (filter(name, ext))
+		else if (!filter || filter(name, ext))
 		{
 			children.push_back(shared_ptr<FileNode>(new FileNode(
-				getBasename(name), fullPath, false, this)));
+				getBasename(name), name, fullPath, false, this, filter)));
 		}
 	}
 
 	std::sort(children.begin(), children.end(), ChildSort());
 
-	
+	filled = true;
 }
 
 struct FileSelector
@@ -130,10 +165,13 @@ struct FileSelector
 		
 	}
 
-	template<typename Filter>
-	void fill(string const& path, Filter filter)
+	void fill(string const& path, FileFilter filter)
 	{
-		rootNode.fill(path, filter);
+		// TODO: Fix filter
+		rootNode.fsNode = FsNode(path);
+		rootNode.fullPath = rootNode.fsNode.fullPath();
+		rootNode.filter = filter;
+		rootNode.fill();
 	}
 
 	void draw()

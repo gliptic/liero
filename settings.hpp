@@ -23,16 +23,16 @@ struct Extensions
 	// Extensions
 	bool recordReplays;
 	bool loadPowerlevelPalette;
-	int bloodParticleMax;
+	int32_t bloodParticleMax;
 
 	int aiFrames, aiMutations;
 	bool aiTraces;
-	int aiParallels;
+	int32_t aiParallels;
 
-	int fullscreenW;
-	int fullscreenH;
+	int32_t fullscreenW;
+	int32_t fullscreenH;
 
-	int zoneTimeout;
+	int32_t zoneTimeout;
 	uint32_t selectBotWeapons;
 
 	bool allowViewingSpawnPoint;
@@ -58,23 +58,24 @@ struct Settings : gvl::shared, Extensions
 	Settings();
 	
 	bool load(std::string const& path, Rand& rand);
+	bool loadLegacy(std::string const& path, Rand& rand);
 	void save(std::string const& path, Rand& rand);
 	gvl::gash::value_type& updateHash();
 	
 	static void generateName(WormSettings& ws, Rand& rand);
 	
 	uint32_t weapTable[40];
-	int maxBonuses;
-	int blood;
-	int timeToLose;
-	int flagsToWin;
+	int32_t maxBonuses;
+	int32_t blood;
+	int32_t timeToLose;
+	int32_t flagsToWin;
 	uint32_t gameMode;
 	bool shadow;
 	bool loadChange;
 	bool namesOnBonuses;
 	bool regenerateLevel;
-	int lives;
-	int loadingTime;
+	int32_t lives;
+	int32_t loadingTime;
 	bool randomLevel;
 	std::string levelFile;
 	bool map;
@@ -85,13 +86,13 @@ struct Settings : gvl::shared, Extensions
 	gvl::gash::value_type hash;
 };
 
-template<int L, int H>
-inline int limit(int v)
+template<int L, int H, typename T>
+inline T limit(T v)
 {
-	if(v >= H)
-		return H - 1;
-	else if(v < L)
-		return L;
+	if(v >= (T)H)
+		return (T)H - 1;
+	else if(v < (T)L)
+		return (T)L;
 		
 	return v;
 }
@@ -313,6 +314,81 @@ void archive(Archive ar, Settings& settings)
 	gvl::enable_when(ar, fileExtensionVersion >= 6)
 		.b(settings.allowViewingSpawnPoint, false);
 	ar.check();
+}
+
+
+
+template<typename Archive>
+void archive_text(Settings& settings, Archive& ar)
+{
+	// TODO: Manage defaults when it becomes necessary
+
+	#define S(n) #n, settings.n
+
+	ar.i32(S(maxBonuses));
+	ar.i32(S(loadingTime));
+	ar.i32(S(lives));
+	ar.i32(S(timeToLose));
+	ar.i32(S(flagsToWin));
+	ar.b(S(screenSync));
+	ar.b(S(map));
+	ar.b(S(randomLevel));
+	ar.i32(S(blood));
+	ar.u32(S(gameMode));
+	ar.b(S(namesOnBonuses));
+	ar.b(S(regenerateLevel));
+	ar.b(S(shadow));
+	ar.b(S(loadChange));
+	ar.str(S(levelFile));
+
+	ar.b(S(recordReplays));
+	ar.b(S(loadPowerlevelPalette));
+	ar.i32(S(fullscreenW));
+	ar.i32(S(fullscreenH));
+
+	ar
+	.i32(S(aiMutations))
+	.i32(S(aiFrames))
+	.u32(S(selectBotWeapons))
+	.i32(S(zoneTimeout));
+
+	ar
+	.b(S(aiTraces))
+	.i32(S(aiParallels));
+
+	ar.b(S(allowViewingSpawnPoint));
+
+	#undef S
+
+	ar.arr("weapTable", settings.weapTable, [&] (uint32_t& v) {
+		ar.u32(0, v);
+		if(ar.in) v = limit<0, 3>(v);
+	});
+
+	#define S(n) #n, ws->n
+
+	ar.array_obj("worms", settings.wormSettings, [&] (gvl::shared_ptr<WormSettings> const& ws) {
+		ar.u32(S(controller));
+		if(ar.in) ws->controller = limit<0, 3>(ws->controller);
+		ar.arr("color", ws->rgb, [&] (int& c) { ar.i32(0, c); if (ar.in) c &= 63; });
+		ar.arr("weapons", ws->weapons, [&] (uint32_t& w) { ar.u32(0, w); });
+		ar.i32(S(health));
+
+		if (ws->randomName && ar.out)
+		{
+			std::string empty;
+			ar.str("name", empty);
+		}
+		else
+		{
+			ar.str(S(name));
+			// TODO: Random generation?
+		}
+		
+		ar.arr("controls", ws->controlsEx, [&] (uint32_t& c) { ar.u32(0, c); });
+	});
+
+	#undef S
 }
 
 #endif // LIERO_SETTINGS_HPP

@@ -31,6 +31,7 @@ inline void findReplace(std::string& str, std::string const& find, std::string c
 		str.replace(p, find.size(), replace);
 }
 
+bool ciStartsWith(std::string const& a, std::string const& b);
 bool ciCompare(std::string const& a, std::string const& b);
 bool ciLess(std::string const& a, std::string const& b);
 int unicodeToDOS(int c);

@@ -168,6 +168,7 @@ int Sstringdesc[][2] =
 	{SRandom2, 0xD413},
 	{SRegenLevel, 0xD41A},
 	{SReloadLevel, 0xD42D},
+	{SCopyright, 0xFB60},
 	{SCopyright2, 0xE693},
 	{SSelWeap, 0xA9C0},
 	{SLevelRandom, 0xA9D5},
@@ -343,10 +344,10 @@ std::string toId(std::string const& name)
 	std::string ret;
 	for (char c : name)
 	{
-		if (c >= 128 || !std::isalnum(c))
+		if (c >= 128 || !std::isalnum((uint8_t)c))
 			ret += '_';
 		else
-			ret += std::tolower(c);
+			ret += std::tolower((uint8_t)c);
 	}
 	return std::move(ret);
 }
@@ -712,110 +713,48 @@ void loadGfx(Common& common, ReaderFile& exe, ReaderFile& gfx)
 		common.largeSprites.spritePtr(82)[idx] = rand(4) + 94;
 		common.largeSprites.spritePtr(83)[idx] = rand(4) + 94;
 	}
-	
-	common.wormSprites.allocate(16, 16, 2 * 2 * 21);
-	
-	for(int i = 0; i < 21; ++i)
-	{
-		for(int y = 0; y < 16; ++y)
-		for(int x = 0; x < 16; ++x)
-		{
-			PalIdx pix = (common.largeSprites.spritePtr(16 + i) + y*16)[x];
-			
-			(common.wormSprite(i, 1, 0) + y*16)[x] = pix;
-			if(x == 15)
-				(common.wormSprite(i, 0, 0) + y*16)[15] = 0;
-			else
-				(common.wormSprite(i, 0, 0) + y*16)[14 - x] = pix;
-			
-			if(pix >= 30 && pix <= 34)
-				pix += 9; // Change worm color
-				
-			(common.wormSprite(i, 1, 1) + y*16)[x] = pix;
-			
-			if(x == 15)
-				(common.wormSprite(i, 0, 1) + y*16)[15] = 0; // A bit haxy, but works
-			else
-				(common.wormSprite(i, 0, 1) + y*16)[14 - x] = pix;
-		}
-	}
-	
-	common.fireConeSprites.allocate(16, 16, 2 * 7);
-	
-	for(int i = 0; i < 7; ++i)
-	{
-		for(int y = 0; y < 16; ++y)
-		for(int x = 0; x < 16; ++x)
-		{
-			PalIdx pix = (common.largeSprites.spritePtr(9 + i) + y*16)[x];
-			
-			(common.fireConeSprite(i, 1) + y*16)[x] = pix;
-			
-			if(x == 15)
-				(common.fireConeSprite(i, 0) + y*16)[15] = 0;
-			else
-				(common.fireConeSprite(i, 0) + y*16)[14 - x] = pix;
-			
-		}
-	}
 }
 
-void loadSfx(std::vector<sfx_sound*>& sounds, ReaderFile& snd)
+void loadSfx(
+	std::vector<SfxSample>& sounds,
+	ReaderFile& snd)
 {
 	int count = readUint16(snd);
 	
-	// TODO: Destroy old sounds to avoid leak
-	sounds.resize(count);
-	
-	long oldPos = (long)snd.tellg();
+	sounds.clear();
 	
 	for(int i = 0; i < count; ++i)
 	{
-		snd.seekg(oldPos + 8);
-		
+		uint8_t name[9];
+		name[8] = 0;
+		snd.get(name, 8);
+
 		int offset = readUint32(snd);
 		int length = readUint32(snd);
 		
-		oldPos = (long)snd.tellg();
+		auto oldPos = snd.tellg();
 		
-		int byteLength = length * 4;
+		SfxSample sample(toId(reinterpret_cast<char const*>(name)), length);
 
-		sounds[i] = sfx_new_sound(byteLength / 2);
-		
-		int16_t* ptr = reinterpret_cast<int16_t*>(sfx_sound_data(sounds[i]));
-		
-		std::vector<uint8_t> temp(length);
-		
 		if(length > 0)
 		{
 			snd.seekg(offset);
-			snd.get(&temp[0], length);
+			snd.get(&sample.originalData[0], length);
 
-			int prev = ((int8_t)temp[0]) * 30;
-			*ptr++ = prev;
-		
-			for(int j = 1; j < length; ++j)
-			{
-				int cur = (int8_t)temp[j] * 30;
-				*ptr++ = (prev + cur) / 2;
-				*ptr++ = cur;
-				prev = cur;
-			}
-		
-			*ptr++ = prev;
+			sample.createSound();
 		}
+
+		snd.seekg(oldPos);
+
+		sounds.push_back(std::move(sample));
 	}
 }
 
-void loadFromExe(Common& common, std::string const& lieroExe)
+void loadFromExe(Common& common, ReaderFile& exe, ReaderFile& gfx, ReaderFile& snd)
 {
 	common.weapons.resize(40);
 	common.nobjectTypes.resize(24);
 	common.sobjectTypes.resize(14);
-
-	ReaderFile& exe = openLieroEXE(lieroExe);
-	ReaderFile& gfx = openLieroCHR(lieroExe);
-	ReaderFile& snd = openLieroSND(lieroExe);
 
 	for (int i = 0; i < 14; ++i)
 	{

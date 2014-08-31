@@ -1,5 +1,6 @@
 #include "text.hpp"
 #include <cctype>
+#include <algorithm>
 
 char const* timeToString(int sec)
 {
@@ -59,6 +60,20 @@ bool ciCompare(std::string const& a, std::string const& b)
 	for(std::size_t i = 0; i < a.size(); ++i)
 	{
 		if(safeToUpper(a[i]) != safeToUpper(b[i]))
+			return false;
+	}
+	
+	return true;
+}
+
+bool ciStartsWith(std::string const& text, std::string const& startsWith)
+{
+	if (startsWith.size() > text.size())
+		return false;
+		
+	for(std::size_t i = 0; i < startsWith.size(); ++i)
+	{
+		if(safeToUpper(text[i]) != safeToUpper(startsWith[i]))
 			return false;
 	}
 	
