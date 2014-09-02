@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <cassert>
 #include <cctype>
+#include <sys/stat.h>
 
 std::string changeLeaf(std::string const& path, std::string const& newLeaf)
 {
@@ -67,6 +68,11 @@ void toLowerCase(std::string& str)
 
 FILE* tolerantFOpen(std::string const& name, char const* mode)
 {
+	struct stat st;
+	stat(name.c_str(), &st);
+	if (((st.st_mode) & S_IFMT) == S_IFDIR)
+		return 0;
+
 	FILE* f = std::fopen(name.c_str(), mode);
 	if(f)
 		return f;
