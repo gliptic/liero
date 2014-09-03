@@ -19,8 +19,6 @@ std::string getExtension(std::string const& path);
 void toUpperCase(std::string& str);
 std::string joinPath(std::string const& root, std::string const& leaf);
 
-bool fileExists(std::string const& path);
-
 FILE* tolerantFOpen(std::string const& name, char const* mode);
 
 std::size_t fileLength(FILE* f);

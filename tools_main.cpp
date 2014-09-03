@@ -64,23 +64,6 @@ try
 
 	gvl::shared_ptr<Common> common(new Common(exePath));
 
-	//common->texts.loadFromEXE();
-
-	//initKeys();
-	//common->loadConstantsFromEXE();
-	//precomputeTables();
-
-	/*
-	common->font.loadFromEXE();
-	common->loadPalette();
-	common->loadGfx();
-	common->loadMaterials();
-	common->loadWeapons();
-	common->loadTextures();
-	common->loadOthers();
-	common->loadSfx();
-	*/
-
 	if (dir)
 	{
 		auto const& root = getRoot(replayPath);

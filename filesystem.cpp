@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <cassert>
 #include <cctype>
+#include <sys/stat.h>
+#include <io.h>
 
 std::string changeLeaf(std::string const& path, std::string const& newLeaf)
 {
@@ -91,14 +93,6 @@ FILE* tolerantFOpen(std::string const& name, char const* mode)
 		return f;
 		
 	return 0;
-}
-
-bool fileExists(std::string const& path)
-{
-	FILE* f = fopen(path.c_str(), "rb");
-	bool state = (f != 0);
-	if(f) fclose(f);
-	return state;
 }
 
 std::size_t fileLength(FILE* f)
@@ -345,6 +339,8 @@ DirectoryIterator::~DirectoryIterator()
 {
 }
 
+// ------------ FsNodeZipFile
+
 FsNodeZipArchive::FsNodeZipArchive(std::string const& path)
 {
 	memset(&archive, 0, sizeof(archive));
@@ -421,8 +417,6 @@ DirectoryIterator FsNodeZipFile::iter()
 
 gvl::shared_ptr<FsNodeImp> FsNodeZipFile::go(std::string const& name)
 {
-	//return std::unique_ptr<FsNodeImp>(new FsNodeZipFile(archive, joinPath(path, name), joinPath(relPath, name)));
-
 	auto i = children.find(name);
 	if (i != children.end())
 		return i->second;
@@ -476,10 +470,33 @@ DirectoryIterator FsNodeFilesystem::iter()
 
 gvl::shared_ptr<FsNodeImp> FsNodeFilesystem::go(std::string const& name)
 {
-	if (name.size() > 4 && name.find(".zip") == name.size() - 4)
-		return gvl::shared_ptr<FsNodeImp>(new FsNodeZipFile(joinPath(path, name)));
-	else
-		return gvl::shared_ptr<FsNodeImp>(new FsNodeFilesystem(joinPath(path, name)));
+	std::string fullPath(joinPath(path, name));
+
+	bool dir = false;
+
+	gvl::shared_ptr<FsNodeImp> imp;
+
+	struct stat st;
+	if (stat(fullPath.c_str(), &st) == 0)
+	{
+		if ((st.st_mode & S_IFMT) == S_IFDIR)
+			dir = true;
+
+		imp.reset(new FsNodeFilesystem(fullPath));
+
+		std::string zipPath(fullPath + ".zip");
+
+		if (access(zipPath.c_str(), 0) != -1)
+		{
+			// We have a zip file, merge nodes
+			return gvl::shared_ptr<FsNodeImp>(new FsNodeZipFile(zipPath));
+		}
+	}
+
+	//if (name.size() > 4 && name.find(".zip") == name.size() - 4)
+	//	return gvl::shared_ptr<FsNodeImp>(new FsNodeZipFile(fullPath));
+	//else
+	return std::move(imp);
 }
 
 ReaderFile FsNodeFilesystem::read()
@@ -516,8 +533,7 @@ FsNode::FsNode(std::string const& path)
 		return;
 	}
 
-	std::size_t beg = 0;
-	std::size_t i = 0;
+	std::size_t beg = 0, i = 0;
 
 	for (; i < path.size(); ++i)
 	{
@@ -552,9 +568,7 @@ inline bool dot_or_dot_dot( char const * name )
 
 struct dir_filesystem_itr_imp : dir_itr_imp
 {
-	dir_filesystem_itr_imp()
-	{
-	}
+	dir_filesystem_itr_imp(char const* dir_path);
 	
 	std::string       entry_path;
 	BOOST_HANDLE      handle;
@@ -569,32 +583,38 @@ struct dir_filesystem_itr_imp : dir_itr_imp
 	}
 };
 
-void dir_filesystem_itr_imp_init(dir_itr_imp_ptr& m_imp, char const* dir_path)
+dir_filesystem_itr_imp::dir_filesystem_itr_imp(char const* dir_path)
 {
-	std::unique_ptr<dir_filesystem_itr_imp> imp(new dir_filesystem_itr_imp);
-	
 	BOOST_SYSTEM_DIRECTORY_TYPE scratch;
 	filename_result name;  // initialization quiets compiler warnings
 
-	if ( !dir_path[0] )
-		imp->handle = BOOST_INVALID_HANDLE_VALUE;
+	if (!dir_path[0])
+		handle = BOOST_INVALID_HANDLE_VALUE;
 	else
-		name = find_first_file( dir_path, imp->handle, scratch );  // sets handle
+		name = find_first_file(dir_path, handle, scratch);  // sets handle
 
-	if ( imp->handle != BOOST_INVALID_HANDLE_VALUE )
+	if (handle != BOOST_INVALID_HANDLE_VALUE)
 	{
-		if ( !dot_or_dot_dot( name.name ) )
-		{ 
-			imp->entry_path = name.name;
-		}
-		else
+		if (!dot_or_dot_dot(name.name))
 		{
-			if (!imp->inc())
-				return;
+			entry_path = name.name;
+			if (entry_path.find(".zip") == entry_path.size() - 4)
+				entry_path.erase(entry_path.size() - 4);
 		}
-
-		m_imp.reset(imp.release());
+		else if (!inc())
+		{
+			find_close(handle);
+			handle = BOOST_INVALID_HANDLE_VALUE;
+		}
 	}
+}
+
+void dir_filesystem_itr_imp_init(dir_itr_imp_ptr& m_imp, char const* dir_path)
+{
+	std::unique_ptr<dir_filesystem_itr_imp> imp(new dir_filesystem_itr_imp(dir_path));
+	
+	if (imp->handle != BOOST_INVALID_HANDLE_VALUE)
+		m_imp.reset(imp.release());
 }
 
 std::string const& dir_filesystem_itr_imp::deref()
@@ -609,12 +629,14 @@ bool dir_filesystem_itr_imp::inc()
 	BOOST_SYSTEM_DIRECTORY_TYPE scratch;
 	filename_result name;
 
-	while ( (name = find_next_file( handle, scratch )) )
+	while ((name = find_next_file(handle, scratch)))
 	{
 		// append name, except ignore "." or ".."
-		if ( !dot_or_dot_dot( name.name ) )
+		if (!dot_or_dot_dot(name.name))
 		{
 			entry_path = name.name;
+			if (entry_path.find(".zip") == entry_path.size() - 4)
+				entry_path.erase(entry_path.size() - 4);
 			return true;
 		}
 	}
