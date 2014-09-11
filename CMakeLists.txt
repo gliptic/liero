@@ -9,8 +9,6 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
 set(SOURCES
     bobject.cpp
     bonus.cpp
-    # common_exereader.cpp
-	# common_writer.cpp
     common.cpp
     console.cpp
     constants.cpp
@@ -21,7 +19,6 @@ set(SOURCES
     ninjarope.cpp
     nobject.cpp
     rand.cpp
-    # reader.cpp
     replay.cpp
     settings.cpp
     sobject.cpp
@@ -47,7 +44,6 @@ set(SOURCES
     gvl/io2/stream.cpp
     gvl/io2/convert.cpp
     gvl/containers/list.cpp
-	tl/utf8.c
     )
 
 set(GAME_SOURCES ${SOURCES}

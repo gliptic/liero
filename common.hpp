@@ -11,7 +11,6 @@
 #include "gfx/sprite.hpp"
 #include <string>
 #include <gvl/resman/shared_ptr.hpp>
-#include <gvl/io2/stream.hpp>
 #include <gvl/support/platform.hpp>
 extern "C" {
 #include "mixer/mixer.h"
@@ -76,6 +75,7 @@ struct SfxSample : gvl::noncopyable
 		sound = other.sound;
 		sound = 0;
 		originalData = std::move(other.originalData);
+		return *this;
 	}
 
 	SfxSample(std::string name, int length)

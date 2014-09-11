@@ -723,8 +723,8 @@ struct reader
 				}
 				else if (c == 'u')
 				{
-					uint8_t c0 = r.get_def();
-					uint8_t c1 = r.get_def();
+					(void)r.get_def(); // Ignore
+					(void)r.get_def(); // Ignore
 					uint8_t c2 = r.get_def();
 					uint8_t c3 = r.get_def();
 

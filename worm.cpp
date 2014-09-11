@@ -1319,8 +1319,6 @@ void Worm::processAiming(Game& game)
 
 void Worm::processWeaponChange(Game& game)
 {
-	Common& common = *game.common;
-	
 	if(!keyChangePressed)
 	{
 		release(Left);
@@ -1533,8 +1531,6 @@ void Worm::processSight(Game& game)
 
 void Worm::processSteerables(Game& game)
 {
-	Common& common = *game.common;
-
 	steerableCount = 0;
 	steerableSumX = 0;
 	steerableSumY = 0;

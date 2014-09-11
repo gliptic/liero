@@ -1,5 +1,6 @@
 #include <gvl/serialization/toml.hpp>
 #include "common.hpp"
+#include <gvl/io2/stream.hpp>
 
 template<typename T>
 struct ObjectResolver

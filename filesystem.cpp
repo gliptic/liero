@@ -2,11 +2,16 @@
 #include "text.hpp"
 #include <gvl/support/platform.hpp>
 #include <gvl/io2/fstream.hpp>
+#include <tl/platform.h>
 #include <stdexcept>
 #include <cassert>
 #include <cctype>
 #include <sys/stat.h>
+#if TL_WINDOWS
 #include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 std::string changeLeaf(std::string const& path, std::string const& newLeaf)
 {
@@ -451,7 +456,7 @@ struct FsNodeZipFile : FsNodeImp
 	std::string relPath;
 	int fileIndex;
 
-	FsNodeZipFile::FsNodeZipFile(std::string const& path)
+	FsNodeZipFile(std::string const& path)
 	: archive(new FsNodeZipArchive(path))
 	, path(path)
 	, fileIndex(-1)
@@ -537,7 +542,7 @@ struct FsNodeZipFile : FsNodeImp
 		return gvl::shared_ptr<FsNodeImp>();
 	}
 
-	gvl::source FsNodeZipFile::tryToSource()
+	gvl::source tryToSource()
 	{
 		if (fileIndex < 0)
 			return gvl::source();

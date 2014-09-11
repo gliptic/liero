@@ -196,6 +196,9 @@ struct octet_reader
 	{
 	}
 
+	octet_reader(octet_reader const& other) = default;
+	octet_reader& operator=(octet_reader const& other) = default;
+
 	octet_reader(octet_reader&& other)
 	: cur_(other.cur_)
 	, end_(other.end_)
@@ -358,8 +361,8 @@ protected:
 
 	uint8_t const* cur_; // Pointer into head_->data
 	uint8_t const* end_; // End of data in head_->data
-	shared_ptr<bucket_data_mem> cur_data;
 	shared_ptr<stream_piece> head_;
+	shared_ptr<bucket_data_mem> cur_data;
 };
 
 //

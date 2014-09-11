@@ -283,6 +283,8 @@ int readSpriteTga(
 	CHECK(r.get() == 8);
 	CHECK(r.get() == 0);
 
+	r.try_skip(idLen); // Skip ID
+
 	// TODO: Support more sprites?
 	CHECK(imageWidth == destImageWidth);
 	CHECK(imageHeight == destImageHeight);
@@ -344,6 +346,8 @@ void Common::load(FsNode node)
 		if (gvl::read_uint32_le(r) == quad('R', 'I', 'F', 'F'))
 		{
 			std::size_t roundedSize = gvl::read_uint32_le(r) + 8;
+
+			(void)roundedSize; // Ignore
 
 			if (gvl::read_uint32_le(r) == quad('W', 'A', 'V', 'E')
 			 && gvl::read_uint32_le(r) == quad('f', 'm', 't', ' ')

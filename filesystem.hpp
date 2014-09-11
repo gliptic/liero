@@ -83,6 +83,9 @@ struct FsNode
 
 	explicit FsNode(std::string const& path);
 
+	FsNode(FsNode const& other) = default;
+	FsNode& operator=(FsNode const& other) = default;
+
 	FsNode(FsNode&& other)
 	: imp(std::move(other.imp))
 	{

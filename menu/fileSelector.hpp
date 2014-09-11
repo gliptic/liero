@@ -23,8 +23,8 @@ struct FileNode : gvl::shared
 	, id(0)
 	, selectedChild(0)
 	, parent(0)
-	, menu(178, 28)
 	, filter(0)
+	, menu(178, 28)
 	, filled(false)
 	{
 		menu.setHeight(14);
@@ -36,8 +36,8 @@ struct FileNode : gvl::shared
 	, id(0)
 	, selectedChild(0)
 	, parent(parent)
-	, menu(178, 28)
 	, filter(filter)
+	, menu(178, 28)
 	, pathName(pathName)
 	, filled(false)
 	{
