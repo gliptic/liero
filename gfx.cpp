@@ -143,13 +143,14 @@ struct ProfileSaveBehavior : ItemBehavior
 			std::string name;
 			if(gfx.inputString(name, 30, x, y) && !name.empty())
 			{
-				ws.saveProfile(joinPath(joinPath(configRoot, "Profiles"), name));
+				//ws.saveProfile(joinPath(joinPath(configRoot, "Profiles"), name));
+				ws.saveProfile(gfx.getConfigNode() / "Profiles" / (name + ".lpf"));
 			}
 				
 			sfx.play(common, 27);
 		}
 		else
-			ws.saveProfile(ws.profilePath);
+			ws.saveProfile(ws.profileNode);
 		
 		menu.updateItems(common);
 		return -1;
@@ -159,7 +160,7 @@ struct ProfileSaveBehavior : ItemBehavior
 	{
 		if(!saveAs)
 		{
-			item.visible = !ws.profilePath.empty();
+			item.visible = (bool)ws.profileNode;
 		}
 	}
 	
@@ -178,9 +179,18 @@ struct ProfileLoadedBehavior : ItemBehavior
 	
 	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		item.value = getBasename(getLeaf(ws.profilePath));
+		if (ws.profileNode)
+		{
+			item.value = getBasename(getLeaf(ws.profileNode.fullPath()));
+			item.visible = true;
+		}
+		else
+		{
+			item.value.clear();
+			item.visible = false;
+		}
+
 		item.hasValue = true;
-		item.visible = !ws.profilePath.empty();
 	}
 	
 	Common& common;
@@ -209,28 +219,6 @@ int levenshtein(char const *s1, char const *s2) {
  
     return(matrix[s2len*w + s1len]);
 }
-/*
-
-#define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
- 
-int levenshtein(char const *s1, char const *s2) {
-    unsigned int s1len, s2len, x, y, lastdiag, olddiag;
-    s1len = strlen(s1);
-    s2len = strlen(s2);
-    std::vector<unsigned int> column(s1len+1);
-    for (y = 1; y <= s1len; y++)
-        column[y] = y;
-    for (x = 1; x <= s2len; x++) {
-        column[0] = x;
-        for (y = 1, lastdiag = x-1; y <= s1len; y++) {
-            olddiag = column[y];
-			int c = std::tolower(s1[y-1]) == std::tolower(s2[x-1]) ? 0 : 1;
-            column[y] = MIN3(column[y] + 1, column[y-1] + 1, lastdiag + c);
-            lastdiag = olddiag;
-        }
-    }
-    return(column[s1len]);
-}*/
 
 struct WeaponEnumBehavior : EnumBehavior
 {
@@ -887,10 +875,11 @@ struct OptionsSaveBehavior : ItemBehavior
 			
 		x += menu.valueOffsetX + 2;
 		
-		std::string name = getBasename(getLeaf(gfx.settingsFile));
+		std::string name = getBasename(getLeaf(gfx.settingsNode.fullPath()));
 		if(gfx.inputString(name, 30, x, y) && !name.empty())
 		{
-			gfx.saveSettings(joinPath(configRoot, name + ".cfg"));
+			//gfx.saveSettings(joinPath(configRoot, name + ".cfg"));
+			gfx.saveSettings(gfx.getConfigNode() / (name + ".cfg"));
 		}
 				
 		sfx.play(common, 27);
@@ -901,7 +890,7 @@ struct OptionsSaveBehavior : ItemBehavior
 	
 	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		item.value = getBasename(getLeaf(gfx.settingsFile));
+		item.value = getBasename(getLeaf(gfx.settingsNode.fullPath()));
 		item.hasValue = true;
 	}
 	
@@ -1002,18 +991,6 @@ void SettingsMenu::onUpdate()
 	}
 }
 
-struct LevelSort
-{
-	typedef std::pair<std::string, bool> type;
-
-	bool operator()(type const& a, type const& b) const
-	{
-		if (a.second == b.second)
-			return ciLess(a.first, b.first);
-		return a.second > b.second;
-	}
-};
-
 using std::string;
 using std::vector;
 using std::pair;
@@ -1024,11 +1001,11 @@ void Gfx::selectLevel()
 	Common& common = *this->common;
 	FileSelector levSel(common);
 
-	{
-		levSel.fill(configRoot, [](string const& name, string const& ext) { return ciCompare(ext, "LEV"); });
+	shared_ptr<FileNode> random(new FileNode(
+		LS(Random), "", "", false, &levSel.rootNode));
 
-		shared_ptr<FileNode> random(new FileNode(
-					LS(Random), "", "", false, &levSel.rootNode));
+	{
+		levSel.fill(getConfigNode(), [](string const& name, string const& ext) { return ciCompare(ext, "LEV"); });
 
 		random->id = 1;
 		levSel.rootNode.children.insert(levSel.rootNode.children.begin(), random);
@@ -1055,7 +1032,7 @@ void Gfx::selectLevel()
 		common.font.drawText(screenBmp, title, 180, 21, 50);
 
 		FileNode* sel = levSel.curSel();
-		if (previewNode != sel && sel)
+		if (previewNode != sel && sel && sel != random.get())
 		{
 			Level level(common);
 
@@ -1063,7 +1040,7 @@ void Gfx::selectLevel()
 
 			try
 			{
-				if (level.load(common, *settings, sel->getFsNode().read()))
+				if (level.load(common, *settings, sel->getFsNode().toOctetReader()))
 				{
 					level.drawMiniature(frozenScreen, 134, 162, 10);
 				}
@@ -1090,7 +1067,7 @@ void Gfx::selectLevel()
 
 			if (sel)
 			{
-				if (sel->id == 1)
+				if (sel == random.get())
 				{
 					settings->randomLevel = true;
 					settings->levelFile.clear();
@@ -1115,10 +1092,10 @@ void Gfx::selectProfile(WormSettings& ws)
 	FileSelector profileSel(*common, 28);
 
 	{
-		profileSel.fill(configRoot, [](string const& name, string const& ext) { return ciCompare(ext, "LPF"); });
+		profileSel.fill(getConfigNode(), [](string const& name, string const& ext) { return ciCompare(ext, "LPF"); });
 
 		profileSel.setFolder(profileSel.rootNode);
-		profileSel.select(joinPath(configRoot, "Profiles"));
+		profileSel.select(joinPath(getConfigNode().fullPath(), "Profiles"));
 	}
 	
 	do
@@ -1146,7 +1123,7 @@ void Gfx::selectProfile(WormSettings& ws)
 
 			if (sel)
 			{
-				ws.loadProfile(sel->fullPath);
+				ws.loadProfile(sel->getFsNode());
 				return;
 			}
 		}
@@ -1164,13 +1141,13 @@ int Gfx::selectReplay()
 	FileSelector replaySel(*common, 28);
 
 	{
-		replaySel.fill(configRoot, [](string const& name, string const& ext) { return ciCompare(ext, "LRP"); });
+		replaySel.fill(getConfigNode(), [](string const& name, string const& ext) { return ciCompare(ext, "LRP"); });
 
 		replaySel.setFolder(replaySel.rootNode);
 		if (prevSelectedReplayPath.empty()
 		  || !replaySel.select(prevSelectedReplayPath))
 		{
-			replaySel.select(joinPath(configRoot, "Replays"));
+			replaySel.select(joinPath(getConfigNode().fullPath(), "Replays"));
 		}
 	}
 	
@@ -1204,11 +1181,6 @@ int Gfx::selectReplay()
 				// Reset controller before opening the replay, since we may be recording it
 				controller.reset();
 				
-				//auto replay(
-				//	gvl::to_source(new gvl::file_bucket_pipe(sel->fullPath.c_str(), "rb")));
-
-
-
 				controller.reset(new ReplayController(common, sel->getFsNode().toSource()));
 				
 				return MainMenu::MaReplay;
@@ -1227,7 +1199,7 @@ void Gfx::selectOptions()
 	FileSelector optionsSel(*common, 28);
 
 	{
-		optionsSel.fill(configRoot, [](string const& name, string const& ext) {
+		optionsSel.fill(getConfigNode(), [](string const& name, string const& ext) {
 			return ciCompare(ext, "CFG");
 		});
 
@@ -1259,7 +1231,7 @@ void Gfx::selectOptions()
 
 			if (sel)
 			{
-				gfx.loadSettings(sel->fullPath);
+				gfx.loadSettings(sel->getFsNode());
 				return;
 			}
 		}
@@ -1649,25 +1621,23 @@ void Gfx::mainLoop()
 	controller.reset();
 }
 
-void Gfx::saveSettings(std::string const& path)
+void Gfx::saveSettings(FsNode node)
 {
-	std::string extension = getExtension(path);
-	settingsFile = path;
-	settings->save(settingsFile, rand);
+	settingsNode = node;
+	settings->save(node, rand);
 }
 
-bool Gfx::loadSettings(std::string const& path)
+bool Gfx::loadSettings(FsNode node)
 {
-	settingsFile = path;
+	settingsNode = node;
 	settings.reset(new Settings);
-	return settings->load(settingsFile, rand);
+	return settings->load(node, rand);
 }
 
-bool Gfx::loadSettingsLegacy(std::string const& path)
+bool Gfx::loadSettingsLegacy(FsNode node)
 {
-	settingsFile = path;
 	settings.reset(new Settings);
-	return settings->loadLegacy(settingsFile, rand);
+	return settings->loadLegacy(node, rand);
 }
 
 void Gfx::drawBasicMenu(/*int curSel*/)

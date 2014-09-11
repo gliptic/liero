@@ -62,16 +62,16 @@ try
 	if(!exeSet)
 		exePath = "LIERO.EXE";
 
-	gvl::shared_ptr<Common> common(new Common(exePath));
+	// TODO: Fix loading
+	gvl::shared_ptr<Common> common(new Common());
 
 	if (dir)
 	{
 		auto const& root = getRoot(replayPath);
-		DirectoryIterator di(root);
+		DirectoryListing di(root);
 
-		for (; di; ++di)
+		for (auto const& path : di)
 		{
-			auto const& path = *di;
 			if (getExtension(path) == "lrp")
 			{
 				auto const& fullPath = joinPath(root, path);

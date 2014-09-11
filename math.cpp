@@ -1,5 +1,5 @@
 #include "math.hpp"
-#include "reader.hpp"
+#include <gvl/cstdint.hpp>
 #include <cmath>
 
 fixed sinTable[128];

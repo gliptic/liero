@@ -5,33 +5,6 @@
 #include "color.hpp"
 //#include <iostream>
 
-void Font::loadFromEXE(ReaderFile& exe)
-{
-	chars.resize(250);
-	
-	std::size_t const FontSize = 250 * 8 * 8 + 1;
-	std::vector<unsigned char> temp(FontSize);
-	
-	exe.seekg(0x1C825);
-	
-	exe.get(reinterpret_cast<uint8_t*>(&temp[0]), FontSize);
-	
-	for(int i = 0; i < 250; ++i)
-	{
-		unsigned char* ptr = &temp[i*64 + 1];
-		
-		for(int y = 0; y < 8; ++y)
-		{
-			for(int x = 0; x < 7; ++x)
-			{
-				chars[i].data[y*7 + x] = ptr[y*8 + x];
-			}
-		}
-		
-		chars[i].width = ptr[63];
-	}
-}
-
 void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color)
 {
 	if(c >= 2 && c < 252) // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since drawText subtracts 2?

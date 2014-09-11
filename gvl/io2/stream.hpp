@@ -385,6 +385,25 @@ struct octet_writer : basic_text_writer<octet_writer>
 	, end_(0)
 	{
 	}
+
+	octet_writer(octet_writer&& other)
+	: sink_(std::move(other.sink_))
+	, cur_(other.cur_)
+	, end_(other.end_)
+	, buffer_(std::move(other.buffer_))
+	{
+		other.cur_ = other.end_ = 0;
+	}
+
+	octet_writer& operator=(octet_writer&& other)
+	{
+		cur_ = other.cur_;
+		end_ = other.end_;
+		sink_ = std::move(other.sink_);
+		buffer_ = std::move(other.buffer_);
+		other.cur_ = other.end_ = 0;
+		return *this;
+	}
 	
 	~octet_writer()
 	{

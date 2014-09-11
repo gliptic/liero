@@ -183,7 +183,7 @@ void NObject::process(Game& game)
 					7,
 					7);
 				if(game.settings->shadow)
-					correctShadow(common, game.level, Rect(ix - 8, iy - 8, ix + 9, iy + 9)); // This seems like an overly large rectangle
+					correctShadow(common, game.level, gvl::rect(ix - 8, iy - 8, ix + 9, iy + 9)); // This seems like an overly large rectangle
 			}
 			
 			doExplode = true;
@@ -303,7 +303,7 @@ void NObject::process(Game& game)
 			drawDirtEffect(common, game.rand, game.level, t.dirtEffect, ftoi(x) - 7, ftoi(y) - 7);
 			
 			if(game.settings->shadow)
-				correctShadow(common, game.level, Rect(ftoi(x) - 10, ftoi(y) - 10, ftoi(x) + 11, ftoi(y) + 11));
+				correctShadow(common, game.level, gvl::rect(ftoi(x) - 10, ftoi(y) - 10, ftoi(x) + 11, ftoi(y) + 11));
 		}
 		
 		if(t.splinterAmount > 0)

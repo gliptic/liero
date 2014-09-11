@@ -5,11 +5,11 @@
 #include <string>
 #include <cstdio>
 #include <utility>
-#include "rect.hpp"
 #include "gfx/palette.hpp"
 #include "material.hpp"
 #include "common.hpp"
 #include <gvl/math/vec.hpp>
+#include <gvl/math/rect.hpp>
 
 struct Game;
 struct Settings;
@@ -25,7 +25,7 @@ struct Level
 		zeroMaterial = common.materials[0];
 	}
 	
-	bool load(Common& common, Settings const& settings, ReaderFile f);
+	bool load(Common& common, Settings const& settings, gvl::octet_reader r);
 	
 	void generateDirtPattern(Common& common, Rand& rand);
 	void generateRandom(Common& common, Settings const& settings, Rand& rand);
@@ -94,9 +94,9 @@ struct Level
 		std::swap(zeroMaterial, other.zeroMaterial);
 	}
 	
-	Rect rect()
+	gvl::rect rect()
 	{
-		return Rect(0, 0, width, height);
+		return gvl::rect(0, 0, width, height);
 	}
 	
 	void resize(int width_new, int height_new);

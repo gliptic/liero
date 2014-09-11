@@ -4,11 +4,8 @@
 #include "gfx/renderer.hpp"
 #include "constants.hpp"
 #include "console.hpp"
-#include "reader.hpp" // TODO: For configRoot. We should move that into Common.
 #include "filesystem.hpp" // For joinPath
 #include <cstdlib>
-//#include <iostream>
-
 
 #include <gvl/serialization/context.hpp>
 #include <gvl/serialization/archive.hpp>
@@ -35,17 +32,20 @@ gvl::gash::value_type& WormSettings::updateHash()
 	return hash;
 }
 
-void WormSettings::saveProfile(std::string const& path)
+void WormSettings::saveProfile(FsNode node)
 {
 	try
 	{
-		auto const& fullPath = path + ".lpf";
-		create_directories(fullPath);
-		gvl::sink str(new gvl::file_bucket_pipe(fullPath.c_str(), "wb"));
+		//auto const& fullPath = path + ".lpf";
+		//create_directories(fullPath);
+		//gvl::sink str(new gvl::file_bucket_pipe(fullPath.c_str(), "wb"));
 		
-		gvl::octet_writer writer(str);
+		//gvl::octet_writer writer(str);
+
+		auto writer = node.toOctetWriter();
 		
-		profilePath = path;
+		//profilePath = path;
+		profileNode = node;
 		GameSerializationContext context;
 		archive(gvl::out_archive<gvl::octet_writer, GameSerializationContext>(writer, context), *this);
 	}
@@ -55,16 +55,18 @@ void WormSettings::saveProfile(std::string const& path)
 	}
 }
 
-void WormSettings::loadProfile(std::string const& path)
+void WormSettings::loadProfile(FsNode node)
 {
 	int oldColor = color;
 	try
 	{
-		gvl::source str(gvl::to_source(new gvl::file_bucket_pipe(path.c_str(), "rb")));
+		//gvl::source str(gvl::to_source(new gvl::file_bucket_pipe(path.c_str(), "rb")));
 		
-		gvl::octet_reader reader(str);
+		//gvl::octet_reader reader(str);
 
-		profilePath = path;
+		auto reader = node.toOctetReader();
+
+		profileNode = node;
 		GameSerializationContext context;
 		archive(gvl::in_archive<gvl::octet_reader, GameSerializationContext>(reader, context), *this);
 	}
@@ -989,7 +991,7 @@ void Worm::doRespawning(Game& game)
 		int ix = ftoi(x), iy = ftoi(y);
 		drawDirtEffect(common, game.rand, game.level, 0, ix - 7, iy - 7);
 		if(game.settings->shadow)
-			correctShadow(common, game.level, Rect(ix - 10, iy - 10, ix + 11, iy + 11));
+			correctShadow(common, game.level, gvl::rect(ix - 10, iy - 10, ix + 11, iy + 11));
 		
 		ready = false;
 		game.soundPlayer->play(21);
@@ -1157,7 +1159,7 @@ void Worm::processMovement(Game& game)
 				int ix = ftoi(posX), iy = ftoi(posY);
 				drawDirtEffect(common, game.rand, game.level, 7, ix, iy);
 				if(game.settings->shadow)
-					correctShadow(common, game.level, Rect(ix - 3, iy - 3, ix + 18, iy + 18));
+					correctShadow(common, game.level, gvl::rect(ix - 3, iy - 3, ix + 18, iy + 18));
 				
 				posX += dirX << 1;
 				posY += dirY << 1;
@@ -1167,7 +1169,7 @@ void Worm::processMovement(Game& game)
 				iy = ftoi(posY);
 				drawDirtEffect(common, game.rand, game.level, 7, ix, iy);
 				if(game.settings->shadow)
-					correctShadow(common, game.level, Rect(ix - 3, iy - 3, ix + 18, iy + 18));
+					correctShadow(common, game.level, gvl::rect(ix - 3, iy - 3, ix + 18, iy + 18));
 				
 				//NOTE! Maybe the shadow corrections can be joined into one? Mmm?
 			} // 4552
@@ -1479,9 +1481,9 @@ bool checkForSpecWormHit(Game& game, int x, int y, int dist, Worm& w)
 	int deltaX = x - ftoi(w.x) + 7;
 	int deltaY = y - ftoi(w.y) + 5;
 	
-	Rect r(deltaX - dist, deltaY - dist, deltaX + dist + 1, deltaY + dist + 1);
+	gvl::rect r(deltaX - dist, deltaY - dist, deltaX + dist + 1, deltaY + dist + 1);
 	
-	r.intersect(Rect(0, 0, 16, 16));
+	r.intersect(gvl::rect(0, 0, 16, 16));
 	
 	for(int cy = r.y1; cy < r.y2; ++cy)
 	for(int cx = r.x1; cx < r.x2; ++cx)

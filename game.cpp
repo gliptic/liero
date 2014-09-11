@@ -1,5 +1,4 @@
 #include "game.hpp"
-#include "reader.hpp"
 #include "viewport.hpp"
 #include "worm.hpp"
 #include "filesystem.hpp"
@@ -173,7 +172,7 @@ void Game::draw(Renderer& renderer, bool isReplay)
 
 bool checkBonusSpawnPosition(Game& game, int x, int y)
 {
-	Rect rect(x - 2, y - 2, x + 3, y + 3);
+	gvl::rect rect(x - 2, y - 2, x + 3, y + 3);
 	
 	rect.intersect(game.level.rect());
 	

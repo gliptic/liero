@@ -12,6 +12,7 @@
 #include "version.hpp"
 #include <gvl/serialization/archive.hpp> // For gvl::enable_when
 #include <gvl/crypt/gash.hpp>
+#include "filesystem.hpp"
 
 struct Worm;
 struct Game;
@@ -101,8 +102,8 @@ struct WormSettings : gvl::shared, WormSettingsExtensions
 	
 	gvl::gash::value_type& updateHash();
 	
-	void saveProfile(std::string const& profilePath);
-	void loadProfile(std::string const& profilePath);
+	void saveProfile(FsNode node);
+	void loadProfile(FsNode node);
 	
 	int health;
 	uint32_t controller; // CPU / Human
@@ -114,7 +115,8 @@ struct WormSettings : gvl::shared, WormSettingsExtensions
 	
 	int color;
 	
-	std::string profilePath;
+	//std::string profilePath;
+	FsNode profileNode;
 	
 	gvl::gash::value_type hash;
 };

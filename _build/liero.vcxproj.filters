@@ -10,9 +10,6 @@
     <Filter Include="gvl">
       <UniqueIdentifier>{927b0729-0241-42ae-9b74-db8ebdb835d1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="gvl\io">
-      <UniqueIdentifier>{b5bd135f-c679-4edd-8ab1-14418da34e04}</UniqueIdentifier>
-    </Filter>
     <Filter Include="gvl\serialization">
       <UniqueIdentifier>{6c4a7b28-59f6-4edf-ac8d-6630f133a635}</UniqueIdentifier>
     </Filter>
@@ -71,7 +68,6 @@
     <ClCompile Include="..\ninjarope.cpp" />
     <ClCompile Include="..\nobject.cpp" />
     <ClCompile Include="..\rand.cpp" />
-    <ClCompile Include="..\reader.cpp" />
     <ClCompile Include="..\replay.cpp" />
     <ClCompile Include="..\settings.cpp" />
     <ClCompile Include="..\sobject.cpp" />
@@ -117,8 +113,6 @@
     <ClCompile Include="..\gvl\io2\convert.cpp">
       <Filter>gvl\io2</Filter>
     </ClCompile>
-    <ClCompile Include="..\common_exereader.cpp" />
-    <ClCompile Include="..\common_writer.cpp" />
     <ClCompile Include="..\tl\utf8.c">
       <Filter>tl</Filter>
     </ClCompile>
@@ -156,8 +150,6 @@
     <ClInclude Include="..\nobject.hpp" />
     <ClInclude Include="..\objectList.hpp" />
     <ClInclude Include="..\rand.hpp" />
-    <ClInclude Include="..\reader.hpp" />
-    <ClInclude Include="..\rect.hpp" />
     <ClInclude Include="..\replay.hpp" />
     <ClInclude Include="..\settings.hpp" />
     <ClInclude Include="..\sobject.hpp" />
@@ -302,7 +294,6 @@
     <ClInclude Include="..\gvl\serialization\toml.hpp">
       <Filter>gvl\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\common_exereader.hpp" />
     <ClInclude Include="..\tl\utf8.h">
       <Filter>tl</Filter>
     </ClInclude>

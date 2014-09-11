@@ -1,9 +1,9 @@
 #ifndef LIERO_VIEWPORT_HPP
 #define LIERO_VIEWPORT_HPP
 
-#include "rect.hpp"
 #include "worm.hpp"
 #include "rand.hpp"
+#include <gvl/math/rect.hpp>
 #include <ctime>
 
 struct Game;
@@ -11,7 +11,7 @@ struct Renderer;
 
 struct Viewport
 {
-	Viewport(Rect rect, int wormIdx, int inGameX, int levwidth, int levheight)
+	Viewport(gvl::rect rect, int wormIdx, int inGameX, int levwidth, int levheight)
 	: wormIdx(wormIdx)
 	, bannerY(-8)
 	, inGameX(inGameX)
@@ -40,7 +40,7 @@ struct Viewport
 	int bannerY;
 	int inGameX; // 0 for first, 218 for second
 	Rand rand;
-	Rect rect;
+	gvl::rect rect;
 
 	
 	void setCenter(int x, int y)

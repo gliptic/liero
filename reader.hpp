@@ -5,13 +5,10 @@
 #include <cstdlib>
 #include <string>
 #include <stdexcept>
-#include <vector>
 #include <gvl/cstdint.hpp>
 #include <gvl/io2/stream.hpp>
 #include <gvl/serialization/coding.hpp>
 #include <gvl/support/platform.hpp>
-
-extern std::string configRoot;
 
 struct ReaderFile : gvl::noncopyable
 {
@@ -24,6 +21,29 @@ struct ReaderFile : gvl::noncopyable
 	: data(other.data), pos(other.pos), len(other.len)
 	{
 		other.data = 0;
+	}
+
+	explicit ReaderFile(gvl::source source)
+	: data(0), pos(0)
+	{
+		len = 0;
+		auto cur = source;
+		while (cur->ensure_data() == gvl::source_result::ok)
+		{
+			len += cur->data->size();
+			cur = cur->next;
+		}
+
+		data = (uint8_t*)malloc(len);
+		uint8_t* p = data;
+
+		cur = source;
+		while (cur->data)
+		{
+			std::memcpy(p, cur->data->begin(), cur->data->size());
+			p += cur->data->size();
+			cur = cur->next;
+		}
 	}
 
 	~ReaderFile()
@@ -66,61 +86,5 @@ struct ReaderFile : gvl::noncopyable
 		pos += l;
 	}
 };
-
-inline std::string readPascalString(ReaderFile& f)
-{
-	unsigned char length = f.get();
-
-	char txt[256];
-	f.get(reinterpret_cast<uint8_t*>(txt), length);
-	return std::string(txt, length);
-}
-
-inline std::string readPascalString(ReaderFile& f, unsigned char fieldLen)
-{
-	char txt[256];
-	f.get(reinterpret_cast<uint8_t*>(txt), fieldLen);
-
-	unsigned char length = static_cast<unsigned char>(txt[0]);
-	return std::string(txt + 1, length);
-}
-
-inline std::string readPascalStringAt(ReaderFile& f, size_t location)
-{
-	f.seekg(location);
-	return readPascalString(f);
-}
-
-inline uint32_t readUint8(ReaderFile& f)
-{
-	return f.get();
-}
-
-inline int32_t readSint8(ReaderFile& f)
-{
-	return (int8_t)f.get();
-}
-
-inline uint32_t readUint16(ReaderFile& f)
-{
-	return gvl::read_uint16_le(f);
-}
-
-inline int32_t readSint16(ReaderFile& f)
-{
-	return (int)(int16_t)gvl::read_uint16_le(f);
-}
-
-inline uint32_t readUint32(ReaderFile& f)
-{
-	return gvl::read_uint32_le(f);
-}
-
-inline int32_t readSint32(ReaderFile& f)
-{
-	return (int32_t)gvl::read_uint32_le(f);
-}
-
-void setConfigPath(std::string const& path);
 
 #endif // LIERO_READER_HPP

@@ -16,11 +16,11 @@
 #include "menu/menu.hpp"
 #include "menu/hiddenMenu.hpp"
 #include "menu/mainMenu.hpp"
-#include "rect.hpp"
 #include "rand.hpp"
 #include "keys.hpp"
 #include "settings.hpp"
 #include "common.hpp"
+#include "filesystem.hpp"
 
 struct Key
 {
@@ -186,9 +186,9 @@ struct Gfx : Renderer
 	void setFullscreen(bool newFullscreen);
 	void setDoubleRes(bool newDoubleRes);
 	
-	void saveSettings(std::string const& path);
-	bool loadSettings(std::string const& path);
-	bool loadSettingsLegacy(std::string const& path);
+	void saveSettings(FsNode node);
+	bool loadSettings(FsNode node);
+	bool loadSettingsLegacy(FsNode node);
 	
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 	
@@ -214,6 +214,18 @@ struct Gfx : Renderer
 		uint8_t* src, int w, int h, std::size_t srcPitch,
 		uint8_t* dest, std::size_t destPitch, int mag);
 
+	void setConfigPath(std::string const& path)
+	{	
+		configNode = FsNode(path);
+	}
+
+	FsNode getConfigNode()
+	{
+		return configNode;
+	}
+
+	FsNode configNode;
+
 	MainMenu mainMenu;
 	SettingsMenu settingsMenu;
 	PlayerMenu playerMenu;
@@ -221,7 +233,7 @@ struct Gfx : Renderer
 	
 	Menu* curMenu;
 	std::string prevSelectedReplayPath;
-	std::string settingsFile; // Currently loaded settings file
+	FsNode settingsNode; // Currently loaded settings file. TODO: This is only used for display. We could just remember the name.
 	gvl::shared_ptr<Settings> settings;
 	
 	bool dosKeys[177];

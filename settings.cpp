@@ -1,6 +1,5 @@
 #include "settings.hpp"
 
-#include "reader.hpp"
 #include "keys.hpp"
 #include "gfx.hpp"
 #include "filesystem.hpp"
@@ -89,40 +88,38 @@ Settings::Settings()
 typedef gvl::in_archive<gvl::octet_reader> in_archive_t;
 typedef gvl::out_archive<gvl::octet_writer> out_archive_t;
 
-bool Settings::load(std::string const& path, Rand& rand)
+bool Settings::load(FsNode node, Rand& rand)
 {
-	FILE* opt = tolerantFOpen(path.c_str(), "rb");
+	try
+	{
+		auto reader = node.toOctetReader();
+		gvl::default_serialization_context context;
 	
-	if(!opt)
+		gvl::toml::reader<gvl::octet_reader> ar(reader);
+
+		archive_text(*this, ar);
+	}
+	catch (std::runtime_error&)
+	{
 		return false;
-
-	gvl::octet_reader reader(gvl::to_source(new gvl::file_bucket_pipe(opt)));
-	gvl::default_serialization_context context;
-	
-	gvl::toml::reader<gvl::octet_reader> ar(reader);
-
-	archive_text(*this, ar);
+	}
 	
 	return true;
 }
 
-bool Settings::loadLegacy(std::string const& path, Rand& rand)
+bool Settings::loadLegacy(FsNode node, Rand& rand)
 {
-	FILE* opt = tolerantFOpen(path.c_str(), "rb");
+	try
+	{
+		auto reader = node.toOctetReader();
+		gvl::default_serialization_context context;
 	
-	if(!opt)
+		archive_liero(in_archive_t(reader, context), *this, rand);
+	}
+	catch (std::runtime_error&)
+	{
 		return false;
-		
-	std::size_t size = fileLength(opt);
-	
-	if(size < 155)
-		return false; // .dat is too short
-	
-	gvl::octet_reader reader(gvl::to_source(new gvl::file_bucket_pipe(opt)));
-	gvl::default_serialization_context context;
-	
-	archive_liero(in_archive_t(reader, context), *this, rand);
-	
+	}
 	
 	return true;
 }
@@ -139,10 +136,9 @@ gvl::gash::value_type& Settings::updateHash()
 	return hash;
 }
 
-void Settings::save(std::string const& path, Rand& rand)
+void Settings::save(FsNode node, Rand& rand)
 {
-	FILE* opt = fopen(path.c_str(), "wb");
-	gvl::octet_writer writer(gvl::sink(new gvl::file_bucket_pipe(opt)));
+	auto writer = node.toOctetWriter();
 
 	gvl::toml::writer<gvl::octet_writer> ar(writer);
 
@@ -151,6 +147,7 @@ void Settings::save(std::string const& path, Rand& rand)
 
 void Settings::generateName(WormSettings& ws, Rand& rand)
 {
+#if 0 // TODO
 	try
 	{
 		ReaderFile f(FsNode(joinPath(configRoot, "NAMES.DAT")).read());
@@ -189,5 +186,5 @@ void Settings::generateName(WormSettings& ws, Rand& rand)
 	{
 		return;
 	}
-	
+#endif
 }

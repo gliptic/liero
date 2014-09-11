@@ -334,31 +334,6 @@ void Menu::movement(int direction)
 	}
 }
 
-void Menu::readItems(ReaderFile& f, int length, int count, bool colorPrefix, PalIdx color, PalIdx disColour)
-{
-	char temp[256];
-	for(int i = 0; i < count; ++i)
-	{
-		f.get(reinterpret_cast<uint8_t*>(temp), length);
-		int offset = 1;
-		int length = static_cast<unsigned char>(temp[0]);
-		if(colorPrefix)
-		{
-			color = disColour = temp[2];
-			length -= 2;
-			offset += 2;
-		}
-		addItem(MenuItem(color, disColour, std::string(&temp[offset], length)));
-	}
-	
-	setTop(0);
-}
-
-void Menu::readItem(ReaderFile& f, int offset, PalIdx color, PalIdx disColour)
-{
-	addItem(MenuItem(color, disColour, readPascalStringAt(f, offset)));
-}
-
 int Menu::addItem(MenuItem item)
 {
 	int idx = (int)items.size();

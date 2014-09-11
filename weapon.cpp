@@ -149,7 +149,7 @@ void WObject::blowUpObject(Game& game, int causeIdx)
 		int ix = ftoi(x), iy = ftoi(y);
 		drawDirtEffect(common, game.rand, game.level, w.dirtEffect, ftoi(x) - 7, ftoi(y) - 7);
 		if(game.settings->shadow)
-			correctShadow(common, game.level, Rect(ix - 10, iy - 10, ix + 11, iy + 11));
+			correctShadow(common, game.level, gvl::rect(ix - 10, iy - 10, ix + 11, iy + 11));
 	}
 }
 

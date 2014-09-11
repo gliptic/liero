@@ -14,8 +14,6 @@
 #include <cassert>
 #include <map>
 
-//int SDLToDOSScanCodes[SDLK_LAST] = {};
-
 std::map<int, int> SDLToDOSScanCodes;
 
 SDLKey const Z = SDLK_UNKNOWN;
@@ -74,12 +72,6 @@ Uint32 const maxScanCodes = sizeof(lieroToSDLKeys) / sizeof(*lieroToSDLKeys);
 
 void initKeys()
 {
-/*
-	for(std::size_t i = 0; i < sizeof(SDLToDOSScanCodes) / sizeof(*SDLToDOSScanCodes); ++i)
-	{
-		SDLToDOSScanCodes[i] = 89;
-	}*/
-	
 	for(std::size_t i = 0; i < maxScanCodes; ++i)
 	{
 		if(lieroToSDLKeys[i] != SDLK_UNKNOWN)
@@ -90,16 +82,6 @@ void initKeys()
 }
 
 // Adapted from DOSBOX
-
-#if 0
-SDLKey DOSToSDLKey(Uint32 scan)
-{
-	if(scan < maxScanCodes)
-		return lieroToSDLKeys[scan];
-	else
-		return SDLK_UNKNOWN;
-}
-#endif
 
 Uint32 SDLToDOSKey(SDLKey key)
 {

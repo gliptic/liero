@@ -9,14 +9,13 @@
 #include <gvl/io2/stream.hpp>
 #include <gvl/zlib/zlib2.h>
 #include <gvl/resman/shared_ptr.hpp>
-#include "reader.hpp"
 
 std::string changeLeaf(std::string const& path, std::string const& newLeaf);
 std::string getRoot(std::string const& path);
 std::string getLeaf(std::string const& path);
 std::string getBasename(std::string const& path);
 std::string getExtension(std::string const& path);
-void toUpperCase(std::string& str);
+std::string toUpperCase(std::string str);
 std::string joinPath(std::string const& root, std::string const& leaf);
 
 FILE* tolerantFOpen(std::string const& name, char const* mode);
@@ -24,100 +23,54 @@ FILE* tolerantFOpen(std::string const& name, char const* mode);
 std::size_t fileLength(FILE* f);
 bool create_directories(std::string const& dir);
 
-struct dir_itr_imp
+struct DirectoryListing
 {
-	virtual ~dir_itr_imp()
+	std::vector<std::string> subs;
+
+	DirectoryListing(DirectoryListing&& other)
+	: subs(std::move(other.subs))
 	{
 	}
 
-	virtual std::string const& deref() = 0;
-	virtual bool inc() = 0;
-};
+	DirectoryListing& operator=(DirectoryListing&& other)
+	{
+		subs = std::move(other.subs);
+		return *this;
+	}
+	
+	DirectoryListing(std::string const& dir);
+	DirectoryListing(std::vector<std::string>&& subsInit);
+	~DirectoryListing();
 
-typedef std::unique_ptr<dir_itr_imp> dir_itr_imp_ptr;
+	DirectoryListing operator|(DirectoryListing const& other)
+	{
+		DirectoryListing ret(std::move(subs));
 
-struct DirectoryIterator
-{
-	dir_itr_imp_ptr m_imp;
-	
-	DirectoryIterator(std::string const& dir);
-	DirectoryIterator(dir_itr_imp_ptr&& imp);
-	~DirectoryIterator();
-	
-	operator void*()
-	{
-		return m_imp.get();
+		ret.subs.insert(ret.subs.end(), other.subs.begin(), other.subs.end());
+		ret.sort();
+		return std::move(ret);
 	}
-	
-	std::string const& operator*() const
+
+	std::vector<std::string>::iterator begin()
 	{
-		return m_imp->deref();
+		return subs.begin();
 	}
-	
-	void operator++()
+
+	std::vector<std::string>::iterator end()
 	{
-		if (!m_imp->inc())
-			m_imp.reset();
+		return subs.end();
 	}
+
+	void sort();
 };
 
 struct FsNodeImp : gvl::shared
 {
 	virtual std::string const& fullPath() = 0;
-	virtual DirectoryIterator iter() = 0;
+	virtual DirectoryListing iter() = 0;
 	virtual gvl::shared_ptr<FsNodeImp> go(std::string const& name) = 0;
-	virtual ReaderFile read() = 0;
-	virtual gvl::source toSource() = 0;
-};
-
-struct FsNodeZipFile;
-
-struct FsNodeZipArchive : gvl::shared
-{
-	FsNodeZipArchive(std::string const& path);
-
-	mz_zip_archive archive;
-
-	FsNodeZipFile* root;
-};
-
-struct FsNodeZipFile : FsNodeImp
-{
-	gvl::shared_ptr<FsNodeZipArchive> archive;
-	std::string path;
-	std::string relPath;
-	int fileIndex;
-
-	FsNodeZipFile(std::string const& path);
-	FsNodeZipFile(
-		gvl::shared_ptr<FsNodeZipArchive> archive,
-		std::string const& path,
-		std::string const& relPath,
-		int fileIndex);
-
-	std::map<std::string, gvl::shared_ptr<FsNodeZipFile>> children;
-
-	virtual std::string const& fullPath();
-	virtual DirectoryIterator iter();
-	virtual gvl::shared_ptr<FsNodeImp> go(std::string const& name);
-	virtual ReaderFile read();
-	virtual gvl::source toSource();
-};
-
-struct FsNodeFilesystem : FsNodeImp
-{
-	FsNodeFilesystem(std::string const& path)
-	: path(path)
-	{
-	}
-	
-	virtual std::string const& fullPath();
-	virtual DirectoryIterator iter();
-	virtual gvl::shared_ptr<FsNodeImp> go(std::string const& name);
-	virtual ReaderFile read();
-	virtual gvl::source toSource();
-
-	std::string path;
+	virtual gvl::source tryToSource() = 0;
+	virtual gvl::sink tryToSink() = 0;
 };
 
 struct FsNode
@@ -128,7 +81,7 @@ struct FsNode
 	{
 	}
 
-	FsNode(std::string const& path);
+	explicit FsNode(std::string const& path);
 
 	FsNode(FsNode&& other)
 	: imp(std::move(other.imp))
@@ -154,20 +107,37 @@ struct FsNode
 	std::string const& fullPath() const
 	{ return imp->fullPath(); }
 
-	DirectoryIterator iter() const
+	DirectoryListing iter() const
 	{ return imp->iter(); }
 
 	FsNode operator/(std::string const& name) const
 	{ return FsNode(imp->go(name)); }
 
-	ReaderFile read() const
-	{ return imp->read(); }
-
 	gvl::octet_reader toOctetReader() const
-	{ return gvl::octet_reader(imp->toSource()); }
+	{
+		return gvl::octet_reader(toSource());
+	}
 
 	gvl::source toSource() const
-	{ return imp->toSource(); }
+	{
+		auto s = imp->tryToSource();
+		if (!s)
+			throw std::runtime_error("Could not read " + fullPath());
+		return std::move(s);
+	}
+
+	gvl::octet_writer toOctetWriter() const
+	{
+		return gvl::octet_writer(toSink());
+	}
+
+	gvl::sink toSink() const
+	{
+		auto s = imp->tryToSink();
+		if (!s)
+			throw std::runtime_error("Could not write " + fullPath());
+		return std::move(s);
+	}
 };
 
 #endif // LIERO_FILESYSTEM_HPP

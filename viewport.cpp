@@ -24,7 +24,7 @@ struct PreserveClipRect
 	}
 	
 	Bitmap& bmp;
-	Rect rect;
+	gvl::rect rect;
 };
 
 void Viewport::process(Game& game)

@@ -5,7 +5,6 @@
 #include "gfx/color.hpp"
 #include "filesystem.hpp"
 
-#include "reader.hpp" // TODO: For configRoot. We should move that into Common.
 #include <cstring>
 
 void Level::generateDirtPattern(Common& common, Rand& rand)
@@ -85,9 +84,9 @@ void Level::generateDirtPattern(Common& common, Rand& rand)
 
 bool isNoRock(Common& common, Level& level, int size, int x, int y)
 {
-	Rect rect(x, y, x + size + 1, y + size + 1);
+	gvl::rect rect(x, y, x + size + 1, y + size + 1);
 	
-	rect.intersect(Rect(0, 0, level.width, level.height));
+	rect.intersect(gvl::rect(0, 0, level.width, level.height));
 	
 	for(int y = rect.y1; y < rect.y2; ++y)
 	for(int x = rect.x1; x < rect.x2; ++x)
@@ -217,34 +216,32 @@ void Level::resize(int width_new, int height_new)
 	materials.resize(width * height);
 }
 
-bool Level::load(Common& common, Settings const& settings, ReaderFile f)
+bool Level::load(Common& common, Settings const& settings, gvl::octet_reader r)
 {
 	resize(504, 350);
 
-	std::size_t len = f.len;
+	//std::size_t len = f.len;
 	bool resetPalette = true;
-	
-	if(len >= 504*350 + 10 + 256*3
-	&& (settings.extensions && settings.loadPowerlevelPalette))
-	{
-		f.seekg(504*350);
 
+	r.get(reinterpret_cast<uint8_t*>(&data[0]), width * height);
+	
+	if(/*len >= 504*350 + 10 + 256*3
+	&&*/ (settings.extensions && settings.loadPowerlevelPalette))
+	{
 		uint8_t buf[10];
-		f.get(buf, 10);
-		
-		if(!std::memcmp("POWERLEVEL", buf, 10))
+		if (r.try_get(buf, 10))
 		{
-			Palette pal;
-			pal.read(f);
-			origpal.resetPalette(pal, settings);
+			if(!std::memcmp("POWERLEVEL", buf, 10))
+			{
+				Palette pal;
+				pal.read(r);
+				origpal.resetPalette(pal, settings);
 			
-			resetPalette = false;
+				resetPalette = false;
+			}
 		}
 	}
 	
-	f.seekg(0);
-	f.get(reinterpret_cast<uint8_t*>(&data[0]), width * height);
-
 	for (std::size_t i = 0; i < data.size(); ++i)
 		materials[i] = common.materials[data[i]];
 
@@ -266,9 +263,18 @@ void Level::generateFromSettings(Common& common, Settings const& settings, Rand&
 		if (path.find('.', 0) == std::string::npos)
 			path += ".LEV";
 
-		if(!load(common, settings, FsNode(path).read()))
+		bool loaded = false;
+		try
+		{
+			loaded = load(common, settings, FsNode(path).toOctetReader());
+		}
+		catch (std::runtime_error&)
+		{
+			// Ignore
+		}
+		
+		if (!loaded)
 			generateRandom(common, settings, rand);
-
 	}
 	
 	oldRandomLevel = settings.randomLevel;

@@ -7,7 +7,6 @@
 #include "rand.hpp"
 #include "filesystem.hpp"
 
-
 int CSint32desc[][3] =
 {
 	{CNRInitialLength, 0x32D7, 0x32DD},
@@ -352,48 +351,72 @@ std::string toId(std::string const& name)
 	return std::move(ret);
 }
 
+inline std::string readPascalString(ReaderFile& f)
+{
+	unsigned char length = f.get();
+
+	char txt[256];
+	f.get(reinterpret_cast<uint8_t*>(txt), length);
+	return std::string(txt, length);
+}
+
+inline std::string readPascalString(ReaderFile& f, unsigned char fieldLen)
+{
+	char txt[256];
+	f.get(reinterpret_cast<uint8_t*>(txt), fieldLen);
+
+	unsigned char length = static_cast<unsigned char>(txt[0]);
+	return std::string(txt + 1, length);
+}
+
+inline std::string readPascalStringAt(ReaderFile& f, size_t location)
+{
+	f.seekg(location);
+	return readPascalString(f);
+}
+
 void loadConstantsFromEXE(Common& common, ReaderFile& exe)
 {
 	for(int i = 0; CSint32desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint32desc[i][1]);
-		int a = readUint16(exe);
+		int32_t a = (int32_t)gvl::read_uint16_le(exe);
 		exe.seekg(CSint32desc[i][2]);
-		int b = readSint16(exe);
+		int32_t b = (int16_t)gvl::read_uint16_le(exe);
 		common.C[CSint32desc[i][0]] = a + (b << 16);
 	}
 	
 	for(int i = 0; CSint24desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint24desc[i][1]);
-		int a = readUint16(exe);
+		int32_t a = (int32_t)gvl::read_uint16_le(exe);
 		exe.seekg(CSint24desc[i][2]);
-		int b = readSint8(exe);
+		int32_t b = (int8_t)exe.get();
 		common.C[CSint24desc[i][0]] = a + (b << 16);
 	}
 	
 	for(int i = 0; CSint16desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint16desc[i][1]);
-		common.C[CSint16desc[i][0]] = readSint16(exe);
+		common.C[CSint16desc[i][0]] = (int16_t)gvl::read_uint16_le(exe);
 	}
 	
 	for(int i = 0; CUint16desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CUint16desc[i][1]);
-		common.C[CUint16desc[i][0]] = readUint16(exe);
+		common.C[CUint16desc[i][0]] = gvl::read_uint16_le(exe);
 	}
 	
 	for(int i = 0; CSint8desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint8desc[i][1]);
-		common.C[CSint8desc[i][0]] = readSint8(exe);
+		common.C[CSint8desc[i][0]] = (int8_t)exe.get();
 	}
 	
 	for(int i = 0; CUint8desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CUint8desc[i][1]);
-		common.C[CUint8desc[i][0]] = readUint8(exe);
+		common.C[CUint8desc[i][0]] = exe.get();
 	}
 	
 	for(int i = 0; Sstringdesc[i][1] >= 0; ++i)
@@ -425,13 +448,21 @@ void loadPalette(Common& common, ReaderFile& exe)
 {
 	exe.seekg(132774);
 	
-	common.exepal.read(exe);
+	for(int i = 0; i < 256; ++i)
+	{
+		unsigned char rgb[3];
+		exe.get(reinterpret_cast<uint8_t*>(rgb), 3);
+		
+		common.exepal.entries[i].r = rgb[0] & 63;
+		common.exepal.entries[i].g = rgb[1] & 63;
+		common.exepal.entries[i].b = rgb[2] & 63;
+	}
 
 	exe.seekg(0x1AF0C);
 	for(int i = 0; i < 4; ++i)
 	{
-		common.colorAnim[i].from = readUint8(exe);
-		common.colorAnim[i].to = readUint8(exe);
+		common.colorAnim[i].from = exe.get();
+		common.colorAnim[i].to = exe.get();
 	}
 }
 
@@ -469,27 +500,33 @@ void loadMaterials(Common& common, ReaderFile& exe)
 	}
 }
 
+
+inline int32_t readSint32(ReaderFile& f)
+{
+	return (int32_t)gvl::read_uint32_le(f);
+}
+
 struct Read32
 {
-	static inline int run(ReaderFile& f)
+	static inline int32_t run(ReaderFile& f)
 	{
-		return readSint32(f);
+		return (int32_t)gvl::read_uint32_le(f);
 	}
 };
 
 struct Read16
 {
-	static inline int run(ReaderFile& f)
+	static inline int32_t run(ReaderFile& f)
 	{
-		return readSint16(f);
+		return (int32_t)gvl::read_uint16_le(f);
 	}
 };
 
 struct Read8
 {
-	static inline int run(ReaderFile& f)
+	static inline int32_t run(ReaderFile& f)
 	{
-		return readUint8(f);
+		return f.get();
 	}
 };
 
@@ -497,14 +534,14 @@ struct ReadBool
 {
 	static inline bool run(ReaderFile& f)
 	{
-		return readUint8(f) != 0;
+		return f.get() != 0;
 	}
 };
 
 template<typename T>
 struct Dec
 {
-	static inline int run(ReaderFile& f)
+	static inline int32_t run(ReaderFile& f)
 	{
 		return T::run(f) - 1;
 	}
@@ -668,35 +705,70 @@ void loadOthers(Common& common, ReaderFile& exe)
 	
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 2; ++j)
-		common.bonusRandTimer[j][i] = readUint16(exe);
+		common.bonusRandTimer[j][i] = gvl::read_uint16_le(exe);
 		
 	exe.seekg(0x1AEEE + 2);
 	
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 7; ++j)
-		common.aiParams.k[i][j] = readUint16(exe);
+		common.aiParams.k[i][j] = gvl::read_uint16_le(exe);
 		
 	exe.seekg(0x1C1E0);
 	
 	for(int i = 0; i < 2; ++i)
-		common.bonusSObjects[i] = readUint8(exe) - 1;
+		common.bonusSObjects[i] = exe.get() - 1;
+}
+
+void loadSprites(SpriteSet& ss, ReaderFile& f, int width, int height, int count)
+{
+	assert(width == height); // We only support rectangular sprites right now
+	
+	ss.width = width;
+	ss.height = height;
+	ss.spriteSize = width * height;
+	ss.count = count;
+	
+	int amount = ss.spriteSize * count;
+	ss.data.resize(amount);
+	
+	std::vector<uint8_t> temp(amount);
+	
+	f.get(&temp[0], amount);
+	
+	PalIdx* dest = &ss.data[0];
+	uint8_t* src = &temp[0];
+	
+	for(int i = 0; i < count; i++)
+	{
+		for(int x = 0; x < width; ++x)
+		{
+			for(int y = 0; y < height; ++y)
+			{
+				dest[x + y*width] = src[y];
+			}
+			
+			src += height;
+		}
+		
+		dest += ss.spriteSize;
+	}
 }
 
 void loadGfx(Common& common, ReaderFile& exe, ReaderFile& gfx)
 {
 	exe.seekg(0x1C1DE);
-	common.bonusFrames[0] = readUint8(exe);
-	common.bonusFrames[1] = readUint8(exe);
+	common.bonusFrames[0] = exe.get();
+	common.bonusFrames[1] = exe.get();
 	
 	gfx.seekg(10); // Skip some header
 	
-	common.largeSprites.read(gfx, 16, 16, 110);
+	loadSprites(common.largeSprites, gfx, 16, 16, 110);
 	gfx.skip(4); // Extra stuff
 	
-	common.smallSprites.read(gfx, 7, 7, 130);
+	loadSprites(common.smallSprites, gfx, 7, 7, 130);
 	gfx.skip(4); // Extra stuff
 	
-	common.textSprites.read(gfx, 4, 4, 26);
+	loadSprites(common.textSprites, gfx, 4, 4, 26);
 	
 	Rand rand;
 	
@@ -719,7 +791,7 @@ void loadSfx(
 	std::vector<SfxSample>& sounds,
 	ReaderFile& snd)
 {
-	int count = readUint16(snd);
+	int count = gvl::read_uint16_le(snd);
 	
 	sounds.clear();
 	
@@ -729,8 +801,8 @@ void loadSfx(
 		name[8] = 0;
 		snd.get(name, 8);
 
-		int offset = readUint32(snd);
-		int length = readUint32(snd);
+		int offset = gvl::read_uint32_le(snd);
+		int length = gvl::read_uint32_le(snd);
 		
 		auto oldPos = snd.tellg();
 		
@@ -747,6 +819,33 @@ void loadSfx(
 		snd.seekg(oldPos);
 
 		sounds.push_back(std::move(sample));
+	}
+}
+
+void loadFromEXE(Font& font, ReaderFile& exe)
+{
+	font.chars.resize(250);
+	
+	std::size_t const FontSize = 250 * 8 * 8 + 1;
+	std::vector<unsigned char> temp(FontSize);
+	
+	exe.seekg(0x1C825);
+	
+	exe.get(reinterpret_cast<uint8_t*>(&temp[0]), FontSize);
+	
+	for(int i = 0; i < 250; ++i)
+	{
+		unsigned char* ptr = &temp[i*64 + 1];
+		
+		for(int y = 0; y < 8; ++y)
+		{
+			for(int x = 0; x < 7; ++x)
+			{
+				font.chars[i].data[y*7 + x] = ptr[y*8 + x];
+			}
+		}
+		
+		font.chars[i].width = ptr[63];
 	}
 }
 
@@ -767,7 +866,7 @@ void loadFromExe(Common& common, ReaderFile& exe, ReaderFile& gfx, ReaderFile& s
 	}
 
 	loadConstantsFromEXE(common, exe);
-	common.font.loadFromEXE(exe);
+	loadFromEXE(common.font, exe);
 	loadPalette(common, exe);
 	loadMaterials(common, exe);
 	loadWeapons(common, exe);

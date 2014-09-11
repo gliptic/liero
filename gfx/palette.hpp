@@ -7,7 +7,11 @@
 
 struct Settings;
 struct WormSettings;
-struct ReaderFile;
+
+namespace gvl
+{
+struct octet_reader;
+}
 
 struct Palette
 {
@@ -19,7 +23,7 @@ struct Palette
 	void fade(int amount);
 	void lightUp(int amount);
 	void rotateFrom(Palette& source, int from, int to, unsigned dist);
-	void read(ReaderFile& f);
+	void read(gvl::octet_reader& r);
 	
 	void scaleAdd(int dest, int const(&c)[3], int scale, int add)
 	{

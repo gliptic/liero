@@ -67,6 +67,8 @@ struct FileNode : gvl::shared
 			return this;
 		if (!ciStartsWith(path, fullPath))
 			return 0;
+		if (!folder)
+			return 0;
 
 		ensureFilled();
 
@@ -130,11 +132,11 @@ struct ChildSort
 void FileNode::fill()
 {
 	assert(fsNode);
-	DirectoryIterator di(fsNode.iter());
+	DirectoryListing di(fsNode.iter());
 
-	for(; di; ++di)
+	for(string const& name : di)
 	{
-		string const& name = *di;
+		//string const& name = *di;
 		string const& fullPath = joinPath(this->fullPath, name);
 		auto const& ext = getExtension(name);
 
@@ -165,10 +167,14 @@ struct FileSelector
 		
 	}
 
-	void fill(string const& path, FileFilter filter)
+	void fill(string const& path, FileFilter filter) // TODO: Get rid of this
 	{
-		// TODO: Fix filter
-		rootNode.fsNode = FsNode(path);
+		fill(FsNode(path), filter);
+	}
+
+	void fill(FsNode node, FileFilter filter)
+	{
+		rootNode.fsNode = std::move(node);
 		rootNode.fullPath = rootNode.fsNode.fullPath();
 		rootNode.filter = filter;
 		rootNode.fill();

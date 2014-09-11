@@ -59,8 +59,8 @@ LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr
 	}
 #endif
 	
-	game.addViewport(new Viewport(Rect(0, 0, 158, 158), worm1->index, 0, 504, 350));
-	game.addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2->index, 218, 504, 350));
+	game.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), worm1->index, 0, 504, 350));
+	game.addViewport(new Viewport(gvl::rect(160, 0, 158+160, 158), worm2->index, 218, 504, 350));
 	
 	game.addWorm(worm1);
 	game.addWorm(worm2);
@@ -277,10 +277,14 @@ void LocalController::changeState(State newState)
 							prefix.push_back(ch);
 					}
 				}
-				std::string path = joinPath(joinPath(configRoot, "Replays"), prefix + buf);
-				create_directories(path);
+				//std::string path = joinPath(joinPath(configRoot, "Replays"), prefix + buf);
+				//create_directories(path);
 
-				replay.reset(new ReplayWriter(gvl::sink(new gvl::file_bucket_pipe(path.c_str(), "wb"))));
+				auto node = gfx.getConfigNode() / "Replays" / (prefix + buf);
+
+				replay.reset(new ReplayWriter(node.toSink()));
+
+				//replay.reset(new ReplayWriter(gvl::sink(new gvl::file_bucket_pipe(path.c_str(), "wb"))));
 				replay->beginRecord(game);
 			}
 			catch(std::runtime_error& e)

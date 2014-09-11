@@ -166,6 +166,7 @@
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <OmitFramePointers>true</OmitFramePointers>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>
     <Link>
       <AdditionalDependencies>
@@ -197,6 +198,7 @@
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
     </ClCompile>
     <Link>
       <AdditionalDependencies>sdl.lib;avcodec.lib;avformat.lib;avresample.lib;avutil.lib;avfilter.lib;swscale.lib</AdditionalDependencies>
@@ -212,8 +214,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\common_exereader.cpp" />
-    <ClCompile Include="..\common_writer.cpp" />
     <ClCompile Include="..\gfx\blit.cpp" />
     <ClCompile Include="..\gfx\font.cpp" />
     <ClCompile Include="..\gfx\palette.cpp" />
@@ -246,7 +246,6 @@
     <ClCompile Include="..\ninjarope.cpp" />
     <ClCompile Include="..\nobject.cpp" />
     <ClCompile Include="..\rand.cpp" />
-    <ClCompile Include="..\reader.cpp" />
     <ClCompile Include="..\replay.cpp" />
     <ClCompile Include="..\settings.cpp" />
     <ClCompile Include="..\sobject.cpp" />
@@ -259,7 +258,6 @@
     <ClCompile Include="..\worm.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\common_exereader.hpp" />
     <ClInclude Include="..\gfx\bitmap.hpp" />
     <ClInclude Include="..\gfx\blit.hpp" />
     <ClInclude Include="..\gfx\color.hpp" />
@@ -321,8 +319,6 @@
     <ClInclude Include="..\nobject.hpp" />
     <ClInclude Include="..\objectList.hpp" />
     <ClInclude Include="..\rand.hpp" />
-    <ClInclude Include="..\reader.hpp" />
-    <ClInclude Include="..\rect.hpp" />
     <ClInclude Include="..\replay.hpp" />
     <ClInclude Include="..\settings.hpp" />
     <ClInclude Include="..\sobject.hpp" />

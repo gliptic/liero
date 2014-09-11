@@ -39,7 +39,7 @@ try
 	std::string const& path = "D:\\cpp\\liero\\tc";
 	FsNode node(path);
 
-	for (DirectoryIterator dir = node.iter(); dir; ++dir)
+	for (DirectoryListing dir = node.iter(); dir; ++dir)
 	{
 		auto d = *dir;
 
@@ -49,7 +49,7 @@ try
 
 			bool found = false;
 
-			for (DirectoryIterator zipDir = zipNode.iter(); zipDir; ++zipDir)
+			for (DirectoryListing zipDir = zipNode.iter(); zipDir; ++zipDir)
 			{
 				auto e = *zipDir;
 				auto upper = e;
@@ -79,9 +79,9 @@ try
 	return 0;
 #endif
 	
-	bool exeSet = false;
+	bool tcSet = false;
 	
-	std::string exePath;
+	std::string tcName;
 	std::string configPath; // Default to current dir
 	
 	for(int i = 1; i < argc; ++i)
@@ -105,15 +105,13 @@ try
 		}
 		else
 		{
-			exePath = argv[i];
-			exeSet = true;
+			tcName = argv[i];
+			tcSet = true;
 		}
 	}
 	
-	if(!exeSet)
-		exePath = "LIERO.EXE";
-
-	setConfigPath(configPath);
+	if(!tcSet)
+		tcName = "Liero v1.33";
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
 	
@@ -121,38 +119,26 @@ try
 	
 	precomputeTables();
 
-	FsNode lieroRoot(getRoot(exePath));
-
-	gvl::shared_ptr<Common> common(new Common(lieroRoot, getLeaf(exePath)));
-
-	if (false)
-	{
-		auto path = changeLeaf(exePath, "");
-		
-		common->save(path);
-
-		if (true)
-		{
-			gvl::shared_ptr<Common> commonNew(new Common());
-
-			commonNew->load(path);
-			common.swap(commonNew);
-		}
-	}
-
-	gfx.common = common;
-	
-	gfx.loadPalette(*common); // This gets the palette from common
 	gfx.loadMenus();
 
 	gfx.init();
+	gfx.setConfigPath(configPath);
+
+	FsNode configNode(gfx.getConfigNode());
+
+	// TC loading
+	FsNode lieroRoot(configNode / tcName);
+	gvl::shared_ptr<Common> common(new Common());
+	common->load(std::move(lieroRoot));
+	gfx.common = common;
+	gfx.loadPalette(*common); // This gets the palette from common
 	
-	if(!gfx.loadSettings(joinPath(configRoot, "liero.cfg")))
+	if(!gfx.loadSettings(configNode / "liero.cfg"))
 	{
-		if(!gfx.loadSettingsLegacy(joinPath(configRoot, "LIERO.DAT")))
+		if(!gfx.loadSettingsLegacy(configNode / "LIERO.DAT"))
 		{
 			gfx.settings.reset(new Settings);
-			gfx.saveSettings(joinPath(configRoot, "liero.cfg"));
+			gfx.saveSettings(configNode / "liero.cfg");
 		}
 	}
 	
@@ -161,7 +147,7 @@ try
 	
 	gfx.mainLoop();
 	
-	gfx.settings->save(joinPath(configRoot, "liero.cfg"), gfx.rand);
+	gfx.settings->save(configNode / "liero.cfg", gfx.rand);
 	
 	sfx.deinit();
 	SDL_Quit();

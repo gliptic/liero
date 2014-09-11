@@ -5,8 +5,6 @@
 #include <cstdio>
 #include "color.hpp"
 
-struct ReaderFile;
-
 struct Sprite
 {
 	PalIdx* mem;
@@ -25,8 +23,6 @@ struct SpriteSet
 	int height;
 	int spriteSize;
 	int count;
-	
-	void read(ReaderFile& f, int width, int height, int count);
 	
 	PalIdx* spritePtr(int frame)
 	{

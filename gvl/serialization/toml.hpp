@@ -2,6 +2,11 @@
 #define GVL_SERIALIZATION_TOML_HPP
 
 #include "../io2/convert.hpp"
+#include "../resman/shared.hpp"
+#include <map>
+#include <string>
+#include <vector>
+#include <stdexcept>
 
 namespace gvl
 {
@@ -23,7 +28,7 @@ struct writer
 
 	void windent()
 	{
-		w << '\n';
+		w << "\r\n";
 		for (int i = 0; i < indent; ++i)
 		{
 			w << "  ";
@@ -64,11 +69,11 @@ struct writer
 			{
 				if (!chain.empty())
 				{
-					w << '\n';
+					w << "\r\n";
 					windent();
 					w << "[";
 					fname();
-					w << "]\n";
+					w << "]\r\n";
 				}
 				inObject = true;
 			}
@@ -122,11 +127,11 @@ struct writer
 
 		for (auto& e : arr)
 		{
-			w << '\n';
+			w << "\r\n";
 			windent();
 			w << "[[";
 			fname();
-			w << "]]\n";
+			w << "]]\r\n";
 			++indent;
 			inObject = true;
 			
@@ -362,8 +367,12 @@ inline value::value(string&& s)
 	u.s = new string(s);
 }
 
-struct parse_error
+struct parse_error : std::runtime_error
 {
+	parse_error()
+	: runtime_error("TOML parse error")
+	{
+	}
 };
 
 template<typename T>
@@ -515,7 +524,7 @@ struct reader
 				}
 			}
 		}
-		while (test('\n'));
+		while (test('\n') || test('\r'));
 
 		cur = root;
 

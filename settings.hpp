@@ -57,9 +57,9 @@ struct Settings : gvl::shared, Extensions
 	
 	Settings();
 	
-	bool load(std::string const& path, Rand& rand);
-	bool loadLegacy(std::string const& path, Rand& rand);
-	void save(std::string const& path, Rand& rand);
+	bool load(FsNode node, Rand& rand);
+	bool loadLegacy(FsNode node, Rand& rand);
+	void save(FsNode node, Rand& rand);
 	gvl::gash::value_type& updateHash();
 	
 	static void generateName(WormSettings& ws, Rand& rand);

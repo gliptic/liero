@@ -32,7 +32,7 @@ struct Holdazone
 	{
 	}
 
-	Rect rect;
+	gvl::rect rect;
 	int holderIdx;
 
 	int contenderIdx, contenderFrames;

@@ -2,7 +2,7 @@
 #define LIERO_GFX_BITMAP_HPP
 
 #include <cstring>
-#include "../rect.hpp"
+#include <gvl/math/rect.hpp>
 #include <gvl/support/platform.hpp>
 
 struct Bitmap : gvl::noncopyable
@@ -10,7 +10,7 @@ struct Bitmap : gvl::noncopyable
 	int w, h;
 	unsigned int pitch;
 	unsigned char* pixels;
-	Rect clip_rect;
+	gvl::rect clip_rect;
 
 	Bitmap()
 	: pixels(0)

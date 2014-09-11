@@ -68,12 +68,12 @@ void Palette::clear()
 	std::memset(entries, 0, sizeof(entries));
 }
 
-void Palette::read(ReaderFile& f)
+void Palette::read(gvl::octet_reader& r)
 {
 	for(int i = 0; i < 256; ++i)
 	{
-		unsigned char rgb[3];
-		f.get(reinterpret_cast<uint8_t*>(rgb), 3);
+		uint8_t rgb[3];
+		r.get(rgb, 3);
 		
 		entries[i].r = rgb[0] & 63;
 		entries[i].g = rgb[1] & 63;

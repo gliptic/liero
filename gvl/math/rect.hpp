@@ -124,6 +124,15 @@ public:
 		return x1 <= b.x1 && x2 >= b.x2
 		    && y1 <= b.y1 && y2 >= b.y2;
 	}
+
+	bool inside(T vx, T vy) const
+	{
+		T diffX = vx - x1;
+		T diffY = vy - y1;
+		
+		return diffX < width() && diffX >= T(0)
+		    && diffY < height() && diffY >= T(0);
+	}
 	
 	bool join_h(basic_rect const& b)
 	{

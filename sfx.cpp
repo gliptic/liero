@@ -7,9 +7,6 @@
 #if !DISABLE_SOUND
 #include <SDL/SDL.h>
 #endif
-//#include <iostream>
-
-//#include <cmath> // TEMP
 
 Sfx sfx;
 
@@ -44,8 +41,6 @@ void Sfx::init()
 	if(ret == 0)
 	{
 		initialized = true;
-		//Mix_AllocateChannels(8);
-		//Mix_Volume(-1, 128);
 		SDL_PauseAudio(0);
 	}
 	else
@@ -62,62 +57,10 @@ void Sfx::deinit()
 		return;
 	initialized = false;
 
-	//Mix_CloseAudio();
 	SDL_CloseAudio();
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 #endif
 }
-/*
-void Sfx::loadFromSND()
-{
-#if !DISABLE_SOUND
-	ReaderFile& snd = openLieroSND();
-		
-	int count = readUint16(snd);
-	
-	sounds.resize(count);
-	
-	long oldPos = snd.tellg();
-	
-	for(int i = 0; i < count; ++i)
-	{
-		snd.seekg(oldPos + 8);
-		
-		int offset = readUint32(snd);
-		int length = readUint32(snd);
-		
-		oldPos = snd.tellg();
-		
-		int byteLength = length * 4;
-
-		sounds[i] = sfx_new_sound(byteLength / 2);
-		
-		int16_t* ptr = reinterpret_cast<int16_t*>(sfx_sound_data(sounds[i]));
-		
-		std::vector<uint8_t> temp(length);
-		
-		if(length > 0)
-		{
-			snd.seekg(offset);
-			snd.get(&temp[0], length);
-		}
-		
-		int prev = ((int8_t)temp[0]) * 30;
-		*ptr++ = prev;
-		
-		for(int j = 1; j < length; ++j)
-		{
-			int cur = (int8_t)temp[j] * 30;
-			*ptr++ = (prev + cur) / 2;
-			*ptr++ = cur;
-			prev = cur;
-		}
-		
-		*ptr++ = prev;
-	}
-#endif
-
-}*/
 
 void Sfx::play(Common& common, int sound, void* id, int loops)
 {
@@ -154,12 +97,4 @@ bool Sfx::isPlaying(void* id)
 Sfx::~Sfx()
 {
 	deinit();
-
-#if !DISABLE_SOUND
-/*
-	for(std::size_t i = 0; i < sounds.size(); ++i)
-	{
-		sfx_free_sound(sounds[i]);
-	}*/
-#endif
 }

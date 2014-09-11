@@ -1,5 +1,5 @@
 #include "blit.hpp"
-#include "../rect.hpp"
+
 #include "../constants.hpp"
 #include "../level.hpp"
 #include "../common.hpp"
@@ -7,6 +7,7 @@
 #include "../settings.hpp"
 #include "bitmap.hpp"
 #include "macros.hpp"
+#include <gvl/math/rect.hpp>
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
@@ -296,7 +297,7 @@ void blitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y)
 void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int width, int height)
 {
 	int pitch = width;
-	Rect clipRect(0, 0, level.width, level.height);
+	gvl::rect clipRect(0, 0, level.width, level.height);
 	
 	CLIP_IMAGE(clipRect);
 	
@@ -348,7 +349,7 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 	int height = 16;
 	int pitch = width;
 	
-	Rect clip(0, 0, level.width, level.height);
+	gvl::rect clip(0, 0, level.width, level.height);
 	
 	CLIP_IMAGE(clip);
 	
@@ -513,9 +514,9 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 	}
 }
 
-void correctShadow(Common& common, Level& level, Rect rect)
+void correctShadow(Common& common, Level& level, gvl::rect rect)
 {
-	rect.intersect(Rect(0, 3, level.width - 3, level.height));
+	rect.intersect(gvl::rect(0, 3, level.width - 3, level.height));
 		
 	for(int x = rect.x1; x < rect.x2; ++x)
 	for(int y = rect.y1; y < rect.y2; ++y)
@@ -570,7 +571,7 @@ void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, i
 {
 	int color = LC(NRColourBegin);
 	
-	Rect& clip = scr.clip_rect;
+	gvl::rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
 	
@@ -586,7 +587,7 @@ void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, i
 
 void drawLaserSight(Bitmap& scr, Rand& rand, int fromX, int fromY, int toX, int toY)
 {
-	Rect& clip = scr.clip_rect;
+	gvl::rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
 	
@@ -603,7 +604,7 @@ void drawLaserSight(Bitmap& scr, Rand& rand, int fromX, int fromY, int toX, int 
 
 void drawShadowLine(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY)
 {
-	Rect& clip = scr.clip_rect;
+	gvl::rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
 	
@@ -620,7 +621,7 @@ void drawShadowLine(Common& common, Bitmap& scr, int fromX, int fromY, int toX, 
 
 void drawLine(Bitmap& scr, int fromX, int fromY, int toX, int toY, int color)
 {
-	Rect& clip = scr.clip_rect;
+	gvl::rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
 	

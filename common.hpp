@@ -105,8 +105,6 @@ using std::vector;
 struct Common : gvl::shared
 {
 	Common();
-	//Common(std::string const& lieroExe);
-	Common(FsNode const& path, std::string const& exeName);
 
 	~Common()
 	{
@@ -114,8 +112,7 @@ struct Common : gvl::shared
 	
 	static int fireConeOffset[2][7][2];
 
-	void save(std::string const& path);
-	void load(std::string const& path);
+	void load(FsNode node);
 	void drawTextSmall(Bitmap& scr, char const* str, int x, int y);
 	void precompute();
 
@@ -136,31 +133,32 @@ struct Common : gvl::shared
 		return fireConeSprites.spritePtr(f + dir*7);
 	}
 
-	Texts texts; // OK, not saved
-	vector<int> weapOrder; // OK, not saved
-	SpriteSet wormSprites; // OK, not saved
-	SpriteSet fireConeSprites; // OK, not saved
+	// Computed
+	Texts texts;
+	vector<int> weapOrder;
+	SpriteSet wormSprites;
+	SpriteSet fireConeSprites;
 
-	Material materials[256]; // OK
-	Texture textures[9]; // OK
-	vector<Weapon> weapons; // OK
-	vector<SObjectType> sobjectTypes; // OK
-	vector<NObjectType> nobjectTypes; // OK
-	int bonusRandTimer[2][2]; // OK
-	int bonusSObjects[2]; // OK
-	AIParams aiParams; // OK
-	ColourAnim colorAnim[4]; // OK
-	int bonusFrames[2]; // OK
-	SpriteSet smallSprites; // OK
-	SpriteSet largeSprites; // OK
-	SpriteSet textSprites; // OK
-	Palette exepal; // OK
-	Font font; // OK
-	vector<SfxSample> sounds; // OK
+	Material materials[256];
+	Texture textures[9];
+	vector<Weapon> weapons;
+	vector<SObjectType> sobjectTypes;
+	vector<NObjectType> nobjectTypes;
+	int bonusRandTimer[2][2];
+	int bonusSObjects[2];
+	AIParams aiParams;
+	ColourAnim colorAnim[4];
+	int bonusFrames[2];
+	SpriteSet smallSprites;
+	SpriteSet largeSprites;
+	SpriteSet textSprites;
+	Palette exepal;
+	Font font;
+	vector<SfxSample> sounds;
 	
-	int C[MaxC]; // OK
-	std::string S[MaxS]; // OK
-	bool H[MaxH]; // OK
+	int32_t C[MaxC];
+	std::string S[MaxS];
+	bool H[MaxH];
 };
 
 #endif // UUID_9E238CFB9F074A3A432E22AE5B8EE5FB
