@@ -28,7 +28,7 @@ struct ReaderFile : gvl::noncopyable
 	{
 		len = 0;
 		auto cur = source;
-		while (cur->ensure_data() == gvl::source_result::ok)
+		while (cur && cur->ensure_data() == gvl::source_result::ok)
 		{
 			len += cur->data->size();
 			cur = cur->next;
@@ -38,7 +38,7 @@ struct ReaderFile : gvl::noncopyable
 		uint8_t* p = data;
 
 		cur = source;
-		while (cur->data)
+		while (cur && cur->data)
 		{
 			std::memcpy(p, cur->data->begin(), cur->data->size());
 			p += cur->data->size();

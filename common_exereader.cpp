@@ -343,7 +343,7 @@ std::string toId(std::string const& name)
 	std::string ret;
 	for (char c : name)
 	{
-		if (c >= 128 || !std::isalnum((uint8_t)c))
+		if ((uint8_t)c >= 128 || !std::isalnum((uint8_t)c))
 			ret += '_';
 		else
 			ret += std::tolower((uint8_t)c);

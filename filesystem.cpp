@@ -568,9 +568,11 @@ struct FsNodeZipFile : FsNodeImp
 
 struct FsNodeFilesystem : FsNodeImp
 {
-	FsNodeFilesystem(std::string const& path)
-	: path(path)
+	FsNodeFilesystem(std::string const& pathInit)
+	: path(pathInit)
 	{
+		if (path.empty())
+			path.assign(".");
 	}
 
 	std::string const& fullPath()
@@ -662,9 +664,30 @@ FsNode::FsNode(std::string const& path)
 		{
 			std::string const& part = path.substr(beg, i - beg);
 			if (!imp)
-				imp.reset(new FsNodeFilesystem(part));
+			{
+#if TL_WINDOWS
+				if (path.size() == 2 && path[1] == ':')
+					imp.reset(new FsNodeFilesystem(part));
+				else
+				{
+					imp.reset(new FsNodeFilesystem("."));
+					imp = imp->go(part);
+				}
+#else
+				if (path.empty())
+					imp.reset(new FsNodeFilesystem(part));
+				else
+				{
+					imp.reset(new FsNodeFilesystem("."));
+					imp = imp->go(part);
+				}
+#endif
+			}
 			else
+			{
 				imp = imp->go(part);
+			}
+				
 			beg = i + 1;
 		}
 	}
@@ -672,9 +695,30 @@ FsNode::FsNode(std::string const& path)
 	if (beg != i)
 	{
 		std::string const& part = path.substr(beg, i - beg);
+
 		if (!imp)
-			imp.reset(new FsNodeFilesystem(part));
+		{
+#if TL_WINDOWS
+			if (path.size() == 2 && path[1] == ':')
+				imp.reset(new FsNodeFilesystem(part));
+			else
+			{
+				imp.reset(new FsNodeFilesystem("."));
+				imp = imp->go(part);
+			}
+#else
+			if (path.empty())
+				imp.reset(new FsNodeFilesystem(part));
+			else
+			{
+				imp.reset(new FsNodeFilesystem("."));
+				imp = imp->go(part);
+			}
+#endif
+		}
 		else
+		{
 			imp = imp->go(part);
+		}
 	}
 }

@@ -19,6 +19,7 @@ void gvl::passert_fail(char const* cond, char const* file, int line, char const*
 #if 0
 	throw gvl::assert_failure(s);
 #else
+	fprintf(stderr, "%s\n", s.c_str());
 	abort();
 #endif
 }

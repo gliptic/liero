@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
 
 	FsNode path(argv[1]);
 
+	bool found = false;
+
 	for (auto const& name : path.iter())
 	{
 		if (toUpperCase(name).find(".EXE") != std::string::npos)
@@ -52,6 +54,8 @@ int main(int argc, char *argv[])
 
 			if (exe.len >= 135000 && exe.len <= 137000)
 			{
+				printf("Converting %s...\n", name.c_str());
+
 				// TODO: Some TCs change the name of the .SND or .CHR for some reason.
 				// We could read that name from the exe to make them work.
 				ReaderFile gfx((path / "LIERO.CHR").toSource());
@@ -64,9 +68,15 @@ int main(int argc, char *argv[])
 
 				commonSave(common, joinPath(configPath, tcName));
 
+				found = true;
 				break;
 			}
 		}
+	}
+
+	if (!found)
+	{
+		printf("Could not find a suitable LIERO.EXE in %s\n", argv[1]);
 	}
 
 	return 0;
