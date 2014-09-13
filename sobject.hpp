@@ -2,7 +2,6 @@
 #define LIERO_SOBJECT_HPP
 
 #include "math.hpp"
-#include "objectList.hpp"
 #include "exactObjectList.hpp"
 #include <string>
 

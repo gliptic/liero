@@ -246,7 +246,6 @@
     <ClCompile Include="..\ninjarope.cpp" />
     <ClCompile Include="..\nobject.cpp" />
     <ClCompile Include="..\rand.cpp" />
-    <ClCompile Include="..\replay.cpp" />
     <ClCompile Include="..\settings.cpp" />
     <ClCompile Include="..\sobject.cpp" />
     <ClCompile Include="..\stats_recorder.cpp" />
@@ -319,7 +318,6 @@
     <ClInclude Include="..\nobject.hpp" />
     <ClInclude Include="..\objectList.hpp" />
     <ClInclude Include="..\rand.hpp" />
-    <ClInclude Include="..\replay.hpp" />
     <ClInclude Include="..\settings.hpp" />
     <ClInclude Include="..\sobject.hpp" />
     <ClInclude Include="..\stats.hpp" />

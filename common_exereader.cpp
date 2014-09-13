@@ -500,12 +500,6 @@ void loadMaterials(Common& common, ReaderFile& exe)
 	}
 }
 
-
-inline int32_t readSint32(ReaderFile& f)
-{
-	return (int32_t)gvl::read_uint32_le(f);
-}
-
 struct Read32
 {
 	static inline int32_t run(ReaderFile& f)
@@ -518,7 +512,7 @@ struct Read16
 {
 	static inline int32_t run(ReaderFile& f)
 	{
-		return (int32_t)gvl::read_uint16_le(f);
+		return (int32_t)(int16_t)gvl::read_uint16_le(f);
 	}
 };
 

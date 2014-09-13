@@ -6,7 +6,6 @@
 #include "weapsel.hpp"
 #include "constants.hpp"
 #include <cstdlib>
-//#include "text.hpp" // TEMP
 #include <ctime>
 #include "ai/predictive_ai.hpp"
 

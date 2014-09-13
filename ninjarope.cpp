@@ -3,7 +3,6 @@
 #include "game.hpp"
 #include "gfx/color.hpp"
 #include "math.hpp"
-//#include <cmath>
 
 void Ninjarope::process(Worm& owner, Game& game)
 {

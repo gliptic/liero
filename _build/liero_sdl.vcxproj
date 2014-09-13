@@ -197,6 +197,7 @@
     <ClCompile Include="..\menu\menu.cpp" />
     <ClCompile Include="..\menu\menuItem.cpp" />
     <ClCompile Include="..\menu\timeBehavior.cpp" />
+    <ClCompile Include="..\replay.cpp" />
     <ClCompile Include="..\sdlmain.cpp" />
     <ClCompile Include="..\sfx.cpp" />
     <ClCompile Include="..\weapsel.cpp" />
@@ -229,6 +230,7 @@
     <ClInclude Include="..\menu\menu.hpp" />
     <ClInclude Include="..\menu\menuItem.hpp" />
     <ClInclude Include="..\menu\timeBehavior.hpp" />
+    <ClInclude Include="..\replay.hpp" />
     <ClInclude Include="..\sfx.hpp" />
     <ClInclude Include="..\weapsel.hpp" />
   </ItemGroup>

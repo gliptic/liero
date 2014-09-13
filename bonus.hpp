@@ -2,7 +2,6 @@
 #define LIERO_BONUS_HPP
 
 #include "math.hpp"
-#include "objectList.hpp"
 #include "exactObjectList.hpp"
 
 struct Game;

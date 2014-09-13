@@ -2,6 +2,7 @@
 #define GVL_SERIALIZATION_CONTEXT_HPP
 
 #include <map>
+#include <vector>
 #include "../support/type_info.hpp"
 
 namespace gvl
@@ -29,7 +30,9 @@ struct serialization_context
 		
 		void add(uint32_t id, void* ptr)
 		{
-			id2ptr.insert(std::make_pair(id, ptr));
+			if (id2ptr.size() <= id)
+				id2ptr.resize(id + 1);
+			id2ptr[id] = ptr;
 			ptr2id.insert(std::make_pair(ptr, id));
 		}
 		
@@ -38,21 +41,19 @@ struct serialization_context
 			std::map<void*, uint32_t>::iterator i1 = ptr2id.find(ptr);
 			if(i1 != ptr2id.end())
 			{
-				std::map<uint32_t, void*>::iterator i2 = id2ptr.find(i1->second);
-				
 				ptr2id.erase(i1);
-				if(i2 != id2ptr.end())
-					id2ptr.erase(i2);
+				id2ptr[i1->second] = 0;
 			}
 		}
 		
 		bool try_get(uint32_t id, void*& ptr)
 		{
-			std::map<uint32_t, void*>::iterator i = id2ptr.find(id);
-			
-			if(i == id2ptr.end())
+			if (id2ptr.size() <= id)
 				return false;
-			ptr = i->second;
+			void* p = id2ptr[id];
+			if (!p)
+				return false;
+			ptr = p;
 			return true;
 		}
 		
@@ -71,7 +72,7 @@ struct serialization_context
 			return next_id++;
 		}
 		
-		std::map<uint32_t, void*> id2ptr;
+		std::vector<void*> id2ptr;
 		std::map<void*, uint32_t> ptr2id;
 		uint32_t next_id;
 	};

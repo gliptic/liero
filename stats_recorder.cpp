@@ -2,7 +2,6 @@
 
 #include "common.hpp"
 #include <gvl/system/system.hpp>
-//#include "gfx.hpp"
 #include "game.hpp"
 #include "text.hpp"
 

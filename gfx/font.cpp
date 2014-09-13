@@ -3,7 +3,6 @@
 #include "../gfx.hpp"
 #include "macros.hpp"
 #include "color.hpp"
-//#include <iostream>
 
 void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color)
 {

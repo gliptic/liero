@@ -1,7 +1,6 @@
 #include "system.hpp"
 
 #include "../support/platform.hpp"
-//#include <stdexcept>
 #include "stdio.h"
 #include "stdlib.h"
 

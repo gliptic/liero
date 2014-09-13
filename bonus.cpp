@@ -1,7 +1,6 @@
 #include "bonus.hpp"
 #include "game.hpp"
 #include "constants.hpp"
-//#include <iostream>
 #include <cstdlib>
 
 void Bonus::process(Game& game)

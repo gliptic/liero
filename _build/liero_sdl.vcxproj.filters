@@ -52,6 +52,7 @@
     <ClCompile Include="..\menu\mainMenu.cpp">
       <Filter>menu</Filter>
     </ClCompile>
+    <ClCompile Include="..\replay.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="controller">
@@ -129,6 +130,7 @@
     <ClInclude Include="..\menu\mainMenu.hpp">
       <Filter>menu</Filter>
     </ClInclude>
+    <ClInclude Include="..\replay.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\CMakeLists.txt" />

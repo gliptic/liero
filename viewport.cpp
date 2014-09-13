@@ -1,5 +1,4 @@
 #include "viewport.hpp"
-//#include "gfx.hpp"
 #include "game.hpp"
 #include "text.hpp"
 #include "math.hpp"
@@ -7,8 +6,6 @@
 #include "gfx/bitmap.hpp"
 #include "gfx/renderer.hpp"
 #include "gfx/blit.hpp"
-
-//#include <iostream>
 
 struct PreserveClipRect
 {

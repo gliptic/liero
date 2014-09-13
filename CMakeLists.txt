@@ -19,7 +19,6 @@ set(SOURCES
     ninjarope.cpp
     nobject.cpp
     rand.cpp
-    replay.cpp
     settings.cpp
     sobject.cpp
     stats_recorder.cpp
@@ -50,6 +49,7 @@ set(GAME_SOURCES ${SOURCES}
 	gfx.cpp
     keys.cpp
 	main.cpp
+    replay.cpp
 	sfx.cpp
     weapsel.cpp
 	ai/dijkstra.cpp
