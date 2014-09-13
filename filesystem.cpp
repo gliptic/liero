@@ -666,7 +666,7 @@ FsNode::FsNode(std::string const& path)
 			if (!imp)
 			{
 #if TL_WINDOWS
-				if (path.size() == 2 && path[1] == ':')
+				if (part.size() == 2 && part[1] == ':')
 					imp.reset(new FsNodeFilesystem(part));
 				else
 				{
@@ -674,7 +674,7 @@ FsNode::FsNode(std::string const& path)
 					imp = imp->go(part);
 				}
 #else
-				if (path.empty())
+				if (part.empty())
 					imp.reset(new FsNodeFilesystem(part));
 				else
 				{
