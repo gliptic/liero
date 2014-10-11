@@ -23,9 +23,21 @@ FILE* tolerantFOpen(std::string const& name, char const* mode);
 std::size_t fileLength(FILE* f);
 bool create_directories(std::string const& dir);
 
+struct NodeName
+{
+	NodeName(std::string nameInit, bool isDirInit)
+	: name(std::move(nameInit))
+	, isDir(isDirInit)
+	{
+	}
+
+	std::string name;
+	bool isDir;
+};
+
 struct DirectoryListing
 {
-	std::vector<std::string> subs;
+	std::vector<NodeName> subs;
 
 	DirectoryListing(DirectoryListing&& other)
 	: subs(std::move(other.subs))
@@ -39,7 +51,7 @@ struct DirectoryListing
 	}
 	
 	DirectoryListing(std::string const& dir);
-	DirectoryListing(std::vector<std::string>&& subsInit);
+	DirectoryListing(std::vector<NodeName>&& subsInit);
 	~DirectoryListing();
 
 	DirectoryListing operator|(DirectoryListing const& other)
@@ -51,12 +63,12 @@ struct DirectoryListing
 		return std::move(ret);
 	}
 
-	std::vector<std::string>::iterator begin()
+	std::vector<NodeName>::iterator begin()
 	{
 		return subs.begin();
 	}
 
-	std::vector<std::string>::iterator end()
+	std::vector<NodeName>::iterator end()
 	{
 		return subs.end();
 	}
@@ -71,6 +83,7 @@ struct FsNodeImp : gvl::shared
 	virtual gvl::shared_ptr<FsNodeImp> go(std::string const& name) = 0;
 	virtual gvl::source tryToSource() = 0;
 	virtual gvl::sink tryToSink() = 0;
+	virtual bool exists() const = 0;
 };
 
 struct FsNode
@@ -115,6 +128,9 @@ struct FsNode
 
 	FsNode operator/(std::string const& name) const
 	{ return FsNode(imp->go(name)); }
+
+	bool exists() const
+	{ return imp && imp->exists(); }
 
 	gvl::octet_reader toOctetReader() const
 	{

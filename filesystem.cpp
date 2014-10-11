@@ -352,10 +352,18 @@ DirectoryListing::DirectoryListing(std::string const& dir)
 		{
 			if (!dot_or_dot_dot(name.name))
 			{
-				subs.push_back(name.name);
+				struct stat st;
+				if (stat(joinPath(dir, name.name).c_str(), &st) == 0)
+				{
+					subs.push_back(NodeName(name.name, (st.st_mode & S_IFMT) == S_IFDIR));
 
-				if (subs.back().find(".zip") == subs.back().size() - 4)
-					subs.back().erase(subs.back().size() - 4);
+					if (endsWith(subs.back().name, ".zip"))
+					{
+						auto& back = subs.back();
+						back.name.erase(subs.back().name.size() - 4);
+						back.isDir = true;
+					}	
+				}
 			}
 		}
 		while ((name = find_next_file(handle, scratch)));
@@ -366,7 +374,7 @@ DirectoryListing::DirectoryListing(std::string const& dir)
 	sort();
 }
 
-DirectoryListing::DirectoryListing(std::vector<std::string>&& subsInit)
+DirectoryListing::DirectoryListing(std::vector<NodeName>&& subsInit)
 : subs(std::move(subsInit))
 {
 	sort();
@@ -378,8 +386,8 @@ DirectoryListing::~DirectoryListing()
 
 void DirectoryListing::sort()
 {
-	std::sort(subs.begin(), subs.end());
-	auto i = std::unique(subs.begin(), subs.end());
+	std::sort(subs.begin(), subs.end(), [](NodeName const& a, NodeName const& b) { return a.name < b.name; });
+	auto i = std::unique(subs.begin(), subs.end(), [](NodeName const& a, NodeName const& b) { return a.name == b.name; });
 	subs.erase(i, subs.end());
 }
 
@@ -423,6 +431,11 @@ struct FsNodeJoin : FsNodeImp
 		return join(a->go(name), b->go(name));
 	}
 
+	bool exists() const
+	{
+		return a->exists() || b->exists();
+	}
+
 	gvl::source tryToSource()
 	{
 		auto s = a->tryToSource();
@@ -455,11 +468,13 @@ struct FsNodeZipFile : FsNodeImp
 	std::string path;
 	std::string relPath;
 	int fileIndex;
+	bool isDir;
 
-	FsNodeZipFile(std::string const& path)
+	FsNodeZipFile(std::string const& path, bool isDir)
 	: archive(new FsNodeZipArchive(path))
 	, path(path)
 	, fileIndex(-1)
+	, isDir(isDir)
 	{
 		archive->root = this;
 
@@ -470,12 +485,13 @@ struct FsNodeZipFile : FsNodeImp
 			char buf[260];
 			mz_zip_reader_get_filename(&archive->archive, fileIndex, buf, 260);
 
+			bool isDir = mz_zip_reader_is_file_a_directory(&archive->archive, fileIndex);
+
 			std::string filepath(buf);
 
 			FsNodeZipFile* cur = this;
 
-			std::size_t beg = 0;
-			std::size_t i = 0;
+			std::size_t beg = 0, i = 0;
 
 			for (; i < filepath.size(); ++i)
 			{
@@ -484,7 +500,7 @@ struct FsNodeZipFile : FsNodeImp
 					std::string const& part = filepath.substr(beg, i - beg);
 				
 					auto& c = cur->children[part];
-					if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), -1));
+					if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), -1, true));
 					cur = c.get();
 
 					beg = i + 1;
@@ -496,17 +512,18 @@ struct FsNodeZipFile : FsNodeImp
 				std::string const& part = filepath.substr(beg, i - beg);
 			
 				auto& c = cur->children[part];
-				if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), (int)fileIndex));
+				if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), (int)fileIndex, isDir));
 				cur = c.get();
 			}
 		}
 	}
 
-	FsNodeZipFile(gvl::shared_ptr<FsNodeZipArchive> archive, std::string const& fullPath, std::string const& relPath, int fileIndex)
+	FsNodeZipFile(gvl::shared_ptr<FsNodeZipArchive> archive, std::string const& fullPath, std::string const& relPath, int fileIndex, bool isDir)
 	: archive(std::move(archive))
 	, path(fullPath)
 	, relPath(relPath)
 	, fileIndex(fileIndex)
+	, isDir(isDir)
 	{
 	}
 
@@ -524,11 +541,11 @@ struct FsNodeZipFile : FsNodeImp
 		//if (imp->cur == imp->end)
 		//	imp.reset();
 
-		std::vector<std::string> subs;
+		std::vector<NodeName> subs;
 
 		for (auto& i : children)
 		{
-			subs.push_back(i.first);
+			subs.push_back(NodeName(i.first, i.second->isDir));
 		}
 
 		return DirectoryListing(std::move(subs));
@@ -540,6 +557,11 @@ struct FsNodeZipFile : FsNodeImp
 		if (i != children.end())
 			return i->second;
 		return gvl::shared_ptr<FsNodeImp>();
+	}
+
+	bool exists() const
+	{
+		return true;
 	}
 
 	gvl::source tryToSource()
@@ -607,10 +629,19 @@ struct FsNodeFilesystem : FsNodeImp
 		if (access(zipPath.c_str(), 0) != -1)
 		{
 			// We have a zip file, merge nodes
-			imp = join(std::move(imp), gvl::shared_ptr<FsNodeImp>(new FsNodeZipFile(zipPath)));
+			imp = join(std::move(imp), gvl::shared_ptr<FsNodeImp>(new FsNodeZipFile(zipPath, true)));
+		}
+		else if (access(fullPath.c_str(), 0) != -1 && endsWith(fullPath, ".zip"))
+		{
+			imp = join(std::move(imp), gvl::shared_ptr<FsNodeImp>(new FsNodeZipFile(fullPath, true)));
 		}
 
 		return std::move(imp);
+	}
+
+	bool exists() const
+	{
+		return access(path.c_str(), 0) != -1;
 	}
 	
 	gvl::source tryToSource()

@@ -18,7 +18,8 @@ struct MainMenu : Menu
 		MaAdvanced,
 		MaQuit,
 		MaReplays,
-		MaReplay
+		MaReplay,
+		MaTc
 	};
 
 	MainMenu(int x, int y)

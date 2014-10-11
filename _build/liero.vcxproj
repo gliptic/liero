@@ -265,6 +265,7 @@
     <ClInclude Include="..\gfx\palette.hpp" />
     <ClInclude Include="..\gfx\renderer.hpp" />
     <ClInclude Include="..\gfx\sprite.hpp" />
+    <ClInclude Include="..\gvl\containers\bucket.hpp" />
     <ClInclude Include="..\gvl\containers\list.h" />
     <ClInclude Include="..\gvl\containers\list.hpp" />
     <ClInclude Include="..\gvl\containers\pairing_heap.hpp" />
@@ -328,6 +329,7 @@
     <ClInclude Include="..\tl\cstdint.h" />
     <ClInclude Include="..\tl\memory.h" />
     <ClInclude Include="..\tl\platform.h" />
+    <ClInclude Include="..\tl\string.h" />
     <ClInclude Include="..\tl\utf8.h" />
     <ClInclude Include="..\tl\vector.h" />
     <ClInclude Include="..\version.hpp" />

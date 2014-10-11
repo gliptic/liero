@@ -127,7 +127,7 @@ try
 	FsNode configNode(gfx.getConfigNode());
 
 	// TC loading
-	FsNode lieroRoot(configNode / tcName);
+	FsNode lieroRoot(configNode / "TC" / tcName);
 	gvl::shared_ptr<Common> common(new Common());
 	common->load(std::move(lieroRoot));
 	gfx.common = common;

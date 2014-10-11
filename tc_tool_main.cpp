@@ -48,13 +48,13 @@ int main(int argc, char *argv[])
 
 	for (auto const& name : path.iter())
 	{
-		if (toUpperCase(name).find(".EXE") != std::string::npos)
+		if (toUpperCase(name.name).find(".EXE") != std::string::npos)
 		{
-			ReaderFile exe((path / name).toSource());
+			ReaderFile exe((path / name.name).toSource());
 
 			if (exe.len >= 135000 && exe.len <= 137000)
 			{
-				printf("Converting %s...\n", name.c_str());
+				printf("Converting %s...\n", name.name.c_str());
 
 				// TODO: Some TCs change the name of the .SND or .CHR for some reason.
 				// We could read that name from the exe to make them work.
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 				if (tcName.empty())
 					tcName = getLeaf(argv[1]);
 
-				commonSave(common, joinPath(configPath, tcName));
+				commonSave(common, joinPath(joinPath(configPath, "TC"), tcName));
 
 				found = true;
 				break;

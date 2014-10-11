@@ -203,6 +203,7 @@ struct Gfx : Renderer
 	void selectLevel();
 	int  selectReplay();
 	void selectProfile(WormSettings& ws);
+	std::unique_ptr<Common> selectTc();
 	void selectOptions();
 	void weaponOptions();
 	void infoBox(std::string const& text, int x = 320/2, int y = 200/2, bool clearScreen = true);

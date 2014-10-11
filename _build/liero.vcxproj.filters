@@ -298,5 +298,11 @@
       <Filter>tl</Filter>
     </ClInclude>
     <ClInclude Include="..\objectList.hpp" />
+    <ClInclude Include="..\gvl\containers\bucket.hpp">
+      <Filter>gvl\containers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\tl\string.h">
+      <Filter>tl</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -31,6 +31,12 @@ inline void findReplace(std::string& str, std::string const& find, std::string c
 		str.replace(p, find.size(), replace);
 }
 
+inline bool endsWith(std::string const& str, char const* end)
+{
+	auto pos = str.find(end);
+	return pos != std::string::npos && pos + std::strlen(end) == str.size();
+}
+
 bool ciStartsWith(std::string const& a, std::string const& b);
 bool ciCompare(std::string const& a, std::string const& b);
 bool ciLess(std::string const& a, std::string const& b);

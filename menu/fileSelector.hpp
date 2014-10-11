@@ -134,23 +134,22 @@ void FileNode::fill()
 	assert(fsNode);
 	DirectoryListing di(fsNode.iter());
 
-	for(string const& name : di)
+	for(auto const& name : di)
 	{
-		//string const& name = *di;
-		string const& fullPath = joinPath(this->fullPath, name);
-		auto const& ext = getExtension(name);
+		string const& fullPath = joinPath(this->fullPath, name.name);
+		auto const& ext = getExtension(name.name);
 
-		if (ext.empty() || ciCompare(ext, "zip"))
+		if (name.isDir)
 		{
 			shared_ptr<FileNode> node(new FileNode(
-				name, name, fullPath, true, this, filter));
+				name.name, name.name, fullPath, true, this, filter));
 
 			children.push_back(node);
 		}
-		else if (!filter || filter(name, ext))
+		else if (!filter || filter(name.name, ext))
 		{
 			children.push_back(shared_ptr<FileNode>(new FileNode(
-				getBasename(name), name, fullPath, false, this, filter)));
+				getBasename(name.name), name.name, fullPath, false, this, filter)));
 		}
 	}
 

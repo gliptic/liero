@@ -397,6 +397,7 @@ void Gfx::loadMenus()
 	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaNewGame)); // string set in menuLoop
 	mainMenu.addItem(MenuItem(48, 48, "OPTIONS (F2)", MainMenu::MaAdvanced));
 	mainMenu.addItem(MenuItem(48, 48, "REPLAYS (F3)", MainMenu::MaReplays));
+	mainMenu.addItem(MenuItem(48, 48, "TC", MainMenu::MaTc));
 	mainMenu.addItem(MenuItem(6, 6, "QUIT TO OS", MainMenu::MaQuit));
 	mainMenu.addItem(MenuItem::space());
 	mainMenu.addItem(MenuItem(48, 48, "LEFT PLAYER (F5)", MainMenu::MaPlayer1Settings));
@@ -1032,7 +1033,7 @@ void Gfx::selectLevel()
 		common.font.drawText(screenBmp, title, 180, 21, 50);
 
 		FileNode* sel = levSel.curSel();
-		if (previewNode != sel && sel && sel != random.get())
+		if (previewNode != sel && sel && sel != random.get() && !sel->folder)
 		{
 			Level level(common);
 
@@ -1239,6 +1240,66 @@ void Gfx::selectOptions()
 		process();
 	}
 	while(true);
+}
+
+std::unique_ptr<Common> Gfx::selectTc()
+{
+	FileSelector tcSel(*common, 28);
+
+	{
+		tcSel.fill(getConfigNode() / "TC", 0);
+
+		tcSel.setFolder(tcSel.rootNode);
+
+		auto end = std::remove_if(tcSel.rootNode.children.begin(), tcSel.rootNode.children.end(), [](shared_ptr<FileNode> const& n) {
+			auto tc = n->getFsNode() / "tc.cfg";
+			return !tc.exists();
+		});
+
+		tcSel.rootNode.children.erase(end, tcSel.rootNode.children.end());
+
+		for (auto& c : tcSel.rootNode.children)
+		{
+			c->folder = false;
+		}
+	}
+	
+	do
+	{
+		screenBmp.copy(frozenScreen);
+		
+		string title = "Select TC:";
+		if (!tcSel.currentNode->fullPath.empty())
+		{
+			title += ' ';
+			title += tcSel.currentNode->fullPath;
+		}
+		
+		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
+
+		tcSel.draw();
+		
+		if (!tcSel.process())
+			break;
+		
+		if(testSDLKeyOnce(SDLK_RETURN)
+		|| testSDLKeyOnce(SDLK_KP_ENTER))
+		{
+			auto* sel = tcSel.enter();
+
+			if (sel)
+			{
+				gvl::unique_ptr<Common> common(new Common());
+				common->load(sel->getFsNode());
+				return std::move(common);
+			}
+		}
+		menuFlip();
+		process();
+	}
+	while(true);
+	
+	return std::unique_ptr<Common>();
 }
 
 struct WeaponMenu : Menu
@@ -1546,6 +1607,7 @@ void Gfx::playerSettings(int player)
 
 void Gfx::mainLoop()
 {
+restart:
 	controller.reset(new LocalController(common, settings));
 	
 	{
@@ -1598,6 +1660,10 @@ void Gfx::mainLoop()
 		else if(selection == MainMenu::MaReplay)
 		{
 			//controller.reset(new ReplayController(common/*, settings*/));
+		}
+		else if (selection == MainMenu::MaTc)
+		{
+			goto restart;
 		}
 		
 		controller->focus();
@@ -1766,6 +1832,13 @@ int Gfx::menuLoop()
 					case MainMenu::MaReplays:
 					{
 						selected = curMenu->onEnter(common);
+						break;
+					}
+
+					case MainMenu::MaTc:
+					{
+						if (curMenu->onEnter(common) == MainMenu::MaTc)
+							return MainMenu::MaTc;
 						break;
 					}
 
