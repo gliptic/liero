@@ -56,8 +56,8 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		{
 			Worm& w = *game.worms[i];
 			
-			int wix = ftoi(w.x);
-			int wiy = ftoi(w.y);
+			int wix = ftoi(w.pos.x);
+			int wiy = ftoi(w.pos.y);
 			
 			if(wix < x + detectRange
 			&& wix > x - detectRange
@@ -68,24 +68,24 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 				int power = detectRange - std::abs(delta);
 				int powerSum = power;
 				
-				if(std::abs(w.velX) < itof(2)) // TODO: Read from EXE
+				if(std::abs(w.vel.x) < itof(2)) // TODO: Read from EXE
 				{
 					if(delta > 0)
-						w.velX += blowAway * power;
+						w.vel.x += blowAway * power;
 					else
-						w.velX -= blowAway * power;
+						w.vel.x -= blowAway * power;
 				}
 				
 				delta = wiy - y;
 				power = detectRange - std::abs(delta);
 				powerSum = (powerSum + power) / 2;
 				
-				if(std::abs(w.velY) < itof(2)) // TODO: Read from EXE
+				if(std::abs(w.vel.y) < itof(2)) // TODO: Read from EXE
 				{
 					if(delta > 0)
-						w.velY += blowAway * power;
+						w.vel.y += blowAway * power;
 					else
-						w.velY -= blowAway * power;
+						w.vel.y -= blowAway * power;
 				}
 				
 				int z = damage * powerSum;
@@ -113,8 +113,8 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 							common.nobjectTypes[6].create2(
 								game,
 								angle,
-								w.velX / 3, w.velY / 3,
-								w.x, w.y,
+								w.vel / 3,
+								w.pos,
 								0,
 								w.index,
 								firedBy);
@@ -141,32 +141,32 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 			
 			if(weapon.affectByExplosions)
 			{
-				int ix = ftoi(i->x), iy = ftoi(i->y);
-				if(ix < x + detectRange
-				&& ix > x - detectRange
-				&& iy < y + detectRange
-				&& iy > y - detectRange)
+				auto ipos = ftoi(i->pos);
+				if(ipos.x < x + detectRange
+				&& ipos.x > x - detectRange
+				&& ipos.y < y + detectRange
+				&& ipos.y > y - detectRange)
 				{
-					int delta = ix - x;
+					int delta = ipos.x - x;
 					int power = detectRange - std::abs(delta);
 					
 					if(power > 0)
 					{
 						if(delta > 0)
-							i->velX += objBlowAway * power;
+							i->vel.x += objBlowAway * power;
 						else if(delta < 0)
-							i->velX -= objBlowAway * power;
+							i->vel.x -= objBlowAway * power;
 					}
 					
-					delta = iy - y;
+					delta = ipos.y - y;
 					power = detectRange - std::abs(delta);
 					
 					if(power > 0)
 					{
 						if(delta > 0)
-							i->velY += objBlowAway * power;
+							i->vel.y += objBlowAway * power;
 						else if(delta < 0)
-							i->velY -= objBlowAway * power;
+							i->vel.y -= objBlowAway * power;
 					}
 					
 					// Is it a booby trap?
@@ -184,32 +184,32 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		
 			if(t.affectByExplosions)
 			{
-				int ix = ftoi(i->x), iy = ftoi(i->y);
-				if(ix < x + detectRange
-				&& ix > x - detectRange
-				&& iy < y + detectRange
-				&& iy > y - detectRange)
+				auto ipos = ftoi(i->pos);
+				if(ipos.x < x + detectRange
+				&& ipos.x > x - detectRange
+				&& ipos.y < y + detectRange
+				&& ipos.y > y - detectRange)
 				{
-					int delta = ix - x;
+					int delta = ipos.x - x;
 					int power = detectRange - std::abs(delta);
 					
 					if(power > 0)
 					{
 						if(delta > 0)
-							i->velX += objBlowAway * power;
+							i->vel.x += objBlowAway * power;
 						else if(delta < 0)
-							i->velX -= objBlowAway * power;
+							i->vel.x -= objBlowAway * power;
 					}
 					
-					delta = iy - y;
+					delta = ipos.y - y;
 					power = detectRange - std::abs(delta);
 					
 					if(power > 0)
 					{
 						if(delta > 0)
-							i->velY += objBlowAway * power;
+							i->vel.y += objBlowAway * power;
 						else if(delta < 0)
-							i->velY -= objBlowAway * power;
+							i->vel.y -= objBlowAway * power;
 					}
 				}
 			}
@@ -233,8 +233,8 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 					common.nobjectTypes[2].create2(
 						game,
 						angle,
-						0, 0,
-						itof(x), itof(y),
+						fixedvec(),
+						itof(gvl::ivec2(x, y)),
 						pix, ownerIdx, firedBy);
 				}
 			}

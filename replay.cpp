@@ -65,13 +65,15 @@ void archive(Archive ar, Worm::ControlState& cs)
 template<typename Archive>
 void archive(Archive ar, Worm& worm)
 {
+	bool dummy = false;
+
 	ar
-	.i32(worm.x)
-	.i32(worm.y)
-	.i32(worm.velX)
-	.i32(worm.velY)
-	.i32(worm.logicRespawnX)
-	.i32(worm.logicRespawnY)
+	.i32(worm.pos.x)
+	.i32(worm.pos.y)
+	.i32(worm.vel.x)
+	.i32(worm.vel.y)
+	.i32(worm.logicRespawn.x)
+	.i32(worm.logicRespawn.y)
 	.i32(worm.hotspotX)
 	.i32(worm.hotspotY)
 	.i32(worm.aimingAngle)
@@ -92,18 +94,18 @@ void archive(Archive ar, Worm& worm)
 	.i32(worm.killedTimer)
 	.i32(worm.currentFrame)
 	.i32(worm.flags)
-	
+
 	.obj(worm.ninjarope.anchor, WormCreator())
 	.b(worm.ninjarope.attached)
 	.i32(worm.ninjarope.curLen)
 	.i32(worm.ninjarope.length)
 	.b(worm.ninjarope.out)
-	.i32(worm.ninjarope.velX)
-	.i32(worm.ninjarope.velY)
-	.i32(worm.ninjarope.x)
-	.i32(worm.ninjarope.y)
+	.i32(worm.ninjarope.vel.x)
+	.i32(worm.ninjarope.vel.y)
+	.i32(worm.ninjarope.pos.x)
+	.i32(worm.ninjarope.pos.y)
 	.i32(worm.currentWeapon)
-	.b(worm.fireConeActive)
+	.b(dummy)
 	.template obj<Worm>(worm.lastKilledByIdx, WormCreator(), WormIdxRefCreator())
 	.i32(worm.fireCone)
 	.i32(worm.leaveShellTimer);
@@ -481,10 +483,10 @@ uint32_t fastGameChecksum(Game& game)
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
 		Worm& worm = *game.worms[i];
-		checksum ^= worm.x;
-		checksum += worm.velX;
-		checksum ^= worm.y;
-		checksum += worm.velY;
+		checksum ^= worm.pos.x;
+		checksum += worm.vel.x;
+		checksum ^= worm.pos.y;
+		checksum += worm.vel.y;
 	}
 	
 	return checksum;

@@ -69,7 +69,7 @@ void NormalStatsRecorder::damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* to
 	auto& w = worms[toWorm->index];
 	w.damage += hp;
 	w.wormFrameStats.back().damage += hp;
-	w.damageHm.incArea(ftoi(toWorm->x), ftoi(toWorm->y), hp);
+	w.damageHm.incArea(ftoi(toWorm->pos.x), ftoi(toWorm->pos.y), hp);
 
 	if(byWorm)
 	{
@@ -159,8 +159,8 @@ void NormalStatsRecorder::tick(Game& game)
 		auto& ws = worms[w->index];
 		if (w->visible)
 		{
-			presence.inc(ftoi(w->x), ftoi(w->y));
-			ws.presence.inc(ftoi(w->x), ftoi(w->y));
+			presence.inc(ftoi(w->pos.x), ftoi(w->pos.y));
+			ws.presence.inc(ftoi(w->pos.x), ftoi(w->pos.y));
 
 			bool ok = true;
 			if (!w->controlStates[Worm::Control::Fire]

@@ -21,7 +21,7 @@ struct Weapon
 		STLaser
 	};
 	
-	void fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, int ownerIdx, WormWeapon* ww) const;
+	void fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, int ownerIdx, WormWeapon* ww) const;
 
 	int detectDistance;
 	bool affectByWorm;
@@ -85,8 +85,7 @@ struct WObject : ExactObjectListBase
 	void blowUpObject(Game& game, int causeIdx);
 	void process(Game& game);
 	
-	fixed x, y;
-	fixed velX, velY;
+	fixedvec pos, vel;
 	//int id;
 	Weapon const* type;
 	int ownerIdx;

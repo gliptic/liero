@@ -30,7 +30,7 @@ struct Ninjarope
 	bool out;            //Is the ninjarope out?
 	bool attached;
 	Worm* anchor;			// If non-zero, the worm the ninjarope is attached to
-	fixed x, y, velX, velY; //Ninjarope props
+	fixedvec pos, vel; //Ninjarope props
 	// Not needed as far as I can tell: fixed forceX, forceY;
 	int length, curLen;
 	
@@ -253,7 +253,7 @@ struct Worm : gvl::shared
 	};
 		
 	Worm()
-	: x(0), y(0), velX(0), velY(0)
+	: pos(), vel()
 	, hotspotX(0), hotspotY(0)
 	, aimingAngle(0), aimingSpeed(0)
 	, ableToJump(false), ableToDig(false)   //The previous state of some keys
@@ -272,7 +272,6 @@ struct Worm : gvl::shared
 	, currentFrame(0)
 	, flags(0)                   //How many flags does this worm have?
 	, currentWeapon(0)
-	, fireConeActive(false)
 	, lastKilledByIdx(-1)
 	, fireCone(0)
 	, leaveShellTimer(0)
@@ -342,10 +341,9 @@ struct Worm : gvl::shared
 	void initWeapons(Game& game);
 	int angleFrame() const;
 	
-	fixed x, y;                    //Worm position    
-	fixed velX, velY;              //Worm velocity
+	fixedvec pos, vel;
 
-	int logicRespawnX, logicRespawnY;
+	gvl::ivec2 logicRespawn;
 	
 	int hotspotX, hotspotY;      //Hotspots for laser, laser sight, etc.
 	fixed aimingAngle, aimingSpeed;
@@ -373,7 +371,6 @@ struct Worm : gvl::shared
 	Ninjarope ninjarope;
 	
 	int currentWeapon;           //The selected weapon
-	bool fireConeActive;          //Is the firecone showing
 	int lastKilledByIdx;          // What worm that last killed this worm
 	int fireCone;                //How much is left of the firecone
 	int leaveShellTimer;         //Time until next shell drop

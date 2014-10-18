@@ -71,8 +71,8 @@ bool hasUsableWeapon(Game& game, Worm* w)
 int wormDistance(Worm* from, Worm* to)
 {
 	return vectorLength(
-		ftoi(to->x) - ftoi(from->x),
-		ftoi(to->y) - ftoi(from->y));
+		ftoi(to->pos.x) - ftoi(from->pos.x),
+		ftoi(to->pos.y) - ftoi(from->pos.y));
 }
 
 // langle in fixed point 0..128
@@ -100,8 +100,8 @@ inline double radianDiff(double a, double b)
 
 double aimingDiff(Worm* from, Worm* to)
 {
-	double xo = std::abs(to->x - from->x);
-	double yo = to->y - from->y;
+	double xo = std::abs(to->pos.x - from->pos.x);
+	double yo = to->pos.y - from->pos.y;
 
 	double angleToTarget = xo != 0 || yo != 0 ? std::atan2(yo, xo) : 0;
 
@@ -154,10 +154,10 @@ int obstacles(Game& game, gvl::ivec2 from, gvl::ivec2 to)
 
 int obstacles(Game& game, Worm* from, Worm* to)
 {
-	double orgX = from->x / 65536.0;
-	double orgY = from->y / 65536.0;
-	double dirX = (to->x - from->x) / 65536.0;
-	double dirY = (to->y - from->y) / 65536.0;
+	double orgX = from->pos.x / 65536.0;
+	double orgY = from->pos.y / 65536.0;
+	double dirX = (to->pos.x - from->pos.x) / 65536.0;
+	double dirY = (to->pos.y - from->pos.y) / 65536.0;
 
 	double l = std::sqrt(dirX*dirX + dirY*dirY);
 	dirX /= l;
@@ -328,7 +328,7 @@ double evaluateState(
 
 	Weights weights = ai.weights;
 
-	int posx = ftoi(me->x), posy = ftoi(me->y);
+	int posx = ftoi(me->pos.x), posy = ftoi(me->pos.y);
 	auto* wormCell = ai.pathFind(posx, posy);
 	Worm* meOrg = orgGame.wormByIdx(me->index);
 
@@ -500,8 +500,8 @@ void SimpleAI::process(Game& game, Worm& worm)
 		int aim = normalizedLangle(worm.aimingAngle);
 		double currentAim = langleToRadians(aim);
 
-		double dirx = std::abs(target->x - worm.x);
-		double diry = target->y - worm.y;
+		double dirx = std::abs(target->pos.x - worm.pos.x);
+		double diry = target->pos.y - worm.pos.y;
 		double angleToTarget = std::atan2(diry, dirx);
 
 		double tolerance = 2 * pi / 32.0;
@@ -531,12 +531,12 @@ void SimpleAI::process(Game& game, Worm& worm)
 			cs.set(Worm::Fire, fire || initial[Worm::Fire]);
 			cs.set(Worm::Change, false);
 
-			if (cs[Worm::Fire] && target->x < worm.x && worm.direction != 0)
+			if (cs[Worm::Fire] && target->pos.x < worm.pos.x && worm.direction != 0)
 			{
 				cs.set(Worm::Left, true);
 				cs.set(Worm::Right, false);
 			}
-			else if (cs[Worm::Fire] && target->x > worm.x && worm.direction != 1)
+			else if (cs[Worm::Fire] && target->pos.x > worm.pos.x && worm.direction != 1)
 			{
 				cs.set(Worm::Left, false);
 				cs.set(Worm::Right, true);
@@ -684,7 +684,7 @@ void evaluate(
 		{
 			int t = 119 - (int)(i * (119 - 104 + 1) / planSize);
 
-			ai.evaluatePositions.push_back(std::make_tuple(gvl::ivec2(meCopy->x, meCopy->y), t));
+			ai.evaluatePositions.push_back(std::make_tuple(gvl::ivec2(meCopy->pos.x, meCopy->pos.y), t));
 		}
 
 		result.scoreOverTime[i + 1] = s - prevS;
@@ -859,7 +859,7 @@ void FollowAI::process(Game& game, Worm& worm)
 	Worm* target = game.worms[worm.index ^ 1];
 
 	{
-		int targetx = ftoi(target->x), targety = ftoi(target->y);
+		int targetx = ftoi(target->pos.x), targety = ftoi(target->pos.y);
 
 		if (game.settings->gameMode == Settings::GMHoldazone)
 		{
@@ -1050,7 +1050,7 @@ Worm::ControlState InputContext::update(InputState newState, Game& game, Worm* w
 	else
 		hiddenFrames = 0;
 
-	facingEnemy = (game.worms[worm->index ^ 1]->x > worm->x) == worm->direction;
+	facingEnemy = (game.worms[worm->index ^ 1]->pos.x > worm->pos.x) == worm->direction;
 	ninjaropeOut = worm->ninjarope.out;
 
 	return cs;
@@ -1215,7 +1215,7 @@ void AiContext::update(FollowAI& ai, Worm& worm)
 		damage = (prevHp - hp);
 	}
 
-	incArea(worm.x, worm.y, presence, damage);
+	incArea(worm.pos.x, worm.pos.y, presence, damage);
 
 #if 1
 	for (int y = 0; y < height; ++y)

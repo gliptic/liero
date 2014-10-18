@@ -13,13 +13,12 @@ int Weapon::computedLoadingTime(Settings& settings) const
 	return ret;
 }
 
-void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixed x, fixed y, int ownerIdx, WormWeapon* ww) const
+void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, int ownerIdx, WormWeapon* ww) const
 {
 	WObject* obj = game.wobjects.newObjectReuse();
 	
 	obj->type = this;
-	obj->x = x;
-	obj->y = y;
+	obj->pos = pos;
 	obj->ownerIdx = ownerIdx;
 
 	// STATS
@@ -32,13 +31,13 @@ void Weapon::fire(Game& game, int angle, fixed velX, fixed velY, int speed, fixe
 
 	if(distribution)
 	{
-		obj->velX = cosTable[angle] * speed / 100 + velX + game.rand(distribution * 2) - distribution;
-		obj->velY = sinTable[angle] * speed / 100 + velY + game.rand(distribution * 2) - distribution;
+		obj->vel.x = cosTable[angle] * speed / 100 + vel.x + game.rand(distribution * 2) - distribution;
+		obj->vel.y = sinTable[angle] * speed / 100 + vel.y + game.rand(distribution * 2) - distribution;
 	}
 	else
 	{
-		obj->velX = cosTable[angle] * speed / 100 + velX;
-		obj->velY = sinTable[angle] * speed / 100 + velY;
+		obj->vel.x = cosTable[angle] * speed / 100 + vel.x;
+		obj->vel.y = sinTable[angle] * speed / 100 + vel.y;
 	}
 	
 	if(startFrame >= 0)
@@ -90,10 +89,10 @@ void WObject::blowUpObject(Game& game, int causeIdx)
 	Common& common = *game.common;
 	Weapon const& w = *type;
 	
-	fixed x = this->x;
-	fixed y = this->y;
-	fixed velX = this->velX;
-	fixed velY = this->velY;
+	fixed x = this->pos.x;
+	fixed y = this->pos.y;
+	fixed velX = this->vel.x;
+	fixed velY = this->vel.y;
 	
 	game.wobjects.free(this);
 	
@@ -120,8 +119,8 @@ void WObject::blowUpObject(Game& game, int causeIdx)
 				common.nobjectTypes[w.splinterType].create2(
 					game,
 					angle,
-					0, 0,
-					x, y,
+					fixedvec(),
+					fixedvec(x, y),
 					w.splinterColour - colorSub,
 					causeIdx,
 					firedBy);
@@ -134,8 +133,8 @@ void WObject::blowUpObject(Game& game, int causeIdx)
 				int colorSub = game.rand(2);
 				common.nobjectTypes[w.splinterType].create1(
 					game,
-					velX, velY,
-					x, y,
+					fixedvec(velX, velY),
+					fixedvec(x, y),
 					w.splinterColour - colorSub,
 					causeIdx,
 					firedBy);
@@ -177,85 +176,74 @@ void WObject::process(Game& game)
 	do
 	{
 		++iter;
-		x += velX;
-		y += velY;
+		pos += vel;
 				
 		if(w.shotType == 2)
 		{
-			fixed dirX = cosTable[curFrame];
-			fixed dirY = sinTable[curFrame];
-			fixed newVelX = dirX * w.speed / 100;
-			fixed newVelY = dirY * w.speed / 100;
+			fixedvec dir(cosTable[curFrame], sinTable[curFrame]);
+			auto newVel = dir * w.speed / 100;
 			
 			if(owner->visible
 			&& owner->pressed(Worm::Up))
 			{
-				newVelX += w.addSpeed * dirX / 100;
-				newVelY += w.addSpeed * dirY / 100;
+				newVel += dir * w.addSpeed / 100;
 			}
 			
-			velX = ((velX * 8) + newVelX) / 9;
-			velY = ((velY * 8) + newVelY) / 9; // TODO: Read from EXE
+			vel = ((vel * 8) + newVel) / 9;
 		}
 		else if(w.shotType == 3)
 		{
-			fixed dirX = cosTable[curFrame];
-			fixed dirY = sinTable[curFrame];
-			fixed addVelX = dirX * w.addSpeed / 100;
-			fixed addVelY = dirY * w.addSpeed / 100;
+			fixedvec dir(cosTable[curFrame], sinTable[curFrame]);
+			auto addVel = dir * w.addSpeed / 100;
 			
-			velX += addVelX;
-			velY += addVelY;
+			vel += addVel;
 			
 			if(w.distribution)
 			{
-				velX += game.rand(w.distribution * 2) - w.distribution; // TODO: We should do game.rand(w.distribution * 2) here, no? Original doesn't
-				velY += game.rand(w.distribution * 2) - w.distribution;
+				vel.x += game.rand(w.distribution * 2) - w.distribution; // TODO: We should do game.rand(w.distribution * 2) here, no? Original doesn't
+				vel.y += game.rand(w.distribution * 2) - w.distribution;
 			}
 		}
 		
 		
 		if(w.bounce > 0)
 		{
-			int ix = ftoi(x);
-			int iy = ftoi(y);
-			int inewX = ftoi(x + velX);
-			int inewY = ftoi(y + velY);
+			auto ipos = ftoi(pos);
+			auto inewPos = ftoi(pos + vel);
 			
-			if(!game.level.inside(inewX, iy)
-			|| game.pixelMat(inewX, iy).dirtRock())
+			if(!game.level.inside(inewPos.x, ipos.y)
+			|| game.pixelMat(inewPos.x, ipos.y).dirtRock())
 			{
 				if(w.bounce != 100)
 				{
-					velX = -velX * w.bounce / 100;
-					velY = (velY * 4) / 5; // TODO: Read from EXE
+					vel.x = -vel.x * w.bounce / 100;
+					vel.y = (vel.y * 4) / 5; // TODO: Read from EXE
 				}
 				else
-					velX = -velX;
+					vel.x = -vel.x;
 			}
 			
-			if(!game.level.inside(ix, inewY)
-			|| game.pixelMat(ix, inewY).dirtRock())
+			if(!game.level.inside(ipos.x, inewPos.y)
+			|| game.pixelMat(ipos.x, inewPos.y).dirtRock())
 			{
 				if(w.bounce != 100)
 				{
-					velY = -velY * w.bounce / 100;
-					velX = (velX * 4) / 5; // TODO: Read from EXE
+					vel.y = -vel.y * w.bounce / 100;
+					vel.x = (vel.x * 4) / 5; // TODO: Read from EXE
 				}
 				else
-					velY = -velY;
+					vel.y = -vel.y;
 			}
 		}
 		
 		if(w.multSpeed != 100)
 		{
-			velX = velX * w.multSpeed / 100;
-			velY = velY * w.multSpeed / 100;
+			vel = vel * w.multSpeed / 100;
 		}
 
 		if(w.objTrailType >= 0 && (game.cycles % w.objTrailDelay) == 0)
 		{
-			common.sobjectTypes[w.objTrailType].create(game, ftoi(x), ftoi(y), ownerIdx, firedBy);
+			common.sobjectTypes[w.objTrailType].create(game, ftoi(pos.x), ftoi(pos.y), ownerIdx, firedBy);
 		}
 		
 		if(w.partTrailObj >= 0 && (game.cycles % w.partTrailDelay) == 0)
@@ -264,8 +252,8 @@ void WObject::process(Game& game)
 			{
 				common.nobjectTypes[w.partTrailObj].create1(
 					game,
-					velX / LC(SplinterLarpaVelDiv), velY / LC(SplinterLarpaVelDiv),
-					x, y,
+					vel / LC(SplinterLarpaVelDiv),
+					pos,
 					0,
 					ownerIdx,
 					firedBy);
@@ -276,8 +264,8 @@ void WObject::process(Game& game)
 				common.nobjectTypes[w.partTrailObj].create2(
 					game,
 					angle,
-					velX / LC(SplinterCracklerVelDiv), velY / LC(SplinterCracklerVelDiv),
-					x, y,
+					vel / LC(SplinterCracklerVelDiv),
+					pos,
 					0,
 					ownerIdx,
 					firedBy);
@@ -291,13 +279,12 @@ void WObject::process(Game& game)
 				if(i->type != type
 				|| i->ownerIdx != ownerIdx)
 				{
-					if(x >= i->x - itof(2)
-					&& x <= i->x + itof(2)
-					&& y >= i->y - itof(2)
-					&& y <= i->y + itof(2))
+					if(pos.x >= i->pos.x - itof(2)
+					&& pos.x <= i->pos.x + itof(2)
+					&& pos.y >= i->pos.y - itof(2)
+					&& pos.y <= i->pos.y + itof(2))
 					{
-						i->velX += velX * w.blowAway / 100;
-						i->velY += velY * w.blowAway / 100;
+						i->vel += vel * w.blowAway / 100;
 					}
 				}
 			}
@@ -309,32 +296,30 @@ void WObject::process(Game& game)
 				|| i->id != id)
 #endif
 				{
-					if(x >= i->x - itof(2)
-					&& x <= i->x + itof(2)
-					&& y >= i->y - itof(2)
-					&& y <= i->y + itof(2))
+					if(pos.x >= i->pos.x - itof(2)
+					&& pos.x <= i->pos.x + itof(2)
+					&& pos.y >= i->pos.y - itof(2)
+					&& pos.y <= i->pos.y + itof(2))
 					{
-						i->velX += velX * w.blowAway / 100;
-						i->velY += velY * w.blowAway / 100;
+						i->vel += vel * w.blowAway / 100;
 					}
 				}
 			}
 		}
 		
-		int inewX = ftoi(x + velX);
-		int inewY = ftoi(y + velY);
+		auto inewPos = ftoi(pos + vel);
 		
-		if(inewX < 0)
-			x = 0;
-		if(inewY < 0)
-			y = 0;
-		if(inewX >= game.level.width)
-			x = itof(game.level.width - 1);
-		if(inewY >= game.level.height)
-			y = itof(game.level.height - 1);
+		if(inewPos.x < 0)
+			pos.x = 0;
+		if(inewPos.y < 0)
+			pos.y = 0;
+		if(inewPos.x >= game.level.width)
+			pos.x = itof(game.level.width - 1);
+		if(inewPos.y >= game.level.height)
+			pos.y = itof(game.level.height - 1);
 			
-		if(!game.level.inside(inewX, inewY)
-		|| game.pixelMat(inewX, inewY).dirtRock())
+		if(!game.level.inside(inewPos)
+		|| game.pixelMat(inewPos.x, inewPos.y).dirtRock())
 		{
 			if(w.bounce == 0)
 			{
@@ -344,14 +329,13 @@ void WObject::process(Game& game)
 				}
 				else
 				{
-					velX = 0;
-					velY = 0;
+					vel.zero();
 				}
 			}
 		}
 		else
 		{
-			velY += w.gravity; // The original tested w.gravity first, which doesn't seem like a gain
+			vel.y += w.gravity; // The original tested w.gravity first, which doesn't seem like a gain
 			
 			if(w.numFrames > 0)
 			{
@@ -364,12 +348,12 @@ void WObject::process(Game& game)
 					}
 					else
 					{
-						if(velX < 0)
+						if(vel.x < 0)
 						{
 							if(--curFrame < 0)
 								curFrame = w.numFrames;
 						}
-						else if(velX > 0)
+						else if(vel.x > 0)
 						{
 							if(++curFrame > w.numFrames)
 								curFrame = 0;
@@ -393,10 +377,9 @@ void WObject::process(Game& game)
 			// Change to use that here too.
 			
 			if((w.hitDamage || w.blowAway || w.bloodOnHit || w.wormCollide)
-			&& checkForSpecWormHit(game, ftoi(x), ftoi(y), w.detectDistance, worm))
+			&& checkForSpecWormHit(game, ftoi(pos.x), ftoi(pos.y), w.detectDistance, worm))
 			{
-				worm.velX += (velX * w.blowAway) / 100;
-				worm.velY += (velY * w.blowAway) / 100;
+				worm.vel += vel * w.blowAway / 100;
 				
 				game.doDamage(worm, w.hitDamage, ownerIdx);
 				game.statsRecorder->damageDealt(owner, firedBy, &worm, w.hitDamage, hasHit);
@@ -409,7 +392,7 @@ void WObject::process(Game& game)
 				for(int i = 0; i < bloodAmount; ++i)
 				{
 					int angle = game.rand(128);
-					common.nobjectTypes[6].create2(game, angle, velX / 3, velY / 3, x, y, 0, worm.index, firedBy);
+					common.nobjectTypes[6].create2(game, angle, vel / 3, pos, 0, worm.index, firedBy);
 				}
 								
 				if(w.hitDamage > 0

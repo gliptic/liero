@@ -11,8 +11,8 @@ struct WormWeapon;
 
 struct NObjectType
 {
-	void create1(Game& game, fixed velX, fixed velY, int x, int y, int color, int ownerIdx, WormWeapon* firedBy);
-	void create2(Game& game, int angle, fixed velX, fixed velY, fixed x, fixed y, int color, int ownerIdx, WormWeapon* firedBy);
+	void create1(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy);
+	void create2(Game& game, int angle, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy);
 
 	int detectDistance;
 	fixed gravity;
@@ -51,8 +51,7 @@ struct NObject : ExactObjectListBase
 {
 	void process(Game& game);
 	
-	fixed x, y;
-	fixed velX, velY;
+	fixedvec pos, vel;
 	int timeLeft;
 	int frameToExplo;
 	//int id;

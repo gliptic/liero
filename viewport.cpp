@@ -37,17 +37,17 @@ void Viewport::process(Game& game)
 			}
 			else
 			{
-				setCenter(ftoi(worm.x), ftoi(worm.y));
+				setCenter(ftoi(worm.pos.x), ftoi(worm.pos.y));
 			}
 		}
 		else
 		{
-			scrollTo(ftoi(worm.x), ftoi(worm.y), 4);
+			scrollTo(ftoi(worm.pos.x), ftoi(worm.pos.y), 4);
 		}
 	}
 	else if(worm.health <= 0)
 	{
-		setCenter(ftoi(worm.x), ftoi(worm.y));
+		setCenter(ftoi(worm.pos.x), ftoi(worm.pos.y));
 		
 		if(worm.killedTimer == 150) // TODO: This depends on what is the starting killedTimer
 			bannerY = -8;
@@ -199,6 +199,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	
 		int offsX = rect.x1 - x;
 		int offsY = rect.y1 - y;
+		fixedvec offs(offsX, offsY);
 	
 		blitImageNoKeyColour(renderer.screenBmp, &game.level.data[0], offsX, offsY, game.level.width, game.level.height);
 
@@ -242,8 +243,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 			if (game.settings->allowViewingSpawnPoint && worm.pressed(Worm::Change))
 			{
-				int tempX = ftoi(worm.x) - 7 + offsX;
-				int tempY = ftoi(worm.y) - 5 + offsY;
+				int tempX = ftoi(worm.pos.x) - 7 + offsX;
+				int tempY = ftoi(worm.pos.y) - 5 + offsY;
 
 				blitImageTrans(renderer.screenBmp, common.wormSpriteObj(worm.currentFrame, worm.direction, worm.index), tempX, tempY, game.cycles);
 			}
@@ -375,8 +376,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 						curFrame = 12;
 				}
 			
-				int posX = ftoi(i->x) - 3;
-				int posY = ftoi(i->y) - 3;
+				int posX = ftoi(i->pos.x) - 3;
+				int posY = ftoi(i->pos.y) - 3;
 			
 				if(game.settings->shadow
 				&& w.shadow)
@@ -398,8 +399,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			}
 			else if(i->curFrame > 0)
 			{
-				int posX = ftoi(i->x) - x + rect.x1;
-				int posY = ftoi(i->y) - y + rect.y1;
+				int posX = ftoi(i->pos.x) - x + rect.x1;
+				int posY = ftoi(i->pos.y) - y + rect.y1;
 			
 				if(renderer.screenBmp.clip_rect.inside(posX, posY))
 					renderer.screenBmp.getPixel(posX, posY) = static_cast<PalIdx>(i->curFrame);
@@ -431,8 +432,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 					common.drawTextSmall(
 						renderer.screenBmp,
 						name.c_str(),
-						ftoi(i->x) - x - width/2 + rect.x1,
-						ftoi(i->y) - y - 10 + rect.y1);
+						ftoi(i->pos.x) - x - width/2 + rect.x1,
+						ftoi(i->pos.y) - y - 10 + rect.y1);
 				}
 			}
 		}
@@ -443,8 +444,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		
 			if(t.startFrame > 0)
 			{
-				int posX = ftoi(i->x) - 3;
-				int posY = ftoi(i->y) - 3;
+				auto pos = ftoi(i->pos) - gvl::ivec2(3, 3);
 			
 #if 0
 				if(i->id >= 20 && i->id <= 21)
@@ -461,8 +461,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 						common,
 						renderer.screenBmp,
 						common.smallSprites.spritePtr(t.startFrame + i->curFrame),
-						posX - 3 + offsX,
-						posY + 3 + offsY,
+						pos.x - 3 + offsX,
+						pos.y + 3 + offsY,
 						7,
 						7);
 				}
@@ -470,25 +470,24 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				blitImage(
 					renderer.screenBmp,
 					common.smallSprites[t.startFrame + i->curFrame],
-					posX + offsX,
-					posY + offsY);
+					pos.x + offsX,
+					pos.y + offsY);
 				
 			}
 			else if(i->curFrame > 1)
 			{
-				int posX = ftoi(i->x) + offsX;
-				int posY = ftoi(i->y) + offsY;
-				if(renderer.screenBmp.clip_rect.inside(posX, posY))
-					renderer.screenBmp.getPixel(posX, posY) = PalIdx(i->curFrame);
+				auto pos = ftoi(i->pos) + offs;
+				if(renderer.screenBmp.clip_rect.encloses(pos))
+					renderer.screenBmp.getPixel(pos.x, pos.y) = PalIdx(i->curFrame);
 				
 				if(game.settings->shadow)
 				{
-					posX -= 3;
-					posY += 3;
+					pos.x -= 3;
+					pos.y += 3;
 				
-					if(renderer.screenBmp.clip_rect.inside(posX, posY))
+					if(renderer.screenBmp.clip_rect.encloses(pos))
 					{
-						PalIdx& pix = renderer.screenBmp.getPixel(posX, posY);
+						PalIdx& pix = renderer.screenBmp.getPixel(pos.x, pos.y);
 						if(common.materials[pix].seeShadow())
 							pix += 4;
 					}
@@ -503,8 +502,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			if(w.visible)
 			{
 			
-				int tempX = ftoi(w.x) - 7 + offsX;
-				int tempY = ftoi(w.y) - 5 + offsY;
+				int tempX = ftoi(w.pos.x) - 7 + offsX;
+				int tempY = ftoi(w.pos.y) - 5 + offsY;
 				int angleFrame = w.angleFrame();
 			
 				if(w.weapons[w.currentWeapon].available)
@@ -528,8 +527,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			
 				if(w.ninjarope.out)
 				{
-					int ninjaropeX = ftoi(w.ninjarope.x) - x + rect.x1;
-					int ninjaropeY = ftoi(w.ninjarope.y) - y + rect.y1;
+					int ninjaropeX = ftoi(w.ninjarope.pos.x) - x + rect.x1;
+					int ninjaropeY = ftoi(w.ninjarope.pos.y) - y + rect.y1;
 				
 					drawNinjarope(common, renderer.screenBmp, ninjaropeX, ninjaropeY, tempX + 7, tempY + 4);
 				
@@ -543,8 +542,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				
 				}
 			
-				if(w.weapons[w.currentWeapon].type->fireCone > -1
-				&& w.fireConeActive)
+				if(w.weapons[w.currentWeapon].type->fireCone > 0 && w.fireCone > 0)
 				{
 					/* TODO
 					//NOTE! Check fctab so it's correct
@@ -582,8 +580,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	
 		if(worm.visible)
 		{
-			int tempX = ftoi(worm.x) - x - 1 + ftoi(cosTable[ftoi(worm.aimingAngle)] * 16) + rect.x1;
-			int tempY = ftoi(worm.y) - y - 2 + ftoi(sinTable[ftoi(worm.aimingAngle)] * 16) + rect.y1;
+			int tempX = ftoi(worm.pos.x) - x - 1 + ftoi(cosTable[ftoi(worm.aimingAngle)] * 16) + rect.x1;
+			int tempY = ftoi(worm.pos.y) - y - 2 + ftoi(sinTable[ftoi(worm.aimingAngle)] * 16) + rect.y1;
 		
 			if(worm.makeSightGreen)
 			{
@@ -611,26 +609,25 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				common.drawTextSmall(
 					renderer.screenBmp,
 					name.c_str(),
-					ftoi(worm.x) - x - len/2 + 1 + rect.x1,
-					ftoi(worm.y) - y - 10 + rect.y1);
+					ftoi(worm.pos.x) - x - len/2 + 1 + rect.x1,
+					ftoi(worm.pos.y) - y - 10 + rect.y1);
 			}
 		}
 	
 		for(Game::BObjectList::iterator i = game.bobjects.begin(); i != game.bobjects.end(); ++i)
 		{
-			int posX = ftoi(i->x) + offsX;
-			int posY = ftoi(i->y) + offsY;
-			if(renderer.screenBmp.clip_rect.inside(posX, posY))
-				renderer.screenBmp.getPixel(posX, posY) = PalIdx(i->color);
+			auto ipos = ftoi(i->pos) + offs;
+			if(renderer.screenBmp.clip_rect.encloses(ipos))
+				renderer.screenBmp.getPixel(ipos.x, ipos.y) = PalIdx(i->color);
 			
 			if(game.settings->shadow)
 			{
-				posX -= 3;
-				posY += 3;
+				ipos.x -= 3;
+				ipos.y += 3;
 			
-				if(renderer.screenBmp.clip_rect.inside(posX, posY))
+				if(renderer.screenBmp.clip_rect.encloses(ipos))
 				{
-					PalIdx& pix = renderer.screenBmp.getPixel(posX, posY);
+					PalIdx& pix = renderer.screenBmp.getPixel(ipos.x, ipos.y);
 					if(common.materials[pix].seeShadow())
 						pix += 4;
 				}
@@ -650,8 +647,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			
 			if(w.visible)
 			{
-				int x = ftoi(w.x) / 10 + mapX;
-				int y = ftoi(w.y) / 10 + mapY;
+				int x = ftoi(w.pos.x) / 10 + mapX;
+				int y = ftoi(w.pos.y) / 10 + mapY;
 				
 				renderer.screenBmp.getPixel(x, y) = w.minimapColor();
 			}

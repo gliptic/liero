@@ -35,7 +35,7 @@ struct SObject : ExactObjectListBase
 {
 	void process(Game& game);
 	
-	fixed x, y;
+	int x, y;
 	int id; // type
 	int curFrame;
 	int animDelay;

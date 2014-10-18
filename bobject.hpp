@@ -10,8 +10,7 @@ struct BObject
 {
 	bool process(Game& game);
 	
-	fixed x, y;
-	fixed velX, velY;
+	fixedvec pos, vel;
 	int color;
 };
 

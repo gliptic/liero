@@ -39,6 +39,11 @@ struct Level
 		return data[x + y*width];
 	}
 
+	unsigned char pixel(fixedvec pos)
+	{
+		return data[pos.x + pos.y*width];
+	}
+
 	unsigned char* pixelp(int x, int y)
 	{
 		return &data[x + y*width];
@@ -50,9 +55,20 @@ struct Level
 		materials[x + y*width] = common.materials[w];
 	}
 
+	void setPixel(fixedvec pos, PalIdx w, Common& common)
+	{
+		data[pos.x + pos.y*width] = w;
+		materials[pos.x + pos.y*width] = common.materials[w];
+	}
+
 	Material& mat(int x, int y)
 	{
 		return materials[x + y*width];
+	}
+
+	Material& mat(fixedvec pos)
+	{
+		return materials[pos.x + pos.y*width];
 	}
 
 	Material* matp(int x, int y)
@@ -80,6 +96,12 @@ struct Level
 	{
 		return static_cast<unsigned int>(x) < static_cast<unsigned int>(width)
 		    && static_cast<unsigned int>(y) < static_cast<unsigned int>(height);
+	}
+
+	bool inside(fixedvec pos)
+	{
+		return static_cast<unsigned int>(pos.x) < static_cast<unsigned int>(width)
+		    && static_cast<unsigned int>(pos.y) < static_cast<unsigned int>(height);
 	}
 	
 	void swap(Level& other)

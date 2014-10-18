@@ -54,7 +54,7 @@ struct Game
 	void focus(Renderer& renderer);
 	void updateSettings(Renderer& renderer);
 	
-	void createBObject(fixed x, fixed y, fixed velX, fixed velY);
+	void createBObject(fixedvec pos, fixedvec vel);
 	void createBonus();
 	
 	void clearViewports();

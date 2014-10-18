@@ -10,10 +10,9 @@ void Ninjarope::process(Worm& owner, Game& game)
 	
 	if(out)
 	{
-		x += velX;
-		y += velY;
+		pos += vel;
 		
-		int ix = ftoi(x), iy = ftoi(y);
+		auto ipos = ftoi(pos);
 		
 		anchor = 0;
 		for(std::size_t i = 0; i < game.worms.size(); ++i)
@@ -21,46 +20,44 @@ void Ninjarope::process(Worm& owner, Game& game)
 			Worm& w = *game.worms[i];
 			
 			if(&w != &owner
-			&& checkForSpecWormHit(game, ix, iy, 1, w))
+			&& checkForSpecWormHit(game, ipos.x, ipos.y, 1, w))
 			{
 				anchor = &w;
 				break;
 			}
 		}
 		
-		fixed forceX, forceY;
+		fixedvec diff = pos - owner.pos;
 		
-		fixed diffX = x - owner.x;
-		fixed diffY = y - owner.y;
+		fixedvec force(
+			(diff.x << LC(NRForceShlX)) / LC(NRForceDivX),
+			(diff.y << LC(NRForceShlY)) / LC(NRForceDivY));
 		
-		forceX = (diffX << LC(NRForceShlX)) / LC(NRForceDivX);
-		forceY = (diffY << LC(NRForceShlY)) / LC(NRForceDivY);
+		curLen = (vectorLength(ftoi(diff.x), ftoi(diff.y)) + 1) << LC(NRForceLenShl);
 		
-		curLen = (vectorLength(ftoi(diffX), ftoi(diffY)) + 1) << LC(NRForceLenShl);
-		
-		if(ix <= 0
-		|| ix >= game.level.width - 1
-		|| iy <= 0
-		|| iy >= game.level.height - 1
-		|| game.level.mat(ix, iy).dirtRock())
+		if(ipos.x <= 0
+		|| ipos.x >= game.level.width - 1
+		|| ipos.y <= 0
+		|| ipos.y >= game.level.height - 1
+		|| game.level.mat(ipos).dirtRock())
 		{
 			if(!attached)
 			{
 				length = LC(NRAttachLength);
 				attached = true;
 				
-				if(game.level.inside(ix, iy))
+				if(game.level.inside(ipos))
 				{
-					if(game.level.mat(ix, iy).anyDirt())
+					if(game.level.mat(ipos).anyDirt())
 					{
-						PalIdx pix = game.level.pixel(ix, iy);
+						PalIdx pix = game.level.pixel(ipos);
 						for(int i = 0; i < 11; ++i) // TODO: Check 11 and read from exe
 						{
 							common.nobjectTypes[2].create2(
 								game,
 								game.rand(128),
-								0, 0,
-								x, y,
+								fixedvec(),
+								pos,
 								pix,
 								owner.index,
 								0);
@@ -69,9 +66,7 @@ void Ninjarope::process(Worm& owner, Game& game)
 				}
 			}
 			
-			
-			velX = 0;
-			velY = 0;
+			vel.zero();
 		}
 		else if(anchor)
 		{
@@ -83,14 +78,11 @@ void Ninjarope::process(Worm& owner, Game& game)
 			
 			if(curLen > length)
 			{
-				anchor->velX -= forceX / curLen;
-				anchor->velY -= forceY / curLen;
+				anchor->vel -= force / curLen;
 			}
 			
-			velX = anchor->velX;
-			velY = anchor->velY;
-			x = anchor->x;
-			y = anchor->y;
+			vel = anchor->vel;
+			pos = anchor->pos;
 		}
 		else
 		{
@@ -103,18 +95,16 @@ void Ninjarope::process(Worm& owner, Game& game)
 
 			if(curLen > length)
 			{
-				owner.velX += forceX / curLen;
-				owner.velY += forceY / curLen;
+				owner.vel += force / curLen;
 			}
 		}
 		else
 		{
-			velY += LC(NinjaropeGravity);
+			vel.y += LC(NinjaropeGravity);
 
 			if(curLen > length)
 			{
-				velX -= forceX / curLen;
-				velY -= forceY / curLen;
+				vel -= force / curLen;
 			}
 		}
 	}

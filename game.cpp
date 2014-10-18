@@ -360,7 +360,7 @@ void Game::processFrame()
 
 		for (Worm* w : worms)
 		{
-			int x = ftoi(w->x), y = ftoi(w->y);
+			int x = ftoi(w->pos.x), y = ftoi(w->pos.y);
 
 			if (w->visible
 			&& holdazone.rect.inside(x, y))

@@ -152,100 +152,100 @@ void Worm::processPhysics(Game& game)
 	
 	if(reacts[RFUp] > 0)
 	{
-		velX = (velX * LC(WormFricMult)) / LC(WormFricDiv);
+		vel.x = (vel.x * LC(WormFricMult)) / LC(WormFricDiv);
 	}
 	
-	if(velX > 0)
+	if(vel.x > 0)
 	{
 		if(reacts[RFLeft] > 0)
 		{
-			if(velX > LC(MinBounceRight))
+			if(vel.x > LC(MinBounceRight))
 			{
 				if(common.H[HFallDamage])
 					health -= LC(FallDamageRight);
 				else
 					game.soundPlayer->play(14);
-				velX = -velX / 3;
+				vel.x = -vel.x / 3;
 			}
 			else
-				velX = 0;
+				vel.x = 0;
 		}
 	}
-	else if(velX < 0)
+	else if(vel.x < 0)
 	{
 		if(reacts[RFRight])
 		{
-			if(velX < LC(MinBounceLeft))
+			if(vel.x < LC(MinBounceLeft))
 			{
 				if(common.H[HFallDamage])
 					health -= LC(FallDamageLeft);
 				else
 					game.soundPlayer->play(14);
-				velX = -velX / 3;
+				vel.x = -vel.x / 3;
 			}
 			else
-				velX = 0;
+				vel.x = 0;
 		}
 	}
 	
-	if(velY > 0)
+	if(vel.y > 0)
 	{
 		if(reacts[RFUp] > 0)
 		{
-			if(velY > LC(MinBounceDown))
+			if(vel.y > LC(MinBounceDown))
 			{
 				if(common.H[HFallDamage])
 					health -= LC(FallDamageDown);
 				else
 					game.soundPlayer->play(14);
-				velY = -velY / 3;
+				vel.y = -vel.y / 3;
 			}
 			else
-				velY = 0;
+				vel.y = 0;
 		}
 	}
-	else if(velY < 0)
+	else if(vel.y < 0)
 	{
 		if(reacts[RFDown])
 		{
-			if(velY < LC(MinBounceUp))
+			if(vel.y < LC(MinBounceUp))
 			{
 				if(common.H[HFallDamage])
 					health -= LC(FallDamageUp);
 				else
 					game.soundPlayer->play(14);
-				velY = -velY / 3;
+				vel.y = -vel.y / 3;
 			}
 			else
-				velY = 0;
+				vel.y = 0;
 		}
 	}
 	
 	if(reacts[RFUp] == 0)
 	{
-		velY += LC(WormGravity);
+		vel.y += LC(WormGravity);
 	}
 	
-	if(velX >= 0)
+	if(vel.x >= 0)
 	{
 		if(reacts[RFLeft] < 2)
-			x += velX;
+			pos.x += vel.x;
 	}
 	else
 	{
 		if(reacts[RFRight] < 2)
-			x += velX;
+			pos.x += vel.x;
 	}
 	
-	if(velY >= 0)
+	if(vel.y >= 0)
 	{
 		if(reacts[RFUp] < 2)
-			y += velY;
+			pos.y += vel.y;
 	}
 	else
 	{
 		if(reacts[RFDown] < 2)
-			y += velY;
+			pos.y += vel.y;
 	}
 }
 
@@ -263,31 +263,28 @@ void Worm::process(Game& game)
 		{
 			// Liero.exe: 291C
 			
-			fixed nextX = x + velX;
-			fixed nextY = y + velY;
-			
-			int iNextX = ftoi(nextX);
-			int iNextY = ftoi(nextY);
+			auto next = pos + vel;
+			auto iNext = ftoi(next);
 			
 			{ // Calculate reaction forces
 
 				for(int i = 0; i < 4; i++)
 				{
-					calculateReactionForce(game, iNextX, iNextY, i);
+					calculateReactionForce(game, iNext.x, iNext.y, i);
 					
 					// Yes, Liero does this in every iteration. Keep it this way.
 					
 					
-					if(iNextX < 4)
+					if(iNext.x < 4)
 					{
 						reacts[RFRight] += 5;
 					}
-					else if(iNextX > game.level.width - 5)
+					else if(iNext.x > game.level.width - 5)
 					{
 						reacts[RFLeft] += 5;
 					}
 
-					if(iNextY < 5)
+					if(iNext.y < 5)
 					{
 						reacts[RFDown] += 5;
 					}
@@ -295,10 +292,10 @@ void Worm::process(Game& game)
 					{
 						if(common.H[HWormFloat])
 						{
-							if(iNextY > LC(WormFloatLevel))
-								velY -= LC(WormFloatPower);
+							if(iNext.y > LC(WormFloatLevel))
+								vel.y -= LC(WormFloatPower);
 						}
-						else if(iNextY > game.level.height - 6)
+						else if(iNext.y > game.level.height - 6)
 						{
 							reacts[RFUp] += 5;
 						}
@@ -315,12 +312,12 @@ void Worm::process(Game& game)
 							//Push up and
 							//Push left or right
 
-							y -= itof(1);
-							nextY = y + velY;
-							iNextY = ftoi(nextY);
+							pos.y -= itof(1);
+							next.y = pos.y + vel.y;
+							iNext.y = ftoi(next.y);
 
-							calculateReactionForce(game, iNextX, iNextY, RFLeft);
-							calculateReactionForce(game, iNextX, iNextY, RFRight);
+							calculateReactionForce(game, iNext.x, iNext.y, RFLeft);
+							calculateReactionForce(game, iNext.x, iNext.y, RFRight);
 						}
 					}
 				}
@@ -335,26 +332,25 @@ void Worm::process(Game& game)
 							//Push down and
 							//Push left or right
 
-							y += itof(1);
-							nextY = y + velY;
-							iNextY = ftoi(nextY);
+							pos.y += itof(1);
+							next.y = pos.y + vel.y;
+							iNext.y = ftoi(next.y);
 
-							calculateReactionForce(game, iNextX, iNextY, RFLeft);
-							calculateReactionForce(game, iNextX, iNextY, RFRight);
+							calculateReactionForce(game, iNext.x, iNext.y, RFLeft);
+							calculateReactionForce(game, iNext.x, iNext.y, RFRight);
 						}
 					}
 				}
 			}
 			
-			int ix = ftoi(x);
-			int iy = ftoi(y);
+			auto ipos = ftoi(pos);
 
 			for(Game::BonusList::iterator i = game.bonuses.begin(); i != game.bonuses.end(); ++i)
 			{				
-				if(ix + 5 > ftoi(i->x)
-				&& ix - 5 < ftoi(i->x)
-				&& iy + 5 > ftoi(i->y)
-				&& iy - 5 < ftoi(i->y))
+				if(ipos.x + 5 > ftoi(i->x)
+				&& ipos.x - 5 < ftoi(i->x)
+				&& ipos.y + 5 > ftoi(i->y)
+				&& ipos.y - 5 < ftoi(i->y))
 				{
 					if(i->frame == 1)
 					{
@@ -374,8 +370,7 @@ void Worm::process(Game& game)
 							
 							if(!common.H[HBonusReloadOnly])
 							{
-								fireConeActive = false;
-								fireCone = -1;
+								fireCone = 0;
 								
 								ww.type = &common.weapons[i->weapon];
 								ww.ammo = ww.type->ammo;
@@ -449,41 +444,14 @@ void Worm::process(Game& game)
 						}
 					}
 					
-					common.nobjectTypes[6].create1(game, velX, velY, x, y, 0, index, 0);
+					common.nobjectTypes[6].create1(game, vel, pos, 0, index, 0);
 				}
 			}
 			
 			if(health <= 0)
 			{
-				/* TODO
-				//Kill him!
-				if(worm->flag != 0)
-				{
-					//He got the flag!
-					long flag;
-					if(w == 0)
-						flag = 21;
-					else
-						flag = 20;
-    
-					//Create the flag
-					CreateObject1(
-						worm->m_fXVel,
-						worm->m_fYVel,
-						worm->m_fX,
-						worm->m_fY,
-						0,
-						flag,
-    BYTE(w)
-					);
-					worm->flag = 0;
-				} // 468D
-				*/
-				
 				leaveShellTimer = 0;
 				makeSightGreen = false;
-				// TODO: cGame::cWorm[w^1].makesightgreen = 0;
-				
 				
 				Weapon const& w = *weapons[currentWeapon].type;
 				if(w.loopSound)
@@ -494,7 +462,7 @@ void Worm::process(Game& game)
 				int deathSnd = 16 + game.rand(3);
 				game.soundPlayer->play(deathSnd, this);
 				
-				fireConeActive = 0;
+				fireCone = 0;
 				ninjarope.out = false;
 				
 				if (game.settings->gameMode == Settings::GMScalesOfJustice)
@@ -540,8 +508,8 @@ void Worm::process(Game& game)
 						common.nobjectTypes[6].create2(
 							game,
 							game.rand(128),
-							velX / 3, velY / 3,
-							x, y,
+							vel / 3,
+							pos,
 							0,
 							index, 0);
 					}
@@ -553,8 +521,8 @@ void Worm::process(Game& game)
 					common.nobjectTypes[index].create2(
 						game,
 						i + game.rand(14),
-						velX / 3, velY / 3,
-						x, y,
+						vel / 3,
+						pos,
 						0,
 						index, 0);
 				}
@@ -644,7 +612,7 @@ void DumbLieroAI::process(Game& game, Worm& worm)
 		Worm* w = game.worms[i];
 		if(w != &worm)
 		{
-			int len = sqrVectorLength(ftoi(worm.x) - ftoi(w->x), ftoi(worm.y) - ftoi(w->y));
+			int len = sqrVectorLength(ftoi(worm.pos.x) - ftoi(w->pos.x), ftoi(worm.pos.y) - ftoi(w->pos.y));
 			if(!target || len < minLen) // First or closer worm
 			{
 				target = w;
@@ -670,12 +638,10 @@ void DumbLieroAI::process(Game& game, Worm& worm)
 	if(maxDist < 90)
 		maxDist = 90;
 		
-	fixed deltaX = target->x - worm.x;
-	fixed deltaY = target->y - worm.y;
-	int ideltaX = ftoi(deltaX);
-	int ideltaY = ftoi(deltaY);
+	fixedvec delta = target->pos - worm.pos;
+	auto idelta = ftoi(delta);
 		
-	int realDist = vectorLength(ideltaX, ideltaY);
+	int realDist = vectorLength(idelta.x, idelta.y);
 	
 	if(realDist < maxDist || !worm.visible)
 	{
@@ -710,32 +676,30 @@ void DumbLieroAI::process(Game& game, Worm& worm)
 // l_4EE5:
 	if(realDist > 0)
 	{
-		deltaX /= realDist;
-		deltaY /= realDist;
+		delta /= realDist;
 	}
 	else
 	{
-		deltaX = 0;
-		deltaY = 0;
+		delta.zero();
 	} // 4F2F
 	
 	int dir = 1;
 	
 	for(; dir < 128; ++dir)
 	{
-		if(std::abs(cosTable[dir] - deltaX) < 0xC00
-		&& std::abs(sinTable[dir] - deltaY) < 0xC00) // The original had 0xC000, which is wrong
+		if(std::abs(cosTable[dir] - delta.x) < 0xC00
+		&& std::abs(sinTable[dir] - delta.y) < 0xC00) // The original had 0xC000, which is wrong
 			break;
 	} // 4F93
 	
-	fixed adeltaX = std::abs(deltaX);
-	fixed adeltaY = std::abs(deltaY);
+	fixed adeltaX = std::abs(delta.x);
+	fixed adeltaY = std::abs(delta.y);
 
 	if(dir >= 128)
 	{
-		if(deltaX > 0)
+		if(delta.x > 0)
 		{
-			if(deltaY < 0)
+			if(delta.y < 0)
 			{
 				if(adeltaY > adeltaX)
 					dir = 64 + rand(16);
@@ -754,7 +718,7 @@ void DumbLieroAI::process(Game& game, Worm& worm)
 		}
 		else
 		{
-			if(deltaY < 0)
+			if(delta.y < 0)
 			{
 				
 				if(adeltaY > adeltaX)
@@ -844,8 +808,8 @@ void DumbLieroAI::process(Game& game, Worm& worm)
 	
 		if(realDist > maxDist)
 		{
-			worm.setControlState(Worm::Right, (deltaX > 0));
-			worm.setControlState(Worm::Left, (deltaX <= 0));
+			worm.setControlState(Worm::Right, (delta.x > 0));
+			worm.setControlState(Worm::Left, (delta.x <= 0));
 		} // 5347
 		else
 		{
@@ -913,39 +877,35 @@ void Worm::beginRespawn(Game& game)
 {
 	Common& common = *game.common;
 	
-	int tempX = ftoi(x);
-	int tempY = ftoi(y);
+	auto temp = ftoi(pos);
 
-	logicRespawnX = tempX - 80;
-	logicRespawnY = tempY - 80;
+	logicRespawn = temp - gvl::ivec2(80, 80);
 	
-	int enemyX = tempX;
-	int enemyY = tempY;
+	auto enemy = temp;
 	
 	if(game.worms.size() == 2)
 	{
-		enemyX = ftoi(game.worms[index ^ 1]->x);
-		enemyY = ftoi(game.worms[index ^ 1]->y);
+		enemy = ftoi(game.worms[index ^ 1]->pos);
 	}
 
 	int trials = 0;
 	do
 	{
-		x = itof(LC(WormSpawnRectX) + game.rand(LC(WormSpawnRectW)));
-		y = itof(LC(WormSpawnRectY) + game.rand(LC(WormSpawnRectH)));
+		pos.x = itof(LC(WormSpawnRectX) + game.rand(LC(WormSpawnRectW)));
+		pos.y = itof(LC(WormSpawnRectY) + game.rand(LC(WormSpawnRectH)));
 
 		// The original didn't have + 4 in both, which seems
 		// to be done in the exe and makes sense.
-		while(ftoi(y) + 4 < game.level.height
-		&& game.level.mat(ftoi(x), ftoi(y) + 4).background())
+		while(ftoi(pos.y) + 4 < game.level.height
+		&& game.level.mat(ftoi(pos.x), ftoi(pos.y) + 4).background())
 		{
-			y += itof(1);
+			pos.y += itof(1);
 		}
 		
 		if(++trials >= 50000)
 			break;
 	}
-	while(!checkRespawnPosition(game, enemyX, enemyY, tempX, tempY, ftoi(x), ftoi(y)));
+	while(!checkRespawnPosition(game, enemy.x, enemy.y, temp.x, temp.y, ftoi(pos.x), ftoi(pos.y)));
 		
 	killedTimer = -1;
 }
@@ -969,37 +929,36 @@ void Worm::doRespawning(Game& game)
 
 	for(int c = 0; c < 4; c++)
 	{
-		if(logicRespawnX < ftoi(x) - 80) ++logicRespawnX;
-		else if(logicRespawnX > ftoi(x) - 80) --logicRespawnX;
+		if(logicRespawn.x < ftoi(pos.x) - 80) ++logicRespawn.x;
+		else if(logicRespawn.x > ftoi(pos.x) - 80) --logicRespawn.x;
 
-		if(logicRespawnY < ftoi(y) - 80) ++logicRespawnY;
-		else if(logicRespawnY > ftoi(y) - 80) --logicRespawnY;
+		if(logicRespawn.y < ftoi(pos.y) - 80) ++logicRespawn.y;
+		else if(logicRespawn.y > ftoi(pos.y) - 80) --logicRespawn.y;
 	}
 
-	limitXY(logicRespawnX, logicRespawnY, game.level.width - 158, game.level.height - 158);
+	limitXY(logicRespawn.x, logicRespawn.y, game.level.width - 158, game.level.height - 158);
 	
-	int destX = ftoi(x) - 80;
-	int destY = ftoi(y) - 80;
+	int destX = ftoi(pos.x) - 80;
+	int destY = ftoi(pos.y) - 80;
 	limitXY(destX, destY, game.level.width - 158, game.level.height - 158);
 
-	if(logicRespawnX < destX + 5
-	&& logicRespawnX > destX - 5
-	&& logicRespawnY < destY + 5
-	&& logicRespawnY > destY - 5
+	if(logicRespawn.x < destX + 5
+	&& logicRespawn.x > destX - 5
+	&& logicRespawn.y < destY + 5
+	&& logicRespawn.y > destY - 5
 	&& ready) // Don't spawn in quicksim
 	{
-		int ix = ftoi(x), iy = ftoi(y);
-		drawDirtEffect(common, game.rand, game.level, 0, ix - 7, iy - 7);
+		auto ipos = ftoi(pos);
+		drawDirtEffect(common, game.rand, game.level, 0, ipos.x - 7, ipos.y - 7);
 		if(game.settings->shadow)
-			correctShadow(common, game.level, gvl::rect(ix - 10, iy - 10, ix + 11, iy + 11));
+			correctShadow(common, game.level, gvl::rect(ipos.x - 10, ipos.y - 10, ipos.x + 11, ipos.y + 11));
 		
 		ready = false;
 		game.soundPlayer->play(21);
 		
 		visible = true;
-		fireConeActive = 0;
-		velX = 0;
-		velY = 0;
+		fireCone = 0;
+		vel.zero();
 		if (game.settings->gameMode != Settings::GMScalesOfJustice)
 			health = settings->health;
 		
@@ -1052,18 +1011,18 @@ void Worm::processWeapons(Game& game)
 		}
 	}
 	
-	if(fireCone >= 0)
+	if(fireCone > 0)
 	{
 		--fireCone;
-		if(fireCone == 0)
-			fireConeActive = false;
 	}
 	
 	if(leaveShellTimer > 0)
 	{
 		if(--leaveShellTimer <= 0)
 		{
-			common.nobjectTypes[7].create1(game, game.rand(16000) - 8000, -int(game.rand(20000)), x, y, 0, index, 0);
+			auto velY = -int(game.rand(20000));
+			auto velX = game.rand(16000) - 8000;
+			common.nobjectTypes[7].create1(game, fixedvec(velX, velY), pos, 0, index, 0);
 		}
 	}
 }
@@ -1079,8 +1038,8 @@ void Worm::processMovement(Game& game)
 		
 		if(left && !right)
 		{
-			if(velX > LC(MaxVelLeft))
-				velX -= LC(WalkVelLeft);
+			if(vel.x > LC(MaxVelLeft))
+				vel.x -= LC(WalkVelLeft);
 				
 			if(direction != 0)
 			{
@@ -1095,8 +1054,8 @@ void Worm::processMovement(Game& game)
 		
 		if(!left && right)
 		{
-			if(velX < LC(MaxVelRight))
-				velX += LC(WalkVelRight);
+			if(vel.x < LC(MaxVelRight))
+				vel.x += LC(WalkVelRight);
 				
 			if(direction != 1)
 			{
@@ -1115,11 +1074,9 @@ void Worm::processMovement(Game& game)
 			{
 				ableToDig = false;
 				
-				fixed dirX = cosTable[ftoi(aimingAngle)];
-				fixed dirY = sinTable[ftoi(aimingAngle)];
+				fixedvec dir(cosTable[ftoi(aimingAngle)], sinTable[ftoi(aimingAngle)]);
 				
-				fixed posX = dirX * 2 + x;
-				fixed posY = dirY * 2 + y;
+				auto digPos = dir * 2 + pos;
 
 				/* TODO
 				long iDigx = ftoi(fTempx) - 4;
@@ -1153,23 +1110,21 @@ void Worm::processMovement(Game& game)
 				} // 41BB
 */
 
-				posX -= itof(7);
-				posY -= itof(7);
+				digPos.x -= itof(7);
+				digPos.y -= itof(7);
 				
-				int ix = ftoi(posX), iy = ftoi(posY);
-				drawDirtEffect(common, game.rand, game.level, 7, ix, iy);
+				auto idigPos = ftoi(digPos);
+				drawDirtEffect(common, game.rand, game.level, 7, idigPos.x, idigPos.y);
 				if(game.settings->shadow)
-					correctShadow(common, game.level, gvl::rect(ix - 3, iy - 3, ix + 18, iy + 18));
+					correctShadow(common, game.level, gvl::rect(idigPos.x - 3, idigPos.y - 3, idigPos.x + 18, idigPos.y + 18));
 				
-				posX += dirX << 1;
-				posY += dirY << 1;
+				digPos += fixedvec(dir.x << 1, dir.y << 1);
 
 //l_43EB:
-				ix = ftoi(posX);
-				iy = ftoi(posY);
-				drawDirtEffect(common, game.rand, game.level, 7, ix, iy);
+				idigPos = ftoi(digPos);
+				drawDirtEffect(common, game.rand, game.level, 7, idigPos.x, idigPos.y);
 				if(game.settings->shadow)
-					correctShadow(common, game.level, gvl::rect(ix - 3, iy - 3, ix + 18, iy + 18));
+					correctShadow(common, game.level, gvl::rect(idigPos.x - 3, idigPos.y - 3, idigPos.x + 18, idigPos.y + 18));
 				
 				//NOTE! Maybe the shadow corrections can be joined into one? Mmm?
 			} // 4552
@@ -1212,11 +1167,8 @@ void Worm::processTasks(Game& game)
 			
 			game.soundPlayer->play(5);
 			
-			ninjarope.x = x;
-			ninjarope.y = y;
-			
-			ninjarope.velX = cosTable[ftoi(aimingAngle)] << LC(NRThrowVelX);
-			ninjarope.velY = sinTable[ftoi(aimingAngle)] << LC(NRThrowVelY);
+			ninjarope.pos = pos;
+			ninjarope.vel = fixedvec(cosTable[ftoi(aimingAngle)] << LC(NRThrowVelX), sinTable[ftoi(aimingAngle)] << LC(NRThrowVelY));
 									
 			ninjarope.length = LC(NRInitialLength);
 		}
@@ -1232,7 +1184,7 @@ void Worm::processTasks(Game& game)
 			if((reacts[RFUp] > 0 || common.H[HAirJump])
 			&& (ableToJump || common.H[HMultiJump]))
 			{
-				velY -= LC(JumpForce);
+				vel.y -= LC(JumpForce);
 				ableToJump = false;
 			}
 		}
@@ -1327,7 +1279,7 @@ void Worm::processWeaponChange(Game& game)
 		keyChangePressed = true;
 	}
 	
-	fireConeActive = 0;
+	fireCone = 0;
 	animate = false;
 	
 	if(weapons[currentWeapon].type->loopSound)
@@ -1342,8 +1294,8 @@ void Worm::processWeaponChange(Game& game)
 			if(--currentWeapon < 0)
 				currentWeapon = Settings::selectableWeapons - 1;
 				
-			hotspotX = ftoi(x);
-			hotspotY = ftoi(y);
+			hotspotX = ftoi(pos.x);
+			hotspotY = ftoi(pos.y);
 		}
 		
 		if(pressedOnce(Right))
@@ -1351,8 +1303,8 @@ void Worm::processWeaponChange(Game& game)
 			if(++currentWeapon >= Settings::selectableWeapons)
 				currentWeapon = 0;
 				
-			hotspotX = ftoi(x);
-			hotspotY = ftoi(y);
+			hotspotX = ftoi(pos.x);
+			hotspotY = ftoi(pos.y);
 		}
 	}
 }
@@ -1367,11 +1319,10 @@ void Worm::fire(Game& game)
 	ww.delayLeft = w.delay;
 	
 	fireCone = w.fireCone;
-	if(fireCone)
-		fireConeActive = true; // TODO: Consider removing fireConeActive since fireCone seems to imply it's state
 		
-	fixed firingX = cosTable[ftoi(aimingAngle)] * (w.detectDistance + 5) + x;
-	fixed firingY = sinTable[ftoi(aimingAngle)] * (w.detectDistance + 5) + y - itof(1);
+	fixedvec firing(
+		cosTable[ftoi(aimingAngle)] * (w.detectDistance + 5) + pos.x,
+		sinTable[ftoi(aimingAngle)] * (w.detectDistance + 5) + pos.y - itof(1));
 	
 	if(w.leaveShells > 0)
 	{
@@ -1405,19 +1356,16 @@ void Worm::fire(Game& game)
 		
 		if(parts > 0)
 		{
-			fixed firingVelX = velX * 100 / speed;
-			fixed firingVelY = velY * 100 / speed;
+			auto firingVel = vel * 100 / speed;
 			
 			for(int i = 0; i < parts; ++i)
 			{
 				w.fire(
 					game,
 					ftoi(aimingAngle),
-					firingVelX,
-					firingVelY,
+					firingVel,
 					speed,
-					firingX,
-					firingY,
+					firing,
 					index, &ww);
 			}
 		}
@@ -1433,11 +1381,9 @@ void Worm::fire(Game& game)
 				w.fire(
 					game,
 					ftoi(aimingAngle),
-					0,
-					0,
+					fixedvec(),
 					w.speed,
-					firingX,
-					firingY,
+					firing,
 					index, &ww);
 			}
 		}
@@ -1448,8 +1394,7 @@ void Worm::fire(Game& game)
 	if(common.H[HSignedRecoil] && recoil >= 128)
 		recoil -= 256;
 	
-	velX -= (cosTable[ftoi(aimingAngle)] * recoil) / 100;
-	velY -= (sinTable[ftoi(aimingAngle)] * recoil) / 100;
+	vel -= fixedvec(cosTable[ftoi(aimingAngle)], sinTable[ftoi(aimingAngle)]) * recoil / 100;
 }
 
 bool checkForWormHit(Game& game, int x, int y, int dist, Worm* ownWorm)
@@ -1476,8 +1421,8 @@ bool checkForSpecWormHit(Game& game, int x, int y, int dist, Worm& w)
 		
 	PalIdx* wormSprite = common.wormSprite(w.currentFrame, w.direction, 0);
 			
-	int deltaX = x - ftoi(w.x) + 7;
-	int deltaY = y - ftoi(w.y) + 5;
+	int deltaX = x - ftoi(w.pos.x) + 7;
+	int deltaY = y - ftoi(w.pos.y) + 5;
 	
 	gvl::rect r(deltaX - dist, deltaY - dist, deltaX + dist + 1, deltaY + dist + 1);
 	
@@ -1503,27 +1448,24 @@ void Worm::processSight(Game& game)
 	if(ww.available
 	&& (w.laserSight || ww.type - &common.weapons[0] == LC(LaserWeapon) - 1))
 	{
-		fixed dirX = cosTable[ftoi(aimingAngle)];
-		fixed dirY = sinTable[ftoi(aimingAngle)];
-		fixed tempX = x + dirX * 6;
-		fixed tempY = y + dirY * 6 - itof(1);
+		fixedvec dir = fixedvec(cosTable[ftoi(aimingAngle)], sinTable[ftoi(aimingAngle)]);
+		fixedvec temp = fixedvec(pos.x + dir.x * 6, pos.y + dir.y * 6 - itof(1));
 		
 		do
 		{
-			tempX += dirX;
-			tempY += dirY;
-			makeSightGreen = checkForWormHit(game, ftoi(tempX), ftoi(tempY), 0, this);
+			temp += dir;
+			makeSightGreen = checkForWormHit(game, ftoi(temp.x), ftoi(temp.y), 0, this);
 		}
 		while(
-			tempX >= 0 &&
-			tempY >= 0 &&
-			tempX < itof(game.level.width) &&
-			tempY < itof(game.level.height) &&
-			game.level.mat(ftoi(tempX), ftoi(tempY)).background() &&
+			temp.x >= 0 &&
+			temp.y >= 0 &&
+			temp.x < itof(game.level.width) &&
+			temp.y < itof(game.level.height) &&
+			game.level.mat(ftoi(temp)).background() &&
 			!makeSightGreen);
 			
-		hotspotX = ftoi(tempX);
-		hotspotY = ftoi(tempY);
+		hotspotX = ftoi(temp.x);
+		hotspotY = ftoi(temp.y);
 	}
 	else
 		makeSightGreen = false;
@@ -1551,8 +1493,8 @@ void Worm::processSteerables(Game& game)
 				i->curFrame &= 127; // Wrap
 				movable = false;
 
-				steerableSumX += ftoi(i->x);
-				steerableSumY += ftoi(i->y);
+				steerableSumX += ftoi(i->pos.x);
+				steerableSumY += ftoi(i->pos.y);
 				++steerableCount;
 			}
 		}
