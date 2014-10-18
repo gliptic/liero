@@ -890,7 +890,7 @@ void FollowAI::process(Game& game, Worm& worm)
 		targetAi->update(*targetAi, *target);
 		*/
 
-	double bestScore = std::numeric_limits<double>::min();
+	double bestScore = -std::numeric_limits<double>::infinity();
 	evaluatePositions.clear();
 
 	{
