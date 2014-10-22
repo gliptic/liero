@@ -7,12 +7,16 @@
 void NObjectType::create1(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
-	
+	Common& common = *game.common;
+
 	obj.type = this;
 	obj.ownerIdx = ownerIdx;
 	obj.pos = pos;
 	
 	obj.vel = vel;
+
+	LTRACE(nobj, &obj - game.nobjects.arr, c1xp, pos.x);
+	LTRACE(nobj, &obj - game.nobjects.arr, c1yp, pos.y);
 
 	// STATS
 	obj.firedBy = firedBy;
@@ -50,10 +54,15 @@ void NObjectType::create1(Game& game, fixedvec vel, fixedvec pos, int color, int
 void NObjectType::create2(Game& game, int angle, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
+	Common& common = *game.common;
 	
 	obj.type = this;
 	obj.ownerIdx = ownerIdx;
 	obj.pos = pos;
+
+	LTRACE(rand, 0, nobj, game.rand.x);
+	LTRACE(nobj, &obj - game.nobjects.arr, c2xp, pos.x);
+	LTRACE(nobj, &obj - game.nobjects.arr, c2yp, pos.y);
 
 	// STATS
 	obj.firedBy = firedBy;
@@ -102,6 +111,10 @@ void NObject::process(Game& game)
 	bool doExplode = false;
 	
 	pos += vel;
+
+	LTRACE(rand, 0, nopr, game.rand.x);
+	LTRACE(nobj, this - game.nobjects.arr, moxp, pos.x);
+	LTRACE(nobj, this - game.nobjects.arr, moyp, pos.y);
 	
 	auto inewPos = ftoi(pos + vel);
 	auto ipos = ftoi(pos);
@@ -117,7 +130,7 @@ void NObject::process(Game& game)
 			vel.y = (vel.y * 4) / 5; // TODO: Read from EXE
 			bounced = true;
 		}
-		
+
 		if(!game.level.inside(ipos.x, inewPos.y)
 		|| game.pixelMat(ipos.x, inewPos.y).dirtRock())
 		{
@@ -275,6 +288,9 @@ void NObject::process(Game& game)
 		
 		if(t.dirtEffect >= 0)
 		{
+			if (game.cycles == 336) {
+				game.cycles = game.cycles;
+			}
 			drawDirtEffect(common, game.rand, game.level, t.dirtEffect, ftoi(pos.x) - 7, ftoi(pos.y) - 7);
 			
 			if(game.settings->shadow)

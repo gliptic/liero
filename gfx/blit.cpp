@@ -298,6 +298,9 @@ void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int
 {
 	int pitch = width;
 	gvl::rect clipRect(0, 0, level.width, level.height);
+
+	LTRACE(blit, 0, xpos, x);
+	LTRACE(blit, 0, ypos, y);
 	
 	CLIP_IMAGE(clipRect);
 	
@@ -415,9 +418,13 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 
 void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, int x, int y)
 {
+	assert(dirtEffect >= 0 && dirtEffect < 9);
 	Texture& tex = common.textures[dirtEffect];
 	PalIdx* tFrame = common.largeSprites.spritePtr(tex.sFrame + rand(tex.rFrame));
 	PalIdx* mFrame = common.largeSprites.spritePtr(tex.mFrame);
+
+	LTRACE(draw, dirtEffect, xpos, x);
+	LTRACE(draw, dirtEffect, ypos, y);
 	
 	// TODO: Optimize this
 	
@@ -444,7 +451,7 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 				switch(mFrame[(cy << 4) + cx])
 				{
 				case 6:
-					if(common.materials[level.pixel(mx, my)].anyDirt())
+					if(level.mat(mx, my).anyDirt())
 					{
 						level.setPixel(mx, my, tFrame[((my & 15) << 4) + (mx & 15)], common);
 					}
@@ -485,7 +492,7 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 				{
 				case 10:
 				case 6:
-					if(common.materials[level.pixel(mx, my)].background())
+					if(level.mat(mx, my).background())
 					{
 						level.setPixel(mx, my, tFrame[((my & 15) << 4) + (mx & 15)], common);
 					}

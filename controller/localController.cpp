@@ -255,6 +255,7 @@ void LocalController::changeState(State newState)
 		{
 			try
 			{
+#if !ENABLE_TRACING
 				std::time_t ticks = std::time(0);
 				std::tm* now = std::localtime(&ticks);
 				
@@ -277,6 +278,10 @@ void LocalController::changeState(State newState)
 							prefix.push_back(ch);
 					}
 				}
+#else
+				std::string prefix = "-  Trace";
+				std::string buf = ".lrp";
+#endif
 				//std::string path = joinPath(joinPath(configRoot, "Replays"), prefix + buf);
 				//create_directories(path);
 

@@ -49,7 +49,7 @@ struct FastObjectList
 	
 	T* getFreeObject()
 	{
-		sassert(count < limit);
+		assert(count < limit);
 		T* ptr = &arr[count++];
 		return ptr;
 	}
@@ -86,7 +86,7 @@ struct FastObjectList
 		
 	void free(T* ptr)
 	{
-		sassert(ptr < &arr[0] + count && ptr >= &arr[0]);
+		assert(ptr < &arr[0] + count && ptr >= &arr[0]);
 		*ptr = arr[--count];
 	}
 	

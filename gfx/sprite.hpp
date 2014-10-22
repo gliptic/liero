@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstdio>
+#include <cassert>
 #include "color.hpp"
 
 struct Sprite
@@ -26,11 +27,13 @@ struct SpriteSet
 	
 	PalIdx* spritePtr(int frame)
 	{
+		assert(frame >= 0 && frame < count);
 		return &data[frame*spriteSize];
 	}
 
 	Sprite operator[](int frame)
 	{
+		assert(frame >= 0 && frame < count);
 		Sprite s = {&data[frame*spriteSize], width, height, width};
 		return s;
 	}

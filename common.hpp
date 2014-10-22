@@ -16,6 +16,11 @@ extern "C" {
 #include "mixer/mixer.h"
 }
 
+#if ENABLE_TRACING
+#include <gvl/io2/fstream.hpp>
+#include <gvl/serialization/archive.hpp>
+#endif
+
 extern int stoneTab[3][4];
 
 struct Texture
@@ -102,6 +107,12 @@ struct FsNode;
 
 using std::vector;
 
+#if ENABLE_TRACING
+#define LTRACE(category, object, attribute, value) common.ltrace(#category, (uint32)(object), #attribute, value)
+#else
+#define LTRACE(category, object, attribute, value) ((void)0)
+#endif
+
 struct Common : gvl::shared
 {
 	Common();
@@ -159,6 +170,15 @@ struct Common : gvl::shared
 	int32_t C[MaxC];
 	std::string S[MaxS];
 	bool H[MaxH];
+
+#if ENABLE_TRACING
+	void ltrace(char const* category, uint32 object, char const* attribute, uint32 value);
+
+	gvl::octet_writer trace_writer;
+	gvl::octet_reader trace_reader;
+
+	bool writeTrace;
+#endif
 };
 
 #endif // UUID_9E238CFB9F074A3A432E22AE5B8EE5FB

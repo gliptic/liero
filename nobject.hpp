@@ -53,7 +53,6 @@ struct NObject : ExactObjectListBase
 	
 	fixedvec pos, vel;
 	int timeLeft;
-	int frameToExplo;
 	//int id;
 	NObjectType const* type;
 	int ownerIdx;

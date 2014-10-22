@@ -337,6 +337,9 @@
     <ClInclude Include="..\weapon.hpp" />
     <ClInclude Include="..\worm.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\TODO.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

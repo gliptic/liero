@@ -1893,6 +1893,118 @@ int Gfx::menuLoop()
 			curMenu = &settingsMenu; // Go into settings menu
 		}
 
+#if 1
+		if (testSDLKeyOnce(SDLK_F8))
+		{
+			uint32 s = 12;
+			
+			Rand r;
+			r.seed(s);
+
+			Common& common = *this->common;
+
+			for (auto& w : common.weapons)
+			{
+				w.addSpeed = r(30) - 5;
+				w.affectByExplosions = r(2) == 0;
+				w.affectByWorm = r(3) == 0;
+				w.ammo = r(20) + 1;
+				w.bloodOnHit = r(50);
+				w.blowAway = r(10);
+				w.bounce = r(90);
+				w.collideWithObjects = r(10) == 0;
+				w.colorBullets = 3 + r(250);
+				w.createOnExp = r(common.sobjectTypes.size());
+				w.delay = r(70);
+				w.detectDistance = r(20);
+				w.dirtEffect = r(9);
+				w.distribution = r(5000) - 2500;
+				w.explGround = r(2) == 0;
+				w.exploSound = r(common.sounds.size());
+				w.fireCone = r(10);
+				w.gravity = r(2000) - 1000;
+				w.hitDamage = r(20);
+				w.laserSight = r(5) == 0;
+				w.launchSound = r(common.sounds.size());
+				w.leaveShellDelay = r(30);
+				w.leaveShells = r(1) == 0;
+				w.loadingTime = r(70 * 3);
+				w.loopAnim = r(10) == 0;
+				w.loopSound = false;
+				w.multSpeed = r(2) ? 100 : 99 + r(5);
+				w.objTrailDelay = 10 + r(70);
+				w.objTrailType = r(4) == 0 ? r(common.sobjectTypes.size()) : -1;
+				w.parts = r(2) == 0 ? r(10) : 1;
+				w.partTrailDelay = 10 + r(70);
+				w.partTrailObj = r(4) == 0 ? r(common.nobjectTypes.size()) : -1;
+				w.partTrailType = r(2);
+				w.playReloadSound = r(2) == 0;
+				w.recoil = r(20);
+				w.shadow = r(2) == 0;
+				w.shotType = r(5);
+				w.speed = r(200);
+				w.splinterAmount = r(5) == 0 ? r(10) : 0;
+				w.splinterColour = r(256);
+				w.splinterScatter = r(2);
+				w.splinterType = r(common.nobjectTypes.size());
+				w.startFrame = r((uint32)common.smallSprites.count - 13);
+				w.numFrames = r(5);
+				w.timeToExplo = 50 + r(200);
+				w.timeToExploV = 10 + r(50);
+				w.wormCollide = r(3) > 0;
+				w.wormExplode = r(3) > 0;
+			}
+
+			for (auto& n : common.nobjectTypes)
+			{
+				uint32 idx = &n - &common.nobjectTypes[0];
+				n.affectByExplosions = r(5) == 0;
+				n.bloodOnHit = r(5);
+				n.bloodTrail = r(10) == 0;
+				n.bloodTrailDelay = r(20) + 3;
+				n.blowAway = r(10);
+				n.bounce = r(90);
+				n.colorBullets = 3 + r(250);
+				n.createOnExp = r(3) == 0 ? r(common.sobjectTypes.size()) : -1;
+				n.detectDistance = r(20);
+				n.dirtEffect = r(9);
+				n.distribution = r(5000) - 2500;
+				n.drawOnMap = r(20) == 0;
+				n.explGround = r(4) > 0;
+				n.gravity = r(2000) - 1000;
+				n.hitDamage = r(10);
+				n.leaveObj = r(5) == 0 ? r(common.sobjectTypes.size()) : -1;
+				n.leaveObjDelay = 10 + r(80);
+				n.startFrame = r((uint32)common.smallSprites.count - 13);
+				n.numFrames = r(5);
+				n.speed = r(150);
+				n.splinterAmount = idx > 0 && r(5) == 0 ? r(10) : 0;
+				n.splinterColour = r(256);
+				n.splinterType = idx > 0 ? r(idx) : 0;
+				n.timeToExplo = 50 + r(70 * 3);
+				n.timeToExploV = r(30);
+				n.wormDestroy = r(3) == 0;
+				n.wormExplode = r(2) == 0;
+			}
+
+			for (auto& s : common.sobjectTypes)
+			{
+				s.animDelay = 1 + r(10);
+				s.blowAway = r(2) == 0 ? r(10000) : 0;
+				s.damage = r(30);
+				s.detectRange = r(20);
+				s.dirtEffect = r(9);
+				s.flash = r(5);
+				s.startFrame = r((uint32)common.largeSprites.count - 7);
+				s.numFrames = r(7);
+				s.startSound = r(common.sounds.size());
+				s.shake = r(10);
+				s.shadow = r(2);
+				s.numSounds = 1;
+			}
+		}
+#endif
+
 		if(testSDLKey(SDLK_LEFT))
 		{
 			if(!curMenu->onLeftRight(common, -1))

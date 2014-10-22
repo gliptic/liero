@@ -15,6 +15,10 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 {
 	Common& common = *game.common;
 	SObject& obj = *game.sobjects.newObjectReuse();
+
+	LTRACE(rand, 0, sobj, game.rand.x);
+	LTRACE(sobj, &obj - game.sobjects.arr, cxpo, x);
+	LTRACE(sobj, &obj - game.sobjects.arr, cypo, y);
 	
 	assert(numSounds < 10);
 	
@@ -211,6 +215,11 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 						else if(delta < 0)
 							i->vel.y -= objBlowAway * power;
 					}
+
+					Common& common = *game.common;
+
+					LTRACE(nobj, &*i - game.nobjects.arr, puxp, i->vel.x);
+					LTRACE(nobj, &*i - game.nobjects.arr, puyp, i->vel.y);
 				}
 			}
 		}
@@ -221,7 +230,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 			gvl::rect rect(x - width, y - width, x + width + 1, y + width + 1);
 			
 			rect.intersect(game.level.rect());
-			
+
 			for(int y = rect.y1; y < rect.y2; ++y)
 			for(int x = rect.x1; x < rect.x2; ++x)
 			{

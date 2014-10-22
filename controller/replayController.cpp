@@ -41,7 +41,11 @@ void ReplayController::focus()
 	{
 		try
 		{
+#if 1 // TEMP
+			game = replay->beginPlayback(common, gvl::shared_ptr<SoundPlayer>(new NullSoundPlayer()));
+#else
 			game = replay->beginPlayback(common, gvl::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)));
+#endif
 		}
 		catch(std::runtime_error& e)
 		{
@@ -155,8 +159,10 @@ void ReplayController::changeState(State newState)
 	if(newState == StateGame)
 	{
 		game->startGame();
+#if !ENABLE_TRACING
 		initialGame.reset(new Game(*game));
 		initialGame->postClone(*game, true);
+#endif
 		initialReader = replay->reader;
 	}
 	else if(newState == StateGameEnded)

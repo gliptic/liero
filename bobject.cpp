@@ -34,6 +34,9 @@ bool BObject::process(Game& game)
 		
 		if(m.background())
 			vel.y += LC(BObjGravity);
+
+		LTRACE(blod, c, xpos, ipos.x);
+		LTRACE(blod, c, ypos, ipos.y);
 			
 		if((c >= 1 && c <= 2)
 		|| (c >= 77 && c <= 79)) // TODO: Read from EXE

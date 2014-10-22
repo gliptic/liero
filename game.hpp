@@ -121,7 +121,5 @@ struct Game
 
 bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x, int y);
 
-//extern Game game;
-
 #endif // LIERO_GAME_HPP
 

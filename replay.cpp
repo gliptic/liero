@@ -7,6 +7,8 @@
 #include <gvl/serialization/archive.hpp>
 #include <gvl/io2/deflate_filter.hpp>
 
+//#define DEBUG_REPLAYS 1
+
 struct WormCreator
 {
 	Worm* operator()(GameSerializationContext& context)
@@ -154,8 +156,12 @@ void archive(Archive ar, Viewport& vp)
 	.i32(vp.rect.x2)
 	.i32(vp.rect.y2)
 	;
+
+	uint32_t dummy = 0;
 	
-	archive(ar, vp.rand);
+	// Dummys for unused rand
+	ar.ui32(dummy);
+	ar.ui32(dummy);
 }
 
 struct mtf
@@ -445,6 +451,21 @@ std::unique_ptr<Game> ReplayReader::beginPlayback(gvl::shared_ptr<Common> common
 
 	std::unique_ptr<Game> game(new Game(common, settings, soundPlayer));
 
+#if ENABLE_TRACING
+	if (true)
+	{
+		common->trace_writer.detach();
+		common->trace_reader.attach(gvl::to_source(new gvl::file_bucket_pipe("trace.dat", "rb")));
+		common->writeTrace = false;
+	}
+	else
+	{
+		common->trace_reader.detach();
+		common->trace_writer.attach(gvl::sink(new gvl::file_bucket_pipe("trace.dat", "wb")));
+		common->writeTrace = true;
+	}
+#endif
+
 	read(reader, context, *game);
 #ifdef DEBUG_REPLAYS
 	gvl::gash::value_type actualH = hash(*game);		
@@ -452,7 +473,7 @@ std::unique_ptr<Game> ReplayReader::beginPlayback(gvl::shared_ptr<Common> common
 	read(reader, context, expectedH);
 	
 	if(actualH != expectedH)
-		std::cout << "Differing hashes" << std::endl;
+		printf("Differing hashes\n");
 #endif
 	return game;
 }
@@ -464,6 +485,12 @@ void ReplayWriter::beginRecord(Game& game)
 	
 	write(writer, context, game);
 	settingsExpired = false; // We just serialized them, so they have to be up to date
+
+#if ENABLE_TRACING
+	game.common->trace_reader.detach();
+	game.common->trace_writer.attach(gvl::sink(new gvl::file_bucket_pipe("trace.dat", "wb")));
+	game.common->writeTrace = true;
+#endif
 	
 #ifdef DEBUG_REPLAYS
 	gvl::gash::value_type h = hash(game);
@@ -557,8 +584,10 @@ bool ReplayReader::playbackFrame(Renderer& renderer)
 	{
 		uint32_t expected = gvl::read_uint32(reader);
 		uint32_t actual = fastGameChecksum(game);
+#if !ENABLE_TRACING
 		if(actual != expected)
 			throw gvl::archive_check_error("Replay has desynced");
+#endif
 	}
 	
 #ifdef DEBUG_REPLAYS

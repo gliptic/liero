@@ -567,3 +567,41 @@ void SfxSample::createSound()
 		
 	*ptr++ = prev;
 }
+
+
+#if ENABLE_TRACING
+void Common::ltrace(char const* category, uint32 object, char const* attribute, uint32 value)
+{
+	uint32 cat = *(uint32*)(category);
+	uint32 attr = *(uint32*)(attribute);
+
+	if (writeTrace)
+	{	
+		gvl::write_uint32_le(trace_writer, cat);
+		gvl::write_uint32_le(trace_writer, object);
+		gvl::write_uint32_le(trace_writer, attr);
+		gvl::write_uint32_le(trace_writer, value);
+	}
+	else
+	{
+		uint32 fcat = gvl::read_uint32_le(trace_reader);
+		uint32 fobject = gvl::read_uint32_le(trace_reader);
+		uint32 fattr = gvl::read_uint32_le(trace_reader);
+		uint32 fvalue = gvl::read_uint32_le(trace_reader);
+
+		if (fcat != cat) {
+			throw std::exception();
+		}
+		if (fobject != object) {
+			throw std::exception();
+		}
+		if (fattr != attr) {
+			throw std::exception();
+		}
+		if (fvalue != value) {
+			throw std::exception();
+		}
+
+	}
+}
+#endif

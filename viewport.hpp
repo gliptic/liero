@@ -17,7 +17,6 @@ struct Viewport
 	, inGameX(inGameX)
 	, rect(rect)
 	{
-		rand.seed((uint32_t)std::clock());
 		maxX = levwidth - rect.width();
 		maxY = levheight - rect.height();
 		centerX = rect.width() >> 1;
@@ -39,7 +38,6 @@ struct Viewport
 	int wormIdx;
 	int bannerY;
 	int inGameX; // 0 for first, 218 for second
-	Rand rand;
 	gvl::rect rect;
 
 	

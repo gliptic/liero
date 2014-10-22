@@ -10,6 +10,8 @@ void Bonus::process(Game& game)
 	y += velY;
 	
 	int ix = ftoi(x), iy = ftoi(y);
+
+	assert(ix >= 0 && ix < game.level.width);
 	
 	if(game.level.inside(ix, iy + 1)
 	&& game.level.mat(ix, iy + 1).background())

@@ -256,7 +256,7 @@ struct ExactObjectList
 			}
 		}
 
-		assert(ptr && !ptr->used);
+		assert(ptr && !ptr->used && ptr >= arr && ptr < arr + Limit);
 		ptr->used = true;
 
 		return ptr;
@@ -270,7 +270,7 @@ struct ExactObjectList
 		else
 			ret = getFreeObject();
 			
-		assert(ret->used);
+		assert(ret->used && ret >= arr && ret < arr + Limit);
 		return ret;
 	}
 	
@@ -280,7 +280,7 @@ struct ExactObjectList
 			return 0;
 			
 		T* ret = getFreeObject();
-		assert(ret->used);
+		assert(ret->used && ret >= arr && ret < arr + Limit);
 		return ret;
 	}
 	

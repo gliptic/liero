@@ -16,6 +16,7 @@ int Weapon::computedLoadingTime(Settings& settings) const
 void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, int ownerIdx, WormWeapon* ww) const
 {
 	WObject* obj = game.wobjects.newObjectReuse();
+	Common& common = *game.common;
 	
 	obj->type = this;
 	obj->pos = pos;
@@ -24,6 +25,10 @@ void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, 
 	// STATS
 	obj->firedBy = ww;
 	obj->hasHit = false;
+
+	LTRACE(rand, 0, wobj, game.rand.x);
+	LTRACE(fire, obj - game.wobjects.arr, cxpo, pos.x);
+	LTRACE(fire, obj - game.wobjects.arr, cypo, pos.y);
 
 	Worm* owner = game.wormByIdx(ownerIdx);
 	game.statsRecorder->damagePotential(owner, ww, hitDamage);
@@ -291,18 +296,12 @@ void WObject::process(Game& game)
 			
 			for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
 			{
-				if(i->ownerIdx != ownerIdx)
-#if 0
-				|| i->id != id)
-#endif
+				if(pos.x >= i->pos.x - itof(2)
+				&& pos.x <= i->pos.x + itof(2)
+				&& pos.y >= i->pos.y - itof(2)
+				&& pos.y <= i->pos.y + itof(2))
 				{
-					if(pos.x >= i->pos.x - itof(2)
-					&& pos.x <= i->pos.x + itof(2)
-					&& pos.y >= i->pos.y - itof(2)
-					&& pos.y <= i->pos.y + itof(2))
-					{
-						i->vel += vel * w.blowAway / 100;
-					}
+					i->vel += vel * w.blowAway / 100;
 				}
 			}
 		}

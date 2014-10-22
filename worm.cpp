@@ -515,7 +515,6 @@ void Worm::process(Game& game)
 					}
 				}
 				
-#if 1
 				for(int i = 7; i <= 105; i += 14)
 				{
 					common.nobjectTypes[index].create2(
@@ -526,11 +525,10 @@ void Worm::process(Game& game)
 						0,
 						index, 0);
 				}
-#endif
 
 				game.statsRecorder->afterDeath(this);
 
-				release(Fire);				
+				release(Fire);
 			}
 			
 			// Update frame
@@ -1118,7 +1116,7 @@ void Worm::processMovement(Game& game)
 				if(game.settings->shadow)
 					correctShadow(common, game.level, gvl::rect(idigPos.x - 3, idigPos.y - 3, idigPos.x + 18, idigPos.y + 18));
 				
-				digPos += fixedvec(dir.x << 1, dir.y << 1);
+				digPos += dir * 2;
 
 //l_43EB:
 				idigPos = ftoi(digPos);
@@ -1431,6 +1429,7 @@ bool checkForSpecWormHit(Game& game, int x, int y, int dist, Worm& w)
 	for(int cy = r.y1; cy < r.y2; ++cy)
 	for(int cx = r.x1; cx < r.x2; ++cx)
 	{
+		assert(cy*16 + cx < 16*16);
 		if(common.materials[wormSprite[cy*16 + cx]].worm())
 			return true;
 	}
