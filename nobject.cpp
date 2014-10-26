@@ -236,11 +236,8 @@ void NObject::process(Game& game)
 										
 					if(t.wormExplode)
 						doExplode = true;
-					if(t.wormDestroy)
-					{
-						if(used) // Temp
-							game.nobjects.free(this);
-					}
+					else if (t.wormDestroy && used)
+						game.nobjects.free(this);
 				}
 				
 			}
