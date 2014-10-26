@@ -2,8 +2,7 @@
 #include <gvl/cstdint.hpp>
 #include <cmath>
 
-fixed sinTable[128];
-fixed cosTable[128];
+fixedvec cossinTable[128];
 
 uint32_t sqr(uint32_t op)
 {
@@ -103,7 +102,7 @@ void precomputeTables()
 
 		int32_t r = (int32_t)(rf >> shift);
 
-		cosTable[i] = r;
-		sinTable[(i + 32) & 0x7f] = r;
+		cossinTable[i].x = r;
+		cossinTable[(i + 32) & 0x7f].y = r;
 	}
 }

@@ -120,9 +120,11 @@ void archive(Archive ar, Worm& worm)
 	
 	for(int i = 0; i < 5; ++i)
 	{
+		bool dummy = false;
+
 		ar
 		.i32(worm.weapons[i].ammo)
-		.b(worm.weapons[i].available)
+		.b(dummy)
 		.i32(worm.weapons[i].delayLeft)
 		.objref(worm.weapons[i].type, WeaponIdxRefCreator())
 		

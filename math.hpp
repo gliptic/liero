@@ -27,8 +27,7 @@ inline gvl::ivec2 ftoi(fixedvec v)
 	return gvl::ivec2(ftoi(v.x), ftoi(v.y));
 }
 
-extern fixed sinTable[128];
-extern fixed cosTable[128];
+extern fixedvec cossinTable[128];
 
 int vectorLength(int x, int y);
 

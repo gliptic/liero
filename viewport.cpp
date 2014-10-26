@@ -115,7 +115,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	
 	WormWeapon const& ww = worm.weapons[worm.currentWeapon];
 	
-	if(ww.available)
+	if(ww.available())
 	{
 		if(ww.ammo > 0)
 		{
@@ -509,7 +509,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				int tempY = ftoi(w.pos.y) - 5 + offs.y;
 				int angleFrame = w.angleFrame();
 			
-				if(w.weapons[w.currentWeapon].available)
+				if(w.weapons[w.currentWeapon].available())
 				{
 					int hotspotX = w.hotspotX + offs.x;
 					int hotspotY = w.hotspotY + offs.y;
@@ -583,26 +583,16 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	
 		if(worm.visible)
 		{
-			int tempX = ftoi(worm.pos.x) - 1 + ftoi(cosTable[ftoi(worm.aimingAngle)] * 16) + offs.x;
-			int tempY = ftoi(worm.pos.y) - 2 + ftoi(sinTable[ftoi(worm.aimingAngle)] * 16) + offs.y;
+			auto temp = ftoi(worm.pos) - gvl::ivec2(1, 2) + ftoi(cossinTable[ftoi(worm.aimingAngle)] * 16) + offs;
+			//int tempX = ftoi(worm.pos.x) - 1 + ftoi(cosTable[ftoi(worm.aimingAngle)] * 16) + offs.x;
+			//int tempY = ftoi(worm.pos.y) - 2 + ftoi(sinTable[ftoi(worm.aimingAngle)] * 16) + offs.y;
 		
-			if(worm.makeSightGreen)
-			{
-				blitImage(
-					renderer.screenBmp,
-					common.smallSprites[44],
-					tempX,
-					tempY);
-			}
-			else
-			{
-				blitImage(
-					renderer.screenBmp,
-					common.smallSprites[43],
-					tempX,
-					tempY);
-			}
-
+			blitImage(
+				renderer.screenBmp,
+				common.smallSprites[worm.makeSightGreen ? 44 : 43],
+				temp.x,
+				temp.y);
+			
 			if(worm.pressed(Worm::Change))
 			{
 				std::string const& name = worm.weapons[worm.currentWeapon].type->name;

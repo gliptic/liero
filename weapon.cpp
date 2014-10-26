@@ -34,15 +34,12 @@ void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, 
 	game.statsRecorder->damagePotential(owner, ww, hitDamage);
 	game.statsRecorder->shot(owner, ww);
 
+	obj->vel = cossinTable[angle] * speed / 100 + vel;
+
 	if(distribution)
 	{
-		obj->vel.x = cosTable[angle] * speed / 100 + vel.x + game.rand(distribution * 2) - distribution;
-		obj->vel.y = sinTable[angle] * speed / 100 + vel.y + game.rand(distribution * 2) - distribution;
-	}
-	else
-	{
-		obj->vel.x = cosTable[angle] * speed / 100 + vel.x;
-		obj->vel.y = sinTable[angle] * speed / 100 + vel.y;
+		obj->vel.x += game.rand(distribution * 2) - distribution;
+		obj->vel.y += game.rand(distribution * 2) - distribution;
 	}
 	
 	if(startFrame >= 0)
@@ -185,7 +182,7 @@ void WObject::process(Game& game)
 				
 		if(w.shotType == 2)
 		{
-			fixedvec dir(cosTable[curFrame], sinTable[curFrame]);
+			fixedvec dir(cossinTable[curFrame]);
 			auto newVel = dir * w.speed / 100;
 			
 			if(owner->visible
@@ -198,7 +195,7 @@ void WObject::process(Game& game)
 		}
 		else if(w.shotType == 3)
 		{
-			fixedvec dir(cosTable[curFrame], sinTable[curFrame]);
+			fixedvec dir(cossinTable[curFrame]);
 			auto addVel = dir * w.addSpeed / 100;
 			
 			vel += addVel;

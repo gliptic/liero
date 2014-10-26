@@ -50,8 +50,12 @@ struct WormWeapon
 	: ammo(0)
 	, delayLeft(0)
 	, loadingLeft(0)
-	, available(true)
 	{
+	}
+
+	bool available() const
+	{
+		return loadingLeft == 0;
 	}
 	
 	//int id;
@@ -59,7 +63,6 @@ struct WormWeapon
 	int ammo;
 	int delayLeft;
 	int loadingLeft;
-	bool available;	// TODO: This is unnecessary, available == loadingLeft == 0
 };
 
 struct WormSettingsExtensions

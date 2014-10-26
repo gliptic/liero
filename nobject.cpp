@@ -4,7 +4,7 @@
 #include "mixer/player.hpp"
 #include "bobject.hpp"
 
-void NObjectType::create1(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy)
+NObject& NObjectType::create(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
 	Common& common = *game.common;
@@ -15,21 +15,12 @@ void NObjectType::create1(Game& game, fixedvec vel, fixedvec pos, int color, int
 	
 	obj.vel = vel;
 
-	LTRACE(nobj, &obj - game.nobjects.arr, c1xp, pos.x);
-	LTRACE(nobj, &obj - game.nobjects.arr, c1yp, pos.y);
-
 	// STATS
 	obj.firedBy = firedBy;
 	obj.hasHit = false;
 
 	Worm* owner = game.wormByIdx(ownerIdx);
 	game.statsRecorder->damagePotential(owner, firedBy, hitDamage);
-	
-	if(distribution)
-	{
-		obj.vel.x += distribution - game.rand(distribution * 2);
-		obj.vel.y += distribution - game.rand(distribution * 2);
-	}
 	
 	if(startFrame > 0)
 	{
@@ -49,58 +40,38 @@ void NObjectType::create1(Game& game, fixedvec vel, fixedvec pos, int color, int
 	if(timeToExploV)
 		obj.timeLeft -= game.rand(timeToExploV);
 	
+	return obj;
+}
+
+NObject& NObjectType::create1(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy)
+{
+	if(distribution)
+	{
+		vel.x += distribution - game.rand(distribution * 2);
+		vel.y += distribution - game.rand(distribution * 2);
+	}
+
+	return create(game, vel, pos, color, ownerIdx, firedBy);
 }
 
 void NObjectType::create2(Game& game, int angle, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy)
 {
-	NObject& obj = *game.nobjects.newObjectReuse();
-	Common& common = *game.common;
-	
-	obj.type = this;
-	obj.ownerIdx = ownerIdx;
-	obj.pos = pos;
-
-	LTRACE(rand, 0, nobj, game.rand.x);
-	LTRACE(nobj, &obj - game.nobjects.arr, c2xp, pos.x);
-	LTRACE(nobj, &obj - game.nobjects.arr, c2yp, pos.y);
-
-	// STATS
-	obj.firedBy = firedBy;
-	obj.hasHit = false;
-
-	Worm* owner = game.wormByIdx(ownerIdx);
-	game.statsRecorder->damagePotential(owner, firedBy, hitDamage);
-	
 	int realSpeed = speed - game.rand(speedV);
-		
-	obj.vel.x = vel.x + (cosTable[angle] * realSpeed) / 100;
-	obj.vel.y = vel.y + (sinTable[angle] * realSpeed) / 100;
-	
+
+	vel += cossinTable[angle] * realSpeed / 100;
+
+	// TODO: !REPLAYS Make the distributions use the same code
 	if(distribution)
 	{
-		obj.vel.x += game.rand(distribution * 2) - distribution;
-		obj.vel.y += game.rand(distribution * 2) - distribution;
+		vel.x += game.rand(distribution * 2) - distribution;
+		vel.y += game.rand(distribution * 2) - distribution;
 	}
-	
+
+	auto& obj = create(game,
+		vel,
+		pos, color, ownerIdx, firedBy);
+
 	obj.pos += obj.vel;
-	
-	if(startFrame > 0)
-	{
-		obj.curFrame = game.rand(numFrames + 1);
-	}
-	else if(color != 0)
-	{
-		obj.curFrame = color;
-	}
-	else
-	{
-		obj.curFrame = colorBullets;
-	}
-	
-	obj.timeLeft = timeToExplo;
-	
-	if(timeToExploV)
-		obj.timeLeft -= game.rand(timeToExploV);
 }
 
 void NObject::process(Game& game)
@@ -237,16 +208,14 @@ void NObject::process(Game& game)
 					game.statsRecorder->damageDealt(owner, firedBy, &w, t.hitDamage, hasHit);
 					hasHit = true;
 					
-					if(t.hitDamage > 0)
+					if(t.hitDamage > 0
+					&& w.health > 0
+					&& game.rand(3) == 0)
 					{
-						if(w.health > 0
-						&& game.rand(3) == 0)
+						int snd = 18 + game.rand(3); // NOTE: MUST be outside the unpredictable branch below
+						if(!game.soundPlayer->isPlaying(&w))
 						{
-							int snd = 18 + game.rand(3); // NOTE: MUST be outside the unpredictable branch below
-							if(!game.soundPlayer->isPlaying(&w))
-							{
-								game.soundPlayer->play(snd, &w);
-							}
+							game.soundPlayer->play(snd, &w);
 						}
 					}
 					
@@ -267,8 +236,7 @@ void NObject::process(Game& game)
 										
 					if(t.wormExplode)
 						doExplode = true;
-					if(t.wormDestroy
-					&& !doExplode)
+					if(t.wormDestroy)
 					{
 						if(used) // Temp
 							game.nobjects.free(this);
@@ -288,9 +256,6 @@ void NObject::process(Game& game)
 		
 		if(t.dirtEffect >= 0)
 		{
-			if (game.cycles == 336) {
-				game.cycles = game.cycles;
-			}
 			drawDirtEffect(common, game.rand, game.level, t.dirtEffect, ftoi(pos.x) - 7, ftoi(pos.y) - 7);
 			
 			if(game.settings->shadow)
@@ -314,7 +279,7 @@ void NObject::process(Game& game)
 			}
 		}
 		
-		if(used) // Temp
+		if(used)
 			game.nobjects.free(this);
 	}
 }

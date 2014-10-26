@@ -8,10 +8,12 @@
 struct Worm;
 struct Game;
 struct WormWeapon;
+struct NObject;
 
 struct NObjectType
 {
-	void create1(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy);
+	NObject& create(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy);
+	NObject& create1(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy);
 	void create2(Game& game, int angle, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy);
 
 	int detectDistance;

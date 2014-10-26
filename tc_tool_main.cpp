@@ -66,7 +66,11 @@ int main(int argc, char *argv[])
 				if (tcName.empty())
 					tcName = getLeaf(argv[1]);
 
-				commonSave(common, joinPath(joinPath(configPath, "TC"), tcName));
+				auto writePath = joinPath(joinPath(configPath, "TC"), tcName);
+
+				printf("Writing to %s...\n", writePath.c_str());
+
+				commonSave(common, writePath);
 
 				found = true;
 				break;

@@ -151,102 +151,56 @@ void Worm::processPhysics(Game& game)
 	Common& common = *game.common;
 	
 	if(reacts[RFUp] > 0)
-	{
 		vel.x = (vel.x * LC(WormFricMult)) / LC(WormFricDiv);
-	}
+
+	fixedvec absvel(std::abs(vel.x), std::abs(vel.y));
 	
-	if(vel.x > 0)
+	int32 rh, rv, mbh, mbv;
+
+	rh = reacts[vel.x >= 0 ? RFLeft : RFRight];
+	rv = reacts[vel.y >= 0 ? RFUp : RFDown];
+	mbh = vel.x > 0 ? LC(MinBounceRight) : -LC(MinBounceLeft);
+	mbv = vel.y > 0 ? LC(MinBounceDown) : -LC(MinBounceUp);
+
+	if (vel.x && rh) // TODO: We wouldn't need the vel.x check if we knew that mbh/mbv were always non-zero
 	{
-		if(reacts[RFLeft] > 0)
+		if(absvel.x > mbh)
 		{
-			if(vel.x > LC(MinBounceRight))
-			{
-				if(common.H[HFallDamage])
-					health -= LC(FallDamageRight);
-				else
-					game.soundPlayer->play(14);
-				vel.x = -vel.x / 3;
-			}
+			if(common.H[HFallDamage])
+				health -= LC(FallDamageRight);
 			else
-				vel.x = 0;
+				game.soundPlayer->play(14);
+			vel.x = -vel.x / 3;
 		}
+		else
+			vel.x = 0;
 	}
-	else if(vel.x < 0)
+
+	if(vel.y && rv)
 	{
-		if(reacts[RFRight])
+		if(absvel.y > mbv)
 		{
-			if(vel.x < LC(MinBounceLeft))
-			{
-				if(common.H[HFallDamage])
-					health -= LC(FallDamageLeft);
-				else
-					game.soundPlayer->play(14);
-				vel.x = -vel.x / 3;
-			}
+			if(common.H[HFallDamage])
+				health -= LC(FallDamageDown);
 			else
-				vel.x = 0;
+				game.soundPlayer->play(14);
+			vel.y = -vel.y / 3;
 		}
-	}
-	
-	if(vel.y > 0)
-	{
-		if(reacts[RFUp] > 0)
-		{
-			if(vel.y > LC(MinBounceDown))
-			{
-				if(common.H[HFallDamage])
-					health -= LC(FallDamageDown);
-				else
-					game.soundPlayer->play(14);
-				vel.y = -vel.y / 3;
-			}
-			else
-				vel.y = 0;
-		}
-	}
-	else if(vel.y < 0)
-	{
-		if(reacts[RFDown])
-		{
-			if(vel.y < LC(MinBounceUp))
-			{
-				if(common.H[HFallDamage])
-					health -= LC(FallDamageUp);
-				else
-					game.soundPlayer->play(14);
-				vel.y = -vel.y / 3;
-			}
-			else
-				vel.y = 0;
-		}
+		else
+			vel.y = 0;
 	}
 	
 	if(reacts[RFUp] == 0)
 	{
 		vel.y += LC(WormGravity);
 	}
+
+	// No, we can't use rh/rv here, they are out of date
+	if(reacts[vel.x >= 0 ? RFLeft : RFRight] < 2)
+		pos.x += vel.x;
 	
-	if(vel.x >= 0)
-	{
-		if(reacts[RFLeft] < 2)
-			pos.x += vel.x;
-	}
-	else
-	{
-		if(reacts[RFRight] < 2)
-			pos.x += vel.x;
-	}
-	
-	if(vel.y >= 0)
-	{
-		if(reacts[RFUp] < 2)
-			pos.y += vel.y;
-	}
-	else
-	{
-		if(reacts[RFDown] < 2)
-			pos.y += vel.y;
-	}
+	if(reacts[vel.y >= 0 ? RFUp : RFDown] < 2)
+		pos.y += vel.y;
 }
 
 void Worm::process(Game& game)
@@ -380,7 +334,7 @@ void Worm::process(Game& game)
 							
 							game.bonuses.free(i);
 							
-							ww.available = true;
+							//ww.available = true;
 							ww.loadingLeft = 0;
 						}
 						else
@@ -406,7 +360,7 @@ void Worm::process(Game& game)
 			processWeapons(game);
 			
 			if(pressed(Fire) && !pressed(Change)
-			&& weapons[currentWeapon].available
+			&& weapons[currentWeapon].available()
 			&& weapons[currentWeapon].delayLeft <= 0)
 			{
 				fire(game);
@@ -532,10 +486,8 @@ void Worm::process(Game& game)
 			}
 			
 			// Update frame
-			if(animate)
-				currentFrame = angleFrame() + game.settings->wormAnimTab[(game.cycles & 31) >> 3];
-			else
-				currentFrame = angleFrame() + game.settings->wormAnimTab[0];
+			int animFrame = animate ? ((game.cycles & 31) >> 3) : 0;
+			currentFrame = angleFrame() + game.settings->wormAnimTab[animFrame];
 		}
 		else
 		{
@@ -543,9 +495,7 @@ void Worm::process(Game& game)
 			steerableCount = 0;
 			
 			if(pressedOnce(Fire))
-			{
 				ready = true;
-			}
 			
 			if(killedTimer > 0)
 				--killedTimer;
@@ -685,8 +635,8 @@ void DumbLieroAI::process(Game& game, Worm& worm)
 	
 	for(; dir < 128; ++dir)
 	{
-		if(std::abs(cosTable[dir] - delta.x) < 0xC00
-		&& std::abs(sinTable[dir] - delta.y) < 0xC00) // The original had 0xC000, which is wrong
+		if(std::abs(cossinTable[dir].x - delta.x) < 0xC00
+		&& std::abs(cossinTable[dir].y - delta.y) < 0xC00) // The original had 0xC000, which is wrong
 			break;
 	} // 4F93
 	
@@ -867,7 +817,6 @@ void Worm::initWeapons(Game& game)
 		ww.ammo = ww.type->ammo;
 		ww.delayLeft = 0;
 		ww.loadingLeft = 0;
-		ww.available = true;
 	}
 }
 
@@ -991,7 +940,6 @@ void Worm::processWeapons(Game& game)
 	
 	if(ww.ammo <= 0)
 	{
-		ww.available = false;
 		int computedLoadingTime = w.computedLoadingTime(*game.settings);
 		ww.loadingLeft = computedLoadingTime;
 		ww.ammo = w.ammo;
@@ -1000,12 +948,9 @@ void Worm::processWeapons(Game& game)
 	if(ww.loadingLeft > 0) // NOTE: computedLoadingTime is never 0, so this works
 	{
 		--ww.loadingLeft;
-		if(ww.loadingLeft <= 0)
+		if(ww.loadingLeft <= 0 && w.playReloadSound)
 		{
-			if(w.playReloadSound)
-				game.soundPlayer->play(24);
-				
-			ww.available = true;
+			game.soundPlayer->play(24);
 		}
 	}
 	
@@ -1072,7 +1017,7 @@ void Worm::processMovement(Game& game)
 			{
 				ableToDig = false;
 				
-				fixedvec dir(cosTable[ftoi(aimingAngle)], sinTable[ftoi(aimingAngle)]);
+				fixedvec dir(cossinTable[ftoi(aimingAngle)]);
 				
 				auto digPos = dir * 2 + pos;
 
@@ -1166,7 +1111,7 @@ void Worm::processTasks(Game& game)
 			game.soundPlayer->play(5);
 			
 			ninjarope.pos = pos;
-			ninjarope.vel = fixedvec(cosTable[ftoi(aimingAngle)] << LC(NRThrowVelX), sinTable[ftoi(aimingAngle)] << LC(NRThrowVelY));
+			ninjarope.vel = fixedvec(cossinTable[ftoi(aimingAngle)].x << LC(NRThrowVelX), cossinTable[ftoi(aimingAngle)].y << LC(NRThrowVelY));
 									
 			ninjarope.length = LC(NRInitialLength);
 		}
@@ -1285,7 +1230,7 @@ void Worm::processWeaponChange(Game& game)
 		game.soundPlayer->stop(&weapons[currentWeapon]);
 	}
 	
-	if(weapons[currentWeapon].available || game.settings->loadChange)
+	if(weapons[currentWeapon].available() || game.settings->loadChange)
 	{
 		if(pressedOnce(Left))
 		{
@@ -1319,9 +1264,8 @@ void Worm::fire(Game& game)
 	fireCone = w.fireCone;
 		
 	fixedvec firing(
-		cosTable[ftoi(aimingAngle)] * (w.detectDistance + 5) + pos.x,
-		sinTable[ftoi(aimingAngle)] * (w.detectDistance + 5) + pos.y - itof(1));
-	
+		cossinTable[ftoi(aimingAngle)] * (w.detectDistance + 5) + pos - fixedvec(0, itof(1)));
+		
 	if(w.leaveShells > 0)
 	{
 		if(game.rand(w.leaveShells) == 0)
@@ -1345,46 +1289,27 @@ void Worm::fire(Game& game)
 		}
 	}
 		
+	int speed = w.speed;
+	fixedvec firingVel;
+	int parts = w.parts;
+
 	if(w.affectByWorm)
 	{
-		int speed = w.speed;
 		if(speed < 100)
 			speed = 100;
-		int parts = w.parts;
 		
-		if(parts > 0)
-		{
-			auto firingVel = vel * 100 / speed;
-			
-			for(int i = 0; i < parts; ++i)
-			{
-				w.fire(
-					game,
-					ftoi(aimingAngle),
-					firingVel,
-					speed,
-					firing,
-					index, &ww);
-			}
-		}
+		firingVel = vel * 100 / speed;
 	}
-	else
+
+	for(int i = 0; i < parts; ++i)
 	{
-		int parts = w.parts;
-		
-		if(parts > 0)
-		{
-			for(int i = 0; i < parts; ++i)
-			{
-				w.fire(
-					game,
-					ftoi(aimingAngle),
-					fixedvec(),
-					w.speed,
-					firing,
-					index, &ww);
-			}
-		}
+		w.fire(
+			game,
+			ftoi(aimingAngle),
+			firingVel,
+			speed,
+			firing,
+			index, &ww);
 	}
 	
 	int recoil = w.recoil;
@@ -1392,7 +1317,7 @@ void Worm::fire(Game& game)
 	if(common.H[HSignedRecoil] && recoil >= 128)
 		recoil -= 256;
 	
-	vel -= fixedvec(cosTable[ftoi(aimingAngle)], sinTable[ftoi(aimingAngle)]) * recoil / 100;
+	vel -= cossinTable[ftoi(aimingAngle)] * recoil / 100;
 }
 
 bool checkForWormHit(Game& game, int x, int y, int dist, Worm* ownWorm)
@@ -1444,10 +1369,10 @@ void Worm::processSight(Game& game)
 	WormWeapon& ww = weapons[currentWeapon];
 	Weapon const& w = *ww.type;
 	
-	if(ww.available
+	if(ww.available()
 	&& (w.laserSight || ww.type - &common.weapons[0] == LC(LaserWeapon) - 1))
 	{
-		fixedvec dir = fixedvec(cosTable[ftoi(aimingAngle)], sinTable[ftoi(aimingAngle)]);
+		fixedvec dir = cossinTable[ftoi(aimingAngle)];
 		fixedvec temp = fixedvec(pos.x + dir.x * 6, pos.y + dir.y * 6 - itof(1));
 		
 		do
