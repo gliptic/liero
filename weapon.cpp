@@ -202,7 +202,7 @@ void WObject::process(Game& game)
 			
 			if(w.distribution)
 			{
-				vel.x += game.rand(w.distribution * 2) - w.distribution; // TODO: We should do game.rand(w.distribution * 2) here, no? Original doesn't
+				vel.x += game.rand(w.distribution * 2) - w.distribution;
 				vel.y += game.rand(w.distribution * 2) - w.distribution;
 			}
 		}
@@ -276,7 +276,10 @@ void WObject::process(Game& game)
 		
 		if(w.collideWithObjects)
 		{
-			for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
+			auto impulse = vel * w.blowAway / 100;
+
+			auto wr = game.wobjects.all();
+			for (WObject* i; i = wr.next(); )
 			{
 				if(i->type != type
 				|| i->ownerIdx != ownerIdx)
@@ -286,19 +289,20 @@ void WObject::process(Game& game)
 					&& pos.y >= i->pos.y - itof(2)
 					&& pos.y <= i->pos.y + itof(2))
 					{
-						i->vel += vel * w.blowAway / 100;
+						i->vel += impulse;
 					}
 				}
 			}
 			
-			for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
+			auto nr = game.nobjects.all();
+			for (NObject* i; i = nr.next(); )
 			{
 				if(pos.x >= i->pos.x - itof(2)
 				&& pos.x <= i->pos.x + itof(2)
 				&& pos.y >= i->pos.y - itof(2)
 				&& pos.y <= i->pos.y + itof(2))
 				{
-					i->vel += vel * w.blowAway / 100;
+					i->vel += impulse;
 				}
 			}
 		}
@@ -369,9 +373,6 @@ void WObject::process(Game& game)
 		{
 			Worm& worm = *game.worms[i];
 			
-			// TODO: The original tests wobjblood, which may not be 0 when w.bloodOnHit is.
-			// Change to use that here too.
-			
 			if((w.hitDamage || w.blowAway || w.bloodOnHit || w.wormCollide)
 			&& checkForSpecWormHit(game, ftoi(pos.x), ftoi(pos.y), w.detectDistance, worm))
 			{
@@ -416,12 +417,17 @@ void WObject::process(Game& game)
 		}
 
 		if(doExplode)
+		{
 			blowUpObject(game, ownerIdx);
+			break;
+		}
 		else if(doRemove)
+		{
 			game.wobjects.free(this);
+			break;
+		}
 	}
 	while(w.shotType == Weapon::STLaser
-	//&& !doExplode
 	&& used // TEMP
 	&& (iter < 8 || w.id == 28));
 }

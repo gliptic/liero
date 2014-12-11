@@ -39,6 +39,7 @@ struct Viewport
 	int bannerY;
 	int inGameX; // 0 for first, 218 for second
 	gvl::rect rect;
+	Rand rand;
 
 	
 	void setCenter(int x, int y)

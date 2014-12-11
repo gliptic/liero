@@ -187,10 +187,10 @@ void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase)
 
 #define BLIT(body) do { \
 	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x; \
-	for(int y = 0; y < height; ++y)	{ \
+	for(int y_ = 0; y_ < height; ++y_)	{ \
 		PalIdx* rowdest = scrptr; \
 		PalIdx* rowsrc = mem; \
-		for(int x = 0; x < width; ++x) { \
+		for(int x_ = 0; x_ < width; ++x_) { \
 			PalIdx c = *rowsrc; \
 			body \
 			++rowsrc; \
@@ -200,10 +200,10 @@ void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase)
 		
 #define BLIT2(pixels, destpitch, body) do { \
 	PalIdx* scrptr = static_cast<PalIdx*>(pixels) + y*(destpitch) + x; \
-	for(int y = 0; y < height; ++y)	{ \
+	for(int y_ = 0; y_ < height; ++y_)	{ \
 		PalIdx* rowdest = scrptr; \
 		PalIdx* rowsrc = mem; \
-		for(int x = 0; x < width; ++x) { \
+		for(int x_ = 0; x_ < width; ++x_) { \
 			PalIdx c = *rowsrc; \
 			body \
 			++rowsrc; \
@@ -213,9 +213,9 @@ void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase)
 
 #define BLIT3(body) do { \
 	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x; \
-	for(int y = 0; y < height; ++y)	{ \
+	for(int y_ = 0; y_ < height; ++y_)	{ \
 		PalIdx* rowdest = scrptr; \
-		for(int x = 0; x < width; ++x) { \
+		for(int x_ = 0; x_ < width; ++x_) { \
 			body \
 			++mem; \
 			++rowdest; } \
@@ -225,11 +225,11 @@ void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase)
 #define BLITL(pixels, destpitch, matpixels, body) do { \
 	PalIdx* scrptr = (pixels) + y*(destpitch) + x; \
 	Material* matptr = (matpixels) + y*(destpitch) + x; \
-	for(int y = 0; y < height; ++y)	{ \
+	for(int y_ = 0; y_ < height; ++y_)	{ \
 		PalIdx* rowdest = scrptr; \
 		Material* rowmatdest = matptr; \
 		PalIdx* rowsrc = mem; \
-		for(int x = 0; x < width; ++x) { \
+		for(int x_ = 0; x_ < width; ++x_) { \
 			PalIdx c = *rowsrc; \
 			body \
 			++rowsrc; \
@@ -247,12 +247,12 @@ void blitImageR(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height)
 
 	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
 
-	for(int y = 0; y < height; ++y)
+	for(int y_ = 0; y_ < height; ++y_)
 	{
 		PalIdx* rowdest = scrptr;
 		PalIdx* rowsrc = mem;
 		
-		for(int x = 0; x < width; ++x)
+		for(int x_ = 0; x_ < width; ++x_)
 		{
 			PalIdx c = *rowsrc;
 			if(c && (PalIdx(*rowdest - 160) < 8))
@@ -327,12 +327,12 @@ void blitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int
 
 	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
 
-	for(int y = 0; y < height; ++y)
+	for(int y_ = 0; y_ < height; ++y_)
 	{
 		PalIdx* rowdest = scrptr;
 		PalIdx* rowsrc = mem;
 		
-		for(int x = 0; x < width; ++x)
+		for(int x_ = 0; x_ < width; ++x_)
 		{
 			PalIdx c = *rowsrc;
 			if(c && common.materials[*rowdest].seeShadow()) // TODO: Speed up this test?
@@ -361,13 +361,13 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 	
 	if(p1)
 	{
-		for(int y = 0; y < height; ++y)
+		for(int y_ = 0; y_ < height; ++y_)
 		{
 			PalIdx* rowdest = dest;
 			Material* rowmatdest = matdest;
 			PalIdx* rowsrc = mem;
 			
-			for(int x = 0; x < width; ++x)
+			for(int x_ = 0; x_ < width; ++x_)
 			{
 				PalIdx c = *rowsrc;
 				PalIdx n;
@@ -389,13 +389,13 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 	}
 	else
 	{
-		for(int y = 0; y < height; ++y)
+		for(int y_ = 0; y_ < height; ++y_)
 		{
 			PalIdx* rowdest = dest;
 			Material* rowmatdest = matdest;
 			PalIdx* rowsrc = mem;
 			
-			for(int x = 0; x < width; ++x)
+			for(int x_ = 0; x_ < width; ++x_)
 			{
 				PalIdx c = *rowsrc;
 				if(c)
@@ -426,98 +426,81 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 	LTRACE(draw, dirtEffect, xpos, x);
 	LTRACE(draw, dirtEffect, ypos, y);
 	
-	// TODO: Optimize this
+	int width = 16;
+	int height = 16;
+	int pitch = width;
+	PalIdx* mem = mFrame;
+
+	gvl::rect clip(0, 0, level.width, level.height - 1);
+	
+	CLIP_IMAGE(clip);
 	
 	if(tex.nDrawBack)
 	{
-		for(int cy = 0; cy < 16; ++cy)
+		BLITL(&level.data[0], level.width, &level.materials[0],
 		{
-			int my = cy + y;
-			if(my >= level.height - 1)
-				break;
-				
-			if(my < 0)
-				continue;
-			
-			for(int cx = 0; cx < 16; ++cx)
+			switch(c)
 			{
-				int mx = cx + x;
-				if(mx >= level.width)
-					break;
-					
-				if(mx < 0)
-					continue;
-					
-				switch(mFrame[(cy << 4) + cx])
+			case 6:
+				if(rowmatdest->anyDirt())
 				{
-				case 6:
-					if(level.mat(mx, my).anyDirt())
-					{
-						level.setPixel(mx, my, tFrame[((my & 15) << 4) + (mx & 15)], common);
-					}
-				break;
+					int mx = x + x_;
+					int my = y + y_;
+
+					*rowdest = tFrame[((my & 15) << 4) + (mx & 15)];
+					*rowmatdest = common.materials[*rowdest];
+				}
+			break;
 				
-				case 1:
-					//PalIdx& pix = level.pixel(mx, my);
-					Material m = level.mat(mx, my);
-					if(m.dirt())
-						level.setPixel(mx, my, 1, common);
-					if(m.dirt2())
-						level.setPixel(mx, my, 2, common);
+			case 1:
+				Material m = *rowmatdest;
+				if(m.dirt2())
+				{
+					*rowdest = 2;
+					*rowmatdest = common.materials[2];
+				}
+				else if(m.dirt())
+				{
+					*rowdest = 1;
+					*rowmatdest = common.materials[1];
 				}
 			}
-		}
+		});
 	}
 	else
 	{
-		for(int cy = 0; cy < 16; ++cy)
+		BLITL(&level.data[0], level.width, &level.materials[0],
 		{
-			int my = cy + y;
-			if(my >= level.height - 1)
-				break;
-				
-			if(my < 0)
-				continue;
-			
-			for(int cx = 0; cx < 16; ++cx)
+			switch(c)
 			{
-				int mx = cx + x;
-				if(mx >= level.width)
-					break;
-					
-				if(mx < 0)
-					continue;
-					
-				switch(mFrame[(cy << 4) + cx])
+			case 10:
+			case 6:
+				if(rowmatdest->background())
 				{
-				case 10:
-				case 6:
-					if(level.mat(mx, my).background())
-					{
-						level.setPixel(mx, my, tFrame[((my & 15) << 4) + (mx & 15)], common);
-					}
-				break;
+					int mx = x + x_;
+					int my = y + y_;
+
+					*rowdest = tFrame[((my & 15) << 4) + (mx & 15)];
+					*rowmatdest = common.materials[*rowdest];
+				}
+			break;
+
+			case 2:
+				if(rowmatdest->background())
+				{
+					*rowdest = 2;
+					*rowmatdest = common.materials[2];
+				}
+			break;
 				
-				case 2:
+			case 1:
+				if(rowmatdest->background())
 				{
-					//PalIdx& pix = level.pixel(mx, my);
-					Material m = level.mat(mx, my);
-					if(m.background())
-						level.setPixel(mx, my, 2, common);
+					*rowdest = 1;
+					*rowmatdest = common.materials[1];
 				}
-				break;
-				
-				case 1:
-				{
-					//PalIdx& pix = level.pixel(mx, my);
-					Material m = level.mat(mx, my);
-					if(m.background())
-						level.setPixel(mx, my, 1, common);
-				}
-				break;
-				}
-			}			
-		}
+			}
+		});
 	}
 }
 

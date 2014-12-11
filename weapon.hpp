@@ -71,11 +71,11 @@ struct Weapon
 	int partTrailType;
 	int partTrailObj;
 	int partTrailDelay;
+	bool chainExplosion;
 	
 	int computedLoadingTime(Settings& settings) const;
 	
 	int id;
-	//int computedLoadingTime;
 	std::string name;
 	std::string idStr;
 };

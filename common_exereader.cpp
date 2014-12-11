@@ -620,6 +620,7 @@ void loadWeapons(Common& common, ReaderFile& exe)
 		common.weapons[i].name = readPascalString(exe, 14);
 		common.weapons[i].idStr = toId(common.weapons[i].name);
 		common.weapons[i].id = i;
+		common.weapons[i].chainExplosion = i == 34;
 	}
 	
 	// Special objects

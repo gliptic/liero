@@ -139,7 +139,8 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		
 		int objBlowAway = blowAway / 3; // TODO: Read from EXE
 		
-		for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
+		auto wr = game.wobjects.all();
+		for (WObject* i; i = wr.next(); )
 		{
 			Weapon const& weapon = *i->type;
 			
@@ -173,16 +174,14 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 							i->vel.y -= objBlowAway * power;
 					}
 					
-					// Is it a booby trap?
-					if(i->type - &common.weapons[0] == 34) // TODO: Read from EXE
-					{
+					if(weapon.chainExplosion)
 						i->blowUpObject(game, ownerIdx);
-					}
 				}
 			} // if( ... affectByExplosions ...
 		} // for( ... wobjects ...
 		
-		for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
+		auto nr = game.nobjects.all();
+		for (NObject* i; i = nr.next(); )
 		{
 			NObjectType const& t = *i->type;
 		
@@ -259,7 +258,8 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 			correctShadow(common, game.level, gvl::rect(x - 10, y - 10, x + 11, y + 11));
 	}
 	
-	for(Game::BonusList::iterator i = game.bonuses.begin(); i != game.bonuses.end(); ++i)
+	auto br = game.bonuses.all();
+	for (Bonus* i; i = br.next(); )
 	{
 		int ix = ftoi(i->x), iy = ftoi(i->y);
 		
@@ -268,7 +268,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		&& iy > y - detectRange
 		&& iy < y + detectRange)
 		{
-			game.bonuses.free(i);
+			game.bonuses.free(br);
 			common.sobjectTypes[0].create(game, ix, iy, ownerIdx, firedBy);
 		}
 	} // for( ... bonuses ...

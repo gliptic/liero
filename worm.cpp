@@ -299,7 +299,8 @@ void Worm::process(Game& game)
 			
 			auto ipos = ftoi(pos);
 
-			for(Game::BonusList::iterator i = game.bonuses.begin(); i != game.bonuses.end(); ++i)
+			auto br = game.bonuses.all();
+			for (Bonus* i; i = br.next(); )
 			{				
 				if(ipos.x + 5 > ftoi(i->x)
 				&& ipos.x - 5 < ftoi(i->x)
@@ -310,7 +311,7 @@ void Worm::process(Game& game)
 					{
 						if(health < settings->health)
 						{
-							game.bonuses.free(i);
+							game.bonuses.free(br);
 							
 							game.doHealing(*this, (game.rand(LC(BonusHealthVar)) + LC(BonusMinHealth)) * settings->health / 100);
 							
@@ -332,16 +333,15 @@ void Worm::process(Game& game)
 							
 							game.soundPlayer->play(24);
 							
-							game.bonuses.free(i);
+							game.bonuses.free(br);
 							
-							//ww.available = true;
 							ww.loadingLeft = 0;
 						}
 						else
 						{
 							int bix = ftoi(i->x);
 							int biy = ftoi(i->y);
-							game.bonuses.free(i);
+							game.bonuses.free(br);
 							common.sobjectTypes[0].create(game, bix, biy, index, 0);
 						}
 					}
@@ -1404,7 +1404,8 @@ void Worm::processSteerables(Game& game)
 	WormWeapon& ww = weapons[currentWeapon];
 	if(ww.type->shotType == Weapon::STSteerable)
 	{
-		for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
+		auto wr = game.wobjects.all();
+		for (WObject* i; i = wr.next(); )
 		{
 			if(i->type == ww.type && i->ownerIdx == index)
 			{

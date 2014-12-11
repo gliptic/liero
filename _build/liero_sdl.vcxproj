@@ -144,7 +144,7 @@
       <OmitFramePointers>true</OmitFramePointers>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
@@ -167,9 +167,10 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <OmitFramePointers>true</OmitFramePointers>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
@@ -181,6 +182,8 @@
   <ItemGroup>
     <ClCompile Include="..\ai\dijkstra.cpp" />
     <ClCompile Include="..\ai\predictive_ai.cpp" />
+    <ClCompile Include="..\bench.cpp" />
+    <ClCompile Include="..\bench_format.cpp" />
     <ClCompile Include="..\controller\commonController.cpp" />
     <ClCompile Include="..\controller\localController.cpp" />
     <ClCompile Include="..\controller\replayController.cpp" />

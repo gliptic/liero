@@ -53,6 +53,19 @@ void Viewport::process(Game& game)
 		if(worm.killedTimer == 150) // TODO: This depends on what is the starting killedTimer
 			bannerY = -8;
 	}
+
+	int realShake = ftoi(shake);
+
+	if(realShake > 0)
+	{
+		x += rand(realShake * 2) - realShake;
+		y += rand(realShake * 2) - realShake;
+	}
+	
+	if(x < 0) x = 0;
+	if(y < 0) y = 0;
+	if(x > maxX) x = maxX;
+	if(y > maxY) y = maxY;
 	
 	/*
 	if(worm->health <= 0)
@@ -77,23 +90,6 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 {
 	Common& common = *game.common;
 	Worm& worm = *game.wormByIdx(wormIdx);
-
-#if 1
-	int realShake = ftoi(shake);
-
-	gvl::ivec2 renderPos(x, y);
-	
-	if(realShake > 0)
-	{
-		renderPos.x += renderer.rand(realShake * 2) - realShake;
-		renderPos.y += renderer.rand(realShake * 2) - realShake;
-	}
-	
-	if(renderPos.x < 0) renderPos.x = 0;
-	if(renderPos.y < 0) renderPos.y = 0;
-	if(renderPos.x > maxX) renderPos.x = maxX;
-	if(renderPos.y > maxY) renderPos.y = maxY;
-#endif
 
 	if(worm.visible)
 	{
@@ -195,7 +191,9 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5, 106 + 84*worm.index, 161, color);
 	}
 	break;
-	}	
+	}
+
+	gvl::ivec2 renderPos(x, y);
 
 	{
 		PreserveClipRect pcr(renderer.screenBmp);
@@ -287,7 +285,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			}
 		}
 
-		for(Game::BonusList::iterator i = game.bonuses.begin(); i != game.bonuses.end(); ++i)
+		auto br = game.bonuses.all();
+		for (Bonus* i; i = br.next(); )
 		{
 			if(i->timer > LC(BonusFlickerTime) || (game.cycles & 3) == 0)
 			{
@@ -296,7 +295,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				blitImage(
 					renderer.screenBmp,
 					common.smallSprites[f],
-					ftoi(i->x) - 3 + offs.x, // TODO: Use offsX
+					ftoi(i->x) - 3 + offs.x,
 					ftoi(i->y) - 3 + offs.y);
 				
 				if(game.settings->shadow)
@@ -325,7 +324,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			}
 		}
 		
-		for(Game::SObjectList::iterator i = game.sobjects.begin(); i != game.sobjects.end(); ++i)
+		auto sr = game.sobjects.all();
+		for (SObject* i; i = sr.next(); )
 		{
 			SObjectType const& t = common.sobjectTypes[i->id];
 			int frame = i->curFrame + t.startFrame;
@@ -349,7 +349,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			}
 		}
 
-		for(Game::WObjectList::iterator i = game.wobjects.begin(); i != game.wobjects.end(); ++i)
+		auto wr = game.wobjects.all();
+		for (WObject* i; i = wr.next(); )
 		{
 			Weapon const& w = *i->type;
 		
@@ -435,29 +436,21 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 					common.drawTextSmall(
 						renderer.screenBmp,
 						name.c_str(),
-						ftoi(i->pos.x) - x - width/2 + rect.x1,
-						ftoi(i->pos.y) - y - 10 + rect.y1);
+						ftoi(i->pos.x) - width/2 + offs.x,
+						ftoi(i->pos.y) - 10 + offs.y);
 				}
 			}
 		}
 	
-		for(Game::NObjectList::iterator i = game.nobjects.begin(); i != game.nobjects.end(); ++i)
+		auto nr = game.nobjects.all();
+		for (NObject* i; i = nr.next(); )
 		{
 			NObjectType const& t = *i->type;
 		
 			if(t.startFrame > 0)
 			{
 				auto pos = ftoi(i->pos) - gvl::ivec2(3, 3);
-			
-#if 0
-				if(i->id >= 20 && i->id <= 21)
-				{
-					// Flag special case
-					posY -= 2;
-					posX += 3;
-				}
-#endif
-			
+
 				if(game.settings->shadow)
 				{
 					blitShadowImage(

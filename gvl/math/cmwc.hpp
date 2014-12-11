@@ -172,8 +172,10 @@ void archive(Archive ar, mwc& x)
 }
 
 template<int A, int B, int C>
-struct xorshift
+struct xorshift : prng_common<xorshift<A, B, C>, uint32_t>
 {
+	using prng_common<xorshift<A, B, C>, uint32_t>::operator();
+
 	uint32_t x;
 	
 	xorshift(uint32_t seed)

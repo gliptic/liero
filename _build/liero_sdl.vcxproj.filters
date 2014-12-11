@@ -53,6 +53,8 @@
       <Filter>menu</Filter>
     </ClCompile>
     <ClCompile Include="..\replay.cpp" />
+    <ClCompile Include="..\bench.cpp" />
+    <ClCompile Include="..\bench_format.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="controller">

@@ -178,6 +178,7 @@ void archive_text(Common& common, Weapon& weapon, Archive& ar)
 		NObj(partTrailObj)
 		I(partTrailDelay)
 		SObj(createOnExp)
+		B(chainExplosion)
 
 		#undef I
 		#undef B

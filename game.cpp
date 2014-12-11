@@ -197,10 +197,6 @@ void Game::createBonus()
 	if(int(bonuses.size()) >= settings->maxBonuses)
 		return;
 		
-	Bonus* bonus = bonuses.newObject();
-	if(!bonus)
-		return;
-	
 	for(std::size_t i = 0; i < 50000; ++i)
 	{
 		int ix = rand(LC(BonusSpawnRectW));
@@ -222,6 +218,10 @@ void Game::createBonus()
 				frame = 0;
 			else
 				frame = rand(2);
+
+			Bonus* bonus = bonuses.newObject();
+			if(!bonus)
+				return;
 			
 			bonus->x = itof(ix);
 			bonus->y = itof(iy);
@@ -242,8 +242,6 @@ void Game::createBonus()
 			return;
 		}
 	} // 234F
-	
-	bonuses.free(bonus);
 }
 
 #if ENABLE_TRACING
@@ -277,7 +275,8 @@ void Game::processFrame()
 			viewports[i]->shake -= 4000; // TODO: Read 4000 from exe?
 	}
 	
-	for(BonusList::iterator i = bonuses.begin(); i != bonuses.end(); ++i)
+	auto br = bonuses.all();
+	for (Bonus* i; i = br.next(); )
 	{
 		i->process(*this);
 	}
@@ -306,17 +305,20 @@ void Game::processFrame()
 		}
 	}
 	
-	for(SObjectList::iterator i = sobjects.begin(); i != sobjects.end(); ++i)
+	auto sr = sobjects.all();
+	for (SObject* i; i = sr.next(); )
 	{
 		i->process(*this);
 	}
 	
-	for(WObjectList::iterator i = wobjects.begin(); i != wobjects.end(); ++i)
+	auto wr = wobjects.all();
+	for (WObject* i; i = wr.next(); )
 	{
 		i->process(*this);
 	}
 	
-	for(NObjectList::iterator i = nobjects.begin(); i != nobjects.end(); ++i)
+	auto nr = nobjects.all();
+	for (NObject* i; i = nr.next(); )
 	{
 		i->process(*this);
 	}

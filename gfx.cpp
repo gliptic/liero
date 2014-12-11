@@ -1896,12 +1896,21 @@ int Gfx::menuLoop()
 #if 1
 		if (testSDLKeyOnce(SDLK_F8))
 		{
-			uint32 s = 12;
+			uint32 s = 14;
 			
 			Rand r;
 			r.seed(s);
 
 			Common& common = *this->common;
+
+			vector<std::size_t> nobjMap;
+
+			for (std::size_t i = 0; i < common.nobjectTypes.size(); ++i)
+			{
+				nobjMap.push_back(i);
+			}
+
+			std::random_shuffle(nobjMap.begin(), nobjMap.end(), r);
 
 			for (auto& w : common.weapons)
 			{
@@ -1955,9 +1964,10 @@ int Gfx::menuLoop()
 				w.wormExplode = r(3) > 0;
 			}
 
-			for (auto& n : common.nobjectTypes)
+			//for (auto& n : common.nobjectTypes)
+			for (std::size_t idx = 0; idx < common.nobjectTypes.size(); ++idx)
 			{
-				uint32 idx = &n - &common.nobjectTypes[0];
+				auto& n = common.nobjectTypes[nobjMap[idx]];
 				n.affectByExplosions = r(5) == 0;
 				n.bloodOnHit = r(5);
 				n.bloodTrail = r(10) == 0;
@@ -1980,7 +1990,7 @@ int Gfx::menuLoop()
 				n.speed = r(150);
 				n.splinterAmount = idx > 0 && r(5) == 0 ? r(10) : 0;
 				n.splinterColour = r(256);
-				n.splinterType = idx > 0 ? r(idx) : 0;
+				n.splinterType = idx > 0 ? nobjMap[r(idx)] : 0;
 				n.timeToExplo = 50 + r(70 * 3);
 				n.timeToExploV = r(30);
 				n.wormDestroy = r(3) == 0;

@@ -33,12 +33,33 @@ struct prng_common
 	}
 	
 	// Number in [0, max)
+#if 0
+	uint32_t operator()(uint32_t max)
+	{
+		uint32_t v;
+
+		uint32_t mask = max | (max >> 16);
+		mask = mask | (mask >> 8);
+		mask = mask | (mask >> 4);
+		mask = mask | (mask >> 2);
+		mask = mask | (mask >> 1);
+
+		do
+		{
+			v = derived()() & mask;
+		}
+		while (v < max);
+
+		return v;
+	}
+#else
 	uint32_t operator()(uint32_t max)
 	{
 		uint64_t v = derived()();
 		v *= max;
 		return uint32_t(v >> 32);
 	}
+#endif
 	
 	// Number in [min, max)
 	uint32_t operator()(uint32_t min, uint32_t max)
