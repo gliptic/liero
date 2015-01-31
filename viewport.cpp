@@ -623,7 +623,9 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	
 	if(game.settings->map)
 	{
-		int const mapX = 134, mapY = 162;
+		int multiplier = renderer.renderResX / 320;
+		int mapX = 134 * multiplier;
+		int mapY = 162 * multiplier;
 
 		game.level.drawMiniature(renderer.screenBmp, mapX, mapY, 10);
 		
