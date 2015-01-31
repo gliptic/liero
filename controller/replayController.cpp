@@ -159,7 +159,7 @@ void ReplayController::changeState(State newState)
 	
 	if(newState == StateGame)
 	{
-		if (game->settings->singleScreenReplay) {
+		if (gfx.settings->singleScreenReplay) {
 			game->clearViewports();
 			game->addViewport(new Viewport(gvl::rect(0, 0, 504, 350), game->worms[0]->index, 100, 504, 350));
 		}
