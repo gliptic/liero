@@ -247,8 +247,6 @@ struct Gfx : Renderer
 	Uint32 lastFrame;
 	unsigned menuCycles;
 	int windowW, windowH;
-	int internalResX = 320; // Resolution used internally
-	int internalResY = 200;
 	int prevMag; // Previous magnification used for drawing
 	gvl::rect lastUpdateRect; // Last region that was updated when flipping
 	gvl::shared_ptr<Common> common;

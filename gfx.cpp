@@ -677,9 +677,9 @@ void Gfx::flip()
 
 	{
 		int offsetX, offsetY;
-		int mag = fitScreen(back->w, back->h, internalResX, internalResY, offsetX, offsetY);
+		int mag = fitScreen(back->w, back->h, renderResX, renderResY, offsetX, offsetY);
 		
-		gvl::rect newRect(offsetX, offsetY, internalResX * mag, internalResY * mag);
+		gvl::rect newRect(offsetX, offsetY, renderResX * mag, renderResY * mag);
 		
 		if(mag != prevMag)
 		{
@@ -704,7 +704,7 @@ void Gfx::flip()
 
 			preparePalette(back->format, realPal, pal32);
 
-			scaleDraw(src, internalResX, internalResY, srcPitch, dest, destPitch, mag, pal32);
+			scaleDraw(src, renderResX, renderResY, srcPitch, dest, destPitch, mag, pal32);
 		}
 	}
 	
@@ -1184,8 +1184,8 @@ int Gfx::selectReplay()
 				controller.reset();
 
 				if (settings->singleScreenReplay) {
-					internalResX = 640;
-					internalResY = 400;
+					renderResX = 640;
+					renderResY = 400;
 				}
 
 				controller.reset(new ReplayController(common, sel->getFsNode().toSource()));
@@ -1686,8 +1686,8 @@ restart:
 		}
 
 		// reset internal resolution upon exiting any game
-		internalResX = 320;
-		internalResY = 200;	
+		renderResX = 320;
+		renderResY = 200;	
 		
 		controller->unfocus();
 		
