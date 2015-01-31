@@ -4,7 +4,7 @@
 
 void Renderer::init()
 {
-	screenBmp.alloc(320, 200);
+	screenBmp.alloc(640, 480);
 }
 
 void Renderer::loadPalette(Common const& common)

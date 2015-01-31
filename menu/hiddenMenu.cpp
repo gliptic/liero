@@ -48,6 +48,8 @@ ItemBehavior* HiddenMenu::getItemBehavior(Common& common, MenuItem& item)
 			return new IntegerBehavior(common, gfx.settings->aiParallels, 1, 16);
 		case AllowViewingSpawnPoint:
 			return new BooleanSwitchBehavior(common, gfx.settings->allowViewingSpawnPoint);
+		case SingleScreenReplay:
+			return new BooleanSwitchBehavior(common, gfx.settings->singleScreenReplay);
 
 		default:
 			return Menu::getItemBehavior(common, item);
