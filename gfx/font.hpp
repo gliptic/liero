@@ -25,6 +25,14 @@ struct Font
 	int getDims(char const* str, std::size_t len, int* height = 0);
 	void drawChar(Bitmap& scr, unsigned char ch, int x, int y, int color);
 
+	// draws text with a simple shadow underneath it, so even text that would blend into the background can
+	// be displayed
+	void drawShadowedText(Bitmap& scr, std::string const& str, int x, int y, int color)
+	{
+		drawText(scr, str, x + 1, y + 1, color / 2);
+		drawText(scr, str, x, y, color);
+	}
+
 	void drawText(Bitmap& scr, std::string const& str, int x, int y, int color)
 	{
 		drawText(scr, str.data(), str.size(), x, y, color);
