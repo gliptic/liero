@@ -31,6 +31,7 @@ Extensions::Extensions()
 , zoneTimeout(30)
 , selectBotWeapons(true)
 , allowViewingSpawnPoint(false)
+, singleScreenReplay(false)
 {
 }
 
