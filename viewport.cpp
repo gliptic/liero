@@ -92,7 +92,6 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	Worm& worm = *game.wormByIdx(wormIdx);
 	int multiplier = renderer.renderResX / 320;
 	int centerX = renderer.renderResX / 2;
-	int centerY = renderer.renderResY / 2;
 
 	if(worm.visible)
 	{
