@@ -177,7 +177,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		
 		int color = stateColours[game.holdazone.holderIdx != worm.index][state];
 		
-		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5 * multiplier, 106 + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
+		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5 * multiplier, 106 * multiplier + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
 	}
 	break;
 	
@@ -191,7 +191,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 		int color = stateColours[game.lastKilledIdx != worm.index][state];
 		
-		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5 * multiplier, 106 + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
+		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5 * multiplier, 106 * multiplier + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
 	}
 	break;
 	}
