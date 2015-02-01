@@ -161,9 +161,10 @@ void ReplayController::changeState(State newState)
 	{
 		if (gfx.settings->singleScreenReplay) {
 			game->clearViewports();
+			// +68 on x to align the viewport in the middle
 			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
 			// TODO: a bit weird to duplicate this, but it's needed to draw health bars etc
-			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 316, 504, 350));
+			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350));
 		}
 		game->startGame();
 #if !ENABLE_TRACING
