@@ -363,9 +363,9 @@ void Common::load(FsNode node)
 				std::size_t dataSize = gvl::read_uint32_le(r);
 
 				s.originalData.resize(dataSize);
-		
-				for (auto& s : s.originalData)
-					s = r.get() - 128;
+
+				for (auto& t : s.originalData)
+					t = r.get() - 128;
 
 				s.sound = sfx_new_sound(dataSize * 2);
 
