@@ -41,11 +41,7 @@ void ReplayController::focus()
 	{
 		try
 		{
-#if 1 // TEMP
-			game = replay->beginPlayback(common, gvl::shared_ptr<SoundPlayer>(new NullSoundPlayer()));
-#else
 			game = replay->beginPlayback(common, gvl::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)));
-#endif
 		}
 		catch(std::runtime_error& e)
 		{
