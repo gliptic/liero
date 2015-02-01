@@ -3,6 +3,7 @@
 
 #include <string>
 #include <cstdio>
+#include <cstring>
 
 inline std::string toString(int v)
 {
