@@ -10,12 +10,12 @@
 
 #include "../common.hpp"
 
-void Menu::onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains)
+void Menu::onKeys(SDL_Keysym* begin, SDL_Keysym* end, bool contains)
 {
 	for (; begin != end; ++begin)
 	{
-		bool isTab = begin->sym == SDLK_TAB;
-		if ((begin->unicode >= 32 && begin->unicode < 128)
+		bool isTab = begin->scancode == SDL_SCANCODE_TAB;
+		if ((begin->sym >= 32 && begin->sym <= 127) // x >= SDLK_SPACE && x < SDLK_DELETE 
 		  || isTab)
 		{
 			Uint32 time = SDL_GetTicks();
@@ -28,7 +28,7 @@ void Menu::onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains)
 				auto newPrefix = searchPrefix;
 				
 				if (!isTab)
-					newPrefix += char(begin->unicode);
+					newPrefix += char(begin->sym);
 				searchTime = time;
 
 				bool found = false;

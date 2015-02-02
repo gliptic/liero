@@ -1,7 +1,9 @@
 cmake_minimum_required (VERSION 2.6)
 project (openliero)
 
-Find_Package (SDL REQUIRED)
+# add current path as module path to get required config file for sdl 2 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ".")
+Find_Package (SDL2 REQUIRED)
 include_directories("${PROJECT_SOURCE_DIR}")
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
@@ -85,4 +87,4 @@ endif(APPLE)
 
 add_executable(openliero ${GAME_SOURCES})
 add_executable(tctool ${TC_TOOL_SOURCES})
-target_link_libraries (openliero ${SDL_LIBRARY})
+target_link_libraries (openliero ${SDL2_LIBRARY})

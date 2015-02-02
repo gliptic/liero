@@ -1,16 +1,15 @@
 #ifndef UUID_96141CB1E20547016970B28195515A14
 #define UUID_96141CB1E20547016970B28195515A14
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
-//extern int SDLToLieroKeys[SDLK_LAST];
+//extern int SDLToLieroKeys[SDL_SCANCODE_LAST];
 //extern int lieroToSDLKeys[177];
 
 void initKeys();
 
-Uint32 SDLToDOSKey(SDL_keysym const& keysym);
-Uint32 SDLToDOSKey(SDLKey key);
-SDLKey DOSToSDLKey(Uint32 scan);
+Uint32 SDLToDOSKey(SDL_Keysym const& keysym);
+Uint32 SDLToDOSKey(SDL_Scancode scancode);
 
 int const DkEscape = 1;
 
