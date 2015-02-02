@@ -5,7 +5,7 @@
 #include <vector>
 #include <cassert>
 #if !DISABLE_SOUND
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #endif
 
 Sfx sfx;

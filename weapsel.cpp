@@ -7,7 +7,7 @@
 #include "mixer/player.hpp"
 #include "viewport.hpp"
 #include "filesystem.hpp"
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 WeaponSelection::WeaponSelection(Game& game)
 : game(game)

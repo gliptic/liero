@@ -9,7 +9,7 @@ int gameEntry(int argc, char *argv[]);
 #define _WIN32_WINDOWS 0x0410
 #define WINVER 0x0410
 #include <windows.h>
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #ifdef main
 #undef main
@@ -17,8 +17,6 @@ int gameEntry(int argc, char *argv[]);
 
 int main(int argc, char *argv[])
 {
-	SDL_SetModuleHandle(GetModuleHandle(NULL));
-
 	try
 	{
 		return gameEntry(argc, argv);

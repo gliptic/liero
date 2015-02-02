@@ -1,10 +1,7 @@
 #ifndef UUID_DC1D9513CDD34960AB8A648004DA149D
 #define UUID_DC1D9513CDD34960AB8A648004DA149D
 
-#include <SDL/SDL.h>
-#if !SDL13
-#include <SDL/SDL_getenv.h>
-#endif
+#include <SDL2/SDL.h>
 
 #include "gfx.hpp"
 #include "sfx.hpp"
@@ -95,10 +92,11 @@ try
 		{
 			switch(argv[i][1])
 			{
-			case 'v':
+			// FIXME: I don't think SDL 2 will need this
+			/*case 'v':
 				// SDL_putenv seems to take char* in linux, STOOPID
 				SDL_putenv(const_cast<char*>((std::string("SDL_VIDEODRIVER=") + &argv[i][2]).c_str()));
-				break;
+				break;*/
 			case '-':
 				if (std::strcmp(argv[i] + 2, "config-root") == 0 && i + 1 < argc)
 				{

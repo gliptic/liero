@@ -1,7 +1,7 @@
 #ifndef UUID_3DC24B15AD67494EEAB541B4AE253D0F
 #define UUID_3DC24B15AD67494EEAB541B4AE253D0F
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <cstddef>
 #include <string>
 #include <cstdio>
@@ -87,7 +87,7 @@ struct Menu
 		return b->onEnter(*this, *s);
 	}
 
-	void onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains = false);
+	void onKeys(SDL_Keysym* begin, SDL_Keysym* end, bool contains = false);
 
 	void updateItems(Common& common)
 	{

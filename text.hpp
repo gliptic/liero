@@ -41,6 +41,5 @@ inline bool endsWith(std::string const& str, char const* end)
 bool ciStartsWith(std::string const& a, std::string const& b);
 bool ciCompare(std::string const& a, std::string const& b);
 bool ciLess(std::string const& a, std::string const& b);
-int unicodeToDOS(int c);
 
 #endif // LIERO_TEXT_HPP

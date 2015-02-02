@@ -1,7 +1,7 @@
 #ifndef LIERO_GFX_HPP
 #define LIERO_GFX_HPP
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/math/rect.hpp>
 
@@ -161,26 +161,26 @@ struct Gfx : Renderer
 		dosKeys[key] = !dosKeys[key];
 	}
 
-	bool testSDLKeyOnce(SDLKey key)
+	bool testSDLKeyOnce(SDL_Scancode key)
 	{
 		Uint32 k = SDLToDOSKey(key);
 		return k ? testKeyOnce(k) : false;
 	}
 
-	bool testSDLKey(SDLKey key)
+	bool testSDLKey(SDL_Scancode key)
 	{
 		Uint32 k = SDLToDOSKey(key);
 		return k ? testKey(k) : false;
 	}
 
-	void releaseSDLKey(SDLKey key)
+	void releaseSDLKey(SDL_Scancode key)
 	{
 		Uint32 k = SDLToDOSKey(key);
 		if(k)
 			dosKeys[k] = false;
 	}
 
-	SDL_keysym waitForKey();
+	SDL_Keysym waitForKey();
 	uint32_t waitForKeyEx();
 	std::string getKeyName(uint32_t key);
 	void setFullscreen(bool newFullscreen);
@@ -238,7 +238,16 @@ struct Gfx : Renderer
 	gvl::shared_ptr<Settings> settings;
 
 	bool dosKeys[177];
-	SDL_Surface* back;
+	// the window to render into
+	SDL_Window* window = NULL;
+	// the SDL renderer to use
+	SDL_Renderer* renderer = NULL;
+	// full screen size texture that represents the screen
+	SDL_Texture* texture = NULL;
+	// a software surface to do the actual drawing into
+	SDL_Surface* back = NULL;
+	// when the menu is open, the ongoing game on the screen is paused and
+	// stored in this bitmap
 	Bitmap frozenScreen;
 
 	bool running;
@@ -254,7 +263,7 @@ struct Gfx : Renderer
 
 	std::vector<Joystick> joysticks;
 
-	SDL_keysym keyBuf[32], *keyBufPtr;
+	SDL_Keysym keyBuf[32], *keyBufPtr;
 
 	std::vector<std::pair<int, int>> debugPoints;
 	std::string debugInfo;
