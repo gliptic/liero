@@ -709,7 +709,7 @@ void Gfx::flip()
 		}
 	}
 
-	SDL_UpdateTexture(texture, NULL, back, windowW * 4);
+	SDL_UpdateTexture(texture, NULL, back->pixels, windowW * 4);
 	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, NULL);
 	SDL_RenderPresent(renderer);
