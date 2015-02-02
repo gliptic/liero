@@ -238,12 +238,16 @@ struct Gfx : Renderer
 	gvl::shared_ptr<Settings> settings;
 	
 	bool dosKeys[177];
-	SDL_Window* window;
-	SDL_Renderer* renderer;
+	// the window to render into
+	SDL_Window* window = NULL;
+	// the SDL renderer to use
+	SDL_Renderer* renderer = NULL;
 	// full screen size texture that represents the screen
-	SDL_Texture* texture;
-	// a software surface to do drawing into
-	SDL_Surface* back;
+	SDL_Texture* texture = NULL;
+	// a software surface to do the actual drawing into
+	SDL_Surface* back = NULL;
+	// when the menu is open, the ongoing game on the screen is paused and 
+	// stored in this bitmap
 	Bitmap frozenScreen;
 
 	bool running;

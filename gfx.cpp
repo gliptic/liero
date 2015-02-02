@@ -306,13 +306,15 @@ void Gfx::init()
 
 void Gfx::setVideoMode()
 {
-	// FIXME possibly add SDL_WINDOW_OPENGL?
 	int flags = SDL_WINDOW_RESIZABLE;
 
 	if (fullscreen)
 	{
-		// FIXME or SDL_WINDOW_FULLSCREEN (probably not)?
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		// FIXME these no longer do anything. I'm not sure if we need to
+		// bother with making them do something though. If your computer can
+		// run an OS in a certain resolution, surely it can run Liero in that
+		// resolution as well? 
 		if(settings->fullscreenW > 0 && settings->fullscreenH > 0)
 		{
 			windowW = settings->fullscreenW;
@@ -330,12 +332,23 @@ void Gfx::setVideoMode()
 		windowH = 480;
 	}*/
 
+	if (window) {
+		SDL_DestroyWindow(window);
+	}
 	window = SDL_CreateWindow("Liero 1.37", SDL_WINDOWPOS_UNDEFINED, 
 	                          SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
-	// FIXME most likely add SDL_RENDERER_PRESENTVSYNC as a flag here.
+	if (renderer) {
+		SDL_DestroyRenderer(renderer);
+	}
 	renderer = SDL_CreateRenderer(window, -1, 0);
+	if (texture) {
+		SDL_DestroyTexture(texture);
+	}
 	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, 
 	                            SDL_TEXTUREACCESS_STREAMING, windowW, windowH);
+	if (back) {
+		SDL_FreeSurface(back);
+	}
 	back = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
 	// linear for that old-school chunky look, but consider adding a user 
 	// option for this
