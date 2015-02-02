@@ -722,6 +722,7 @@ void Gfx::flip()
 
 	lastUpdateRect = updateRect;
 	
+	// FIXME: we should use hardware syncing instead!
 	if(settings->screenSync)
 	{
 		static unsigned int const delay = 14u;
