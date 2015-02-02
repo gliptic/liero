@@ -322,16 +322,6 @@ void Gfx::setVideoMode()
 		}
 	}
 
-	// FIXME
-	// removed in SDL 2. Replace by using SDL_GetDisplayMode() et al to discover
-	// if it is an OK mode
-	/*if(!SDL_VideoModeOK(windowW, windowH, bitDepth, flags))
-	{
-		// Default to 640x480
-		windowW = 640;
-		windowH = 480;
-	}*/
-
 	if (window) {
 		SDL_DestroyWindow(window);
 	}
