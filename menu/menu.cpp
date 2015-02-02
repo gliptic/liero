@@ -15,7 +15,7 @@ void Menu::onKeys(SDL_Keysym* begin, SDL_Keysym* end, bool contains)
 	for (; begin != end; ++begin)
 	{
 		bool isTab = begin->scancode == SDL_SCANCODE_TAB;
-		if ((begin->sym >= 32 && begin->sym <= 127) // x >= SDLK_SPACE && x < SDLK_DELETE 
+		if ((begin->sym >= 32 && begin->sym <= 127) // x >= SDLK_SPACE && x <= SDLK_DELETE 
 		  || isTab)
 		{
 			Uint32 time = SDL_GetTicks();
