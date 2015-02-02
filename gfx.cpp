@@ -1466,7 +1466,7 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 		flip();
 		SDL_Keysym key(waitForKey());
 
-		switch(key.sym)
+		switch(key.scancode)
 		{
 		case SDL_SCANCODE_BACKSPACE:
 			if(!buffer.empty())
@@ -1487,9 +1487,11 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 			return false;
 
 		default:
-			// FIXME this won't work on international keyboards. Use some variant
-			// of key.sym.sym instead
-			uint32 k = SDLToDOSKey(SDL_GetScancodeFromKey(key.sym));
+			// this is an ugly way to handle text input, but handling it 
+		    // properly would require some code refactoring, and the font used 
+		    // doesn't support anything beyond US ASCII anyway, so this will
+		    // do for now
+			uint32 k = key.sym;
 			if(k
 			&& buffer.size() < maxLen
 			&& (
