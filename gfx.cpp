@@ -307,7 +307,7 @@ void Gfx::init()
 void Gfx::setVideoMode()
 {
 	// FIXME possibly add SDL_WINDOW_OPENGL?
-	int flags = 0;
+	int flags = SDL_WINDOW_RESIZABLE;
 
 	if (fullscreen)
 	{
