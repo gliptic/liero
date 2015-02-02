@@ -340,7 +340,9 @@ void Gfx::setVideoMode()
 	if (renderer) {
 		SDL_DestroyRenderer(renderer);
 	}
-	renderer = SDL_CreateRenderer(window, -1, 0);
+	// FIXME vertical sync is currently always enabled, because without
+	// it everything breaks apart
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
 	if (texture) {
 		SDL_DestroyTexture(texture);
 	}
@@ -734,29 +736,6 @@ void Gfx::flip()
 	SDL_RenderPresent(renderer);
 
 	lastUpdateRect = updateRect;
-	
-	// FIXME: we should use hardware syncing instead!
-	if(settings->screenSync)
-	{
-		static unsigned int const delay = 14u;
-		
-		uint32_t wantedTime = lastFrame + delay;
-
-		while(true)
-		{
-			uint32_t now = SDL_GetTicks();
-			if(now >= wantedTime)
-				break;
-			
-			SDL_Delay(wantedTime - now);
-		}
-		
-		lastFrame = SDL_GetTicks();
-		while((SDL_GetTicks() - lastFrame) > delay)
-			lastFrame += delay;
-	}
-	else
-		SDL_Delay(0);
 }
 
 void playChangeSound(Common& common, int change)
