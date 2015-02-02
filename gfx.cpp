@@ -330,8 +330,12 @@ void Gfx::setVideoMode()
 	if (renderer) {
 		SDL_DestroyRenderer(renderer);
 	}
-	// FIXME vertical sync is currently always enabled, because without
-	// it everything breaks apart
+	// vertical sync is always enabled, because without it Liero will always
+	// run at the maximum speed your computer can manage. On my machine, this
+	// means it will draw so fast you can't even see the results. Of course,
+	// the proper way to fix this is to decouple the drawing from the game
+	// logic, but that's a pretty big undertaking. Any modern (or even old) 
+	// machine should be able to run Liero with vsync without problems.
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
 	if (texture) {
 		SDL_DestroyTexture(texture);
