@@ -92,11 +92,6 @@ try
 		{
 			switch(argv[i][1])
 			{
-			// FIXME: I don't think SDL 2 will need this
-			/*case 'v':
-				// SDL_putenv seems to take char* in linux, STOOPID
-				SDL_putenv(const_cast<char*>((std::string("SDL_VIDEODRIVER=") + &argv[i][2]).c_str()));
-				break;*/
 			case '-':
 				if (std::strcmp(argv[i] + 2, "config-root") == 0 && i + 1 < argc)
 				{
