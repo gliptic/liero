@@ -311,15 +311,6 @@ void Gfx::setVideoMode()
 	if (fullscreen)
 	{
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-		// FIXME these no longer do anything. I'm not sure if we need to
-		// bother with making them do something though. If your computer can
-		// run an OS in a certain resolution, surely it can run Liero in that
-		// resolution as well?
-		if(settings->fullscreenW > 0 && settings->fullscreenH > 0)
-		{
-			windowW = settings->fullscreenW;
-			windowH = settings->fullscreenH;
-		}
 	}
 
 	if (window) {
@@ -334,7 +325,7 @@ void Gfx::setVideoMode()
 	// run at the maximum speed your computer can manage. On my machine, this
 	// means it will draw so fast you can't even see the results. Of course,
 	// the proper way to fix this is to decouple the drawing from the game
-	// logic, but that's a pretty big undertaking. Any modern (or even old) 
+	// logic, but that's a pretty big undertaking. Any modern (or even old)
 	// machine should be able to run Liero with vsync without problems.
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
 	if (texture) {
@@ -1487,8 +1478,8 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 			return false;
 
 		default:
-			// this is an ugly way to handle text input, but handling it 
-		    // properly would require some code refactoring, and the font used 
+			// this is an ugly way to handle text input, but handling it
+		    // properly would require some code refactoring, and the font used
 		    // doesn't support anything beyond US ASCII anyway, so this will
 		    // do for now
 			uint32 k = key.sym;
