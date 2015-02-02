@@ -311,15 +311,6 @@ void Gfx::setVideoMode()
 	if (fullscreen)
 	{
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-		// FIXME these no longer do anything. I'm not sure if we need to
-		// bother with making them do something though. If your computer can
-		// run an OS in a certain resolution, surely it can run Liero in that
-		// resolution as well? 
-		if(settings->fullscreenW > 0 && settings->fullscreenH > 0)
-		{
-			windowW = settings->fullscreenW;
-			windowH = settings->fullscreenH;
-		}
 	}
 
 	if (window) {
