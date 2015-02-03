@@ -328,6 +328,12 @@ void Gfx::setVideoMode()
 	// logic, but that's a pretty big undertaking. Any modern (or even old)
 	// machine should be able to run Liero with vsync without problems.
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+
+	onWindowResize();
+}
+
+void Gfx::onWindowResize()
+{
 	if (texture) {
 		SDL_DestroyTexture(texture);
 	}
@@ -424,11 +430,20 @@ void Gfx::setFullscreen(bool newFullscreen)
 	if (newFullscreen == fullscreen)
 		return;
 	fullscreen = newFullscreen;
-	if(fullscreen)
+
+	// fullscreen will automatically set window size
+	if (!fullscreen)
 	{
-		// Try lowest resolution
-		windowW = 320;
-		windowH = 200;
+		if (doubleRes)
+		{
+			windowW = 640;
+			windowH = 400;
+		}
+		else
+		{
+			windowW = 320;
+			windowH = 200;
+		}
 	}
 	setVideoMode();
 	hiddenMenu.updateItems(*common);
@@ -494,11 +509,19 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
-		case SDL_WINDOWEVENT_RESIZED:
+		case SDL_WINDOWEVENT:
 		{
-			windowW = ev.window.data1;
-			windowH = ev.window.data2;
-			setVideoMode();
+			switch (ev.window.event)
+			{
+				case SDL_WINDOWEVENT_RESIZED:
+				{
+					windowW = ev.window.data1;
+					windowH = ev.window.data2;
+					onWindowResize();
+				}
+				default:
+					break;
+			}
 		}
 		break;
 
