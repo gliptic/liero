@@ -121,6 +121,7 @@ struct Gfx : Renderer
 		
 	void init();
 	void setVideoMode();
+	void onWindowResize();
 	void loadMenus();
 	
 	void process(Controller* controller = 0);
