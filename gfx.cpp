@@ -520,7 +520,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 					onWindowResize();
 				}
 				break;
-				
+
 				default:
 				break;
 			}
@@ -1469,6 +1469,8 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 
 		int clrX = x - 10 - adjust;
 
+		SDL_Event ev;
+
 		//int offset = clrX + y*320; // TODO: Unhardcode 320
 
 		blitImageNoKeyColour(screenBmp, &frozenScreen.getPixel(clrX, y), clrX, y, clrX + 10 + width, 8, frozenScreen.pitch);
@@ -1477,43 +1479,53 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 
 		font.drawText(screenBmp, str, x - adjust, y + 1, 50);
 		flip();
-		SDL_Keysym key(waitForKey());
 
-		switch(key.scancode)
+		SDL_StartTextInput();
+		SDL_WaitEvent(&ev);
+		processEvent(ev);
+
+		switch (ev.type)
 		{
-		case SDL_SCANCODE_BACKSPACE:
-			if(!buffer.empty())
+			case SDL_KEYDOWN:
+				switch (ev.key.keysym.scancode)
+				{
+					case SDL_SCANCODE_BACKSPACE:
+						if(!buffer.empty())
+						{
+							buffer.erase(buffer.size() - 1);
+						}
+					break;
+
+					case SDL_SCANCODE_RETURN:
+					case SDL_SCANCODE_KP_ENTER:
+						dest = buffer;
+						sfx.play(*common, 27);
+						clearKeys();
+						return true;
+
+					case SDL_SCANCODE_ESCAPE:
+						clearKeys();
+						return false;
+					break;
+				}
+				break;
+
+			case SDL_TEXTINPUT:
 			{
-				buffer.erase(buffer.size() - 1);
+				int k = utf8ToDOS(ev.text.text);
+				if (k && buffer.size() < maxLen &&
+					(!filter || (k = filter(k))))
+				{
+					buffer += char(k);
+				}
+				break;
 			}
-		break;
-
-		case SDL_SCANCODE_RETURN:
-		case SDL_SCANCODE_KP_ENTER:
-			dest = buffer;
-			sfx.play(*common, 27);
-			clearKeys();
-			return true;
-
-		case SDL_SCANCODE_ESCAPE:
-			clearKeys();
-			return false;
-
-		default:
-			// this is an ugly way to handle text input, but handling it
-		    // properly would require some code refactoring, and the font used
-		    // doesn't support anything beyond US ASCII anyway, so this will
-		    // do for now
-			uint32 k = key.sym;
-			if(k
-			&& buffer.size() < maxLen
-			&& (
-			    !filter
-			 || (k = filter(k))))
-			{
-				buffer += char(k);
-			}
-		}
+            case SDL_TEXTEDITING:
+				// since there's no support for any characters that can use a
+            	// complex IME input (like East Asian languages), we naively
+            	// discard this event
+                break;
+        }
 	}
 }
 
