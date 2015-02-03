@@ -1193,11 +1193,6 @@ int Gfx::selectReplay()
 				// Reset controller before opening the replay, since we may be recording it
 				controller.reset();
 
-				if (settings->singleScreenReplay) {
-					renderResX = 640;
-					renderResY = 400;
-				}
-
 				controller.reset(new ReplayController(common, sel->getFsNode().toSource()));
 
 				return MainMenu::MaReplay;
@@ -1683,7 +1678,11 @@ restart:
 		}
 		else if(selection == MainMenu::MaResumeGame)
 		{
-
+			if (controller->isReplay() && settings->singleScreenReplay)
+			{
+				renderResX = 640;
+				renderResY = 400;
+			}
 		}
 		else if(selection == MainMenu::MaQuit) // QUIT TO OS
 		{
@@ -1691,7 +1690,11 @@ restart:
 		}
 		else if(selection == MainMenu::MaReplay)
 		{
-			//controller.reset(new ReplayController(common/*, settings*/));
+			if (settings->singleScreenReplay)
+			{
+				renderResX = 640;
+				renderResY = 400;
+			}
 		}
 		else if (selection == MainMenu::MaTc)
 		{
@@ -1711,7 +1714,8 @@ restart:
 			process(controller.get());
 		}
 
-		// reset internal resolution upon exiting any game
+		// reset internal resolution upon exiting any game. This includes
+		// replays, because the menu needs to render at the same resolution
 		renderResX = 320;
 		renderResY = 200;
 

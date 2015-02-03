@@ -11,6 +11,10 @@ struct Controller
 	{
 	}
 
+	// Returns true if this controller is controlling a replay, false if it is
+	// an actual match
+	virtual bool isReplay() { return false; };
+
 	// Called when a key event is forwarded to the controller
 	virtual void onKey(int key, bool state) = 0;
 
