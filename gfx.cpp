@@ -519,8 +519,10 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 					windowH = ev.window.data2;
 					onWindowResize();
 				}
+				break;
+				
 				default:
-					break;
+				break;
 			}
 		}
 		break;
