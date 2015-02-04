@@ -163,20 +163,18 @@ void ReplayController::changeState(State newState)
 		game->clearViewports();
 		Viewport *v1, *v2;
 
-		// +68 on x to align the viewport in the middle
-		v1 = new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350);
-		// TODO: a bit weird to duplicate this, but it's needed to draw health bars etc
-		v2 = new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350);
-
 		// spectator viewport is always full size
-		game->addSpectatorViewport(v1);
-		game->addSpectatorViewport(v2);
+		// +68 on x to align the viewport in the middle
+		game->addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
+		// TODO: a bit weird to duplicate this, but it's needed to draw health bars etc
+		game->addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350););
 		if (gfx.settings->singleScreenReplay)
 		{
 			// on single screen replay, use the spectator viewports for the
 			// main screen as well
-			game->addViewport(v1);
-			game->addViewport(v2);
+			// we can't use the same objects, as the vector will delete them
+			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
+			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350));
 		}
 		else
 		{
