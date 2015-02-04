@@ -2,9 +2,16 @@
 #include "blit.hpp"
 #include "../common.hpp"
 
-void Renderer::init()
+void Renderer::init(int x, int y)
 {
-	screenBmp.alloc(640, 480);
+	this->setRenderResolution(x, y);
+}
+
+void Renderer::setRenderResolution(int x, int y)
+{
+	renderResX = x;
+	renderResY = y;
+	bmp.alloc(renderResX, renderResY);
 }
 
 void Renderer::loadPalette(Common const& common)
@@ -15,5 +22,5 @@ void Renderer::loadPalette(Common const& common)
 
 void Renderer::clear()
 {
-	fill(screenBmp, 0);
+	fill(bmp, 0);
 }

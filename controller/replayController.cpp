@@ -54,7 +54,7 @@ void ReplayController::focus()
 		// Changing state first when game is available
 		changeState(StateGame);
 	}
-	game->focus(gfx);
+	game->focus(gfx.primaryRenderer);
 	goingToMenu = false;
 	fadeValue = 0;
 }
@@ -77,7 +77,7 @@ bool ReplayController::process()
 			{
 				try
 				{
-					if(!replay->playbackFrame(gfx))
+					if (!replay->playbackFrame(gfx.primaryRenderer))
 					{
 						// End of replay
 						replay.reset();
