@@ -99,14 +99,8 @@ void Game::releaseControls()
 
 void Game::clearViewports()
 {
-	for(std::size_t i = 0; i < viewports.size(); ++i)
-		delete viewports[i];
 	viewports.clear();
-
-	for(std::size_t i = 0; i < spectatorViewports.size(); ++i)
-		delete spectatorViewports[i];
 	spectatorViewports.clear();
-
 }
 
 void Game::addViewport(Viewport* vp)
@@ -152,8 +146,6 @@ void Game::drawSpectatorViewports(Renderer& renderer, bool isReplay)
 
 void Game::clearWorms()
 {
-	for(std::size_t i = 0; i < worms.size(); ++i)
-		delete worms[i];
 	worms.clear();
 }
 
