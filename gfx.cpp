@@ -313,13 +313,17 @@ void Gfx::setVideoMode()
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	}
 
-	if (sdlWindow) {
+	if (sdlWindow)
+	{
 		SDL_DestroyWindow(sdlWindow);
+		sdlWindow = NULL;
 	}
 	sdlWindow = SDL_CreateWindow("Liero 1.37", SDL_WINDOWPOS_UNDEFINED, 
 		                         SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
-	if (sdlRenderer) {
+	if (sdlRenderer)
+	{
 		SDL_DestroyRenderer(sdlRenderer);
+		sdlRenderer = NULL;
 	}
 	// vertical sync is always enabled, because without it Liero will always
 	// run at the maximum speed your computer can manage. On my machine, this
@@ -329,29 +333,40 @@ void Gfx::setVideoMode()
 	// machine should be able to run Liero with vsync without problems.
 	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, SDL_RENDERER_PRESENTVSYNC);
 
-	if (sdlSpectatorWindow) {
+	if (sdlSpectatorWindow)
+	{
 		SDL_DestroyWindow(sdlSpectatorWindow);
+		sdlSpectatorWindow = NULL;
 	}
-	sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", SDL_WINDOWPOS_UNDEFINED, 
-		                		          SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
-	if (sdlSpectatorRenderer) {
+	if (sdlSpectatorRenderer)
+	{
 		SDL_DestroyRenderer(sdlSpectatorRenderer);
+		sdlSpectatorWindow = NULL;
 	}
-	sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, SDL_RENDERER_PRESENTVSYNC);
 
+	if (settings->spectatorWindow)
+	{
+		sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", SDL_WINDOWPOS_UNDEFINED, 
+			                		          SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
+		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, SDL_RENDERER_PRESENTVSYNC);
+	}
 	onWindowResize();
 }
 
 void Gfx::onWindowResize()
 {
-	if (sdlTexture) {
+	if (sdlTexture)
+	{
 		SDL_DestroyTexture(sdlTexture);
+		sdlTexture = NULL;
 	}
 	sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, 
 		                           SDL_TEXTUREACCESS_STREAMING, windowW, windowH);
 
-	if (sdlDrawSurface) {
+	if (sdlDrawSurface)
+	{
 		SDL_FreeSurface(sdlDrawSurface);
+		sdlDrawSurface = NULL;
 	}
 	sdlDrawSurface = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
 	// linear for that old-school chunky look, but consider adding a user 
@@ -360,25 +375,31 @@ void Gfx::onWindowResize()
 	// FIXME: we should use SDL's logical size functionality instead of the
 	// manual rescaling we do now
 	SDL_RenderSetLogicalSize(sdlRenderer, windowW, windowH);
-	doubleRes = (windowW >= 640 && windowH >= 400);
 
-	if (sdlSpectatorTexture) {
+	if (sdlSpectatorTexture)
+	{
 		SDL_DestroyTexture(sdlSpectatorTexture);
+		sdlSpectatorTexture = NULL;
 	}
-	sdlSpectatorTexture = SDL_CreateTexture(sdlSpectatorRenderer, 
-	                                        SDL_PIXELFORMAT_ARGB8888, 
-		                           			SDL_TEXTUREACCESS_STREAMING, 
-		                           			windowW, windowH);
-	if (sdlSpectatorDrawSurface) {
+	if (sdlSpectatorDrawSurface)
+	{
 		SDL_FreeSurface(sdlSpectatorDrawSurface);
+		sdlSpectatorDrawSurface = NULL;
 	}
-	sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
-	// linear for that old-school chunky look, but consider adding a user 
-	// option for this
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-	// FIXME: we should use SDL's logical size functionality instead of the
-	// manual rescaling we do now
-	SDL_RenderSetLogicalSize(sdlSpectatorRenderer, windowW, windowH);
+
+	if (settings->spectatorWindow)
+	{
+		sdlSpectatorTexture = SDL_CreateTexture(sdlSpectatorRenderer, 
+		                                        SDL_PIXELFORMAT_ARGB8888, 
+			                           			SDL_TEXTUREACCESS_STREAMING, 
+			                           			windowW, windowH);
+		sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
+
+		// FIXME: we should use SDL's logical size functionality instead of the
+		// manual rescaling we do now
+		SDL_RenderSetLogicalSize(sdlSpectatorRenderer, windowW, windowH);
+	}
+	doubleRes = (windowW >= 640 && windowH >= 400);
 }
 
 void Gfx::loadMenus()
@@ -396,6 +417,7 @@ void Gfx::loadMenus()
 	hiddenMenu.addItem(MenuItem(48, 7, "BOT WEAPONS", HiddenMenu::SelectBotWeapons));
 	hiddenMenu.addItem(MenuItem(48, 7, "SEE SPAWN POINT", HiddenMenu::AllowViewingSpawnPoint));
 	hiddenMenu.addItem(MenuItem(48, 7, "SINGLE SCREEN REPLAY", HiddenMenu::SingleScreenReplay));
+	hiddenMenu.addItem(MenuItem(48, 7, "SPECTATOR WINDOW", HiddenMenu::SpectatorWindow));
 
 	playerMenu.addItem(MenuItem(3, 7, "PROFILE LOADED", PlayerMenu::PlLoadedProfile));
 	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE", PlayerMenu::PlSaveProfile));
@@ -770,7 +792,10 @@ void Gfx::draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRend
 void Gfx::flip()
 {
 	draw(*sdlDrawSurface, *sdlTexture, *sdlRenderer, primaryRenderer);
-	draw(*sdlSpectatorDrawSurface, *sdlSpectatorTexture, *sdlSpectatorRenderer, secondaryRenderer);
+	if (settings->spectatorWindow)
+	{
+		draw(*sdlSpectatorDrawSurface, *sdlSpectatorTexture, *sdlSpectatorRenderer, secondaryRenderer);
+	}
 }
 
 void playChangeSound(Common& common, int change)

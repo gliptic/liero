@@ -27,6 +27,7 @@ struct HiddenMenu : Menu
 		AiParallels,
 		AllowViewingSpawnPoint,
 		SingleScreenReplay,
+		SpectatorWindow,
 	};
 	
 	HiddenMenu(int x, int y)
