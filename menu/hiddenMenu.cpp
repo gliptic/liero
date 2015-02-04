@@ -70,7 +70,7 @@ void HiddenMenu::drawItemOverlay(Common& common, MenuItem& item, int x, int y, b
 		int w = 30;
 		int offsX = 44;
 		
-		drawRoundedBox(gfx.primaryRenderer.bmp, x + offsX, y, selected ? 168 : 0, 7, w);
-		fillRect(gfx.primaryRenderer.bmp, x + offsX + 1, y + 1, w + 1, 5, paletteColor);
+		drawRoundedBox(gfx.playRenderer.bmp, x + offsX, y, selected ? 168 : 0, 7, w);
+		fillRect(gfx.playRenderer.bmp, x + offsX + 1, y + 1, w + 1, 5, paletteColor);
 	}
 }

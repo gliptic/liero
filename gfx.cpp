@@ -285,6 +285,7 @@ Gfx::Gfx()
 , keyBufPtr(keyBuf)
 {
 	clearKeys();
+	primaryRenderer = &playRenderer;
 }
 
 void Gfx::init()
@@ -292,8 +293,8 @@ void Gfx::init()
 	SDL_ShowCursor(SDL_DISABLE);
 	lastFrame = SDL_GetTicks();
 
-	primaryRenderer.init(320, 200);
-	secondaryRenderer.init(640, 400);
+	playRenderer.init(320, 200);
+	singleScreenRenderer.init(640, 400);
 	// Joystick init:
 	SDL_JoystickEventState(SDL_ENABLE);
 	int numJoysticks = SDL_NumJoysticks();
@@ -738,14 +739,14 @@ void Gfx::preparePalette(SDL_PixelFormat* format, Color realPal[256], uint32_t (
 
 void Gfx::menuFlip(bool quitting)
 {
-	if (primaryRenderer.fadeValue < 32 && !quitting)
-		++primaryRenderer.fadeValue;
+	if (playRenderer.fadeValue < 32 && !quitting)
+		++playRenderer.fadeValue;
 
 	++menuCycles;
-	primaryRenderer.pal = primaryRenderer.origpal;
-	primaryRenderer.pal.rotateFrom(primaryRenderer.origpal, 168, 174, menuCycles);
-	primaryRenderer.pal.setWormColours(*settings);
-	primaryRenderer.pal.fade(primaryRenderer.fadeValue);
+	playRenderer.pal = playRenderer.origpal;
+	playRenderer.pal.rotateFrom(playRenderer.origpal, 168, 174, menuCycles);
+	playRenderer.pal.setWormColours(*settings);
+	playRenderer.pal.fade(playRenderer.fadeValue);
 	flip();
 }
 
@@ -791,10 +792,13 @@ void Gfx::draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRend
 
 void Gfx::flip()
 {
-	draw(*sdlDrawSurface, *sdlTexture, *sdlRenderer, primaryRenderer);
+	// draw into the play window. This uses either the normal split screen renderer
+	// or the single screen renderer if this is a replay and single screen replay
+	// is turned on
+	draw(*sdlDrawSurface, *sdlTexture, *sdlRenderer, *primaryRenderer);
 	if (settings->spectatorWindow)
 	{
-		draw(*sdlSpectatorDrawSurface, *sdlSpectatorTexture, *sdlSpectatorRenderer, secondaryRenderer);
+		draw(*sdlSpectatorDrawSurface, *sdlSpectatorTexture, *sdlSpectatorRenderer, singleScreenRenderer);
 	}
 }
 
@@ -1082,7 +1086,7 @@ void Gfx::selectLevel()
 
 	do
 	{
-		primaryRenderer.bmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 		
 		string title = LS(SelLevel);
 		if (!levSel.currentNode->fullPath.empty())
@@ -1093,8 +1097,8 @@ void Gfx::selectLevel()
 		
 		int wid = common.font.getDims(title);
 
-		drawRoundedBox(primaryRenderer.bmp, 178, 20, 0, 7, wid);
-		common.font.drawText(primaryRenderer.bmp, title, 180, 21, 50);
+		drawRoundedBox(playRenderer.bmp, 178, 20, 0, 7, wid);
+		common.font.drawText(playRenderer.bmp, title, 180, 21, 50);
 
 		FileNode* sel = levSel.curSel();
 		if (previewNode != sel && sel && sel != random.get() && !sel->folder)
@@ -1165,7 +1169,7 @@ void Gfx::selectProfile(WormSettings& ws)
 	
 	do
 	{
-		primaryRenderer.bmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 
 		string title = "Select profile:";
 		if (!profileSel.currentNode->fullPath.empty())
@@ -1174,7 +1178,7 @@ void Gfx::selectProfile(WormSettings& ws)
 			title += profileSel.currentNode->fullPath;
 		}
 
-		common->font.drawFramedText(primaryRenderer.bmp, title, 178, 20, 50);
+		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
 
 		profileSel.draw();
 
@@ -1218,7 +1222,7 @@ int Gfx::selectReplay()
 
 	do
 	{
-		primaryRenderer.bmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 
 		string title = "Select replay:";
 		if (!replaySel.currentNode->fullPath.empty())
@@ -1227,7 +1231,7 @@ int Gfx::selectReplay()
 			title += replaySel.currentNode->fullPath;
 		}
 
-		common->font.drawFramedText(primaryRenderer.bmp, title, 178, 20, 50);
+		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
 
 		replaySel.draw();
 
@@ -1273,7 +1277,7 @@ void Gfx::selectOptions()
 	
 	do
 	{
-		primaryRenderer.bmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 		
 		string title = "Select options:";
 		if (!optionsSel.currentNode->fullPath.empty())
@@ -1282,7 +1286,7 @@ void Gfx::selectOptions()
 			title += optionsSel.currentNode->fullPath;
 		}
 		
-		common->font.drawFramedText(primaryRenderer.bmp, title, 178, 20, 50);
+		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
 
 		optionsSel.draw();
 		
@@ -1330,7 +1334,7 @@ std::unique_ptr<Common> Gfx::selectTc()
 	
 	do
 	{
-		primaryRenderer.bmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 		
 		string title = "Select TC:";
 		if (!tcSel.currentNode->fullPath.empty())
@@ -1339,7 +1343,7 @@ std::unique_ptr<Common> Gfx::selectTc()
 			title += tcSel.currentNode->fullPath;
 		}
 		
-		common->font.drawFramedText(primaryRenderer.bmp, title, 178, 20, 50);
+		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
 
 		tcSel.draw();
 		
@@ -1399,15 +1403,15 @@ void Gfx::weaponOptions()
 	
 	while(true)
 	{
-		primaryRenderer.bmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 		
 		drawBasicMenu();
 		
-		drawRoundedBox(primaryRenderer.bmp, 179, 20, 0, 7, common.font.getDims(LS(Weapon)));
-		drawRoundedBox(primaryRenderer.bmp, 249, 20, 0, 7, common.font.getDims(LS(Availability)));
+		drawRoundedBox(playRenderer.bmp, 179, 20, 0, 7, common.font.getDims(LS(Weapon)));
+		drawRoundedBox(playRenderer.bmp, 249, 20, 0, 7, common.font.getDims(LS(Availability)));
 		
-		common.font.drawText(primaryRenderer.bmp, LS(Weapon), 181, 21, 50);
-		common.font.drawText(primaryRenderer.bmp, LS(Availability), 251, 21, 50);
+		common.font.drawText(playRenderer.bmp, LS(Weapon), 181, 21, 50);
+		common.font.drawText(playRenderer.bmp, LS(Availability), 251, 21, 50);
 		
 		weaponMenu.draw(common, false);
 
@@ -1478,8 +1482,8 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	
 	if(clearScreen)
 	{
-		primaryRenderer.pal = common->exepal;
-		fill(primaryRenderer.bmp, bgColor);
+		playRenderer.pal = common->exepal;
+		fill(playRenderer.bmp, bgColor);
 	}
 	
 	int height;
@@ -1488,8 +1492,8 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	int cx = x - width/2 - 2;
 	int cy = y - height/2 - 2;
 	
-	drawRoundedBox(primaryRenderer.bmp, cx, cy, 0, height+1, width+1);
-	common->font.drawText(primaryRenderer.bmp, text, cx+2, cy+2, 6);
+	drawRoundedBox(playRenderer.bmp, cx, cy, 0, height+1, width+1);
+	common->font.drawText(playRenderer.bmp, text, cx+2, cy+2, 6);
 	
 	flip();
 	process();
@@ -1498,7 +1502,7 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	clearKeys();
 	
 	if(clearScreen)
-		fill(primaryRenderer.bmp, bgColor);
+		fill(playRenderer.bmp, bgColor);
 }
 
 bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int), std::string const& prefix, bool centered)
@@ -1521,11 +1525,11 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 
 		//int offset = clrX + y*320; // TODO: Unhardcode 320
 		
-		blitImageNoKeyColour(primaryRenderer.bmp, &frozenScreen.getPixel(clrX, y), clrX, y, clrX + 10 + width, 8, frozenScreen.pitch);
+		blitImageNoKeyColour(playRenderer.bmp, &frozenScreen.getPixel(clrX, y), clrX, y, clrX + 10 + width, 8, frozenScreen.pitch);
 		
-		drawRoundedBox(primaryRenderer.bmp, x - 2 - adjust, y, 0, 7, width);
+		drawRoundedBox(playRenderer.bmp, x - 2 - adjust, y, 0, 7, width);
 		
-		font.drawText(primaryRenderer.bmp, str, x - adjust, y + 1, 50);
+		font.drawText(playRenderer.bmp, str, x - adjust, y + 1, 50);
 		flip();
 
 		SDL_StartTextInput();
@@ -1605,14 +1609,14 @@ void PlayerMenu::drawItemOverlay(Common& common, MenuItem& item, int x, int y, b
 
 		if(selected)
 		{
-			drawRoundedBox(gfx.primaryRenderer.bmp, x + 24, y, 168, 7, ws->rgb[rgbcol] - 1);
+			drawRoundedBox(gfx.playRenderer.bmp, x + 24, y, 168, 7, ws->rgb[rgbcol] - 1);
 		}
 		else // CE98
 		{
-			drawRoundedBox(gfx.primaryRenderer.bmp, x + 24, y, 0, 7, ws->rgb[rgbcol] - 1);
+			drawRoundedBox(gfx.playRenderer.bmp, x + 24, y, 0, 7, ws->rgb[rgbcol] - 1);
 		}
 		
-		fillRect(gfx.primaryRenderer.bmp, x + 25, y + 1, ws->rgb[rgbcol], 5, ws->color);
+		fillRect(gfx.playRenderer.bmp, x + 25, y + 1, ws->rgb[rgbcol], 5, ws->color);
 	} // CED9
 }
 
@@ -1696,18 +1700,18 @@ restart:
 		controller->swapLevel(newLevel);
 	}
 	
-	controller->currentGame()->focus(this->primaryRenderer);
-	controller->currentGame()->focus(this->secondaryRenderer);
+	controller->currentGame()->focus(this->playRenderer);
+	controller->currentGame()->focus(this->singleScreenRenderer);
 
 	// TODO: Unfocus game when necessary
 	
 	while(true)
 	{
-		primaryRenderer.clear();
-		controller->draw(this->primaryRenderer, false);
+		playRenderer.clear();
+		controller->draw(this->playRenderer, false);
 
-		secondaryRenderer.clear();
-		controller->draw(this->secondaryRenderer, true);
+		singleScreenRenderer.clear();
+		controller->draw(this->singleScreenRenderer, true);
 
 		
 		int selection = menuLoop();
@@ -1737,9 +1741,9 @@ restart:
 		}
 		else if(selection == MainMenu::MaResumeGame)
 		{
-			if (controller->isReplay() && settings->singleScreenReplay)
+			if (controller->isReplay())
 			{
-				primaryRenderer.setRenderResolution(640, 400);
+				primaryRenderer = &singleScreenRenderer;
 			}			
 		}
 		else if(selection == MainMenu::MaQuit) // QUIT TO OS
@@ -1750,7 +1754,7 @@ restart:
 		{
 			if (settings->singleScreenReplay)
 			{
-				primaryRenderer.setRenderResolution(640, 400);
+				primaryRenderer = &singleScreenRenderer;
 			}
 		}
 		else if (selection == MainMenu::MaTc)
@@ -1764,20 +1768,18 @@ restart:
 		{
 			if(!controller->process())
 				break;
-			primaryRenderer.clear();
-			controller->draw(this->primaryRenderer, false);
+			playRenderer.clear();
+			controller->draw(this->playRenderer, false);
 
-			secondaryRenderer.clear();
-			controller->draw(this->secondaryRenderer, true);
+			singleScreenRenderer.clear();
+			controller->draw(this->singleScreenRenderer, true);
 			
 			flip();
 			process(controller.get());
 		}
 
-		// reset internal resolution upon exiting any game. This includes
-		// replays, because the menu needs to render at the same resolution
-		primaryRenderer.setRenderResolution(320, 200);
-		
+		primaryRenderer = &playRenderer;
+
 		controller->unfocus();
 		
 		clearKeys();
@@ -1807,7 +1809,7 @@ bool Gfx::loadSettingsLegacy(FsNode node)
 
 void Gfx::drawBasicMenu(/*int curSel*/)
 {
-	primaryRenderer.bmp.copy(frozenScreen);
+	playRenderer.bmp.copy(frozenScreen);
 
 	mainMenu.draw(*common, curMenu != &mainMenu, -1, true);
 }
@@ -1836,12 +1838,12 @@ void Gfx::openHiddenMenu()
 int Gfx::menuLoop()
 {
 	Common& common = *this->common;
-	std::memset(primaryRenderer.pal.entries, 0, sizeof(primaryRenderer.pal.entries));
+	std::memset(playRenderer.pal.entries, 0, sizeof(playRenderer.pal.entries));
 	flip();
 	process();
 	
-	fillRect(primaryRenderer.bmp, 0, 151, 160, 7, 0);
-	common.font.drawText(primaryRenderer.bmp, LS(Copyright2), 2, 152, 19);
+	fillRect(playRenderer.bmp, 0, 151, 160, 7, 0);
+	common.font.drawText(playRenderer.bmp, LS(Copyright2), 2, 152, 19);
 
 	int startItemId;
 	if (controller->running())
@@ -1862,10 +1864,10 @@ int Gfx::menuLoop()
 	settingsMenu.moveToFirstVisible();
 	settingsMenu.updateItems(common);
 	
-	primaryRenderer.fadeValue = 0;
+	playRenderer.fadeValue = 0;
 	curMenu = &mainMenu;
 
-	frozenScreen.copy(primaryRenderer.bmp);
+	frozenScreen.copy(playRenderer.bmp);
 
 	menuCycles = 0;
 	int selected = -1;
@@ -2144,7 +2146,7 @@ int Gfx::menuLoop()
 	}
 	while(selected < 0);
 
-	for (primaryRenderer.fadeValue = 32; primaryRenderer.fadeValue > 0; --primaryRenderer.fadeValue)
+	for (playRenderer.fadeValue = 32; playRenderer.fadeValue > 0; --playRenderer.fadeValue)
 	{
 		menuFlip(true);
 		process();

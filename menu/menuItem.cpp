@@ -12,15 +12,15 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 	
 	if(selected)
 	{
-		drawRoundedBox(gfx.primaryRenderer.bmp, x, y, 0, 7, wid);
+		drawRoundedBox(gfx.playRenderer.bmp, x, y, 0, 7, wid);
 		if(hasValue)
-			drawRoundedBox(gfx.primaryRenderer.bmp, x + valueOffsetX - (valueWid >> 1), y, 0, 7, valueWid);
+			drawRoundedBox(gfx.playRenderer.bmp, x + valueOffsetX - (valueWid >> 1), y, 0, 7, valueWid);
 	}
 	else
 	{
-		common.font.drawText(gfx.primaryRenderer.bmp, string, x + 3, y + 2, 0);
+		common.font.drawText(gfx.playRenderer.bmp, string, x + 3, y + 2, 0);
 		if(hasValue)
-			common.font.drawText(gfx.primaryRenderer.bmp, value, x + valueOffsetX - (valueWid >> 1) + 3, y + 2, 0);
+			common.font.drawText(gfx.playRenderer.bmp, value, x + valueOffsetX - (valueWid >> 1) + 3, y + 2, 0);
 	}
 	
 	PalIdx c;
@@ -32,8 +32,8 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 	else
 		c = color;
 		
-	common.font.drawText(gfx.primaryRenderer.bmp, string, x + 2, y + 1, c);
+	common.font.drawText(gfx.playRenderer.bmp, string, x + 2, y + 1, c);
 	if(hasValue)
-		common.font.drawText(gfx.primaryRenderer.bmp, value, x + valueOffsetX - (valueWid >> 1) + 2, y + 1, c);
+		common.font.drawText(gfx.playRenderer.bmp, value, x + valueOffsetX - (valueWid >> 1) + 2, y + 1, c);
 }
 

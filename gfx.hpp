@@ -232,9 +232,15 @@ struct Gfx
 	Rand rand;
 
 	// renders everything for actual play
-	Renderer primaryRenderer;
-	// renders everything for spectator mode
-	Renderer secondaryRenderer;
+	Renderer playRenderer;
+	// renders everything on a single screen, for single screen replay and
+	// the spectator window
+	Renderer singleScreenRenderer;
+
+	// the renderer currently in use by the primary window. Usually
+	// playRenderer, but is singleScreenRenderer if watching a replay in
+	// single screen mode.
+	Renderer* primaryRenderer;
 
 	FsNode configNode;
 

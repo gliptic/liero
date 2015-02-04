@@ -339,6 +339,27 @@ void Game::processFrame()
 					--v.bannerY;
 			}
 		}
+		// FIXME duplicated code
+		for(std::size_t i = 0; i < spectatorViewports.size(); ++i)
+		{
+			Viewport& v = *spectatorViewports[i];
+			
+			bool down = false;
+			
+			if(wormByIdx(v.wormIdx)->killedTimer > 16)
+				down = true;
+				
+			if(down)
+			{
+				if(v.bannerY < 2)
+					++v.bannerY;
+			}
+			else
+			{
+				if(v.bannerY > -8)
+					--v.bannerY;
+			}
+		}
 	}
 	
 	auto sr = sobjects.all();

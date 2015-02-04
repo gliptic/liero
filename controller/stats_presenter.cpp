@@ -256,9 +256,9 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 	Bitmap bg;
 
-	bg.copy(gfx.primaryRenderer.bmp);
+	bg.copy(gfx.playRenderer.bmp);
 
-	StatsRenderer renderer(gfx.primaryRenderer, game, recorder, common);
+	StatsRenderer renderer(gfx.playRenderer, game, recorder, common);
 
 	double offset = 0, destOffset = 0;
 	double pane = 0;
@@ -301,7 +301,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 	while (true)
 	{
-		gfx.primaryRenderer.bmp.copy(bg);
+		gfx.playRenderer.bmp.copy(bg);
 
 		int offsX = (int)std::floor(pane * -renderer.renderer.renderResX);
 		int offsY = (int)offset;
@@ -394,7 +394,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 			});
 		}
 
-		gfx.primaryRenderer.pal = common.exepal; // We don't use gfx.origpal because the colors are unpredictable
+		gfx.playRenderer.pal = common.exepal; // We don't use gfx.origpal because the colors are unpredictable
 
 		gfx.flip();
 		gfx.process();
@@ -441,7 +441,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 		}
 	}
 	
-	fill(gfx.primaryRenderer.bmp, 0);
+	fill(gfx.playRenderer.bmp, 0);
 
 	gfx.clearKeys();
 }

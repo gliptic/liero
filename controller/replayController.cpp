@@ -54,7 +54,8 @@ void ReplayController::focus()
 		// Changing state first when game is available
 		changeState(StateGame);
 	}
-	game->focus(gfx.primaryRenderer);
+	game->focus(gfx.playRenderer);
+	game->focus(gfx.singleScreenRenderer);
 	goingToMenu = false;
 	fadeValue = 0;
 }
@@ -77,7 +78,7 @@ bool ReplayController::process()
 			{
 				try
 				{
-					if (!replay->playbackFrame(gfx.primaryRenderer))
+					if (!replay->playbackFrame(*gfx.primaryRenderer))
 					{
 						// End of replay
 						replay.reset();
@@ -155,12 +156,32 @@ void ReplayController::changeState(State newState)
 	
 	if(newState == StateGame)
 	{
-		if (gfx.settings->singleScreenReplay) {
-			game->clearViewports();
-			// +68 on x to align the viewport in the middle
-			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
-			// TODO: a bit weird to duplicate this, but it's needed to draw health bars etc
-			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350));
+		// FIXME: the viewports are changed based on the replay for some 
+		// reason, so we need to restore them here. Probably makes more sense
+		// to not save the viewports at all. But that probably breaks save
+		// format compatibility?
+		game->clearViewports();
+		Viewport *v1, *v2;
+
+		// +68 on x to align the viewport in the middle
+		v1 = new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350);
+		// TODO: a bit weird to duplicate this, but it's needed to draw health bars etc
+		v2 = new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350);
+
+		// spectator viewport is always full size
+		game->addSpectatorViewport(v1);
+		game->addSpectatorViewport(v2);
+		if (gfx.settings->singleScreenReplay)
+		{
+			// on single screen replay, use the spectator viewports for the
+			// main screen as well
+			game->addViewport(v1);
+			game->addViewport(v2);
+		}
+		else
+		{
+			game->addViewport(new Viewport(gvl::rect(0, 0, 158, 158), game->worms[0]->index, 0, 504, 350));
+			game->addViewport(new Viewport(gvl::rect(160, 0, 158+160, 158), game->worms[1]->index, 218, 504, 350));
 		}
 		game->startGame();
 #if !ENABLE_TRACING

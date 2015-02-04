@@ -94,31 +94,31 @@ void WeaponSelection::draw()
 	
 	if(!cachedBackground)
 	{
-		game.draw(gfx.primaryRenderer, false);
+		game.draw(gfx.playRenderer, false);
 			
 		if(game.settings->levelFile.empty())
 		{
-			common.font.drawText(gfx.primaryRenderer.bmp, LS(LevelRandom), 0, 162, 50);
+			common.font.drawText(gfx.playRenderer.bmp, LS(LevelRandom), 0, 162, 50);
 		}
 		else
 		{
 			auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
-			common.font.drawText(gfx.primaryRenderer.bmp, (LS(LevelIs1) + levelName + LS(LevelIs2)), 0, 162, 50);
+			common.font.drawText(gfx.playRenderer.bmp, (LS(LevelIs1) + levelName + LS(LevelIs2)), 0, 162, 50);
 		}
 		
-		gfx.frozenScreen.copy(gfx.primaryRenderer.bmp);
+		gfx.frozenScreen.copy(gfx.playRenderer.bmp);
 		cachedBackground = true;
 	}
 	
-	gfx.primaryRenderer.bmp.copy(gfx.frozenScreen);
+	gfx.playRenderer.bmp.copy(gfx.frozenScreen);
 
 	if(!focused)
 		return;
 		
 
-	drawRoundedBox(gfx.primaryRenderer.bmp, 114, 2, 0, 7, common.font.getDims(LS(SelWeap)));
+	drawRoundedBox(gfx.playRenderer.bmp, 114, 2, 0, 7, common.font.getDims(LS(SelWeap)));
 	
-	common.font.drawText(gfx.primaryRenderer.bmp, LS(SelWeap), 116, 3, 50);
+	common.font.drawText(gfx.playRenderer.bmp, LS(SelWeap), 116, 3, 50);
 		
 	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
@@ -130,8 +130,8 @@ void WeaponSelection::draw()
 		WormSettings& ws = *worm.settings;
 		
 		int width = common.font.getDims(ws.name);
-		drawRoundedBox(gfx.primaryRenderer.bmp, weaponMenu.x + 29 - width / 2, weaponMenu.y - 11, 0, 7, width);
-		common.font.drawText(gfx.primaryRenderer.bmp, ws.name, weaponMenu.x + 31 - width / 2, weaponMenu.y - 10, ws.color + 1);
+		drawRoundedBox(gfx.playRenderer.bmp, weaponMenu.x + 29 - width / 2, weaponMenu.y - 11, 0, 7, width);
+		common.font.drawText(gfx.playRenderer.bmp, ws.name, weaponMenu.x + 31 - width / 2, weaponMenu.y - 10, ws.color + 1);
 		
 		if(!isReady[i])
 		{
@@ -140,9 +140,9 @@ void WeaponSelection::draw()
 	}
 	
 	// TODO: This just uses the currently activated palette, which might well be wrong.
-	gfx.primaryRenderer.pal = gfx.primaryRenderer.origpal;
-	gfx.primaryRenderer.pal.rotateFrom(gfx.primaryRenderer.origpal, 168, 174, gfx.menuCycles);
-	gfx.primaryRenderer.pal.fade(gfx.primaryRenderer.fadeValue);
+	gfx.playRenderer.pal = gfx.playRenderer.origpal;
+	gfx.playRenderer.pal.rotateFrom(gfx.playRenderer.origpal, 168, 174, gfx.menuCycles);
+	gfx.playRenderer.pal.fade(gfx.playRenderer.fadeValue);
 	++gfx.menuCycles;
 }
 	
