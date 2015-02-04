@@ -727,14 +727,9 @@ void Gfx::flip()
 		PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels) + offsetY * destPitch + offsetX * back->format->BytesPerPixel;
 		PalIdx* src = screenBmp.pixels;
 		
-		if(back->format->BitsPerPixel == 32)
-		{
-			uint32_t pal32[256];
-
-			preparePalette(back->format, realPal, pal32);
-
-			scaleDraw(src, renderResX, renderResY, srcPitch, dest, destPitch, mag, pal32);
-		}
+		uint32_t pal32[256];
+		preparePalette(back->format, realPal, pal32);
+		scaleDraw(src, renderResX, renderResY, srcPitch, dest, destPitch, mag, pal32);
 	}
 
 	SDL_UpdateTexture(texture, NULL, back->pixels, windowW * 4);
