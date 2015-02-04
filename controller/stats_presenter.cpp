@@ -52,7 +52,7 @@ struct StatsRenderer
 			y = topY;
 			y += 10;
 
-			drawRoundedBox(renderer.screenBmp, offsX + paneX, y, 0, 2000, paneWidth);
+			drawRoundedBox(renderer.bmp, offsX + paneX, y, 0, 2000, paneWidth);
 
 			y += 10;
 
@@ -80,11 +80,11 @@ struct StatsRenderer
 			for (int i = 0; i < 2; ++i)
 			{
 				int x = renderer.renderResX / 2 + (i == 0 ? -1 : 1) * (renderer.renderResX / 4) + offsX;
-				blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
+				blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
 				cell c(i == 0 ? cell::right : cell::left);
 				common.font.drawText(
-					renderer.screenBmp,
+					renderer.bmp,
 					c << game.worms[i]->settings->name,
 					x + (i == 0 ? -16 : 16),
 					y + 2,
@@ -97,11 +97,11 @@ struct StatsRenderer
 	{
 		bool visible = hblock(20, [this, i] {
 			int x = renderer.renderResX / 2 + offsX;
-			blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
+			blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
 			cell c(i == 0 ? cell::right : cell::left);
 			common.font.drawText(
-				renderer.screenBmp,
+				renderer.bmp,
 				c << game.worms[i]->settings->name,
 				x + (i == 0 ? -16 : 16),
 				y + 2,
@@ -111,7 +111,7 @@ struct StatsRenderer
 		if (!visible)
 		{
 			int x = 18 + offsX;
-			blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, 10);
+			blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, 10);
 		}
 	}
 
@@ -120,7 +120,7 @@ struct StatsRenderer
 	{
 		hblock(11, [this, name, &wormStat] {
 			common.font.drawText(
-				renderer.screenBmp,
+				renderer.bmp,
 				cell(cell::center).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
 
 			for (int i = 0; i < 2; ++i)
@@ -132,7 +132,7 @@ struct StatsRenderer
 				cell c(p);
 				wormStat(w, c);
 				common.font.drawText(
-					renderer.screenBmp,
+					renderer.bmp,
 					c, x, y, textColor);
 			}
 		});
@@ -143,7 +143,7 @@ struct StatsRenderer
 	{
 		hblock(11, [this, name, &stat] {
 			common.font.drawText(
-				renderer.screenBmp,
+				renderer.bmp,
 				cell(cell::right).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
 
 			int x = renderer.renderResX / 2 + 10 + offsX;
@@ -151,7 +151,7 @@ struct StatsRenderer
 			cell c(cell::left);
 			stat(c);
 			common.font.drawText(
-				renderer.screenBmp,
+				renderer.bmp,
 				c, x, y, textColor);
 		});
 	}
@@ -172,7 +172,7 @@ struct StatsRenderer
 		}
 
 		common.font.drawText(
-			renderer.screenBmp,
+			renderer.bmp,
 			c, x, y, color);
 
 		if (level == 0)
@@ -218,7 +218,7 @@ struct StatsRenderer
 		y += 2;
 		hblock(height, [&, this] {
 			int start = 20 + offsX;
-			drawGraph(renderer.screenBmp, data, height, start, y, color, negColor, balanced);
+			drawGraph(renderer.bmp, data, height, start, y, color, negColor, balanced);
 		});
 		y += 7;
 	}
@@ -230,7 +230,7 @@ struct StatsRenderer
 			int startX = paneX + paneWidth / 2 - (hm.width / 2) + offsX;
 			int startY = y;
 
-			drawHeatmap(renderer.screenBmp, startX, startY, hm);
+			drawHeatmap(renderer.bmp, startX, startY, hm);
 		});
 		y += 7;
 	}
@@ -256,9 +256,9 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 	Bitmap bg;
 
-	bg.copy(gfx.screenBmp);
+	bg.copy(gfx.primaryRenderer.bmp);
 
-	StatsRenderer renderer(gfx, game, recorder, common);
+	StatsRenderer renderer(gfx.primaryRenderer, game, recorder, common);
 
 	double offset = 0, destOffset = 0;
 	double pane = 0;
@@ -301,7 +301,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 	while (true)
 	{
-		gfx.screenBmp.copy(bg);
+		gfx.primaryRenderer.bmp.copy(bg);
 
 		int offsX = (int)std::floor(pane * -renderer.renderer.renderResX);
 		int offsY = (int)offset;
@@ -394,7 +394,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 			});
 		}
 
-		gfx.pal = common.exepal; // We don't use gfx.origpal because the colors are unpredictable
+		gfx.primaryRenderer.pal = common.exepal; // We don't use gfx.origpal because the colors are unpredictable
 
 		gfx.flip();
 		gfx.process();
@@ -441,7 +441,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 		}
 	}
 	
-	fill(gfx.screenBmp, 0);
+	fill(gfx.primaryRenderer.bmp, 0);
 
 	gfx.clearKeys();
 }

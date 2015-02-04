@@ -94,31 +94,31 @@ void WeaponSelection::draw()
 	
 	if(!cachedBackground)
 	{
-		game.draw(gfx);
+		game.draw(gfx.primaryRenderer);
 			
 		if(game.settings->levelFile.empty())
 		{
-			common.font.drawText(gfx.screenBmp, LS(LevelRandom), 0, 162, 50);
+			common.font.drawText(gfx.primaryRenderer.bmp, LS(LevelRandom), 0, 162, 50);
 		}
 		else
 		{
 			auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
-			common.font.drawText(gfx.screenBmp, (LS(LevelIs1) + levelName + LS(LevelIs2)), 0, 162, 50);
+			common.font.drawText(gfx.primaryRenderer.bmp, (LS(LevelIs1) + levelName + LS(LevelIs2)), 0, 162, 50);
 		}
 		
-		gfx.frozenScreen.copy(gfx.screenBmp);
+		gfx.frozenScreen.copy(gfx.primaryRenderer.bmp);
 		cachedBackground = true;
 	}
 	
-	gfx.screenBmp.copy(gfx.frozenScreen);
+	gfx.primaryRenderer.bmp.copy(gfx.frozenScreen);
 
 	if(!focused)
 		return;
 		
 
-	drawRoundedBox(gfx.screenBmp, 114, 2, 0, 7, common.font.getDims(LS(SelWeap)));
+	drawRoundedBox(gfx.primaryRenderer.bmp, 114, 2, 0, 7, common.font.getDims(LS(SelWeap)));
 	
-	common.font.drawText(gfx.screenBmp, LS(SelWeap), 116, 3, 50);
+	common.font.drawText(gfx.primaryRenderer.bmp, LS(SelWeap), 116, 3, 50);
 		
 	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
@@ -130,8 +130,8 @@ void WeaponSelection::draw()
 		WormSettings& ws = *worm.settings;
 		
 		int width = common.font.getDims(ws.name);
-		drawRoundedBox(gfx.screenBmp, weaponMenu.x + 29 - width/2, weaponMenu.y - 11, 0, 7, width);
-		common.font.drawText(gfx.screenBmp, ws.name, weaponMenu.x + 31 - width/2, weaponMenu.y - 10, ws.color + 1);
+		drawRoundedBox(gfx.primaryRenderer.bmp, weaponMenu.x + 29 - width / 2, weaponMenu.y - 11, 0, 7, width);
+		common.font.drawText(gfx.primaryRenderer.bmp, ws.name, weaponMenu.x + 31 - width / 2, weaponMenu.y - 10, ws.color + 1);
 		
 		if(!isReady[i])
 		{
@@ -140,9 +140,9 @@ void WeaponSelection::draw()
 	}
 	
 	// TODO: This just uses the currently activated palette, which might well be wrong.
-	gfx.pal = gfx.origpal;
-	gfx.pal.rotateFrom(gfx.origpal, 168, 174, gfx.menuCycles);
-	gfx.pal.fade(gfx.fadeValue);
+	gfx.primaryRenderer.pal = gfx.primaryRenderer.origpal;
+	gfx.primaryRenderer.pal.rotateFrom(gfx.primaryRenderer.origpal, 168, 174, gfx.menuCycles);
+	gfx.primaryRenderer.pal.fade(gfx.primaryRenderer.fadeValue);
 	++gfx.menuCycles;
 }
 	

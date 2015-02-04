@@ -129,7 +129,7 @@ try
 	gvl::shared_ptr<Common> common(new Common());
 	common->load(std::move(lieroRoot));
 	gfx.common = common;
-	gfx.loadPalette(*common); // This gets the palette from common
+	gfx.primaryRenderer.loadPalette(*common); // This gets the palette from common
 	
 	if(!gfx.loadSettings(configNode / "liero.cfg"))
 	{

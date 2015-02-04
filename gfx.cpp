@@ -274,7 +274,7 @@ Gfx::Gfx()
 , playerMenu(178, 20)
 , hiddenMenu(178, 20)
 , curMenu(0)
-, back(0)
+, sdlDrawSurface(0)
 , running(true)
 , fullscreen(false)
 , doubleRes(true)
@@ -292,8 +292,8 @@ void Gfx::init()
 	SDL_ShowCursor(SDL_DISABLE);
 	lastFrame = SDL_GetTicks();
 
-	Renderer::init();
-	
+	primaryRenderer.init(320, 200);
+	secondaryRenderer.init(640, 400);
 	// Joystick init:
 	SDL_JoystickEventState(SDL_ENABLE);
 	int numJoysticks = SDL_NumJoysticks();
@@ -313,13 +313,13 @@ void Gfx::setVideoMode()
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	}
 
-	if (window) {
-		SDL_DestroyWindow(window);
+	if (sdlWindow) {
+		SDL_DestroyWindow(sdlWindow);
 	}
-	window = SDL_CreateWindow("Liero 1.37", SDL_WINDOWPOS_UNDEFINED, 
-	                          SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
-	if (renderer) {
-		SDL_DestroyRenderer(renderer);
+	sdlWindow = SDL_CreateWindow("Liero 1.37", SDL_WINDOWPOS_UNDEFINED, 
+		                         SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
+	if (sdlRenderer) {
+		SDL_DestroyRenderer(sdlRenderer);
 	}
 	// vertical sync is always enabled, because without it Liero will always
 	// run at the maximum speed your computer can manage. On my machine, this
@@ -327,28 +327,28 @@ void Gfx::setVideoMode()
 	// the proper way to fix this is to decouple the drawing from the game
 	// logic, but that's a pretty big undertaking. Any modern (or even old) 
 	// machine should be able to run Liero with vsync without problems.
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC);
+	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, SDL_RENDERER_PRESENTVSYNC);
 
 	onWindowResize();
 }
 
 void Gfx::onWindowResize()
 {
-	if (texture) {
-		SDL_DestroyTexture(texture);
+	if (sdlTexture) {
+		SDL_DestroyTexture(sdlTexture);
 	}
-	texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, 
-	                            SDL_TEXTUREACCESS_STREAMING, windowW, windowH);
-	if (back) {
-		SDL_FreeSurface(back);
+	sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, 
+		                           SDL_TEXTUREACCESS_STREAMING, windowW, windowH);
+	if (sdlDrawSurface) {
+		SDL_FreeSurface(sdlDrawSurface);
 	}
-	back = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
+	sdlDrawSurface = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
 	// linear for that old-school chunky look, but consider adding a user 
 	// option for this
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 	// FIXME: we should use SDL's logical size functionality instead of the
 	// manual rescaling we do now
-	SDL_RenderSetLogicalSize(renderer, windowW, windowH);
+	SDL_RenderSetLogicalSize(sdlRenderer, windowW, windowH);
 	doubleRes = (windowW >= 640 && windowH >= 400);
 }
 
@@ -687,14 +687,14 @@ void Gfx::preparePalette(SDL_PixelFormat* format, Color realPal[256], uint32_t (
 
 void Gfx::menuFlip(bool quitting)
 {
-	if (fadeValue < 32 && !quitting)
-		++fadeValue;
+	if (primaryRenderer.fadeValue < 32 && !quitting)
+		++primaryRenderer.fadeValue;
 
 	++menuCycles;
-	pal = origpal;
-	pal.rotateFrom(origpal, 168, 174, menuCycles);
-	pal.setWormColours(*settings);
-	pal.fade(fadeValue);
+	primaryRenderer.pal = primaryRenderer.origpal;
+	primaryRenderer.pal.rotateFrom(primaryRenderer.origpal, 168, 174, menuCycles);
+	primaryRenderer.pal.setWormColours(*settings);
+	primaryRenderer.pal.fade(primaryRenderer.fadeValue);
 	flip();
 }
 
@@ -702,40 +702,41 @@ void Gfx::flip()
 {
 	gvl::rect updateRect;
 	Color realPal[256];
-	pal.activate(realPal);
+	primaryRenderer.pal.activate(realPal);
 
 	{
 		int offsetX, offsetY;
-		int mag = fitScreen(back->w, back->h, renderResX, renderResY, offsetX, offsetY);
+		int mag = fitScreen(sdlDrawSurface->w, sdlDrawSurface->h, 
+							primaryRenderer.renderResX, primaryRenderer.renderResY, offsetX, offsetY);
 		
-		gvl::rect newRect(offsetX, offsetY, renderResX * mag, renderResY * mag);
+		gvl::rect newRect(offsetX, offsetY, primaryRenderer.renderResX * mag, primaryRenderer.renderResY * mag);
 		
 		if(mag != prevMag)
 		{
 			// Clear background if magnification is decreased to
 			// avoid leftovers.
-			SDL_FillRect(back, 0, 0);
+			SDL_FillRect(sdlDrawSurface, 0, 0);
 			updateRect = lastUpdateRect | newRect;
 		}
 		else
 			updateRect = newRect;
 		prevMag = mag;
 		
-		std::size_t destPitch = back->pitch;
-		std::size_t srcPitch = screenBmp.pitch;
+		std::size_t destPitch = sdlDrawSurface->pitch;
+		std::size_t srcPitch = primaryRenderer.bmp.pitch;
 		
-		PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels) + offsetY * destPitch + offsetX * back->format->BytesPerPixel;
-		PalIdx* src = screenBmp.pixels;
+		PalIdx* dest = reinterpret_cast<PalIdx*>(sdlDrawSurface->pixels) + offsetY * destPitch + offsetX * sdlDrawSurface->format->BytesPerPixel;
+		PalIdx* src = primaryRenderer.bmp.pixels;
 		
 		uint32_t pal32[256];
-		preparePalette(back->format, realPal, pal32);
-		scaleDraw(src, renderResX, renderResY, srcPitch, dest, destPitch, mag, pal32);
+		preparePalette(sdlDrawSurface->format, realPal, pal32);
+		scaleDraw(src, primaryRenderer.renderResX, primaryRenderer.renderResY, srcPitch, dest, destPitch, mag, pal32);
 	}
 
-	SDL_UpdateTexture(texture, NULL, back->pixels, windowW * 4);
-	SDL_RenderClear(renderer);
-	SDL_RenderCopy(renderer, texture, NULL, NULL);
-	SDL_RenderPresent(renderer);
+	SDL_UpdateTexture(sdlTexture, NULL, sdlDrawSurface->pixels, windowW * 4);
+	SDL_RenderClear(sdlRenderer);
+	SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
+	SDL_RenderPresent(sdlRenderer);
 
 	lastUpdateRect = updateRect;
 }
@@ -1024,7 +1025,7 @@ void Gfx::selectLevel()
 
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		primaryRenderer.bmp.copy(frozenScreen);
 		
 		string title = LS(SelLevel);
 		if (!levSel.currentNode->fullPath.empty())
@@ -1035,8 +1036,8 @@ void Gfx::selectLevel()
 		
 		int wid = common.font.getDims(title);
 
-		drawRoundedBox(screenBmp, 178, 20, 0, 7, wid);
-		common.font.drawText(screenBmp, title, 180, 21, 50);
+		drawRoundedBox(primaryRenderer.bmp, 178, 20, 0, 7, wid);
+		common.font.drawText(primaryRenderer.bmp, title, 180, 21, 50);
 
 		FileNode* sel = levSel.curSel();
 		if (previewNode != sel && sel && sel != random.get() && !sel->folder)
@@ -1107,7 +1108,7 @@ void Gfx::selectProfile(WormSettings& ws)
 	
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		primaryRenderer.bmp.copy(frozenScreen);
 
 		string title = "Select profile:";
 		if (!profileSel.currentNode->fullPath.empty())
@@ -1116,7 +1117,7 @@ void Gfx::selectProfile(WormSettings& ws)
 			title += profileSel.currentNode->fullPath;
 		}
 
-		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
+		common->font.drawFramedText(primaryRenderer.bmp, title, 178, 20, 50);
 
 		profileSel.draw();
 
@@ -1160,7 +1161,7 @@ int Gfx::selectReplay()
 
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		primaryRenderer.bmp.copy(frozenScreen);
 
 		string title = "Select replay:";
 		if (!replaySel.currentNode->fullPath.empty())
@@ -1169,7 +1170,7 @@ int Gfx::selectReplay()
 			title += replaySel.currentNode->fullPath;
 		}
 
-		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
+		common->font.drawFramedText(primaryRenderer.bmp, title, 178, 20, 50);
 
 		replaySel.draw();
 
@@ -1215,7 +1216,7 @@ void Gfx::selectOptions()
 	
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		primaryRenderer.bmp.copy(frozenScreen);
 		
 		string title = "Select options:";
 		if (!optionsSel.currentNode->fullPath.empty())
@@ -1224,7 +1225,7 @@ void Gfx::selectOptions()
 			title += optionsSel.currentNode->fullPath;
 		}
 		
-		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
+		common->font.drawFramedText(primaryRenderer.bmp, title, 178, 20, 50);
 
 		optionsSel.draw();
 		
@@ -1272,7 +1273,7 @@ std::unique_ptr<Common> Gfx::selectTc()
 	
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		primaryRenderer.bmp.copy(frozenScreen);
 		
 		string title = "Select TC:";
 		if (!tcSel.currentNode->fullPath.empty())
@@ -1281,7 +1282,7 @@ std::unique_ptr<Common> Gfx::selectTc()
 			title += tcSel.currentNode->fullPath;
 		}
 		
-		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
+		common->font.drawFramedText(primaryRenderer.bmp, title, 178, 20, 50);
 
 		tcSel.draw();
 		
@@ -1341,15 +1342,15 @@ void Gfx::weaponOptions()
 	
 	while(true)
 	{
-		screenBmp.copy(frozenScreen);
+		primaryRenderer.bmp.copy(frozenScreen);
 		
 		drawBasicMenu();
 		
-		drawRoundedBox(screenBmp, 179, 20, 0, 7, common.font.getDims(LS(Weapon)));
-		drawRoundedBox(screenBmp, 249, 20, 0, 7, common.font.getDims(LS(Availability)));
+		drawRoundedBox(primaryRenderer.bmp, 179, 20, 0, 7, common.font.getDims(LS(Weapon)));
+		drawRoundedBox(primaryRenderer.bmp, 249, 20, 0, 7, common.font.getDims(LS(Availability)));
 		
-		common.font.drawText(screenBmp, LS(Weapon), 181, 21, 50);
-		common.font.drawText(screenBmp, LS(Availability), 251, 21, 50);
+		common.font.drawText(primaryRenderer.bmp, LS(Weapon), 181, 21, 50);
+		common.font.drawText(primaryRenderer.bmp, LS(Availability), 251, 21, 50);
 		
 		weaponMenu.draw(common, false);
 
@@ -1420,8 +1421,8 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	
 	if(clearScreen)
 	{
-		pal = common->exepal;
-		fill(screenBmp, bgColor);
+		primaryRenderer.pal = common->exepal;
+		fill(primaryRenderer.bmp, bgColor);
 	}
 	
 	int height;
@@ -1430,8 +1431,8 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	int cx = x - width/2 - 2;
 	int cy = y - height/2 - 2;
 	
-	drawRoundedBox(screenBmp, cx, cy, 0, height+1, width+1);
-	common->font.drawText(screenBmp, text, cx+2, cy+2, 6);
+	drawRoundedBox(primaryRenderer.bmp, cx, cy, 0, height+1, width+1);
+	common->font.drawText(primaryRenderer.bmp, text, cx+2, cy+2, 6);
 	
 	flip();
 	process();
@@ -1440,7 +1441,7 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	clearKeys();
 	
 	if(clearScreen)
-		fill(screenBmp, bgColor);
+		fill(primaryRenderer.bmp, bgColor);
 }
 
 bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int), std::string const& prefix, bool centered)
@@ -1463,11 +1464,11 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 
 		//int offset = clrX + y*320; // TODO: Unhardcode 320
 		
-		blitImageNoKeyColour(screenBmp, &frozenScreen.getPixel(clrX, y), clrX, y, clrX + 10 + width, 8, frozenScreen.pitch);
+		blitImageNoKeyColour(primaryRenderer.bmp, &frozenScreen.getPixel(clrX, y), clrX, y, clrX + 10 + width, 8, frozenScreen.pitch);
 		
-		drawRoundedBox(screenBmp, x - 2 - adjust, y, 0, 7, width);
+		drawRoundedBox(primaryRenderer.bmp, x - 2 - adjust, y, 0, 7, width);
 		
-		font.drawText(screenBmp, str, x - adjust, y + 1, 50);
+		font.drawText(primaryRenderer.bmp, str, x - adjust, y + 1, 50);
 		flip();
 
 		SDL_StartTextInput();
@@ -1547,14 +1548,14 @@ void PlayerMenu::drawItemOverlay(Common& common, MenuItem& item, int x, int y, b
 
 		if(selected)
 		{
-			drawRoundedBox(gfx.screenBmp, x + 24, y, 168, 7, ws->rgb[rgbcol] - 1);
+			drawRoundedBox(gfx.primaryRenderer.bmp, x + 24, y, 168, 7, ws->rgb[rgbcol] - 1);
 		}
 		else // CE98
 		{
-			drawRoundedBox(gfx.screenBmp, x + 24, y, 0, 7, ws->rgb[rgbcol] - 1);
+			drawRoundedBox(gfx.primaryRenderer.bmp, x + 24, y, 0, 7, ws->rgb[rgbcol] - 1);
 		}
 		
-		fillRect(gfx.screenBmp, x + 25, y + 1, ws->rgb[rgbcol], 5, ws->color);
+		fillRect(gfx.primaryRenderer.bmp, x + 25, y + 1, ws->rgb[rgbcol], 5, ws->color);
 	} // CED9
 }
 
@@ -1638,13 +1639,13 @@ restart:
 		controller->swapLevel(newLevel);
 	}
 	
-	controller->currentGame()->focus(*this);
+	controller->currentGame()->focus(this->primaryRenderer);
 	// TODO: Unfocus game when necessary
 	
 	while(true)
 	{
-		clear();
-		controller->draw(*this);
+		primaryRenderer.clear();
+		controller->draw(this->primaryRenderer);
 		
 		int selection = menuLoop();
 		
@@ -1675,8 +1676,7 @@ restart:
 		{
 			if (controller->isReplay() && settings->singleScreenReplay)
 			{
-				renderResX = 640;
-				renderResY = 400;
+				primaryRenderer.setRenderResolution(640, 400);
 			}			
 		}
 		else if(selection == MainMenu::MaQuit) // QUIT TO OS
@@ -1687,8 +1687,7 @@ restart:
 		{
 			if (settings->singleScreenReplay)
 			{
-				renderResX = 640;
-				renderResY = 400;
+				primaryRenderer.setRenderResolution(640, 400);
 			}
 		}
 		else if (selection == MainMenu::MaTc)
@@ -1702,8 +1701,8 @@ restart:
 		{
 			if(!controller->process())
 				break;
-			clear();
-			controller->draw(*this);
+			primaryRenderer.clear();
+			controller->draw(this->primaryRenderer);
 			
 			flip();
 			process(controller.get());
@@ -1711,8 +1710,7 @@ restart:
 
 		// reset internal resolution upon exiting any game. This includes
 		// replays, because the menu needs to render at the same resolution
-		renderResX = 320;
-		renderResY = 200;	
+		primaryRenderer.setRenderResolution(320, 200);
 		
 		controller->unfocus();
 		
@@ -1743,7 +1741,7 @@ bool Gfx::loadSettingsLegacy(FsNode node)
 
 void Gfx::drawBasicMenu(/*int curSel*/)
 {
-	screenBmp.copy(frozenScreen);
+	primaryRenderer.bmp.copy(frozenScreen);
 
 	mainMenu.draw(*common, curMenu != &mainMenu, -1, true);
 }
@@ -1772,12 +1770,12 @@ void Gfx::openHiddenMenu()
 int Gfx::menuLoop()
 {
 	Common& common = *this->common;
-	std::memset(pal.entries, 0, sizeof(pal.entries));
+	std::memset(primaryRenderer.pal.entries, 0, sizeof(primaryRenderer.pal.entries));
 	flip();
 	process();
 	
-	fillRect(screenBmp, 0, 151, 160, 7, 0);
-	common.font.drawText(screenBmp, LS(Copyright2), 2, 152, 19);
+	fillRect(primaryRenderer.bmp, 0, 151, 160, 7, 0);
+	common.font.drawText(primaryRenderer.bmp, LS(Copyright2), 2, 152, 19);
 
 	int startItemId;
 	if (controller->running())
@@ -1798,10 +1796,10 @@ int Gfx::menuLoop()
 	settingsMenu.moveToFirstVisible();
 	settingsMenu.updateItems(common);
 	
-	fadeValue = 0;
+	primaryRenderer.fadeValue = 0;
 	curMenu = &mainMenu;
 
-	frozenScreen.copy(screenBmp);
+	frozenScreen.copy(primaryRenderer.bmp);
 
 	menuCycles = 0;
 	int selected = -1;
@@ -2080,7 +2078,7 @@ int Gfx::menuLoop()
 	}
 	while(selected < 0);
 
-	for(fadeValue = 32; fadeValue > 0; --fadeValue)
+	for (primaryRenderer.fadeValue = 32; primaryRenderer.fadeValue > 0; --primaryRenderer.fadeValue)
 	{
 		menuFlip(true);
 		process();

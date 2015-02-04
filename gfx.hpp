@@ -115,7 +115,7 @@ struct Joystick {
 };
 
 
-struct Gfx : Renderer
+struct Gfx
 {
 	Gfx();
 		
@@ -226,6 +226,14 @@ struct Gfx : Renderer
 		return configNode;
 	}
 
+	// PRNG for things that don't affect the game
+	Rand rand;
+
+	// renders everything for actual play
+	Renderer primaryRenderer;
+	// renders everything for spectator mode
+	Renderer secondaryRenderer;
+
 	FsNode configNode;
 
 	MainMenu mainMenu;
@@ -240,13 +248,13 @@ struct Gfx : Renderer
 	
 	bool dosKeys[177];
 	// the window to render into
-	SDL_Window* window = NULL;
+	SDL_Window* sdlWindow = NULL;
 	// the SDL renderer to use
-	SDL_Renderer* renderer = NULL;
+	SDL_Renderer* sdlRenderer = NULL;
 	// full screen size texture that represents the screen
-	SDL_Texture* texture = NULL;
+	SDL_Texture* sdlTexture = NULL;
 	// a software surface to do the actual drawing into
-	SDL_Surface* back = NULL;
+	SDL_Surface* sdlDrawSurface = NULL;
 	// when the menu is open, the ongoing game on the screen is paused and 
 	// stored in this bitmap
 	Bitmap frozenScreen;

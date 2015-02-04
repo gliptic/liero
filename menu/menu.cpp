@@ -109,10 +109,10 @@ void Menu::draw(Common& common, bool disabled, int x, bool showDisabledSelection
 	{
 		int menuHeight = height * itemHeight + 1;
 		
-		common.font.drawChar(gfx.screenBmp, 22, x - 6, y + 2, 0);
-		common.font.drawChar(gfx.screenBmp, 22, x - 7, y + 1, 50);
-		common.font.drawChar(gfx.screenBmp, 23, x - 6, y + menuHeight - 7, 0);
-		common.font.drawChar(gfx.screenBmp, 23, x - 7, y + menuHeight - 8, 50);
+		common.font.drawChar(gfx.primaryRenderer.bmp, 22, x - 6, y + 2, 0);
+		common.font.drawChar(gfx.primaryRenderer.bmp, 22, x - 7, y + 1, 50);
+		common.font.drawChar(gfx.primaryRenderer.bmp, 23, x - 6, y + menuHeight - 7, 0);
+		common.font.drawChar(gfx.primaryRenderer.bmp, 23, x - 7, y + menuHeight - 8, 50);
 		
 		int scrollBarHeight = menuHeight - 17;
 		
@@ -121,8 +121,8 @@ void Menu::draw(Common& common, bool disabled, int x, bool showDisabledSelection
 		scrollTabHeight = std::max(scrollTabHeight, 0);
 		int scrollTabY = y + int(topItem * scrollBarHeight / visibleItemCount);
 		
-		fillRect(gfx.screenBmp, x - 7, scrollTabY + 9, 7, scrollTabHeight, 0);
-		fillRect(gfx.screenBmp, x - 8, scrollTabY + 8, 7, scrollTabHeight, 7);
+		fillRect(gfx.primaryRenderer.bmp, x - 7, scrollTabY + 9, 7, scrollTabHeight, 0);
+		fillRect(gfx.primaryRenderer.bmp, x - 8, scrollTabY + 8, 7, scrollTabHeight, 7);
 	}
 }
 

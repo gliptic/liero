@@ -130,7 +130,7 @@ void LocalController::focus()
 		replay->focus();
 	if(state == StateInitial)
 		changeState(StateWeaponSelection);
-	game.focus(gfx);
+	game.focus(gfx.primaryRenderer);
 	goingToMenu = false;
 	fadeValue = 0;
 }

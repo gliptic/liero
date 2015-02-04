@@ -72,7 +72,7 @@ void replayToVideo(
 	frameDebt.den = 1;
 
 	int offsetX, offsetY;
-	int mag = fitScreen(w, h, renderer.screenBmp.w, renderer.screenBmp.h, offsetX, offsetY);
+	int mag = fitScreen(w, h, renderer.bmp.w, renderer.bmp.h, offsetX, offsetY);
 
 	printf("\n");
 
@@ -113,10 +113,10 @@ void replayToVideo(
 
 				Color realPal[256];
 				renderer.pal.activate(realPal);
-				PalIdx* src = renderer.screenBmp.pixels;
+				PalIdx* src = renderer.bmp.pixels;
 				std::size_t destPitch = vidrec.tmp_picture->linesize[0];
 				uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
-				std::size_t srcPitch = renderer.screenBmp.pitch;
+				std::size_t srcPitch = renderer.bmp.pitch;
 								
 				uint32_t pal32[256];
 				preparePaletteBgra(realPal, pal32);
