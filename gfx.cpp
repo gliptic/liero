@@ -326,13 +326,9 @@ void Gfx::setVideoMode()
 		SDL_DestroyRenderer(sdlRenderer);
 		sdlRenderer = NULL;
 	}
-	// vertical sync is always enabled, because without it Liero will always
-	// run at the maximum speed your computer can manage. On my machine, this
-	// means it will draw so fast you can't even see the results. Of course,
-	// the proper way to fix this is to decouple the drawing from the game
-	// logic, but that's a pretty big undertaking. Any modern (or even old) 
-	// machine should be able to run Liero with vsync without problems.
-	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, SDL_RENDERER_PRESENTVSYNC);
+	// vertical sync is always disabled. Frame limiting is done manually below,
+	// to keep the correct speed
+	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0 /*SDL_RENDERER_PRESENTVSYNC*/);
 
 	if (sdlSpectatorWindow)
 	{
@@ -349,7 +345,7 @@ void Gfx::setVideoMode()
 	{
 		sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", SDL_WINDOWPOS_UNDEFINED, 
 			                		          SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
-		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, SDL_RENDERER_PRESENTVSYNC);
+		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, 0/*SDL_RENDERER_PRESENTVSYNC*/);
 	}
 	onWindowResize();
 }
@@ -800,6 +796,23 @@ void Gfx::flip()
 	{
 		draw(*sdlSpectatorDrawSurface, *sdlSpectatorTexture, *sdlSpectatorRenderer, singleScreenRenderer);
 	}
+
+	static unsigned int const delay = 14u;
+		
+	uint32_t wantedTime = lastFrame + delay;
+
+	while(true)
+	{
+		uint32_t now = SDL_GetTicks();
+		if(now >= wantedTime)
+			break;
+		
+		SDL_Delay(wantedTime - now);
+	}
+		
+	lastFrame = SDL_GetTicks();
+	while((SDL_GetTicks() - lastFrame) > delay)
+		lastFrame += delay;
 }
 
 void playChangeSound(Common& common, int change)
