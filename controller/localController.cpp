@@ -136,9 +136,9 @@ void LocalController::focus()
 		replay->focus();
 	if(state == StateInitial)
 		changeState(StateWeaponSelection);
-	game.focus(gfx.primaryRenderer);
+	game.focus(gfx.playRenderer);
 	// FIXME rewrite the focus function to avoid nonsense like this?
-	game.focus(gfx.secondaryRenderer);
+	game.focus(gfx.singleScreenRenderer);
 	goingToMenu = false;
 	fadeValue = 0;
 }
