@@ -102,6 +102,11 @@ void Game::clearViewports()
 	for(std::size_t i = 0; i < viewports.size(); ++i)
 		delete viewports[i];
 	viewports.clear();
+
+	for(std::size_t i = 0; i < spectatorViewports.size(); ++i)
+		delete spectatorViewports[i];
+	spectatorViewports.clear();
+
 }
 
 void Game::addViewport(Viewport* vp)
@@ -110,7 +115,10 @@ void Game::addViewport(Viewport* vp)
 	viewports.push_back(vp);
 }
 
-
+void Game::addSpectatorViewport(Viewport* vp)
+{
+	spectatorViewports.push_back(vp);
+}
 
 void Game::processViewports()
 {
@@ -118,6 +126,11 @@ void Game::processViewports()
 	{
 		viewports[i]->process(*this);
 	}
+	for(std::size_t i = 0; i < spectatorViewports.size(); ++i)
+	{
+		spectatorViewports[i]->process(*this);
+	}
+
 }
 
 void Game::drawViewports(Renderer& renderer, bool isReplay)
@@ -127,6 +140,15 @@ void Game::drawViewports(Renderer& renderer, bool isReplay)
 		viewports[i]->draw(*this, renderer, isReplay);
 	}
 }
+
+void Game::drawSpectatorViewports(Renderer& renderer, bool isReplay)
+{
+	for(std::size_t i = 0; i < spectatorViewports.size(); ++i)
+	{
+		spectatorViewports[i]->draw(*this, renderer, isReplay);
+	}
+}
+
 
 void Game::clearWorms()
 {
@@ -155,9 +177,16 @@ void Game::addWorm(Worm* worm)
 	worms.push_back(worm);
 }
 
-void Game::draw(Renderer& renderer, bool isReplay)
+void Game::draw(Renderer& renderer, bool useSpectatorViewports, bool isReplay)
 {
-	drawViewports(renderer, isReplay);
+	if (useSpectatorViewports)
+	{
+		drawSpectatorViewports(renderer, isReplay);
+	}
+	else
+	{
+		drawViewports(renderer, isReplay);
+	}
 
 	//common->font.drawText(toString(cycles / 70), 10, 10, 7);
 
@@ -275,8 +304,15 @@ void Game::processFrame()
 			viewports[i]->shake -= 4000; // TODO: Read 4000 from exe?
 	}
 
+	for(std::size_t i = 0; i < spectatorViewports.size(); ++i)
+	{
+		if(spectatorViewports[i]->shake > 0)
+			spectatorViewports[i]->shake -= 4000; // TODO: Read 4000 from exe?
+	}
+
+
 	auto br = bonuses.all();
-	for (Bonus* i; (i = br.next()); )
+	for (Bonus* i; i = br.next(); )
 	{
 		i->process(*this);
 	}
@@ -306,19 +342,19 @@ void Game::processFrame()
 	}
 
 	auto sr = sobjects.all();
-	for (SObject* i; (i = sr.next()); )
+	for (SObject* i; i = sr.next(); )
 	{
 		i->process(*this);
 	}
 
 	auto wr = wobjects.all();
-	for (WObject* i; (i = wr.next()); )
+	for (WObject* i; i = wr.next(); )
 	{
 		i->process(*this);
 	}
 
 	auto nr = nobjects.all();
-	for (NObject* i; (i = nr.next()); )
+	for (NObject* i; i = nr.next(); )
 	{
 		i->process(*this);
 	}
