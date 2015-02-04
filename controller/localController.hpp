@@ -34,7 +34,7 @@ struct LocalController : CommonController
 	// Called when the controller gets focus.
 	void focus();
 	bool process();
-	void draw(Renderer& renderer);
+	void draw(Renderer& renderer, bool useSpectatorViewports);
 	void changeState(State newState);
 	void endRecord();
 	void swapLevel(Level& newLevel);

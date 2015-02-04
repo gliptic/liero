@@ -94,7 +94,7 @@ void WeaponSelection::draw()
 	
 	if(!cachedBackground)
 	{
-		game.draw(gfx.primaryRenderer);
+		game.draw(gfx.primaryRenderer, false);
 			
 		if(game.settings->levelFile.empty())
 		{

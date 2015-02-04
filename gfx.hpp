@@ -125,6 +125,8 @@ struct Gfx
 	void loadMenus();
 	
 	void process(Controller* controller = 0);
+	// draws a given surface onto an SDL texture/renderer, using a given Renderer
+	void draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRenderer, Renderer& renderer);
 	void flip();
 	void menuFlip(bool quitting = false);
 	
@@ -249,12 +251,20 @@ struct Gfx
 	bool dosKeys[177];
 	// the window to render into
 	SDL_Window* sdlWindow = NULL;
+	// the window to render the spectator view into
+	SDL_Window* sdlSpectatorWindow = NULL;
 	// the SDL renderer to use
 	SDL_Renderer* sdlRenderer = NULL;
-	// full screen size texture that represents the screen
+	// the SDL renderer to use for the spectator window
+	SDL_Renderer* sdlSpectatorRenderer = NULL;
+	// full window size texture that represents the window
 	SDL_Texture* sdlTexture = NULL;
+	// full spectator window size texture that represents the spectator window
+	SDL_Texture* sdlSpectatorTexture = NULL;
 	// a software surface to do the actual drawing into
 	SDL_Surface* sdlDrawSurface = NULL;
+	// a software surface to do the actual drawing of the spectator view into
+	SDL_Surface* sdlSpectatorDrawSurface = NULL;
 	// when the menu is open, the ongoing game on the screen is paused and 
 	// stored in this bitmap
 	Bitmap frozenScreen;

@@ -64,6 +64,12 @@ LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr
 	
 	game.addWorm(worm1);
 	game.addWorm(worm2);
+
+	// +68 on x to align the viewport in the middle
+	game.addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), worm1->index, 0, 504, 350));
+	// FIXME: a bit weird to duplicate this, but it's needed to draw health bars etc. We can solve this by special
+	// casing the spectator viewport, something we probably want to do anyway
+	game.addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), worm2->index, 538, 504, 350));
 }
 
 LocalController::~LocalController()
@@ -131,6 +137,8 @@ void LocalController::focus()
 	if(state == StateInitial)
 		changeState(StateWeaponSelection);
 	game.focus(gfx.primaryRenderer);
+	// FIXME rewrite the focus function to avoid nonsense like this?
+	game.focus(gfx.secondaryRenderer);
 	goingToMenu = false;
 	fadeValue = 0;
 }
@@ -210,7 +218,7 @@ bool LocalController::process()
 	return true;
 }
 
-void LocalController::draw(Renderer& renderer)
+void LocalController::draw(Renderer& renderer, bool useSpectatorViewports)
 {
 	if(state == StateWeaponSelection)
 	{
@@ -218,7 +226,7 @@ void LocalController::draw(Renderer& renderer)
 	}
 	else if(state == StateGame || state == StateGameEnded || state == StateInitial)
 	{
-		game.draw(renderer);
+		game.draw(renderer, useSpectatorViewports);
 	}
 	renderer.fadeValue = fadeValue;
 }

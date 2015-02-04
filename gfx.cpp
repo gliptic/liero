@@ -329,6 +329,16 @@ void Gfx::setVideoMode()
 	// machine should be able to run Liero with vsync without problems.
 	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, SDL_RENDERER_PRESENTVSYNC);
 
+	if (sdlSpectatorWindow) {
+		SDL_DestroyWindow(sdlSpectatorWindow);
+	}
+	sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", SDL_WINDOWPOS_UNDEFINED, 
+		                		          SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
+	if (sdlSpectatorRenderer) {
+		SDL_DestroyRenderer(sdlSpectatorRenderer);
+	}
+	sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, SDL_RENDERER_PRESENTVSYNC);
+
 	onWindowResize();
 }
 
@@ -339,6 +349,7 @@ void Gfx::onWindowResize()
 	}
 	sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, 
 		                           SDL_TEXTUREACCESS_STREAMING, windowW, windowH);
+
 	if (sdlDrawSurface) {
 		SDL_FreeSurface(sdlDrawSurface);
 	}
@@ -350,6 +361,24 @@ void Gfx::onWindowResize()
 	// manual rescaling we do now
 	SDL_RenderSetLogicalSize(sdlRenderer, windowW, windowH);
 	doubleRes = (windowW >= 640 && windowH >= 400);
+
+	if (sdlSpectatorTexture) {
+		SDL_DestroyTexture(sdlSpectatorTexture);
+	}
+	sdlSpectatorTexture = SDL_CreateTexture(sdlSpectatorRenderer, 
+	                                        SDL_PIXELFORMAT_ARGB8888, 
+		                           			SDL_TEXTUREACCESS_STREAMING, 
+		                           			windowW, windowH);
+	if (sdlSpectatorDrawSurface) {
+		SDL_FreeSurface(sdlSpectatorDrawSurface);
+	}
+	sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
+	// linear for that old-school chunky look, but consider adding a user 
+	// option for this
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+	// FIXME: we should use SDL's logical size functionality instead of the
+	// manual rescaling we do now
+	SDL_RenderSetLogicalSize(sdlSpectatorRenderer, windowW, windowH);
 }
 
 void Gfx::loadMenus()
@@ -698,47 +727,50 @@ void Gfx::menuFlip(bool quitting)
 	flip();
 }
 
-void Gfx::flip()
+void Gfx::draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRenderer, Renderer& renderer)
 {
 	gvl::rect updateRect;
 	Color realPal[256];
-	primaryRenderer.pal.activate(realPal);
-
+	renderer.pal.activate(realPal);
+	int offsetX, offsetY;
+	int mag = fitScreen(surface.w, surface.h,
+						renderer.renderResX, renderer.renderResY, offsetX, offsetY);
+		
+	gvl::rect newRect(offsetX, offsetY, renderer.renderResX * mag, renderer.renderResY * mag);
+		
+	if(mag != prevMag)
 	{
-		int offsetX, offsetY;
-		int mag = fitScreen(sdlDrawSurface->w, sdlDrawSurface->h, 
-							primaryRenderer.renderResX, primaryRenderer.renderResY, offsetX, offsetY);
-		
-		gvl::rect newRect(offsetX, offsetY, primaryRenderer.renderResX * mag, primaryRenderer.renderResY * mag);
-		
-		if(mag != prevMag)
-		{
-			// Clear background if magnification is decreased to
-			// avoid leftovers.
-			SDL_FillRect(sdlDrawSurface, 0, 0);
-			updateRect = lastUpdateRect | newRect;
-		}
-		else
-			updateRect = newRect;
-		prevMag = mag;
-		
-		std::size_t destPitch = sdlDrawSurface->pitch;
-		std::size_t srcPitch = primaryRenderer.bmp.pitch;
-		
-		PalIdx* dest = reinterpret_cast<PalIdx*>(sdlDrawSurface->pixels) + offsetY * destPitch + offsetX * sdlDrawSurface->format->BytesPerPixel;
-		PalIdx* src = primaryRenderer.bmp.pixels;
-		
-		uint32_t pal32[256];
-		preparePalette(sdlDrawSurface->format, realPal, pal32);
-		scaleDraw(src, primaryRenderer.renderResX, primaryRenderer.renderResY, srcPitch, dest, destPitch, mag, pal32);
+		// Clear background if magnification is decreased to
+		// avoid leftovers.
+		SDL_FillRect(&surface, 0, 0);
+		updateRect = lastUpdateRect | newRect;
 	}
+	else
+		updateRect = newRect;
+	prevMag = mag;
+		
+	std::size_t destPitch = surface.pitch;
+	std::size_t srcPitch = renderer.bmp.pitch;
+		
+	PalIdx* dest = reinterpret_cast<PalIdx*>(surface.pixels) + offsetY * destPitch + offsetX * surface.format->BytesPerPixel;
+	PalIdx* src = renderer.bmp.pixels;
+		
+	uint32_t pal32[256];
+	preparePalette(surface.format, realPal, pal32);
+	scaleDraw(src, renderer.renderResX, renderer.renderResY, srcPitch, dest, destPitch, mag, pal32);
 
-	SDL_UpdateTexture(sdlTexture, NULL, sdlDrawSurface->pixels, windowW * 4);
-	SDL_RenderClear(sdlRenderer);
-	SDL_RenderCopy(sdlRenderer, sdlTexture, NULL, NULL);
-	SDL_RenderPresent(sdlRenderer);
+	SDL_UpdateTexture(&texture, NULL, surface.pixels, windowW * 4);
+	SDL_RenderClear(&sdlRenderer);
+	SDL_RenderCopy(&sdlRenderer, &texture, NULL, NULL);
+	SDL_RenderPresent(&sdlRenderer);
 
 	lastUpdateRect = updateRect;
+}
+
+void Gfx::flip()
+{
+	draw(*sdlDrawSurface, *sdlTexture, *sdlRenderer, primaryRenderer);
+	draw(*sdlSpectatorDrawSurface, *sdlSpectatorTexture, *sdlSpectatorRenderer, secondaryRenderer);
 }
 
 void playChangeSound(Common& common, int change)
@@ -1640,12 +1672,18 @@ restart:
 	}
 	
 	controller->currentGame()->focus(this->primaryRenderer);
+	controller->currentGame()->focus(this->secondaryRenderer);
+
 	// TODO: Unfocus game when necessary
 	
 	while(true)
 	{
 		primaryRenderer.clear();
-		controller->draw(this->primaryRenderer);
+		controller->draw(this->primaryRenderer, false);
+
+		secondaryRenderer.clear();
+		controller->draw(this->secondaryRenderer, true);
+
 		
 		int selection = menuLoop();
 		
@@ -1702,7 +1740,10 @@ restart:
 			if(!controller->process())
 				break;
 			primaryRenderer.clear();
-			controller->draw(this->primaryRenderer);
+			controller->draw(this->primaryRenderer, false);
+
+			secondaryRenderer.clear();
+			controller->draw(this->secondaryRenderer, true);
 			
 			flip();
 			process(controller.get());
