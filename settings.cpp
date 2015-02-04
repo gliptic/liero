@@ -32,6 +32,7 @@ Extensions::Extensions()
 , selectBotWeapons(true)
 , allowViewingSpawnPoint(false)
 , singleScreenReplay(false)
+, spectatorWindow(false)
 {
 }
 
