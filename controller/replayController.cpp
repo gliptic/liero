@@ -161,7 +161,6 @@ void ReplayController::changeState(State newState)
 		// to not save the viewports at all. But that probably breaks save
 		// format compatibility?
 		game->clearViewports();
-		Viewport *v1, *v2;
 
 		// spectator viewport is always full size
 		// +68 on x to align the viewport in the middle
