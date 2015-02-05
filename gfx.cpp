@@ -314,13 +314,23 @@ void Gfx::setVideoMode()
 		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 	}
 
-	if (sdlWindow)
+	if (!sdlWindow)
 	{
-		SDL_DestroyWindow(sdlWindow);
-		sdlWindow = NULL;
+		sdlWindow = SDL_CreateWindow("Liero 1.37", SDL_WINDOWPOS_UNDEFINED, 
+		 	                         SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
 	}
-	sdlWindow = SDL_CreateWindow("Liero 1.37", SDL_WINDOWPOS_UNDEFINED, 
-		                         SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
+	else
+	{
+		if (fullscreen)
+		{
+			SDL_SetWindowFullscreen(sdlWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		}
+		else
+		{
+			SDL_SetWindowFullscreen(sdlWindow, 0);
+			SDL_SetWindowSize(sdlWindow, windowW, windowH);
+		}
+	}
 	if (sdlRenderer)
 	{
 		SDL_DestroyRenderer(sdlRenderer);
@@ -329,28 +339,56 @@ void Gfx::setVideoMode()
 	// vertical sync is always disabled. Frame limiting is done manually below,
 	// to keep the correct speed
 	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0 /*SDL_RENDERER_PRESENTVSYNC*/);
+	onWindowResize(SDL_GetWindowID(sdlWindow), windowW, windowH);
 
-	if (sdlSpectatorWindow)
-	{
-		SDL_DestroyWindow(sdlSpectatorWindow);
-		sdlSpectatorWindow = NULL;
-	}
 	if (sdlSpectatorRenderer)
 	{
 		SDL_DestroyRenderer(sdlSpectatorRenderer);
-		sdlSpectatorWindow = NULL;
+		sdlSpectatorRenderer = NULL;
 	}
-
-	onWindowResize(SDL_GetWindowID(sdlWindow), windowW, windowH);
 
 	if (settings->spectatorWindow)
 	{
-		int x, y;
-		SDL_GetWindowPosition(sdlWindow, &x, &y);
-		sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", x + 100, 
-			                		          y, windowW, windowH, flags);
+		if (!sdlSpectatorWindow)
+		{
+			int x, y;
+			SDL_GetWindowPosition(sdlWindow, &x, &y);
+			sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", x + 100, 
+				                		          y, windowW, windowH, flags);
+		}
+		else
+		{
+			if (fullscreen)
+			{
+				SDL_SetWindowFullscreen(sdlSpectatorWindow, 
+				                        SDL_WINDOW_FULLSCREEN_DESKTOP);
+			}
+			else
+			{
+				SDL_SetWindowFullscreen(sdlSpectatorWindow, 0);
+				SDL_SetWindowSize(sdlSpectatorWindow, windowW, windowH);
+			}
+		}
 		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, 0/*SDL_RENDERER_PRESENTVSYNC*/);
 		onWindowResize(SDL_GetWindowID(sdlSpectatorWindow), windowW, windowH);
+	}
+	else
+	{
+		if (sdlSpectatorTexture)
+		{
+			SDL_DestroyTexture(sdlSpectatorTexture);
+			sdlSpectatorTexture = NULL;
+		}
+		if (sdlSpectatorDrawSurface)
+		{
+			SDL_FreeSurface(sdlSpectatorDrawSurface);
+			sdlSpectatorDrawSurface = NULL;
+		}
+		if (sdlSpectatorWindow)
+		{
+			SDL_DestroyWindow(sdlSpectatorWindow);
+			sdlSpectatorWindow = NULL;
+		}
 	}
 }
 
@@ -358,6 +396,9 @@ void Gfx::onWindowResize(Uint32 windowID, int w, int h)
 {
 	if (windowID == SDL_GetWindowID(sdlWindow))
 	{
+		windowW = w;
+		windowH = h;
+
 		if (sdlTexture)
 		{
 			SDL_DestroyTexture(sdlTexture);
@@ -399,12 +440,12 @@ void Gfx::onWindowResize(Uint32 windowID, int w, int h)
 			sdlSpectatorTexture = SDL_CreateTexture(sdlSpectatorRenderer, 
 			                                        SDL_PIXELFORMAT_ARGB8888, 
 				                           			SDL_TEXTUREACCESS_STREAMING, 
-				                           			windowW, windowH);
-			sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
+				                           			w, h);
+			sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
 
 			// FIXME: we should use SDL's logical size functionality instead of the
 			// manual rescaling we do now
-			SDL_RenderSetLogicalSize(sdlSpectatorRenderer, windowW, windowH);
+			SDL_RenderSetLogicalSize(sdlSpectatorRenderer, w, h);
 		}
 	}
 }
@@ -792,7 +833,7 @@ void Gfx::draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRend
 	preparePalette(surface.format, realPal, pal32);
 	scaleDraw(src, renderer.renderResX, renderer.renderResY, srcPitch, dest, destPitch, mag, pal32);
 
-	SDL_UpdateTexture(&texture, NULL, surface.pixels, windowW * 4);
+	SDL_UpdateTexture(&texture, NULL, surface.pixels, surface.w * 4);
 	SDL_RenderClear(&sdlRenderer);
 	SDL_RenderCopy(&sdlRenderer, &texture, NULL, NULL);
 	SDL_RenderPresent(&sdlRenderer);
