@@ -343,8 +343,10 @@ void Gfx::setVideoMode()
 
 	if (settings->spectatorWindow)
 	{
-		sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", SDL_WINDOWPOS_UNDEFINED, 
-			                		          SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
+		int x, y;
+		SDL_GetWindowPosition(sdlWindow, &x, &y);
+		sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", x + 100, 
+			                		          y, windowW, windowH, flags);
 		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, 0/*SDL_RENDERER_PRESENTVSYNC*/);
 	}
 	onWindowResize();
