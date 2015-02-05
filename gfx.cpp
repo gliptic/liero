@@ -640,6 +640,9 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 				controller->onKey(joyButtonToExKey(ev.jbutton.which, jbtn), js.btnState[jbtn]);
 		}
 		break;
+		
+		default:
+			break;
 	}
 }
 
@@ -699,6 +702,8 @@ uint32_t Gfx::waitForKeyEx()
 			break;
 		case SDL_JOYBUTTONDOWN:
 			return joyButtonToExKey(ev.jbutton.which, 16 + ev.jbutton.button);
+		default:
+			break;
 		}
 	}
 	
@@ -1561,7 +1566,7 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 						{
 							buffer.erase(buffer.size() - 1);
 						}
-					break;
+						break;
 
 					case SDL_SCANCODE_RETURN:
 					case SDL_SCANCODE_KP_ENTER:
@@ -1573,7 +1578,9 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 					case SDL_SCANCODE_ESCAPE:
 						clearKeys();
 						return false;
-					break;
+
+					default:
+						break;
 				}
 				break;
 
@@ -1587,11 +1594,14 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 				}
 				break;
 			}
-            case SDL_TEXTEDITING:
+			case SDL_TEXTEDITING:
 				// since there's no support for any characters that can use a
-            	// complex IME input (like East Asian languages), we naively
-            	// discard this event
-                break;
+				// complex IME input (like East Asian languages), we naively
+				// discard this event
+				break;
+			
+			default:
+				break;
         }
 	}
 }
