@@ -416,11 +416,8 @@ void Gfx::onWindowResize(Uint32 windowID, int w, int h)
 		// linear for that old-school chunky look, but consider adding a user 
 		// option for this
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-		// FIXME: we should use SDL's logical size functionality instead of the
-		// manual rescaling we do now
-		SDL_RenderSetLogicalSize(sdlRenderer, w, h);
-
-		doubleRes = (w >= 640 && h >= 400);
+		SDL_RenderSetLogicalSize(sdlRenderer, doubleRes ? 640 : 320, 
+		                         doubleRes ? 400 : 200);
 	}
 	else
 	{
@@ -442,10 +439,7 @@ void Gfx::onWindowResize(Uint32 windowID, int w, int h)
 				                           			SDL_TEXTUREACCESS_STREAMING, 
 				                           			w, h);
 			sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
-
-			// FIXME: we should use SDL's logical size functionality instead of the
-			// manual rescaling we do now
-			SDL_RenderSetLogicalSize(sdlSpectatorRenderer, w, h);
+			SDL_RenderSetLogicalSize(sdlSpectatorRenderer, 640, 400);
 		}
 	}
 }
@@ -552,6 +546,7 @@ void Gfx::setDoubleRes(bool newDoubleRes)
 {
 	if (newDoubleRes == doubleRes)
 		return;
+	doubleRes = newDoubleRes;
 
 	if (!newDoubleRes)
 	{
