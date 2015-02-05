@@ -166,7 +166,7 @@ void ReplayController::changeState(State newState)
 		// +68 on x to align the viewport in the middle
 		game->addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
 		// TODO: a bit weird to duplicate this, but it's needed to draw health bars etc
-		game->addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350););
+		game->addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350));
 		if (gfx.settings->singleScreenReplay)
 		{
 			// on single screen replay, use the spectator viewports for the
