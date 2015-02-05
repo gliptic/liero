@@ -341,6 +341,8 @@ void Gfx::setVideoMode()
 		sdlSpectatorWindow = NULL;
 	}
 
+	onWindowResize(SDL_GetWindowID(sdlWindow), windowW, windowH);
+
 	if (settings->spectatorWindow)
 	{
 		int x, y;
@@ -348,57 +350,63 @@ void Gfx::setVideoMode()
 		sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", x + 100, 
 			                		          y, windowW, windowH, flags);
 		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, 0/*SDL_RENDERER_PRESENTVSYNC*/);
+		onWindowResize(SDL_GetWindowID(sdlSpectatorWindow), windowW, windowH);
 	}
-	onWindowResize();
 }
 
-void Gfx::onWindowResize()
+void Gfx::onWindowResize(Uint32 windowID, int w, int h)
 {
-	if (sdlTexture)
+	if (windowID == SDL_GetWindowID(sdlWindow))
 	{
-		SDL_DestroyTexture(sdlTexture);
-		sdlTexture = NULL;
-	}
-	sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, 
-		                           SDL_TEXTUREACCESS_STREAMING, windowW, windowH);
+		if (sdlTexture)
+		{
+			SDL_DestroyTexture(sdlTexture);
+			sdlTexture = NULL;
+		}
+		sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, 
+			                           SDL_TEXTUREACCESS_STREAMING, w, h);
 
-	if (sdlDrawSurface)
-	{
-		SDL_FreeSurface(sdlDrawSurface);
-		sdlDrawSurface = NULL;
-	}
-	sdlDrawSurface = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
-	// linear for that old-school chunky look, but consider adding a user 
-	// option for this
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-	// FIXME: we should use SDL's logical size functionality instead of the
-	// manual rescaling we do now
-	SDL_RenderSetLogicalSize(sdlRenderer, windowW, windowH);
-
-	if (sdlSpectatorTexture)
-	{
-		SDL_DestroyTexture(sdlSpectatorTexture);
-		sdlSpectatorTexture = NULL;
-	}
-	if (sdlSpectatorDrawSurface)
-	{
-		SDL_FreeSurface(sdlSpectatorDrawSurface);
-		sdlSpectatorDrawSurface = NULL;
-	}
-
-	if (settings->spectatorWindow)
-	{
-		sdlSpectatorTexture = SDL_CreateTexture(sdlSpectatorRenderer, 
-		                                        SDL_PIXELFORMAT_ARGB8888, 
-			                           			SDL_TEXTUREACCESS_STREAMING, 
-			                           			windowW, windowH);
-		sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
-
+		if (sdlDrawSurface)
+		{
+			SDL_FreeSurface(sdlDrawSurface);
+			sdlDrawSurface = NULL;
+		}
+		sdlDrawSurface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
+		// linear for that old-school chunky look, but consider adding a user 
+		// option for this
+		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 		// FIXME: we should use SDL's logical size functionality instead of the
 		// manual rescaling we do now
-		SDL_RenderSetLogicalSize(sdlSpectatorRenderer, windowW, windowH);
+		SDL_RenderSetLogicalSize(sdlRenderer, w, h);
+
+		doubleRes = (w >= 640 && h >= 400);
 	}
-	doubleRes = (windowW >= 640 && windowH >= 400);
+	else
+	{
+		if (sdlSpectatorTexture)
+		{
+			SDL_DestroyTexture(sdlSpectatorTexture);
+			sdlSpectatorTexture = NULL;
+		}
+		if (sdlSpectatorDrawSurface)
+		{
+			SDL_FreeSurface(sdlSpectatorDrawSurface);
+			sdlSpectatorDrawSurface = NULL;
+		}
+
+		if (settings->spectatorWindow)
+		{
+			sdlSpectatorTexture = SDL_CreateTexture(sdlSpectatorRenderer, 
+			                                        SDL_PIXELFORMAT_ARGB8888, 
+				                           			SDL_TEXTUREACCESS_STREAMING, 
+				                           			windowW, windowH);
+			sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, windowW, windowH, 32, 0, 0, 0, 0);
+
+			// FIXME: we should use SDL's logical size functionality instead of the
+			// manual rescaling we do now
+			SDL_RenderSetLogicalSize(sdlSpectatorRenderer, windowW, windowH);
+		}
+	}
 }
 
 void Gfx::loadMenus()
@@ -565,9 +573,8 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			{
 				case SDL_WINDOWEVENT_RESIZED:
 				{
-					windowW = ev.window.data1;
-					windowH = ev.window.data2;
-					onWindowResize();
+					onWindowResize(ev.window.windowID, ev.window.data1, 
+					               ev.window.data2);
 				}
 				break;
 				
