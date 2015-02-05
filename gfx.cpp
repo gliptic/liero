@@ -405,14 +405,17 @@ void Gfx::onWindowResize(Uint32 windowID, int w, int h)
 			sdlTexture = NULL;
 		}
 		sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, 
-			                           SDL_TEXTUREACCESS_STREAMING, w, h);
+			                           SDL_TEXTUREACCESS_STREAMING, 
+			                           doubleRes ? 640 : 320, 
+		                         	   doubleRes ? 400 : 200);
 
 		if (sdlDrawSurface)
 		{
 			SDL_FreeSurface(sdlDrawSurface);
 			sdlDrawSurface = NULL;
 		}
-		sdlDrawSurface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
+		sdlDrawSurface = SDL_CreateRGBSurface(0, doubleRes ? 640 : 320, 
+		                         doubleRes ? 400 : 200, 32, 0, 0, 0, 0);
 		// linear for that old-school chunky look, but consider adding a user 
 		// option for this
 		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
@@ -437,8 +440,9 @@ void Gfx::onWindowResize(Uint32 windowID, int w, int h)
 			sdlSpectatorTexture = SDL_CreateTexture(sdlSpectatorRenderer, 
 			                                        SDL_PIXELFORMAT_ARGB8888, 
 				                           			SDL_TEXTUREACCESS_STREAMING, 
-				                           			w, h);
-			sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, w, h, 32, 0, 0, 0, 0);
+				                           			640, 400);
+			sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, 640, 400, 32, 0, 
+			                                               0, 0, 0);
 			SDL_RenderSetLogicalSize(sdlSpectatorRenderer, 640, 400);
 		}
 	}
