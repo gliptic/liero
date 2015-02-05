@@ -121,7 +121,7 @@ struct Gfx
 		
 	void init();
 	void setVideoMode();
-	void onWindowResize(Uint32 windowId, int w, int h);
+	void onWindowResize(Uint32 windowId);
 	void loadMenus();
 	
 	void process(Controller* controller = 0);

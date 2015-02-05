@@ -328,7 +328,6 @@ void Gfx::setVideoMode()
 		else
 		{
 			SDL_SetWindowFullscreen(sdlWindow, 0);
-			SDL_SetWindowSize(sdlWindow, windowW, windowH);
 		}
 	}
 	if (sdlRenderer)
@@ -339,7 +338,7 @@ void Gfx::setVideoMode()
 	// vertical sync is always disabled. Frame limiting is done manually below,
 	// to keep the correct speed
 	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0 /*SDL_RENDERER_PRESENTVSYNC*/);
-	onWindowResize(SDL_GetWindowID(sdlWindow), windowW, windowH);
+	onWindowResize(SDL_GetWindowID(sdlWindow));
 
 	if (sdlSpectatorRenderer)
 	{
@@ -366,11 +365,10 @@ void Gfx::setVideoMode()
 			else
 			{
 				SDL_SetWindowFullscreen(sdlSpectatorWindow, 0);
-				SDL_SetWindowSize(sdlSpectatorWindow, windowW, windowH);
 			}
 		}
 		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, 0/*SDL_RENDERER_PRESENTVSYNC*/);
-		onWindowResize(SDL_GetWindowID(sdlSpectatorWindow), windowW, windowH);
+		onWindowResize(SDL_GetWindowID(sdlSpectatorWindow));
 	}
 	else
 	{
@@ -392,13 +390,10 @@ void Gfx::setVideoMode()
 	}
 }
 
-void Gfx::onWindowResize(Uint32 windowID, int w, int h)
+void Gfx::onWindowResize(Uint32 windowID)
 {
 	if (windowID == SDL_GetWindowID(sdlWindow))
 	{
-		windowW = w;
-		windowH = h;
-
 		if (sdlTexture)
 		{
 			SDL_DestroyTexture(sdlTexture);
@@ -613,8 +608,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			{
 				case SDL_WINDOWEVENT_RESIZED:
 				{
-					onWindowResize(ev.window.windowID, ev.window.data1, 
-					               ev.window.data2);
+					onWindowResize(ev.window.windowID);
 				}
 				break;
 				
