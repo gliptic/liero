@@ -61,8 +61,8 @@ struct Viewport
 	}
 	
 	
-	void draw(Game& game, Renderer& renderer, bool isReplay);
-	void process(Game& game);
+	virtual void draw(Game& game, Renderer& renderer, bool isReplay);
+	virtual void process(Game& game);
 };
 
 #endif // LIERO_VIEWPORT_HPP

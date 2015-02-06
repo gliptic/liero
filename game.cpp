@@ -1,5 +1,6 @@
 #include "game.hpp"
 #include "viewport.hpp"
+#include "spectatorviewport.hpp"
 #include "worm.hpp"
 #include "filesystem.hpp"
 #include "gfx/renderer.hpp"
@@ -109,7 +110,7 @@ void Game::addViewport(Viewport* vp)
 	viewports.push_back(vp);
 }
 
-void Game::addSpectatorViewport(Viewport* vp)
+void Game::addSpectatorViewport(SpectatorViewport* vp)
 {
 	spectatorViewports.push_back(vp);
 }
@@ -334,7 +335,7 @@ void Game::processFrame()
 		// FIXME duplicated code
 		for(std::size_t i = 0; i < spectatorViewports.size(); ++i)
 		{
-			Viewport& v = *spectatorViewports[i];
+			SpectatorViewport& v = *spectatorViewports[i];
 			
 			bool down = false;
 			

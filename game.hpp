@@ -17,6 +17,7 @@
 #include "common.hpp"
 #include "stats_recorder.hpp"
 
+struct SpectatorViewport;
 struct Viewport;
 struct Worm;
 struct Renderer;
@@ -59,7 +60,7 @@ struct Game
 	
 	void clearViewports();
 	void addViewport(Viewport*);
-	void addSpectatorViewport(Viewport*);
+	void addSpectatorViewport(SpectatorViewport*);
 	void processViewports();
 	void drawViewports(Renderer& renderer, bool isReplay = false);
 	void drawSpectatorViewports(Renderer& renderer, bool isReplay = false);
@@ -105,7 +106,7 @@ struct Game
 	Holdazone holdazone;
 
 	std::vector<Viewport*> viewports;
-	std::vector<Viewport*> spectatorViewports;
+	std::vector<SpectatorViewport*> spectatorViewports;
 	std::vector<Worm*> worms;
 
 	typedef ExactObjectList<Bonus, 99> BonusList;

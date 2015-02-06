@@ -26,6 +26,7 @@ set(SOURCES
     rand.cpp
     settings.cpp
     sobject.cpp
+    spectatorviewport.cpp
     stats_recorder.cpp
     sys.cpp
     text.cpp

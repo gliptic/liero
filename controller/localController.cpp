@@ -12,6 +12,7 @@
 
 #include "../ai/predictive_ai.hpp"
 #include "../worm.hpp"
+#include "../spectatorviewport.hpp"
 #include "../viewport.hpp"
 
 #include <cctype>
@@ -66,10 +67,7 @@ LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr
 	game.addWorm(worm2);
 
 	// +68 on x to align the viewport in the middle
-	game.addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), worm1->index, 0, 504, 350));
-	// FIXME: a bit weird to duplicate this, but it's needed to draw health bars etc. We can solve this by special
-	// casing the spectator viewport, something we probably want to do anyway
-	game.addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), worm2->index, 538, 504, 350));
+	game.addSpectatorViewport(new SpectatorViewport(gvl::rect(0, 0, 504 + 68, 350), worm1->index, 0, 504, 350));
 }
 
 LocalController::~LocalController()

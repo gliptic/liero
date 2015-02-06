@@ -2,6 +2,7 @@
 
 #include "../game.hpp"
 #include "stats_presenter.hpp"
+#include "../spectatorviewport.hpp"
 #include "../viewport.hpp"
 #include "../sfx.hpp"
 
@@ -164,16 +165,13 @@ void ReplayController::changeState(State newState)
 
 		// spectator viewport is always full size
 		// +68 on x to align the viewport in the middle
-		game->addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
-		// TODO: a bit weird to duplicate this, but it's needed to draw health bars etc
-		game->addSpectatorViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350));
+		game->addSpectatorViewport(new SpectatorViewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
 		if (gfx.settings->singleScreenReplay)
 		{
-			// on single screen replay, use the spectator viewports for the
+			// on single screen replay, use the spectator viewport for the
 			// main screen as well
-			// we can't use the same objects, as the vector will delete them
-			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
-			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350));
+			// we can't use the same object, as the vector's clean function will delete them
+			game->addViewport(new SpectatorViewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
 		}
 		else
 		{
