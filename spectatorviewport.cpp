@@ -28,7 +28,6 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	Common& common = *game.common;
 	int multiplier = renderer.renderResX / 320;
 	int centerX = renderer.renderResX / 2;
-	PreserveClipRect pcr(renderer.bmp);
 	gvl::ivec2 renderPos(x, y);
 	fixedvec offs = rect.ul() - renderPos;
 
@@ -137,8 +136,6 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		break;
 		}
 	}
-
-	renderer.bmp.clip_rect = rect;
 
 	blitImageNoKeyColour(renderer.bmp, &game.level.data[0], offs.x, offs.y, game.level.width, game.level.height);
 
