@@ -38,12 +38,14 @@ LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr
 	worm1->settings = settings->wormSettings[0];
 	worm1->health = worm1->settings->health;
 	worm1->index = 0;
+	worm1->statsX = 0;
 	worm1->ai = createAi(worm1->settings->controller, *worm1, *settings);
 	
 	Worm* worm2 = new Worm();
 	worm2->settings = settings->wormSettings[1];
 	worm2->health = worm2->settings->health;
 	worm2->index = 1;
+	worm2->statsX = 218;
 	worm2->ai = createAi(worm2->settings->controller, *worm2, *settings);
 
 #if 0
@@ -60,14 +62,14 @@ LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr
 	}
 #endif
 	
-	game.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), worm1->index, 0, 504, 350));
-	game.addViewport(new Viewport(gvl::rect(160, 0, 158+160, 158), worm2->index, 218, 504, 350));
+	game.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), worm1->index, 504, 350));
+	game.addViewport(new Viewport(gvl::rect(160, 0, 158+160, 158), worm2->index, 504, 350));
 	
 	game.addWorm(worm1);
 	game.addWorm(worm2);
 
 	// +68 on x to align the viewport in the middle
-	game.addSpectatorViewport(new SpectatorViewport(gvl::rect(0, 0, 504 + 68, 350), worm1->index, 0, 504, 350));
+	game.addSpectatorViewport(new SpectatorViewport(gvl::rect(0, 0, 504 + 68, 350), 504, 350));
 }
 
 LocalController::~LocalController()

@@ -142,6 +142,8 @@ void archive(Archive ar, Worm& worm)
 template<typename Archive>
 void archive(Archive ar, Viewport& vp)
 {
+	int32_t dummy_int = 0;
+
 	ar
 	.i32(vp.x)
 	.i32(vp.y)
@@ -152,7 +154,8 @@ void archive(Archive ar, Viewport& vp)
 	.i32(vp.centerY)
 	.template obj<Worm>(vp.wormIdx, WormCreator(), WormIdxRefCreator())
 	.i32(vp.bannerY)
-	.i32(vp.inGameX)
+	// dummy for old ingameX variable
+	.i32(dummy_int)
 	.i32(vp.rect.x1)
 	.i32(vp.rect.y1)
 	.i32(vp.rect.x2)

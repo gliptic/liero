@@ -281,6 +281,7 @@ struct Worm : gvl::shared
 	, index(0)
 	, direction(0)
 	, steerableCount(0)
+	, statsX(0)
 	{
 		makeSightGreen = false;
 		
@@ -391,6 +392,9 @@ struct Worm : gvl::shared
 
 	// Temporary state for steerables
 	int steerableSumX, steerableSumY, steerableCount;
+
+	// which X coordinate to display stats at for this worm
+	int statsX;
 	
 	// Data for LocalController
 	ControlState cleanControlStates; // This contains the real state of real and extended controls
