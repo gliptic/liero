@@ -7,23 +7,6 @@
 #include "gfx/renderer.hpp"
 #include "gfx/blit.hpp"
 
-struct PreserveClipRect
-{
-	PreserveClipRect(Bitmap& bmp)
-	: bmp(bmp)
-	{
-		rect = bmp.clip_rect;
-	}
-	
-	~PreserveClipRect()
-	{
-		bmp.clip_rect = rect;
-	}
-	
-	Bitmap& bmp;
-	gvl::rect rect;
-};
-
 void SpectatorViewport::process(Game& game)
 {
 	int realShake = ftoi(shake);
@@ -44,13 +27,19 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 {
 	Common& common = *game.common;
 	int multiplier = renderer.renderResX / 320;
+	int centerX = renderer.renderResX / 2;
+	PreserveClipRect pcr(renderer.bmp);
+	gvl::ivec2 renderPos(x, y);
+	fixedvec offs = rect.ul() - renderPos;
+
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
 		Worm const& worm = *game.worms[i];
+		int offsetX = offs.x / (i + 1);
 		if (worm.visible)
 		{
 			int lifebarWidth = worm.health * 100 / worm.settings->health;
-			drawBar(renderer.bmp, worm.statsX * multiplier, renderer.renderResY - 39, lifebarWidth, lifebarWidth / 10 + 234);
+			drawBar(renderer.bmp, offsetX + worm.statsX * multiplier, renderer.renderResY - 39, lifebarWidth, lifebarWidth / 10 + 234);
 		}
 		else
 		{
@@ -59,7 +48,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			{
 				if(lifebarWidth > 100)
 					lifebarWidth = 100;
-				drawBar(renderer.bmp, worm.statsX * multiplier, renderer.renderResY - 39, lifebarWidth, lifebarWidth / 10 + 234);
+				drawBar(renderer.bmp, offsetX + worm.statsX * multiplier, renderer.renderResY - 39, lifebarWidth, lifebarWidth / 10 + 234);
 			}
 		}
 		
@@ -74,7 +63,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				int ammoBarWidth = ww.ammo * 100 / ww.type->ammo;
 				
 				if(ammoBarWidth > 0)
-					drawBar(renderer.bmp, worm.statsX * multiplier, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
+					drawBar(renderer.bmp, offsetX + worm.statsX * multiplier, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
 			}
 		}
 		else
@@ -92,21 +81,21 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			}
 			
 			if(ammoBarWidth > 0)
-				drawBar(renderer.bmp, worm.statsX * multiplier, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
+				drawBar(renderer.bmp, offsetX + worm.statsX * multiplier, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
 			
 			if((game.cycles % 20) > 10
 			&& worm.visible)
 			{
-				common.font.drawText(renderer.bmp, LS(Reloading), worm.statsX * multiplier, 164 * multiplier, 50);
+				common.font.drawText(renderer.bmp, LS(Reloading), offsetX + worm.statsX * multiplier, 164, 50);
 			}
 		}
 		
-		common.font.drawText(renderer.bmp, (LS(Kills) + toString(worm.kills)), worm.statsX * multiplier, renderer.renderResY - 29, 10);
+		common.font.drawText(renderer.bmp, (LS(Kills) + toString(worm.kills)), offsetX + worm.statsX * multiplier, renderer.renderResY - 29, 10);
 		
 		if(isReplay)
 		{
-			common.font.drawShadowedText(renderer.bmp, worm.settings->name, worm.statsX * multiplier, renderer.renderResY - 8, worm.settings->color);
-			common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), 95 * multiplier, renderer.renderResY - 15, 7);
+			common.font.drawShadowedText(renderer.bmp, worm.settings->name, offsetX + worm.statsX * multiplier, renderer.renderResY - 8, worm.settings->color);
+			common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), centerX - 5, renderer.renderResY - 15, 7);
 		}
 		int const stateColours[2][2] = {{6, 10}, {79, 4}};
 		
@@ -115,7 +104,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		case Settings::GMKillEmAll:
 		case Settings::GMScalesOfJustice:
 		{
-			common.font.drawText(renderer.bmp, (LS(Lives) + toString(worm.lives)), worm.statsX * multiplier, renderer.renderResY - 22, 6);
+			common.font.drawText(renderer.bmp, (LS(Lives) + toString(worm.lives)), offsetX + worm.statsX * multiplier, renderer.renderResY - 22, 6);
 		}
 		break;
 
@@ -129,7 +118,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			
 			int color = stateColours[game.holdazone.holderIdx != worm.index][state];
 			
-			common.font.drawText(renderer.bmp, timeToString(worm.timer), 5 * multiplier, 106 * multiplier + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
+			common.font.drawText(renderer.bmp, timeToString(worm.timer), 5, 106 + 84 * worm.index, renderer.renderResY - 39, color);
 		}
 		break;
 		
@@ -143,18 +132,13 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 			int color = stateColours[game.lastKilledIdx != worm.index][state];
 			
-			common.font.drawText(renderer.bmp, timeToString(worm.timer), 5 * multiplier, 106 * multiplier + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
+			common.font.drawText(renderer.bmp, timeToString(worm.timer), 5, 106 + 84 * worm.index, renderer.renderResY - 39, color);
 		}
 		break;
 		}
 	}
-	gvl::ivec2 renderPos(x, y);
-
-	PreserveClipRect pcr(renderer.bmp);
 
 	renderer.bmp.clip_rect = rect;
-
-	fixedvec offs = rect.ul() - renderPos;
 
 	blitImageNoKeyColour(renderer.bmp, &game.level.data[0], offs.x, offs.y, game.level.width, game.level.height);
 

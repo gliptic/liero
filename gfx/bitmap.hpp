@@ -1,6 +1,7 @@
 #ifndef LIERO_GFX_BITMAP_HPP
 #define LIERO_GFX_BITMAP_HPP
 
+#include "color.hpp"
 #include <cstring>
 #include <gvl/math/rect.hpp>
 #include <gvl/support/platform.hpp>

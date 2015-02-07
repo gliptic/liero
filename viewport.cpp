@@ -7,23 +7,6 @@
 #include "gfx/renderer.hpp"
 #include "gfx/blit.hpp"
 
-struct PreserveClipRect
-{
-	PreserveClipRect(Bitmap& bmp)
-	: bmp(bmp)
-	{
-		rect = bmp.clip_rect;
-	}
-	
-	~PreserveClipRect()
-	{
-		bmp.clip_rect = rect;
-	}
-	
-	Bitmap& bmp;
-	gvl::rect rect;
-};
-
 void Viewport::process(Game& game)
 {
 	Worm& worm = *game.wormByIdx(wormIdx);
