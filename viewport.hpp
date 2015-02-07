@@ -11,10 +11,9 @@ struct Renderer;
 
 struct Viewport
 {
-	Viewport(gvl::rect rect, int wormIdx, int inGameX, int levwidth, int levheight)
+	Viewport(gvl::rect rect, int wormIdx, int levwidth, int levheight)
 	: wormIdx(wormIdx)
 	, bannerY(-8)
-	, inGameX(inGameX)
 	, rect(rect)
 	{
 		maxX = levwidth - rect.width();
@@ -37,7 +36,6 @@ struct Viewport
 	int centerX, centerY;
 	int wormIdx;
 	int bannerY;
-	int inGameX; // 0 for first, 218 for second
 	gvl::rect rect;
 	Rand rand;
 

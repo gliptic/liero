@@ -12,8 +12,8 @@ struct Renderer;
 
 struct SpectatorViewport : Viewport
 {
-	SpectatorViewport(gvl::rect rect, int wormIdx, int inGameX, int levwidth, int levheight)
-	: Viewport(rect, wormIdx, inGameX, levwidth, levheight)
+	SpectatorViewport(gvl::rect rect, int levwidth, int levheight)
+	: Viewport(rect, 0, levwidth, levheight)
 	{
 	}
 
