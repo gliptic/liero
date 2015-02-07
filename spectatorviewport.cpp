@@ -216,27 +216,24 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			}
 		}
 	}
-	for(std::size_t i = 0; i < game.viewports.size(); ++i)
+	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
-		Viewport* v = game.viewports[i];
-		Worm& otherWorm = *game.wormByIdx(v->wormIdx);
+		Worm const& worm = *game.worms[i];
 		// FIXME: this should be changed to read "x was killed by y" and
-		// and similar, but that requires adding new strings
-		if(v != this
-		&& otherWorm.health <= 0
-		&& v->bannerY > -8)
+		// similar, but that requires adding new strings
+		if(worm.health <= 0 && bannerY > -8)
 		{
-			if (otherWorm.lastKilledByIdx == otherWorm.lastKilledByIdx)
+			if (worm.lastKilledByIdx == worm.index)
 			{
-				std::string msg(otherWorm.settings->name + LS(CommittedSuicideMsg));
-				common.font.drawText(renderer.bmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
-				common.font.drawText(renderer.bmp, msg, rect.x1 + 2, v->bannerY, 50);
+				std::string msg(worm.settings->name + LS(CommittedSuicideMsg));
+				common.font.drawText(renderer.bmp, msg, rect.x1 + 3, bannerY + 1, 0);
+				common.font.drawText(renderer.bmp, msg, rect.x1 + 2, bannerY, 50);
 			}
 			else
 			{
-				std::string msg(LS(KilledMsg) + otherWorm.settings->name);
-				common.font.drawText(renderer.bmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
-				common.font.drawText(renderer.bmp, msg, rect.x1 + 2, v->bannerY, 50);
+				std::string msg(LS(KilledMsg) + worm.settings->name);
+				common.font.drawText(renderer.bmp, msg, rect.x1 + 3, bannerY + 1, 0);
+				common.font.drawText(renderer.bmp, msg, rect.x1 + 2, bannerY, 50);
 			}
 		}
 	}
