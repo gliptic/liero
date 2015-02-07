@@ -3,29 +3,11 @@
 
 #include "worm.hpp"
 #include "rand.hpp"
-#include "gfx/bitmap.hpp"
 #include <gvl/math/rect.hpp>
 #include <ctime>
 
 struct Game;
 struct Renderer;
-
-struct PreserveClipRect
-{
-	PreserveClipRect(Bitmap& bmp)
-	: bmp(bmp)
-	{
-		rect = bmp.clip_rect;
-	}
-	
-	~PreserveClipRect()
-	{
-		bmp.clip_rect = rect;
-	}
-	
-	Bitmap& bmp;
-	gvl::rect rect;
-};
 
 struct Viewport
 {
