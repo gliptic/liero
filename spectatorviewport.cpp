@@ -94,7 +94,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		if(isReplay)
 		{
 			common.font.drawShadowedText(renderer.bmp, worm.settings->name, offsetX + worm.statsX * multiplier, renderer.renderResY - 8, worm.settings->color);
-			common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), centerX - 5, renderer.renderResY - 15, 7);
+			common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), centerX - 15, renderer.renderResY - 15, 7);
 		}
 		int const stateColours[2][2] = {{6, 10}, {79, 4}};
 		
