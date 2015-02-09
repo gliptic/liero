@@ -91,11 +91,10 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		
 		common.font.drawText(renderer.bmp, (LS(Kills) + toString(worm.kills)), offsetX + worm.statsX * multiplier, renderer.renderResY - 29, 10);
 		
-		if(isReplay)
-		{
-			common.font.drawShadowedText(renderer.bmp, worm.settings->name, offsetX + worm.statsX * multiplier, renderer.renderResY - 8, worm.settings->color);
-			common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), centerX - 15, renderer.renderResY - 15, 7);
-		}
+		// always display player names and time in spectator view
+		common.font.drawShadowedText(renderer.bmp, worm.settings->name, offsetX + worm.statsX * multiplier, renderer.renderResY - 8, worm.settings->color);
+		common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), centerX - 15, renderer.renderResY - 15, 7);
+
 		int const stateColours[2][2] = {{6, 10}, {79, 4}};
 		
 		switch(game.settings->gameMode)
