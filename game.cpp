@@ -6,6 +6,7 @@
 #include "gfx/renderer.hpp"
 #include "weapsel.hpp"
 #include "constants.hpp"
+#include <SDL2/SDL.h>
 #include <cstdlib>
 #include <ctime>
 #include "ai/predictive_ai.hpp"
