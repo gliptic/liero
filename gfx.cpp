@@ -858,9 +858,7 @@ void Gfx::flip()
 		SDL_Delay(wantedTime - now);
 	}
 		
-	lastFrame = SDL_GetTicks();
-	while((SDL_GetTicks() - lastFrame) > delay)
-		lastFrame += delay;
+	lastFrame = wantedTime;
 }
 
 void playChangeSound(Common& common, int change)
