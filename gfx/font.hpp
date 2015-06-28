@@ -21,9 +21,14 @@ struct Font
 	{
 	}
 
-	void drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color);
+	void drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color, int size);
 	int getDims(char const* str, std::size_t len, int* height = 0);
-	void drawChar(Bitmap& scr, unsigned char ch, int x, int y, int color);
+	void drawChar(Bitmap& scr, unsigned char ch, int x, int y, int color, int size);
+
+	void drawChar(Bitmap& scr, unsigned char ch, int x, int y, int color)
+	{
+		drawChar(scr, ch, x, y, color, 1);
+	}
 
 	// draws text with a simple shadow underneath it, so even text that would blend into the background can
 	// be displayed
@@ -33,9 +38,14 @@ struct Font
 		drawText(scr, str, x, y, color);
 	}
 
+	void drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color)
+	{
+		drawText(scr, str, len, x, y, color, 1);
+	}
+
 	void drawText(Bitmap& scr, std::string const& str, int x, int y, int color)
 	{
-		drawText(scr, str.data(), str.size(), x, y, color);
+		drawText(scr, str.data(), str.size(), x, y, color, 1);
 	}
 
 	void drawText(Bitmap& scr, gvl::cell const& str, int x, int y, int color)
@@ -55,7 +65,7 @@ struct Font
 				x -= w;
 		}
 
-		drawText(scr, reinterpret_cast<char const*>(&str.buffer[0]), str.buffer.size(), x, y, color);
+		drawText(scr, reinterpret_cast<char const*>(&str.buffer[0]), str.buffer.size(), x, y, color, 1);
 	}
 
 	int getDims(std::string const& str, int* height = 0)
