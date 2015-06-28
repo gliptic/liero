@@ -151,7 +151,9 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	
 	if(isReplay)
 	{
-		common.font.drawShadowedText(renderer.bmp, worm.settings->name, worm.statsX, renderer.renderResY - 8, worm.settings->color);
+		common.font.drawText(renderer.bmp, worm.settings->name, worm.statsX, renderer.renderResY - 15, 7);
+		fillRect(renderer.bmp, worm.statsX, renderer.renderResY - 7 - 1, 8, 8, 7);
+		fillRect(renderer.bmp, worm.statsX + 1, renderer.renderResY - 7, 6, 6, worm.settings->color);
 		common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), 95 * multiplier, renderer.renderResY - 15, 7);
 	}
 
