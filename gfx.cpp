@@ -1176,7 +1176,10 @@ void Gfx::selectLevel()
 			{
 				if (level.load(common, *settings, sel->getFsNode().toOctetReader()))
 				{
+					int centerX = singleScreenRenderer.renderResX / 2;
+
 					level.drawMiniature(frozenScreen, 134, 162, 10);
+					level.drawMiniature(frozenSpectatorScreen, centerX - 60, singleScreenRenderer.renderResY - 95, 4);
 				}
 			}
 			catch (std::runtime_error&)
@@ -1890,7 +1893,17 @@ void Gfx::drawSpectatorInfo()
 	int centerX = singleScreenRenderer.renderResX / 2;
 	int centerY = singleScreenRenderer.renderResY / 2;
 
-	singleScreenRenderer.clear();
+	gfx.singleScreenRenderer.bmp.copy(gfx.frozenSpectatorScreen);
+	if(settings->levelFile.empty())
+	{
+		common.font.drawCenteredText(singleScreenRenderer.bmp, LS(LevelRandom), centerX, centerY - 32, 7, 2);
+	}
+	else
+	{
+		auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
+		common.font.drawCenteredText(singleScreenRenderer.bmp, LS(LevelIs1) + levelName + LS(LevelIs2), centerX, centerY - 32, 7, 2);
+	}
+
 	std::string vsText = settings->wormSettings[0]->name + " vs " + settings->wormSettings[1]->name;
 	int textSize = common.font.getDims(vsText) * 2;
 	common.font.drawCenteredText(singleScreenRenderer.bmp, vsText, centerX, centerY, 7, 2);
@@ -1929,6 +1942,8 @@ void Gfx::openHiddenMenu()
 int Gfx::menuLoop()
 {
 	Common& common = *this->common;
+	int centerX = singleScreenRenderer.renderResX / 2;
+
 	std::memset(playRenderer.pal.entries, 0, sizeof(playRenderer.pal.entries));
 	std::memset(singleScreenRenderer.pal.entries, 0, sizeof(singleScreenRenderer.pal.entries));
 	flip();
@@ -1961,8 +1976,9 @@ int Gfx::menuLoop()
 	curMenu = &mainMenu;
 
 	frozenScreen.copy(playRenderer.bmp);
-	frozenSpectatorScreen.copy(singleScreenRenderer.bmp);
 	singleScreenRenderer.clear();
+	controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 60, singleScreenRenderer.renderResY - 95, 4);
+	frozenSpectatorScreen.copy(singleScreenRenderer.bmp);
 
 	menuCycles = 0;
 	int selected = -1;

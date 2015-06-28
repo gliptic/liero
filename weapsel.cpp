@@ -97,17 +97,19 @@ void WeaponSelection::draw()
 	if(!cachedBackground)
 	{
 		game.draw(gfx.playRenderer, false);
-			
+
 		if(game.settings->levelFile.empty())
 		{
 			common.font.drawText(gfx.playRenderer.bmp, LS(LevelRandom), 0, 162, 50);
+			common.font.drawCenteredText(gfx.singleScreenRenderer.bmp, LS(LevelRandom), centerX, centerY - 32, 7, 2);
 		}
 		else
 		{
 			auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
 			common.font.drawText(gfx.playRenderer.bmp, (LS(LevelIs1) + levelName + LS(LevelIs2)), 0, 162, 50);
+			common.font.drawCenteredText(gfx.singleScreenRenderer.bmp, LS(LevelIs1) + levelName + LS(LevelIs2), centerX, centerY - 32, 7, 2);
 		}
-		
+
 		gfx.frozenScreen.copy(gfx.playRenderer.bmp);
 		gfx.frozenSpectatorScreen.copy(gfx.singleScreenRenderer.bmp);
 		cachedBackground = true;
@@ -151,6 +153,7 @@ void WeaponSelection::draw()
 	fillRect(gfx.singleScreenRenderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
 	fillRect(gfx.singleScreenRenderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, game.settings->wormSettings[1]->color);
 	common.font.drawCenteredText(gfx.singleScreenRenderer.bmp, "WEAPON SELECTION", centerX, centerY + 48, 7, 2);
+	game.level.drawMiniature(gfx.singleScreenRenderer.bmp, centerX - 60, gfx.singleScreenRenderer.renderResY - 95, 4);
 
 	// TODO: This just uses the currently activated palette, which might well be wrong.
 	gfx.playRenderer.pal = gfx.playRenderer.origpal;
