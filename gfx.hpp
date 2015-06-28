@@ -198,6 +198,7 @@ struct Gfx
 	int menuLoop();
 	void mainLoop();
 	void drawBasicMenu(/*int curSel*/);
+	void drawSpectatorInfo();
 	void playerSettings(int player);
 	void openHiddenMenu();
 
@@ -274,6 +275,9 @@ struct Gfx
 	// when the menu is open, the ongoing game on the screen is paused and
 	// stored in this bitmap
 	Bitmap frozenScreen;
+	// when the menu is open, the ongoing game on the spectator screen is
+	// paused and stored in this bitmap
+	Bitmap frozenSpectatorScreen;
 
 	bool running;
 	bool fullscreen, doubleRes;

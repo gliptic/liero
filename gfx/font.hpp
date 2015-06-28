@@ -30,6 +30,17 @@ struct Font
 		drawChar(scr, ch, x, y, color, 1);
 	}
 
+	void drawCenteredText(Bitmap& scr, std::string const& str, int x, int y, int color, int size)
+	{
+		int len = getDims(str) * size;
+		drawText(scr, str.data(), str.size(), x - (len / 2), y, color, size);
+	}
+
+	void drawCenteredText(Bitmap& scr, std::string const& str, int x, int y, int color)
+	{
+		drawCenteredText(scr, str, x, y, color, 1);
+	}
+
 	// draws text with a simple shadow underneath it, so even text that would blend into the background can
 	// be displayed
 	void drawShadowedText(Bitmap& scr, std::string const& str, int x, int y, int color)
