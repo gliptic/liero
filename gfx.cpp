@@ -785,12 +785,18 @@ void Gfx::menuFlip(bool quitting)
 {
 	if (playRenderer.fadeValue < 32 && !quitting)
 		++playRenderer.fadeValue;
+	if (singleScreenRenderer.fadeValue < 32 && !quitting)
+		++singleScreenRenderer.fadeValue;
 
 	++menuCycles;
 	playRenderer.pal = playRenderer.origpal;
 	playRenderer.pal.rotateFrom(playRenderer.origpal, 168, 174, menuCycles);
 	playRenderer.pal.setWormColours(*settings);
 	playRenderer.pal.fade(playRenderer.fadeValue);
+	singleScreenRenderer.pal = singleScreenRenderer.origpal;
+	singleScreenRenderer.pal.rotateFrom(singleScreenRenderer.origpal, 168, 174, menuCycles);
+	singleScreenRenderer.pal.setWormColours(*settings);
+	singleScreenRenderer.pal.fade(singleScreenRenderer.fadeValue);
 	flip();
 }
 
@@ -1878,6 +1884,27 @@ void Gfx::drawBasicMenu(/*int curSel*/)
 	mainMenu.draw(*common, curMenu != &mainMenu, -1, true);
 }
 
+void Gfx::drawSpectatorInfo()
+{
+	Common& common = *this->common;
+	int centerX = singleScreenRenderer.renderResX / 2;
+	int centerY = singleScreenRenderer.renderResY / 2;
+
+	singleScreenRenderer.clear();
+	std::string vsText = settings->wormSettings[0]->name + " vs " + settings->wormSettings[1]->name;
+	int textSize = common.font.getDims(vsText) * 2;
+	common.font.drawCenteredText(singleScreenRenderer.bmp, vsText, centerX, centerY, 7, 2);
+	fillRect(singleScreenRenderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
+	fillRect(singleScreenRenderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, settings->wormSettings[0]->color);
+	fillRect(singleScreenRenderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
+	fillRect(singleScreenRenderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, settings->wormSettings[1]->color);
+
+	if (controller->running())
+	{
+		common.font.drawCenteredText(singleScreenRenderer.bmp, "PAUSED", centerX, centerY + 48, 7, 2);
+	}
+}
+
 int upperCaseOnly(int k)
 {
 	k = std::toupper(k);
@@ -1903,6 +1930,7 @@ int Gfx::menuLoop()
 {
 	Common& common = *this->common;
 	std::memset(playRenderer.pal.entries, 0, sizeof(playRenderer.pal.entries));
+	std::memset(singleScreenRenderer.pal.entries, 0, sizeof(singleScreenRenderer.pal.entries));
 	flip();
 	process();
 	
@@ -1929,9 +1957,12 @@ int Gfx::menuLoop()
 	settingsMenu.updateItems(common);
 	
 	playRenderer.fadeValue = 0;
+	singleScreenRenderer.fadeValue = 0;
 	curMenu = &mainMenu;
 
 	frozenScreen.copy(playRenderer.bmp);
+	frozenSpectatorScreen.copy(singleScreenRenderer.bmp);
+	singleScreenRenderer.clear();
 
 	menuCycles = 0;
 	int selected = -1;
@@ -1939,7 +1970,8 @@ int Gfx::menuLoop()
 	do
 	{
 		drawBasicMenu();
-		
+		drawSpectatorInfo();
+
 		if(curMenu == &mainMenu)
 			settingsMenu.draw(common, true);
 		else

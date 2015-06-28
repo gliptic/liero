@@ -91,7 +91,9 @@ WeaponSelection::WeaponSelection(Game& game)
 void WeaponSelection::draw()
 {
 	Common& common = *game.common;
-	
+	int centerX = gfx.singleScreenRenderer.renderResX / 2;
+	int centerY = gfx.singleScreenRenderer.renderResY / 2;
+
 	if(!cachedBackground)
 	{
 		game.draw(gfx.playRenderer, false);
@@ -107,10 +109,12 @@ void WeaponSelection::draw()
 		}
 		
 		gfx.frozenScreen.copy(gfx.playRenderer.bmp);
+		gfx.frozenSpectatorScreen.copy(gfx.singleScreenRenderer.bmp);
 		cachedBackground = true;
 	}
 	
 	gfx.playRenderer.bmp.copy(gfx.frozenScreen);
+	gfx.singleScreenRenderer.bmp.copy(gfx.frozenSpectatorScreen);
 
 	if(!focused)
 		return;
@@ -138,11 +142,24 @@ void WeaponSelection::draw()
 			menus[i].draw(common, false);
 		}
 	}
-	
+
+	std::string vsText = game.settings->wormSettings[0]->name + " vs " + game.settings->wormSettings[1]->name;
+	int textSize = common.font.getDims(vsText) * 2;
+	common.font.drawCenteredText(gfx.singleScreenRenderer.bmp, vsText, centerX, centerY, 7, 2);
+	fillRect(gfx.singleScreenRenderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
+	fillRect(gfx.singleScreenRenderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, game.settings->wormSettings[0]->color);
+	fillRect(gfx.singleScreenRenderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
+	fillRect(gfx.singleScreenRenderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, game.settings->wormSettings[1]->color);
+	common.font.drawCenteredText(gfx.singleScreenRenderer.bmp, "WEAPON SELECTION", centerX, centerY + 48, 7, 2);
+
 	// TODO: This just uses the currently activated palette, which might well be wrong.
 	gfx.playRenderer.pal = gfx.playRenderer.origpal;
 	gfx.playRenderer.pal.rotateFrom(gfx.playRenderer.origpal, 168, 174, gfx.menuCycles);
 	gfx.playRenderer.pal.fade(gfx.playRenderer.fadeValue);
+	// TODO: This just uses the currently activated palette, which might well be wrong.
+	gfx.singleScreenRenderer.pal = gfx.singleScreenRenderer.origpal;
+	gfx.singleScreenRenderer.pal.rotateFrom(gfx.singleScreenRenderer.origpal, 168, 174, gfx.menuCycles);
+	gfx.singleScreenRenderer.pal.fade(gfx.singleScreenRenderer.fadeValue);
 	++gfx.menuCycles;
 }
 	

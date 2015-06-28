@@ -198,6 +198,7 @@ struct Gfx
 	int menuLoop();
 	void mainLoop();
 	void drawBasicMenu(/*int curSel*/);
+	void drawSpectatorInfo();
 	void playerSettings(int player);
 	void openHiddenMenu();
 
@@ -271,9 +272,12 @@ struct Gfx
 	SDL_Surface* sdlDrawSurface = NULL;
 	// a software surface to do the actual drawing of the spectator view into
 	SDL_Surface* sdlSpectatorDrawSurface = NULL;
-	// when the menu is open, the ongoing game on the screen is paused and 
+	// when the menu is open, the ongoing game on the screen is paused and
 	// stored in this bitmap
 	Bitmap frozenScreen;
+	// when the menu is open, the ongoing game on the spectator screen is
+	// paused and stored in this bitmap
+	Bitmap frozenSpectatorScreen;
 
 	bool running;
 	bool fullscreen, doubleRes;
