@@ -348,6 +348,11 @@ void Gfx::setVideoMode()
 
 	if (settings->spectatorWindow)
 	{
+		flags = 0;
+		if (spectatorFullscreen)
+		{
+			flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		}
 		if (!sdlSpectatorWindow)
 		{
 			int x, y;
@@ -357,7 +362,7 @@ void Gfx::setVideoMode()
 		}
 		else
 		{
-			if (fullscreen)
+			if (spectatorFullscreen)
 			{
 				SDL_SetWindowFullscreen(sdlSpectatorWindow,
 				                        SDL_WINDOW_FULLSCREEN_DESKTOP);
@@ -517,14 +522,23 @@ void Gfx::loadMenus()
 	hiddenMenu.valueOffsetX = 120;
 }
 
-void Gfx::setFullscreen(bool newFullscreen)
+void Gfx::setFullscreen(bool newFullscreen, SDL_Window *window)
 {
-	if (newFullscreen == fullscreen)
-		return;
-	fullscreen = newFullscreen;
+	if (window == NULL || window == sdlWindow)
+	{
+		if (newFullscreen == fullscreen)
+			return;
+		fullscreen = newFullscreen;
+	}
+	if (window == NULL || window == sdlSpectatorWindow)
+	{
+		if (newFullscreen == spectatorFullscreen)
+			return;
+		spectatorFullscreen = newFullscreen;
+	}
 
 	// fullscreen will automatically set window size
-	if (!fullscreen)
+	if (!newFullscreen)
 	{
 		if (doubleRes)
 		{
@@ -583,7 +597,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 
 			if(s == SDL_SCANCODE_F11)
 			{
-				setFullscreen(!fullscreen);
+				setFullscreen(!fullscreen, SDL_GetWindowFromID(ev.key.windowID));
 			}
 		}
 		break;

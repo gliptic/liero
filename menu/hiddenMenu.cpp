@@ -25,7 +25,7 @@ ItemBehavior* HiddenMenu::getItemBehavior(Common& common, MenuItem& item)
 		case DoubleRes:
 			return new BooleanSwitchBehavior(common, gfx.doubleRes, [](bool v) { gfx.setDoubleRes(v); });
 		case Fullscreen:
-			return new BooleanSwitchBehavior(common, gfx.fullscreen, [](bool v) { gfx.setFullscreen(v); });
+			return new BooleanSwitchBehavior(common, gfx.fullscreen, [](bool v) { gfx.setFullscreen(v, gfx.sdlWindow); });
 		case FullscreenW:
 			return new IntegerBehavior(common, gfx.settings->fullscreenW, 0, 9999, 0);
 		case FullscreenH:
