@@ -348,7 +348,7 @@ void Gfx::setVideoMode()
 
 	if (settings->spectatorWindow)
 	{
-		flags = 0;
+		flags = SDL_WINDOW_RESIZABLE;
 		if (spectatorFullscreen)
 		{
 			flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
