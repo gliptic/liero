@@ -348,18 +348,23 @@ void Gfx::setVideoMode()
 
 	if (settings->spectatorWindow)
 	{
+		flags = 0;
+		if (spectatorFullscreen)
+		{
+			flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		}
 		if (!sdlSpectatorWindow)
 		{
 			int x, y;
 			SDL_GetWindowPosition(sdlWindow, &x, &y);
-			sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", x + 100, 
+			sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", x + 100,
 				                		          y, windowW, windowH, flags);
 		}
 		else
 		{
-			if (fullscreen)
+			if (spectatorFullscreen)
 			{
-				SDL_SetWindowFullscreen(sdlSpectatorWindow, 
+				SDL_SetWindowFullscreen(sdlSpectatorWindow,
 				                        SDL_WINDOW_FULLSCREEN_DESKTOP);
 			}
 			else
@@ -399,9 +404,9 @@ void Gfx::onWindowResize(Uint32 windowID)
 			SDL_DestroyTexture(sdlTexture);
 			sdlTexture = NULL;
 		}
-		sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888, 
-			                           SDL_TEXTUREACCESS_STREAMING, 
-			                           doubleRes ? 640 : 320, 
+		sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888,
+			                           SDL_TEXTUREACCESS_STREAMING,
+			                           doubleRes ? 640 : 320,
 		                         	   doubleRes ? 400 : 200);
 
 		if (sdlDrawSurface)
@@ -517,14 +522,23 @@ void Gfx::loadMenus()
 	hiddenMenu.valueOffsetX = 120;
 }
 
-void Gfx::setFullscreen(bool newFullscreen)
+void Gfx::setFullscreen(bool newFullscreen, SDL_Window *window)
 {
-	if (newFullscreen == fullscreen)
-		return;
-	fullscreen = newFullscreen;
+	if (window == NULL || window == sdlWindow)
+	{
+		if (newFullscreen == fullscreen)
+			return;
+		fullscreen = newFullscreen;
+	}
+	if (window == NULL || window == sdlSpectatorWindow)
+	{
+		if (newFullscreen == spectatorFullscreen)
+			return;
+		spectatorFullscreen = newFullscreen;
+	}
 
 	// fullscreen will automatically set window size
-	if (!fullscreen)
+	if (!newFullscreen)
 	{
 		if (doubleRes)
 		{
@@ -583,7 +597,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 
 			if(s == SDL_SCANCODE_F11)
 			{
-				setFullscreen(!fullscreen);
+				setFullscreen(!fullscreen, SDL_GetWindowFromID(ev.key.windowID));
 			}
 		}
 		break;

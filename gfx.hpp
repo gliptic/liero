@@ -186,7 +186,7 @@ struct Gfx
 	SDL_Keysym waitForKey();
 	uint32_t waitForKeyEx();
 	std::string getKeyName(uint32_t key);
-	void setFullscreen(bool newFullscreen);
+	void setFullscreen(bool newFullscreen, SDL_Window *window);
 	void setDoubleRes(bool newDoubleRes);
 	
 	void saveSettings(FsNode node);
@@ -280,8 +280,8 @@ struct Gfx
 	Bitmap frozenSpectatorScreen;
 
 	bool running;
-	bool fullscreen, doubleRes;
-	
+	bool fullscreen, spectatorFullscreen, doubleRes;
+
 	Uint32 lastFrame;
 	unsigned menuCycles;
 	int windowW, windowH;
