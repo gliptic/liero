@@ -522,23 +522,36 @@ void Gfx::loadMenus()
 	hiddenMenu.valueOffsetX = 120;
 }
 
-void Gfx::setFullscreen(bool newFullscreen, SDL_Window *window)
+void Gfx::setSpectatorFullscreen(bool newFullscreen)
 {
-	if (window == NULL || window == sdlWindow)
+	if (newFullscreen == spectatorFullscreen)
+		return;
+	spectatorFullscreen = newFullscreen;
+
+	if (!spectatorFullscreen)
 	{
-		if (newFullscreen == fullscreen)
-			return;
-		fullscreen = newFullscreen;
+		if (doubleRes)
+		{
+			windowW = 640;
+			windowH = 400;
+		}
+		else
+		{
+			windowW = 320;
+			windowH = 200;
+		}
 	}
-	if (window == NULL || window == sdlSpectatorWindow)
-	{
-		if (newFullscreen == spectatorFullscreen)
-			return;
-		spectatorFullscreen = newFullscreen;
-	}
+	setVideoMode();
+}
+
+void Gfx::setFullscreen(bool newFullscreen)
+{
+	if (newFullscreen == fullscreen)
+		return;
+	fullscreen = newFullscreen;
 
 	// fullscreen will automatically set window size
-	if (!newFullscreen)
+	if (!fullscreen)
 	{
 		if (doubleRes)
 		{
@@ -597,7 +610,15 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 
 			if(s == SDL_SCANCODE_F11)
 			{
-				setFullscreen(!fullscreen, SDL_GetWindowFromID(ev.key.windowID));
+				if (SDL_GetWindowFromID(ev.key.windowID) == sdlWindow)
+				{
+					setFullscreen(!fullscreen);
+				}
+				else
+				{
+					setSpectatorFullscreen(!spectatorFullscreen);
+				}
+
 			}
 		}
 		break;
@@ -1193,7 +1214,7 @@ void Gfx::selectLevel()
 					int centerX = singleScreenRenderer.renderResX / 2;
 
 					level.drawMiniature(frozenScreen, 134, 162, 10);
-					level.drawMiniature(frozenSpectatorScreen, centerX - 63, singleScreenRenderer.renderResY - 87, 4);
+					level.drawMiniature(frozenSpectatorScreen, centerX - 63, singleScreenRenderer.renderResY - 88, 4);
 				}
 			}
 			catch (std::runtime_error&)
@@ -1991,7 +2012,7 @@ int Gfx::menuLoop()
 
 	frozenScreen.copy(playRenderer.bmp);
 	singleScreenRenderer.clear();
-	controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 60, singleScreenRenderer.renderResY - 95, 4);
+	controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 63, singleScreenRenderer.renderResY - 88, 4);
 	frozenSpectatorScreen.copy(singleScreenRenderer.bmp);
 
 	menuCycles = 0;

@@ -186,7 +186,8 @@ struct Gfx
 	SDL_Keysym waitForKey();
 	uint32_t waitForKeyEx();
 	std::string getKeyName(uint32_t key);
-	void setFullscreen(bool newFullscreen, SDL_Window *window);
+	void setSpectatorFullscreen(bool newFullscreen);
+	void setFullscreen(bool newFullscreen);
 	void setDoubleRes(bool newDoubleRes);
 	
 	void saveSettings(FsNode node);
