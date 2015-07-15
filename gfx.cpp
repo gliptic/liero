@@ -1193,7 +1193,7 @@ void Gfx::selectLevel()
 					int centerX = singleScreenRenderer.renderResX / 2;
 
 					level.drawMiniature(frozenScreen, 134, 162, 10);
-					level.drawMiniature(frozenSpectatorScreen, centerX - 60, singleScreenRenderer.renderResY - 95, 4);
+					level.drawMiniature(frozenSpectatorScreen, centerX - 63, singleScreenRenderer.renderResY - 87, 4);
 				}
 			}
 			catch (std::runtime_error&)
