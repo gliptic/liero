@@ -98,8 +98,6 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 
 	if (!cachedSpectatorBackground)
 	{
-		game.draw(renderer, true);
-
 		if (game.settings->levelFile.empty())
 		{
 			common.font.drawCenteredText(renderer.bmp, LS(LevelRandom), centerX, centerY - 32, 7, 2);
@@ -110,6 +108,16 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 			common.font.drawCenteredText(renderer.bmp, LS(LevelIs1) + levelName + LS(LevelIs2), centerX, centerY - 32, 7, 2);
 		}
 
+		std::string vsText = game.settings->wormSettings[0]->name + " vs " + game.settings->wormSettings[1]->name;
+		int textSize = common.font.getDims(vsText) * 2;
+		common.font.drawCenteredText(renderer.bmp, vsText, centerX, centerY, 7, 2);
+		fillRect(renderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
+		fillRect(renderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, game.settings->wormSettings[0]->color);
+		fillRect(renderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
+		fillRect(renderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, game.settings->wormSettings[1]->color);
+		common.font.drawCenteredText(renderer.bmp, "WEAPON SELECTION", centerX, centerY + 48, 7, 2);
+		game.level.drawMiniature(renderer.bmp, centerX - 60, renderer.renderResY - 95, 4);
+
 		gfx.frozenSpectatorScreen.copy(renderer.bmp);
 		cachedSpectatorBackground = true;
 	}
@@ -118,16 +126,6 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 
 	if(!focused)
 		return;
-
-	std::string vsText = game.settings->wormSettings[0]->name + " vs " + game.settings->wormSettings[1]->name;
-	int textSize = common.font.getDims(vsText) * 2;
-	common.font.drawCenteredText(renderer.bmp, vsText, centerX, centerY, 7, 2);
-	fillRect(renderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
-	fillRect(renderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, game.settings->wormSettings[0]->color);
-	fillRect(renderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
-	fillRect(renderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, game.settings->wormSettings[1]->color);
-	common.font.drawCenteredText(renderer.bmp, "WEAPON SELECTION", centerX, centerY + 48, 7, 2);
-	game.level.drawMiniature(renderer.bmp, centerX - 60, renderer.renderResY - 95, 4);
 
 	// TODO: This just uses the currently activated palette, which might well be wrong.
 	gfx.singleScreenRenderer.pal = gfx.singleScreenRenderer.origpal;
