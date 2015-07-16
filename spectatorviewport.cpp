@@ -11,16 +11,24 @@ void SpectatorViewport::process(Game& game)
 {
 	int realShake = ftoi(shake);
 
-	if(realShake > 0)
+	// FIXME this is a bit broken
+	// TODO: This depends on what is the starting killedTimer
+	if (game.wormByIdx(0)->killedTimer == 150 || game.wormByIdx(1)->killedTimer == 150)
+	{
+		bannerY = -8;
+	}
+
+	if (realShake > 0)
 	{
 		x += rand(realShake * 2) - realShake;
 		y += rand(realShake * 2) - realShake;
 	}
-	
+
 	if(x < 0) x = 0;
 	if(y < 0) y = 0;
 	if(x > maxX) x = maxX;
 	if(y > maxY) y = maxY;
+
 }
 
 void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
@@ -201,9 +209,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
 		Worm const& worm = *game.worms[i];
-		// FIXME: this should be changed to read "x was killed by y" and
-		// similar, but that requires adding new strings
-		if(worm.health <= 0 && bannerY > -8)
+		if (worm.health <= 0 && bannerY > -8)
 		{
 			if (worm.lastKilledByIdx == worm.index)
 			{
@@ -213,7 +219,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			}
 			else
 			{
-				std::string msg(LS(KilledMsg) + worm.settings->name);
+				std::string msg(game.worms[worm.lastKilledByIdx]->settings->name + " killed " + worm.settings->name);
 				common.font.drawText(renderer.bmp, msg, rect.x1 + 3, bannerY + 1, 0);
 				common.font.drawText(renderer.bmp, msg, rect.x1 + 2, bannerY, 50);
 			}
