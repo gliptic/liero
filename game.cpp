@@ -340,7 +340,7 @@ void Game::processFrame()
 
 			bool down = false;
 
-			if(wormByIdx(v.wormIdx)->killedTimer > 16)
+			if(wormByIdx(0)->killedTimer > 16 || wormByIdx(1)->killedTimer > 16)
 				down = true;
 
 			if(down)
