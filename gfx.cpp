@@ -1214,7 +1214,7 @@ void Gfx::selectLevel()
 					int centerX = singleScreenRenderer.renderResX / 2;
 
 					level.drawMiniature(frozenScreen, 134, 162, 10);
-					level.drawMiniature(frozenSpectatorScreen, centerX - 63, singleScreenRenderer.renderResY - 88, 4);
+					level.drawMiniature(frozenSpectatorScreen, centerX - 126, singleScreenRenderer.renderResY - 176, 2);
 				}
 			}
 			catch (std::runtime_error&)
@@ -1928,9 +1928,9 @@ void Gfx::drawSpectatorInfo()
 {
 	Common& common = *this->common;
 	int centerX = singleScreenRenderer.renderResX / 2;
-	int centerY = singleScreenRenderer.renderResY / 2;
+	int centerY = singleScreenRenderer.renderResY / 4;
 
-	gfx.singleScreenRenderer.bmp.copy(gfx.frozenSpectatorScreen);
+	singleScreenRenderer.bmp.copy(frozenSpectatorScreen);
 	if(settings->levelFile.empty())
 	{
 		common.font.drawCenteredText(singleScreenRenderer.bmp, LS(LevelRandom), centerX, centerY - 32, 7, 2);
@@ -1952,6 +1952,10 @@ void Gfx::drawSpectatorInfo()
 	if (controller->running())
 	{
 		common.font.drawCenteredText(singleScreenRenderer.bmp, "PAUSED", centerX, centerY + 48, 7, 2);
+	}
+	else
+	{
+		common.font.drawCenteredText(singleScreenRenderer.bmp, "SETUP", centerX, centerY + 48, 7, 2);
 	}
 }
 
@@ -2014,12 +2018,11 @@ int Gfx::menuLoop()
 
 	frozenScreen.copy(playRenderer.bmp);
 	singleScreenRenderer.clear();
-	controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 63, singleScreenRenderer.renderResY - 88, 4);
+	controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 126, singleScreenRenderer.renderResY - 176, 2);
 	frozenSpectatorScreen.copy(singleScreenRenderer.bmp);
 
 	menuCycles = 0;
 	int selected = -1;
-		
 	do
 	{
 		drawBasicMenu();

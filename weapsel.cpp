@@ -94,7 +94,7 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 {
 	Common& common = *game.common;
 	int centerX = renderer.renderResX / 2;
-	int centerY = renderer.renderResY / 2;
+	int centerY = renderer.renderResY / 4;
 
 	if (!cachedSpectatorBackground)
 	{
@@ -116,7 +116,7 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 		fillRect(renderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
 		fillRect(renderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, game.settings->wormSettings[1]->color);
 		common.font.drawCenteredText(renderer.bmp, "WEAPON SELECTION", centerX, centerY + 48, 7, 2);
-		game.level.drawMiniature(renderer.bmp, centerX - 60, renderer.renderResY - 95, 4);
+		game.level.drawMiniature(renderer.bmp, centerX - 126, renderer.renderResY - 176, 2);
 
 		gfx.frozenSpectatorScreen.copy(renderer.bmp);
 		cachedSpectatorBackground = true;
@@ -133,7 +133,7 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 	}
 	if (!isReady[1])
 	{
-		menus[1].draw(common, renderer, false, 570);
+		menus[1].draw(common, renderer, false, 560);
 	}
 
 	// TODO: This just uses the currently activated palette, which might well be wrong.
