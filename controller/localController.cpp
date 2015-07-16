@@ -222,7 +222,7 @@ void LocalController::draw(Renderer& renderer, bool useSpectatorViewports)
 {
 	if(state == StateWeaponSelection)
 	{
-		ws->draw();
+		ws->draw(renderer, useSpectatorViewports);
 	}
 	else if(state == StateGame || state == StateGameEnded || state == StateInitial)
 	{
