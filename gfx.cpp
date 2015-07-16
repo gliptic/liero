@@ -1881,7 +1881,9 @@ restart:
 
 			singleScreenRenderer.clear();
 			controller->draw(this->singleScreenRenderer, true);
-			
+
+			++gfx.menuCycles;
+
 			flip();
 			process(controller.get());
 		}
