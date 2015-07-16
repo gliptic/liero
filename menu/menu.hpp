@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include "../gfx/color.hpp"
+#include "../gfx/renderer.hpp"
 
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/support/cstdint.hpp>
@@ -51,15 +52,15 @@ struct Menu
 		visibleItemCount = 0;
 		searchTime = 0;
 	}
-	
-	void draw(Common& common, bool disabled, int x = -1, bool showDisabledSelection = false);
+
+	void draw(Common& common, Renderer& renderer, bool disabled, int x = -1, bool showDisabledSelection = false);
 	void process();
-	
+
 	virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected, bool disabled)
 	{
 		// Nothing by default
 	}
-	
+
 	virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item)
 	{
 		// Dummy item behavior by default

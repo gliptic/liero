@@ -127,6 +127,15 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 	if(!focused)
 		return;
 
+	if (!isReady[0])
+	{
+		menus[0].draw(common, renderer, false, 10);
+	}
+	if (!isReady[1])
+	{
+		menus[1].draw(common, renderer, false, 570);
+	}
+
 	// TODO: This just uses the currently activated palette, which might well be wrong.
 	gfx.singleScreenRenderer.pal = gfx.singleScreenRenderer.origpal;
 	gfx.singleScreenRenderer.pal.rotateFrom(gfx.singleScreenRenderer.origpal, 168, 174, gfx.menuCycles);
@@ -179,7 +188,7 @@ void WeaponSelection::drawNormalViewports(Renderer& renderer)
 
 		if(!isReady[i])
 		{
-			menus[i].draw(common, false);
+			menus[i].draw(common, gfx.playRenderer, false);
 		}
 	}
 

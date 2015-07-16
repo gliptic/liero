@@ -82,48 +82,48 @@ void Menu::onKeys(SDL_Keysym* begin, SDL_Keysym* end, bool contains)
 	}
 }
 
-void Menu::draw(Common& common, bool disabled, int x, bool showDisabledSelection)
+void Menu::draw(Common& common, Renderer& renderer, bool disabled, int x, bool showDisabledSelection)
 {
 	int itemsLeft = height;
 	int curY = y;
 
 	if (x < 0)
 		x = this->x;
-	
+
 	for(int c = itemFromVisibleIndex(topItem); itemsLeft > 0 && c < (int)items.size(); ++c)
 	{
 		MenuItem& item = items[c];
 		if(!item.visible)
 			continue;
-			
+
 		--itemsLeft;
-			
+
 		bool selected = (c == selection_) && (!disabled || showDisabledSelection);
-			
-		item.draw(common, x, curY, selected, disabled, centered, valueOffsetX);
+
+		item.draw(common, renderer, x, curY, selected, disabled, centered, valueOffsetX);
 		drawItemOverlay(common, item, x, curY, selected, disabled);
-		
+
 		curY += itemHeight;
 	}
-	
+
 	if(visibleItemCount > height)
 	{
 		int menuHeight = height * itemHeight + 1;
-		
-		common.font.drawChar(gfx.playRenderer.bmp, 22, x - 6, y + 2, 0);
-		common.font.drawChar(gfx.playRenderer.bmp, 22, x - 7, y + 1, 50);
-		common.font.drawChar(gfx.playRenderer.bmp, 23, x - 6, y + menuHeight - 7, 0);
-		common.font.drawChar(gfx.playRenderer.bmp, 23, x - 7, y + menuHeight - 8, 50);
-		
+
+		common.font.drawChar(renderer.bmp, 22, x - 6, y + 2, 0);
+		common.font.drawChar(renderer.bmp, 22, x - 7, y + 1, 50);
+		common.font.drawChar(renderer.bmp, 23, x - 6, y + menuHeight - 7, 0);
+		common.font.drawChar(renderer.bmp, 23, x - 7, y + menuHeight - 8, 50);
+
 		int scrollBarHeight = menuHeight - 17;
-		
+
 		int scrollTabHeight = int(height*scrollBarHeight / visibleItemCount);
 		scrollTabHeight = std::min(scrollTabHeight, scrollBarHeight);
 		scrollTabHeight = std::max(scrollTabHeight, 0);
 		int scrollTabY = y + int(topItem * scrollBarHeight / visibleItemCount);
-		
-		fillRect(gfx.playRenderer.bmp, x - 7, scrollTabY + 9, 7, scrollTabHeight, 0);
-		fillRect(gfx.playRenderer.bmp, x - 8, scrollTabY + 8, 7, scrollTabHeight, 7);
+
+		fillRect(renderer.bmp, x - 7, scrollTabY + 9, 7, scrollTabHeight, 0);
+		fillRect(renderer.bmp, x - 8, scrollTabY + 8, 7, scrollTabHeight, 7);
 	}
 }
 

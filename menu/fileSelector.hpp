@@ -184,9 +184,9 @@ struct FileSelector
 		if (currentNode && currentNode->parent)
 		{
 			common.font.drawFramedText(gfx.playRenderer.bmp, "Parent directory", 28, 20, 50);
-			currentNode->parent->getMenu().draw(common, true, 28, true);
+			currentNode->parent->getMenu().draw(common, gfx.playRenderer, true, 28, true);
 		}
-		menu().draw(common, false, 178);
+		menu().draw(common, gfx.playRenderer, false, 178);
 	}
 
 	Menu& menu()

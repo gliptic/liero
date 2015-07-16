@@ -3,6 +3,7 @@
 
 #include <string>
 #include "../gfx/color.hpp"
+#include "../gfx/renderer.hpp"
 
 struct Common;
 
@@ -28,16 +29,16 @@ struct MenuItem
 		m.selectable = false;
 		return m;
 	}
-	
-	void draw(Common& common, int x, int y, bool selected, bool disabled, bool centered, int valueOffsetX);
-	
+
+	void draw(Common& common, Renderer& renderer, int x, int y, bool selected, bool disabled, bool centered, int valueOffsetX);
+
 	PalIdx color;
 	PalIdx disColour;
 	std::string string;
-	
+
 	bool hasValue;
 	std::string value;
-	
+
 	bool visible, selectable;
 	int id;
 };

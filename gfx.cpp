@@ -1516,7 +1516,7 @@ void Gfx::weaponOptions()
 		common.font.drawText(playRenderer.bmp, LS(Weapon), 181, 21, 50);
 		common.font.drawText(playRenderer.bmp, LS(Availability), 251, 21, 50);
 		
-		weaponMenu.draw(common, false);
+		weaponMenu.draw(common, playRenderer, false);
 
 		if(testSDLKeyOnce(SDL_SCANCODE_UP))
 		{
@@ -1921,7 +1921,7 @@ void Gfx::drawBasicMenu(/*int curSel*/)
 {
 	playRenderer.bmp.copy(frozenScreen);
 
-	mainMenu.draw(*common, curMenu != &mainMenu, -1, true);
+	mainMenu.draw(*common, playRenderer, curMenu != &mainMenu, -1, true);
 }
 
 void Gfx::drawSpectatorInfo()
@@ -2026,9 +2026,9 @@ int Gfx::menuLoop()
 		drawSpectatorInfo();
 
 		if(curMenu == &mainMenu)
-			settingsMenu.draw(common, true);
+			settingsMenu.draw(common, playRenderer, true);
 		else
-			curMenu->draw(common, false);
+			curMenu->draw(common, playRenderer, false);
 
 		if(testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
 		{
