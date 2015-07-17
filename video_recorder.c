@@ -1,16 +1,12 @@
 #include "video_recorder.h"
 
-#include "libavutil/mathematics.h"
 #include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
+#include "libavutil/avutil.h"
 
 #define STREAM_PIX_FMT    PIX_FMT_YUV420P
 #define SOURCE_PIX_FMT    PIX_FMT_BGRA
 
 static int sws_flags = SWS_BICUBIC;
-
-#include "libavutil/audioconvert.h"
-#include "libavutil/avutil.h"
 
 static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 {
@@ -100,7 +96,7 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 		c->flags |= CODEC_FLAG_LOOP_FILTER;   // flags=+loop
 		c->me_cmp |= 1;  // cmp=+chroma, where CHROMA = 1
 		//c->partitions|=X264_PART_I8X8+X264_PART_I4X4+X264_PART_P8X8+X264_PART_B8X8; // partitions=+parti8x8+parti4x4+partp8x8+partb8x8
-		c->me_method = ME_HEX;    // me_method=hex
+		//c->me_method = ME_HEX;    // me_method=hex
 		c->me_subpel_quality = 7;   // subq=7
 		c->me_range = 16;   // me_range=16
 		c->gop_size = 250;  // g=250
@@ -155,11 +151,12 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 		c = self->audio_st->codec;
 
 		/* put sample parameters */
-		c->sample_fmt  = AV_SAMPLE_FMT_S16;
-		c->bit_rate    = 64000;
+		c->sample_fmt  = AV_SAMPLE_FMT_FLTP;
+		c->bit_rate    = 128000;
 		c->sample_rate = 44100;
 		c->channels    = 1;
 		c->channel_layout = AV_CH_LAYOUT_MONO;
+		c->strict_std_compliance = -2;
 		//c->profile = FF_PROFILE_AAC_MAIN;
 		//c->frame_size = 1024;
 		//c->time_base.num = 1;

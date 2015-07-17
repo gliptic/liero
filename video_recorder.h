@@ -3,9 +3,6 @@
 
 #include "tl/platform.h"
 
-#define inline TL_INLINE
-
-#include "libavutil/mathematics.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 

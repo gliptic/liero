@@ -4,7 +4,8 @@ project (openliero)
 # add current path as module path to get required config file for sdl 2
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ".")
 Find_Package (SDL2 REQUIRED)
-include_directories("${PROJECT_SOURCE_DIR}")
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/ffmpeg)
+link_directories(${PROJECT_SOURCE_DIR}/ffmpeg/libavcodec ${PROJECT_SOURCE_DIR}/ffmpeg/libavformat ${PROJECT_SOURCE_DIR}/ffmpeg/libavutil ${PROJECT_SOURCE_DIR}/ffmpeg/libswscale)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
@@ -81,6 +82,13 @@ set(TC_TOOL_SOURCES ${SOURCES}
 	tc_tool_main.cpp
 	)
 
+set(VIDEO_TOOL_SOURCES ${SOURCES}
+    replay.cpp
+	replay_to_video.cpp
+	tools_main.cpp
+	video_recorder.c
+	)
+
 if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     set(GAME_SOURCES ${GAME_SOURCES} SDLmain.m)
@@ -91,5 +99,7 @@ endif(APPLE)
 
 add_executable(openliero ${GAME_SOURCES})
 add_executable(tctool ${TC_TOOL_SOURCES})
+add_executable(videotool EXCLUDE_FROM_ALL ${VIDEO_TOOL_SOURCES})
 target_link_libraries (openliero ${SDL2_LIBRARY})
 target_link_libraries (tctool ${SDL2_LIBRARY})
+target_link_libraries (videotool avcodec avformat avutil swscale)
