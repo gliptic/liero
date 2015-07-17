@@ -1,5 +1,23 @@
+Changes
+=======
+
+From 1.36
+---------
+- AI improvements
+- Menu reorganization
+- New game mode "Scales of Justice"
+- Ability to view spawn point when dead (off by default)
+- Single screen replay. Views the full map in replays
+- Spectator window. View the full map in a separate window for spectators or streaming
+- Updated to use SDL2. Uses "borderless window" fullscreen instead of
+  changing resolution, which may change appearance on some screens
+- (Hopefully) fixed occasional stuttering
+
+How to build
+============
+
 How to build on Windows
-==================
+-----------------------
 
 * Install VS Express
 * Download SDL2 for VS (https://www.libsdl.org/download-2.0.php)
@@ -11,14 +29,14 @@ C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include
 * Copy "lib\x64\SDL2.dll" to "C:\Windows\System32"
 
 How to build on Linux
-====================
+---------------------
 * Make sure you have CMake, SDL2 and gcc installed
 * Run cmake:
 * $ cmake -G "Unix Makefiles"
 * Run "make"
 
 How to build a release build on Linux
-====================
+---------------------
 * Run cmake:
 * $ cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 * Run "make"
