@@ -1,12 +1,12 @@
 cmake_minimum_required (VERSION 2.6)
 project (openliero)
 
-# add current path as module path to get required config file for sdl 2 
+# add current path as module path to get required config file for sdl 2
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ".")
 Find_Package (SDL2 REQUIRED)
 include_directories("${PROJECT_SOURCE_DIR}")
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-s")
