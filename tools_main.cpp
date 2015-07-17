@@ -30,11 +30,11 @@ bool match(std::string const& str, std::string const& pat)
 int main(int argc, char *argv[])
 try
 {
-	bool exeSet = false, dir = false;
-	
-	std::string exePath;
+	bool tcSet = false, dir = false;
+
+	std::string tcName;
 	std::string replayPath;
-	
+
 	for(int i = 1; i < argc; ++i)
 	{
 		if(argv[i][0] == '-')
@@ -54,16 +54,21 @@ try
 		}
 		else
 		{
-			exePath = argv[i];
-			exeSet = true;
+			tcName = argv[i];
+			tcSet = true;
 		}
 	}
-	
-	if(!exeSet)
-		exePath = "LIERO.EXE";
+
+	if (!tcSet)
+	{
+		tcName = "Liero v1.33";
+	}
 
 	// TODO: Fix loading
 	gvl::shared_ptr<Common> common(new Common());
+	FsNode configNode(""); // current dir
+	FsNode lieroRoot(configNode / "TC" / tcName);
+	common->load(std::move(lieroRoot));
 
 	if (dir)
 	{
@@ -72,9 +77,9 @@ try
 
 		for (auto const& path : di)
 		{
-			if (getExtension(path) == "lrp")
+			if (getExtension(path.name) == "lrp")
 			{
-				auto const& fullPath = joinPath(root, path);
+				auto const& fullPath = joinPath(root, path.name);
 				if (match(fullPath, replayPath))
 				{
 					printf("Converting %s\n", fullPath.c_str());

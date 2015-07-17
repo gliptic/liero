@@ -29,10 +29,8 @@ void replayToVideo(
 	ReplayReader replayReader(replay);
 	Renderer renderer;
 
-	renderer.init();
+	renderer.init(320, 200);
 	renderer.loadPalette(*common);
-
-	std::string fullVideoPath = joinPath(configRoot, replayVideoName);
 
 	sfx_mixer* mixer = sfx_mixer_create();
 
@@ -56,7 +54,7 @@ void replayToVideo(
 
 	av_register_all();
 	video_recorder vidrec;
-	vidrec_init(&vidrec, fullVideoPath.c_str(), w, h, framerate);
+	vidrec_init(&vidrec, replayVideoName.c_str(), w, h, framerate);
 
 	tl_vector soundBuffer;
 	tl_vector_new_empty(soundBuffer);
@@ -81,7 +79,7 @@ void replayToVideo(
 	{
 		game->processFrame();
 		renderer.clear();
-		game->draw(renderer, true);
+		game->draw(renderer, false, true);
 		++f;
 		renderer.fadeValue = 33;
 
@@ -93,7 +91,7 @@ void replayToVideo(
 		tl_vector_reserve(soundBuffer, int16_t, soundBuffer.size + mixerFrames);
 		sfx_mixer_mix(mixer, tl_vector_idx(soundBuffer, int16_t, mixerStart), mixerFrames);
 		tl_vector_post_enlarge(soundBuffer, int16_t, mixerFrames);
-						
+
 		{
 			int16_t* audioSamples = tl_vector_idx(soundBuffer, int16_t, 0);
 			std::size_t samplesLeft = soundBuffer.size;
@@ -104,7 +102,7 @@ void replayToVideo(
 				audioSamples += audioCodecFrames;
 				samplesLeft -= audioCodecFrames;
 			}
-								
+
 			frameDebt = av_add_q(frameDebt, nativeFramerate);
 
 			if (av_cmp_q(frameDebt, framerate) > 0)
@@ -117,7 +115,7 @@ void replayToVideo(
 				std::size_t destPitch = vidrec.tmp_picture->linesize[0];
 				uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
 				std::size_t srcPitch = renderer.bmp.pitch;
-								
+
 				uint32_t pal32[256];
 				preparePaletteBgra(realPal, pal32);
 
@@ -134,7 +132,7 @@ void replayToVideo(
 
 		if ((f % (70 * 5)) == 0)
 		{
-			printf("\r%s", timeToStringFrames(f));
+			printf("\n%s", timeToStringFrames(f));
 		}
 	}
 

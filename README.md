@@ -27,6 +27,7 @@ C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include
 * Copy *.lib from the "lib\x64" folder to "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\lib\amd64"
 * Copy "lib\x86\SDL2.dll" to "C:\Windows\SysWOW64"
 * Copy "lib\x64\SDL2.dll" to "C:\Windows\System32"
+* (optional, for video to replay only) Download latest ffmpeg: git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg
 
 How to build on Linux
 ---------------------
@@ -34,6 +35,12 @@ How to build on Linux
 * Run cmake:
 * $ cmake -G "Unix Makefiles"
 * Run "make"
+
+(Optional) Enabling and building the video tool (Linux)
+-------------------------------
+* Download latest ffmpeg: git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg
+* Build it: cd ffmpeg; ./configure --enable-shared --enable-pic --enable-libx264 --enable-gpl && make -j8
+* Run "make videotool"
 
 How to build a release build on Linux
 ---------------------
