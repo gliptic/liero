@@ -66,7 +66,7 @@ void replayToVideo(
 
 	AVRational framerate;
 	framerate.num = 1;
-	framerate.den = 30;
+	framerate.den = 60;
 
 	AVRational nativeFramerate;
 	nativeFramerate.num = 1;
