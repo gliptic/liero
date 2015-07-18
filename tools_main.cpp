@@ -76,6 +76,12 @@ try
 	FsNode lieroRoot(configNode / "TC" / tcName);
 	common->load(std::move(lieroRoot));
 
+	std::string suffix = "_n";
+	if (spectator)
+	{
+		suffix = "_s";
+	}
+
 	if (dir)
 	{
 		auto const& root = getRoot(replayPath);
@@ -89,14 +95,14 @@ try
 				if (match(fullPath, replayPath))
 				{
 					printf("Converting %s\n", fullPath.c_str());
-					replayToVideo(common, spectator, fullPath, fullPath + ".mp4");
+					replayToVideo(common, spectator, fullPath, fullPath + suffix + ".mp4");
 				}
 			}
 		}
 	}
 	else
 	{
-		replayToVideo(common, spectator, replayPath, replayPath + ".mp4");
+		replayToVideo(common, spectator, replayPath, replayPath + suffix + ".mp4");
 	}
 
 	return 0;
