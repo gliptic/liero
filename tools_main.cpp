@@ -30,7 +30,7 @@ bool match(std::string const& str, std::string const& pat)
 int main(int argc, char *argv[])
 try
 {
-	bool tcSet = false, dir = false;
+	bool tcSet = false, dir = false, spectator = false;
 
 	std::string tcName;
 	std::string replayPath;
@@ -45,11 +45,15 @@ try
 				dir = true;
 				break;
 
+			case 's':
+				spectator = true;
+				break;
+
 			case 'r':
 				++i;
 				if (i < argc)
 					replayPath = &argv[i][0];
-			break;
+				break;
 			}
 		}
 		else
@@ -85,14 +89,14 @@ try
 				if (match(fullPath, replayPath))
 				{
 					printf("Converting %s\n", fullPath.c_str());
-					replayToVideo(common, fullPath, fullPath + ".mp4");
+					replayToVideo(common, spectator, fullPath, fullPath + ".mp4");
 				}
 			}
 		}
 	}
 	else
 	{
-		replayToVideo(common, replayPath, replayPath + ".mp4");
+		replayToVideo(common, spectator, replayPath, replayPath + ".mp4");
 	}
 
 	return 0;

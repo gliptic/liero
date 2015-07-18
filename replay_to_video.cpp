@@ -23,14 +23,24 @@ extern "C"
 
 void replayToVideo(
 	gvl::shared_ptr<Common> const& common,
+	bool spectator,
 	std::string const& fullPath,
 	std::string const& replayVideoName)
 {
 	auto replay(
 		gvl::to_source(new gvl::file_bucket_pipe(fullPath.c_str(), "rb")));
 	ReplayReader replayReader(replay);
+	Renderer* used_renderer;
 	Renderer renderer, spectatorRenderer;
 
+	if (spectator)
+	{
+		used_renderer = &spectatorRenderer;
+	}
+	else
+	{
+		used_renderer = &renderer;
+	}
 	renderer.init(320, 200);
 	renderer.loadPalette(*common);
 	spectatorRenderer.init(640, 400);
@@ -90,13 +100,11 @@ void replayToVideo(
 	frameDebt.den = 1;
 
 	int offsetX, offsetY;
-	int mag = fitScreen(w, h, renderer.bmp.w, renderer.bmp.h, offsetX, offsetY);
-
-	printf("\n");
+	int mag = fitScreen(w, h, used_renderer->bmp.w, used_renderer->bmp.h, offsetX, offsetY);
 
 	int f = 0;
 
-    while(replayReader.playbackFrame(renderer))
+    while(replayReader.playbackFrame(*used_renderer))
 	{
 		game->processFrame();
 		// because of bugs in spectatorviewport and its use of randomness,
@@ -106,7 +114,7 @@ void replayToVideo(
 		spectatorRenderer.clear();
 		game->draw(spectatorRenderer, true, true);
 		++f;
-		renderer.fadeValue = 33;
+		used_renderer->fadeValue = 33;
 
 		sampleDebt.num += 44100; // sampleDebt += 44100 / 70
 		int mixerFrames = sampleDebt.num / sampleDebt.den; // floor(sampleDebt)
@@ -135,16 +143,16 @@ void replayToVideo(
 				frameDebt = av_sub_q(frameDebt, framerate);
 
 				Color realPal[256];
-				renderer.pal.activate(realPal);
-				PalIdx* src = renderer.bmp.pixels;
+				used_renderer->pal.activate(realPal);
+				PalIdx* src = used_renderer->bmp.pixels;
 				std::size_t destPitch = vidrec.tmp_picture->linesize[0];
 				uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
-				std::size_t srcPitch = renderer.bmp.pitch;
+				std::size_t srcPitch = used_renderer->bmp.pitch;
 
 				uint32_t pal32[256];
 				preparePaletteBgra(realPal, pal32);
 
-				scaleDraw(src, renderer.renderResX, renderer.renderResY, srcPitch, dest, destPitch, mag, pal32);
+				scaleDraw(src, used_renderer->renderResX, used_renderer->renderResY, srcPitch, dest, destPitch, mag, pal32);
 
 				vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
 			}
@@ -157,7 +165,8 @@ void replayToVideo(
 
 		if ((f % (70 * 5)) == 0)
 		{
-			printf("\n%s", timeToStringFrames(f));
+			printf("\r%s", timeToStringFrames(f));
+			fflush(stdout);
 		}
 	}
 
