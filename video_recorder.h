@@ -5,6 +5,7 @@
 
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
+#include "libswresample/swresample.h"
 #define inline TL_INLINE
 
 typedef struct video_recorder {
@@ -14,6 +15,7 @@ typedef struct video_recorder {
 	AVOutputFormat *fmt;
 	AVFormatContext *oc;
 	AVStream *audio_st, *video_st;
+    SwrContext *swr;
 	struct SwsContext *img_convert_ctx;
 } video_recorder;
 

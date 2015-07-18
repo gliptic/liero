@@ -1,7 +1,11 @@
 #include "video_recorder.h"
 
+#include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavutil/avutil.h"
+#include "libavutil/error.h"
+#include "libavutil/opt.h"
+#include "assert.h"
 
 #define STREAM_PIX_FMT    PIX_FMT_YUV420P
 #define SOURCE_PIX_FMT    PIX_FMT_BGRA
@@ -31,6 +35,7 @@ static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 int vidrec_init(video_recorder* self, char const* filename, int width, int height, AVRational framerate)
 {
 	memset(self, 0, sizeof(*self));
+
 	self->fmt = av_guess_format("mp4", NULL, NULL);
 	self->oc = avformat_alloc_context();
 	self->oc->oformat = self->fmt;
@@ -169,7 +174,14 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 		if (self->oc->oformat->flags & AVFMT_GLOBALHEADER)
 			c->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
-
+		self->swr = swr_alloc();
+		av_opt_set_int(self->swr, "in_channel_layout",  c->channel_layout, 0);
+		av_opt_set_int(self->swr, "out_channel_layout", c->channel_layout,  0);
+		av_opt_set_int(self->swr, "in_sample_rate",     c->sample_rate, 0);
+		av_opt_set_int(self->swr, "out_sample_rate",    c->sample_rate, 0);
+		av_opt_set_sample_fmt(self->swr, "in_sample_fmt",  AV_SAMPLE_FMT_S16, 0);
+		av_opt_set_sample_fmt(self->swr, "out_sample_fmt", c->sample_fmt,  0);
+		swr_init(self->swr);
 	}
 
 	{
@@ -330,6 +342,10 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 	AVCodecContext *c;
 	AVPacket pkt = { 0 }; // data and size must be 0;
 	AVFrame *frame = av_frame_alloc();
+	AVFrame *resampled_frame = av_frame_alloc();
+	// FIXME calculate this properly, this is just a magic number that happens
+	// to be big enough
+	uint8_t *converted_samples = av_malloc(8192);
 	int got_packet;
 	int r;
 
@@ -341,13 +357,29 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 	frame->nb_samples = audio_input_frame_size;
 	frame->channel_layout = c->channel_layout;
 
-	r = avcodec_fill_audio_frame(frame, c->channels, c->sample_fmt,
-								(uint8_t *)samples,
-								audio_input_frame_size *
-								av_get_bytes_per_sample(c->sample_fmt) *
-								c->channels, 1);
+	r = avcodec_fill_audio_frame(frame, c->channels, AV_SAMPLE_FMT_S16,
+								 (uint8_t *)samples,
+								 audio_input_frame_size *
+								 av_get_bytes_per_sample(AV_SAMPLE_FMT_S16) *
+								 c->channels, 1);
+	assert(r >= 0);
 
-	r = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+	r = swr_convert(self->swr, &converted_samples, frame->nb_samples,
+	                (const uint8_t **)frame->extended_data, frame->nb_samples);
+	assert(r >= 0);
+
+	resampled_frame->nb_samples = audio_input_frame_size;
+	resampled_frame->channel_layout = c->channel_layout;
+
+	r = avcodec_fill_audio_frame(resampled_frame, c->channels, c->sample_fmt,
+								 converted_samples,
+								 r *
+								 av_get_bytes_per_sample(c->sample_fmt) *
+								 c->channels, 1);
+	assert(r >= 0);
+
+	r = avcodec_encode_audio2(c, &pkt, resampled_frame, &got_packet);
+	assert(r >= 0);
 	if (got_packet)
 	{
 		pkt.stream_index = self->audio_st->index;
@@ -358,6 +390,9 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 			return 1;
 		}
 	}
+	av_free(converted_samples);
+	av_frame_free(&frame);
+	av_frame_free(&resampled_frame);
 
 	return 0;
 }
@@ -384,8 +419,9 @@ int vidrec_write_video_frame(video_recorder* self, AVFrame* pic)
 		}
 	}
 
-	sws_scale(self->img_convert_ctx, pic->data, pic->linesize,
-				0, c->height, self->picture->data, self->picture->linesize);
+	sws_scale(self->img_convert_ctx, (const uint8_t * const*) pic->data,
+	          pic->linesize, 0, c->height, self->picture->data,
+	          self->picture->linesize);
 
 	{
 		/* encode the image */
