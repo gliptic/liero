@@ -39,7 +39,7 @@ How to build on Linux
 (Optional) Enabling and building the video tool (Linux)
 -------------------------------
 * Download latest ffmpeg: git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg
-* Build it: cd ffmpeg; ./configure --enable-shared --enable-pic --enable-libx264 --enable-gpl && make -j8
+* Build it: cd ffmpeg; ./configure --enable-shared --enable-pic && make -j8
 * Run "make videotool"
 
 How to build a release build on Linux
