@@ -30,21 +30,18 @@ void replayToVideo(
 	auto replay(
 		gvl::to_source(new gvl::file_bucket_pipe(fullPath.c_str(), "rb")));
 	ReplayReader replayReader(replay);
-	Renderer* used_renderer;
-	Renderer renderer, spectatorRenderer;
+	Renderer renderer;
 
 	if (spectator)
 	{
-		used_renderer = &spectatorRenderer;
+		renderer.init(640, 400);
+		renderer.loadPalette(*common);
 	}
 	else
 	{
-		used_renderer = &renderer;
+		renderer.init(320, 200);
+		renderer.loadPalette(*common);
 	}
-	renderer.init(320, 200);
-	renderer.loadPalette(*common);
-	spectatorRenderer.init(640, 400);
-	spectatorRenderer.loadPalette(*common);
 
 	sfx_mixer* mixer = sfx_mixer_create();
 
@@ -70,7 +67,6 @@ void replayToVideo(
 	game->addViewport(new Viewport(gvl::rect(160, 0, 158+160, 158), game->worms[1]->index, 504, 350));
 	game->startGame();
 	game->focus(renderer);
-	game->focus(spectatorRenderer);
 
 	int w = 1280, h = 720;
 
@@ -100,21 +96,19 @@ void replayToVideo(
 	frameDebt.den = 1;
 
 	int offsetX, offsetY;
-	int mag = fitScreen(640, 400, used_renderer->bmp.w, used_renderer->bmp.h, offsetX, offsetY);
+	int mag = fitScreen(640, 400, renderer.bmp.w, renderer.bmp.h, offsetX, offsetY);
 
 	int f = 0;
 
-    while(replayReader.playbackFrame(*used_renderer))
+    while(replayReader.playbackFrame(renderer))
 	{
 		game->processFrame();
 		// because of bugs in spectatorviewport and its use of randomness,
 		// we must draw twice
 		renderer.clear();
-		game->draw(renderer, false, true);
-		spectatorRenderer.clear();
-		game->draw(spectatorRenderer, true, true);
+		game->draw(renderer, spectator, true);
 		++f;
-		used_renderer->fadeValue = 33;
+		renderer.fadeValue = 33;
 
 		sampleDebt.num += 44100; // sampleDebt += 44100 / 70
 		int mixerFrames = sampleDebt.num / sampleDebt.den; // floor(sampleDebt)
@@ -143,16 +137,16 @@ void replayToVideo(
 				frameDebt = av_sub_q(frameDebt, framerate);
 
 				Color realPal[256];
-				used_renderer->pal.activate(realPal);
-				PalIdx* src = used_renderer->bmp.pixels;
+				renderer.pal.activate(realPal);
+				PalIdx* src = renderer.bmp.pixels;
 				std::size_t destPitch = vidrec.tmp_picture->linesize[0];
 				uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
-				std::size_t srcPitch = used_renderer->bmp.pitch;
+				std::size_t srcPitch = renderer.bmp.pitch;
 
 				uint32_t pal32[256];
 				preparePaletteBgra(realPal, pal32);
 
-				scaleDraw(src, used_renderer->renderResX, used_renderer->renderResY, srcPitch, dest, destPitch, mag, pal32);
+				scaleDraw(src, renderer.renderResX, renderer.renderResY, srcPitch, dest, destPitch, mag, pal32);
 
 				vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
 			}
