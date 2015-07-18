@@ -64,6 +64,8 @@ try
 		tcName = "Liero v1.33";
 	}
 
+	precomputeTables();
+
 	// TODO: Fix loading
 	gvl::shared_ptr<Common> common(new Common());
 	FsNode configNode(""); // current dir

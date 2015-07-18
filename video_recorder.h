@@ -5,6 +5,7 @@
 
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
+#define inline TL_INLINE
 
 typedef struct video_recorder {
 	AVFrame *picture, *tmp_picture;
