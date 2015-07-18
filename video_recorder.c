@@ -14,7 +14,7 @@ static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 	uint8_t *picture_buf;
 	int size;
 
-	picture = avcodec_alloc_frame();
+	picture = av_frame_alloc();
 	if (!picture)
 		return NULL;
 	size        = avpicture_get_size(pix_fmt, width, height);
@@ -53,6 +53,8 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 		}
 
 		c = self->video_st->codec;
+
+		self->video_st->time_base = framerate;
 
 		/* Put sample parameters. */
 		c->bit_rate = 400000;
@@ -148,8 +150,9 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 			return 1;
 		}
 
+		self->audio_st->time_base = framerate;
 		c = self->audio_st->codec;
-
+		c->time_base = framerate;
 		/* put sample parameters */
 		c->sample_fmt  = AV_SAMPLE_FMT_FLTP;
 		c->bit_rate    = 128000;
@@ -196,6 +199,9 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 			fprintf(stderr, "Could not allocate picture\n");
 			return 1;
 		}
+		self->picture->format = c->pix_fmt;
+		self->picture->width = c->width;
+		self->picture->height = c->height;
 
 		/* If the output format is not YUV420P, then a temporary YUV420P
 		 * picture is needed too. It is then converted to the required
@@ -206,7 +212,10 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 			fprintf(stderr, "Could not allocate temporary picture\n");
 			return 1;
 		}
-	}
+		self->tmp_picture->format = SOURCE_PIX_FMT;
+		self->tmp_picture->width = c->width;
+		self->tmp_picture->height = c->height;
+    }
 
 	{
 		AVCodecContext *c = self->audio_st->codec;
@@ -320,7 +329,7 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 {
 	AVCodecContext *c;
 	AVPacket pkt = { 0 }; // data and size must be 0;
-	AVFrame *frame = avcodec_alloc_frame();
+	AVFrame *frame = av_frame_alloc();
 	int got_packet;
 	int r;
 
@@ -402,7 +411,8 @@ int vidrec_write_video_frame(video_recorder* self, AVFrame* pic)
 		return 1;
 	}
 
-	++self->frame_count;
+	// I have no idea why this needs to be 256. I would think it should be 1
+	self->frame_count+=256;
 
 	return 0;
 }
