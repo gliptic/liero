@@ -100,7 +100,7 @@ void replayToVideo(
 	frameDebt.den = 1;
 
 	int offsetX, offsetY;
-	int mag = fitScreen(w, h, used_renderer->bmp.w, used_renderer->bmp.h, offsetX, offsetY);
+	int mag = fitScreen(640, 400, used_renderer->bmp.w, used_renderer->bmp.h, offsetX, offsetY);
 
 	int f = 0;
 
