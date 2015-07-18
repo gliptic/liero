@@ -219,14 +219,14 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 		 * picture is needed too. It is then converted to the required
 		 * output format. */
 
-		self->tmp_picture = alloc_picture(SOURCE_PIX_FMT, c->width, c->height);
+		self->tmp_picture = alloc_picture(SOURCE_PIX_FMT, 640, 400);
 		if (!self->tmp_picture) {
 			fprintf(stderr, "Could not allocate temporary picture\n");
 			return 1;
 		}
 		self->tmp_picture->format = SOURCE_PIX_FMT;
-		self->tmp_picture->width = c->width;
-		self->tmp_picture->height = c->height;
+		self->tmp_picture->width = 640;
+		self->tmp_picture->height = 400;
     }
 
 	{
@@ -407,7 +407,7 @@ int vidrec_write_video_frame(video_recorder* self, AVFrame* pic)
 	/* as we only generate a YUV420P picture, we must convert it
 		* to the codec pixel format if needed */
 	if (self->img_convert_ctx == NULL) {
-		self->img_convert_ctx = sws_getContext(c->width, c->height,
+		self->img_convert_ctx = sws_getContext(640, 400,
 											SOURCE_PIX_FMT,
 											c->width, c->height,
 											c->pix_fmt,
