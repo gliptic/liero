@@ -288,7 +288,6 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 	AVCodecContext *c;
 	AVPacket pkt = { 0 }; // data and size must be 0;
 	AVFrame *frame = av_frame_alloc();
-	AVFrame *resampled_frame = av_frame_alloc();
 	// FIXME calculate this properly, this is just a magic number that happens
 	// to be big enough
 	uint8_t *converted_samples = av_malloc(8192);
@@ -298,34 +297,22 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 	av_init_packet(&pkt);
 	c = self->audio_st->codec;
 
-	// get_audio_frame(samples, audio_input_frame_size, c->channels);
+	r = swr_convert(self->swr, &converted_samples, audio_input_frame_size,
+	                (const uint8_t **) &samples, audio_input_frame_size);
+	assert(r >= 0);
 
-	frame->nb_samples = audio_input_frame_size;
+	frame->nb_samples = r;
 	frame->channel_layout = c->channel_layout;
+	frame->pts = self->pts;
 
-	r = avcodec_fill_audio_frame(frame, c->channels, AV_SAMPLE_FMT_S16,
-								 (uint8_t *)samples,
-								 audio_input_frame_size *
-								 av_get_bytes_per_sample(AV_SAMPLE_FMT_S16) *
-								 c->channels, 1);
-	assert(r >= 0);
-
-	r = swr_convert(self->swr, &converted_samples, frame->nb_samples,
-	                (const uint8_t **)frame->extended_data, frame->nb_samples);
-	assert(r >= 0);
-
-	resampled_frame->nb_samples = r;
-	resampled_frame->channel_layout = c->channel_layout;
-	resampled_frame->pts = self->pts;
-
-	r = avcodec_fill_audio_frame(resampled_frame, c->channels, c->sample_fmt,
+	r = avcodec_fill_audio_frame(frame, c->channels, c->sample_fmt,
 								 converted_samples,
 								 r *
 								 av_get_bytes_per_sample(c->sample_fmt) *
 								 c->channels, 1);
 	assert(r >= 0);
 
-	r = avcodec_encode_audio2(c, &pkt, resampled_frame, &got_packet);
+	r = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
 	assert(r >= 0);
 	if (got_packet)
 	{
@@ -338,11 +325,10 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 		}
 	}
 
-	self->pts += resampled_frame->nb_samples;
+	self->pts += frame->nb_samples;
 
 	av_free(converted_samples);
 	av_frame_free(&frame);
-	av_frame_free(&resampled_frame);
 
 	return 0;
 }
