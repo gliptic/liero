@@ -103,8 +103,6 @@ void replayToVideo(
     while(replayReader.playbackFrame(renderer))
 	{
 		game->processFrame();
-		// because of bugs in spectatorviewport and its use of randomness,
-		// we must draw twice
 		renderer.clear();
 		game->draw(renderer, spectator, true);
 		++f;
