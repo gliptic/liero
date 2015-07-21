@@ -3,6 +3,7 @@ _bin/
 _build/
 Debug/
 /ffmpeg/
+/x264/
 openliero
 tctool
 videotool
