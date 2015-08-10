@@ -364,8 +364,8 @@ void Common::load(FsNode node)
 
 				s.originalData.resize(dataSize);
 		
-				for (auto& s : s.originalData)
-					s = r.get() - 128;
+				for (auto& z : s.originalData)
+					z = r.get() - 128;
 
 				s.sound = sfx_new_sound(dataSize * 2);
 
