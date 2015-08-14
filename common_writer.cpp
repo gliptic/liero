@@ -97,8 +97,8 @@ void commonSave(Common& common, std::string const& path)
 
 		auto curSize = s.originalData.size();
 			
-		for (auto& s : s.originalData)
-			w.put(s + 128);
+		for (auto& z : s.originalData)
+			w.put(z + 128);
 			
 		while (curSize < roundedSize)
 		{

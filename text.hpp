@@ -2,6 +2,7 @@
 #define LIERO_TEXT_HPP
 
 #include <string>
+#include <cstring>
 #include <cstdio>
 
 inline std::string toString(int v)
