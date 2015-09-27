@@ -85,4 +85,5 @@ endif(APPLE)
 
 add_executable(openliero ${GAME_SOURCES})
 add_executable(tctool ${TC_TOOL_SOURCES})
+include_directories(SYSTEM "${SDL_INCLUDE_DIR}/..")
 target_link_libraries (openliero ${SDL_LIBRARY})
