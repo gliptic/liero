@@ -1,17 +1,23 @@
-Changes
-=======
+Liero (Göteborg edition)
+========================
 
-From 1.36
----------
+This is the fork of Liero made by and for the community of Liero players in
+Göteborg. Compared to Liero 1.36 it contains:
+- an upgrade to SDL 2
+- borderless window fullscreen
+- single screen replay. Views the full map in replays
+- spectator window. View the full map in a separate window for spectators or streaming
+- updated video replay processing
+- ability to view spawn point when dead (off by default)
+- fix for occasional stuttering
+
+Due to being forked from an unreleased improved version of Liero 1.36, it also
+contains the following changes:
 - AI improvements
-- Menu reorganization
-- New game mode "Scales of Justice"
-- Ability to view spawn point when dead (off by default)
-- Single screen replay. Views the full map in replays
-- Spectator window. View the full map in a separate window for spectators or streaming
-- Updated to use SDL2. Uses "borderless window" fullscreen instead of
-  changing resolution, which may change appearance on some screens
-- (Hopefully) fixed occasional stuttering
+- menu reorganization
+- new game mode "Scales of Justice"
+- massively improved total conversion support
+- various other changes
 
 How to build
 ============
@@ -19,12 +25,12 @@ How to build
 How to build on Windows
 -----------------------
 
-* Install VS Express
+* Install Visual Studio 2015
 * Download SDL2 for VS (https://www.libsdl.org/download-2.0.php)
 * Rename the "include" folder to "SDL2" and copy it here:
-C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include
-* Copy *.lib from the "lib\x86" folder to "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\lib"
-* Copy *.lib from the "lib\x64" folder to "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\lib\amd64"
+C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include
+* Copy *.lib from the "lib\x86" folder to "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\lib"
+* Copy *.lib from the "lib\x64" folder to "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\lib\amd64"
 * Copy "lib\x86\SDL2.dll" to "C:\Windows\SysWOW64"
 * Copy "lib\x64\SDL2.dll" to "C:\Windows\System32"
 * (optional, for video to replay only) Download latest ffmpeg: git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg
