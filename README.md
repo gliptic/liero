@@ -1,4 +1,4 @@
-Liero (Göteborg edition)
+Liero (orbmit edition)
 ========================
 
 This is the fork of Liero made by and for the community of Liero players in

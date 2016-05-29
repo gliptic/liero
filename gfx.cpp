@@ -316,7 +316,7 @@ void Gfx::setVideoMode()
 
 	if (!sdlWindow)
 	{
-		sdlWindow = SDL_CreateWindow("Liero 1.37gbg", SDL_WINDOWPOS_UNDEFINED,
+		sdlWindow = SDL_CreateWindow("Liero 1.37o", SDL_WINDOWPOS_UNDEFINED,
 		 	                         SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
 	}
 	else
