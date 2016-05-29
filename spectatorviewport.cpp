@@ -39,10 +39,11 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	gvl::ivec2 renderPos(x, y);
 	fixedvec offs = rect.ul() - renderPos;
 
-	for(std::size_t i = 0; i < game.worms.size(); ++i)
+	for (std::size_t i = 0; i < game.worms.size(); ++i)
 	{
 		Worm const& worm = *game.worms[i];
 		int offsetX = offs.x / (i + 1);
+		int offsetWeaponListX = centerX - 15 + (i == 0 ? 50 : -50);
 		if (worm.visible)
 		{
 			int lifebarWidth = worm.health * 100 / worm.settings->health;
@@ -51,9 +52,9 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		else
 		{
 			int lifebarWidth = 100 - (worm.killedTimer * 25) / 37;
-			if(lifebarWidth > 0)
+			if (lifebarWidth > 0)
 			{
-				if(lifebarWidth > 100)
+				if (lifebarWidth > 100)
 					lifebarWidth = 100;
 				drawBar(renderer.bmp, offsetX + worm.statsX * multiplier, renderer.renderResY - 39, lifebarWidth, lifebarWidth / 10 + 234);
 			}
@@ -63,13 +64,13 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 		WormWeapon const& ww = worm.weapons[worm.currentWeapon];
 
-		if(ww.available())
+		if (ww.available())
 		{
-			if(ww.ammo > 0)
+			if (ww.ammo > 0)
 			{
 				int ammoBarWidth = ww.ammo * 100 / ww.type->ammo;
 
-				if(ammoBarWidth > 0)
+				if (ammoBarWidth > 0)
 					drawBar(renderer.bmp, offsetX + worm.statsX * multiplier, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
 			}
 		}
@@ -77,7 +78,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		{
 			int ammoBarWidth = 0;
 
-			if(ww.type->loadingTime != 0)
+			if (ww.type->loadingTime != 0)
 			{
 				int computedLoadingTime = ww.type->computedLoadingTime(*game.settings);
 				ammoBarWidth = 100 - ww.loadingLeft * 100 / computedLoadingTime;
@@ -87,11 +88,11 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				ammoBarWidth = 100 - ww.loadingLeft * 100;
 			}
 
-			if(ammoBarWidth > 0)
+			if (ammoBarWidth > 0)
 				drawBar(renderer.bmp, offsetX + worm.statsX * multiplier, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
 
-			if((game.cycles % 20) > 10
-			&& worm.visible)
+			if ((game.cycles % 20) > 10
+				&& worm.visible)
 			{
 				common.font.drawText(renderer.bmp, LS(Reloading), offsetX + worm.statsX * multiplier, 164, 50);
 			}
@@ -103,7 +104,22 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		common.font.drawText(renderer.bmp, worm.settings->name, offsetX + worm.statsX * multiplier, renderer.renderResY - 15, 7);
 		fillRect(renderer.bmp, offsetX + worm.statsX * multiplier - 1, renderer.renderResY - 7 - 1, 8, 8, 7);
 		fillRect(renderer.bmp, offsetX + worm.statsX * multiplier, renderer.renderResY - 7, 6, 6, worm.settings->color);
+		// time
+		// FIXME: only draw this once, not once per worm
 		common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), centerX - 15, renderer.renderResY - 15, 7);
+
+		// draw available/selected weapons
+		for (int i = 0; i < 5; i++)
+		{
+			if (worm.currentWeapon == i)
+			{
+				common.font.drawText(renderer.bmp, common.weapons[worm.settings->weapons[i]].name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 6);
+			}
+			else
+			{
+				common.font.drawText(renderer.bmp, common.weapons[worm.settings->weapons[i]].name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 7);
+			}
+		}
 
 		int const stateColours[2][2] = {{6, 10}, {79, 4}};
 
