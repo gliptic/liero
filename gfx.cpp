@@ -1942,7 +1942,8 @@ void Gfx::drawSpectatorInfo()
 	}
 
 	std::string vsText = settings->wormSettings[0]->name + " vs " + settings->wormSettings[1]->name;
-	int textSize = common.font.getDims(vsText) * 2;
+	// put worm color boxes on a nice spot even if no player names have been entered
+	int textSize = std::max(common.font.getDims(vsText) * 2, 48);
 	common.font.drawCenteredText(singleScreenRenderer.bmp, vsText, centerX, centerY, 7, 2);
 	fillRect(singleScreenRenderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
 	fillRect(singleScreenRenderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, settings->wormSettings[0]->color);
