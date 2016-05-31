@@ -41,10 +41,17 @@ void fill(Bitmap& scr, int color)
 
 void drawBar(Bitmap& scr, int x, int y, int width, int color)
 {
-	if(width > 0)
+	drawBar(scr, x, y, width, 2, color);
+}
+
+void drawBar(Bitmap& scr, int x, int y, int width, int height, int color)
+{
+	for (int h = 0; h < height; h++)
 	{
-		std::memset(&scr.getPixel(x, y), color, width);
-		std::memset(&scr.getPixel(x, y+1), color, width);
+		if (width > 0)
+		{
+			std::memset(&scr.getPixel(x, y + h), color, width);
+		}
 	}
 }
 

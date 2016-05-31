@@ -4,15 +4,16 @@
 #include "menu/menu.hpp"
 #include "gfx/renderer.hpp"
 
+enum GameState;
 struct Game;
 
 struct WeaponSelection
 {
 	WeaponSelection(Game& game);
 
-	void draw(Renderer& renderer, bool useSpectatorViewports);
-	void drawNormalViewports(Renderer& renderer);
-	void drawSpectatorViewports(Renderer& renderer);
+	void draw(Renderer& renderer, GameState state, bool useSpectatorViewports);
+	void drawNormalViewports(Renderer& renderer, GameState state);
+	void drawSpectatorViewports(Renderer& renderer, GameState state);
 	bool processFrame();
 	void finalize();
 

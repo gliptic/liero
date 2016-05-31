@@ -86,7 +86,7 @@ void Viewport::process(Game& game)
 	}*/
 }
 
-void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
+void Viewport::draw(Game& game, Renderer& renderer, GameState state, bool isReplay)
 {
 	Common& common = *game.common;
 	Worm& worm = *game.wormByIdx(wormIdx);

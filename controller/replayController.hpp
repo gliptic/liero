@@ -5,6 +5,7 @@
 
 #include "../keys.hpp"
 #include "../gfx.hpp"
+#include "../game.hpp"
 
 #include "../worm.hpp"
 #include "../weapsel.hpp"
@@ -21,13 +22,6 @@ struct Game;
 
 struct ReplayController : CommonController
 {
-	enum State
-	{
-		StateInitial,
-		StateGame,
-		StateGameEnded
-	};
-	
 	ReplayController(gvl::shared_ptr<Common> common, gvl::source source);
 
 	bool isReplay() { return true; };	
@@ -38,7 +32,7 @@ struct ReplayController : CommonController
 	void focus();
 	bool process();
 	void draw(Renderer& renderer, bool useSpectatorViewports);
-	void changeState(State newState);
+	void changeState(GameState newState);
 	void swapLevel(Level& newLevel);
 	Level* currentLevel();
 	Game* currentGame();
@@ -51,7 +45,7 @@ struct ReplayController : CommonController
 	gvl::octet_reader initialReader;
 
 
-	State state;
+	GameState state;
 	int fadeValue;
 	bool goingToMenu;
 	std::unique_ptr<ReplayReader> replay;

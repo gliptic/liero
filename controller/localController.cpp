@@ -222,16 +222,16 @@ void LocalController::draw(Renderer& renderer, bool useSpectatorViewports)
 {
 	if(state == StateWeaponSelection)
 	{
-		ws->draw(renderer, useSpectatorViewports);
+		ws->draw(renderer, state, useSpectatorViewports);
 	}
 	else if(state == StateGame || state == StateGameEnded || state == StateInitial)
 	{
-		game.draw(renderer, useSpectatorViewports);
+		game.draw(renderer, state, useSpectatorViewports);
 	}
 	renderer.fadeValue = fadeValue;
 }
 
-void LocalController::changeState(State newState)
+void LocalController::changeState(GameState newState)
 {
 	if(state == newState)
 		return;

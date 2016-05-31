@@ -31,7 +31,7 @@ void SpectatorViewport::process(Game& game)
 
 }
 
-void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
+void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bool isReplay)
 {
 	Common& common = *game.common;
 	int multiplier = renderer.renderResX / 320;
@@ -43,7 +43,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	{
 		Worm const& worm = *game.worms[i];
 		int offsetX = offs.x / (i + 1);
-		int offsetWeaponListX = centerX - 15 + (i == 0 ? -50 : 50);
+		int offsetWeaponListX = centerX - 15 + (i == 0 ? -70 : 45);
 		if (worm.visible)
 		{
 			int lifebarWidth = worm.health * 100 / worm.settings->health;
@@ -109,15 +109,27 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), centerX - 15, renderer.renderResY - 15, 7);
 
 		// draw available/selected weapons
-		for (int i = 0; i < 5; i++)
-		{
-			if (worm.currentWeapon == i)
+		if (state == StateGame) {
+			for (int i = 0; i < 5; i++)
 			{
-				common.font.drawText(renderer.bmp, common.weapons[worm.settings->weapons[i]].name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 6);
-			}
-			else
-			{
-				common.font.drawText(renderer.bmp, common.weapons[worm.settings->weapons[i]].name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 7);
+				WormWeapon const& ww = worm.weapons[i];
+				if (ww.ammo > 0)
+				{
+					int ammoBarWidth = ww.ammo * 50 / ww.type->ammo;
+
+					if (ammoBarWidth > 0)
+					{
+						drawBar(renderer.bmp, offsetWeaponListX, renderer.renderResY - 40 + i * 8, ammoBarWidth, 5, ammoBarWidth / 5 + 245);
+					}
+				}
+				if (worm.currentWeapon == i)
+				{
+					common.font.drawText(renderer.bmp, worm.weapons[i].type->name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 5);
+				}
+				else
+				{
+					common.font.drawText(renderer.bmp, worm.weapons[i].type->name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 3);
+				}
 			}
 		}
 

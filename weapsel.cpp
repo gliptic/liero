@@ -90,7 +90,7 @@ WeaponSelection::WeaponSelection(Game& game)
 	}
 }
 
-void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
+void WeaponSelection::drawSpectatorViewports(Renderer& renderer, GameState state)
 {
 	Common& common = *game.common;
 	int centerX = renderer.renderResX / 2;
@@ -143,13 +143,13 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 	gfx.singleScreenRenderer.pal.fade(gfx.singleScreenRenderer.fadeValue);
 }
 
-void WeaponSelection::drawNormalViewports(Renderer& renderer)
+void WeaponSelection::drawNormalViewports(Renderer& renderer, GameState state)
 {
 	Common& common = *game.common;
 
 	if (!cachedBackground)
 	{
-		game.draw(renderer, false);
+		game.draw(renderer, state, false);
 
 		if (game.settings->levelFile.empty())
 		{
@@ -199,15 +199,15 @@ void WeaponSelection::drawNormalViewports(Renderer& renderer)
 	gfx.playRenderer.pal.fade(gfx.playRenderer.fadeValue);
 }
 
-void WeaponSelection::draw(Renderer& renderer, bool useSpectatorViewports)
+void WeaponSelection::draw(Renderer& renderer, GameState state, bool useSpectatorViewports)
 {
 	if (useSpectatorViewports)
 	{
-		drawSpectatorViewports(renderer);
+		drawSpectatorViewports(renderer, state);
 	}
 	else
 	{
-		drawNormalViewports(renderer);
+		drawNormalViewports(renderer, state);
 	}
 }
 

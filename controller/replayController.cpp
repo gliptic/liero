@@ -145,12 +145,12 @@ void ReplayController::draw(Renderer& renderer, bool useSpectatorViewports)
 {
 	if(state == StateGame || state == StateGameEnded)
 	{
-		game->draw(renderer, useSpectatorViewports, true);
+		game->draw(renderer, state, useSpectatorViewports, true);
 	}
 	renderer.fadeValue = fadeValue;
 }
 
-void ReplayController::changeState(State newState)
+void ReplayController::changeState(GameState newState)
 {
 	if(state == newState)
 		return;

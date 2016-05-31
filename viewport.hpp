@@ -6,6 +6,7 @@
 #include <gvl/math/rect.hpp>
 #include <ctime>
 
+enum GameState;
 struct Game;
 struct Renderer;
 
@@ -59,7 +60,7 @@ struct Viewport
 	}
 	
 	
-	virtual void draw(Game& game, Renderer& renderer, bool isReplay);
+	virtual void draw(Game& game, Renderer& renderer, GameState state, bool isReplay);
 	virtual void process(Game& game);
 };
 
