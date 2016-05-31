@@ -109,7 +109,8 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 		}
 
 		std::string vsText = game.settings->wormSettings[0]->name + " vs " + game.settings->wormSettings[1]->name;
-		int textSize = common.font.getDims(vsText) * 2;
+		// put worm color boxes on a nice spot even if no player names have been entered
+		int textSize = std::max(common.font.getDims(vsText) * 2, 48);
 		common.font.drawCenteredText(renderer.bmp, vsText, centerX, centerY, 7, 2);
 		fillRect(renderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
 		fillRect(renderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, game.settings->wormSettings[0]->color);
