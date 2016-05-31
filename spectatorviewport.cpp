@@ -43,7 +43,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	{
 		Worm const& worm = *game.worms[i];
 		int offsetX = offs.x / (i + 1);
-		int offsetWeaponListX = centerX - 15 + (i == 0 ? 50 : -50);
+		int offsetWeaponListX = centerX - 15 + (i == 0 ? -50 : 50);
 		if (worm.visible)
 		{
 			int lifebarWidth = worm.health * 100 / worm.settings->health;
