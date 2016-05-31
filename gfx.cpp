@@ -2019,7 +2019,10 @@ int Gfx::menuLoop()
 
 	frozenScreen.copy(playRenderer.bmp);
 	singleScreenRenderer.clear();
-	controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 126, singleScreenRenderer.renderResY - 176, 2);
+	if (controller->currentLevel())
+	{
+		controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 126, singleScreenRenderer.renderResY - 176, 2);
+	}
 	frozenSpectatorScreen.copy(singleScreenRenderer.bmp);
 
 	menuCycles = 0;

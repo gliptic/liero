@@ -211,7 +211,7 @@ Level* ReplayController::currentLevel()
 {
 	if(game.get() && replay.get())
 		return &game->level;
-	return 0;
+	return nullptr;
 }
 
 Game* ReplayController::currentGame()
