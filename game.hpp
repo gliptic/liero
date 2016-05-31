@@ -22,6 +22,14 @@ struct Viewport;
 struct Worm;
 struct Renderer;
 
+enum GameState {
+	StateInitial,
+	StateWeaponSelection,
+	StateGame,
+	StateGameEnded,
+};
+
+
 struct Holdazone
 {
 	Holdazone()
@@ -62,12 +70,12 @@ struct Game
 	void addViewport(Viewport*);
 	void addSpectatorViewport(SpectatorViewport*);
 	void processViewports();
-	void drawViewports(Renderer& renderer, bool isReplay = false);
-	void drawSpectatorViewports(Renderer& renderer, bool isReplay = false);
+	void drawViewports(Renderer& renderer, GameState state, bool isReplay = false);
+	void drawSpectatorViewports(Renderer& renderer, GameState state, bool isReplay = false);
 	void clearWorms();
 	void addWorm(Worm*);
 	void resetWorms();
-	void draw(Renderer& renderer, bool useSpectatorViewports, bool isReplay = false);
+	void draw(Renderer& renderer, GameState state, bool useSpectatorViewports, bool isReplay = false);
 	void startGame();
 	bool isGameOver();
 	void doDamageDirect(Worm& w, int amount, int byIdx);

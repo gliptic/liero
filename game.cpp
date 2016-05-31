@@ -129,19 +129,19 @@ void Game::processViewports()
 
 }
 
-void Game::drawViewports(Renderer& renderer, bool isReplay)
+void Game::drawViewports(Renderer& renderer, GameState state, bool isReplay)
 {
 	for(std::size_t i = 0; i < viewports.size(); ++i)
 	{
-		viewports[i]->draw(*this, renderer, isReplay);
+		viewports[i]->draw(*this, renderer, state, isReplay);
 	}
 }
 
-void Game::drawSpectatorViewports(Renderer& renderer, bool isReplay)
+void Game::drawSpectatorViewports(Renderer& renderer, GameState state, bool isReplay)
 {
 	for(std::size_t i = 0; i < spectatorViewports.size(); ++i)
 	{
-		spectatorViewports[i]->draw(*this, renderer, isReplay);
+		spectatorViewports[i]->draw(*this, renderer, state, isReplay);
 	}
 }
 
@@ -171,15 +171,15 @@ void Game::addWorm(Worm* worm)
 	worms.push_back(worm);
 }
 
-void Game::draw(Renderer& renderer, bool useSpectatorViewports, bool isReplay)
+void Game::draw(Renderer& renderer, GameState state, bool useSpectatorViewports, bool isReplay)
 {
 	if (useSpectatorViewports)
 	{
-		drawSpectatorViewports(renderer, isReplay);
+		drawSpectatorViewports(renderer, state, isReplay);
 	}
 	else
 	{
-		drawViewports(renderer, isReplay);
+		drawViewports(renderer, state, isReplay);
 	}
 
 	//common->font.drawText(toString(cycles / 70), 10, 10, 7);

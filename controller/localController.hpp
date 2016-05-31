@@ -17,14 +17,6 @@ struct ReplayWriter;
 
 struct LocalController : CommonController
 {
-	enum State
-	{
-		StateInitial,
-		StateWeaponSelection,
-		StateGame,
-		StateGameEnded
-	};
-
 	LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings);
 	~LocalController();
 	void onKey(int key, bool keyState);
@@ -35,7 +27,7 @@ struct LocalController : CommonController
 	void focus();
 	bool process();
 	void draw(Renderer& renderer, bool useSpectatorViewports);
-	void changeState(State newState);
+	void changeState(GameState newState);
 	void endRecord();
 	void swapLevel(Level& newLevel);
 	Level* currentLevel();
@@ -44,7 +36,7 @@ struct LocalController : CommonController
 
 	Game game;
 	std::unique_ptr<WeaponSelection> ws;
-	State state;
+	GameState state;
 	int fadeValue;
 	bool goingToMenu;
 	std::unique_ptr<ReplayWriter> replay;

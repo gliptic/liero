@@ -17,6 +17,7 @@ void vline(Bitmap& scr, int x, int y1, int y2, int color);
 void fillRect(Bitmap& scr, int x, int y, int w, int h, int color);
 void fill(Bitmap& scr, int color);
 void drawBar(Bitmap& scr, int x, int y, int width, int color);
+void drawBar(Bitmap& scr, int x, int y, int width, int height, int color);
 void drawRoundedBox(Bitmap& scr, int x, int y, int color, int height, int width);
 void drawRoundedLineBox(Bitmap& scr, int x, int y, int color, int width, int height);
 void blitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height, int pitch);
