@@ -7,12 +7,12 @@
 #include "libavutil/opt.h"
 #include "assert.h"
 
-#define STREAM_PIX_FMT    PIX_FMT_YUV420P
-#define SOURCE_PIX_FMT    PIX_FMT_BGRA
+#define STREAM_PIX_FMT    AV_PIX_FMT_YUV420P
+#define SOURCE_PIX_FMT    AV_PIX_FMT_BGRA
 
 static int sws_flags = SWS_BICUBIC;
 
-static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
+static AVFrame *alloc_picture(enum AVPixelFormat pix_fmt, int width, int height)
 {
 	AVFrame *picture;
 	uint8_t *picture_buf;
