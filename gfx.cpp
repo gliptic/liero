@@ -1214,7 +1214,7 @@ void Gfx::selectLevel()
 					int centerX = singleScreenRenderer.renderResX / 2;
 
 					level.drawMiniature(frozenScreen, 134, 162, 10);
-					level.drawMiniature(frozenSpectatorScreen, centerX - 126, singleScreenRenderer.renderResY - 176, 2);
+					level.drawMiniature(frozenSpectatorScreen, centerX - 126, singleScreenRenderer.renderResY - 208, 2);
 				}
 			}
 			catch (std::runtime_error&)
@@ -2021,7 +2021,7 @@ int Gfx::menuLoop()
 	singleScreenRenderer.clear();
 	if (controller->currentLevel())
 	{
-		controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 126, singleScreenRenderer.renderResY - 176, 2);
+		controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 126, singleScreenRenderer.renderResY - 208, 2);
 	}
 	frozenSpectatorScreen.copy(singleScreenRenderer.bmp);
 

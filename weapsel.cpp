@@ -117,7 +117,7 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer, GameState state
 		fillRect(renderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
 		fillRect(renderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, game.settings->wormSettings[1]->color);
 		common.font.drawCenteredText(renderer.bmp, "WEAPON SELECTION", centerX, centerY + 48, 7, 2);
-		game.level.drawMiniature(renderer.bmp, centerX - 126, renderer.renderResY - 176, 2);
+		game.level.drawMiniature(renderer.bmp, centerX - 126, renderer.renderResY - 208, 2);
 
 		gfx.frozenSpectatorScreen.copy(renderer.bmp);
 		cachedSpectatorBackground = true;
