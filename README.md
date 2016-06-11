@@ -26,7 +26,7 @@ How to build on Linux
 * Download latest libx264: git clone git://git.videolan.org/x264.git
 * Build it: cd x264; ./configure --enable-shared --enable-pic && make -j8
 * Download latest ffmpeg: git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg
-* Build it: cd ffmpeg; LD_LIBRARY_PATH=../x264:$LD_LIBRARY_PATH ./configure --enable-shared --enable-pic --enable-gpl --enable-libx264 --disable-programs && LD_LIBRARY_PATH=../x264:$LD_LIBRARY_PATH make -j8
+* Build it: cd ffmpeg; ./configure --enable-shared --enable-pic --enable-gpl --enable-libx264 --disable-programs --extra-ldflags=-L"../x264" --extra-cflags="-I../x264" --extra-libs=-ldl && make -j8
 * Run: make -j8 videotool
 
 How to build a release build on Linux
