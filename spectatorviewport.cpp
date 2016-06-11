@@ -111,7 +111,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 		fillRect(renderer.bmp, offsetX + worm.statsX * multiplier, renderer.renderResY - 7, 6, 6, worm.settings->color);
 		// time
 		// FIXME: only draw this once, not once per worm
-		common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), centerX - 15, renderer.renderResY - 15, 7);
+		common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14, false, true), centerX - 15, renderer.renderResY - 15, 7);
 
 		// draw available/selected weapons
 		if (state == StateGame) {
