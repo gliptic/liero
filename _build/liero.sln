@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liero", "liero.vcxproj", "{CDE258F8-90DB-407B-8521-AA531EE4D167}"
 EndProject
@@ -57,7 +57,8 @@ Global
 		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Release|Mixed Platforms.Build.0 = Release|Win32
 		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Release|Win32.ActiveCfg = Release|Win32
 		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Release|Win32.Build.0 = Release|Win32
-		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Release|x64.ActiveCfg = Release|Win32
+		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Release|x64.ActiveCfg = Release|x64
+		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Release|x64.Build.0 = Release|x64
 		{8B60945A-4F77-4247-B140-3DF99CC9D326}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
 		{8B60945A-4F77-4247-B140-3DF99CC9D326}.Debug|Mixed Platforms.Build.0 = Debug|Win32
 		{8B60945A-4F77-4247-B140-3DF99CC9D326}.Debug|Win32.ActiveCfg = Debug|Win32
