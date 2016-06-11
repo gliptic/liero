@@ -1,13 +1,12 @@
 #ifndef LIERO_VIEWPORT_HPP
 #define LIERO_VIEWPORT_HPP
 
+#include "game.hpp"
 #include "worm.hpp"
 #include "rand.hpp"
 #include <gvl/math/rect.hpp>
 #include <ctime>
 
-enum GameState;
-struct Game;
 struct Renderer;
 
 struct Viewport

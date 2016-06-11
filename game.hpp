@@ -22,13 +22,12 @@ struct Viewport;
 struct Worm;
 struct Renderer;
 
-enum GameState {
+typedef enum {
 	StateInitial,
 	StateWeaponSelection,
 	StateGame,
 	StateGameEnded,
-};
-
+} GameState;
 
 struct Holdazone
 {

@@ -1,10 +1,10 @@
 #ifndef LIERO_WEAPSEL_HPP
 #define LIERO_WEAPSEL_HPP
 
+#include "game.hpp"
 #include "menu/menu.hpp"
 #include "gfx/renderer.hpp"
 
-enum GameState;
 struct Game;
 
 struct WeaponSelection
