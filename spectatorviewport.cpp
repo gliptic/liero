@@ -133,7 +133,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 				}
 				else
 				{
-					common.font.drawText(renderer.bmp, worm.weapons[i].type->name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 186);
+					common.font.drawText(renderer.bmp, worm.weapons[i].type->name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 185);
 				}
 			}
 		}
