@@ -43,6 +43,11 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 	{
 		Worm const& worm = *game.worms[i];
 		int offsetX = offs.x / (i + 1);
+		// fix misalignment. Not sure why this is needed
+		if (i == 1)
+		{
+			offsetX += 2;
+		}
 		int offsetWeaponListX = centerX - 15 + (i == 0 ? -90 : 60);
 		if (worm.visible)
 		{
