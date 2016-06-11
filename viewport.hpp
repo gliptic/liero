@@ -1,13 +1,12 @@
 #ifndef LIERO_VIEWPORT_HPP
 #define LIERO_VIEWPORT_HPP
 
+#include "game.hpp"
 #include "worm.hpp"
 #include "rand.hpp"
 #include <gvl/math/rect.hpp>
 #include <ctime>
 
-enum GameState;
-struct Game;
 struct Renderer;
 
 struct Viewport
@@ -25,12 +24,12 @@ struct Viewport
 		y = 0;
 		shake = 0;
 	}
-	
+
 	Viewport()
 	{
-		
+
 	}
-	
+
 	int x, y;
 	int shake;
 	int maxX, maxY;
@@ -40,13 +39,13 @@ struct Viewport
 	gvl::rect rect;
 	Rand rand;
 
-	
+
 	void setCenter(int x, int y)
 	{
 		this->x = x - centerX;
 		this->y = y - centerY;
 	}
-	
+
 	void scrollTo(int destX, int destY, int iter)
 	{
 		for(int c = 0; c < iter; c++)
@@ -58,8 +57,8 @@ struct Viewport
 			else if(y > destY - centerY) --y;
 		}
 	}
-	
-	
+
+
 	virtual void draw(Game& game, Renderer& renderer, GameState state, bool isReplay);
 	virtual void process(Game& game);
 };
