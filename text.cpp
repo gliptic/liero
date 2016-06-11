@@ -16,17 +16,17 @@ char const* timeToString(int sec)
 	return ret;
 }
 
-char const* timeToStringEx(int ms)
+char const* timeToStringEx(int ms, bool forceHours, bool forceMinutes)
 {
 	static char ret[10];
 	
 	int c = 0;
-	if (ms >= 6000000)
+	if (ms >= 6000000 || forceHours)
 	{
 		ret[c++] = '0' + (ms / 6000000); ms %= 6000000;
 	}
 
-	if (ms >= 60000)
+	if (ms >= 60000 || forceMinutes)
 	{
 		ret[c++] = '0' + (ms / 600000); ms %= 600000;
 		ret[c++] = '0' + (ms / 60000); ms %= 60000;
@@ -44,7 +44,7 @@ char const* timeToStringEx(int ms)
 
 char const* timeToStringFrames(int frames)
 {
-	return timeToStringEx(frames * 14);
+	return timeToStringEx(frames * 14, false, false);
 }
 
 int safeToUpper(char ch)

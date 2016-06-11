@@ -154,7 +154,7 @@ void Viewport::draw(Game& game, Renderer& renderer, GameState state, bool isRepl
 		common.font.drawText(renderer.bmp, worm.settings->name, worm.statsX, renderer.renderResY - 15, 7);
 		fillRect(renderer.bmp, worm.statsX, renderer.renderResY - 7 - 1, 8, 8, 7);
 		fillRect(renderer.bmp, worm.statsX + 1, renderer.renderResY - 7, 6, 6, worm.settings->color);
-		common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), 95 * multiplier, renderer.renderResY - 15, 7);
+		common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14, false, true), 95 * multiplier, renderer.renderResY - 15, 7);
 	}
 
 	int const stateColours[2][2] = {{6, 10}, {79, 4}};
