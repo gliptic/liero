@@ -104,7 +104,7 @@ void replayToVideo(
 	{
 		game->processFrame();
 		renderer.clear();
-		game->draw(renderer, spectator, true);
+		game->draw(renderer, StateGame, spectator, true);
 		++f;
 		renderer.fadeValue = 33;
 
