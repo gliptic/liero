@@ -16,6 +16,7 @@ cmake_install.cmake
 # created by running Liero
 Replays/
 Profiles/
-TC/
-liero.cfg
-
+./TC/
+./_build/TC/
+./liero.cfg
+./_build/liero.cfg
