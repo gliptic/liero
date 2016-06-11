@@ -43,7 +43,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 	{
 		Worm const& worm = *game.worms[i];
 		int offsetX = offs.x / (i + 1);
-		int offsetWeaponListX = centerX - 15 + (i == 0 ? -70 : 45);
+		int offsetWeaponListX = centerX - 15 + (i == 0 ? -90 : 60);
 		if (worm.visible)
 		{
 			int lifebarWidth = worm.health * 100 / worm.settings->health;
@@ -115,11 +115,11 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 				WormWeapon const& ww = worm.weapons[i];
 				if (ww.ammo > 0)
 				{
-					int ammoBarWidth = ww.ammo * 50 / ww.type->ammo;
+					int ammoBarWidth = ww.ammo * 60 / ww.type->ammo;
 
 					if (ammoBarWidth > 0)
 					{
-						drawBar(renderer.bmp, offsetWeaponListX, renderer.renderResY - 40 + i * 8, ammoBarWidth, 5, ammoBarWidth / 5 + 245);
+						drawBar(renderer.bmp, offsetWeaponListX, renderer.renderResY - 40 + i * 8, ammoBarWidth, 5, ammoBarWidth / 6 + 245);
 					}
 				}
 				if (worm.currentWeapon == i)
