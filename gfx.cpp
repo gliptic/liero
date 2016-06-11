@@ -307,45 +307,13 @@ void Gfx::init()
 
 void Gfx::setVideoMode()
 {
-	int flags = SDL_WINDOW_RESIZABLE;
-
-	if (fullscreen)
-	{
-		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-	}
-
-	if (!sdlWindow)
-	{
-		sdlWindow = SDL_CreateWindow("Liero 1.37", SDL_WINDOWPOS_UNDEFINED,
-		 	                         SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
-	}
-	else
-	{
-		if (fullscreen)
-		{
-			SDL_SetWindowFullscreen(sdlWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
-		}
-		else
-		{
-			SDL_SetWindowFullscreen(sdlWindow, 0);
-		}
-	}
-	if (sdlRenderer)
-	{
-		SDL_DestroyRenderer(sdlRenderer);
-		sdlRenderer = NULL;
-	}
-	// vertical sync is always disabled. Frame limiting is done manually below,
-	// to keep the correct speed
-	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0 /*SDL_RENDERER_PRESENTVSYNC*/);
-	onWindowResize(SDL_GetWindowID(sdlWindow));
+	int flags;
 
 	if (sdlSpectatorRenderer)
 	{
 		SDL_DestroyRenderer(sdlSpectatorRenderer);
 		sdlSpectatorRenderer = NULL;
 	}
-
 	if (settings->spectatorWindow)
 	{
 		flags = SDL_WINDOW_RESIZABLE;
@@ -355,17 +323,15 @@ void Gfx::setVideoMode()
 		}
 		if (!sdlSpectatorWindow)
 		{
-			int x, y;
-			SDL_GetWindowPosition(sdlWindow, &x, &y);
-			sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", x + 100,
-				                		          y, windowW, windowH, flags);
+			sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", 
+				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
 		}
 		else
 		{
 			if (spectatorFullscreen)
 			{
 				SDL_SetWindowFullscreen(sdlSpectatorWindow,
-				                        SDL_WINDOW_FULLSCREEN_DESKTOP);
+					SDL_WINDOW_FULLSCREEN_DESKTOP);
 			}
 			else
 			{
@@ -393,6 +359,44 @@ void Gfx::setVideoMode()
 			sdlSpectatorWindow = NULL;
 		}
 	}
+
+	flags = SDL_WINDOW_RESIZABLE;
+
+	if (fullscreen)
+	{
+		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	}
+
+	if (!sdlWindow)
+	{
+		int x = SDL_WINDOWPOS_UNDEFINED;
+		int y = SDL_WINDOWPOS_UNDEFINED;
+		if (sdlSpectatorWindow)
+		{
+			SDL_GetWindowPosition(sdlSpectatorWindow, &x, &y);
+		}
+		sdlWindow = SDL_CreateWindow("Liero 1.37", x + 100, y + 50, windowW, windowH, flags);
+	}
+	else
+	{
+		if (fullscreen)
+		{
+			SDL_SetWindowFullscreen(sdlWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		}
+		else
+		{
+			SDL_SetWindowFullscreen(sdlWindow, 0);
+		}
+	}
+	if (sdlRenderer)
+	{
+		SDL_DestroyRenderer(sdlRenderer);
+		sdlRenderer = NULL;
+	}
+	// vertical sync is always disabled. Frame limiting is done manually below,
+	// to keep the correct speed
+	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0 /*SDL_RENDERER_PRESENTVSYNC*/);
+	onWindowResize(SDL_GetWindowID(sdlWindow));
 }
 
 void Gfx::onWindowResize(Uint32 windowID)
