@@ -121,7 +121,7 @@
       <AdditionalIncludeDirectories>$(VCInstallDir)\include\SDL;$(SolutionDir)\..;$(SolutionDir)\..\..;$(SolutionDir)\..\libavcodec;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>sdl2.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
