@@ -124,11 +124,11 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 				}
 				if (worm.currentWeapon == i)
 				{
-					common.font.drawText(renderer.bmp, worm.weapons[i].type->name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 5);
+					common.font.drawText(renderer.bmp, worm.weapons[i].type->name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 187);
 				}
 				else
 				{
-					common.font.drawText(renderer.bmp, worm.weapons[i].type->name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 3);
+					common.font.drawText(renderer.bmp, worm.weapons[i].type->name, offsetWeaponListX, renderer.renderResY - 40 + i * 8, 186);
 				}
 			}
 		}
