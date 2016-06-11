@@ -19,7 +19,11 @@ openliero.xcodeproj
 # created by running Liero
 Replays/
 Profiles/
-./TC/
-./_build/TC/
-./liero.cfg
-./_build/liero.cfg
+/TC/
+/_build/TC/
+/liero.cfg
+/orbmit.cfg
+/original.cfg
+/_build/liero.cfg
+/_build/orbmit.cfg
+/_build/original.cfg
