@@ -1,7 +1,11 @@
 #ifndef UUID_96141CB1E20547016970B28195515A14
 #define UUID_96141CB1E20547016970B28195515A14
 
+#ifdef WIN32
+#include <SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif // WIN32
 
 //extern int SDLToLieroKeys[SDL_SCANCODE_LAST];
 //extern int lieroToSDLKeys[177];
