@@ -110,6 +110,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)\..</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GVL_CPP0X=1;_CRT_NONSTDC_NO_WARNINGS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
