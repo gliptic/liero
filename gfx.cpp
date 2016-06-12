@@ -1,10 +1,8 @@
-#include "gfx.hpp"
-#include "reader.hpp"
-#include "game.hpp"
-#include "sfx.hpp"
-#include "text.hpp"
-#include "keys.hpp"
-#include "filesystem.hpp"
+#ifdef WIN32
+#include <SDL.h>
+#else
+#include <SDL2/SDL.h>
+#endif // WIN32
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
@@ -12,10 +10,17 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
-#include <SDL2/SDL.h>
 #include <cstdio>
 #include <memory>
 #include <limits>
+
+#include "gfx.hpp"
+#include "reader.hpp"
+#include "game.hpp"
+#include "sfx.hpp"
+#include "text.hpp"
+#include "keys.hpp"
+#include "filesystem.hpp"
 
 #include <gvl/io2/fstream.hpp>
 

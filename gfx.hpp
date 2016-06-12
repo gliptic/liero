@@ -1,7 +1,11 @@
 #ifndef LIERO_GFX_HPP
 #define LIERO_GFX_HPP
 
+#ifdef WIN32
+#include <SDL.h>
+#else
 #include <SDL2/SDL.h>
+#endif // WIN32
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/math/rect.hpp>
 

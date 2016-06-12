@@ -137,4 +137,7 @@
   <ItemGroup>
     <Text Include="..\CMakeLists.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
 </Project>

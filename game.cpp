@@ -1,3 +1,11 @@
+#ifdef WIN32
+#include <SDL.h>
+#else
+#include <SDL2/SDL.h>
+#endif // WIN32
+#include <cstdlib>
+#include <ctime>
+
 #include "game.hpp"
 #include "viewport.hpp"
 #include "spectatorviewport.hpp"
@@ -6,17 +14,7 @@
 #include "gfx/renderer.hpp"
 #include "weapsel.hpp"
 #include "constants.hpp"
-#include <SDL2/SDL.h>
-#include <cstdlib>
-#include <ctime>
 #include "ai/predictive_ai.hpp"
-
-
-/*
-void Game::createDefaults()
-{
-
-}*/
 
 Game::Game(
 	gvl::shared_ptr<Common> common,

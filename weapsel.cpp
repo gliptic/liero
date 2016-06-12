@@ -1,3 +1,9 @@
+#ifdef WIN32
+#include <SDL.h>
+#else
+#include <SDL2/SDL.h>
+#endif // WIN32
+
 #include "weapsel.hpp"
 #include "gfx.hpp"
 #include "game.hpp"
@@ -8,7 +14,6 @@
 #include "viewport.hpp"
 #include "filesystem.hpp"
 #include "gfx/renderer.hpp"
-#include <SDL2/SDL.h>
 
 WeaponSelection::WeaponSelection(Game& game)
 : game(game)
