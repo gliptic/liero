@@ -140,7 +140,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		int objBlowAway = blowAway / 3; // TODO: Read from EXE
 
 		auto wr = game.wobjects.all();
-		for (WObject* i; (i = wr.next()); )
+		for (WObject* i; i = wr.next(); )
 		{
 			Weapon const& weapon = *i->type;
 
@@ -181,7 +181,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		} // for( ... wobjects ...
 
 		auto nr = game.nobjects.all();
-		for (NObject* i; (i = nr.next()); )
+		for (NObject* i; i = nr.next(); )
 		{
 			NObjectType const& t = *i->type;
 
@@ -214,8 +214,6 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 						else if(delta < 0)
 							i->vel.y -= objBlowAway * power;
 					}
-
-					Common& common = *game.common;
 
 					LTRACE(nobj, &*i - game.nobjects.arr, puxp, i->vel.x);
 					LTRACE(nobj, &*i - game.nobjects.arr, puyp, i->vel.y);
@@ -259,7 +257,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 	}
 
 	auto br = game.bonuses.all();
-	for (Bonus* i; (i = br.next()); )
+	for (Bonus* i; i = br.next(); )
 	{
 		int ix = ftoi(i->x), iy = ftoi(i->y);
 

@@ -610,9 +610,6 @@ struct FsNodeFilesystem : FsNodeImp
 	gvl::shared_ptr<FsNodeImp> go(std::string const& name)
 	{
 		std::string fullPath(joinPath(path, name));
-
-		bool dir = false;
-
 		gvl::shared_ptr<FsNodeImp> imp;
 
 		//struct stat st;

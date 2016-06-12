@@ -16,7 +16,6 @@ int Weapon::computedLoadingTime(Settings& settings) const
 void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, int ownerIdx, WormWeapon* ww) const
 {
 	WObject* obj = game.wobjects.newObjectReuse();
-	Common& common = *game.common;
 
 	obj->type = this;
 	obj->pos = pos;
@@ -279,7 +278,7 @@ void WObject::process(Game& game)
 			auto impulse = vel * w.blowAway / 100;
 
 			auto wr = game.wobjects.all();
-			for (WObject* i; (i = wr.next()); )
+			for (WObject* i; i = wr.next(); )
 			{
 				if(i->type != type
 				|| i->ownerIdx != ownerIdx)
@@ -295,7 +294,7 @@ void WObject::process(Game& game)
 			}
 
 			auto nr = game.nobjects.all();
-			for (NObject* i; (i = nr.next()); )
+			for (NObject* i; i = nr.next(); )
 			{
 				if(pos.x >= i->pos.x - itof(2)
 				&& pos.x <= i->pos.x + itof(2)

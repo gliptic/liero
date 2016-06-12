@@ -7,7 +7,6 @@
 NObject& NObjectType::create(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx, WormWeapon* firedBy)
 {
 	NObject& obj = *game.nobjects.newObjectReuse();
-	Common& common = *game.common;
 
 	obj.type = this;
 	obj.ownerIdx = ownerIdx;

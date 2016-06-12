@@ -336,8 +336,6 @@ double evaluateState(
 	if (wormCell)
 	{
 		double optimalDist = 10.0;
-		double meNormHealth = orgGame.wormByIdx(me->index)->health * 100.0 / me->settings->health;
-		double targetNormHealth = orgGame.wormByIdx(target->index)->health * 100.0 / target->settings->health;
 
 		if (readyWeapons(orgGame, orgGame.wormByIdx(me->index)) <= 1)
 		{

@@ -40,7 +40,6 @@ struct StatsRenderer
 	}
 
 	static int const paneX = 10;
-	int paneWidth = 300;
 
 	template<typename P>
 	void pane(int n, int leftX, int topY, P const& p)
@@ -239,6 +238,7 @@ struct StatsRenderer
 	Game& game;
 	NormalStatsRecorder& stats;
 	Common& common;
+    int paneWidth = 300;
 	int offsX, y;
 };
 
