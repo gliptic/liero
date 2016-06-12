@@ -356,7 +356,7 @@ int vidrec_write_video_frame(video_recorder* self, AVFrame* pic)
 	}
 
 	sws_scale(self->img_convert_ctx, (const uint8_t * const*) pic->data,
-	          pic->linesize, 0, c->height, self->picture->data,
+	          pic->linesize, 0, 400, self->picture->data,
 	          self->picture->linesize);
 
 	{
