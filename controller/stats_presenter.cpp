@@ -16,7 +16,7 @@ std::string percent(int nom, int den)
 {
 	if (den == 0)
 		return "";
-	
+
 	char buf[256];
 	sprintf(buf, "%.2f%%", double(nom)*100.0/den);
 	return buf;
@@ -40,7 +40,6 @@ struct StatsRenderer
 	}
 
 	static int const paneX = 10;
-	int paneWidth = 300;
 
 	template<typename P>
 	void pane(int n, int leftX, int topY, P const& p)
@@ -239,6 +238,7 @@ struct StatsRenderer
 	Game& game;
 	NormalStatsRecorder& stats;
 	Common& common;
+    int paneWidth = 300;
 	int offsX, y;
 };
 
@@ -251,7 +251,7 @@ void sortWeaponStats(vector<WeaponStats>& ws)
 void presentStats(NormalStatsRecorder& recorder, Game& game)
 {
 	gfx.clearKeys();
-	
+
 	Common& common = *game.common;
 
 	Bitmap bg;
@@ -284,7 +284,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 		stretch(zip(wormTotalHp[0], wormTotalHp[1], std::minus<double>()), graphWidth));
 
 	normalize(wormTotalHpDiff, 100);
-	
+
 	for (int i = 0; i < 40; ++i)
 	{
 		auto ws = recorder.worms[0].weapons[i];
@@ -325,7 +325,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 					c << (int)(w.aiProcessTime * 1000 / ticks_per_sec) << "ms";
 				});
 			}
-			
+
 
 			if (game.settings->gameMode == Settings::GMHoldazone
 			 || game.settings->gameMode == Settings::GMGameOfTag)
@@ -342,7 +342,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 			renderer.drawWormStat("damage dealt", &WormStats::damageDealt);
 			renderer.drawWormStat("damage received", &WormStats::damage);
 			renderer.drawWormStat("damage to self", &WormStats::selfDamage);
-		
+
 			renderer.drawWormStat("shortest life", [](WormStats& w, cell& c) {
 				int min, max;
 				w.lifeStats(min, max);
@@ -364,7 +364,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 			renderer.weaponStats(combinedWeaponStats);
 
 			renderer.section(cell().ref() << "Total health difference", 0);
-			
+
 			renderer.graph(
 					wormTotalHpDiff,
 					100,
@@ -415,7 +415,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 		{
 			destPane = std::max(destPane - 1.0, -1.0);
 		}
-		else if (gfx.testSDLKey(SDL_SCANCODE_RETURN) || 
+		else if (gfx.testSDLKey(SDL_SCANCODE_RETURN) ||
 		         gfx.testSDLKey(SDL_SCANCODE_ESCAPE))
 		{
 			break;
@@ -440,7 +440,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 			//vel = 0;
 		}
 	}
-	
+
 	fill(gfx.playRenderer.bmp, 0);
 
 	gfx.clearKeys();
