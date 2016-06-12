@@ -22,6 +22,7 @@
     <ProjectGuid>{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>liero_tools</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -73,20 +74,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\..\_bin\$(Configuration)$(PlatformName)\</OutDir>
-    <TargetName>openliero_tools</TargetName>
+    <TargetName>videotool</TargetName>
+    <ReferencePath>$(VC_ReferencesPath_x86);$(SolutionDir)\..\ffmpeg;$(SolutionDir)\..\x264</ReferencePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\..\ffmpeg;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>openliero_tools</TargetName>
+    <TargetName>videotool</TargetName>
     <LinkIncremental>true</LinkIncremental>
+    <ReferencePath>$(VC_ReferencesPath_x64);$(SolutionDir)\..\ffmpeg;$(SolutionDir)\..\x264</ReferencePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\..\ffmpeg;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)\..\_bin\$(Configuration)$(PlatformName)\</OutDir>
-    <TargetName>openliero_tools</TargetName>
+    <TargetName>videotool</TargetName>
+    <ReferencePath>$(VC_ReferencesPath_x86);$(SolutionDir)\..\ffmpeg;$(SolutionDir)\..\x264</ReferencePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\..\ffmpeg;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>openliero_tools</TargetName>
+    <TargetName>videotool</TargetName>
     <LinkIncremental>false</LinkIncremental>
+    <ReferencePath>$(VC_ReferencesPath_x64);$(SolutionDir)\..\ffmpeg;$(SolutionDir)\..\x264</ReferencePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)\..\ffmpeg;</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -167,6 +176,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\replay.cpp" />
     <ClCompile Include="..\replay_to_video.cpp" />
     <ClCompile Include="..\tools_main.cpp" />
     <ClCompile Include="..\video_recorder.c" />
@@ -177,6 +187,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\replay.hpp" />
     <ClInclude Include="..\replay_to_video.hpp" />
     <ClInclude Include="..\video_recorder.h" />
   </ItemGroup>

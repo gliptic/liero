@@ -19,10 +19,10 @@ contains the following changes:
 - massively improved total conversion support
 - various other changes
 
-How to build
+How to build (Windows)
 ============
 
-How to build on Windows
+Building on Windows
 -----------------------
 
 * Install Visual Studio 2015
@@ -35,14 +35,25 @@ C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\include
 * Copy "lib\x64\SDL2.dll" to "C:\Windows\System32"
 * (optional, for video to replay only) Download latest ffmpeg: git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg
 
-How to build on Linux
+(Optional) Dependencies for building the video tool
+-----------------------
+* Follow the instructions for how to build ffmpeg. At the time of writing, the MSYS2 route worked best for me https://trac.ffmpeg.org/wiki/CompilationGuide/MinGW
+* Download latest libx264: git clone git://git.videolan.org/x264.git
+* Build it: cd x264; ./configure --enable-shared --enable-pic && make -j8
+* Download latest ffmpeg: git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg
+* Build it: cd ffmpeg; ./configure --enable-shared --enable-pic --enable-gpl --enable-libx264 --disable-programs --extra-ldflags=-L../x264 --extra-cflags=-I../x264 && make -j8
+
+How to build (Linux)
+====================
+
+Building on Linux
 ---------------------
 * Make sure you have CMake, SDL2 and gcc installed
 * Run cmake:
 * $ cmake -G "Unix Makefiles"
 * Run "make"
 
-(Optional) Enabling and building the video tool (Linux)
+(Optional) Enabling and building the video tool
 -------------------------------
 * Download latest libx264: git clone git://git.videolan.org/x264.git
 * Build it: cd x264; ./configure --enable-shared --enable-pic && make -j8
@@ -50,7 +61,7 @@ How to build on Linux
 * Build it: cd ffmpeg; ./configure --enable-shared --enable-pic --enable-gpl --enable-libx264 --disable-programs --extra-ldflags=-L"../x264" --extra-cflags="-I../x264" --extra-libs=-ldl && make -j8
 * Run: make -j8 videotool
 
-How to build a release build on Linux
+Building a release build
 ---------------------
 * Run cmake:
 * $ cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
