@@ -268,9 +268,9 @@ void LocalController::changeState(GameState newState)
 				std::tm* now = std::localtime(&ticks);
 				
 				char buf[512];
-				std::strftime(buf, sizeof(buf), " %Y-%m-%d %H.%M.%S.lrp", now);
+				std::strftime(buf, sizeof(buf), "%Y-%m-%d %H.%M.%S", now);
 				
-				std::string prefix;
+				std::string playerNames = " ";
 				for(std::size_t i = 0; i < 2; ++i)
 				{
 					Worm& worm = *game.worms[i];
@@ -278,12 +278,12 @@ void LocalController::changeState(GameState newState)
 					int chars = 0;
 					
 					if(i > 0)
-						prefix.push_back('-');
+						playerNames.push_back('-');
 					for(std::size_t c = 0; c < name.size() && chars < 4; ++c, ++chars)
 					{
 						unsigned char ch = (unsigned char)name[c];
 						if(std::isalnum(ch))
-							prefix.push_back(ch);
+							playerNames.push_back(ch);
 					}
 				}
 #else
@@ -293,7 +293,7 @@ void LocalController::changeState(GameState newState)
 				//std::string path = joinPath(joinPath(configRoot, "Replays"), prefix + buf);
 				//create_directories(path);
 
-				auto node = gfx.getConfigNode() / "Replays" / (prefix + buf);
+				auto node = gfx.getConfigNode() / "Replays" / (buf + playerNames + ".lrp");
 
 				replay.reset(new ReplayWriter(node.toSink()));
 
