@@ -106,4 +106,5 @@ target_link_libraries (videotool avcodec avformat avutil dl pthread swresample s
 
 if(APPLE)
     set_target_properties(openliero PROPERTIES MACOSX_BUNDLE TRUE)
+    set_target_properties(openliero PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in")
 endif(APPLE)
