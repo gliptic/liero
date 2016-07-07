@@ -35,11 +35,11 @@ Building on Windows
 * Download latest ffmpeg: git clone git://source.ffmpeg.org/ffmpeg.git ffmpeg
 * Build it: cd ffmpeg; ./configure --enable-shared --enable-pic --enable-gpl --enable-libx264 --disable-programs --extra-ldflags=-L../x264 --extra-cflags=-I../x264 && make -j8
 
-How to build (Linux)
-====================
+How to build (Linux and Mac)
+============================
 
-Building on Linux
----------------------
+Building on Linux and Mac
+-------------------------
 * Make sure you have CMake, SDL2 and gcc installed
 * Run cmake:
 * $ cmake -G "Unix Makefiles"

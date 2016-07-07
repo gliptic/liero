@@ -321,7 +321,7 @@ void Gfx::setVideoMode()
 	}
 	if (settings->spectatorWindow)
 	{
-		flags = SDL_WINDOW_RESIZABLE;
+		flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
 		if (spectatorFullscreen)
 		{
 			flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -365,7 +365,7 @@ void Gfx::setVideoMode()
 		}
 	}
 
-	flags = SDL_WINDOW_RESIZABLE;
+	flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
 
 	if (fullscreen)
 	{

@@ -93,13 +93,29 @@ if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     set(GAME_SOURCES ${GAME_SOURCES} SDLmain.m)
     set_source_files_properties(SDLmain.m PROPERTIES COMPILE_FLAGS "-std=c99")
+
+    # Populate RESOURCE_FILES with contents of pkg/ directory.
+    file(GLOB_RECURSE RESOURCE_FILES pkg/*)
 else(APPLE)
     set(GAME_SOURCES ${GAME_SOURCES} sdlmain.cpp)
 endif(APPLE)
 
-add_executable(openliero ${GAME_SOURCES})
+add_executable(openliero ${GAME_SOURCES} ${RESOURCE_FILES})
 add_executable(tctool ${TC_TOOL_SOURCES})
 add_executable(videotool EXCLUDE_FROM_ALL ${VIDEO_TOOL_SOURCES})
 target_link_libraries (openliero ${SDL2_LIBRARY})
 target_link_libraries (tctool ${SDL2_LIBRARY})
 target_link_libraries (videotool avcodec avformat avutil dl pthread swresample swscale x264)
+
+if(APPLE)
+    set_target_properties(openliero PROPERTIES MACOSX_BUNDLE TRUE)
+    set_target_properties(openliero PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in")
+
+    # Preserve directory structure when copying contents of pkg/ to the .app Resources/ directory.
+    foreach(absolute_path ${RESOURCE_FILES})
+        file(RELATIVE_PATH relative_path "${CMAKE_CURRENT_SOURCE_DIR}/pkg" ${absolute_path})
+        get_filename_component(relative_path ${relative_path} DIRECTORY)
+        set_source_files_properties(${absolute_path}
+            PROPERTIES MACOSX_PACKAGE_LOCATION "Resources/${relative_path}")
+    endforeach(absolute_path)
+endif(APPLE)
