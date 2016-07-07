@@ -60,7 +60,7 @@ struct DirectoryListing
 
 		ret.subs.insert(ret.subs.end(), other.subs.begin(), other.subs.end());
 		ret.sort();
-		return std::move(ret);
+		return ret;
 	}
 
 	std::vector<NodeName>::iterator begin()
@@ -142,7 +142,7 @@ struct FsNode
 		auto s = imp->tryToSource();
 		if (!s)
 			throw std::runtime_error("Could not read " + fullPath());
-		return std::move(s);
+		return s;
 	}
 
 	gvl::octet_writer toOctetWriter() const
@@ -155,7 +155,7 @@ struct FsNode
 		auto s = imp->tryToSink();
 		if (!s)
 			throw std::runtime_error("Could not write " + fullPath());
-		return std::move(s);
+		return s;
 	}
 };
 

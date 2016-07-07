@@ -440,7 +440,7 @@ struct FsNodeJoin : FsNodeImp
 	{
 		auto s = a->tryToSource();
 		if (s)
-			return std::move(s);
+			return s;
 		return b->tryToSource();
 	}
 
@@ -448,7 +448,7 @@ struct FsNodeJoin : FsNodeImp
 	{
 		auto s = a->tryToSink();
 		if (s)
-			return std::move(s);
+			return s;
 		return b->tryToSink();
 	}
 };
@@ -579,7 +579,7 @@ struct FsNodeZipFile : FsNodeImp
 			gvl::make_shared(gvl::bucket_data_mem::create_from((uint8_t const*)ptr, (uint8_t const*)ptr + size, size))));
 		free(ptr);
 
-		return std::move(s);
+		return s;
 	}
 
 	gvl::sink tryToSink()
@@ -633,7 +633,7 @@ struct FsNodeFilesystem : FsNodeImp
 			imp = join(std::move(imp), gvl::shared_ptr<FsNodeImp>(new FsNodeZipFile(fullPath, true)));
 		}
 
-		return std::move(imp);
+		return imp;
 	}
 
 	bool exists() const
