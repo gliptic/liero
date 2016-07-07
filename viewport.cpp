@@ -290,7 +290,7 @@ void Viewport::draw(Game& game, Renderer& renderer, GameState state, bool isRepl
 		}
 
 		auto br = game.bonuses.all();
-		for (Bonus* i; i = br.next(); )
+		for (Bonus* i; (i = br.next()); )
 		{
 			if(i->timer > LC(BonusFlickerTime) || (game.cycles & 3) == 0)
 			{
@@ -329,7 +329,7 @@ void Viewport::draw(Game& game, Renderer& renderer, GameState state, bool isRepl
 		}
 		
 		auto sr = game.sobjects.all();
-		for (SObject* i; i = sr.next(); )
+		for (SObject* i; (i = sr.next()); )
 		{
 			SObjectType const& t = common.sobjectTypes[i->id];
 			int frame = i->curFrame + t.startFrame;
@@ -354,7 +354,7 @@ void Viewport::draw(Game& game, Renderer& renderer, GameState state, bool isRepl
 		}
 
 		auto wr = game.wobjects.all();
-		for (WObject* i; i = wr.next(); )
+		for (WObject* i; (i = wr.next()); )
 		{
 			Weapon const& w = *i->type;
 		
@@ -447,7 +447,7 @@ void Viewport::draw(Game& game, Renderer& renderer, GameState state, bool isRepl
 		}
 	
 		auto nr = game.nobjects.all();
-		for (NObject* i; i = nr.next(); )
+		for (NObject* i; (i = nr.next()); )
 		{
 			NObjectType const& t = *i->type;
 		

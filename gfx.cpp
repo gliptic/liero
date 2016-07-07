@@ -1471,7 +1471,7 @@ std::unique_ptr<Common> Gfx::selectTc()
 			{
 				gvl::unique_ptr<Common> common(new Common());
 				common->load(sel->getFsNode());
-				return std::move(common);
+				return common;
 			}
 		}
 		menuFlip();

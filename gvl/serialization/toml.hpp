@@ -556,7 +556,7 @@ struct reader
 			}
 		}
 
-		return std::move(ret);
+		return ret;
 	}
 
 	void skipws()
@@ -744,7 +744,7 @@ struct reader
 		}
 		check('"');
 
-		return move(s);
+		return s;
 	}
 
 	value val()

@@ -278,7 +278,7 @@ void WObject::process(Game& game)
 			auto impulse = vel * w.blowAway / 100;
 
 			auto wr = game.wobjects.all();
-			for (WObject* i; i = wr.next(); )
+			for (WObject* i; (i = wr.next()); )
 			{
 				if(i->type != type
 				|| i->ownerIdx != ownerIdx)
@@ -294,7 +294,7 @@ void WObject::process(Game& game)
 			}
 
 			auto nr = game.nobjects.all();
-			for (NObject* i; i = nr.next(); )
+			for (NObject* i; (i = nr.next()); )
 			{
 				if(pos.x >= i->pos.x - itof(2)
 				&& pos.x <= i->pos.x + itof(2)
