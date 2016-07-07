@@ -81,20 +81,15 @@ static NSString *getApplicationName(void)
 /* The main class of the application, the application's delegate */
 @implementation SDLMain
 
-/* Set the working directory to the .app's parent directory */
-- (void) setupWorkingDirectory:(BOOL)shouldChdir
+/* Set the working directory to the .app's Resources directory, for config file loading */
+- (void) setupWorkingDirectory
 {
-    if (shouldChdir)
-    {
-        char parentdir[MAXPATHLEN];
-        CFURLRef url = CFBundleCopyBundleURL(CFBundleGetMainBundle());
-        CFURLRef url2 = CFURLCreateCopyDeletingLastPathComponent(0, url);
-        if (CFURLGetFileSystemRepresentation(url2, 1, (UInt8 *)parentdir, MAXPATHLEN)) {
-            chdir(parentdir);   /* chdir to the binary app's parent */
-        }
-        CFRelease(url);
-        CFRelease(url2);
+    char resourcesDir[MAXPATHLEN];
+    CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(CFBundleGetMainBundle());
+    if (CFURLGetFileSystemRepresentation(resourcesURL, 1, (UInt8 *)resourcesDir, MAXPATHLEN)) {
+        chdir(resourcesDir);   /* chdir to the app's Resources directory */
     }
+    CFRelease(resourcesURL);
 }
 
 #if SDL_USE_NIB_FILE
@@ -287,8 +282,8 @@ static void CustomApplicationMain (int argc, char **argv)
 {
     int status;
 
-    /* Set the working directory to the .app's parent directory */
-    [self setupWorkingDirectory:gFinderLaunch];
+    /* Set the working directory to the .app's Resources directory, for config file loading */
+    [self setupWorkingDirectory];
 
 #if SDL_USE_NIB_FILE
     /* Set the main menu to contain the real app name instead of "SDL App" */
