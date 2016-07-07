@@ -304,7 +304,7 @@ void Game::processFrame()
 
 
 	auto br = bonuses.all();
-	for (Bonus* i; i = br.next(); )
+	for (Bonus* i; (i = br.next()); )
 	{
 		i->process(*this);
 	}
@@ -355,19 +355,19 @@ void Game::processFrame()
 	}
 
 	auto sr = sobjects.all();
-	for (SObject* i; i = sr.next(); )
+	for (SObject* i; (i = sr.next()); )
 	{
 		i->process(*this);
 	}
 
 	auto wr = wobjects.all();
-	for (WObject* i; i = wr.next(); )
+	for (WObject* i; (i = wr.next()); )
 	{
 		i->process(*this);
 	}
 
 	auto nr = nobjects.all();
-	for (NObject* i; i = nr.next(); )
+	for (NObject* i; (i = nr.next()); )
 	{
 		i->process(*this);
 	}
