@@ -1,15 +1,15 @@
 #include "replay_to_video.hpp"
 
 #include <string>
-#include "replay.hpp"
-#include "filesystem.hpp"
-#include "reader.hpp"
-#include "mixer/player.hpp"
-#include "game.hpp"
-#include "viewport.hpp"
-#include "spectatorviewport.hpp"
-#include "gfx/renderer.hpp"
-#include "text.hpp"
+#include "game/replay.hpp"
+#include "game/filesystem.hpp"
+#include "game/reader.hpp"
+#include "game/mixer/player.hpp"
+#include "game/game.hpp"
+#include "game/viewport.hpp"
+#include "game/spectatorviewport.hpp"
+#include "game/gfx/renderer.hpp"
+#include "game/text.hpp"
 
 #include <gvl/io2/fstream.hpp>
 #include <memory>
@@ -18,7 +18,7 @@ extern "C"
 {
 #include "video_recorder.h"
 #include "tl/vector.h"
-#include "mixer/mixer.h"
+#include "game/mixer/mixer.h"
 }
 
 void replayToVideo(

@@ -1,10 +1,10 @@
-#include "common_model.hpp"
+#include "game/common_model.hpp"
 #include <gvl/io2/convert.hpp>
 #include <gvl/io2/fstream.hpp>
 #include <gvl/serialization/coding.hpp>
 #include <gvl/serialization/toml.hpp>
 
-#include "filesystem.hpp"
+#include "game/filesystem.hpp"
 
 struct OctetTextWriter : gvl::octet_writer
 {

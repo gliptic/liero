@@ -2,7 +2,7 @@
 #define REPLAY_TO_VIDEO_HPP
 
 #include <string>
-#include "common.hpp"
+#include "game/common.hpp"
 
 void replayToVideo(
 	gvl::shared_ptr<Common> const& common,

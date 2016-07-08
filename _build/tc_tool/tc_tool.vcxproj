@@ -54,23 +54,23 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\gvl\_build\Gvl Standard Config.props" />
-    <Import Project="..\..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\..\src\gvl\_build\Gvl Standard Config.props" />
+    <Import Project="..\..\src\gvl\_build\Gvl C++0x.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\gvl\_build\Gvl Standard Config.props" />
-    <Import Project="..\..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\..\src\gvl\_build\Gvl Standard Config.props" />
+    <Import Project="..\..\src\gvl\_build\Gvl C++0x.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\gvl\_build\Gvl Standard Config.props" />
-    <Import Project="..\..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\..\src\gvl\_build\Gvl Standard Config.props" />
+    <Import Project="..\..\src\gvl\_build\Gvl C++0x.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\gvl\_build\Gvl Standard Config.props" />
-    <Import Project="..\..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\..\src\gvl\_build\Gvl Standard Config.props" />
+    <Import Project="..\..\src\gvl\_build\Gvl C++0x.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup />
@@ -79,7 +79,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GVL_CPP0X=1;_CRT_NONSTDC_NO_WARNINGS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -92,7 +92,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GVL_CPP0X=1;_CRT_NONSTDC_NO_WARNINGS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -107,7 +107,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GVL_CPP0X=1;_CRT_NONSTDC_NO_WARNINGS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
@@ -126,7 +126,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>GVL_CPP0X=1;_CRT_NONSTDC_NO_WARNINGS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -138,15 +138,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\common_exereader.cpp" />
-    <ClCompile Include="..\..\common_writer.cpp" />
-    <ClCompile Include="..\..\tc_tool_main.cpp" />
+    <ClCompile Include="..\..\src\tc_tool\common_exereader.cpp" />
+    <ClCompile Include="..\..\src\tc_tool\common_writer.cpp" />
+    <ClCompile Include="..\..\src\tc_tool\tc_tool_main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\common_exereader.hpp" />
-    <ClInclude Include="..\..\common_model.hpp" />
-    <ClInclude Include="..\..\common_writer.hpp" />
-    <ClInclude Include="..\..\reader.hpp" />
+    <ClInclude Include="..\..\src\tc_tool\common_exereader.hpp" />
+    <ClInclude Include="..\..\src\tc_tool\common_model.hpp" />
+    <ClInclude Include="..\..\src\tc_tool\common_writer.hpp" />
+    <ClInclude Include="..\..\src\tc_tool\reader.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\liero.vcxproj">

@@ -1,60 +1,60 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\main.cpp" />
-    <ClCompile Include="..\sdlmain.cpp" />
-    <ClCompile Include="..\controller\commonController.cpp">
+    <ClCompile Include="..\src\game\main.cpp" />
+    <ClCompile Include="..\src\game\sdlmain.cpp" />
+    <ClCompile Include="..\src\game\controller\commonController.cpp">
       <Filter>controller</Filter>
     </ClCompile>
-    <ClCompile Include="..\controller\localController.cpp">
+    <ClCompile Include="..\src\game\controller\localController.cpp">
       <Filter>controller</Filter>
     </ClCompile>
-    <ClCompile Include="..\controller\replayController.cpp">
+    <ClCompile Include="..\src\game\controller\replayController.cpp">
       <Filter>controller</Filter>
     </ClCompile>
-    <ClCompile Include="..\menu\booleanSwitchBehavior.cpp">
+    <ClCompile Include="..\src\game\menu\booleanSwitchBehavior.cpp">
       <Filter>menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\menu\enumBehavior.cpp">
+    <ClCompile Include="..\src\game\menu\enumBehavior.cpp">
       <Filter>menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\menu\hiddenMenu.cpp">
+    <ClCompile Include="..\src\game\menu\hiddenMenu.cpp">
       <Filter>menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\menu\integerBehavior.cpp">
+    <ClCompile Include="..\src\game\menu\integerBehavior.cpp">
       <Filter>menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\menu\itemBehavior.cpp">
+    <ClCompile Include="..\src\game\menu\itemBehavior.cpp">
       <Filter>menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\menu\menu.cpp">
+    <ClCompile Include="..\src\game\menu\menu.cpp">
       <Filter>menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\menu\menuItem.cpp">
+    <ClCompile Include="..\src\game\menu\menuItem.cpp">
       <Filter>menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\menu\timeBehavior.cpp">
+    <ClCompile Include="..\src\game\menu\timeBehavior.cpp">
       <Filter>menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\gfx.cpp" />
-    <ClCompile Include="..\controller\stats_presenter.cpp">
+    <ClCompile Include="..\src\game\gfx.cpp" />
+    <ClCompile Include="..\src\game\controller\stats_presenter.cpp">
       <Filter>controller</Filter>
     </ClCompile>
-    <ClCompile Include="..\keys.cpp" />
-    <ClCompile Include="..\sfx.cpp" />
-    <ClCompile Include="..\weapsel.cpp" />
-    <ClCompile Include="..\ai\dijkstra.cpp">
+    <ClCompile Include="..\src\game\keys.cpp" />
+    <ClCompile Include="..\src\game\sfx.cpp" />
+    <ClCompile Include="..\src\game\weapsel.cpp" />
+    <ClCompile Include="..\src\game\ai\dijkstra.cpp">
       <Filter>ai</Filter>
     </ClCompile>
-    <ClCompile Include="..\ai\predictive_ai.cpp">
+    <ClCompile Include="..\src\game\ai\predictive_ai.cpp">
       <Filter>ai</Filter>
     </ClCompile>
-    <ClCompile Include="..\menu\mainMenu.cpp">
+    <ClCompile Include="..\src\game\menu\mainMenu.cpp">
       <Filter>menu</Filter>
     </ClCompile>
-    <ClCompile Include="..\replay.cpp" />
-    <ClCompile Include="..\bench.cpp" />
-    <ClCompile Include="..\bench_format.cpp" />
+    <ClCompile Include="..\src\game\replay.cpp" />
+    <ClCompile Include="..\src\game\bench.cpp" />
+    <ClCompile Include="..\src\game\bench_format.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="controller">
@@ -68,71 +68,71 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\controller\commonController.hpp">
+    <ClInclude Include="..\src\game\controller\commonController.hpp">
       <Filter>controller</Filter>
     </ClInclude>
-    <ClInclude Include="..\controller\controller.hpp">
+    <ClInclude Include="..\src\game\controller\controller.hpp">
       <Filter>controller</Filter>
     </ClInclude>
-    <ClInclude Include="..\controller\localController.hpp">
+    <ClInclude Include="..\src\game\controller\localController.hpp">
       <Filter>controller</Filter>
     </ClInclude>
-    <ClInclude Include="..\controller\replayController.hpp">
+    <ClInclude Include="..\src\game\controller\replayController.hpp">
       <Filter>controller</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\arrayEnumBehavior.hpp">
+    <ClInclude Include="..\src\game\menu\arrayEnumBehavior.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\booleanSwitchBehavior.hpp">
+    <ClInclude Include="..\src\game\menu\booleanSwitchBehavior.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\enumBehavior.hpp">
+    <ClInclude Include="..\src\game\menu\enumBehavior.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\hiddenMenu.hpp">
+    <ClInclude Include="..\src\game\menu\hiddenMenu.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\integerBehavior.hpp">
+    <ClInclude Include="..\src\game\menu\integerBehavior.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\itemBehavior.hpp">
+    <ClInclude Include="..\src\game\menu\itemBehavior.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\menu.hpp">
+    <ClInclude Include="..\src\game\menu\menu.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\menuItem.hpp">
+    <ClInclude Include="..\src\game\menu\menuItem.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\timeBehavior.hpp">
+    <ClInclude Include="..\src\game\menu\timeBehavior.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\gfx.hpp" />
-    <ClInclude Include="..\controller\stats_presenter.hpp">
+    <ClInclude Include="..\src\game\gfx.hpp" />
+    <ClInclude Include="..\src\game\controller\stats_presenter.hpp">
       <Filter>controller</Filter>
     </ClInclude>
-    <ClInclude Include="..\keys.hpp" />
-    <ClInclude Include="..\sfx.hpp" />
-    <ClInclude Include="..\weapsel.hpp" />
-    <ClInclude Include="..\menu\fileSelector.hpp">
+    <ClInclude Include="..\src\game\keys.hpp" />
+    <ClInclude Include="..\src\game\sfx.hpp" />
+    <ClInclude Include="..\src\game\weapsel.hpp" />
+    <ClInclude Include="..\src\game\menu\fileSelector.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\ai\astar.hpp">
+    <ClInclude Include="..\src\game\ai\astar.hpp">
       <Filter>ai</Filter>
     </ClInclude>
-    <ClInclude Include="..\ai\dijkstra.hpp">
+    <ClInclude Include="..\src\game\ai\dijkstra.hpp">
       <Filter>ai</Filter>
     </ClInclude>
-    <ClInclude Include="..\ai\predictive_ai.hpp">
+    <ClInclude Include="..\src\game\ai\predictive_ai.hpp">
       <Filter>ai</Filter>
     </ClInclude>
-    <ClInclude Include="..\ai\work_queue.hpp">
+    <ClInclude Include="..\src\game\ai\work_queue.hpp">
       <Filter>ai</Filter>
     </ClInclude>
-    <ClInclude Include="..\menu\mainMenu.hpp">
+    <ClInclude Include="..\src\game\menu\mainMenu.hpp">
       <Filter>menu</Filter>
     </ClInclude>
-    <ClInclude Include="..\replay.hpp" />
+    <ClInclude Include="..\src\game\replay.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\CMakeLists.txt" />

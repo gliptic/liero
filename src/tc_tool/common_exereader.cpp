@@ -3,9 +3,9 @@
 #include <gvl/io2/convert.hpp>
 #include <gvl/io2/fstream.hpp>
 #include <cctype>
-#include "reader.hpp"
-#include "rand.hpp"
-#include "filesystem.hpp"
+#include "game/reader.hpp"
+#include "game/rand.hpp"
+#include "game/filesystem.hpp"
 
 int CSint32desc[][3] =
 {

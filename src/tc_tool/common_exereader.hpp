@@ -1,7 +1,7 @@
 #ifndef LIERO_COMMON_EXEREADER_HPP
 #define LIERO_COMMON_EXEREADER_HPP
 
-#include "common.hpp"
+#include "game/common.hpp"
 
 struct ReaderFile;
 
