@@ -1,4 +1,0 @@
-* Move more of display logic
-
-When breaking replays:
-* Use non-state rand for blood, sound (maybe)

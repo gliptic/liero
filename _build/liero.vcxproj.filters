@@ -301,7 +301,4 @@
     <ClInclude Include="..\src\game\weapon.hpp" />
     <ClInclude Include="..\src\game\worm.hpp" />
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\TODO.txt" />
-  </ItemGroup>
 </Project>
