@@ -460,8 +460,6 @@ void Common::load(FsNode node)
 	precompute();
 }
 
-#include "common_exereader.hpp"
-
 void Common::precompute()
 {
 	weapOrder.resize(weapons.size());
