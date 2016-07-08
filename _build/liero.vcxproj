@@ -344,9 +344,6 @@
     <ClInclude Include="..\src\game\weapon.hpp" />
     <ClInclude Include="..\src\game\worm.hpp" />
   </ItemGroup>
-  <ItemGroup>
-    <Text Include="..\TODO.txt" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="packages\sdl2.redist.2.0.3\build\native\sdl2.redist.targets" />
