@@ -4,7 +4,7 @@ project (openliero)
 # add current path as module path to get required config file for sdl 2
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ".")
 Find_Package (SDL2 REQUIRED)
-include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/ffmpeg)
+include_directories(${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/ffmpeg)
 link_directories(${PROJECT_SOURCE_DIR}/ffmpeg/libavcodec ${PROJECT_SOURCE_DIR}/ffmpeg/libavformat ${PROJECT_SOURCE_DIR}/ffmpeg/libavutil ${PROJECT_SOURCE_DIR}/ffmpeg/libswresample ${PROJECT_SOURCE_DIR}/ffmpeg/libswscale ${PROJECT_SOURCE_DIR}/x264)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
