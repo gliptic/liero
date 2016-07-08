@@ -45,267 +45,261 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\gfx\blit.cpp">
+    <ClCompile Include="..\src\game\gfx\blit.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\gfx\font.cpp">
+    <ClCompile Include="..\src\game\gfx\font.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\gfx\palette.cpp">
+    <ClCompile Include="..\src\game\gfx\palette.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\gfx\sprite.cpp">
+    <ClCompile Include="..\src\game\gfx\sprite.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\bobject.cpp" />
-    <ClCompile Include="..\bonus.cpp" />
-    <ClCompile Include="..\common.cpp" />
-    <ClCompile Include="..\console.cpp" />
-    <ClCompile Include="..\filesystem.cpp" />
-    <ClCompile Include="..\game.cpp" />
-    <ClCompile Include="..\level.cpp" />
-    <ClCompile Include="..\math.cpp" />
-    <ClCompile Include="..\ninjarope.cpp" />
-    <ClCompile Include="..\nobject.cpp" />
-    <ClCompile Include="..\rand.cpp" />
-    <ClCompile Include="..\settings.cpp" />
-    <ClCompile Include="..\sobject.cpp" />
-    <ClCompile Include="..\sys.cpp" />
-    <ClCompile Include="..\text.cpp" />
-    <ClCompile Include="..\viewport.cpp" />
-    <ClCompile Include="..\weapon.cpp" />
-    <ClCompile Include="..\worm.cpp" />
-    <ClCompile Include="..\mixer\mixer.c">
+    <ClCompile Include="..\src\game\bobject.cpp" />
+    <ClCompile Include="..\src\game\bonus.cpp" />
+    <ClCompile Include="..\src\game\common.cpp" />
+    <ClCompile Include="..\src\game\console.cpp" />
+    <ClCompile Include="..\src\game\filesystem.cpp" />
+    <ClCompile Include="..\src\game\game.cpp" />
+    <ClCompile Include="..\src\game\level.cpp" />
+    <ClCompile Include="..\src\game\math.cpp" />
+    <ClCompile Include="..\src\game\ninjarope.cpp" />
+    <ClCompile Include="..\src\game\nobject.cpp" />
+    <ClCompile Include="..\src\game\rand.cpp" />
+    <ClCompile Include="..\src\game\settings.cpp" />
+    <ClCompile Include="..\src\game\sobject.cpp" />
+    <ClCompile Include="..\src\game\sys.cpp" />
+    <ClCompile Include="..\src\game\text.cpp" />
+    <ClCompile Include="..\src\game\viewport.cpp" />
+    <ClCompile Include="..\src\game\weapon.cpp" />
+    <ClCompile Include="..\src\game\worm.cpp" />
+    <ClCompile Include="..\src\game\mixer\mixer.c">
       <Filter>mixer</Filter>
     </ClCompile>
-    <ClCompile Include="..\stats_recorder.cpp" />
-    <ClCompile Include="..\gvl\system\system.c">
+    <ClCompile Include="..\src\game\stats_recorder.cpp" />
+    <ClCompile Include="..\src\gvl\system\system.c">
       <Filter>gvl\system</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\support\bits.c">
+    <ClCompile Include="..\src\gvl\support\bits.c">
       <Filter>gvl\support</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\support\debug.cpp">
+    <ClCompile Include="..\src\gvl\support\debug.cpp">
       <Filter>gvl\support</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\support\platform.cpp">
+    <ClCompile Include="..\src\gvl\support\platform.cpp">
       <Filter>gvl\support</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\support\profile.cpp">
+    <ClCompile Include="..\src\gvl\support\profile.cpp">
       <Filter>gvl\support</Filter>
     </ClCompile>
-    <ClCompile Include="..\gfx\renderer.cpp">
+    <ClCompile Include="..\src\game\gfx\renderer.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\mixer\player.cpp">
+    <ClCompile Include="..\src\game\mixer\player.cpp">
       <Filter>mixer</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\zlib\miniz.c">
+    <ClCompile Include="..\src\gvl\zlib\miniz.c">
       <Filter>gvl\zlib</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\containers\list.cpp">
+    <ClCompile Include="..\src\gvl\containers\list.cpp">
       <Filter>gvl\containers</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\io2\stream.cpp">
+    <ClCompile Include="..\src\gvl\io2\stream.cpp">
       <Filter>gvl\io2</Filter>
     </ClCompile>
-    <ClCompile Include="..\gvl\io2\convert.cpp">
+    <ClCompile Include="..\src\gvl\io2\convert.cpp">
       <Filter>gvl\io2</Filter>
     </ClCompile>
-    <ClCompile Include="..\tl\utf8.c">
+    <ClCompile Include="..\src\tl\utf8.c">
       <Filter>tl</Filter>
     </ClCompile>
-    <ClCompile Include="..\spectatorviewport.cpp" />
+    <ClCompile Include="..\src\game\spectatorviewport.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\gfx\blit.hpp">
+    <ClInclude Include="..\src\game\gfx\blit.hpp">
       <Filter>gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\gfx\color.hpp">
+    <ClInclude Include="..\src\game\gfx\color.hpp">
       <Filter>gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\gfx\font.hpp">
+    <ClInclude Include="..\src\game\gfx\font.hpp">
       <Filter>gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\gfx\macros.hpp">
+    <ClInclude Include="..\src\game\gfx\macros.hpp">
       <Filter>gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\gfx\palette.hpp">
+    <ClInclude Include="..\src\game\gfx\palette.hpp">
       <Filter>gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\gfx\sprite.hpp">
+    <ClInclude Include="..\src\game\gfx\sprite.hpp">
       <Filter>gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\bobject.hpp" />
-    <ClInclude Include="..\bonus.hpp" />
-    <ClInclude Include="..\common.hpp" />
-    <ClInclude Include="..\console.hpp" />
-    <ClInclude Include="..\constants.hpp" />
-    <ClInclude Include="..\exactObjectList.hpp" />
-    <ClInclude Include="..\fastObjectList.hpp" />
-    <ClInclude Include="..\filesystem.hpp" />
-    <ClInclude Include="..\game.hpp" />
-    <ClInclude Include="..\level.hpp" />
-    <ClInclude Include="..\math.hpp" />
-    <ClInclude Include="..\nobject.hpp" />
-    <ClInclude Include="..\rand.hpp" />
-    <ClInclude Include="..\settings.hpp" />
-    <ClInclude Include="..\sobject.hpp" />
-    <ClInclude Include="..\sys.hpp" />
-    <ClInclude Include="..\text.hpp" />
-    <ClInclude Include="..\version.hpp" />
-    <ClInclude Include="..\viewport.hpp" />
-    <ClInclude Include="..\weapon.hpp" />
-    <ClInclude Include="..\worm.hpp" />
-    <ClInclude Include="..\mixer\mixer.h">
-      <Filter>mixer</Filter>
-    </ClInclude>
-    <ClInclude Include="..\stats_recorder.hpp" />
-    <ClInclude Include="..\gfx\bitmap.hpp">
-      <Filter>gfx</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\math\cmwc.hpp">
+    <ClInclude Include="..\src\gvl\math\cmwc.hpp">
       <Filter>gvl\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\math\random.hpp">
+    <ClInclude Include="..\src\gvl\math\random.hpp">
       <Filter>gvl\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\math\rect.hpp">
+    <ClInclude Include="..\src\gvl\math\rect.hpp">
       <Filter>gvl\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\crypt\gash.hpp">
+    <ClInclude Include="..\src\gvl\crypt\gash.hpp">
       <Filter>gvl\crypt</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\system\memory.hpp">
+    <ClInclude Include="..\src\gvl\system\memory.hpp">
       <Filter>gvl\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\system\system.hpp">
+    <ClInclude Include="..\src\gvl\system\system.hpp">
       <Filter>gvl\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\system\windows.hpp">
+    <ClInclude Include="..\src\gvl\system\windows.hpp">
       <Filter>gvl\system</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\bits.hpp">
+    <ClInclude Include="..\src\gvl\support\bits.hpp">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\config.h">
+    <ClInclude Include="..\src\gvl\support\config.h">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\cstdint.hpp">
+    <ClInclude Include="..\src\gvl\support\cstdint.hpp">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\debug.hpp">
+    <ClInclude Include="..\src\gvl\support\debug.hpp">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\functional.hpp">
+    <ClInclude Include="..\src\gvl\support\functional.hpp">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\macros.hpp">
+    <ClInclude Include="..\src\gvl\support\macros.hpp">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\opt.hpp">
+    <ClInclude Include="..\src\gvl\support\opt.hpp">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\platform.h">
+    <ClInclude Include="..\src\gvl\support\platform.h">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\platform.hpp">
+    <ClInclude Include="..\src\gvl\support\platform.hpp">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\profile.hpp">
+    <ClInclude Include="..\src\gvl\support\profile.hpp">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\support\type_info.hpp">
+    <ClInclude Include="..\src\gvl\support\type_info.hpp">
       <Filter>gvl\support</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\serialization\archive.hpp">
+    <ClInclude Include="..\src\gvl\serialization\archive.hpp">
       <Filter>gvl\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\serialization\context.hpp">
+    <ClInclude Include="..\src\gvl\serialization\context.hpp">
       <Filter>gvl\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\serialization\except.hpp">
+    <ClInclude Include="..\src\gvl\serialization\except.hpp">
       <Filter>gvl\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\cstdint.hpp">
+    <ClInclude Include="..\src\gvl\cstdint.hpp">
       <Filter>gvl</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\containers\pairing_heap.hpp">
+    <ClInclude Include="..\src\gvl\containers\pairing_heap.hpp">
       <Filter>gvl\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\stats.hpp" />
-    <ClInclude Include="..\gfx\renderer.hpp">
+    <ClInclude Include="..\src\game\stats.hpp" />
+    <ClInclude Include="..\src\game\gfx\renderer.hpp">
       <Filter>gfx</Filter>
     </ClInclude>
-    <ClInclude Include="..\mixer\player.hpp">
+    <ClInclude Include="..\src\game\mixer\player.hpp">
       <Filter>mixer</Filter>
     </ClInclude>
-    <ClInclude Include="..\tl\cstdint.h">
+    <ClInclude Include="..\src\tl\cstdint.h">
       <Filter>tl</Filter>
     </ClInclude>
-    <ClInclude Include="..\tl\memory.h">
+    <ClInclude Include="..\src\tl\memory.h">
       <Filter>tl</Filter>
     </ClInclude>
-    <ClInclude Include="..\tl\platform.h">
+    <ClInclude Include="..\src\tl\platform.h">
       <Filter>tl</Filter>
     </ClInclude>
-    <ClInclude Include="..\tl\vector.h">
+    <ClInclude Include="..\src\tl\vector.h">
       <Filter>tl</Filter>
     </ClInclude>
-    <ClInclude Include="..\material.hpp" />
-    <ClInclude Include="..\gvl\math\vec.hpp">
+    <ClInclude Include="..\src\game\material.hpp" />
+    <ClInclude Include="..\src\gvl\math\vec.hpp">
       <Filter>gvl\math</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\containers\list.h">
+    <ClInclude Include="..\src\gvl\containers\list.h">
       <Filter>gvl\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\containers\list.hpp">
+    <ClInclude Include="..\src\gvl\containers\list.hpp">
       <Filter>gvl\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\resman\shared.hpp">
+    <ClInclude Include="..\src\gvl\resman\shared.hpp">
       <Filter>gvl\resman</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\resman\shared_ptr.hpp">
+    <ClInclude Include="..\src\gvl\resman\shared_ptr.hpp">
       <Filter>gvl\resman</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\meta\as_unsigned.hpp">
+    <ClInclude Include="..\src\gvl\meta\as_unsigned.hpp">
       <Filter>gvl\meta</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\io2\stream.hpp">
+    <ClInclude Include="..\src\gvl\io2\stream.hpp">
       <Filter>gvl\io2</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\serialization\coding.hpp">
+    <ClInclude Include="..\src\gvl\serialization\coding.hpp">
       <Filter>gvl\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\io2\deflate_filter.hpp">
+    <ClInclude Include="..\src\gvl\io2\deflate_filter.hpp">
       <Filter>gvl\io2</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\io2\fstream.hpp">
+    <ClInclude Include="..\src\gvl\io2\fstream.hpp">
       <Filter>gvl\io2</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\zlib\zlib2.h">
-      <Filter>gvl\zlib</Filter>
-    </ClInclude>
-    <ClInclude Include="..\gvl\io2\convert.hpp">
+    <ClInclude Include="..\src\gvl\io2\convert.hpp">
       <Filter>gvl\io2</Filter>
     </ClInclude>
-    <ClInclude Include="..\gvl\serialization\toml.hpp">
+    <ClInclude Include="..\src\gvl\serialization\toml.hpp">
       <Filter>gvl\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\tl\utf8.h">
+    <ClInclude Include="..\src\tl\utf8.h">
       <Filter>tl</Filter>
     </ClInclude>
-    <ClInclude Include="..\tl\config.h">
+    <ClInclude Include="..\src\tl\config.h">
       <Filter>tl</Filter>
     </ClInclude>
-    <ClInclude Include="..\objectList.hpp" />
-    <ClInclude Include="..\gvl\containers\bucket.hpp">
+    <ClInclude Include="..\src\game\objectList.hpp" />
+    <ClInclude Include="..\src\gvl\containers\bucket.hpp">
       <Filter>gvl\containers</Filter>
     </ClInclude>
-    <ClInclude Include="..\tl\string.h">
+    <ClInclude Include="..\src\tl\string.h">
       <Filter>tl</Filter>
     </ClInclude>
-    <ClInclude Include="..\spectatorviewport.hpp" />
+    <ClInclude Include="..\src\game\spectatorviewport.hpp" />
+    <ClInclude Include="..\src\game\gfx\bitmap.hpp" />
+    <ClInclude Include="..\src\game\bobject.hpp" />
+    <ClInclude Include="..\src\game\bonus.hpp" />
+    <ClInclude Include="..\src\game\common.hpp" />
+    <ClInclude Include="..\src\game\console.hpp" />
+    <ClInclude Include="..\src\game\constants.hpp" />
+    <ClInclude Include="..\src\game\exactObjectList.hpp" />
+    <ClInclude Include="..\src\game\fastObjectList.hpp" />
+    <ClInclude Include="..\src\game\filesystem.hpp" />
+    <ClInclude Include="..\src\game\game.hpp" />
+    <ClInclude Include="..\src\game\gvl\zlib\zlib2.h" />
+    <ClInclude Include="..\src\game\level.hpp" />
+    <ClInclude Include="..\src\game\math.hpp" />
+    <ClInclude Include="..\src\game\mixer\mixer.h" />
+    <ClInclude Include="..\src\game\nobject.hpp" />
+    <ClInclude Include="..\src\game\rand.hpp" />
+    <ClInclude Include="..\src\game\settings.hpp" />
+    <ClInclude Include="..\src\game\sobject.hpp" />
+    <ClInclude Include="..\src\game\stats_recorder.hpp" />
+    <ClInclude Include="..\src\game\sys.hpp" />
+    <ClInclude Include="..\src\game\text.hpp" />
+    <ClInclude Include="..\src\game\version.hpp" />
+    <ClInclude Include="..\src\game\viewport.hpp" />
+    <ClInclude Include="..\src\game\weapon.hpp" />
+    <ClInclude Include="..\src\game\worm.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\TODO.txt" />

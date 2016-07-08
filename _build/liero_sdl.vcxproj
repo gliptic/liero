@@ -55,23 +55,23 @@
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
-    <Import Project="..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\src\gvl\_build\Gvl Standard Config.props" />
+    <Import Project="..\src\gvl\_build\Gvl C++0x.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
-    <Import Project="..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\src\gvl\_build\Gvl Standard Config.props" />
+    <Import Project="..\src\gvl\_build\Gvl C++0x.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
-    <Import Project="..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\src\gvl\_build\Gvl Standard Config.props" />
+    <Import Project="..\src\gvl\_build\Gvl C++0x.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\gvl\_build\Gvl Standard Config.props" />
-    <Import Project="..\gvl\_build\Gvl C++0x.props" />
+    <Import Project="..\src\gvl\_build\Gvl Standard Config.props" />
+    <Import Project="..\src\gvl\_build\Gvl C++0x.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -101,7 +101,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -118,7 +118,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -137,7 +137,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -163,7 +163,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -181,30 +181,30 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ai\dijkstra.cpp" />
-    <ClCompile Include="..\ai\predictive_ai.cpp" />
-    <ClCompile Include="..\bench.cpp" />
-    <ClCompile Include="..\bench_format.cpp" />
-    <ClCompile Include="..\controller\commonController.cpp" />
-    <ClCompile Include="..\controller\localController.cpp" />
-    <ClCompile Include="..\controller\replayController.cpp" />
-    <ClCompile Include="..\controller\stats_presenter.cpp" />
-    <ClCompile Include="..\gfx.cpp" />
-    <ClCompile Include="..\keys.cpp" />
-    <ClCompile Include="..\main.cpp" />
-    <ClCompile Include="..\menu\booleanSwitchBehavior.cpp" />
-    <ClCompile Include="..\menu\enumBehavior.cpp" />
-    <ClCompile Include="..\menu\hiddenMenu.cpp" />
-    <ClCompile Include="..\menu\integerBehavior.cpp" />
-    <ClCompile Include="..\menu\itemBehavior.cpp" />
-    <ClCompile Include="..\menu\mainMenu.cpp" />
-    <ClCompile Include="..\menu\menu.cpp" />
-    <ClCompile Include="..\menu\menuItem.cpp" />
-    <ClCompile Include="..\menu\timeBehavior.cpp" />
-    <ClCompile Include="..\replay.cpp" />
-    <ClCompile Include="..\sdlmain.cpp" />
-    <ClCompile Include="..\sfx.cpp" />
-    <ClCompile Include="..\weapsel.cpp" />
+    <ClCompile Include="..\src\game\ai\dijkstra.cpp" />
+    <ClCompile Include="..\src\game\ai\predictive_ai.cpp" />
+    <ClCompile Include="..\src\game\bench.cpp" />
+    <ClCompile Include="..\src\game\bench_format.cpp" />
+    <ClCompile Include="..\src\game\controller\commonController.cpp" />
+    <ClCompile Include="..\src\game\controller\localController.cpp" />
+    <ClCompile Include="..\src\game\controller\replayController.cpp" />
+    <ClCompile Include="..\src\game\controller\stats_presenter.cpp" />
+    <ClCompile Include="..\src\game\gfx.cpp" />
+    <ClCompile Include="..\src\game\keys.cpp" />
+    <ClCompile Include="..\src\game\main.cpp" />
+    <ClCompile Include="..\src\game\menu\booleanSwitchBehavior.cpp" />
+    <ClCompile Include="..\src\game\menu\enumBehavior.cpp" />
+    <ClCompile Include="..\src\game\menu\hiddenMenu.cpp" />
+    <ClCompile Include="..\src\game\menu\integerBehavior.cpp" />
+    <ClCompile Include="..\src\game\menu\itemBehavior.cpp" />
+    <ClCompile Include="..\src\game\menu\mainMenu.cpp" />
+    <ClCompile Include="..\src\game\menu\menu.cpp" />
+    <ClCompile Include="..\src\game\menu\menuItem.cpp" />
+    <ClCompile Include="..\src\game\menu\timeBehavior.cpp" />
+    <ClCompile Include="..\src\game\replay.cpp" />
+    <ClCompile Include="..\src\game\sdlmain.cpp" />
+    <ClCompile Include="..\src\game\sfx.cpp" />
+    <ClCompile Include="..\src\game\weapsel.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="liero.vcxproj">
@@ -212,31 +212,31 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ai\astar.hpp" />
-    <ClInclude Include="..\ai\dijkstra.hpp" />
-    <ClInclude Include="..\ai\predictive_ai.hpp" />
-    <ClInclude Include="..\ai\work_queue.hpp" />
-    <ClInclude Include="..\controller\commonController.hpp" />
-    <ClInclude Include="..\controller\controller.hpp" />
-    <ClInclude Include="..\controller\localController.hpp" />
-    <ClInclude Include="..\controller\replayController.hpp" />
-    <ClInclude Include="..\controller\stats_presenter.hpp" />
-    <ClInclude Include="..\gfx.hpp" />
-    <ClInclude Include="..\keys.hpp" />
-    <ClInclude Include="..\menu\arrayEnumBehavior.hpp" />
-    <ClInclude Include="..\menu\booleanSwitchBehavior.hpp" />
-    <ClInclude Include="..\menu\enumBehavior.hpp" />
-    <ClInclude Include="..\menu\fileSelector.hpp" />
-    <ClInclude Include="..\menu\hiddenMenu.hpp" />
-    <ClInclude Include="..\menu\integerBehavior.hpp" />
-    <ClInclude Include="..\menu\itemBehavior.hpp" />
-    <ClInclude Include="..\menu\mainMenu.hpp" />
-    <ClInclude Include="..\menu\menu.hpp" />
-    <ClInclude Include="..\menu\menuItem.hpp" />
-    <ClInclude Include="..\menu\timeBehavior.hpp" />
-    <ClInclude Include="..\replay.hpp" />
-    <ClInclude Include="..\sfx.hpp" />
-    <ClInclude Include="..\weapsel.hpp" />
+    <ClInclude Include="..\src\game\ai\astar.hpp" />
+    <ClInclude Include="..\src\game\ai\dijkstra.hpp" />
+    <ClInclude Include="..\src\game\ai\predictive_ai.hpp" />
+    <ClInclude Include="..\src\game\ai\work_queue.hpp" />
+    <ClInclude Include="..\src\game\controller\commonController.hpp" />
+    <ClInclude Include="..\src\game\controller\controller.hpp" />
+    <ClInclude Include="..\src\game\controller\localController.hpp" />
+    <ClInclude Include="..\src\game\controller\replayController.hpp" />
+    <ClInclude Include="..\src\game\controller\stats_presenter.hpp" />
+    <ClInclude Include="..\src\game\gfx.hpp" />
+    <ClInclude Include="..\src\game\keys.hpp" />
+    <ClInclude Include="..\src\game\menu\arrayEnumBehavior.hpp" />
+    <ClInclude Include="..\src\game\menu\booleanSwitchBehavior.hpp" />
+    <ClInclude Include="..\src\game\menu\enumBehavior.hpp" />
+    <ClInclude Include="..\src\game\menu\fileSelector.hpp" />
+    <ClInclude Include="..\src\game\menu\hiddenMenu.hpp" />
+    <ClInclude Include="..\src\game\menu\integerBehavior.hpp" />
+    <ClInclude Include="..\src\game\menu\itemBehavior.hpp" />
+    <ClInclude Include="..\src\game\menu\mainMenu.hpp" />
+    <ClInclude Include="..\src\game\menu\menu.hpp" />
+    <ClInclude Include="..\src\game\menu\menuItem.hpp" />
+    <ClInclude Include="..\src\game\menu\timeBehavior.hpp" />
+    <ClInclude Include="..\src\game\replay.hpp" />
+    <ClInclude Include="..\src\game\sfx.hpp" />
+    <ClInclude Include="..\src\game\weapsel.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\CMakeLists.txt" />

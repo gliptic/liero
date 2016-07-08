@@ -1,9 +1,9 @@
 #include "predictive_ai.hpp"
 
-#include "game.hpp"
-#include "gfx/blit.hpp"
-#include "gfx/renderer.hpp"
-#include "stats.hpp"
+#include "game/game.hpp"
+#include "game/gfx/blit.hpp"
+#include "game/gfx/renderer.hpp"
+#include "game/stats.hpp"
 #include <sstream>
 #include <cfloat>
 #include <limits>
