@@ -116,6 +116,7 @@ include_directories(src/game)
 if(APPLE)
     set_target_properties(openliero PROPERTIES MACOSX_BUNDLE TRUE)
     set_target_properties(openliero PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in")
+    set(MACOSX_BUNDLE_ICON_FILE liero)
 
     # Preserve directory structure when copying contents of pkg/ to the .app Resources/ directory.
     foreach(absolute_path ${RESOURCE_FILES})
