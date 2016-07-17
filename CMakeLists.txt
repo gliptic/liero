@@ -99,8 +99,8 @@ if(APPLE)
     set(GAME_SOURCES ${GAME_SOURCES} src/game/SDLmain.m)
     set_source_files_properties(src/game/SDLmain.m PROPERTIES COMPILE_FLAGS "-std=c99")
 
-    # Populate RESOURCE_FILES with contents of pkg/ directory.
-    file(GLOB_RECURSE RESOURCE_FILES pkg/*)
+    # Populate RESOURCE_FILES with files to copy into the .app Resources/ directory.
+    file(GLOB_RECURSE RESOURCE_FILES pkg/*.cfg pkg/TC/* pkg/*.icns)
 else(APPLE)
     set(GAME_SOURCES ${GAME_SOURCES} src/game/sdlmain.cpp)
 endif(APPLE)
