@@ -133,11 +133,18 @@
       <Filter>menu</Filter>
     </ClInclude>
     <ClInclude Include="..\src\game\replay.hpp" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="liero_sdl.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="icon.ico" />
   </ItemGroup>
 </Project>
