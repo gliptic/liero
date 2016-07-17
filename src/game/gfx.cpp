@@ -1,7 +1,9 @@
 #ifdef WIN32
 #include <SDL.h>
+#include <SDL_image.h>
 #else
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #endif // WIN32
 #include <cstring>
 #include <cassert>
@@ -330,6 +332,10 @@ void Gfx::setVideoMode()
 		{
 			sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", 
 				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
+			std::string s = joinPath(getConfigNode().fullPath(), "spectator_icon.png");
+			SDL_Surface *spectator_icon = IMG_Load(s.c_str());
+			SDL_SetWindowIcon(sdlSpectatorWindow, spectator_icon);
+			SDL_FreeSurface(spectator_icon);
 		}
 		else
 		{
@@ -381,6 +387,10 @@ void Gfx::setVideoMode()
 			SDL_GetWindowPosition(sdlSpectatorWindow, &x, &y);
 		}
 		sdlWindow = SDL_CreateWindow("Liero 1.37o", x + 100, y + 50, windowW, windowH, flags);
+		std::string s = joinPath(getConfigNode().fullPath(), "icon.png");
+		SDL_Surface *icon = IMG_Load(s.c_str());
+		SDL_SetWindowIcon(sdlWindow, icon);
+		SDL_FreeSurface(icon);
 	}
 	else
 	{
