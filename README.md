@@ -20,7 +20,7 @@ How to build (Linux and Mac)
 
 Building on Linux and Mac
 -------------------------
-* Make sure you have CMake, SDL2 and gcc installed
+* Make sure you have CMake, SDL2, SDL2_image and gcc installed
 * Run cmake:
 * $ cmake -G "Unix Makefiles"
 * Run "make"
