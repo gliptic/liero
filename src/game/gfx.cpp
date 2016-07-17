@@ -334,8 +334,11 @@ void Gfx::setVideoMode()
 				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
 			std::string s = joinPath(getConfigNode().fullPath(), "spectator_icon.png");
 			SDL_Surface *spectator_icon = IMG_Load(s.c_str());
-			SDL_SetWindowIcon(sdlSpectatorWindow, spectator_icon);
-			SDL_FreeSurface(spectator_icon);
+			if (spectator_icon)
+			{
+				SDL_SetWindowIcon(sdlSpectatorWindow, spectator_icon);
+				SDL_FreeSurface(spectator_icon);
+			}
 		}
 		else
 		{
@@ -389,8 +392,11 @@ void Gfx::setVideoMode()
 		sdlWindow = SDL_CreateWindow("Liero 1.37o", x + 100, y + 50, windowW, windowH, flags);
 		std::string s = joinPath(getConfigNode().fullPath(), "icon.png");
 		SDL_Surface *icon = IMG_Load(s.c_str());
-		SDL_SetWindowIcon(sdlWindow, icon);
-		SDL_FreeSurface(icon);
+		if (icon)
+		{
+			SDL_SetWindowIcon(sdlWindow, icon);
+			SDL_FreeSurface(icon);
+		}
 	}
 	else
 	{
