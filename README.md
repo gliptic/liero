@@ -26,6 +26,7 @@ Building on Windows
 -----------------------
 * Install Visual Studio 2015
 * Install needed packages (SDL2) via nuget
+* Copy everything from the pkg directory to the _build directory
 
 (Optional) Dependencies for building the video tool
 -----------------------
@@ -40,10 +41,11 @@ How to build (Linux and Mac)
 
 Building on Linux and Mac
 -------------------------
-* Make sure you have CMake, SDL2 and gcc installed
+* Make sure you have CMake, SDL2, SDL2_image and gcc installed
 * Run cmake:
 * $ cmake -G "Unix Makefiles"
 * Run "make"
+* Copy everything from the pkg directory to the root directory used for the build
 
 (Optional) Enabling and building the video tool
 -------------------------------

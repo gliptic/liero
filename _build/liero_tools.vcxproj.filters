@@ -4,11 +4,11 @@
     <ClCompile Include="..\src\video_tool\tools_main.cpp" />
     <ClCompile Include="..\src\video_tool\replay_to_video.cpp" />
     <ClCompile Include="..\src\video_tool\video_recorder.c" />
-    <ClCompile Include="..\src\video_tool\replay.cpp" />
+    <ClCompile Include="..\src\game\replay.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\video_tool\replay_to_video.hpp" />
     <ClInclude Include="..\src\video_tool\video_recorder.h" />
-    <ClInclude Include="..\src\video_tool\replay.hpp" />
+    <ClInclude Include="..\src\game\replay.hpp" />
   </ItemGroup>
 </Project>
