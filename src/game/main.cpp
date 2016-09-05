@@ -1,11 +1,7 @@
 #ifndef UUID_DC1D9513CDD34960AB8A648004DA149D
 #define UUID_DC1D9513CDD34960AB8A648004DA149D
 
-#ifdef WIN32
 #include <SDL.h>
-#else
-#include <SDL2/SDL.h>
-#endif // WIN32
 
 #include "gfx.hpp"
 #include "sfx.hpp"
