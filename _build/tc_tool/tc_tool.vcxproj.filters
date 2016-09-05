@@ -1,14 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\src\tctool\common_exereader.cpp" />
-    <ClCompile Include="..\..\src\tctool\common_writer.cpp" />
-    <ClCompile Include="..\..\src\tctool\tc_tool_main.cpp" />
+    <ClCompile Include="..\..\src\tc_tool\common_exereader.cpp" />
+    <ClCompile Include="..\..\src\tc_tool\common_writer.cpp" />
+    <ClCompile Include="..\..\src\tc_tool\tc_tool_main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\tctool\common_exereader.hpp" />
-    <ClInclude Include="..\..\src\tctool\common_model.hpp" />
-    <ClInclude Include="..\..\src\tctool\common_writer.hpp" />
-    <ClInclude Include="..\..\src\tctool\reader.hpp" />
+    <ClInclude Include="..\..\src\tc_tool\common_exereader.hpp" />
+    <ClInclude Include="..\..\src\tc_tool\common_model.hpp" />
+    <ClInclude Include="..\..\src\tc_tool\common_writer.hpp" />
+    <ClInclude Include="..\..\src\tc_tool\reader.hpp" />
   </ItemGroup>
 </Project>

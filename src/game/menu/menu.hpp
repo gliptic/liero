@@ -1,11 +1,7 @@
 #ifndef UUID_3DC24B15AD67494EEAB541B4AE253D0F
 #define UUID_3DC24B15AD67494EEAB541B4AE253D0F
 
-#ifdef WIN32
 #include <SDL.h>
-#else
-#include <SDL2/SDL.h>
-#endif // WIN32
 #include <cstddef>
 #include <string>
 #include <cstdio>

@@ -1,11 +1,7 @@
 #ifndef LIERO_WORK_QUEUE_HPP
 #define LIERO_WORK_QUEUE_HPP
 
-#ifdef WIN32
 #include <SDL.h>
-#else
-#include <SDL2/SDL.h>
-#endif // WIN32
 #include <sstream>
 #include <vector>
 #include "tl/memory.h"

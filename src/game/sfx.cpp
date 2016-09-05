@@ -5,11 +5,7 @@
 #include <vector>
 #include <cassert>
 #if !DISABLE_SOUND
-#ifdef WIN32
 #	include <SDL.h>
-#	else
-#	include <SDL2/SDL.h>
-#	endif // WIN32
 #endif
 
 Sfx sfx;

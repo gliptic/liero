@@ -1,8 +1,5 @@
-#ifdef WIN32
 #include <SDL.h>
-#else
-#include <SDL2/SDL.h>
-#endif // WIN32
+#include <SDL_image.h>
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
@@ -381,6 +378,18 @@ void Gfx::setVideoMode()
 			SDL_GetWindowPosition(sdlSpectatorWindow, &x, &y);
 		}
 		sdlWindow = SDL_CreateWindow("Liero 1.37o", x + 100, y + 50, windowW, windowH, flags);
+
+		// The Mac app will automatically use the .icns icon file located in the
+		// .app bundle, so don't override that here.
+#ifndef __APPLE__
+		std::string s = joinPath(getConfigNode().fullPath(), "icon.png");
+		SDL_Surface *icon = IMG_Load(s.c_str());
+		if (icon)
+		{
+			SDL_SetWindowIcon(sdlWindow, icon);
+			SDL_FreeSurface(icon);
+		}
+#endif
 	}
 	else
 	{
@@ -402,6 +411,23 @@ void Gfx::setVideoMode()
 	// to keep the correct speed
 	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0 /*SDL_RENDERER_PRESENTVSYNC*/);
 	onWindowResize(SDL_GetWindowID(sdlWindow));
+
+	// Set the spectator window's icon after the main window has been initialized.
+	// On Windows, this makes sure the icon in the stacked taskbar is the main icon.
+	// On MacOS this is commented out, because it only allows one icon and the spectator icon
+	// will override the main icon
+#ifndef __APPLE__
+	if (sdlSpectatorWindow)
+	{
+		std::string s = joinPath(getConfigNode().fullPath(), "spectator_icon.png");
+		SDL_Surface *spectator_icon = IMG_Load(s.c_str());
+		if (spectator_icon)
+		{
+			SDL_SetWindowIcon(sdlSpectatorWindow, spectator_icon);
+			SDL_FreeSurface(spectator_icon);
+		}
+	}
+#endif
 }
 
 void Gfx::onWindowResize(Uint32 windowID)

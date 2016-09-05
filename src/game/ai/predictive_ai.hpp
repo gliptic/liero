@@ -1,11 +1,7 @@
 #ifndef LIERO_PREDICTIVE_AI_HPP
 #define LIERO_PREDICTIVE_AI_HPP
 
-#ifdef WIN32
 #include <SDL.h>
-#else
-#include <SDL2/SDL.h>
-#endif // WIN32
 
 #include "../worm.hpp"
 #include "../math.hpp"
