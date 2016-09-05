@@ -1,10 +1,5 @@
-#ifdef WIN32
 #include <SDL.h>
 #include <SDL_image.h>
-#else
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
-#endif // WIN32
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
