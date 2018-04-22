@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25123.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2037
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "liero", "liero.vcxproj", "{CDE258F8-90DB-407B-8521-AA531EE4D167}"
 EndProject
@@ -50,7 +50,9 @@ Global
 		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
 		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Debug|Mixed Platforms.Build.0 = Debug|Win32
 		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Debug|Win32.ActiveCfg = Debug|Win32
-		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Debug|x64.ActiveCfg = Debug|Win32
+		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Debug|Win32.Build.0 = Debug|Win32
+		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Debug|x64.ActiveCfg = Debug|x64
+		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Debug|x64.Build.0 = Debug|x64
 		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Release|Mixed Platforms.ActiveCfg = Release|Win32
 		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Release|Mixed Platforms.Build.0 = Release|Win32
 		{B637DD19-885C-4A5D-ABC0-9F0E63FB2D19}.Release|Win32.ActiveCfg = Release|Win32
@@ -72,5 +74,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2DD19003-F59D-4F7D-9878-B6CFE8509C7B}
 	EndGlobalSection
 EndGlobal
