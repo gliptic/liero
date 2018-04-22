@@ -109,6 +109,7 @@
       <PrecompiledHeader />
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <AdditionalDependencies>sdl.lib;avcodec.lib;avformat.lib;avresample.lib;avutil.lib;avfilter.lib;swscale.lib</AdditionalDependencies>
