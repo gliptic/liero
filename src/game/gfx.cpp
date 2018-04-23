@@ -377,7 +377,7 @@ void Gfx::setVideoMode()
 		{
 			SDL_GetWindowPosition(sdlSpectatorWindow, &x, &y);
 		}
-		sdlWindow = SDL_CreateWindow("Liero 1.37o", x + 100, y + 50, windowW, windowH, flags);
+		sdlWindow = SDL_CreateWindow("Liero 1.38o", x + 100, y + 50, windowW, windowH, flags);
 
 		// The Mac app will automatically use the .icns icon file located in the
 		// .app bundle, so don't override that here.
