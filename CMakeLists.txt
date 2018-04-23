@@ -39,13 +39,15 @@ set(SOURCES
     src/game/viewport.cpp
     src/game/weapon.cpp
     src/game/worm.cpp
-    src/game/mixer/mixer.c
-    src/game/mixer/player.cpp
+    src/game/ai/dijkstra.cpp
+    src/game/ai/predictive_ai.cpp
     src/game/gfx/blit.cpp
     src/game/gfx/font.cpp
     src/game/gfx/palette.cpp
     src/game/gfx/renderer.cpp
     src/game/gfx/sprite.cpp
+    src/game/mixer/mixer.c
+    src/game/mixer/player.cpp
     src/gvl/zlib/miniz.c
     src/gvl/system/system.c
     src/gvl/support/bits.c
@@ -64,8 +66,6 @@ set(GAME_SOURCES ${SOURCES}
     src/game/replay.cpp
     src/game/sfx.cpp
     src/game/weapsel.cpp
-    src/game/ai/dijkstra.cpp
-    src/game/ai/predictive_ai.cpp
     src/game/controller/commonController.cpp
     src/game/controller/localController.cpp
     src/game/controller/replayController.cpp
