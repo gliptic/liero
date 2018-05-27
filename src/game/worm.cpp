@@ -413,7 +413,7 @@ void Worm::process(Game& game)
 					game.soundPlayer->stop(&weapons[currentWeapon]);
 				}
 
-				int deathSnd = 16 + game.rand(3);
+				int deathSnd = 15 + game.rand(3);
 				game.soundPlayer->play(deathSnd, this);
 
 				fireCone = 0;
