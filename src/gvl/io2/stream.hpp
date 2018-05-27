@@ -291,7 +291,7 @@ struct octet_reader
 		for(std::size_t i = 0; i < len; ++i)
 		{
 			auto s = try_get(dest[i]);
-			if(s != source_result::ok) return i;
+			if(!s) return i;
 		}
 
 		return len;
