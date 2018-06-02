@@ -228,7 +228,7 @@ bool Level::load(Common& common, Settings const& settings, gvl::octet_reader r)
 	if(/*len >= 504*350 + 10 + 256*3
 	&&*/ (settings.extensions && settings.loadPowerlevelPalette))
 	{
-		uint8_t buf[10];
+		uint8_t buf[10] = {};
 		if (r.try_get(buf, 10))
 		{
 			if(!std::memcmp("POWERLEVEL", buf, 10))
