@@ -300,7 +300,7 @@ void Worm::process(Game& game)
 			auto ipos = ftoi(pos);
 
 			auto br = game.bonuses.all();
-			for (Bonus* i; i = br.next(); )
+			for (Bonus* i; (i = br.next()); )
 			{				
 				if(ipos.x + 5 > ftoi(i->x)
 				&& ipos.x - 5 < ftoi(i->x)
@@ -1405,7 +1405,7 @@ void Worm::processSteerables(Game& game)
 	if(ww.type->shotType == Weapon::STSteerable)
 	{
 		auto wr = game.wobjects.all();
-		for (WObject* i; i = wr.next(); )
+		for (WObject* i; (i = wr.next()); )
 		{
 			if(i->type == ww.type && i->ownerIdx == index)
 			{
