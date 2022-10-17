@@ -375,7 +375,7 @@ inline std::string readPascalStringAt(ReaderFile& f, size_t location)
 	return readPascalString(f);
 }
 
-void loadConstantsFromEXE(Common& common, ReaderFile& exe)
+void loadConstants(Common& common, ReaderFile& exe)
 {
 	for(int i = 0; CSint32desc[i][1] >= 0; ++i)
 	{
@@ -749,6 +749,28 @@ void loadSprites(SpriteSet& ss, ReaderFile& f, int width, int height, int count)
 	}
 }
 
+void cropSprites(SpriteSet& sprites, int first, int count, int minX, int minY, int width, int height)
+{
+	// Crop sprites by clearing pixels outside the desired area.
+
+	int maxX = minX + width - 1;
+	int maxY = minY + height - 1;
+
+	for (int i = first; i < first + count; i++)
+	{
+		Sprite sprite = sprites[i];
+		
+		for (int y = 0; y < sprite.height; y++)
+		{
+			for (int x = 0; x < sprite.width; x++)
+			{
+				if (x < minX || x > maxX || y < minY || y > maxY)
+					sprite.mem[y * sprite.width + x] = 0;
+			}
+		}
+	}
+}
+
 void loadGfx(Common& common, ReaderFile& exe, ReaderFile& gfx)
 {
 	exe.seekg(0x1C1DE);
@@ -765,6 +787,10 @@ void loadGfx(Common& common, ReaderFile& exe, ReaderFile& gfx)
 	
 	loadSprites(common.textSprites, gfx, 4, 4, 26);
 	
+	// The original would only render 10x9 pixels of the worm sprites.
+	// Cropping the worm sprites here to match the original behavior.
+	cropSprites(common.largeSprites, 16, 21, 2, 0, 10, 9);
+
 	Rand rand;
 	
 	for(int y = 0; y < 16; ++y)
@@ -817,7 +843,7 @@ void loadSfx(
 	}
 }
 
-void loadFromEXE(Font& font, ReaderFile& exe)
+void loadFont(Font& font, ReaderFile& exe)
 {
 	font.chars.resize(250);
 	
@@ -860,8 +886,8 @@ void loadFromExe(Common& common, ReaderFile& exe, ReaderFile& gfx, ReaderFile& s
 		common.nobjectTypes[i].idStr = toId(nobjectNames[i]);
 	}
 
-	loadConstantsFromEXE(common, exe);
-	loadFromEXE(common.font, exe);
+	loadConstants(common, exe);
+	loadFont(common.font, exe);
 	loadPalette(common, exe);
 	loadMaterials(common, exe);
 	loadWeapons(common, exe);
