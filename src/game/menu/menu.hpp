@@ -37,6 +37,10 @@ struct Menu
 		place(x, y);
 	}
 
+	virtual ~Menu()
+	{
+	}
+
 	void init(bool centeredInit = false)
 	{
 		itemHeight = 8;

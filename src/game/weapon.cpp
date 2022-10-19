@@ -16,6 +16,7 @@ int Weapon::computedLoadingTime(Settings& settings) const
 void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, int ownerIdx, WormWeapon* ww) const
 {
 	WObject* obj = game.wobjects.newObjectReuse();
+	IF_ENABLE_TRACING(Common& common = *game.common);
 
 	obj->type = this;
 	obj->pos = pos;

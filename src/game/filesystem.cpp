@@ -280,12 +280,12 @@ bool create_directories(std::string const& dir)
 
 #else
 
+static char const dirSep = '/';
+
 inline char isDirSep(char c)
 {
-	return c == '/';
+	return c == dirSep;
 }
-
-static char const dirSep = '/';
 
 #include <sys/types.h>
 #include <sys/stat.h>

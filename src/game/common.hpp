@@ -109,8 +109,10 @@ using std::vector;
 
 #if ENABLE_TRACING
 #define LTRACE(category, object, attribute, value) common.ltrace(#category, (uint32)(object), #attribute, value)
+#define IF_ENABLE_TRACING(...) __VA_ARGS__
 #else
 #define LTRACE(category, object, attribute, value) ((void)0)
+#define IF_ENABLE_TRACING(x) ((void)0)
 #endif
 
 struct Common : gvl::shared

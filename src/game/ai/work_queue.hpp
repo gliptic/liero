@@ -32,7 +32,7 @@ struct Work
 		stateCond = SDL_CreateCond();
 	}
 
-	~Work()
+	virtual ~Work()
 	{
 		SDL_DestroyMutex(mutex);
 		SDL_DestroyCond(stateCond);

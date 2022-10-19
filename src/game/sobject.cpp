@@ -215,6 +215,8 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 							i->vel.y -= objBlowAway * power;
 					}
 
+					IF_ENABLE_TRACING(Common& common = *game.common);
+
 					LTRACE(nobj, &*i - game.nobjects.arr, puxp, i->vel.x);
 					LTRACE(nobj, &*i - game.nobjects.arr, puyp, i->vel.y);
 				}
