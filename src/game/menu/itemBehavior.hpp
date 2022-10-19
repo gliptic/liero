@@ -13,6 +13,10 @@ struct ItemBehavior
 	{
 	}
 
+	virtual ~ItemBehavior()
+	{
+	}
+
 	virtual bool onLeftRight(Menu& menu, MenuItem& item, int dir)
 	{
 		return true;

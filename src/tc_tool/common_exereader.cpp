@@ -348,7 +348,7 @@ std::string toId(std::string const& name)
 		else
 			ret += std::tolower((uint8_t)c);
 	}
-	return std::move(ret);
+	return ret;
 }
 
 inline std::string readPascalString(ReaderFile& f)
