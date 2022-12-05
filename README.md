@@ -24,9 +24,27 @@ How to build (Windows)
 
 Building on Windows
 -----------------------
-* Install Visual Studio 2015
-* Install needed packages (SDL2) via nuget
+* Install Visual Studio 2022
+* Install SDL 2
+  * Go to https://github.com/libsdl-org/SDL/releases
+  * Download e.g. SDL2-devel-2.26.1-VC.zip
+  * Extract the contents to somewhere on your file system
+  * Set the SDL2_DIR environment variable to the directory you extracted the files to
+* Install SDL2_image
+  * Go to https://github.com/libsdl-org/SDL_image/releases
+  * Download e.g. SDL2_image-devel-2.6.2-VC.zip
+  * Extract the contents to somewhere on your file system
+  * Set the SDL2_image_DIR environment variable to the directory you extracted the files to
 * Copy everything from the pkg directory to the _build directory
+* Download SDL 2
+  * Go to https://github.com/libsdl-org/SDL/releases
+  * Download e.g. SDL2-2.26.1-win32-x64.zip
+  * Put SDL2.dll either in your system32 folder or in the same folder as openliero.exe ends up in, e.g. out\build\x64-Debug
+* Download SDL2_image
+  * Go to https://github.com/libsdl-org/SDL_image/releases
+  * Download e.g. SDL2_image-2.6.2-win32-x64.zip
+  * Put SDL2_image.dll either in your system32 folder or in the same folder as openliero.exe ends up in, e.g. out\build\x64-Debug
+
 
 (Optional) Dependencies for building the video tool
 -----------------------
