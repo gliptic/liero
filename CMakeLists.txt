@@ -106,7 +106,7 @@ add_executable(tctool ${TC_TOOL_SOURCES})
 add_executable(videotool EXCLUDE_FROM_ALL ${VIDEO_TOOL_SOURCES})
 target_link_libraries(openliero SDL2::SDL2 SDL2_image::SDL2_image)
 target_link_libraries(tctool SDL2::SDL2)
-target_link_libraries(videotool avcodec avformat avutil dl pthread swresample swscale x264)
+target_link_libraries(videotool SDL2::SDL2 avcodec avformat avutil dl pthread swresample swscale x264)
 include_directories(src/game)
 
 if(APPLE)
