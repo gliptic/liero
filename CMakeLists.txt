@@ -101,7 +101,7 @@ else(APPLE)
     set(GAME_SOURCES ${GAME_SOURCES} src/game/sdlmain.cpp)
 endif(APPLE)
 
-add_executable(openliero ${GAME_SOURCES} ${RESOURCE_FILES} pkg/win32_icon.rc)
+add_executable(openliero WIN32 ${GAME_SOURCES} ${RESOURCE_FILES} pkg/win32_icon.rc)
 add_executable(tctool ${TC_TOOL_SOURCES})
 add_executable(videotool EXCLUDE_FROM_ALL ${VIDEO_TOOL_SOURCES})
 target_link_libraries(openliero SDL2::SDL2 SDL2_image::SDL2_image)
