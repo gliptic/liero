@@ -6,17 +6,12 @@ int gameEntry(int argc, char *argv[]);
 
 #if GVL_WINDOWS
 #include <windows.h>
-#include <SDL.h>
 
-#ifdef main
-#undef main
-#endif
-
-int main(int argc, char *argv[])
+INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow) 
 {
 	try
 	{
-		return gameEntry(argc, argv);
+		return gameEntry(__argc, __argv);
 	}
 	catch(std::exception& ex)
 	{
