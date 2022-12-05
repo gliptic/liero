@@ -4,16 +4,9 @@
 
 int gameEntry(int argc, char *argv[]);
 
-#if GVL_WINDOWS && !defined(DISABLE_MAINHACK)
-// A bit of a hack to avoid DLL dependencies
-#define _WIN32_WINDOWS 0x0410
-#define WINVER 0x0410
+#if GVL_WINDOWS
 #include <windows.h>
-#ifdef WIN32
 #include <SDL.h>
-#else
-#include <SDL2/SDL.h>
-#endif // WIN32
 
 #ifdef main
 #undef main
