@@ -44,6 +44,7 @@ Building on Windows
   * Go to https://github.com/libsdl-org/SDL_image/releases
   * Download e.g. SDL2_image-2.6.2-win32-x64.zip
   * Put SDL2_image.dll either in your system32 folder or in the same folder as openliero.exe ends up in, e.g. out\build\x64-Debug
+* Copy everything from the pkg directory to the same folder as openliero.exe ends up in, e.g. out\build\x64-Debug
 
 
 (Optional) Dependencies for building the video tool
