@@ -16,6 +16,10 @@ ReplayController::ReplayController(
 {
 }
 
+void ReplayController::onAxisAim(int wormIdx, Joystick& js)
+{
+}
+
 void ReplayController::onKey(int key, bool keyState)
 {
 	if(key == DkEscape && !goingToMenu)

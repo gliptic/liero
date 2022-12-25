@@ -4,6 +4,7 @@
 struct Level;
 struct Game;
 struct Renderer;
+struct Joystick;
 
 struct Controller
 {
@@ -15,6 +16,9 @@ struct Controller
 	// an actual match
 	virtual bool isReplay() { return false; };
 	
+	// Called when axn axis aim event happens
+	virtual void onAxisAim(int wormIdx, Joystick &js) = 0;
+
 	// Called when a key event is forwarded to the controller
 	virtual void onKey(int key, bool state) = 0;
 	

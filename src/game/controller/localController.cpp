@@ -77,6 +77,32 @@ LocalController::~LocalController()
 	endRecord();
 }
 
+inline int normalizedLangle(int langle)
+{
+	if (langle < itof(64)) langle = itof(128) - langle;
+	return langle;
+}
+
+void LocalController::onAxisAim(int wormIdx, Joystick &js)
+{
+	Worm* worm = game.wormByIdx(wormIdx);
+	if (!worm)
+	{
+		return;
+	}
+	int16 leftRight = SDL_JoystickGetAxis(js.sdlJoystick, 2);
+	int16 upDown = SDL_JoystickGetAxis(js.sdlJoystick, 3);
+	if (leftRight == 0)
+	{
+		worm->aimingAngle = itof(0);
+		return;
+	}
+	float rangle = std::atan2(upDown, leftRight);
+	int newAimAngle = (rangle * 64 / 3.141592653589793) + 96;
+	if (newAimAngle > 128) newAimAngle -= 128;
+	worm->aimingAngle = itof(newAimAngle);
+}
+
 void LocalController::onKey(int key, bool keyState)
 {
 	Worm::Control control;
