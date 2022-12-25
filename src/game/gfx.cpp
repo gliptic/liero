@@ -699,7 +699,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			Joystick& js = joysticks[ev.jaxis.which];
 			int jbtnBase = 4 + 2 * ev.jaxis.axis;
 
-			if (ev.jaxis.axis == 2 || ev.jaxis.axis == 3)
+			if (ev.jaxis.which < 2 && (ev.jaxis.axis == 2 || ev.jaxis.axis == 3))
 			{
 				if ((ev.jaxis.value > 0 && ev.jaxis.value < JoyAxisThreshold) || (ev.jaxis.value < 0 && ev.jaxis.value > -JoyAxisThreshold))
 				{
@@ -707,7 +707,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 				}
 				if (controller)
 				{
-					controller->onAxisAim(ev.jbutton.which, js);
+					controller->onAxisAim(ev.jaxis.which, js);
 				}
 			}
 			else
