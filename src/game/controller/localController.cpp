@@ -100,6 +100,7 @@ void LocalController::onAxisAim(int wormIdx, Joystick &js)
 	float rangle = std::atan2(upDown, leftRight);
 	int newAimAngle = (rangle * 64 / 3.141592653589793) + 96;
 	if (newAimAngle > 128) newAimAngle -= 128;
+	worm->direction = newAimAngle > 64 ? 1 : 0;
 	worm->aimingAngle = itof(newAimAngle);
 }
 
