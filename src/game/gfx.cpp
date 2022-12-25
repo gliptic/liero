@@ -696,7 +696,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 
 		case SDL_JOYAXISMOTION:
 		{
-			Joystick& js = joysticks[ev.jbutton.which];
+			Joystick& js = joysticks[ev.jaxis.which];
 			int jbtnBase = 4 + 2 * ev.jaxis.axis;
 
 			bool newBtnStates[2];
@@ -712,7 +712,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 				{
 					js.btnState[jbtn] = newState;
 					if (controller)
-						controller->onKey(joyButtonToExKey(ev.jbutton.which, jbtn), newState);
+						controller->onKey(joyButtonToExKey(ev.jaxis.which, jbtn), newState);
 				}
 			}
 		}
@@ -720,7 +720,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		
 		case SDL_JOYHATMOTION:
 		{
-			Joystick& js = joysticks[ev.jbutton.which];
+			Joystick& js = joysticks[ev.jhat.which];
 			
 			bool newBtnStates[4];
 			newBtnStates[0] = (ev.jhat.value & SDL_HAT_UP) != 0;
@@ -735,7 +735,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 				{
 					js.btnState[jbtn] = newState;
 					if(controller)
-						controller->onKey(joyButtonToExKey(ev.jbutton.which, jbtn), newState);
+						controller->onKey(joyButtonToExKey(ev.jhat.which, jbtn), newState);
 				}
 			}
 		}
@@ -795,20 +795,20 @@ uint32_t Gfx::waitForKeyEx()
 			
 		case SDL_JOYAXISMOTION:
 			if(ev.jaxis.value > JoyAxisThreshold)
-				return joyButtonToExKey( ev.jbutton.which, 4 + 2 * ev.jaxis.axis );
+				return joyButtonToExKey( ev.jaxis.which, 4 + 2 * ev.jaxis.axis );
 			else if ( ev.jaxis.value < -JoyAxisThreshold )
-				return joyButtonToExKey( ev.jbutton.which, 5 + 2 * ev.jaxis.axis );
+				return joyButtonToExKey( ev.jaxis.which, 5 + 2 * ev.jaxis.axis );
 
 			break;
 		case SDL_JOYHATMOTION:
 			if(ev.jhat.value & SDL_HAT_UP)
-				return joyButtonToExKey(ev.jbutton.which, 0);
+				return joyButtonToExKey(ev.jhat.which, 0);
 			else if(ev.jhat.value & SDL_HAT_DOWN)
-				return joyButtonToExKey(ev.jbutton.which, 1);
+				return joyButtonToExKey(ev.jhat.which, 1);
 			else if (ev.jhat.value & SDL_HAT_LEFT)
-				return joyButtonToExKey(ev.jbutton.which, 2);
+				return joyButtonToExKey(ev.jhat.which, 2);
 			else if (ev.jhat.value & SDL_HAT_RIGHT)
-				return joyButtonToExKey(ev.jbutton.which, 3);
+				return joyButtonToExKey(ev.jhat.which, 3);
 
 			break;
 		case SDL_JOYBUTTONDOWN:
