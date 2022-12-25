@@ -2,6 +2,7 @@
 /_bin/
 /out/
 *.build/
+/build
 /ffmpeg/
 /x264/
 openliero
