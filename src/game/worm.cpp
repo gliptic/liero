@@ -1184,7 +1184,7 @@ void Worm::processAiming(Game& game)
 	
 	if(movable && (!ninjarope.out || !pressed(Change)))
 	{
-		if(up)
+		if(!game.settings->dualStickControls && up)
 		{
 			if(direction == 0)
 			{
@@ -1198,7 +1198,7 @@ void Worm::processAiming(Game& game)
 			}
 		}
 		
-		if(down)
+		if(!game.settings->dualStickControls && down)
 		{
 			if(direction == 1)
 			{
