@@ -57,6 +57,10 @@ struct PlayerMenu : Menu
 		PlChange,
 		PlJump,
 		PlDig,
+		PlAimUpDownJoy,
+		PlAimUpDownAxis,
+		PlAimLeftRightJoy,
+		PlAimLeftRightAxis,
 		PlWeap0,
 		PlController = PlWeap0 + 5,
 		PlSaveProfile,
@@ -185,7 +189,9 @@ struct Gfx
 
 	SDL_Keysym waitForKey();
 	uint32_t waitForKeyEx();
+	bool waitForAxis(uint32_t &joystick, uint32_t& axis);
 	std::string getKeyName(uint32_t key);
+	std::string getAxisName(uint32_t joystick, uint32_t axis);
 	void setSpectatorFullscreen(bool newFullscreen);
 	void setFullscreen(bool newFullscreen);
 	void setDoubleRes(bool newDoubleRes);

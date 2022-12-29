@@ -19,7 +19,7 @@ struct LocalController : CommonController
 {
 	LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings);
 	~LocalController();
-	void onAxisAim(int wormIdx, Joystick& js);
+	bool onAxis(Joystick& js, uint32_t axis);
 	void onKey(int key, bool keyState);
 	
 	// Called when the controller loses focus. When not focused, it will not receive key events among other things.

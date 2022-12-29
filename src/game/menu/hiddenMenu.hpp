@@ -28,6 +28,7 @@ struct HiddenMenu : Menu
 		AllowViewingSpawnPoint,
 		SingleScreenReplay,
 		SpectatorWindow,
+		DualStickControls
 	};
 	
 	HiddenMenu(int x, int y)

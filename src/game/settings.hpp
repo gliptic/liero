@@ -15,7 +15,7 @@
 // It can then easily reset the extensions if they fail to load.
 struct Extensions
 {
-	static int const myVersion = 8;
+	static int const myVersion = 9;
 	static bool const extensions = true;
 
 	Extensions();
@@ -38,6 +38,7 @@ struct Extensions
 	bool allowViewingSpawnPoint;
 	bool singleScreenReplay;
 	bool spectatorWindow;
+	bool dualStickControls;
 };
 
 struct Rand;
@@ -257,6 +258,8 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 		gvl::enable_when(ar, fileExtensionVersion >= 8)
 			.b(settings.spectatorWindow, false);
 
+		gvl::enable_when(ar, fileExtensionVersion >= 9)
+			.b(settings.dualStickControls, false);
 	}
 	catch(std::runtime_error&)
 	{
@@ -326,6 +329,8 @@ void archive(Archive ar, Settings& settings)
 		.b(settings.singleScreenReplay, false);
 	gvl::enable_when(ar, fileExtensionVersion >= 8)
 		.b(settings.spectatorWindow, false);
+	gvl::enable_when(ar, fileExtensionVersion >= 9)
+		.b(settings.dualStickControls, false);
 	ar.check();
 }
 
@@ -372,6 +377,7 @@ void archive_text(Settings& settings, Archive& ar)
 	ar.b(S(allowViewingSpawnPoint));
 	ar.b(S(singleScreenReplay));
 	ar.b(S(spectatorWindow));
+	ar.b(S(dualStickControls));
 
 	#undef S
 

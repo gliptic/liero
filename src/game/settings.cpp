@@ -33,6 +33,7 @@ Extensions::Extensions()
 , allowViewingSpawnPoint(false)
 , singleScreenReplay(false)
 , spectatorWindow(false)
+, dualStickControls(false)
 {
 }
 

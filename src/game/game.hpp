@@ -56,6 +56,7 @@ struct Game
 	~Game();
 
 	void onKey(uint32_t key, bool state);
+	Worm* findControlAxis(uint32_t joystick, uint32_t axis, Worm::Control& control);
 	Worm* findControlForKey(uint32_t key, Worm::Control& control);
 	void releaseControls();
 	void processFrame();

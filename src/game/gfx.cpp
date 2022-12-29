@@ -79,6 +79,38 @@ struct KeyBehavior : ItemBehavior
 	bool extended;
 };
 
+struct AxisBehavior : ItemBehavior
+{
+	AxisBehavior(Common& common, uint32_t& joystick, uint32_t& axis)
+		: common(common)
+		, joystick(joystick)
+		, axis(axis)
+	{
+	}
+
+	int onEnter(Menu& menu, MenuItem& item)
+	{
+		sfx.play(common, 27);
+		bool changed = gfx.waitForAxis(joystick, axis);
+		if (changed)
+		{
+			onUpdate(menu, item);
+		}
+		gfx.clearKeys();
+		return -1;
+	}
+
+	void onUpdate(Menu& menu, MenuItem& item)
+	{
+		item.value = gfx.getAxisName(joystick, axis);
+		item.hasValue = true;
+	}
+
+	Common& common;
+	uint32_t& joystick;
+	uint32_t& axis;
+};
+
 struct WormNameBehavior : ItemBehavior
 {
 	WormNameBehavior(Common& common, WormSettings& ws)
@@ -499,6 +531,7 @@ void Gfx::loadMenus()
 	hiddenMenu.addItem(MenuItem(48, 7, "SEE SPAWN POINT", HiddenMenu::AllowViewingSpawnPoint));
 	hiddenMenu.addItem(MenuItem(48, 7, "SINGLE SCREEN REPLAY", HiddenMenu::SingleScreenReplay));
 	hiddenMenu.addItem(MenuItem(48, 7, "SPECTATOR WINDOW", HiddenMenu::SpectatorWindow));
+	hiddenMenu.addItem(MenuItem(48, 7, "DUALSTICK CONTROLS", HiddenMenu::DualStickControls));
 
 	playerMenu.addItem(MenuItem(3, 7, "PROFILE LOADED", PlayerMenu::PlLoadedProfile));
 	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE", PlayerMenu::PlSaveProfile));
@@ -517,6 +550,8 @@ void Gfx::loadMenus()
 	playerMenu.addItem(MenuItem(48, 7, "CHANGE", PlayerMenu::PlChange));
 	playerMenu.addItem(MenuItem(48, 7, "JUMP", PlayerMenu::PlJump));
 	playerMenu.addItem(MenuItem(48, 7, "DIG", PlayerMenu::PlDig));
+	playerMenu.addItem(MenuItem(48, 7, "AIM L/R (AXIS)", PlayerMenu::PlAimLeftRightAxis));
+	playerMenu.addItem(MenuItem(48, 7, "AIM U/D (AXIS)", PlayerMenu::PlAimUpDownAxis));
 
 	for (int i = 0; i < 5; ++i)
 		playerMenu.addItem(MenuItem(48, 7, std::string("WEAPON ") + (char)(i + '1'), PlayerMenu::PlWeap0 + i));
@@ -697,20 +732,15 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		case SDL_JOYAXISMOTION:
 		{
 			Joystick& js = joysticks[ev.jaxis.which];
-			int jbtnBase = 4 + 2 * ev.jaxis.axis;
-
-			if (ev.jaxis.which < 2 && (ev.jaxis.axis == 2 || ev.jaxis.axis == 3))
+			bool wasAxisAim = false;
+			if (settings->dualStickControls)
 			{
-				if ((ev.jaxis.value > 0 && ev.jaxis.value < JoyAxisThreshold) || (ev.jaxis.value < 0 && ev.jaxis.value > -JoyAxisThreshold))
+				if (controller && ((ev.jaxis.value > 0 && ev.jaxis.value > JoyAxisThreshold) || (ev.jaxis.value < 0 && ev.jaxis.value < -JoyAxisThreshold)))
 				{
-					break;
-				}
-				if (controller)
-				{
-					controller->onAxisAim(ev.jaxis.which, js);
+					wasAxisAim = controller->onAxis(js, ev.jaxis.axis);
 				}
 			}
-			else
+			if (!wasAxisAim)
 			{
 				bool newBtnStates[2];
 				newBtnStates[0] = (ev.jaxis.value > JoyAxisThreshold);
@@ -718,6 +748,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 
 				for(int i = 0; i < 2; ++i)
 				{
+					int jbtnBase = 4 + 2 * ev.jaxis.axis;
 					int jbtn = jbtnBase + i;
 					bool newState = newBtnStates[i];
 
@@ -796,6 +827,29 @@ SDL_Keysym Gfx::waitForKey()
 	return SDL_Keysym(); // Dummy
 }
 
+bool Gfx::waitForAxis(uint32_t& joystick, uint32_t& axis)
+{
+	SDL_Event ev;
+	while (SDL_WaitEvent(&ev))
+	{
+		processEvent(ev);
+		switch (ev.type)
+		{
+		case SDL_KEYDOWN:
+			if (ev.key.keysym.scancode == SDL_Scancode::SDL_SCANCODE_ESCAPE)
+				return false;
+
+		case SDL_JOYAXISMOTION:
+			if (ev.jaxis.value > JoyAxisThreshold || ev.jaxis.value < -JoyAxisThreshold)
+				joystick = ev.jaxis.which;
+				axis = ev.jaxis.axis;
+				return true;
+		}
+	}
+
+	return false; // Dummy
+}
+
 uint32_t Gfx::waitForKeyEx()
 {
 	SDL_Event ev;
@@ -850,6 +904,11 @@ std::string Gfx::getKeyName(uint32_t key)
 	}
 
 	return "";
+}
+
+std::string Gfx::getAxisName(uint32_t joystick, uint32_t axis)
+{
+	return "J" + toString(joystick) + "_axis_" + toString(axis);
 }
 
 void Gfx::clearKeys()
@@ -1814,6 +1873,10 @@ ItemBehavior* PlayerMenu::getItemBehavior(Common& common, MenuItem& item)
 		case PlDig: // Controls Extension
 			return new KeyBehavior(common, ws->controlsEx[item.id - PlUp], ws->controlsEx[item.id - PlUp], gfx.settings->extensions);
 
+		case PlAimLeftRightAxis:
+			return new AxisBehavior(common, ws->controlsEx[PlAimLeftRightJoy - PlUp], ws->controlsEx[PlAimLeftRightAxis - PlUp]);
+		case PlAimUpDownAxis:
+			return new AxisBehavior(common, ws->controlsEx[PlAimUpDownJoy - PlUp], ws->controlsEx[PlAimUpDownAxis - PlUp]);
 
 		case PlController: // Controller
 			return new ArrayEnumBehavior(common, ws->controller, common.texts.controllers);

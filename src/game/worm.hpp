@@ -73,9 +73,12 @@ struct WormSettingsExtensions
 		Fire, Change, Jump,
 		Dig,
 		MaxControl = Dig,
-		MaxControlEx
+		AxisUpDownJoy,
+		AxisUpDownAxis,
+		AxisLeftRightJoy,
+		AxisLeftRightAxis,
+		MaxControlEx = AxisLeftRightAxis
 	};
-	//static const int MaxControl = Dig;
 
 	WormSettingsExtensions()
 	{

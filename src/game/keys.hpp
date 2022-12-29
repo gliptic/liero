@@ -14,13 +14,21 @@ Uint32 SDLToDOSKey(SDL_Scancode scancode);
 int const DkEscape = 1;
 
 int const MaxJoyButtons = 32;
+int const MaxJoyAxis = 32;
 
 uint32_t const MaxDOSKey 	= 177;
 uint32_t const JoyKeysStart	= 512;
+uint32_t const JoyAxisStart = 1024;
+
 
 inline uint32_t joyButtonToExKey( int joyNum, int joyButton ) {
 	return JoyKeysStart + MaxJoyButtons * joyNum + joyButton;
 }
+
+inline uint32_t joyAxisToExKey(int joyNum, int joyAxis) {
+	return JoyAxisStart + MaxJoyAxis * joyNum + joyAxis;
+}
+
 
 inline bool isExtendedKey( uint32_t k ) {
 	return k >= MaxDOSKey;

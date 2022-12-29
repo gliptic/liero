@@ -25,7 +25,7 @@ struct ReplayController : CommonController
 	ReplayController(gvl::shared_ptr<Common> common, gvl::source source);
 
 	bool isReplay() { return true; };
-	void onAxisAim(int wormIdx, Joystick& js);
+	bool onAxis(Joystick& js, uint32_t axis);
 	void onKey(int key, bool keyState);
 	// Called when the controller loses focus. When not focused, it will not receive key events among other things.
 	void unfocus();

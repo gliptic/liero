@@ -59,6 +59,27 @@ void Game::onKey(uint32_t key, bool state)
 	}
 }
 
+Worm* Game::findControlAxis(uint32_t joystick, uint32_t axis, Worm::Control& control)
+{
+	for (std::size_t i = 0; i < worms.size(); ++i)
+	{
+		Worm& w = *worms[i];
+
+		uint32_t* controls = w.settings->controlsEx;
+		std::size_t maxControl = WormSettings::MaxControlEx;
+		for (std::size_t c = WormSettings::AxisUpDownJoy; c < WormSettings::AxisLeftRightAxis; c+=2)
+		{
+			if (controls[c] == joystick && controls[c+1] == axis)
+			{
+				control = static_cast<Worm::Control>(c);
+				return &w;
+			}
+		}
+	}
+
+	return 0;
+}
+
 Worm* Game::findControlForKey(uint32_t key, Worm::Control& control)
 {
 	for(std::size_t i = 0; i < worms.size(); ++i)
