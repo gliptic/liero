@@ -835,11 +835,10 @@ void loadSfx(
 			snd.get(&sample.originalData[0], length);
 
 			sample.createSound();
+			sounds.push_back(std::move(sample));
 		}
 
 		snd.seekg(oldPos);
-
-		sounds.push_back(std::move(sample));
 	}
 }
 
