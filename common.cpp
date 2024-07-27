@@ -550,6 +550,24 @@ std::string Common::guessName() const
 	return cp.substr(0, p);
 }
 
+static std::string soundNames[] = {
+	"shotgun", "shot", "rifle", "bazooka", "blaster", "throw", "larpa",
+	"exp3a", "exp3b", "exp2", "exp3", "exp4", "exp5", "dirt", "bump", "death1",
+	"death2", "death3", "hurt1", "hurt2", "hurt3", "alive", "begin",
+	"dropshel", "reloaded", "moveup", "movedown", "select", "boing", "burner"
+};
+
+sfx_sound* Common::soundSample(int sound) const
+{
+	std::string name = soundNames[sound];
+	auto find_by_name = [&name](const SfxSample& inSample){ return inSample.name == name; };
+	vector<SfxSample>::const_iterator sample = std::find_if(sounds.begin(), sounds.end(), find_by_name);
+	if (sample != sounds.end())
+		return sample->sound;
+	
+	return nullptr;
+}
+
 void SfxSample::createSound()
 {
 	int16_t* ptr = reinterpret_cast<int16_t*>(sfx_sound_data(sound));

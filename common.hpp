@@ -144,6 +144,8 @@ struct Common : gvl::shared
 		return fireConeSprites.spritePtr(f + dir*7);
 	}
 
+	sfx_sound* soundSample(int sound) const;
+
 	// Computed
 	Texts texts;
 	vector<int> weapOrder;
