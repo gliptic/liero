@@ -1,3 +1,4 @@
+
 How to build (Windows)
 ======================
 
@@ -58,3 +59,16 @@ Building a release build
 * Run cmake:
 * $ cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 * Run "make"
+
+Extracting the game data
+======================
+
+You need data from the original Liero in order to play. You can get the data from the original game by following these steps:
+```bash
+curl https://www.liero.be/download/liero-1.36-bundle.zip -O
+unzip liero-1.36-bundle.zip
+./tctool liero-1.36-bundle
+mv TC/liero-1.36-bundle TC/"Liero v1.33"
+rm liero-1.36-bundle.zip
+rm -rf liero-1.36-bundle
+```
