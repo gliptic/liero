@@ -1,5 +1,8 @@
+How to build
+============
+
 How to build on Windows
-==================
+-----------------------
 
 * Install VS Express
 * Download SDL2 for VS (https://www.libsdl.org/download-2.0.php)
@@ -11,14 +14,14 @@ C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\include
 * Copy "lib\x64\SDL2.dll" to "C:\Windows\System32"
 
 How to build on Linux
-====================
+---------------------
 * Make sure you have CMake, SDL2 and gcc installed
 * Run cmake:
 * $ cmake -G "Unix Makefiles"
 * Run "make"
 
 How to build a release build on Linux
-====================
+---------------------
 * Run cmake:
 * $ cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles"
 * Run "make"
