@@ -15,16 +15,16 @@ Building on Windows
   * Download e.g. SDL2_image-devel-2.6.2-VC.zip
   * Extract the contents to somewhere on your file system
   * Set the SDL2_image_DIR environment variable to the directory you extracted the files to
-* Copy everything from the pkg directory to the _build directory
+* Copy everything from the pkg directory to the same folder as openliero.exe ends up in, e.g. `out\build\x64-Debug` or `out\build\x64-Release`
 * Download SDL 2
   * Go to https://github.com/libsdl-org/SDL/releases
   * Download e.g. SDL2-2.26.1-win32-x64.zip
-  * Put SDL2.dll either in your system32 folder or in the same folder as openliero.exe ends up in, e.g. out\build\x64-Debug
+  * Put SDL2.dll either in your system32 folder or in the same folder as openliero.exe ends up in, e.g. `out\build\x64-Debug` or `out\build\x64-Release`
 * Download SDL2_image
   * Go to https://github.com/libsdl-org/SDL_image/releases
   * Download e.g. SDL2_image-2.6.2-win32-x64.zip
-  * Put SDL2_image.dll either in your system32 folder or in the same folder as openliero.exe ends up in, e.g. out\build\x64-Debug
-* Copy everything from the pkg directory to the same folder as openliero.exe ends up in, e.g. out\build\x64-Debug
+  * Put SDL2_image.dll either in your system32 folder or in the same folder as openliero.exe ends up in, e.g. `out\build\x64-Debug` or `out\build\x64-Release`
+* Copy everything from the pkg directory to the same folder as openliero.exe ends up in, e.g. `out\build\x64-Debug` or `out\build\x64-Release`
 
 
 (Optional) Dependencies for building the video tool
@@ -63,7 +63,23 @@ Building a release build
 Extracting the game data
 ======================
 
-You need data from the original Liero in order to play. You can get the data from the original game by following these steps:
+You need data from the original Liero in order to run local builds. You can get the data from the original game by following these steps:
+
+Windows
+---------------------
+```powershell
+Invoke-WebRequest https://www.liero.be/download/liero-1.36-bundle.zip -OutFile liero-1.36-bundle.zip
+Expand-Archive -LiteralPath .\liero-1.36-bundle.zip .
+.\out/build/x64-Release/tctool.exe liero-1.36-bundle
+Move-Item .\TC\liero-1.36-bundle .\TC\"Liero v1.33"
+Remove-Item .\liero-1.36-bundle.zip
+Remove-Item -Recurse .\liero-1.36-bundle
+Copy-Item -Recurse .\TC .\out\build\x64-Debug
+Copy-Item -Recurse .\TC .\out\build\x64-Release
+```
+
+Linux/Mac
+---------------------
 ```bash
 curl https://www.liero.be/download/liero-1.36-bundle.zip -O
 unzip liero-1.36-bundle.zip
