@@ -73,7 +73,7 @@
 //   Curve tesselation                  120 LOC   \__ 500 LOC Bitmap creation
 //   Bitmap management                   70 LOC   /
 //   Baked bitmap interface              70 LOC  /
-//   Font name matching & access        150 LOC  ---- 150 
+//   Font name matching & access        150 LOC  ---- 150
 //   C runtime library abstraction       60 LOC  ----  60
 
 #include "config.h"
@@ -109,7 +109,7 @@ extern "C" {
 typedef struct
 {
    unsigned short x0,y0,x1,y1; // coordinates of bbox in bitmap
-   float xoff,yoff,xadvance;   
+   float xoff,yoff,xadvance;
 } tl_tt_bakedchar;
 
 extern int tl_tt_BakeFontBitmap(const unsigned char *data, int offset,  // font location (use offset=0 for plain .ttf)

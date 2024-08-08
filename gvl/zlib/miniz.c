@@ -789,7 +789,7 @@ size_t tdefl_compress_mem_to_mem(void *pOut_buf, size_t out_buf_len, const void 
 
 // Compresses an image to a compressed PNG file in memory.
 // On entry:
-//  pImage, w, h, and num_chans describe the image to compress. num_chans may be 1, 2, 3, or 4. 
+//  pImage, w, h, and num_chans describe the image to compress. num_chans may be 1, 2, 3, or 4.
 //  The image pitch in bytes per scanline will be w*num_chans. The leftmost pixel on the top scanline is stored first in memory.
 // On return:
 //  Function returns a pointer to the compressed data, or NULL on failure.

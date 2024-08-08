@@ -22,7 +22,7 @@ void Sfx::init()
 #if !DISABLE_SOUND
 	if(initialized)
 		return;
-	
+
 	SDL_InitSubSystem(SDL_INIT_AUDIO);
 
 	mixer = sfx_mixer_create();
@@ -35,9 +35,9 @@ void Sfx::init()
 	spec.size = 4*512;
 	spec.callback = Sfx_callback;
 	spec.userdata = mixer;
-	
+
 	int ret = SDL_OpenAudio(&spec, NULL);
-	
+
 	if(ret == 0)
 	{
 		initialized = true;

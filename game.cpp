@@ -52,7 +52,7 @@ void Game::onKey(uint32_t key, bool state)
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		Worm& w = *worms[i];
-		
+
 		for(std::size_t control = 0; control < WormSettings::MaxControl; ++control)
 		{
 			if(w.settings->controls[control] == key)
@@ -68,7 +68,7 @@ Worm* Game::findControlForKey(uint32_t key, Worm::Control& control)
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		Worm& w = *worms[i];
-		
+
 		uint32_t* controls = settings->extensions ? w.settings->controlsEx : w.settings->controls;
 		std::size_t maxControl = settings->extensions ? WormSettings::MaxControlEx : WormSettings::MaxControl;
 		for(std::size_t c = 0; c < maxControl; ++c)
@@ -80,7 +80,7 @@ Worm* Game::findControlForKey(uint32_t key, Worm::Control& control)
 			}
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -89,7 +89,7 @@ void Game::releaseControls()
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		Worm& w = *worms[i];
-		
+
 		for(std::size_t control = 0; control < WormSettings::MaxControl; ++control)
 		{
 			w.release(static_cast<Worm::Control>(control));
@@ -145,7 +145,7 @@ void Game::resetWorms()
 		w.kills = 0;
 		w.visible = false;
 		w.killedTimer = 150;
-		
+
 		w.currentWeapon = 1;
 	}
 }
@@ -165,7 +165,7 @@ void Game::draw(Renderer& renderer, bool isReplay)
 
 	for(int w = 0; w < 4; ++w)
 		renderer.pal.rotateFrom(renderer.origpal, common->colorAnim[w].from, common->colorAnim[w].to, cycles >> 3);
-	
+
 	renderer.pal.fade(renderer.fadeValue);
 
 	if(screenFlash > 0)
@@ -177,16 +177,16 @@ void Game::draw(Renderer& renderer, bool isReplay)
 bool checkBonusSpawnPosition(Game& game, int x, int y)
 {
 	gvl::rect rect(x - 2, y - 2, x + 3, y + 3);
-	
+
 	rect.intersect(game.level.rect());
-	
+
 	for(int cx = rect.x1; cx < rect.x2; ++cx)
 	for(int cy = rect.y1; cy < rect.y2; ++cy)
 	{
 		if(game.level.mat(cx, cy).dirtRock())
 			return false;
 	}
-	
+
 	return true;
 }
 
@@ -196,22 +196,22 @@ void Game::createBonus()
 
 	if(int(bonuses.size()) >= settings->maxBonuses)
 		return;
-		
+
 	for(std::size_t i = 0; i < 50000; ++i)
 	{
 		int ix = rand(LC(BonusSpawnRectW));
 		int iy = rand(LC(BonusSpawnRectH));
-		
+
 		if(common.H[HBonusSpawnRect])
 		{
 			ix += LC(BonusSpawnRectX);
 			iy += LC(BonusSpawnRectY);
 		}
-		
+
 		if(checkBonusSpawnPosition(*this, ix, iy))
 		{
 			int frame;
-			
+
 			if(common.H[HBonusOnlyHealth])
 				frame = 1;
 			else if(common.H[HBonusOnlyWeapon])
@@ -222,13 +222,13 @@ void Game::createBonus()
 			Bonus* bonus = bonuses.newObject();
 			if(!bonus)
 				return;
-			
+
 			bonus->x = itof(ix);
 			bonus->y = itof(iy);
 			bonus->velY = 0;
 			bonus->frame = frame;
 			bonus->timer = rand(common.bonusRandTimer[frame][1]) + common.bonusRandTimer[frame][0];
-			
+
 			if(frame == 0)
 			{
 				do
@@ -237,7 +237,7 @@ void Game::createBonus()
 				}
 				while(settings->weapTable[bonus->weapon] == 2);
 			}
-			
+
 			common.sobjectTypes[7].create(*this, ix, iy, 0, 0);
 			return;
 		}
@@ -268,30 +268,30 @@ void Game::processFrame()
 
 	if(screenFlash > 0)
 		--screenFlash;
-	
+
 	for(std::size_t i = 0; i < viewports.size(); ++i)
 	{
 		if(viewports[i]->shake > 0)
 			viewports[i]->shake -= 4000; // TODO: Read 4000 from exe?
 	}
-	
+
 	auto br = bonuses.all();
 	for (Bonus* i; (i = br.next()); )
 	{
 		i->process(*this);
 	}
-	
+
 	if((cycles & 1) == 0)
 	{
 		for(std::size_t i = 0; i < viewports.size(); ++i)
 		{
 			Viewport& v = *viewports[i];
-			
+
 			bool down = false;
-			
+
 			if(wormByIdx(v.wormIdx)->killedTimer > 16)
 				down = true;
-				
+
 			if(down)
 			{
 				if(v.bannerY < 2)
@@ -304,25 +304,25 @@ void Game::processFrame()
 			}
 		}
 	}
-	
+
 	auto sr = sobjects.all();
 	for (SObject* i; (i = sr.next()); )
 	{
 		i->process(*this);
 	}
-	
+
 	auto wr = wobjects.all();
 	for (WObject* i; (i = wr.next()); )
 	{
 		i->process(*this);
 	}
-	
+
 	auto nr = nobjects.all();
 	for (NObject* i; (i = nr.next()); )
 	{
 		i->process(*this);
 	}
-	
+
 	for(BObjectList::iterator i = bobjects.begin(); i != bobjects.end(); )
 	{
 		if(i->process(*this))
@@ -330,28 +330,28 @@ void Game::processFrame()
 		else
 			bobjects.free(i);
 	}
-	
+
 	// NOTE: This was originally the beginning of the processing, but has been rotated down to
 	// separate out the drawing
 	++cycles;
-	
+
 	if(!common->H[HBonusDisable]
 	&& settings->maxBonuses > 0
 	&& rand(common->C[CBonusDropChance]) == 0)
 	{
 		createBonus();
 	}
-		
+
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		worms[i]->process(*this);
 	}
-	
+
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		worms[i]->ninjarope.process(*worms[i], *this);
 	}
-	
+
 	switch(settings->gameMode)
 	{
 	case Settings::GMGameOfTag:
@@ -367,7 +367,7 @@ void Game::processFrame()
 		}
 
 		Worm* lastKilledBy = wormByIdx(lastKilledIdx);
-		
+
 		if(!someInvisible
 		&& lastKilledBy
 		&& (cycles % 70) == 0
@@ -417,7 +417,7 @@ void Game::processFrame()
 				 && holdazone.holderIdx != holdazone.contenderIdx)
 				{
 					// New holder
-					
+
 					int newTimeout = holdazone.timeoutLeft;
 					if (holdazone.contenderIdx >= 0)
 						newTimeout += settings->zoneTimeout * 70 / 4;
@@ -436,7 +436,7 @@ void Game::processFrame()
 		if (holdazone.holderIdx >= 0)
 		{
 			auto* holder = wormByIdx(holdazone.holderIdx);
-				
+
 			if ((cycles % 70) == 0)
 				++holder->timer;
 
@@ -457,15 +457,15 @@ void Game::processFrame()
 	}
 	break;
 	}
-	
+
 	processViewports();
-	
+
 	// Store old control states so we can see what changes (mainly for replays)
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		worms[i]->prevControlStates = worms[i]->controlStates;
 	}
-	
+
 	statsRecorder->tick(*this);
 }
 
@@ -477,7 +477,7 @@ void Game::focus(Renderer& renderer)
 void Game::updateSettings(Renderer& renderer)
 {
 	renderer.origpal = level.origpal; // Activate the Level palette
-	
+
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		Worm& worm = *worms[i];
@@ -616,7 +616,7 @@ void Game::doDamage(Worm& w, int amount, int byIdx)
 void Game::doHealing(Worm& w, int amount)
 {
 	doHealingDirect(w, amount);
-	
+
 	if (settings->gameMode == Settings::GMScalesOfJustice)
 	{
 		int parts = (int)worms.size() - 1;
@@ -638,39 +638,39 @@ void Game::doHealing(Worm& w, int amount)
 		if(w.health > w.settings->health)
 			w.health = w.settings->health;
 	}
-	
+
 }
 
 bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x, int y)
 {
 	Common& common = *game.common;
-	
+
 	int deltaX = oldX;
 	int deltaY = oldY - y;
 	int enemyDX = x2 - x;
 	int enemyDY = y2 - y;
-	
+
 	if((std::abs(deltaX) <= LC(WormMinSpawnDistLast) && std::abs(deltaY) <= LC(WormMinSpawnDistLast))
 	|| (std::abs(enemyDX) <= LC(WormMinSpawnDistEnemy) && std::abs(enemyDY) <= LC(WormMinSpawnDistEnemy)))
 		return false;
-		
+
 	int maxX = x + 3;
 	int maxY = y + 4;
 	int minX = x - 3;
 	int minY = y - 4;
-	
+
 	if(maxX >= game.level.width) maxX = game.level.width - 1;
 	if(maxY >= game.level.height) maxY = game.level.height - 1;
 	if(minX < 0) minX = 0;
 	if(minY < 0) minY = 0;
-	
+
 	for(int i = minX; i != maxX; ++i)
 	for(int j = minY; j != maxY; ++j)
 	{
 		if(game.level.mat(i, j).rock()) // TODO: The special rock respawn bug is here, consider an option to turn it off
 			return false;
 	}
-	
+
 	return true;
 }
 

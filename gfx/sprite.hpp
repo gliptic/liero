@@ -24,7 +24,7 @@ struct SpriteSet
 	int height;
 	int spriteSize;
 	int count;
-	
+
 	PalIdx* spritePtr(int frame)
 	{
 		assert(frame >= 0 && frame < count);
@@ -37,7 +37,7 @@ struct SpriteSet
 		Sprite s = {&data[frame*spriteSize], width, height, width};
 		return s;
 	}
-	
+
 	void allocate(int width, int height, int count);
 };
 

@@ -18,16 +18,16 @@ struct basic_vec<T, 2>
 {
 	typedef T manip_t;
 	typedef T coord_type;
-	
+
 	basic_vec()
 	: x(T(0)), y(T(0))
 	{ }
-	
+
 	template<class T2>
 	explicit basic_vec(basic_vec<T2, 2> const& b)
 	: x(static_cast<T>(b.x)), y(static_cast<T>(b.y))
 	{ }
-	
+
 	/// Vector from a to b.
 	///
 	basic_vec(basic_vec const& a, basic_vec const& b)
@@ -37,52 +37,52 @@ struct basic_vec<T, 2>
 	basic_vec(T const& x_, T const& y_)
 	: x(x_) , y(y_)
 	{ }
-	
+
 	template<class T2>
 	basic_vec(T2 const& x, T2 const& y)
 	: x(static_cast<T>(x)), y(static_cast<T>(y))
 	{ }
-	
+
 	void zero()
 	{
 		x = T(0); y = T(0);
 	}
-		
+
 	basic_vec& operator += (basic_vec const& rhs)
 	{
 		x += rhs.x; y += rhs.y;
 		return *this;
 	}
-	
+
 	basic_vec& operator -= (basic_vec const& rhs)
 	{
 		x -= rhs.x; y -= rhs.y;
 		return *this;
 	}
-	
+
 	basic_vec& operator *= (T rhs)
 	{
 		x *= rhs; y *= rhs;
 		return *this;
 	}
-	
+
 	basic_vec& operator /= (T rhs)
 	{
 		x /= rhs; y /= rhs;
 		return *this;
 	}
-	
+
 	friend basic_vec operator - (basic_vec const& self)
 	{
 		return basic_vec(-self.x, -self.y);
 	}
-	
+
 	basic_vec half() const
 	{ return basic_vec(x / T(2), y / T(2)); }
-		
+
 	T x;
 	T y;
-	
+
 };
 
 // Operations

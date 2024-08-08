@@ -32,7 +32,7 @@ unsigned tl_polar_code_lengths(tl_ord_freq const* symbols, uint32 num_syms, uint
 		for (i = start_index; i < num_syms; i++)
 		{
 			unsigned freq = tmp_freq[i];
-			if ((cur_total + freq) <= tree_total) 
+			if ((cur_total + freq) <= tree_total)
 			{
 				tmp_freq[i] += freq;
 				if ((cur_total += freq) == tree_total)
@@ -48,7 +48,7 @@ unsigned tl_polar_code_lengths(tl_ord_freq const* symbols, uint32 num_syms, uint
 	assert(cur_total == tree_total);
 
 	tree_total_bits = tl_top_bit(tree_total) + 1;
-	for (i = 0; i < num_syms; i++) 
+	for (i = 0; i < num_syms; i++)
 	{
 		unsigned codesize = (tree_total_bits - tl_top_bit(tmp_freq[i]) - 1);
 		max_code_size = tl_max(codesize, max_code_size);

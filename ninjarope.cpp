@@ -7,18 +7,18 @@
 void Ninjarope::process(Worm& owner, Game& game)
 {
 	Common& common = *game.common;
-	
+
 	if(out)
 	{
 		pos += vel;
-		
+
 		auto ipos = ftoi(pos);
-		
+
 		anchor = 0;
 		for(std::size_t i = 0; i < game.worms.size(); ++i)
 		{
 			Worm& w = *game.worms[i];
-			
+
 			if(&w != &owner
 			&& checkForSpecWormHit(game, ipos.x, ipos.y, 1, w))
 			{
@@ -26,15 +26,15 @@ void Ninjarope::process(Worm& owner, Game& game)
 				break;
 			}
 		}
-		
+
 		fixedvec diff = pos - owner.pos;
-		
+
 		fixedvec force(
 			(diff.x << LC(NRForceShlX)) / LC(NRForceDivX),
 			(diff.y << LC(NRForceShlY)) / LC(NRForceDivY));
-		
+
 		curLen = (vectorLength(ftoi(diff.x), ftoi(diff.y)) + 1) << LC(NRForceLenShl);
-		
+
 		if(ipos.x <= 0
 		|| ipos.x >= game.level.width - 1
 		|| ipos.y <= 0
@@ -45,7 +45,7 @@ void Ninjarope::process(Worm& owner, Game& game)
 			{
 				length = LC(NRAttachLength);
 				attached = true;
-				
+
 				if(game.level.inside(ipos))
 				{
 					if(game.level.mat(ipos).anyDirt())
@@ -65,7 +65,7 @@ void Ninjarope::process(Worm& owner, Game& game)
 					}
 				}
 			}
-			
+
 			vel.zero();
 		}
 		else if(anchor)
@@ -75,12 +75,12 @@ void Ninjarope::process(Worm& owner, Game& game)
 				length = LC(NRAttachLength); // TODO: Should this value be separate from the non-worm attaching?
 				attached = true;
 			}
-			
+
 			if(curLen > length)
 			{
 				anchor->vel -= force / curLen;
 			}
-			
+
 			vel = anchor->vel;
 			pos = anchor->pos;
 		}
@@ -88,7 +88,7 @@ void Ninjarope::process(Worm& owner, Game& game)
 		{
 			attached = false;
 		}
-		
+
 		if(attached)
 		{
 			// curLen can't be 0

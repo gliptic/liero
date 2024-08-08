@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
@@ -18,9 +18,9 @@
  *   1. Argument reduction:
  *	Given x, find r and integer k such that
  *
- *               x = k*ln2 + r,  |r| <= 0.5*ln2 ~ 0.34658  
+ *               x = k*ln2 + r,  |r| <= 0.5*ln2 ~ 0.34658
  *
- *      Here a correction term c will be computed to compensate 
+ *      Here a correction term c will be computed to compensate
  *	the error in r when rounded to a floating-point number.
  *
  *   2. Approximating fd_expm1(r) by a special rational function on
@@ -33,9 +33,9 @@
  *	    R1(r**2) = 6/r *((fd_exp(r)+1)/(fd_exp(r)-1) - 2/r)
  *		     = 6/r * ( 1 + 2.0*(1/(fd_exp(r)-1) - 1/r))
  *		     = 1 - r^2/60 + r^4/2520 - r^6/100800 + ...
- *      We use a special Reme algorithm on [0,0.347] to generate 
- * 	a polynomial of degree 5 in r*r to approximate R1. The 
- *	maximum error of this polynomial approximation is bounded 
+ *      We use a special Reme algorithm on [0,0.347] to generate
+ * 	a polynomial of degree 5 in r*r to approximate R1. The
+ *	maximum error of this polynomial approximation is bounded
  *	by 2**-61. In other words,
  *	    R1(z) ~ 1.0 + Q1*z + Q2*z**2 + Q3*z**3 + Q4*z**4 + Q5*z**5
  *	where 	Q1  =  -1.6666666666666567384E-2,
@@ -46,28 +46,28 @@
  *  	(where z=r*r, and the values of Q1 to Q5 are listed below)
  *	with error bounded by
  *	    |                  5           |     -61
- *	    | 1.0+Q1*z+...+Q5*z   -  R1(z) | <= 2 
+ *	    | 1.0+Q1*z+...+Q5*z   -  R1(z) | <= 2
  *	    |                              |
- *	
- *	fd_expm1(r) = fd_exp(r)-1 is then computed by the following 
- * 	specific way which minimize the accumulation rounding error: 
+ *
+ *	fd_expm1(r) = fd_exp(r)-1 is then computed by the following
+ * 	specific way which minimize the accumulation rounding error:
  *			       2     3
  *			      r     r    [ 3 - (R1 + R1*r/2)  ]
  *	      fd_expm1(r) = r + --- + --- * [--------------------]
  *		              2     2    [ 6 - r*(3 - R1*r/2) ]
- *	
+ *
  *	To compensate the error in the argument reduction, we use
- *		fd_expm1(r+c) = fd_expm1(r) + c + fd_expm1(r)*c 
- *			   ~ fd_expm1(r) + c + r*c 
+ *		fd_expm1(r+c) = fd_expm1(r) + c + fd_expm1(r)*c
+ *			   ~ fd_expm1(r) + c + r*c
  *	Thus c+r*c will be added in as the correction terms for
- *	fd_expm1(r+c). Now rearrange the term to avoid optimization 
+ *	fd_expm1(r+c). Now rearrange the term to avoid optimization
  * 	screw up:
  *		        (      2                                    2 )
  *		        ({  ( r    [ R1 -  (3 - R1*r/2) ]  )  }    r  )
  *	 fd_expm1(r+c)~r - ({r*(--- * [--------------------]-c)-c} - --- )
  *	                ({  ( 2    [ 6 - r*(3 - R1*r/2) ]  )  }    2  )
  *                      (                                             )
- *    	
+ *
  *		   = r - E
  *   3. Scale back to obtain fd_expm1(x):
  *	From step 1, we have
@@ -84,7 +84,7 @@
  *	       	       else	     return  1.0+2.0*(r-E);
  *	  (v)   if (k<-2||k>56) return 2^k(1-(E-r)) - 1 (or fd_exp(x)-1)
  *	  (vi)  if k <= 20, return 2^k((1-2^-k)-(E-r)), else
- *	  (vii) return 2^k(1-((E+2^-k)-r)) 
+ *	  (vii) return 2^k(1-((E+2^-k)-r))
  *
  * Special cases:
  *	fd_expm1(INF) is INF, fd_expm1(NaN) is NaN;
@@ -96,12 +96,12 @@
  *	1 ulp (unit in the last place).
  *
  * Misc. info.
- *	For IEEE double 
+ *	For IEEE double
  *	    if x >  7.09782712893383973096e+02 then fd_expm1(x) overflow
  *
  * Constants:
- * The hexadecimal values are the intended ones for the following 
- * constants. The decimal values may be used, provided that the 
+ * The hexadecimal values are the intended ones for the following
+ * constants. The decimal values may be used, provided that the
  * compiler will convert from decimal to binary accurately enough
  * to produce the hexadecimal values shown.
  */
@@ -132,7 +132,7 @@ double fd_expm1(double x)
 	if(hx >= 0x4043687A) {			/* if |x|>=56*ln2 */
 	    if(hx >= 0x40862E42) {		/* if |x|>=709.78... */
                 if(hx>=0x7ff00000) {
-		    if(((hx&0xfffff)|FD_LO(x))!=0) 
+		    if(((hx&0xfffff)|FD_LO(x))!=0)
 		         return gA(x,x); 	 /* NaN */
 		    else return (xsb==0)? x:-1.0;/* fd_exp(+-inf)={inf,-1} */
 	        }
@@ -145,7 +145,7 @@ double fd_expm1(double x)
 	}
 
     /* argument reduction */
-	if(hx > 0x3fd62e42) {		/* if  |x| > 0.5 ln2 */ 
+	if(hx > 0x3fd62e42) {		/* if  |x| > 0.5 ln2 */
 	    if(hx < 0x3FF0A2B2) {	/* and |x| < 1.5 ln2 */
 		if(xsb==0)
 		    {hi = gS(x, ln2_hi); lo =  ln2_lo;  k =  1;}
@@ -159,7 +159,7 @@ double fd_expm1(double x)
 	    }
 	    x  = gS(hi, lo);
 	    c  = gS(gS(hi,x),lo);
-	} 
+	}
 	else if(hx < 0x3c900000) {  	/* when |x|<2**-54, return x */
 	    t = gA(huge,x);	/* return x with inexact flags when x!=0 */
 	    return gS(x, gS(t, gA(huge, x)));
@@ -177,7 +177,7 @@ double fd_expm1(double x)
 	    e = gS(gM(x,gS(e, c)), c);
 	    e = gS(e, hxs);
 	    if(k== -1) return gS(gM(0.5, gS(x, e)), 0.5);
-	    if(k==1) 
+	    if(k==1)
 	       	if(x < -0.25) return gM(-2.0, gS(e, gA(x, 0.5)));
 	       	else 	      return   gA(one,  gM(2.0, gS(x, e)));
 	    if (k <= -2 || k>56) {   /* suffice to return fd_exp(x)-1 */

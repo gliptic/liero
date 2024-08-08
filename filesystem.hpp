@@ -49,7 +49,7 @@ struct DirectoryListing
 		subs = std::move(other.subs);
 		return *this;
 	}
-	
+
 	DirectoryListing(std::string const& dir);
 	DirectoryListing(std::vector<NodeName>&& subsInit);
 	~DirectoryListing();

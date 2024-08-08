@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
@@ -15,7 +15,7 @@
  * _kernel_cos( x,  y )
  * kernel fd_cos function on [-pi/4, pi/4], pi/4 ~ 0.785398164
  * Input x is assumed to be bounded by ~pi/4 in magnitude.
- * Input y is the tail of x. 
+ * Input y is the tail of x.
  *
  * Algorithm
  *	1. Since fd_cos(-x) = fd_cos(x), we need only to consider positive x.
@@ -25,15 +25,15 @@
  *		  	                 4            14
  *	   	fd_cos(x) ~ 1 - x*x/2 + C1*x + ... + C6*x
  *	   where the remez error is
- *	
+ *
  * 	|              2     4     6     8     10    12     14 |     -58
  * 	|fd_cos(x)-(1-.5*x +C1*x +C2*x +C3*x +C4*x +C5*x  +C6*x  )| <= 2
- * 	|    					               | 
- * 
- * 	               4     6     8     10    12     14 
+ * 	|    					               |
+ *
+ * 	               4     6     8     10    12     14
  *	4. let r = C1*x +C2*x +C3*x +C4*x +C5*x  +C6*x  , then
  *	       fd_cos(x) = 1 - x*x/2 + r
- *	   since fd_cos(x+y) ~ fd_cos(x) - fd_sin(x)*y 
+ *	   since fd_cos(x+y) ~ fd_cos(x) - fd_sin(x)*y
  *			  ~ fd_cos(x) - x*y,
  *	   a correction term is necessary in fd_cos(x) and hence
  *		fd_cos(x+y) = 1 - (x*x/2 - (r - x*y))
@@ -49,7 +49,7 @@
 #include "fdlibm.h"
 #include "fdlibm_intern.h"
 
-static const double 
+static const double
 C1  =  4.16666666666666019037e-02, /* 0x3FA55555, 0x5555554C */
 C2  = -1.38888888888741095749e-03, /* 0xBF56C16C, 0x16C15177 */
 C3  =  2.48015872894767294178e-05, /* 0x3EFA01A0, 0x19CB1590 */
@@ -67,7 +67,7 @@ FDLIBM_INTERNAL double _kernel_cos(double x, double y)
 	}
 	z = gM(x,x);
 	r = gM(z,gA(C1, gM(z,gA(C2, gM(z,gA(C3, gM(z,gA(C4, gM(z,gA(C5, gM(z,C6)))))))))));
-	if(ix < 0x3FD33333) 			/* if |x| < 0.3 */ 
+	if(ix < 0x3FD33333) 			/* if |x| < 0.3 */
 	    return gS(one, gS(gM(0.5,z), gS(gM(z,r), gM(x,y))));
 	else {
 	    if(ix > 0x3fe90000) {		/* x > 0.78125 */

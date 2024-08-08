@@ -126,7 +126,7 @@ struct InputState
 		return InputState(idx);
 	}
 
-	
+
 };
 
 typedef std::vector<InputState> Plan;
@@ -297,7 +297,7 @@ struct AiContext
 	, maxPresence(0)
 	{
 	}
-	
+
 	dijkstra_level dlevel;
 
 	CellState state[width][height];
@@ -409,7 +409,7 @@ struct FollowAI : WormAI, AiContext
 	void process(Game& game, Worm& worm);
 
 	void drawDebug(Game& game, Worm const& worm, Renderer& renderer, int offsX, int offsY);
-	
+
 	Rand rand;
 	int frame;
 	InputContext currentContext;
@@ -433,7 +433,7 @@ struct FollowAI : WormAI, AiContext
 #endif
 
 	Weights weights;
-	
+
 };
 
 #endif // LIERO_PREDICTIVE_AI_HPP

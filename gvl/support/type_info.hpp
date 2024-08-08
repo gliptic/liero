@@ -25,7 +25,7 @@ namespace gvl
  || (   defined(__sgi) && defined(__host_mips)) \
  || (defined(linux) && defined(__INTEL_COMPILER) && defined(__ICC))
 #  define BOOST_PYTHON_TYPE_ID_NAME
-# endif 
+# endif
 
 // type ids which represent the same information as std::type_info
 // (i.e. the top-level reference and cv-qualifiers are stripped), but
@@ -33,19 +33,19 @@ namespace gvl
 struct type_info
 {
     inline type_info(std::type_info const& = typeid(void));
-    
+
     inline bool operator<(type_info const& rhs) const;
     inline bool operator==(type_info const& rhs) const;
 
     char const* name() const;
-    
+
  private: // data members
 #  ifdef BOOST_PYTHON_TYPE_ID_NAME
     typedef char const* base_id_t;
 #  else
     typedef std::type_info const* base_id_t;
 #  endif
-    
+
     base_id_t m_base_type;
 };
 
@@ -73,7 +73,7 @@ inline bool type_info::operator<(type_info const& rhs) const
     return std::strcmp(m_base_type, rhs.m_base_type) < 0;
 #  else
     return m_base_type->before(*rhs.m_base_type) != 0;
-#  endif 
+#  endif
 }
 
 inline bool type_info::operator==(type_info const& rhs) const
@@ -82,7 +82,7 @@ inline bool type_info::operator==(type_info const& rhs) const
     return !std::strcmp(m_base_type, rhs.m_base_type);
 #  else
     return *m_base_type == *rhs.m_base_type;
-#  endif 
+#  endif
 }
 
 

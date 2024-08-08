@@ -11,7 +11,7 @@ struct StatsRecorder : gvl::shared
 {
 	virtual void damagePotential(Worm* byWorm, WormWeapon* weapon, int hp);
 	virtual void damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp, bool hasHit);
-	
+
 	virtual void shot(Worm* byWorm, WormWeapon* weapon);
 	virtual void hit(Worm* byWorm, WormWeapon* weapon, Worm* toWorm);
 
@@ -102,7 +102,7 @@ struct WormStats
 	int damage, damageDealt, selfDamage;
 	Heatmap damageHm, presence;
 	int weaponChangeGood, weaponChangeBad;
-	
+
 	std::vector<WormFrameStats> wormFrameStats;
 
 	int spawnTime;
@@ -135,7 +135,7 @@ struct NormalStatsRecorder : StatsRecorder
 
 	void damagePotential(Worm* byWorm, WormWeapon* weapon, int hp);
 	void damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp, bool hasHit);
-	
+
 	void shot(Worm* byWorm, WormWeapon* weapon);
 	void hit(Worm* byWorm, WormWeapon* weapon, Worm* toWorm);
 
@@ -146,7 +146,7 @@ struct NormalStatsRecorder : StatsRecorder
 
 	void finish(Game& game);
 	void aiProcessTime(Worm* worm, uint64_t time);
-	
+
 
 	//void write(Common& common, gvl::stream_ptr sink);
 };

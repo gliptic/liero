@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 	SDL_SetModuleHandle(GetModuleHandle(NULL));
 
 	try
-	{	
+	{
 		return gameEntry(argc, argv);
 	}
 	catch(std::exception& ex)

@@ -399,7 +399,7 @@ int test_video()
 	int16_t silence[44100 / 25] = {0};
 
 	av_register_all();
-	
+
 	vidrec_init(&vidrec, "test.mpeg", 320, 200);
 
 	for (i = 0; i < 25 * 10; ++i)

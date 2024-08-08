@@ -17,7 +17,7 @@ void tl_polar_model_rebuild(tl_model* self)
 		symbols[i].sym = i;
 		symbols[i].freq = (self->symbols[i].freq + offset) >> shift;
 	}
-	
+
 	tl_sort_symbols(symbols, self->n);
 	max = tl_polar_code_lengths(symbols, self->n, lengths);
 

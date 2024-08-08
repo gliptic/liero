@@ -9,7 +9,7 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 	int valueWid = common.font.getDims(value);
 	if(centered)
 		x -= (wid >> 1);
-	
+
 	if(selected)
 	{
 		drawRoundedBox(gfx.screenBmp, x, y, 0, 7, wid);
@@ -22,16 +22,16 @@ void MenuItem::draw(Common& common, int x, int y, bool selected, bool disabled, 
 		if(hasValue)
 			common.font.drawText(gfx.screenBmp, value, x + valueOffsetX - (valueWid >> 1) + 3, y + 2, 0);
 	}
-	
+
 	PalIdx c;
-	
+
 	if(disabled)
 		c = disColour;
 	else if(selected)
 		c = disabled ? 7 : 168;
 	else
 		c = color;
-		
+
 	common.font.drawText(gfx.screenBmp, string, x + 2, y + 1, c);
 	if(hasValue)
 		common.font.drawText(gfx.screenBmp, value, x + valueOffsetX - (valueWid >> 1) + 2, y + 1, c);

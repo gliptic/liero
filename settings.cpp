@@ -51,25 +51,25 @@ Settings::Settings()
 , screenSync(true)
 {
 	std::memset(weapTable, 0, sizeof(weapTable));
-	
+
 	wormSettings[0].reset(new WormSettings);
 	wormSettings[1].reset(new WormSettings);
-	
+
 	wormSettings[0]->color = 32;
 	wormSettings[1]->color = 41;
-	
+
 	unsigned char defControls[2][7] =
 	{
 		{0x13, 0x21, 0x20, 0x22, 0x1D, 0x2A, 0x38},
 		{0xA0, 0xA8, 0xA3, 0xA5, 0x75, 0x90, 0x36}
 	};
-	
+
 	unsigned char defRGB[2][3] =
 	{
 		{26, 26, 63},
 		{15, 43, 15}
 	};
-	
+
 	for(int i = 0; i < 2; ++i)
 	{
 		for(int j = 0; j < 7; ++j)
@@ -94,7 +94,7 @@ bool Settings::load(FsNode node, Rand& rand)
 	{
 		auto reader = node.toOctetReader();
 		gvl::default_serialization_context context;
-	
+
 		gvl::toml::reader<gvl::octet_reader> ar(reader);
 
 		archive_text(*this, ar);
@@ -103,7 +103,7 @@ bool Settings::load(FsNode node, Rand& rand)
 	{
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -113,14 +113,14 @@ bool Settings::loadLegacy(FsNode node, Rand& rand)
 	{
 		auto reader = node.toOctetReader();
 		gvl::default_serialization_context context;
-	
+
 		archive_liero(in_archive_t(reader, context), *this, rand);
 	}
 	catch (std::runtime_error&)
 	{
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -128,9 +128,9 @@ gvl::gash::value_type& Settings::updateHash()
 {
 	gvl::default_serialization_context context;
 	gvl::hash_accumulator<gvl::gash> ha;
-	
+
 	archive(gvl::out_archive<gvl::hash_accumulator<gvl::gash>, gvl::default_serialization_context>(ha, context), *this);
-	
+
 	ha.flush();
 	hash = ha.final();
 	return hash;
@@ -151,16 +151,16 @@ void Settings::generateName(WormSettings& ws, Rand& rand)
 	try
 	{
 		ReaderFile f(FsNode(joinPath(configRoot, "NAMES.DAT")).read());
-	
+
 		std::vector<std::string> names;
-	
+
 		std::size_t len = f.len;
-	
+
 		// TODO: This is a bit silly since we switched to ReaderFile
 		std::vector<char> chars(len);
-	
+
 		f.get(reinterpret_cast<uint8_t*>(&chars[0]), len);
-	
+
 		std::size_t begin = 0;
 		for(std::size_t i = 0; i < len; ++i)
 		{
@@ -171,11 +171,11 @@ void Settings::generateName(WormSettings& ws, Rand& rand)
 				{
 					names.push_back(std::string(chars.begin() + begin, chars.begin() + i));
 				}
-			
+
 				begin = i + 1;
 			}
 		}
-	
+
 		if(!names.empty())
 		{
 			ws.name = names[rand(uint32_t(names.size()))];

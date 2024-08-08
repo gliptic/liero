@@ -26,7 +26,7 @@ struct MainMenu : Menu
 	: Menu(x, y)
 	{
 	}
-	
+
 	virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item);
 };
 

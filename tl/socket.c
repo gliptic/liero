@@ -110,15 +110,15 @@ static char** copy_list(char** p)
 	char** n;
 	for(; p[l]; ++l)
 		/* nothing */;
-	
+
 	n = new char*[l + 1];
 	for(i = 0; i < l; ++i)
 	{
 		n[i] = copy_string(p[i]);
 	}
-	
+
 	n[l] = 0;
-	
+
 	return n;
 }
 
@@ -129,16 +129,16 @@ static char** copy_list_l(char** p, size_t len)
 	char** n;
 	for(; p[l]; ++l)
 		/* nothing */;
-	
+
 	n = new char*[l + 1];
 	for(i = 0; i < l; ++i)
 	{
 		n[i] = new char[len];
 		std::memcpy(n[i], p[i], len);
 	}
-	
+
 	n[l] = 0;
-	
+
 	return n;
 }
 
@@ -153,9 +153,9 @@ static void free_list(char** p)
 struct host_entry_storage : host_entry_impl
 {
 	hostent v;
-	
+
 	~host_entry_storage();
-	
+
 	void* storage()
 	{ return &v; }
 };
@@ -181,10 +181,10 @@ host_entry_storage::~host_entry_storage()
 host_entry* resolve_host(char const* name)
 {
 	hostent* p = gethostbyname( name ); // TODO: This is deprecated IIRC
-	
+
 	if(!p)
 		return 0; // ERROR
-	
+
 	return create_host_entry(p);
 }
 
@@ -275,11 +275,11 @@ tl_socket tl_accept(tl_socket s, tl_internet_addr* addr)
 int tl_connect(tl_socket s, tl_internet_addr* addr)
 {
 	int r = connect(tl_native_socket(s), get_sockaddr(addr), sizeof(sockaddr_in)); // TODO: Some way to get size from addr
-	
+
 	if(r == error_ret)
 	{
 		int err = error();
-		
+
 		#if TL_WIN32==1
 			if(err != sckerr_would_block)
 		#else
@@ -287,7 +287,7 @@ int tl_connect(tl_socket s, tl_internet_addr* addr)
 		#endif
 				return 0; // ERROR
 	}
-		
+
 	return 1;
 }
 
@@ -300,7 +300,7 @@ static int translate_comm_ret(int ret)
 	else if(ret == error_ret || ret < 0)
 	{
 		int err = error();
-		
+
 #if 0
 		if(err != sckerr_would_block)
 			printf("Sockerr: %d\n", err);
@@ -312,21 +312,21 @@ static int translate_comm_ret(int ret)
 		default: return tl_failure;
 		}
 	}
-	
+
 	return ret;
 }
 
 int tl_send(tl_socket s, void const* msg, size_t len)
 {
 	int ret = send(tl_native_socket(s), (char const*)msg, (int)len, 0);
-	
+
 	return translate_comm_ret(ret);
 }
 
 int tl_recv(tl_socket s, void* msg, size_t len)
 {
 	int ret = recv(tl_native_socket(s), (char*)msg, (int)len, 0);
-	
+
 	return translate_comm_ret(ret);
 }
 
@@ -338,7 +338,7 @@ int tl_sendto(tl_socket s, void const* msg, size_t len, tl_internet_addr const* 
 		(int)len, 0,
 		get_sockaddr_c(dest),
 		sizeof(sockaddr));
-	
+
 	return translate_comm_ret(ret);
 }
 
@@ -351,7 +351,7 @@ int tl_recvfrom(tl_socket s, void* msg, size_t len, tl_internet_addr* src)
 		(int)len, 0,
 		get_sockaddr(src),
 		&fromlen);
-	
+
 	return translate_comm_ret(ret);
 }
 
@@ -403,7 +403,7 @@ void tl_internet_addr_init_name(tl_internet_addr* self, char const* name, int po
 	if(p)
 	{
 		sockaddr_in* s = get_sockaddr_in(self);
-		
+
 		memmove(&s->sin_addr, p->h_addr_list[0], p->h_length);
 		s->sin_family = p->h_addrtype;
 		s->sin_port = htons((u_short)port);
@@ -417,7 +417,7 @@ void tl_internet_addr_init_from_socket(tl_internet_addr* self, tl_socket s)
 	clear_initialized(self);
 
 	t = sizeof(sockaddr_in);
-	
+
 	if(getsockname(tl_native_socket(s), (sockaddr*)&addr, &t) != error_ret)
 	{
 		*get_sockaddr_in(self) = addr;
@@ -430,7 +430,7 @@ void tl_internet_addr_init_empty(tl_internet_addr* self)
 	clear_initialized(self);
 
 	s = get_sockaddr_in(self);
-	
+
 	s->sin_family = AF_INET;
 	s->sin_port = htons(0);
 	s->sin_addr.s_addr = htonl(INADDR_ANY);

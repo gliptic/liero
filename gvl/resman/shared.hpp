@@ -11,13 +11,13 @@ struct weak_ptr_common;
 struct shared
 {
 	friend struct weak_ptr_common;
-	
+
 	shared()
 	: _ref_count(1), _first(0)
 	{
 
 	}
-	
+
 	// const to allow shared_ptr<T const>
 	void add_ref() const
 	{
@@ -28,7 +28,7 @@ struct shared
 		++_ref_count;
 #endif
 	}
-	
+
 	// const to allow shared_ptr<T const>
 	void release() const
 	{
@@ -45,7 +45,7 @@ struct shared
 				read_ref_count = _ref_count;
 			}
 			while(!cas(&_ref_count, read_ref_count, read_ref_count - 1));
-			
+
 			if(read_ref_count - 1 == 0)
 			{
 				_clear_weak_ptrs();
@@ -61,7 +61,7 @@ struct shared
 		}
 #endif
 	}
-	
+
 	void swap(shared& b)
 	{
 		std::swap(_ref_count, b._ref_count);
@@ -74,17 +74,17 @@ struct shared
 	virtual ~shared()
 	{
 	}
-	
+
 private:
 	void _delete() const
 	{
 		delete this;
 	}
-	
+
 	void _clear_weak_ptrs() const
 	{
 	}
-	
+
 	mutable int _ref_count; // You should be able to have shared_ptr<T const>
 	weak_ptr_common* _first;
 };

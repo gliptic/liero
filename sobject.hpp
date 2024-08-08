@@ -13,7 +13,7 @@ struct WObject;
 struct SObjectType
 {
 	void create(Game& game, int x, int y, int ownedIdx, WormWeapon* firedBy, WObject* from = 0);
-	
+
 	int startSound;
 	int numSounds;
 	int animDelay;
@@ -26,7 +26,7 @@ struct SObjectType
 	int shake;
 	int flash;
 	int dirtEffect;
-	
+
 	int id;
 	std::string idStr;
 };
@@ -34,7 +34,7 @@ struct SObjectType
 struct SObject : ExactObjectListBase
 {
 	void process(Game& game);
-	
+
 	int x, y;
 	int id; // type
 	int curFrame;

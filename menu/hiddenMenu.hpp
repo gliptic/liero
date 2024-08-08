@@ -27,13 +27,13 @@ struct HiddenMenu : Menu
 		AiParallels,
 		AllowViewingSpawnPoint,
 	};
-	
+
 	HiddenMenu(int x, int y)
 	: Menu(x, y)
 	, paletteColor(0)
 	{
 	}
-	
+
 	virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item);
 
 	virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected, bool disabled);

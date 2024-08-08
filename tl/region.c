@@ -10,7 +10,7 @@ void* tl_region_alloc_newblock(tl_region* r, size_t rounded_size) {
 	r->first_block = bl;
 	r->cur = ALIGN_PTR(bl->mem);
 	r->end = (char*)((size_t)bl + 4096);
-	
+
 	ret = r->cur;
 	r->cur += rounded_size;
 	return ret;

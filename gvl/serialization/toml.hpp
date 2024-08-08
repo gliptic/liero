@@ -95,7 +95,7 @@ struct writer
 			beginf(name);
 
 		func();
-		
+
 		if (name)
 			endf();
 
@@ -134,7 +134,7 @@ struct writer
 			w << "]]\r\n";
 			++indent;
 			inObject = true;
-			
+
 			func(e);
 			--indent;
 		}
@@ -227,7 +227,7 @@ struct writer
 		return *this;
 	}
 
-	
+
 };
 
 enum type
@@ -755,7 +755,7 @@ struct reader
 
 			next();
 			skipallws();
-			
+
 			while (c != ']')
 			{
 				a.v.emplace_back(val());

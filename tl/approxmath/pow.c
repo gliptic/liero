@@ -28,7 +28,7 @@ float am_powf(float x, float y)
 		addss	xmm7, xmm3
 		subss	xmm0, xmm3
 		mov		edx, temp
-		rcpss	xmm7, xmm7  
+		rcpss	xmm7, xmm7
 		mulss	xmm0, xmm7
 		addss	xmm0, xmm0
 
@@ -61,7 +61,7 @@ float am_powf(float x, float y)
 		addss	xmm6, xmm7
 
 		mulss	xmm4, xmm2
-		rcpss	xmm6, xmm6  
+		rcpss	xmm6, xmm6
 
 		mulss	xmm6, xmm0
 		mulss	xmm4, xmm6
@@ -116,7 +116,7 @@ float am_powf(float x, float y)
 		mov 	temp, eax
 		subss	xmm6, xmm4
 		movss	xmm7, _ps_am_1
-		rcpss	xmm6, xmm6  
+		rcpss	xmm6, xmm6
 		mulss	xmm4, xmm6
 		movss	xmm0, temp
 		addss	xmm4, xmm4
@@ -156,7 +156,7 @@ __m128 __declspec(naked) __cdecl am_pow_ss(__m128 x, __m128 y)
 		addss	xmm7, xmm3
 		subss	xmm0, xmm3
 		mov		edx, [esp - 4]
-		rcpss	xmm7, xmm7  
+		rcpss	xmm7, xmm7
 		mulss	xmm0, xmm7
 		addss	xmm0, xmm0
 
@@ -189,7 +189,7 @@ __m128 __declspec(naked) __cdecl am_pow_ss(__m128 x, __m128 y)
 		addss	xmm6, xmm7
 
 		mulss	xmm4, xmm2
-		rcpss	xmm6, xmm6  
+		rcpss	xmm6, xmm6
 
 		mulss	xmm6, xmm0
 		mulss	xmm4, xmm6
@@ -244,7 +244,7 @@ __m128 __declspec(naked) __cdecl am_pow_ss(__m128 x, __m128 y)
 		mov 	[esp - 4], eax
 		subss	xmm6, xmm4
 		movss	xmm7, _ps_am_1
-		rcpss	xmm6, xmm6  
+		rcpss	xmm6, xmm6
 		mulss	xmm4, xmm6
 		movss	xmm0, [esp - 4]
 		addss	xmm4, xmm4

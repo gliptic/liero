@@ -19,7 +19,7 @@ static int zbuild_huffman(zhuffman *z, uint8 *sizelist, int num)
 	// DEFLATE spec for generating codes
 	memset(sizes, 0, sizeof(sizes));
 	memset(z->fast, 255, sizeof(z->fast));
-	for (i=0; i < num; ++i) 
+	for (i=0; i < num; ++i)
 		++sizes[sizelist[i]];
 	sizes[0] = 0;
 	for (i=1; i < 16; ++i)
@@ -121,7 +121,7 @@ static int length_base[31] = {
    15,17,19,23,27,31,35,43,51,59,
    67,83,99,115,131,163,195,227,258,0,0 };
 
-static int length_extra[31]= 
+static int length_extra[31]=
 { 0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,0,0 };
 
 static int dist_base[32] = { 1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,
@@ -233,7 +233,7 @@ static int parse_zlib(tl_inflate_source* self, int parse_header)
 					}
 					CHECK(zbuild_huffman(&self->z_codelength, self->codelength_sizes, 19));
 
-					self->i = 0; 
+					self->i = 0;
 					while (self->i < self->hlit + self->hdist) {
 						unsigned int c;
 						YIELD_WE(9, zhuffman_decode(self, &self->z_codelength, &c));

@@ -10,7 +10,7 @@
 
 TL_API const uint8_t utf8d[364];
 
-TL_INLINE uint32_t 
+TL_INLINE uint32_t
 tl_utf8_decode(uint32_t* state, uint32_t* codep, uint32_t byte) {
   uint32_t type = utf8d[byte];
 

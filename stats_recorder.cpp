@@ -12,7 +12,7 @@ void StatsRecorder::damagePotential(Worm* byWorm, WormWeapon* weapon, int hp)
 void StatsRecorder::damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp, bool hasHit)
 {
 }
-	
+
 void StatsRecorder::shot(Worm* byWorm, WormWeapon* weapon)
 {
 }
@@ -91,7 +91,7 @@ void NormalStatsRecorder::damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* to
 		weap.totalHp += hp;
 	}
 }
-	
+
 void NormalStatsRecorder::shot(Worm* byWorm, WormWeapon* weapon)
 {
 	if (!byWorm || !weapon)
@@ -170,7 +170,7 @@ void NormalStatsRecorder::tick(Game& game)
 			{
 				ok = false;
 			}
-			
+
 			ws.weaponChangeGood += ok;
 			ws.weaponChangeBad += !ok;
 		}

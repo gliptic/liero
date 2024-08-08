@@ -7,19 +7,19 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
-/* 
+/*
  * wrapper fd_pow(x,y) return x**y
  */
 
 #include "fdlibm.h"
 #include "fdlibm_intern.h"
 
-static const double 
+static const double
 bp[] = {1.0, 1.5,},
 dp_h[] = { 0.0, 5.84962487220764160156e-01,}, /* 0x3FE2B803, 0x40000000 */
 dp_l[] = { 0.0, 1.35003920212974897128e-08,}, /* 0x3E4CFDEB, 0x43CFD006 */
@@ -60,12 +60,12 @@ double fd_pow(double x, double y)	/* wrapper fd_pow */
 	ix = hx&0x7fffffff;  iy = hy&0x7fffffff;
 
     /* y==zero: x**0 = 1 */
-	if((iy|ly)==0) return one; 	
+	if((iy|ly)==0) return one;
 
     /* +-NaN return x+y */
 	if(ix > 0x7ff00000 || ((ix==0x7ff00000)&&(lx!=0)) ||
-	   iy > 0x7ff00000 || ((iy==0x7ff00000)&&(ly!=0))) 
-		return gA(x,y);	
+	   iy > 0x7ff00000 || ((iy==0x7ff00000)&&(ly!=0)))
+		return gA(x,y);
 
     /* determine if y is an odd int when x < 0
      * yisint = 0	... y is not an integer
@@ -73,7 +73,7 @@ double fd_pow(double x, double y)	/* wrapper fd_pow */
      * yisint = 2	... y is an even int
      */
 	yisint  = 0;
-	if(hx<0) {	
+	if(hx<0) {
 	    if(iy>=0x43400000) yisint = 2; /* even integer y */
 	    else if(iy>=0x3ff00000) {
 		k = (iy>>20)-0x3ff;	   /* exponent */
@@ -84,11 +84,11 @@ double fd_pow(double x, double y)	/* wrapper fd_pow */
 		    j = iy>>(20-k);
 		    if((j<<(20-k))==iy) yisint = 2-(j&1);
 		}
-	    }		
-	} 
+	    }
+	}
 
     /* special value of y */
-	if(ly==0) { 	
+	if(ly==0) {
 	    if (iy==0x7ff00000) {	/* y is +-inf */
 	        if(((ix-0x3ff00000)|lx)==0)
 		    return gS(y, y);	/* inf**+-1 is NaN */
@@ -96,14 +96,14 @@ double fd_pow(double x, double y)	/* wrapper fd_pow */
 		    return (hy>=0)? y: zero;
 	        else			/* (|x|<1)**-,+inf = inf,0 */
 		    return (hy<0)?-y: zero;
-	    } 
+	    }
 	    if(iy==0x3ff00000) {	/* y is  +-1 */
 		if(hy<0) return gD(one,x); else return x;
 	    }
 	    if(hy==0x40000000) return gM(x,x); /* y is  2 */
 	    if(hy==0x3fe00000) {	/* y is  0.5 */
 		if(hx>=0)	/* x >= +0 */
-		return gSqrt(x);	
+		return gSqrt(x);
 	    }
 	}
 
@@ -116,13 +116,13 @@ double fd_pow(double x, double y)	/* wrapper fd_pow */
 		if(hx<0) {
 		    if(((ix-0x3ff00000)|yisint)==0) {
 			z = gD(gS(z,z), gS(z,z)); /* (-1)**non-int is NaN */
-		    } else if(yisint==1) 
+		    } else if(yisint==1)
 			z = -z;		/* (x<0)**odd = -(|x|**odd) */
 		}
 		return z;
 	    }
 	}
-    
+
     /* (x<0)**(non-int) is NaN */
 	if((((hx>>31)+1)|yisint)==0) return gD(gS(x,x),gS(x,x));
 
@@ -135,7 +135,7 @@ double fd_pow(double x, double y)	/* wrapper fd_pow */
 	/* over/underflow if x is not close to one */
 	    if(ix<0x3fefffff) return (hy<0)? gM(huge,huge):gM(tiny,tiny);
 	    if(ix>0x3ff00000) return (hy>0)? gM(huge,huge):gM(tiny,tiny);
-	/* now |1-x| is tiny <= 2**-20, suffice to compute 
+	/* now |1-x| is tiny <= 2**-20, suffice to compute
 	   fd_log(x) by x-x^2/2+x^3/3-x^4/4 */
 	    t = gS(x,1);		/* t has 20 trailing zeros */
 	    w = gM(gM(t,t),gS(0.5, gM(t,gS(0.3333333333333333333333, gM(t,0.25)))));
@@ -167,7 +167,7 @@ double fd_pow(double x, double y)	/* wrapper fd_pow */
 	    FD_LO(s_h) = 0;
 	/* t_h=ax+bp[k] High */
 	    t_h = zero;
-	    FD_HI(t_h)=((ix>>1)|0x20000000)+0x00080000+(k<<18); 
+	    FD_HI(t_h)=((ix>>1)|0x20000000)+0x00080000+(k<<18);
 	    t_l = gS(ax, gS(t_h, bp[k]));
 	    s_l = gM(v,gS(gS(u, gM(s_h,t_h)), gM(s_h,t_l)));
 	/* compute fd_log(ax) */
@@ -232,7 +232,7 @@ double fd_pow(double x, double y)	/* wrapper fd_pow */
 	    n = ((n&0x000fffff)|0x00100000)>>(20-k);
 	    if(j<0) n = -n;
 	    p_h = gS(p_h, t);
-	} 
+	}
 	t = gA(p_l,p_h);
 	FD_LO(t) = 0;
 	u = gM(t,lg2_h);

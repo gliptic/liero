@@ -26,7 +26,7 @@ void Menu::onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains)
 			{
 				bool wasEmpty = searchPrefix.empty();
 				auto newPrefix = searchPrefix;
-				
+
 				if (!isTab)
 					newPrefix += char(begin->unicode);
 				searchTime = time;
@@ -39,12 +39,12 @@ void Menu::onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains)
 				{
 					int i = (selection_ + offs) % (int)items.size();
 					auto const& menuString = items[i].string;
-					
+
 					if (items[i].visible
 					 && menuString.size() >= newPrefix.size())
 					{
 						bool result;
-						
+
 						if (contains)
 						{
 							result = std::search(menuString.begin(), menuString.end(), newPrefix.begin(), newPrefix.end(), [](char a, char b) {
@@ -57,7 +57,7 @@ void Menu::onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains)
 								return std::toupper((unsigned char)a) == std::toupper((unsigned char)b);
 							});
 						}
-					
+
 						if (result)
 						{
 							found = true;
@@ -88,39 +88,39 @@ void Menu::draw(Common& common, bool disabled, int x, bool showDisabledSelection
 
 	if (x < 0)
 		x = this->x;
-	
+
 	for(int c = itemFromVisibleIndex(topItem); itemsLeft > 0 && c < (int)items.size(); ++c)
 	{
 		MenuItem& item = items[c];
 		if(!item.visible)
 			continue;
-			
+
 		--itemsLeft;
-			
+
 		bool selected = (c == selection_) && (!disabled || showDisabledSelection);
-			
+
 		item.draw(common, x, curY, selected, disabled, centered, valueOffsetX);
 		drawItemOverlay(common, item, x, curY, selected, disabled);
-		
+
 		curY += itemHeight;
 	}
-	
+
 	if(visibleItemCount > height)
 	{
 		int menuHeight = height * itemHeight + 1;
-		
+
 		common.font.drawChar(gfx.screenBmp, 22, x - 6, y + 2, 0);
 		common.font.drawChar(gfx.screenBmp, 22, x - 7, y + 1, 50);
 		common.font.drawChar(gfx.screenBmp, 23, x - 6, y + menuHeight - 7, 0);
 		common.font.drawChar(gfx.screenBmp, 23, x - 7, y + menuHeight - 8, 50);
-		
+
 		int scrollBarHeight = menuHeight - 17;
-		
+
 		int scrollTabHeight = int(height*scrollBarHeight / visibleItemCount);
 		scrollTabHeight = std::min(scrollTabHeight, scrollBarHeight);
 		scrollTabHeight = std::max(scrollTabHeight, 0);
 		int scrollTabY = y + int(topItem * scrollBarHeight / visibleItemCount);
-		
+
 		fillRect(gfx.screenBmp, x - 7, scrollTabY + 9, 7, scrollTabHeight, 0);
 		fillRect(gfx.screenBmp, x - 8, scrollTabY + 8, 7, scrollTabHeight, 7);
 	}
@@ -155,7 +155,7 @@ bool Menu::itemPosition(MenuItem& item, int& x, int& y)
 	int index = int(&item - &items[0]);
 	if(!isInView(index))
 		return false;
-		
+
 	int visIdx = visibleItemIndex(index);
 	x = this->x;
 	y = this->y + (visIdx - topItem) * itemHeight;
@@ -167,9 +167,9 @@ void Menu::ensureInView(int item)
 	if(item < 0 || item >= (int)items.size()
 	|| !items[item].visible)
 		return; // Can't show items outside the menu or invisible items
-		
+
 	int visibleIndex = visibleItemIndex(item);
-	
+
 	if(visibleIndex < topItem)
 		setTop(visibleIndex);
 	else if(visibleIndex >= bottomItem)
@@ -185,7 +185,7 @@ int Menu::firstVisibleFrom(int item)
 			return (int)i;
 		}
 	}
-	
+
 	return (int)items.size();
 }
 
@@ -198,7 +198,7 @@ int Menu::lastVisibleFrom(int item)
 			return (int)i + 1;
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -209,7 +209,7 @@ int Menu::visibleItemIndex(int item)
 	{
 		if(!items[i].visible)
 			continue;
-		
+
 		if(i >= item)
 			break;
 		++idx;
@@ -223,7 +223,7 @@ int Menu::itemFromVisibleIndex(int idx)
 	{
 		if(!items[i].visible)
 			continue;
-		
+
 		if(idx == 0)
 			return i;
 		--idx;
@@ -234,7 +234,7 @@ int Menu::itemFromVisibleIndex(int idx)
 void Menu::setBottom(int newBottomVisIdx)
 {
 	setTop(newBottomVisIdx - height);
-	
+
 }
 
 void Menu::setTop(int newTopVisIdx)
@@ -258,7 +258,7 @@ void Menu::setVisibility(int id, bool state)
 		--visibleItemCount;
 	else if(!items[item].visible && state)
 		++visibleItemCount;
-		
+
 	int realTopItem = itemFromVisibleIndex(topItem);
 
 	items[item].visible = state;
@@ -266,7 +266,7 @@ void Menu::setVisibility(int id, bool state)
 	if(!items[selection()].visible)
 		movement(1);
 #endif
-	
+
 	setTop(visibleItemIndex(realTopItem));
 	ensureInView(selection());
 }
@@ -279,14 +279,14 @@ void Menu::scroll(int dir)
 void Menu::movementPage(int direction)
 {
 	int sel = visibleItemIndex(selection_);
-	
+
 	int offset = direction * (height/2);
 	sel += offset;
 	setTop(topItem + offset);
-	
+
 	sel = std::max(sel, 0);
 	sel = std::min(sel, visibleItemCount-1);
-	
+
 	moveTo(itemFromVisibleIndex(sel));
 }
 
@@ -302,7 +302,7 @@ void Menu::movement(int direction)
 				return;
 			}
 		}
-		
+
 		for(int i = (int)items.size() - 1; i > selection_; --i)
 		{
 			if(items[i].visible && items[i].selectable)
@@ -322,7 +322,7 @@ void Menu::movement(int direction)
 				return;
 			}
 		}
-		
+
 		for(int i = 0; i < selection_; ++i)
 		{
 			if(items[i].visible && items[i].selectable)

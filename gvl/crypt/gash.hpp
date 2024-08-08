@@ -16,15 +16,15 @@ template<int Length>
 struct hash_value
 {
 	static int const size = Length;
-	
+
 	uint64_t value[Length];
-	
+
 	hash_value()
 	{
 		for(int i = 0; i < Length; ++i)
 			value[i] = 0;
 	}
-	
+
 	bool operator!=(hash_value const& b) const
 	{
 		for(int i = 0; i < Length; ++i)
@@ -34,7 +34,7 @@ struct hash_value
 		}
 		return false;
 	}
-	
+
 	bool operator==(hash_value const& b) const
 	{
 		return !operator!=(b);
@@ -44,7 +44,7 @@ struct hash_value
 struct gash
 {
 	static int const block_size = 4;
-	
+
 	typedef hash_value<block_size> value_type;
 
 	gash()
@@ -57,26 +57,26 @@ struct gash
 			d[i] = accum;
 		}
 	}
-	
+
 	void process(uint64_t* n)
 	{
 		d[0] ^= n[0];
 		d[1] ^= n[1];
 		d[2] ^= n[2];
 		d[3] ^= n[3];
-		
+
 		for(int i = 0; i < 4; ++i)
 		{
 			round1();
 			round2();
 		}
-		
+
 		d[4] += n[0];
 		d[5] += n[1];
 		d[6] += n[2];
 		d[7] += n[3];
 	}
-	
+
 	void round1()
 	{
 		d[0] -= d[5];
@@ -85,15 +85,15 @@ struct gash
 		d[3] ^= d[0];
 		d[4] ^= d[1];
 		d[5] ^= d[2];
-		
+
 		d[6] = rot(d[6], 17);
 		d[7] = rot(d[7], 37);
-		
+
 		std::swap(d[0], d[4]);
 		std::swap(d[2], d[5]);
 		std::swap(d[3], d[7]);
 	}
-	
+
 
 	void round2()
 	{
@@ -103,10 +103,10 @@ struct gash
 		d[4] ^= d[7];
 		d[3] ^= d[6];
 		d[2] ^= d[5];
-		
+
 		d[0] = rot(d[0], 13);
 		d[1] = rot(d[1], 23);
-		
+
 		std::swap(d[1], d[2]);
 		std::swap(d[3], d[5]);
 		std::swap(d[7], d[0]);
@@ -121,7 +121,7 @@ struct gash
 		}
 		return ret;
 	}
-	
+
 	uint64_t d[8];
 };
 
@@ -137,13 +137,13 @@ struct hash_accumulator
 			dump_cur();
 		}
 	}
-	
+
 	void put(uint8_t const* p, std::size_t len)
 	{
 		for(std::size_t i = 0; i < len; ++i)
 			put(p[i]);
 	}
-	
+
 	void dump_cur()
 	{
 		bit_n = 64;
@@ -155,7 +155,7 @@ struct hash_accumulator
 			word_n = 0;
 		}
 	}
-	
+
 #if 0 // Untested
 	void ui32(uint32_t v)
 	{
@@ -176,7 +176,7 @@ struct hash_accumulator
 		}
 	}
 #endif
-	
+
 	void flush()
 	{
 		// Pad with one followed by zeroes
@@ -187,7 +187,7 @@ struct hash_accumulator
 		{
 			buf[word_n++] = cur;
 		}
-		
+
 		// Flush buf
 		if(word_n > 0)
 		{
@@ -198,29 +198,29 @@ struct hash_accumulator
 			}
 			hash_.process(buf);
 		}
-		
+
 		bit_n = 64;
 		word_n = 0;
 		cur = 0;
 	}
-	
+
 	typename Hash::value_type final() const
 	{
 		return hash_.final();
 	}
-	
+
 	hash_accumulator()
 	: bit_n(64)
 	, word_n(0)
 	, cur(0)
 	{
 	}
-	
+
 	Hash& hash()
 	{
 		return hash_;
 	}
-	
+
 	Hash hash_;
 	uint64_t buf[Hash::block_size];
 	int bit_n;

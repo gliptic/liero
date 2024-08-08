@@ -117,7 +117,7 @@ void archive(Archive ar, Worm& worm)
 	.i32(worm.reacts[1])
 	.i32(worm.reacts[2])
 	.i32(worm.reacts[3]);
-	
+
 	for(int i = 0; i < 5; ++i)
 	{
 		bool dummy = false;
@@ -127,15 +127,15 @@ void archive(Archive ar, Worm& worm)
 		.b(dummy)
 		.i32(worm.weapons[i].delayLeft)
 		.objref(worm.weapons[i].type, WeaponIdxRefCreator())
-		
+
 		.i32(worm.weapons[i].loadingLeft);
 	}
-	
+
 	ar.ui8(worm.direction);
-	
+
 	archive(ar, worm.controlStates);
 	archive(ar, worm.prevControlStates);
-	
+
 	ar.check();
 }
 
@@ -160,7 +160,7 @@ void archive(Archive ar, Viewport& vp)
 	;
 
 	uint32_t dummy = 0;
-	
+
 	// Dummys for unused rand
 	ar.ui32(dummy);
 	ar.ui32(dummy);
@@ -169,13 +169,13 @@ void archive(Archive ar, Viewport& vp)
 struct mtf
 {
 	uint8_t order[256];
-	
+
 	mtf()
 	{
 		for(int i = 0; i < 256; ++i)
 			order[i] = i;
 	}
-	
+
 	uint8_t byte_to_rank(uint8_t v)
 	{
 		for(int i = 0; i < 256; ++i)
@@ -183,15 +183,15 @@ struct mtf
 			if(order[i] == v)
 				return i;
 		}
-		
+
 		return 0; // Will never reach here
 	}
-	
+
 	uint8_t rank_to_byte(uint8_t v)
 	{
 		return order[v];
 	}
-	
+
 	void promote_rank(uint8_t rank)
 	{
 		uint8_t byte = order[rank];
@@ -224,7 +224,7 @@ void archive(in_archive_t ar, Level& level)
 	unsigned int w = gvl::read_uint16(ar.reader);
 	unsigned int h = gvl::read_uint16(ar.reader);
 	level.resize(w, h);
-	
+
 	if(ar.context.replayVersion > 1)
 		archive(ar, level.origpal);
 
@@ -247,7 +247,7 @@ void archive(in_archive_t ar, Level& level)
 		level_mtf.promote_rank(rank);
 	}
 #endif
-	
+
 	for(unsigned int i = 0; i < 256; ++i)
 	{
 		level.origpal.entries[i].r = ar.reader.get();
@@ -263,15 +263,15 @@ void archive(gvl::out_archive<Writer, GameSerializationContext> ar, Level& level
 	ar.ui16(level.height);
 	unsigned int w = level.width;
 	unsigned int h = level.height;
-	
+
 	if(ar.context.replayVersion > 1)
 		archive(ar, level.origpal);
-	
+
 #if 1
 	ar.writer.put(&level.data[0], w * h);
 #else
 	mtf level_mtf;
-	
+
 	for(unsigned int y = 0; y < h; ++y)
 	for(unsigned int x = 0; x < w; ++x)
 	{
@@ -281,7 +281,7 @@ void archive(gvl::out_archive<Writer, GameSerializationContext> ar, Level& level
 		level_mtf.promote_rank(rank);
 	}
 #endif
-	
+
 	for(unsigned int i = 0; i < 256; ++i)
 	{
 		ar.writer.put(level.origpal.entries[i].r);
@@ -296,23 +296,23 @@ void archive_worms(in_archive_t ar, Game& game)
 	while(ar.ui8(cont), cont)
 	{
 		//int wormId = ar.context.nextWormId++;
-		
+
 		Worm* worm;
 		ar.obj(worm, WormCreator());
-		
+
 		//printf("Worm ID %d: %s\n", wormId, worm->settings->name.c_str());
-		
+
 		//GameSerializationContext::WormData& data = ar.context.wormData[worm];
 
 		game.addWorm(worm);
 		//ar.context.idToWorm[wormId] = worm;
 	}
-	
+
 	while(ar.ui8(cont), cont)
 	{
 		Viewport* vp;
 		ar.fobj(vp, ViewportCreator());
-		
+
 		game.addViewport(vp);
 	}
 }
@@ -324,30 +324,30 @@ void archive_worms(gvl::out_archive<Writer, GameSerializationContext> ar, Game& 
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
 		Worm& worm = *game.worms[i];
-		
+
 		int wormId = ar.context.nextWormId++;
-		
+
 		//printf("Worm from game, ID %d: %s\n", wormId, worm.settings->name.c_str());
 		ar.context.idToWorm[wormId] = &worm;
 	}*/
-	
+
 	//for(GameSerializationContext::IdToWormMap::iterator i = ar.context.idToWorm.begin(); i != ar.context.idToWorm.end(); ++i)
 	for (auto* worm : game.worms)
 	{
 		ar.writer.put(1);
-		
+
 		//Worm* worm = i->second;
 		GameSerializationContext::WormData& data = ar.context.wormData[worm];
-		
+
 		ar.obj(worm, WormCreator());
-		
+
 		//printf("Worm ID %d: %s\n", i->first, worm->settings->name.c_str());
-		
+
 		data.settingsExpired = false; // We just serialized them, so they have to be up to date
-		
+
 	}
 	ar.writer.put(0);
-	
+
 	for(std::size_t i = 0; i < game.viewports.size(); ++i)
 	{
 		ar.writer.put(1);
@@ -361,7 +361,7 @@ template<typename Archive>
 void archive(Archive ar, Game& game)
 {
 	ar.context.game = &game;
-	
+
 	ar
 	.fobj(game.settings)
 	.i32(game.cycles)
@@ -369,9 +369,9 @@ void archive(Archive ar, Game& game)
 	.template obj<Worm>(game.lastKilledIdx, WormCreator(), WormIdxRefCreator())
 	.i32(game.screenFlash);
 	archive(ar, game.rand);
-	
+
 	archive_worms(ar, game);
-	
+
 	archive(ar, game.level);
 }
 
@@ -393,9 +393,9 @@ gvl::gash::value_type hash(T& x)
 {
 	GameSerializationContext context;
 	gvl::hash_accumulator<gvl::gash> ha;
-	
+
 	archive(gvl::out_archive<GameSerializationContext, gvl::hash_accumulator<gvl::gash> >(ha, context), x);
-	
+
 	ha.flush();
 	return ha.final();
 }
@@ -448,7 +448,7 @@ std::unique_ptr<Game> ReplayReader::beginPlayback(gvl::shared_ptr<Common> common
 	context.replayVersion = reader.get();
 	if(context.replayVersion > myReplayVersion)
 		throw gvl::archive_check_error("Replay version is too recent");
-	
+
 	gvl::shared_ptr<Settings> settings(new Settings);
 
 	std::unique_ptr<Game> game(new Game(common, settings, soundPlayer));
@@ -470,10 +470,10 @@ std::unique_ptr<Game> ReplayReader::beginPlayback(gvl::shared_ptr<Common> common
 
 	read(reader, context, *game);
 #ifdef DEBUG_REPLAYS
-	gvl::gash::value_type actualH = hash(*game);		
+	gvl::gash::value_type actualH = hash(*game);
 	gvl::gash::value_type expectedH;
 	read(reader, context, expectedH);
-	
+
 	if(actualH != expectedH)
 		printf("Differing hashes\n");
 #endif
@@ -484,7 +484,7 @@ void ReplayWriter::beginRecord(Game& game)
 {
 	gvl::write_uint32(writer, replayMagic);
 	writer.put(context.replayVersion);
-	
+
 	write(writer, context, game);
 	settingsExpired = false; // We just serialized them, so they have to be up to date
 
@@ -493,7 +493,7 @@ void ReplayWriter::beginRecord(Game& game)
 	game.common->trace_writer.attach(gvl::sink(new gvl::file_bucket_pipe("trace.dat", "wb")));
 	game.common->writeTrace = true;
 #endif
-	
+
 #ifdef DEBUG_REPLAYS
 	gvl::gash::value_type h = hash(game);
 	write(writer, context, h);
@@ -517,20 +517,20 @@ uint32_t fastGameChecksum(Game& game)
 		checksum ^= worm.pos.y;
 		checksum += worm.vel.y;
 	}
-	
+
 	return checksum;
 }
 
 bool ReplayReader::playbackFrame(Renderer& renderer)
 {
 	Game& game = *context.game;
-	
+
 	bool settingsChanged = false;
-	
+
 	while(true)
 	{
 		uint8_t first = reader.get();
-		
+
 		if(first == 0x80)
 			break;
 		else if(first == 0x81)
@@ -570,18 +570,18 @@ bool ReplayReader::playbackFrame(Renderer& renderer)
 
 				worm->controlStates.unpack(state ^ worm->prevControlStates.pack());
 			}
-			
+
 			break; // Read frame
 		}
 		else
 			throw gvl::archive_check_error("Unexpected header byte");
 	}
-	
+
 	if(settingsChanged)
 	{
 		game.updateSettings(renderer);
 	}
-	
+
 	if((game.cycles % (70 * 15)) == 0)
 	{
 		uint32_t expected = gvl::read_uint32(reader);
@@ -591,7 +591,7 @@ bool ReplayReader::playbackFrame(Renderer& renderer)
 			throw gvl::archive_check_error("Replay has desynced");
 #endif
 	}
-	
+
 #ifdef DEBUG_REPLAYS
 	uint32_t expected = gvl::read_uint32(reader);
 	uint32_t expected2 = gvl::read_uint32(reader);
@@ -607,7 +607,7 @@ bool ReplayReader::playbackFrame(Renderer& renderer)
 		throw gvl::archive_check_error("Descyned stream");
 	}
 #endif
-	
+
 	return true;
 }
 
@@ -615,16 +615,16 @@ bool ReplayReader::playbackFrame(Renderer& renderer)
 void ReplayWriter::recordFrame()
 {
 	Game& game = *context.game;
-	
+
 	if(settingsExpired)
 	{
 		writer.put(0x81);
 		write(writer, context, *context.game->settings);
 		settingsExpired = false;
 	}
-	
+
 	bool writeStates = false;
-	
+
 	if(game.worms.size() <= 3) // TODO: What limit do we want here? None?
 		writeStates = true;
 	else
@@ -636,7 +636,7 @@ void ReplayWriter::recordFrame()
 			{
 				writeStates = true;
 			}
-			
+
 			if(data.settingsExpired)
 			{
 				writer.put(0x82);
@@ -646,15 +646,15 @@ void ReplayWriter::recordFrame()
 			}
 		}
 	}
-	
+
 	if(writeStates)
 	{
 		for (auto* worm : game.worms)
 		{
 			uint8_t state = worm->controlStates.pack() ^ worm->prevControlStates.pack();
-			
+
 			sassert(state < 0x80);
-			
+
 			writer.put(state);
 		}
 	}
@@ -662,13 +662,13 @@ void ReplayWriter::recordFrame()
 	{
 		writer.put(0x80); // Bit 7 means empty frame
 	}
-	
+
 	if((game.cycles % (70 * 15)) == 0)
 	{
 		uint32_t checksum = fastGameChecksum(game);
 		gvl::write_uint32(writer, checksum);
 	}
-	
+
 #ifdef DEBUG_REPLAYS
 	gvl::gash::value_type actual = hash(game);
 	gvl::write_uint32(writer, (uint32_t)actual.value[0]);
@@ -684,7 +684,7 @@ void ReplayWriter::unfocus()
 	{
 		i->second.lastSettingsHash = i->first->settings->updateHash();
 	}
-	
+
 	lastSettingsHash = context.game->settings->updateHash();
 }
 
@@ -699,7 +699,7 @@ void ReplayWriter::focus()
 			i->second.settingsExpired = true;
 		}
 	}
-	
+
 	if(lastSettingsHash != context.game->settings->updateHash())
 		settingsExpired = true;
 }

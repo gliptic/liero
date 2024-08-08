@@ -134,7 +134,7 @@ void blitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int
 void blitImage(Bitmap& scr, Sprite spr, int x, int y)
 {
 	UNPACK_SPRITE(spr);
-	
+
 	CLIP_IMAGE(scr.clip_rect);
 
 	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
@@ -143,7 +143,7 @@ void blitImage(Bitmap& scr, Sprite spr, int x, int y)
 	{
 		PalIdx* rowdest = scrptr;
 		PalIdx* rowsrc = mem;
-		
+
 		for(int x = 0; x < width; ++x)
 		{
 			PalIdx c = *rowsrc;
@@ -161,7 +161,7 @@ void blitImage(Bitmap& scr, Sprite spr, int x, int y)
 void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase)
 {
 	UNPACK_SPRITE(spr);
-	
+
 	CLIP_IMAGE(scr.clip_rect);
 
 	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
@@ -170,7 +170,7 @@ void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase)
 	{
 		PalIdx* rowdest = scrptr;
 		PalIdx* rowsrc = mem;
-		
+
 		for(int x = 0; x < width; ++x)
 		{
 			PalIdx c = *rowsrc;
@@ -197,7 +197,7 @@ void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase)
 			++rowdest; } \
 		scrptr += scr.pitch; \
 		mem += pitch; } } while(false)
-		
+
 #define BLIT2(pixels, destpitch, body) do { \
 	PalIdx* scrptr = static_cast<PalIdx*>(pixels) + y*(destpitch) + x; \
 	for(int y_ = 0; y_ < height; ++y_)	{ \
@@ -242,7 +242,7 @@ void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase)
 void blitImageR(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height)
 {
 	int pitch = width;
-	
+
 	CLIP_IMAGE(scr.clip_rect);
 
 	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
@@ -251,7 +251,7 @@ void blitImageR(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height)
 	{
 		PalIdx* rowdest = scrptr;
 		PalIdx* rowsrc = mem;
-		
+
 		for(int x_ = 0; x_ < width; ++x_)
 		{
 			PalIdx c = *rowsrc;
@@ -271,23 +271,23 @@ void blitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y)
 	int width = 16;
 	int height = 16;
 	int pitch = width;
-	
+
 	CLIP_IMAGE(scr.clip_rect);
-	
+
 	switch(fc)
 	{
 		case 0:
 			BLIT( { if(c > 116) *rowdest = c - 5; } );
 		break;
-		
+
 		case 1:
 			BLIT( { if(c > 114) *rowdest = c - 3; } );
 		break;
-		
+
 		case 2:
 			BLIT( { if(c > 112) *rowdest = c - 1; } );
 		break;
-		
+
 		default:
 			BLIT( { if(c) *rowdest = c; } );
 		break;
@@ -301,9 +301,9 @@ void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int
 
 	LTRACE(blit, 0, xpos, x);
 	LTRACE(blit, 0, ypos, y);
-	
+
 	CLIP_IMAGE(clipRect);
-	
+
 	BLITL(&level.data[0], level.width, &level.materials[0],
 	{
 		if(c)
@@ -322,7 +322,7 @@ void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int
 void blitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int width, int height)
 {
 	int pitch = width;
-	
+
 	CLIP_IMAGE(scr.clip_rect);
 
 	PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
@@ -331,7 +331,7 @@ void blitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int
 	{
 		PalIdx* rowdest = scrptr;
 		PalIdx* rowsrc = mem;
-		
+
 		for(int x_ = 0; x_ < width; ++x_)
 		{
 			PalIdx c = *rowsrc;
@@ -351,14 +351,14 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 	int width = 16;
 	int height = 16;
 	int pitch = width;
-	
+
 	gvl::rect clip(0, 0, level.width, level.height);
-	
+
 	CLIP_IMAGE(clip);
-	
+
 	PalIdx* dest = level.pixelp(x, y);
 	Material* matdest = level.matp(x, y);
-	
+
 	if(p1)
 	{
 		for(int y_ = 0; y_ < height; ++y_)
@@ -366,7 +366,7 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 			PalIdx* rowdest = dest;
 			Material* rowmatdest = matdest;
 			PalIdx* rowsrc = mem;
-			
+
 			for(int x_ = 0; x_ < width; ++x_)
 			{
 				PalIdx c = *rowsrc;
@@ -394,7 +394,7 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 			PalIdx* rowdest = dest;
 			Material* rowmatdest = matdest;
 			PalIdx* rowsrc = mem;
-			
+
 			for(int x_ = 0; x_ < width; ++x_)
 			{
 				PalIdx c = *rowsrc;
@@ -403,7 +403,7 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 					*rowdest = c;
 					*rowmatdest = common.materials[c];
 				}
-				
+
 				++rowsrc;
 				++rowdest;
 				++rowmatdest;
@@ -425,16 +425,16 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 
 	LTRACE(draw, dirtEffect, xpos, x);
 	LTRACE(draw, dirtEffect, ypos, y);
-	
+
 	int width = 16;
 	int height = 16;
 	int pitch = width;
 	PalIdx* mem = mFrame;
 
 	gvl::rect clip(0, 0, level.width, level.height - 1);
-	
+
 	CLIP_IMAGE(clip);
-	
+
 	if(tex.nDrawBack)
 	{
 		BLITL(&level.data[0], level.width, &level.materials[0],
@@ -451,7 +451,7 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 					*rowmatdest = common.materials[*rowdest];
 				}
 			break;
-				
+
 			case 1:
 				Material m = *rowmatdest;
 				if(m.dirt2())
@@ -492,7 +492,7 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 					*rowmatdest = common.materials[2];
 				}
 			break;
-				
+
 			case 1:
 				if(rowmatdest->background())
 				{
@@ -507,7 +507,7 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 void correctShadow(Common& common, Level& level, gvl::rect rect)
 {
 	rect.intersect(gvl::rect(0, 3, level.width - 3, level.height));
-		
+
 	for(int x = rect.x1; x < rect.x2; ++x)
 	for(int y = rect.y1; y < rect.y2; ++y)
 	{
@@ -560,16 +560,16 @@ if(dx > dy) { \
 void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY)
 {
 	int color = LC(NRColourBegin);
-	
+
 	gvl::rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
-	
-	
+
+
 	DO_LINE({
 		if(++color == LC(NRColourEnd))
 			color = LC(NRColourBegin);
-			
+
 		if(clip.inside(cx, cy))
 			ptr[cy*pitch + cx] = color;
 	});
@@ -580,10 +580,10 @@ void drawLaserSight(Bitmap& scr, Rand& rand, int fromX, int fromY, int toX, int 
 	gvl::rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
-	
-	
+
+
 	DO_LINE({
-		
+
 		if(rand(5) == 0)
 		{
 			if(clip.inside(cx, cy))
@@ -597,8 +597,8 @@ void drawShadowLine(Common& common, Bitmap& scr, int fromX, int fromY, int toX, 
 	gvl::rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
-	
-	
+
+
 	DO_LINE({
 		if(clip.inside(cx, cy))
 		{
@@ -614,8 +614,8 @@ void drawLine(Bitmap& scr, int fromX, int fromY, int toX, int toY, int color)
 	gvl::rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
-	
-	
+
+
 	DO_LINE({
 		if(clip.inside(cx, cy))
 		{
@@ -675,7 +675,7 @@ void drawHeatmap(Bitmap& scr, int x, int y, Heatmap& hm)
 	std::map<int, int> mapping;
 	int cum = 0;
 	int maxIdx = 119 - 104 + 1;
-	
+
 	mapping[0] = 0;
 
 	for (auto& v : counts)
@@ -683,9 +683,9 @@ void drawHeatmap(Bitmap& scr, int x, int y, Heatmap& hm)
 		mapping[v.first] = int(104 + int64_t(cum) * maxIdx / totalPixels);
 		cum += v.second;
 	}
-	
+
 	CLIP_IMAGE(scr.clip_rect);
-	
+
 	BLIT3( {
 		int v = mapping[*mem];
 		*rowdest = v;
@@ -702,7 +702,7 @@ void scaleDraw(
 		{
 			PalIdx* line = src + y*srcPitch;
 			uint32_t* destLine = reinterpret_cast<uint32_t*>(dest + y*destPitch);
-					
+
 			for(int x = 0; x < w; ++x)
 			{
 				PalIdx pix = *line++;
@@ -717,12 +717,12 @@ void scaleDraw(
 			PalIdx* line = src + y*srcPitch;
 			int destMagPitch = mag*(int)destPitch;
 			uint8_t* destLine = dest + y*destMagPitch;
-						
+
 			for(int x = 0; x < w/4; ++x)
 			{
 				uint32_t pix = *reinterpret_cast<uint32_t*>(line);
 				line += 4;
-							
+
 				uint32_t a = pal32[pix >> 24];
 				uint32_t b = pal32[(pix & 0x00ff0000) >> 16];
 				uint32_t c = pal32[(pix & 0x0000ff00) >> 8];
@@ -776,18 +776,18 @@ void preparePaletteBgra(Color realPal[256], uint32_t (&pal32)[256])
 int fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY)
 {
 	int mag = 1;
-	
+
 	while(scrW*mag <= backW
 	   && scrH*mag <= backH)
 	   ++mag;
-	   
+
 	--mag; // mag was the first that didn't fit
-	
+
 	scrW *= mag;
 	scrH *= mag;
-	
+
 	offsetX = backW/2 - scrW/2;
 	offsetY = backH/2 - scrH/2;
-	   
-	return mag; 
+
+	return mag;
 }

@@ -11,18 +11,18 @@ struct path_node : gvl::pairing_node<path_node>
 		open,
 		closed
 	};
-	
+
 	path_node()
 	: parent(0)
 	, state(none)
 	{
 	}
-	
+
 	bool operator<(path_node const& b) const
 	{
 		return f < b.f;
 	}
-	
+
 	void update_cost(int g_new)
 	{
 		g = g_new;
@@ -33,10 +33,10 @@ struct path_node : gvl::pairing_node<path_node>
 	{
 		state = none;
 	}
-	
+
 	path_node* parent;
 	int state;
-	
+
 	int f, g, h; // TODO: Generic type
 };
 
@@ -47,14 +47,14 @@ struct astar_state
 
 	// open_list contains elements of nodes, so it's important that open_list is last
 	gvl::pairing_heap<path_node_t, std::less<path_node_t>, gvl::dummy_delete> open_list;
-	
+
 	void add_open(path_node_t* node)
 	{
 		sassert(node->state != path_node_t::open);
 		open_list.insert(node);
 		node->state = path_node_t::open;
 	}
-	
+
 	// get_node(NodeT) -> path_node_t*
 	// get_node_id(path_node_t*) -> NodeT
 
@@ -70,21 +70,21 @@ struct astar_state
 		//astar_state_t state;
 
 		DerivedT& derived = static_cast<DerivedT&>(*this);
-	
+
 		path_node_t* origin_pn = derived.get_node(origin);
 		origin_pn->h = heuristic(origin, target);
 		origin_pn->update_cost(0);
 		state.add_open(origin_pn);
-	
+
 		while(!state.open_list.empty())
 		{
 			path_node_t* min_pn = state.open_list.unlink_min();
 			NodeT min = derived.get_node_id(min_pn);
-		
+
 			if(min == target)
 			{
 				// Success, output result
-			
+
 				do
 				{
 					*result = derived.get_node_id(min_pn);
@@ -92,18 +92,18 @@ struct astar_state
 					min_pn = min_pn->parent;
 				}
 				while(min_pn);
-			
+
 				return true;
 			}
-		
+
 			min_pn->state = path_node_t::closed;
-		
+
 			succ_iter.begin(min);
-		
+
 			// TODO: We can avoid adding/updating one node if it's better than the
 			// best node in open_list. We simply save it and pretend we got it
 			// from the open_list in the next iteration. Is this useful? I suppose not.
-		
+
 			for(; succ_iter; ++succ_iter)
 			{
 				NodeT node = succ_iter.node();
@@ -127,7 +127,7 @@ struct astar_state
 				}
 			}
 		}
-	
+
 		return false;
 	}
 };
@@ -144,27 +144,27 @@ struct level_cell_succ
 		i = 0;
 		this->c = c;
 	}
-	
+
 	void operator++()
 	{
 		++i;
 	}
-	
+
 	operator bool() const
 	{
 		return i < 8;
 	}
-	
+
 	int node()
 	{
-		
+
 	}
-	
+
 	int cost()
 	{
 		return edges[i].cost;
 	}
-	
+
 	level_cell* c;
 	int i;
 };
@@ -238,7 +238,7 @@ struct astar_level : astar_state<level_cell*, astar_level>
 					}
 				}
 			done:
-				
+
 				level_cell* c = cell(lx, ly);
 
 				c->cost = cost;

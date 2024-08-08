@@ -40,7 +40,7 @@ void* mem_reserve() {
 	printf("%p, %d\n", guard, GetLastError());
 
 	char* ptr = (char*)guard + range / 2;
-	
+
 	return ptr;
 
 }

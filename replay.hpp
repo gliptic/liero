@@ -21,25 +21,25 @@ struct GameSerializationContext : gvl::serialization_context<GameSerializationCo
 	, replayVersion(myReplayVersion)
 	{
 	}
-	
+
 	struct WormData
 	{
 		WormData()
 		: settingsExpired(true)
 		{
 		}
-		
+
 		gvl::gash::value_type lastSettingsHash;
 		bool settingsExpired;
 	};
-	
+
 	int version()
 	{
 		return replayVersion;
 	}
-	
+
 	typedef std::map<Worm*, WormData> WormDataMap;
-	
+
 	Game* game;
 	WormDataMap wormData;
 	int replayVersion;
@@ -50,25 +50,25 @@ struct Replay
 	Replay()
 	{
 	}
-	
+
 	GameSerializationContext context;
-	
+
 };
 
 struct ReplayWriter : Replay
 {
 	ReplayWriter(gvl::sink str_init);
 	~ReplayWriter();
-	
+
 	void unfocus();
 	void focus();
-	
+
 	//gvl::filter_ptr str;
 	//gvl::octet_stream_writer writer;
 	gvl::octet_writer writer;
 	gvl::gash::value_type lastSettingsHash;
 	bool settingsExpired;
-	
+
 	void beginRecord(Game& game);
 	void recordFrame();
 private:
@@ -80,20 +80,20 @@ struct Renderer;
 struct ReplayReader : Replay
 {
 	ReplayReader(gvl::source str_init);
-	
+
 	void unfocus()
 	{
 		// Nothing
 	}
-	
+
 	void focus()
 	{
 		// Nothing
 	}
-	
+
 	std::unique_ptr<Game> beginPlayback(gvl::shared_ptr<Common> common, gvl::shared_ptr<SoundPlayer> soundPlayer);
 	bool playbackFrame(Renderer& renderer);
-	
+
 	gvl::octet_reader reader;
 };
 

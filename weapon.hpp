@@ -20,7 +20,7 @@ struct Weapon
 		STDType2,
 		STLaser
 	};
-	
+
 	void fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, int ownerIdx, WormWeapon* ww) const;
 
 	int detectDistance;
@@ -72,9 +72,9 @@ struct Weapon
 	int partTrailObj;
 	int partTrailDelay;
 	bool chainExplosion;
-	
+
 	int computedLoadingTime(Settings& settings) const;
-	
+
 	int id;
 	std::string name;
 	std::string idStr;
@@ -84,7 +84,7 @@ struct WObject : ExactObjectListBase
 {
 	void blowUpObject(Game& game, int causeIdx);
 	void process(Game& game);
-	
+
 	fixedvec pos, vel;
 	//int id;
 	Weapon const* type;

@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  *
@@ -25,7 +25,7 @@
 #undef fflush
 #endif	/* !defined(_USE_WRITE) */
 
-/* 
+/*
  * Standard conformance (non-IEEE) on fd_exception cases.
  * Mapping:
  *	1 -- fd_acos(|x|>1)
@@ -50,7 +50,7 @@
  *	20-- fd_pow(0.0,0.0)
  *	21-- fd_pow(x,y) overflow
  *	22-- fd_pow(x,y) underflow
- *	23-- fd_pow(0,negative) 
+ *	23-- fd_pow(0,negative)
  *	24-- fd_pow(neg,non-integral)
  *	25-- fd_sinh(fd_finite) overflow
  *	26-- fd_sqrt(negative)
@@ -72,10 +72,10 @@
  *	42-- fd_pow(NaN,0.0)
  */
 
-FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type) 
+FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
 {
 	struct fd_exception exc;
-#ifndef HUGE_VAL	/* this is the only routine that uses HUGE_VAL */ 
+#ifndef HUGE_VAL	/* this is the only routine that uses HUGE_VAL */
 #define HUGE_VAL inf
 	double inf = 0.0;
 
@@ -432,7 +432,7 @@ FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
 		/* 0**neg */
 		exc.type = FD_DOMAIN;
 		exc.name = "fd_pow";
-		if (FD_LIB_VERSION == FD_SVID_) 
+		if (FD_LIB_VERSION == FD_SVID_)
 		  exc.retval = zero;
 		else
 		  exc.retval = -HUGE_VAL;
@@ -449,11 +449,11 @@ FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
 		/* neg**non-integral */
 		exc.type = FD_DOMAIN;
 		exc.name = "fd_pow";
-		if (FD_LIB_VERSION == FD_SVID_) 
+		if (FD_LIB_VERSION == FD_SVID_)
 		    exc.retval = zero;
-		else 
+		else
 		    exc.retval = zero/zero;	/* X/Open allow NaN */
-		if (FD_LIB_VERSION == FD_POSIX_) 
+		if (FD_LIB_VERSION == FD_POSIX_)
 		   errno = EDOM;
 		else if (!fd_matherr(&exc)) {
 		  if (FD_LIB_VERSION == FD_SVID_) {
@@ -601,7 +601,7 @@ FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
                                 (void) WRITE2(": FD_TLOSS error\n", 14);
                         }
                         errno = ERANGE;
-                }        
+                }
 		break;
 	    case 35:
 		/* fd_y0(x>FD_X_TLOSS) */
@@ -616,7 +616,7 @@ FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
                                 (void) WRITE2(": FD_TLOSS error\n", 14);
                         }
                         errno = ERANGE;
-                }        
+                }
 		break;
 	    case 36:
 		/* fd_j1(|x|>FD_X_TLOSS) */
@@ -631,7 +631,7 @@ FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
                                 (void) WRITE2(": FD_TLOSS error\n", 14);
                         }
                         errno = ERANGE;
-                }        
+                }
 		break;
 	    case 37:
 		/* fd_y1(x>FD_X_TLOSS) */
@@ -646,7 +646,7 @@ FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
                                 (void) WRITE2(": FD_TLOSS error\n", 14);
                         }
                         errno = ERANGE;
-                }        
+                }
 		break;
 	    case 38:
 		/* fd_jn(|x|>FD_X_TLOSS) */
@@ -661,7 +661,7 @@ FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
                                 (void) WRITE2(": FD_TLOSS error\n", 14);
                         }
                         errno = ERANGE;
-                }        
+                }
 		break;
 	    case 39:
 		/* fd_yn(x>FD_X_TLOSS) */
@@ -676,7 +676,7 @@ FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
                                 (void) WRITE2(": FD_TLOSS error\n", 14);
                         }
                         errno = ERANGE;
-                }        
+                }
 		break;
 	    case 40:
 		/* fd_gamma(fd_finite) overflow */
@@ -722,5 +722,5 @@ FDLIBM_INTERNAL double _kernel_standard(double x, double y, int type)
 		}
 		break;
 	}
-	return exc.retval; 
+	return exc.retval;
 }

@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  *
@@ -24,7 +24,7 @@
 extern int fd_signgam;
 
 
-static const double 
+static const double
 two52=  4.50359962737049600000e+15, /* 0x43300000, 0x00000000 */
 a0  =  7.72156649015328655494e-02, /* 0x3FB3C467, 0xE37DB0C8 */
 a1  =  3.22467033424113591611e-01, /* 0x3FD4A34C, 0xC4A60FAD */
@@ -120,9 +120,9 @@ static double sin_pi(double x)
         }
 	switch (n) {
 	    case 0:   y =  _kernel_sin(gM(pi, y),zero,0); break;
-	    case 1:   
+	    case 1:
 	    case 2:   y =  _kernel_cos(gM(pi, gS(0.5,y)),zero); break;
-	    case 3:  
+	    case 3:
 	    case 4:   y =  _kernel_sin(gM(pi, gS(one,y)),zero,0); break;
 	    case 5:
 	    case 6:   y = -_kernel_cos(gM(pi, gS(y,1.5)),zero); break;
@@ -190,7 +190,7 @@ static double _ieee754_lgamma_r(double x, int *signgamp)
 		p3 = gA(t2, gM(w,gA(t5, gM(w,gA(t8, gM(w,gA(t11, gM(w,t14))))))));
 		p  = gS(gM(z,p1), gS(tt, gM(w,gA(p2, gM(y,p3)))));
 		r  = gA(r, gA(tf, p)); break;
-	      case 2:	
+	      case 2:
 		p1 =         gM(y,gA(u0, gM(y,gA(u1, gM(y,gA(u2, gM(y,gA(u3, gM(y,gA(u4, gM(y,u5)))))))))));
 		p2 = gA(one, gM(y,gA(v1, gM(y,gA(v2, gM(y,gA(v3, gM(y,gA(v4, gM(y,v5))))))))));
 		r  = gA(r, gA(gM(-0.5,y), gD(p1,p2)));
@@ -219,7 +219,7 @@ static double _ieee754_lgamma_r(double x, int *signgamp)
 	    y = gM(z,z);
 	    w = gA(w0, gM(z,gA(w1, gM(y,gA(w2, gM(y,gA(w3, gM(y,gA(w4, gM(y,gA(w5, gM(y,w6))))))))))));
 	    r = gA(gM(gS(x,half),gS(t,one)), w);
-	} else 
+	} else
     /* 2**58 <= x <= inf */
 	    r =  gM(x,gS(fd_log(x), one));
 	if(hx<0) r = gS(nadj, r);
@@ -235,17 +235,17 @@ static double _ieee754_gamma_r(double x, int *signgamp)
 double fd_gamma(double x)
 {
 	return _ieee754_gamma_r(x,&fd_signgam);
-}             
+}
 
 double fd_gamma_r(double x, int *signgamp) /* wrapper fd_lgamma_r */
 {
 	return _ieee754_gamma_r(x,signgamp);
-}             
+}
 
 double fd_lgamma(double x)
 {
 	return _ieee754_lgamma_r(x,&fd_signgam);
-}             
+}
 
 double fd_lgamma_r(double x, int *signgamp) /* wrapper fd_lgamma_r */
 {

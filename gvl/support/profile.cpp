@@ -16,33 +16,33 @@ struct profile_manager
 {
 	typedef std::map<int, profile_counter*> counter_line_map_t;
 	typedef std::map<int, profile_timer*> timer_line_map_t;
-	
+
 	struct function_def
 	{
 		counter_line_map_t counters;
 		timer_line_map_t timers;
 	};
-	
+
 	static profile_manager& instance()
 	{
 		static profile_manager instance_;
 		return instance_;
 	}
-	
+
 	void register_counter(profile_counter* c)
 	{
 		function_map[c->func].counters[c->line] = c;
 	}
-	
+
 	void register_timer(profile_timer* c)
 	{
 		function_map[c->func].timers[c->line] = c;
 	}
-	
+
 	void present(std::ostream& str);
-	
+
 	typedef std::map<std::string, function_def> function_map_t;
-	
+
 	std::vector<profile_counter*> counters;
 	function_map_t function_map;
 };
@@ -98,9 +98,9 @@ void profile_manager::present(std::ostream& str)
 			{
 				double time = l->second->total_time / 1000.0;
 				str << std::setw(10);
-				
+
 				format_time(str, time);
-				
+
 				str << " " << l->second->desc; // << ":" << l->first;
 				if(l->second->count > 1)
 				{

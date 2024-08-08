@@ -6,19 +6,19 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
 /*
- * for non-zero x 
+ * for non-zero x
  *	x = fd_frexp(arg,&fd_exp);
  * return a double fp quantity x such that 0.5 <= |x| <1.0
  * and the corresponding binary exponent "fd_exp". That is
  *	arg = x*2^fd_exp.
- * If arg is inf, 0.0, or NaN, then fd_frexp(arg,&fd_exp) returns arg 
- * with *fd_exp=0. 
+ * If arg is inf, 0.0, or NaN, then fd_frexp(arg,&fd_exp) returns arg
+ * with *fd_exp=0.
  */
 
 #include "fdlibm.h"

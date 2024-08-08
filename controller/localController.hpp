@@ -24,11 +24,11 @@ struct LocalController : CommonController
 		StateGame,
 		StateGameEnded
 	};
-	
+
 	LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings);
 	~LocalController();
 	void onKey(int key, bool keyState);
-	
+
 	// Called when the controller loses focus. When not focused, it will not receive key events among other things.
 	void unfocus();
 	// Called when the controller gets focus.
@@ -41,7 +41,7 @@ struct LocalController : CommonController
 	Level* currentLevel();
 	Game* currentGame();
 	bool running();
-	
+
 	Game game;
 	std::unique_ptr<WeaponSelection> ws;
 	State state;

@@ -9,7 +9,7 @@ struct Game;
 struct BObject
 {
 	bool process(Game& game);
-	
+
 	fixedvec pos, vel;
 	int color;
 };

@@ -83,12 +83,12 @@ try
 
 	return 0;
 #endif
-	
+
 	bool tcSet = false;
-	
+
 	std::string tcName;
 	std::string configPath; // Default to current dir
-	
+
 	for(int i = 1; i < argc; ++i)
 	{
 		if(argv[i][0] == '-')
@@ -114,14 +114,14 @@ try
 			tcSet = true;
 		}
 	}
-	
+
 	if(!tcSet)
 		tcName = "Liero v1.33";
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK);
-	
+
 	initKeys();
-	
+
 	precomputeTables();
 
 	gfx.loadMenus();
@@ -137,7 +137,7 @@ try
 	common->load(std::move(lieroRoot));
 	gfx.common = common;
 	gfx.loadPalette(*common); // This gets the palette from common
-	
+
 	if(!gfx.loadSettings(configNode / "liero.cfg"))
 	{
 		if(!gfx.loadSettingsLegacy(configNode / "LIERO.DAT"))
@@ -146,19 +146,19 @@ try
 			gfx.saveSettings(configNode / "liero.cfg");
 		}
 	}
-	
+
 	gfx.setVideoMode();
 	sfx.init();
-	
+
 	gfx.mainLoop();
-	
+
 	gfx.settings->save(configNode / "liero.cfg", gfx.rand);
-	
+
 	sfx.deinit();
 	SDL_Quit();
-	
+
 	//gvl::present_profile(std::cout);
-	
+
 	return 0;
 }
 catch(std::exception&)

@@ -25,12 +25,12 @@ struct deflate_source : bucket_pipe, octet_reader
 		str.zalloc = 0;
 		str.zfree = 0;
 		str.opaque = 0;
-		
+
 		if (compress)
 			mz_deflateInit(&str, MZ_DEFAULT_COMPRESSION);
 		else
 			mz_inflateInit(&str);
-		
+
 		str.avail_in = 0;
 		str.avail_out = 0;
 
@@ -144,7 +144,7 @@ struct deflate_source : bucket_pipe, octet_reader
 	{
 		if (empty())
 			return source_result::eos;
-			
+
 		while (true)
 		{
 			if (str.avail_in == 0)
@@ -173,12 +173,12 @@ struct deflate_source : bucket_pipe, octet_reader
 			if (str.avail_out == 0)
 			{
 				cur_out->size_ = str.next_out - cur_out->data;
-				
+
 				return source_result::ok;
 			}
 
 			int ret;
-			
+
 			if (compress)
 				ret = mz_deflate(&str, deflate_flags);
 			else
@@ -198,7 +198,7 @@ struct deflate_source : bucket_pipe, octet_reader
 			else if (deflate_flags == MZ_SYNC_FLUSH && str.avail_in == 0)
 			{
 				cur_out->size_ = str.next_out - cur_out->data;
-				
+
 				return source_result::ok;
 			}
 		}

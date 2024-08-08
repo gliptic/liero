@@ -79,7 +79,7 @@ __m128 __declspec(naked) __cdecl am_exp_ss(__m128 x)
 		movss	xmm0, [esp - 4]
 
 		subss	xmm6, xmm4
-		rcpss	xmm6, xmm6  
+		rcpss	xmm6, xmm6
 		movss	xmm7, _ps_am_1
 		mulss	xmm4, xmm6
 		addss	xmm4, xmm4
@@ -209,7 +209,7 @@ __m128 __declspec(naked) __cdecl am_exp2_ss(__m128 x)
 		mov 	[esp - 4], eax
 		subss	xmm6, xmm4
 		movss	xmm7, _ps_am_1
-		rcpss	xmm6, xmm6  
+		rcpss	xmm6, xmm6
 		mulss	xmm4, xmm6
 		movss	xmm0, [esp - 4]
 		addss	xmm4, xmm4

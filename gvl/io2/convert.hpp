@@ -16,7 +16,7 @@ struct basic_text_writer
 {
 	DerivedT& derived()
 	{ return *static_cast<DerivedT*>(this); }
-	
+
 	DerivedT const& derived() const
 	{ return *static_cast<DerivedT const*>(this); }
 };
@@ -45,9 +45,9 @@ inline prepared_division const& get_base_divider(int base)
 		prepared_division(34), prepared_division(35),
 		prepared_division(36)
 	};
-	
+
 	sassert(base >= 2 && base <= 36);
-	
+
 	return base_dividers[base-2];
 }*/
 
@@ -60,23 +60,23 @@ int uint_to_ascii(Writer& writer, T x, int base = 10, int min_digits = 1, bool u
 {
 	if(base < 2 || base > 36)
 		return -1;
-		
+
 	prepared_division div = get_base_divider(base);
-	
+
 	std::size_t const buf_size = sizeof(T) * CHAR_BIT;
 	uint8_t digits[buf_size];
 	uint8_t* e = digits + buf_size;
 	uint8_t* p = e;
-	
+
 	uint8_t const* names = uppercase ? caps : no_caps;
-	
+
 	while(min_digits-- > 0 || x > 0)
 	{
 		std::pair<uint32_t, uint32_t> res(div.quot_rem(x));
 		*--p = names[res.second];
 		x = res.first;
 	}
-  
+
 	writer.put(p, e - p);
 	return 0;
 }*/
@@ -88,16 +88,16 @@ int uint_to_ascii_base(Writer& writer, T x, int min_digits = 1, bool uppercase =
 	uint8_t digits[buf_size];
 	uint8_t* e = digits + buf_size;
 	uint8_t* p = e;
-	
+
 	uint8_t const* names = uppercase ? caps : no_caps;
-	
+
 	while(min_digits-- > 0 || x > 0)
 	{
 		int n = x % Base;
 		*--p = names[n];
 		x /= Base;
 	}
-  
+
 	writer.put(p, e - p);
 	return 0;
 }
@@ -106,7 +106,7 @@ template<uint32_t Base, typename Writer, typename T>
 void int_to_ascii_base(Writer& writer, T x, int min_digits = 1, bool uppercase = false)
 {
 	typedef typename as_unsigned<T>::type unsigned_t;
-	
+
 	if(x < 0)
 	{
 		writer.put('-');
@@ -122,7 +122,7 @@ template<typename Writer, typename T>
 void int_to_ascii(Writer& writer, T x, int base = 10, int min_digits = 1, bool uppercase = false)
 {
 	typedef typename as_unsigned<T>::type unsigned_t;
-	
+
 	if(x < 0)
 	{
 		writer.put('-');
@@ -249,16 +249,16 @@ struct cell : basic_text_writer<cell>
 	, width(-1)
 	{
 	}
-	
+
 	cell(int width_init, placement text_placement_init)
 	: text_placement(text_placement_init)
 	, width(width_init)
 	{
 	}
-	
+
 	void put(uint8_t x)
 	{ buffer.push_back(x); }
-	
+
 	void put(uint8_t const* p, std::size_t len)
 	{
 		for(std::size_t i = 0; i < len; ++i)
@@ -271,7 +271,7 @@ struct cell : basic_text_writer<cell>
 	{
 		return *this;
 	}
-	
+
 	std::vector<uint8_t> buffer;
 	placement text_placement;
 	int width;

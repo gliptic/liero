@@ -141,14 +141,14 @@ void tyvm_compile(tyvm_module* M, u8 const* code, u8 const* code_end) {
 
 	WRITE_INSTR(c_mov_rk64(MEMBASE, 0));
 	data_ptr = LOC;
-	
+
 	WRITE_INSTR(c_mov_rk64(RCX, (u64)&M->org_stack_ptr));
 	WRITE_INSTR(c_wide(); c_mov_r(m_si_d32(RSP, RCX, SS_1, 0)));
 
 	for (i = 0; i < 8; ++i) {
 		WRITE_INSTR(c_xor(rq(REG(i), REG(i))));
 	}
-	
+
 	WRITE_INSTR(c_mov_rk64(RSP, (u64)mem));
 
 	for (; code + MAX_INSTR <= code_end; ) {
@@ -269,7 +269,7 @@ end_instr:
 
 		((u64*)data_ptr)[-1] = (u64)data;
 	}
-	
+
 
 	// TODO: Lock down machine code from writing
 
@@ -480,7 +480,7 @@ int r_reg(parser* P) {
 }
 
 void r_file(parser* P) {
-	
+
 
 	uint32_t pos = 0;
 	uint32_t next_label_pos = 0xffffffff;
@@ -529,11 +529,11 @@ void r_file(parser* P) {
 		}
 		case OP_JMP: {
 			u32 op;
-			
+
 			WRITE_OP(OP_JMP);
 			op = 0;
 			lex(P);
-			
+
 			if (P->token == T_IDENT) {
 				*P->dest++ = op;
 				P->dest += 4;
@@ -543,17 +543,17 @@ void r_file(parser* P) {
 				int jr = r_reg(P);
 				*P->dest++ = (jr << 5) | (1 << 4) | op;
 			}
-			
+
 			break;
 		}
 		case OP_JCND: {
 			int r, sr;
 			u32 op;
-			
+
 			WRITE_OP(OP_JCND);
 			op = P->tok_cnd - JCND_JO;
 			lex(P);
-			
+
 			r = r_reg(P);
 			expect(P, T_COMMA);
 			sr = r_reg(P);
@@ -569,7 +569,7 @@ void r_file(parser* P) {
 				*P->dest++ = (jr << 5) | (1 << 4) | op;
 				WRITE_REGOPS(r, sr);
 			}
-			
+
 			break;
 		}
 		case OP_ADD: {

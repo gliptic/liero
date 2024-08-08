@@ -47,12 +47,12 @@ struct LFS
 		seed(first, last);
 	}
 */
-	void seed(UIntType s0) 
+	void seed(UIntType s0)
 	{
 		assert(s0 >= (1 << (w-k)));
 		value = s0;
 	}
-	
+
 	/*
 	template<class It> void seed(It& first, It last)
 	{
@@ -69,7 +69,7 @@ struct LFS
 		value = ((value & mask) << s) ^ b;
 		return value;
 	}
-	
+
 	UIntType wordmask; // avoid "left shift count >= width of type" warnings
 	UIntType value;
 };

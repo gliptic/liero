@@ -6,27 +6,27 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
 /* fd_asinh(x)
  * Method :
- *	Based on 
+ *	Based on
  *		fd_asinh(x) = sign(x) * fd_log [ |x| + fd_sqrt(x*x+1) ]
  *	we have
  *	fd_asinh(x) := x  if  1+x*x=1,
  *		 := sign(x)*(fd_log(x)+ln2)) for large |x|, else
  *		 := sign(x)*fd_log(2|x|+1/(|x|+fd_sqrt(x*x+1))) if|x|>2, else
- *		 := sign(x)*fd_log1p(|x| + x^2/(1 + fd_sqrt(1+x^2)))  
+ *		 := sign(x)*fd_log1p(|x| + x^2/(1 + fd_sqrt(1+x^2)))
  */
 
 #include "fdlibm.h"
 #include "fdlibm_intern.h"
 
 double fd_asinh(double x)
-{	
+{
 	double t,w;
 	int hx,ix;
 	hx = FD_HI(x);
@@ -34,7 +34,7 @@ double fd_asinh(double x)
 	if(ix>=0x7ff00000) return x+x;	/* x is inf or NaN */
 	if(ix< 0x3e300000) {	/* |x|<2**-28 */
 	    if(gA(huge,x) > one) return x;	/* return x inexact except 0 */
-	} 
+	}
 	if(ix>0x41b00000) {	/* |x| > 2**28 */
 	    w = gA(fd_log(fd_fabs(x)), ln2);
 	} else if (ix>0x40000000) {	/* 2**28 > |x| > 2.0 */

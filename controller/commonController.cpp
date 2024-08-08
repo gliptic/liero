@@ -3,7 +3,7 @@
 
 #include "../gfx.hpp"
 
-CommonController::CommonController() 
+CommonController::CommonController()
 : frameSkip(1)
 , inverseFrameSkip(false)
 , cycles(0)
@@ -33,14 +33,14 @@ bool CommonController::process()
 		newFrameSkip = 256;
 	else if(gfx.testSDLKeyOnce(SDLK_0))
 		newFrameSkip = 512;
-		
+
 	if(newFrameSkip)
 	{
 		inverseFrameSkip = (gfx.testSDLKey(SDLK_RCTRL) || gfx.testSDLKey(SDLK_LCTRL));
 		frameSkip = newFrameSkip;
 	}
-	
+
 	++cycles;
-		
+
 	return true;
 }

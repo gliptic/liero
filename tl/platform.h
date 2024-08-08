@@ -105,7 +105,7 @@
 # if __STDC__
 #  define TL_STDC __STDC_VERSION__
 # else
-#  define TL_STDC 199409L 
+#  define TL_STDC 199409L
 # endif
 #endif
 

@@ -11,7 +11,7 @@ int CSint32desc[][3] =
 {
 	{CNRInitialLength, 0x32D7, 0x32DD},
 	{CNRAttachLength, 0xA679, 0xA67F},
-	
+
 	{0, -1, -1}
 };
 
@@ -34,22 +34,22 @@ int CSint24desc[][3] =
 	{CNinjaropeGravity, 0xA895, 0xA89B},
 	{CNRMinLength, 0x3206, 0x31FD},
 	{CNRMaxLength, 0x3229, 0x3220},
-	
+
 	{CBonusGravity, 0x72C3, 0x72C9},
 	{CBObjGravity, 0x744A, 0x7450},
-	
-	
-	
+
+
+
 	// WormFloat hack
 	{CWormFloatPower, 0x29DB, 0x29E1},
-	
+
 	{0, -1, -1}
 };
 
 int CUint16desc[][2] =
 {
 	{CBloodLimit, 0xE686},
-	
+
 	{0, -1}
 };
 
@@ -65,7 +65,7 @@ int CSint16desc[][2] =
 	{CWormSpawnRectH, 0x491D},
 	{CAimFricMult, 0x3003},
 	{CAimFricDiv, 0x300D},
-	
+
 	{CNRThrowVelX, 0x329B},
 	{CNRThrowVelY, 0x32BF},
 	{CNRForceShlX, 0xA8AD},
@@ -73,25 +73,25 @@ int CSint16desc[][2] =
 	{CNRForceShlY, 0xA8DA},
 	{CNRForceDivY, 0xA8E4},
 	{CNRForceLenShl, 0xA91E},
-	
+
 	{CBonusBounceMul, 0x731F},
 	{CBonusBounceDiv, 0x7329},
 	{CBonusFlickerTime, 0x87B8},
-	
+
 	{CBonusDropChance, 0xBECA},
 	{CSplinterLarpaVelDiv, 0x677D},
 	{CSplinterCracklerVelDiv, 0x67D0},
-	
-	
+
+
 	// WormFloat hack
 	{CWormFloatLevel, 0x29D3},
-	
+
 	// BonusSpawnRect hack
 	{CBonusSpawnRectX, 0x2319},
 	{CBonusSpawnRectY, 0x2327},
 	{CBonusSpawnRectW, 0x2311}, // This is used even when the hack isn't enabled
 	{CBonusSpawnRectH, 0x231F}, // -==-
-	
+
 	{0, -1}
 };
 
@@ -107,10 +107,10 @@ int CUint8desc[][2] =
 	{CBonusHealthVar, 0x2D56},
 	{CBonusMinHealth, 0x2D5D},
 	{CLaserWeapon, 0x7255},
-	
+
 	{CFirstBloodColour, 0x2388},
 	{CNumBloodColours, 0x2381},
-	
+
 	{CRemExpObject, 0x8F8B},
 
 	{0, -1}
@@ -120,16 +120,16 @@ int CSint8desc[][2] =
 {
 	{CNRPullVel, 0x31D0},
 	{CNRReleaseVel, 0x31F0},
-	
+
 	// FallDamage hack
 	{CFallDamageRight, 0x3A0E},
 	{CFallDamageLeft, 0x3A8B},
 	{CFallDamageDown, 0x3B08},
 	{CFallDamageUp, 0x3B85},
-	
+
 	{CBloodStepUp, 0xE67B},
 	{CBloodStepDown, 0xE68E},
-	
+
 	{0, -1}
 };
 
@@ -137,27 +137,27 @@ int Sstringdesc[][2] =
 {
 	{SInitSound, 0x177F},
 	{SLoadingSounds, 0x18F2},
-	
+
 	{SInit_BaseIO, 0x17DD},
 	{SInit_IRQ, 0x17E5},
 	{SInit_DMA8, 0x17EE},
 	{SInit_DMA16, 0x17F8},
-	
+
 	{SInit_DSPVersion, 0x181E},
 	{SInit_Colon, 0x182B},
 	{SInit_16bit, 0x182F},
 	{SInit_Autoinit, 0x1840},
-	
+
 	{SInit_XMSSucc, 0x189D},
-	
+
 	{SInit_FreeXMS, 0x18C5},
 	{SInit_k, 0x18D8},
-	
+
 	{SLoadingAndThinking, 0xFB92},
 	{SOK, 0xFBA8},
 	{SOK2, 0x190E},
 	{SPressAnyKey, 0xFBAB},
-	
+
 	{SCommittedSuicideMsg, 0xE70C},
 	{SKilledMsg, 0xE71F},
 	{SYoureIt, 0x75C5},
@@ -183,7 +183,7 @@ int Sstringdesc[][2] =
 	{SWeapon, 0xD700},
 	{SAvailability, 0xD707},
 	{SNoWeaps, 0xD714},
-	
+
 	{0, -1}
 };
 
@@ -199,14 +199,14 @@ int hFallDamageInd[][2] =
 	{0x3A87, 0x26},
 	{0x3B04, 0x26},
 	{0x3B81, 0x26},
-	
+
 	{-1, 0}
 };
 
 int hBonusReloadOnlyInd[][2] =
 {
 	{0x2DB1, 0xEB}, // We check one byte only, because ProMode has a silly jump destination
-	
+
 	{-1, 0}
 };
 
@@ -214,7 +214,7 @@ int hBonusSpawnRectInd[][2] =
 {
 	{0x2318, 0x05}, // These are the first bytes of the add instructions that offset the spawn
 	{0x2323, 0x05},
-	
+
 	{-1, 0}
 };
 
@@ -222,7 +222,7 @@ int hBonusOnlyHealthInd[][2] =
 {
 	{0x228B, 0xB0},
 	{0x228C, 0x02},
-	
+
 	{-1, 0}
 };
 
@@ -230,14 +230,14 @@ int hBonusOnlyWeaponInd[][2] =
 {
 	{0x228B, 0xB0},
 	{0x228C, 0x01},
-	
+
 	{-1, 0}
 };
 
 int hBonusDisableInd[][2] =
 {
 	{0xBED3, 0xEB},
-	
+
 	{-1, 0}
 };
 
@@ -245,7 +245,7 @@ int hWormFloatInd[][2] =
 {
 	{0x29D7, 0x26}, // 0x26 is the first byte of the sub instruction
 	{0x29DA, 0x34}, // 0x34 is the offset to part of velY of the worm
-	
+
 	{-1, 0}
 };
 
@@ -385,7 +385,7 @@ void loadConstants(Common& common, ReaderFile& exe)
 		int32_t b = (int16_t)gvl::read_uint16_le(exe);
 		common.C[CSint32desc[i][0]] = a + (b << 16);
 	}
-	
+
 	for(int i = 0; CSint24desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint24desc[i][1]);
@@ -394,36 +394,36 @@ void loadConstants(Common& common, ReaderFile& exe)
 		int32_t b = (int8_t)exe.get();
 		common.C[CSint24desc[i][0]] = a + (b << 16);
 	}
-	
+
 	for(int i = 0; CSint16desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint16desc[i][1]);
 		common.C[CSint16desc[i][0]] = (int16_t)gvl::read_uint16_le(exe);
 	}
-	
+
 	for(int i = 0; CUint16desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CUint16desc[i][1]);
 		common.C[CUint16desc[i][0]] = gvl::read_uint16_le(exe);
 	}
-	
+
 	for(int i = 0; CSint8desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint8desc[i][1]);
 		common.C[CSint8desc[i][0]] = (int8_t)exe.get();
 	}
-	
+
 	for(int i = 0; CUint8desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CUint8desc[i][1]);
 		common.C[CUint8desc[i][0]] = exe.get();
 	}
-	
+
 	for(int i = 0; Sstringdesc[i][1] >= 0; ++i)
 	{
 		common.S[Sstringdesc[i][0]] = readPascalStringAt(exe, Sstringdesc[i][1]);
 	}
-	
+
 	for(int i = 0; Hhackdesc[i].indicators; ++i)
 	{
 		int (*ind)[2] = Hhackdesc[i].indicators;
@@ -438,7 +438,7 @@ void loadConstants(Common& common, ReaderFile& exe)
 				break;
 			}
 		}
-		
+
 		common.H[Hhackdesc[i].which] = active;
 	}
 }
@@ -447,12 +447,12 @@ void loadConstants(Common& common, ReaderFile& exe)
 void loadPalette(Common& common, ReaderFile& exe)
 {
 	exe.seekg(132774);
-	
+
 	for(int i = 0; i < 256; ++i)
 	{
 		unsigned char rgb[3];
 		exe.get(reinterpret_cast<uint8_t*>(rgb), 3);
-		
+
 		common.exepal.entries[i].r = rgb[0] & 63;
 		common.exepal.entries[i].g = rgb[1] & 63;
 		common.exepal.entries[i].b = rgb[2] & 63;
@@ -470,29 +470,29 @@ void loadPalette(Common& common, ReaderFile& exe)
 void loadMaterials(Common& common, ReaderFile& exe)
 {
 	exe.seekg(0x01C2E0);
-	
+
 	for(int i = 0; i < 256; ++i)
 	{
 		common.materials[i].flags = 0;
 	}
-	
+
 	unsigned char bits[32];
-	
+
 	for(int i = 0; i < 5; ++i)
 	{
 		exe.get(reinterpret_cast<uint8_t*>(bits), 32);
-		
+
 		for(int j = 0; j < 256; ++j)
 		{
 			int bit = ((bits[j >> 3] >> (j & 7)) & 1);
 			common.materials[j].flags |= bit << i;
 		}
 	}
-	
+
 	exe.seekg(0x01AEA8);
-	
+
 	exe.get(reinterpret_cast<uint8_t*>(bits), 32);
-	
+
 	for(int j = 0; j < 256; ++j)
 	{
 		int bit = ((bits[j >> 3] >> (j & 7)) & 1);
@@ -562,7 +562,7 @@ inline void readMembers(ReaderFile& f, std::vector<T>& arr, U (T::*mem))
 void loadWeapons(Common& common, ReaderFile& exe)
 {
 	exe.seekg(112806);
-	
+
 	readMembers<Read8>(exe, common.weapons, &Weapon::detectDistance);
 	readMembers<ReadBool>(exe, common.weapons, &Weapon::affectByWorm);
 	readMembers<Read8>(exe, common.weapons, &Weapon::blowAway);
@@ -613,7 +613,7 @@ void loadWeapons(Common& common, ReaderFile& exe)
 	readMembers<Read8>(exe, common.weapons, &Weapon::partTrailType);
 	readMembers<Dec<Read8> >(exe, common.weapons, &Weapon::partTrailObj);
 	readMembers<Read8>(exe, common.weapons, &Weapon::partTrailDelay);
-	
+
 	exe.seekg(0x1B676);
 	for(int i = 0; i < 40; ++i)
 	{
@@ -622,7 +622,7 @@ void loadWeapons(Common& common, ReaderFile& exe)
 		common.weapons[i].id = i;
 		common.weapons[i].chainExplosion = i == 34;
 	}
-	
+
 	// Special objects
 	exe.seekg(115218);
 	readMembers<Dec<Read8> >(exe, common.sobjectTypes, &SObjectType::startSound);
@@ -639,14 +639,14 @@ void loadWeapons(Common& common, ReaderFile& exe)
 	readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::shake);
 	readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::flash);
 	readMembers<Dec<Read8> >(exe, common.sobjectTypes, &SObjectType::dirtEffect);
-	
+
 	for(int i = 0; i < 14; ++i) // TODO: Unhardcode
 	{
 		common.sobjectTypes[i].id = i;
 	}
-	
+
 	exe.seekg(111430);
-	
+
 	readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::detectDistance);
 	readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::gravity);
 	readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::speed);
@@ -675,7 +675,7 @@ void loadWeapons(Common& common, ReaderFile& exe)
 	readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::leaveObjDelay);
 	readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::timeToExplo);
 	readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::timeToExploV);
-	
+
 	for(int i = 0; i < 24; ++i) // TODO: Unhardcode
 	{
 		common.nobjectTypes[i].id = i;
@@ -697,19 +697,19 @@ void loadTextures(Common& common, ReaderFile& exe)
 void loadOthers(Common& common, ReaderFile& exe)
 {
 	exe.seekg(0x1C1E2);
-	
+
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 2; ++j)
 		common.bonusRandTimer[j][i] = gvl::read_uint16_le(exe);
-		
+
 	exe.seekg(0x1AEEE + 2);
-	
+
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 7; ++j)
 		common.aiParams.k[i][j] = gvl::read_uint16_le(exe);
-		
+
 	exe.seekg(0x1C1E0);
-	
+
 	for(int i = 0; i < 2; ++i)
 		common.bonusSObjects[i] = exe.get() - 1;
 }
@@ -717,22 +717,22 @@ void loadOthers(Common& common, ReaderFile& exe)
 void loadSprites(SpriteSet& ss, ReaderFile& f, int width, int height, int count)
 {
 	assert(width == height); // We only support rectangular sprites right now
-	
+
 	ss.width = width;
 	ss.height = height;
 	ss.spriteSize = width * height;
 	ss.count = count;
-	
+
 	int amount = ss.spriteSize * count;
 	ss.data.resize(amount);
-	
+
 	std::vector<uint8_t> temp(amount);
-	
+
 	f.get(&temp[0], amount);
-	
+
 	PalIdx* dest = &ss.data[0];
 	uint8_t* src = &temp[0];
-	
+
 	for(int i = 0; i < count; i++)
 	{
 		for(int x = 0; x < width; ++x)
@@ -741,10 +741,10 @@ void loadSprites(SpriteSet& ss, ReaderFile& f, int width, int height, int count)
 			{
 				dest[x + y*width] = src[y];
 			}
-			
+
 			src += height;
 		}
-		
+
 		dest += ss.spriteSize;
 	}
 }
@@ -759,7 +759,7 @@ void cropSprites(SpriteSet& sprites, int first, int count, int minX, int minY, i
 	for (int i = first; i < first + count; i++)
 	{
 		Sprite sprite = sprites[i];
-		
+
 		for (int y = 0; y < sprite.height; y++)
 		{
 			for (int x = 0; x < sprite.width; x++)
@@ -776,33 +776,33 @@ void loadGfx(Common& common, ReaderFile& exe, ReaderFile& gfx)
 	exe.seekg(0x1C1DE);
 	common.bonusFrames[0] = exe.get();
 	common.bonusFrames[1] = exe.get();
-	
+
 	gfx.seekg(10); // Skip some header
-	
+
 	loadSprites(common.largeSprites, gfx, 16, 16, 110);
 	gfx.skip(4); // Extra stuff
-	
+
 	loadSprites(common.smallSprites, gfx, 7, 7, 130);
 	gfx.skip(4); // Extra stuff
-	
+
 	loadSprites(common.textSprites, gfx, 4, 4, 26);
-	
+
 	// The original would only render 10x9 pixels of the worm sprites.
 	// Cropping the worm sprites here to match the original behavior.
 	cropSprites(common.largeSprites, 16, 21, 2, 0, 10, 9);
 
 	Rand rand;
-	
+
 	for(int y = 0; y < 16; ++y)
 	for(int x = 0; x < 16; ++x)
 	{
 		int idx = y * 16 + x;
 		common.largeSprites.spritePtr(73)[idx] = rand(4) + 160;
 		common.largeSprites.spritePtr(74)[idx] = rand(4) + 160;
-		
+
 		common.largeSprites.spritePtr(87)[idx] = rand(4) + 12;
 		common.largeSprites.spritePtr(88)[idx] = rand(4) + 12;
-		
+
 		common.largeSprites.spritePtr(82)[idx] = rand(4) + 94;
 		common.largeSprites.spritePtr(83)[idx] = rand(4) + 94;
 	}
@@ -813,9 +813,9 @@ void loadSfx(
 	ReaderFile& snd)
 {
 	int count = gvl::read_uint16_le(snd);
-	
+
 	sounds.clear();
-	
+
 	for(int i = 0; i < count; ++i)
 	{
 		uint8_t name[9];
@@ -824,9 +824,9 @@ void loadSfx(
 
 		int offset = gvl::read_uint32_le(snd);
 		int length = gvl::read_uint32_le(snd);
-		
+
 		auto oldPos = snd.tellg();
-		
+
 		SfxSample sample(toId(reinterpret_cast<char const*>(name)), length);
 
 		if(length > 0)
@@ -845,18 +845,18 @@ void loadSfx(
 void loadFont(Font& font, ReaderFile& exe)
 {
 	font.chars.resize(250);
-	
+
 	std::size_t const FontSize = 250 * 8 * 8 + 1;
 	std::vector<unsigned char> temp(FontSize);
-	
+
 	exe.seekg(0x1C825);
-	
+
 	exe.get(reinterpret_cast<uint8_t*>(&temp[0]), FontSize);
-	
+
 	for(int i = 0; i < 250; ++i)
 	{
 		unsigned char* ptr = &temp[i*64 + 1];
-		
+
 		for(int y = 0; y < 8; ++y)
 		{
 			for(int x = 0; x < 7; ++x)
@@ -864,7 +864,7 @@ void loadFont(Font& font, ReaderFile& exe)
 				font.chars[i].data[y*7 + x] = ptr[y*8 + x];
 			}
 		}
-		
+
 		font.chars[i].width = ptr[63];
 	}
 }

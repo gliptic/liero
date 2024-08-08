@@ -33,7 +33,7 @@ void Palette::fade(int amount)
 {
 	if(amount >= 32)
 		return;
-		
+
 	for(int i = 0; i < 256; ++i)
 	{
 		entries[i].r = fadeValue(entries[i].r, amount);
@@ -74,7 +74,7 @@ void Palette::read(gvl::octet_reader& r)
 	{
 		uint8_t rgb[3];
 		r.get(rgb, 3);
-		
+
 		entries[i].r = rgb[0] & 63;
 		entries[i].g = rgb[1] & 63;
 		entries[i].b = rgb[2] & 63;
@@ -86,14 +86,14 @@ int const Palette::wormColourIndexes[2] = {0x58, 0x78}; // TODO: Read from EXE?
 void Palette::setWormColour(int i, WormSettings const& settings)
 {
 	int idx = settings.color;
-	
+
 	setWormColoursSpan(idx, settings.rgb);
-	
+
 	for(int j = 0; j < 6; ++j)
 	{
 		entries[wormColourIndexes[i] + j] = entries[idx + (j % 3) - 1];
 	}
-	
+
 	for(int j = 0; j < 3; ++j)
 	{
 		entries[129 + i * 4 + j] = entries[idx + j];

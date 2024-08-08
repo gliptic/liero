@@ -2,7 +2,7 @@
 
 namespace gvl
 {
-	
+
 shared_ptr<stream_piece> octet_reader::detach()
 {
 	if (cur_ == end_)
@@ -29,10 +29,10 @@ uint8_t octet_reader::underflow_get_()
 	auto status = next_piece_();
 	if (status != source_result::ok)
 		throw runtime_error("Read error in get()");
-		
+
 	return *cur_++;
 }
-	
+
 source_result::status octet_reader::underflow_get_(uint8_t& ret)
 {
 	if(!head_)
@@ -41,7 +41,7 @@ source_result::status octet_reader::underflow_get_(uint8_t& ret)
 	auto s = next_piece_();
 	if (s != source_result::ok)
 		return s;
-		
+
 	ret = *cur_++;
 	return source_result::ok;
 }
@@ -82,7 +82,7 @@ sink_result octet_writer::flush()
 	auto res = flush_buffer(default_initial_bucket_size);
 	if(res.s == sink_result::error)
 		return res;
-		
+
 	if (sink_)
 		return sink_->flush();
 	// If flush_buffer succeeded, we're ok without a sink
@@ -125,7 +125,7 @@ sink_result octet_writer::flush_buffer(bucket_size new_buffer_size)
 	}
 
 	sassert(left() >= new_buffer_size);
-	
+
 	return res;
 }
 
@@ -151,7 +151,7 @@ sink_result octet_writer::overflow_put_(uint8_t const* p, std::size_t len)
 		cur_ += l;
 		p += l;
 		len -= l;
-			
+
 		// Flush and try to allocate a buffer large enough for the rest of the data
 		ret = flush_buffer(len);
 		if (ret.s == sink_result::error)

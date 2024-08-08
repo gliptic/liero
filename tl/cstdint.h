@@ -95,7 +95,7 @@ typedef ptrdiff_t intptr_t;
 
 #define TL_BITS_IN(t) (sizeof(t)*CHAR_BIT)
 
-#endif /* !TL_GCC */ 
+#endif /* !TL_GCC */
 
 typedef uint8_t  uint8;
 typedef int8_t   int8;
