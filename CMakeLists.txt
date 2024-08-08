@@ -1,10 +1,16 @@
 cmake_minimum_required (VERSION 2.6)
 project (openliero)
 
-Find_Package (SDL REQUIRED)
-include_directories("${PROJECT_SOURCE_DIR}")
+# add current path as module path to get required config file for sdl 2
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ".")
+Find_Package (SDL2 REQUIRED)
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/ffmpeg)
+link_directories(${PROJECT_SOURCE_DIR}/ffmpeg/libavcodec ${PROJECT_SOURCE_DIR}/ffmpeg/libavformat ${PROJECT_SOURCE_DIR}/ffmpeg/libavutil ${PROJECT_SOURCE_DIR}/ffmpeg/libswresample ${PROJECT_SOURCE_DIR}/ffmpeg/libswscale ${PROJECT_SOURCE_DIR}/x264)
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-s")
 
 set(SOURCES
     bobject.cpp
@@ -21,6 +27,7 @@ set(SOURCES
     rand.cpp
     settings.cpp
     sobject.cpp
+    spectatorviewport.cpp
     stats_recorder.cpp
     sys.cpp
     text.cpp
@@ -75,6 +82,13 @@ set(TC_TOOL_SOURCES ${SOURCES}
 	tc_tool_main.cpp
 	)
 
+set(VIDEO_TOOL_SOURCES ${SOURCES}
+    replay.cpp
+	replay_to_video.cpp
+	tools_main.cpp
+	video_recorder.c
+	)
+
 if(APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
     set(GAME_SOURCES ${GAME_SOURCES} SDLmain.m)
@@ -85,5 +99,7 @@ endif(APPLE)
 
 add_executable(openliero ${GAME_SOURCES})
 add_executable(tctool ${TC_TOOL_SOURCES})
-include_directories(SYSTEM "${SDL_INCLUDE_DIR}/..")
-target_link_libraries (openliero ${SDL_LIBRARY})
+add_executable(videotool EXCLUDE_FROM_ALL ${VIDEO_TOOL_SOURCES})
+target_link_libraries (openliero ${SDL2_LIBRARY})
+target_link_libraries (tctool ${SDL2_LIBRARY})
+target_link_libraries (videotool avcodec avformat avutil dl pthread swresample swscale x264)

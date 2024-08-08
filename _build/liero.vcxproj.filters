@@ -115,6 +115,7 @@
     <ClCompile Include="..\tl\utf8.c">
       <Filter>tl</Filter>
     </ClCompile>
+    <ClCompile Include="..\spectatorviewport.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\gfx\blit.hpp">
@@ -304,6 +305,7 @@
     <ClInclude Include="..\tl\string.h">
       <Filter>tl</Filter>
     </ClInclude>
+    <ClInclude Include="..\spectatorviewport.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\TODO.txt" />

@@ -744,7 +744,7 @@ void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int o
 		gvl::ivec2 v;
 		PalIdx t;
 		std::tie(v, t) = p;
-		renderer.screenBmp.setPixel(ftoi(v.x) + offsX, ftoi(v.y) + offsY, t);
+		renderer.bmp.setPixel(ftoi(v.x) + offsX, ftoi(v.y) + offsY, t);
 	}
 #endif
 
@@ -793,9 +793,9 @@ void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int o
 
 		std::ostringstream s; s << d;
 
-		game.common->font.drawFramedText(renderer.screenBmp, s.str(), 10, 10, 7);
+		game.common->font.drawFramedText(renderer.bmp, s.str(), 10, 10, 7);
 
-		drawLine(renderer.screenBmp,
+		drawLine(renderer.bmp,
 			ftoi(worm.x) + offsX, ftoi(worm.y) + offsY,
 			ftoi(worm.x) + offsX + (int)(std::cos(angleToTarget) * 20.0),
 			ftoi(worm.y) + offsY + (int)(std::sin(angleToTarget) * 20.0),
@@ -809,7 +809,7 @@ void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int o
 	while (cell)
 	{
 		auto coords = dlevel.coords(cell);
-		fillRect(renderer.screenBmp,
+		fillRect(renderer.bmp,
 			coords.first * dlevel.factor + offsX,
 			coords.second * dlevel.factor + offsY,
 			dlevel.factor,

@@ -183,10 +183,10 @@ struct FileSelector
 	{
 		if (currentNode && currentNode->parent)
 		{
-			common.font.drawFramedText(gfx.screenBmp, "Parent directory", 28, 20, 50);
-			currentNode->parent->getMenu().draw(common, true, 28, true);
+			common.font.drawFramedText(gfx.playRenderer.bmp, "Parent directory", 28, 20, 50);
+			currentNode->parent->getMenu().draw(common, gfx.playRenderer, true, 28, true);
 		}
-		menu().draw(common, false, 178);
+		menu().draw(common, gfx.playRenderer, false, 178);
 	}
 
 	Menu& menu()
@@ -272,45 +272,45 @@ struct FileSelector
 
 	bool process()
 	{
-		if(gfx.testSDLKeyOnce(SDLK_UP))
+		if(gfx.testSDLKeyOnce(SDL_SCANCODE_UP))
 		{
 			sfx.play(common, 26);
 
 			menu().movement(-1);
 		}
 
-		if(gfx.testSDLKeyOnce(SDLK_DOWN))
+		if(gfx.testSDLKeyOnce(SDL_SCANCODE_DOWN))
 		{
 			sfx.play(common, 25);
 
 			menu().movement(1);
 		}
 
-		if(gfx.testSDLKeyOnce(SDLK_PAGEUP))
+		if(gfx.testSDLKeyOnce(SDL_SCANCODE_PAGEUP))
 		{
 			sfx.play(common, 26);
 
 			menu().movementPage(-1);
 		}
 
-		if(gfx.testSDLKeyOnce(SDLK_PAGEDOWN))
+		if(gfx.testSDLKeyOnce(SDL_SCANCODE_PAGEDOWN))
 		{
 			sfx.play(common, 25);
 
 			menu().movementPage(1);
 		}
 
-		if (gfx.testSDLKeyOnce(SDLK_ESCAPE))
+		if (gfx.testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
 		{
 			return false;
 		}
 
-		if (gfx.testSDLKeyOnce(SDLK_LEFT))
+		if (gfx.testSDLKeyOnce(SDL_SCANCODE_LEFT))
 		{
 			exit();
 		}
 
-		if (gfx.testSDLKeyOnce(SDLK_RIGHT))
+		if (gfx.testSDLKeyOnce(SDL_SCANCODE_RIGHT))
 		{
 			enter();
 		}

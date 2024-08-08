@@ -97,23 +97,25 @@ bool ciLess(std::string const& a, std::string const& b)
 	return b.size() > a.size(); // if b is longer, then a < b, otherwise a == b
 }
 
-int unicodeToDOS(int c)
+char utf8ToDOS(char* str)
 {
-	int table[][2] =
+	if (str[1] == 0) {
+		return str[0];
+	}
+	char table[][3] =
 	{
-		{229, 0x86},
-		{228, 0x84},
-		{246, 0x94},
-		{197, 0x8f},
-		{196, 0x8e},
-		{214, 0x99}
+		{(char)0xc3, (char)0xa5, (char)0x86}, // å
+		{(char)0xc3, (char)0xa4, (char)0x84}, // ä
+		{(char)0xc3, (char)0xb6, (char)0x94}, // ö
+		{(char)0xc3, (char)0x85, (char)0x8f}, // Å
+		{(char)0xc3, (char)0x84, (char)0x8e}, // Ä
+		{(char)0xc3, (char)0x96, (char)0x99}, // Ö
 	};
 
 	for(std::size_t i = 0; i < sizeof(table) / sizeof(*table); ++i)
 	{
-		if(table[i][0] == c)
-			return table[i][1];
+		if(table[i][0] == str[0] && table[i][1] == str[1])
+			return table[i][2];
 	}
-
-	return c & 0x7f; // Return ASCII
+	return '?';
 }

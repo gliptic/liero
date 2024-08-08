@@ -11,6 +11,10 @@ struct Controller
 	{
 	}
 
+	// Returns true if this controller is controlling a replay, false if it is
+	// an actual match
+	virtual bool isReplay() { return false; };
+
 	// Called when a key event is forwarded to the controller
 	virtual void onKey(int key, bool state) = 0;
 
@@ -22,7 +26,7 @@ struct Controller
 
 	virtual bool process() = 0;
 
-	virtual void draw(Renderer& renderer) = 0;
+	virtual void draw(Renderer& renderer, bool useSpectatorViewports) = 0;
 
 	// Returns true if the game is still running. The menu should check this to decide whether to show the resume option.
 	virtual bool running() = 0;

@@ -4,7 +4,7 @@
 #include "macros.hpp"
 #include "color.hpp"
 
-void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color)
+void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int size)
 {
 	if(c >= 2 && c < 252) // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since drawText subtracts 2?
 	{
@@ -19,25 +19,33 @@ void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color)
 
 		for(int cy = 0; cy < height; ++cy)
 		{
-			PalIdx* rowdest = scrptr;
-			PalIdx* rowsrc = mem;
-
-			for(int cx = 0; cx < width; ++cx)
+			for(int i = 0; i < size; i++)
 			{
-				PalIdx c = *rowsrc;
-				if(c)
-					*rowdest = color;
-				++rowsrc;
-				++rowdest;
-			}
+				PalIdx* rowdest = scrptr;
+				PalIdx* rowsrc = mem;
 
-			scrptr += scr.pitch;
+				for(int cx = 0; cx < width; ++cx)
+				{
+					PalIdx c = *rowsrc;
+					for(int k = 0; k < size; k++)
+					{
+						if(c)
+						{
+							*rowdest = color;
+						}
+						++rowdest;
+					}
+					++rowsrc;
+				}
+
+				scrptr += scr.pitch;
+			}
 			mem += pitch;
 		}
 	}
 }
 
-void Font::drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color)
+void Font::drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color, int size)
 {
 	int orgX = x;
 
@@ -48,15 +56,15 @@ void Font::drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y,
 		if(!c)
 		{
 			x = orgX;
-			y += 8;
+			y += 8 * size;
 		}
 		else if(c >= 2 && c < 252)
 		{
 			c -= 2;
 
-			drawChar(scr, c, x, y, color);
+			drawChar(scr, c, x, y, color, size);
 
-			x += chars[c].width;
+			x += chars[c].width * size;
 		}
 	}
 }

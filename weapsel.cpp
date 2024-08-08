@@ -7,7 +7,8 @@
 #include "mixer/player.hpp"
 #include "viewport.hpp"
 #include "filesystem.hpp"
-#include <SDL/SDL.h>
+#include "gfx/renderer.hpp"
+#include <SDL2/SDL.h>
 
 WeaponSelection::WeaponSelection(Game& game)
 : game(game)
@@ -15,6 +16,7 @@ WeaponSelection::WeaponSelection(Game& game)
 , isReady(game.viewports.size())
 , menus(game.viewports.size())
 , cachedBackground(false)
+, cachedSpectatorBackground(false)
 , focused(true)
 {
 	Common& common = *game.common;
@@ -88,37 +90,88 @@ WeaponSelection::WeaponSelection(Game& game)
 	}
 }
 
-void WeaponSelection::draw()
+void WeaponSelection::drawSpectatorViewports(Renderer& renderer)
 {
 	Common& common = *game.common;
+	int centerX = renderer.renderResX / 2;
+	int centerY = renderer.renderResY / 4;
 
-	if(!cachedBackground)
+	if (!cachedSpectatorBackground)
 	{
-		game.draw(gfx);
-
-		if(game.settings->levelFile.empty())
+		if (game.settings->levelFile.empty())
 		{
-			common.font.drawText(gfx.screenBmp, LS(LevelRandom), 0, 162, 50);
+			common.font.drawCenteredText(renderer.bmp, LS(LevelRandom), centerX, centerY - 32, 7, 2);
 		}
 		else
 		{
 			auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
-			common.font.drawText(gfx.screenBmp, (LS(LevelIs1) + levelName + LS(LevelIs2)), 0, 162, 50);
+			common.font.drawCenteredText(renderer.bmp, LS(LevelIs1) + levelName + LS(LevelIs2), centerX, centerY - 32, 7, 2);
 		}
 
-		gfx.frozenScreen.copy(gfx.screenBmp);
-		cachedBackground = true;
+		std::string vsText = game.settings->wormSettings[0]->name + " vs " + game.settings->wormSettings[1]->name;
+		int textSize = common.font.getDims(vsText) * 2;
+		common.font.drawCenteredText(renderer.bmp, vsText, centerX, centerY, 7, 2);
+		fillRect(renderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
+		fillRect(renderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, game.settings->wormSettings[0]->color);
+		fillRect(renderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
+		fillRect(renderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, game.settings->wormSettings[1]->color);
+		common.font.drawCenteredText(renderer.bmp, "WEAPON SELECTION", centerX, centerY + 48, 7, 2);
+		game.level.drawMiniature(renderer.bmp, centerX - 126, renderer.renderResY - 176, 2);
+
+		gfx.frozenSpectatorScreen.copy(renderer.bmp);
+		cachedSpectatorBackground = true;
 	}
 
-	gfx.screenBmp.copy(gfx.frozenScreen);
+	renderer.bmp.copy(gfx.frozenSpectatorScreen);
 
 	if(!focused)
 		return;
 
+	if (!isReady[0])
+	{
+		menus[0].draw(common, renderer, false, 10);
+	}
+	if (!isReady[1])
+	{
+		menus[1].draw(common, renderer, false, 560);
+	}
 
-	drawRoundedBox(gfx.screenBmp, 114, 2, 0, 7, common.font.getDims(LS(SelWeap)));
+	// TODO: This just uses the currently activated palette, which might well be wrong.
+	gfx.singleScreenRenderer.pal = gfx.singleScreenRenderer.origpal;
+	gfx.singleScreenRenderer.pal.rotateFrom(gfx.singleScreenRenderer.origpal, 168, 174, gfx.menuCycles);
+	gfx.singleScreenRenderer.pal.fade(gfx.singleScreenRenderer.fadeValue);
+}
 
-	common.font.drawText(gfx.screenBmp, LS(SelWeap), 116, 3, 50);
+void WeaponSelection::drawNormalViewports(Renderer& renderer)
+{
+	Common& common = *game.common;
+
+	if (!cachedBackground)
+	{
+		game.draw(renderer, false);
+
+		if (game.settings->levelFile.empty())
+		{
+			common.font.drawText(renderer.bmp, LS(LevelRandom), 0, 162, 50);
+		}
+		else
+		{
+			auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
+			common.font.drawText(renderer.bmp, (LS(LevelIs1) + levelName + LS(LevelIs2)), 0, 162, 50);
+		}
+
+		gfx.frozenScreen.copy(renderer.bmp);
+		cachedBackground = true;
+	}
+
+	renderer.bmp.copy(gfx.frozenScreen);
+
+	if(!focused)
+		return;
+
+	drawRoundedBox(renderer.bmp, 114, 2, 0, 7, common.font.getDims(LS(SelWeap)));
+
+	common.font.drawText(renderer.bmp, LS(SelWeap), 116, 3, 50);
 
 	for(std::size_t i = 0; i < menus.size(); ++i)
 	{
@@ -130,20 +183,31 @@ void WeaponSelection::draw()
 		WormSettings& ws = *worm.settings;
 
 		int width = common.font.getDims(ws.name);
-		drawRoundedBox(gfx.screenBmp, weaponMenu.x + 29 - width/2, weaponMenu.y - 11, 0, 7, width);
-		common.font.drawText(gfx.screenBmp, ws.name, weaponMenu.x + 31 - width/2, weaponMenu.y - 10, ws.color + 1);
+		drawRoundedBox(renderer.bmp, weaponMenu.x + 29 - width / 2, weaponMenu.y - 11, 0, 7, width);
+		common.font.drawText(renderer.bmp, ws.name, weaponMenu.x + 31 - width / 2, weaponMenu.y - 10, ws.color + 1);
 
 		if(!isReady[i])
 		{
-			menus[i].draw(common, false);
+			menus[i].draw(common, gfx.playRenderer, false);
 		}
 	}
 
 	// TODO: This just uses the currently activated palette, which might well be wrong.
-	gfx.pal = gfx.origpal;
-	gfx.pal.rotateFrom(gfx.origpal, 168, 174, gfx.menuCycles);
-	gfx.pal.fade(gfx.fadeValue);
-	++gfx.menuCycles;
+	gfx.playRenderer.pal = gfx.playRenderer.origpal;
+	gfx.playRenderer.pal.rotateFrom(gfx.playRenderer.origpal, 168, 174, gfx.menuCycles);
+	gfx.playRenderer.pal.fade(gfx.playRenderer.fadeValue);
+}
+
+void WeaponSelection::draw(Renderer& renderer, bool useSpectatorViewports)
+{
+	if (useSpectatorViewports)
+	{
+		drawSpectatorViewports(renderer);
+	}
+	else
+	{
+		drawNormalViewports(renderer);
+	}
 }
 
 bool WeaponSelection::processFrame()

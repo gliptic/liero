@@ -41,6 +41,7 @@ inline bool endsWith(std::string const& str, char const* end)
 bool ciStartsWith(std::string const& a, std::string const& b);
 bool ciCompare(std::string const& a, std::string const& b);
 bool ciLess(std::string const& a, std::string const& b);
-int unicodeToDOS(int c);
+// converts an extremely limited subset of UTF-8 to extended ASCII
+char utf8ToDOS(char* str);
 
 #endif // LIERO_TEXT_HPP

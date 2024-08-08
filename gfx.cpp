@@ -12,7 +12,7 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <cstdio>
 #include <memory>
 #include <limits>
@@ -274,7 +274,7 @@ Gfx::Gfx()
 , playerMenu(178, 20)
 , hiddenMenu(178, 20)
 , curMenu(0)
-, back(0)
+, sdlDrawSurface(0)
 , running(true)
 , fullscreen(false)
 , doubleRes(true)
@@ -285,18 +285,16 @@ Gfx::Gfx()
 , keyBufPtr(keyBuf)
 {
 	clearKeys();
+	primaryRenderer = &playRenderer;
 }
 
 void Gfx::init()
 {
-	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
-	SDL_EnableUNICODE(1);
-	SDL_WM_SetCaption("Liero 1.37", 0);
 	SDL_ShowCursor(SDL_DISABLE);
 	lastFrame = SDL_GetTicks();
 
-	Renderer::init();
-
+	playRenderer.init(320, 200);
+	singleScreenRenderer.init(640, 400);
 	// Joystick init:
 	SDL_JoystickEventState(SDL_ENABLE);
 	int numJoysticks = SDL_NumJoysticks();
@@ -309,40 +307,153 @@ void Gfx::init()
 
 void Gfx::setVideoMode()
 {
-	int bitDepth = 32;
+	int flags = SDL_WINDOW_RESIZABLE;
 
-	int flags = SDL_SWSURFACE | SDL_RESIZABLE;
-	if(fullscreen)
+	if (fullscreen)
 	{
-		flags |= SDL_FULLSCREEN;
-		if(settings->fullscreenW > 0 && settings->fullscreenH > 0)
+		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+	}
+
+	if (!sdlWindow)
+	{
+		sdlWindow = SDL_CreateWindow("Liero 1.37", SDL_WINDOWPOS_UNDEFINED,
+		 	                         SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
+	}
+	else
+	{
+		if (fullscreen)
 		{
-			windowW = settings->fullscreenW;
-			windowH = settings->fullscreenH;
+			SDL_SetWindowFullscreen(sdlWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		}
+		else
+		{
+			SDL_SetWindowFullscreen(sdlWindow, 0);
 		}
 	}
-
-	if(!SDL_VideoModeOK(windowW, windowH, bitDepth, flags))
+	if (sdlRenderer)
 	{
-		// Default to 640x480
-		windowW = 640;
-		windowH = 480;
+		SDL_DestroyRenderer(sdlRenderer);
+		sdlRenderer = NULL;
+	}
+	// vertical sync is always disabled. Frame limiting is done manually below,
+	// to keep the correct speed
+	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0 /*SDL_RENDERER_PRESENTVSYNC*/);
+	onWindowResize(SDL_GetWindowID(sdlWindow));
+
+	if (sdlSpectatorRenderer)
+	{
+		SDL_DestroyRenderer(sdlSpectatorRenderer);
+		sdlSpectatorRenderer = NULL;
 	}
 
-	back = SDL_SetVideoMode(windowW, windowH, bitDepth, flags);
+	if (settings->spectatorWindow)
+	{
+		flags = SDL_WINDOW_RESIZABLE;
+		if (spectatorFullscreen)
+		{
+			flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+		}
+		if (!sdlSpectatorWindow)
+		{
+			int x, y;
+			SDL_GetWindowPosition(sdlWindow, &x, &y);
+			sdlSpectatorWindow = SDL_CreateWindow("Liero Spectator Window", x + 100,
+				                		          y, windowW, windowH, flags);
+		}
+		else
+		{
+			if (spectatorFullscreen)
+			{
+				SDL_SetWindowFullscreen(sdlSpectatorWindow,
+				                        SDL_WINDOW_FULLSCREEN_DESKTOP);
+			}
+			else
+			{
+				SDL_SetWindowFullscreen(sdlSpectatorWindow, 0);
+			}
+		}
+		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, 0/*SDL_RENDERER_PRESENTVSYNC*/);
+		onWindowResize(SDL_GetWindowID(sdlSpectatorWindow));
+	}
+	else
+	{
+		if (sdlSpectatorTexture)
+		{
+			SDL_DestroyTexture(sdlSpectatorTexture);
+			sdlSpectatorTexture = NULL;
+		}
+		if (sdlSpectatorDrawSurface)
+		{
+			SDL_FreeSurface(sdlSpectatorDrawSurface);
+			sdlSpectatorDrawSurface = NULL;
+		}
+		if (sdlSpectatorWindow)
+		{
+			SDL_DestroyWindow(sdlSpectatorWindow);
+			sdlSpectatorWindow = NULL;
+		}
+	}
+}
 
-	doubleRes = (windowW >= 640 && windowH >= 400);
+void Gfx::onWindowResize(Uint32 windowID)
+{
+	if (windowID == SDL_GetWindowID(sdlWindow))
+	{
+		if (sdlTexture)
+		{
+			SDL_DestroyTexture(sdlTexture);
+			sdlTexture = NULL;
+		}
+		sdlTexture = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_ARGB8888,
+			                           SDL_TEXTUREACCESS_STREAMING,
+			                           doubleRes ? 640 : 320,
+		                         	   doubleRes ? 400 : 200);
+
+		if (sdlDrawSurface)
+		{
+			SDL_FreeSurface(sdlDrawSurface);
+			sdlDrawSurface = NULL;
+		}
+		sdlDrawSurface = SDL_CreateRGBSurface(0, doubleRes ? 640 : 320,
+		                         doubleRes ? 400 : 200, 32, 0, 0, 0, 0);
+		// linear for that old-school chunky look, but consider adding a user
+		// option for this
+		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
+		SDL_RenderSetLogicalSize(sdlRenderer, doubleRes ? 640 : 320,
+		                         doubleRes ? 400 : 200);
+	}
+	else
+	{
+		if (sdlSpectatorTexture)
+		{
+			SDL_DestroyTexture(sdlSpectatorTexture);
+			sdlSpectatorTexture = NULL;
+		}
+		if (sdlSpectatorDrawSurface)
+		{
+			SDL_FreeSurface(sdlSpectatorDrawSurface);
+			sdlSpectatorDrawSurface = NULL;
+		}
+
+		if (settings->spectatorWindow)
+		{
+			sdlSpectatorTexture = SDL_CreateTexture(sdlSpectatorRenderer,
+			                                        SDL_PIXELFORMAT_ARGB8888,
+				                           			SDL_TEXTUREACCESS_STREAMING,
+				                           			640, 400);
+			sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, 640, 400, 32, 0,
+			                                               0, 0, 0);
+			SDL_RenderSetLogicalSize(sdlSpectatorRenderer, 640, 400);
+		}
+	}
 }
 
 void Gfx::loadMenus()
 {
 	hiddenMenu.addItem(MenuItem(48, 7, "FULLSCREEN (F11)", HiddenMenu::Fullscreen));
 	hiddenMenu.addItem(MenuItem(48, 7, "DOUBLE SIZE", HiddenMenu::DoubleRes));
-	hiddenMenu.addItem(MenuItem(48, 7, "SET FULLSCREEN WIDTH", HiddenMenu::FullscreenW));
-	hiddenMenu.addItem(MenuItem(48, 7, "SET FULLSCREEN HEIGHT", HiddenMenu::FullscreenH));
 	hiddenMenu.addItem(MenuItem(48, 7, "POWERLEVEL PALETTES", HiddenMenu::LoadPowerLevels));
 	hiddenMenu.addItem(MenuItem(48, 7, "SHADOWS", HiddenMenu::Shadows));
-	hiddenMenu.addItem(MenuItem(48, 7, "SCREEN SYNC.", HiddenMenu::ScreenSync));
 	hiddenMenu.addItem(MenuItem(48, 7, "AUTO-RECORD REPLAYS", HiddenMenu::RecordReplays));
 	hiddenMenu.addItem(MenuItem(48, 7, "AI FRAMES", HiddenMenu::AiFrames));
 	hiddenMenu.addItem(MenuItem(48, 7, "AI MUTATIONS", HiddenMenu::AiMutations));
@@ -351,6 +462,8 @@ void Gfx::loadMenus()
 	hiddenMenu.addItem(MenuItem(48, 7, "PALETTE", HiddenMenu::PaletteSelect));
 	hiddenMenu.addItem(MenuItem(48, 7, "BOT WEAPONS", HiddenMenu::SelectBotWeapons));
 	hiddenMenu.addItem(MenuItem(48, 7, "SEE SPAWN POINT", HiddenMenu::AllowViewingSpawnPoint));
+	hiddenMenu.addItem(MenuItem(48, 7, "SINGLE SCREEN REPLAY", HiddenMenu::SingleScreenReplay));
+	hiddenMenu.addItem(MenuItem(48, 7, "SPECTATOR WINDOW", HiddenMenu::SpectatorWindow));
 
 	playerMenu.addItem(MenuItem(3, 7, "PROFILE LOADED", PlayerMenu::PlLoadedProfile));
 	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE", PlayerMenu::PlSaveProfile));
@@ -409,16 +522,47 @@ void Gfx::loadMenus()
 	hiddenMenu.valueOffsetX = 120;
 }
 
+void Gfx::setSpectatorFullscreen(bool newFullscreen)
+{
+	if (newFullscreen == spectatorFullscreen)
+		return;
+	spectatorFullscreen = newFullscreen;
+
+	if (!spectatorFullscreen)
+	{
+		if (doubleRes)
+		{
+			windowW = 640;
+			windowH = 400;
+		}
+		else
+		{
+			windowW = 320;
+			windowH = 200;
+		}
+	}
+	setVideoMode();
+}
+
 void Gfx::setFullscreen(bool newFullscreen)
 {
 	if (newFullscreen == fullscreen)
 		return;
 	fullscreen = newFullscreen;
-	if(fullscreen)
+
+	// fullscreen will automatically set window size
+	if (!fullscreen)
 	{
-		// Try lowest resolution
-		windowW = 320;
-		windowH = 200;
+		if (doubleRes)
+		{
+			windowW = 640;
+			windowH = 400;
+		}
+		else
+		{
+			windowW = 320;
+			windowH = 200;
+		}
 	}
 	setVideoMode();
 	hiddenMenu.updateItems(*common);
@@ -428,6 +572,7 @@ void Gfx::setDoubleRes(bool newDoubleRes)
 {
 	if (newDoubleRes == doubleRes)
 		return;
+	doubleRes = newDoubleRes;
 
 	if (!newDoubleRes)
 	{
@@ -450,12 +595,12 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		case SDL_KEYDOWN:
 		{
 
-			SDLKey s = ev.key.keysym.sym;
+			SDL_Scancode s = ev.key.keysym.scancode;
 
 			if (keyBufPtr < keyBuf + 32)
 				*keyBufPtr++ = ev.key.keysym;
 
-			Uint32 dosScan = SDLToDOSKey(ev.key.keysym);
+			Uint32 dosScan = SDLToDOSKey(ev.key.keysym.scancode);
 			if(dosScan)
 			{
 				dosKeys[dosScan] = true;
@@ -463,16 +608,24 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 					controller->onKey(dosScan, true);
 			}
 
-			if(s == SDLK_F11)
+			if(s == SDL_SCANCODE_F11)
 			{
-				setFullscreen(!fullscreen);
+				if (SDL_GetWindowFromID(ev.key.windowID) == sdlWindow)
+				{
+					setFullscreen(!fullscreen);
+				}
+				else
+				{
+					setSpectatorFullscreen(!spectatorFullscreen);
+				}
+
 			}
 		}
 		break;
 
 		case SDL_KEYUP:
 		{
-			SDLKey s = ev.key.keysym.sym;
+			SDL_Scancode s = ev.key.keysym.scancode;
 
 			Uint32 dosScan = SDLToDOSKey(s);
 			if(dosScan)
@@ -484,11 +637,19 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
-		case SDL_VIDEORESIZE:
+		case SDL_WINDOWEVENT:
 		{
-			windowW = ev.resize.w;
-			windowH = ev.resize.h;
-			setVideoMode();
+			switch (ev.window.event)
+			{
+				case SDL_WINDOWEVENT_RESIZED:
+				{
+					onWindowResize(ev.window.windowID);
+				}
+				break;
+
+				default:
+				break;
+			}
 		}
 		break;
 
@@ -556,10 +717,8 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
-		case SDL_ACTIVEEVENT:
-		{
-		}
-		break;
+		default:
+			break;
 	}
 }
 
@@ -573,7 +732,7 @@ void Gfx::process(Controller* controller)
 	}
 }
 
-SDL_keysym Gfx::waitForKey()
+SDL_Keysym Gfx::waitForKey()
 {
 	SDL_Event ev;
 	while(SDL_WaitEvent(&ev))
@@ -585,7 +744,7 @@ SDL_keysym Gfx::waitForKey()
 		}
 	}
 
-	return SDL_keysym(); // Dummy
+	return SDL_Keysym(); // Dummy
 }
 
 uint32_t Gfx::waitForKeyEx()
@@ -619,6 +778,8 @@ uint32_t Gfx::waitForKeyEx()
 			break;
 		case SDL_JOYBUTTONDOWN:
 			return joyButtonToExKey(ev.jbutton.which, 16 + ev.jbutton.button);
+		default:
+			break;
 		}
 	}
 
@@ -657,81 +818,88 @@ void Gfx::preparePalette(SDL_PixelFormat* format, Color realPal[256], uint32_t (
 
 void Gfx::menuFlip(bool quitting)
 {
-	if (fadeValue < 32 && !quitting)
-		++fadeValue;
+	if (playRenderer.fadeValue < 32 && !quitting)
+		++playRenderer.fadeValue;
+	if (singleScreenRenderer.fadeValue < 32 && !quitting)
+		++singleScreenRenderer.fadeValue;
 
 	++menuCycles;
-	pal = origpal;
-	pal.rotateFrom(origpal, 168, 174, menuCycles);
-	pal.setWormColours(*settings);
-	pal.fade(fadeValue);
+	playRenderer.pal = playRenderer.origpal;
+	playRenderer.pal.rotateFrom(playRenderer.origpal, 168, 174, menuCycles);
+	playRenderer.pal.setWormColours(*settings);
+	playRenderer.pal.fade(playRenderer.fadeValue);
+	singleScreenRenderer.pal = singleScreenRenderer.origpal;
+	singleScreenRenderer.pal.rotateFrom(singleScreenRenderer.origpal, 168, 174, menuCycles);
+	singleScreenRenderer.pal.setWormColours(*settings);
+	singleScreenRenderer.pal.fade(singleScreenRenderer.fadeValue);
 	flip();
+}
+
+void Gfx::draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRenderer, Renderer& renderer)
+{
+	gvl::rect updateRect;
+	Color realPal[256];
+	renderer.pal.activate(realPal);
+	int offsetX, offsetY;
+	int mag = fitScreen(surface.w, surface.h,
+						renderer.renderResX, renderer.renderResY, offsetX, offsetY);
+
+	gvl::rect newRect(offsetX, offsetY, renderer.renderResX * mag, renderer.renderResY * mag);
+
+	if(mag != prevMag)
+	{
+		// Clear background if magnification is decreased to
+		// avoid leftovers.
+		SDL_FillRect(&surface, 0, 0);
+		updateRect = lastUpdateRect | newRect;
+	}
+	else
+		updateRect = newRect;
+	prevMag = mag;
+
+	std::size_t destPitch = surface.pitch;
+	std::size_t srcPitch = renderer.bmp.pitch;
+
+	PalIdx* dest = reinterpret_cast<PalIdx*>(surface.pixels) + offsetY * destPitch + offsetX * surface.format->BytesPerPixel;
+	PalIdx* src = renderer.bmp.pixels;
+
+	uint32_t pal32[256];
+	preparePalette(surface.format, realPal, pal32);
+	scaleDraw(src, renderer.renderResX, renderer.renderResY, srcPitch, dest, destPitch, mag, pal32);
+
+	SDL_UpdateTexture(&texture, NULL, surface.pixels, surface.w * 4);
+	SDL_RenderClear(&sdlRenderer);
+	SDL_RenderCopy(&sdlRenderer, &texture, NULL, NULL);
+	SDL_RenderPresent(&sdlRenderer);
+
+	lastUpdateRect = updateRect;
 }
 
 void Gfx::flip()
 {
-	gvl::rect updateRect;
-	Color realPal[256];
-	pal.activate(realPal);
-
+	// draw into the play window. This uses either the normal split screen renderer
+	// or the single screen renderer if this is a replay and single screen replay
+	// is turned on
+	draw(*sdlDrawSurface, *sdlTexture, *sdlRenderer, *primaryRenderer);
+	if (settings->spectatorWindow)
 	{
-		int offsetX, offsetY;
-		int mag = fitScreen(back->w, back->h, screenBmp.w, screenBmp.h, offsetX, offsetY);
-
-		gvl::rect newRect(offsetX, offsetY, screenBmp.w * mag, screenBmp.h * mag);
-
-		if(mag != prevMag)
-		{
-			// Clear background if magnification is decreased to
-			// avoid leftovers.
-			SDL_FillRect(back, 0, 0);
-			updateRect = lastUpdateRect | newRect;
-		}
-		else
-			updateRect = newRect;
-		prevMag = mag;
-
-		std::size_t destPitch = back->pitch;
-		std::size_t srcPitch = screenBmp.pitch;
-
-		PalIdx* dest = reinterpret_cast<PalIdx*>(back->pixels) + offsetY * destPitch + offsetX * back->format->BytesPerPixel;
-		PalIdx* src = screenBmp.pixels;
-
-		if(back->format->BitsPerPixel == 32)
-		{
-			uint32_t pal32[256];
-
-			preparePalette(back->format, realPal, pal32);
-
-			scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, pal32);
-		}
+		draw(*sdlSpectatorDrawSurface, *sdlSpectatorTexture, *sdlSpectatorRenderer, singleScreenRenderer);
 	}
 
-	SDL_Flip(back);
+	static unsigned int const delay = 14u;
 
-	lastUpdateRect = updateRect;
+	uint32_t wantedTime = lastFrame + delay;
 
-	if(settings->screenSync)
+	while(true)
 	{
-		static unsigned int const delay = 14u;
+		uint32_t now = SDL_GetTicks();
+		if(now >= wantedTime)
+			break;
 
-		uint32_t wantedTime = lastFrame + delay;
-
-		while(true)
-		{
-			uint32_t now = SDL_GetTicks();
-			if(now >= wantedTime)
-				break;
-
-			SDL_Delay(wantedTime - now);
-		}
-
-		lastFrame = SDL_GetTicks();
-		while((SDL_GetTicks() - lastFrame) > delay)
-			lastFrame += delay;
+		SDL_Delay(wantedTime - now);
 	}
-	else
-		SDL_Delay(0);
+
+	lastFrame = wantedTime;
 }
 
 void playChangeSound(Common& common, int change)
@@ -748,8 +916,8 @@ void playChangeSound(Common& common, int change)
 
 void resetLeftRight()
 {
-	gfx.releaseSDLKey(SDLK_LEFT);
-	gfx.releaseSDLKey(SDLK_RIGHT);
+	gfx.releaseSDLKey(SDL_SCANCODE_LEFT);
+	gfx.releaseSDLKey(SDL_SCANCODE_RIGHT);
 }
 
 template<typename T>
@@ -1018,7 +1186,7 @@ void Gfx::selectLevel()
 
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 
 		string title = LS(SelLevel);
 		if (!levSel.currentNode->fullPath.empty())
@@ -1029,8 +1197,8 @@ void Gfx::selectLevel()
 
 		int wid = common.font.getDims(title);
 
-		drawRoundedBox(screenBmp, 178, 20, 0, 7, wid);
-		common.font.drawText(screenBmp, title, 180, 21, 50);
+		drawRoundedBox(playRenderer.bmp, 178, 20, 0, 7, wid);
+		common.font.drawText(playRenderer.bmp, title, 180, 21, 50);
 
 		FileNode* sel = levSel.curSel();
 		if (previewNode != sel && sel && sel != random.get() && !sel->folder)
@@ -1043,7 +1211,10 @@ void Gfx::selectLevel()
 			{
 				if (level.load(common, *settings, sel->getFsNode().toOctetReader()))
 				{
+					int centerX = singleScreenRenderer.renderResX / 2;
+
 					level.drawMiniature(frozenScreen, 134, 162, 10);
+					level.drawMiniature(frozenSpectatorScreen, centerX - 126, singleScreenRenderer.renderResY - 176, 2);
 				}
 			}
 			catch (std::runtime_error&)
@@ -1059,8 +1230,8 @@ void Gfx::selectLevel()
 		if (!levSel.process())
 			break;
 
-		if(testSDLKeyOnce(SDLK_RETURN)
-		|| testSDLKeyOnce(SDLK_KP_ENTER))
+		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
+		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
 		{
 			sfx.play(common, 27);
 
@@ -1101,7 +1272,7 @@ void Gfx::selectProfile(WormSettings& ws)
 
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 
 		string title = "Select profile:";
 		if (!profileSel.currentNode->fullPath.empty())
@@ -1110,15 +1281,15 @@ void Gfx::selectProfile(WormSettings& ws)
 			title += profileSel.currentNode->fullPath;
 		}
 
-		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
+		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
 
 		profileSel.draw();
 
 		if (!profileSel.process())
 			break;
 
-		if(testSDLKeyOnce(SDLK_RETURN)
-		|| testSDLKeyOnce(SDLK_KP_ENTER))
+		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
+		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
 		{
 			auto* sel = profileSel.enter();
 
@@ -1154,7 +1325,7 @@ int Gfx::selectReplay()
 
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 
 		string title = "Select replay:";
 		if (!replaySel.currentNode->fullPath.empty())
@@ -1163,15 +1334,15 @@ int Gfx::selectReplay()
 			title += replaySel.currentNode->fullPath;
 		}
 
-		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
+		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
 
 		replaySel.draw();
 
 		if (!replaySel.process())
 			break;
 
-		if(testSDLKeyOnce(SDLK_RETURN)
-		|| testSDLKeyOnce(SDLK_KP_ENTER))
+		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
+		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
 		{
 			auto* sel = replaySel.enter();
 
@@ -1209,7 +1380,7 @@ void Gfx::selectOptions()
 
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 
 		string title = "Select options:";
 		if (!optionsSel.currentNode->fullPath.empty())
@@ -1218,15 +1389,15 @@ void Gfx::selectOptions()
 			title += optionsSel.currentNode->fullPath;
 		}
 
-		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
+		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
 
 		optionsSel.draw();
 
 		if (!optionsSel.process())
 			break;
 
-		if(testSDLKeyOnce(SDLK_RETURN)
-		|| testSDLKeyOnce(SDLK_KP_ENTER))
+		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
+		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
 		{
 			auto* sel = optionsSel.enter();
 
@@ -1266,7 +1437,7 @@ std::unique_ptr<Common> Gfx::selectTc()
 
 	do
 	{
-		screenBmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 
 		string title = "Select TC:";
 		if (!tcSel.currentNode->fullPath.empty())
@@ -1275,15 +1446,15 @@ std::unique_ptr<Common> Gfx::selectTc()
 			title += tcSel.currentNode->fullPath;
 		}
 
-		common->font.drawFramedText(screenBmp, title, 178, 20, 50);
+		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
 
 		tcSel.draw();
 
 		if (!tcSel.process())
 			break;
 
-		if(testSDLKeyOnce(SDLK_RETURN)
-		|| testSDLKeyOnce(SDLK_KP_ENTER))
+		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
+		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
 		{
 			auto* sel = tcSel.enter();
 
@@ -1335,49 +1506,49 @@ void Gfx::weaponOptions()
 
 	while(true)
 	{
-		screenBmp.copy(frozenScreen);
+		playRenderer.bmp.copy(frozenScreen);
 
 		drawBasicMenu();
 
-		drawRoundedBox(screenBmp, 179, 20, 0, 7, common.font.getDims(LS(Weapon)));
-		drawRoundedBox(screenBmp, 249, 20, 0, 7, common.font.getDims(LS(Availability)));
+		drawRoundedBox(playRenderer.bmp, 179, 20, 0, 7, common.font.getDims(LS(Weapon)));
+		drawRoundedBox(playRenderer.bmp, 249, 20, 0, 7, common.font.getDims(LS(Availability)));
 
-		common.font.drawText(screenBmp, LS(Weapon), 181, 21, 50);
-		common.font.drawText(screenBmp, LS(Availability), 251, 21, 50);
+		common.font.drawText(playRenderer.bmp, LS(Weapon), 181, 21, 50);
+		common.font.drawText(playRenderer.bmp, LS(Availability), 251, 21, 50);
 
-		weaponMenu.draw(common, false);
+		weaponMenu.draw(common, playRenderer, false);
 
-		if(testSDLKeyOnce(SDLK_UP))
+		if(testSDLKeyOnce(SDL_SCANCODE_UP))
 		{
 			sfx.play(common, 26);
 			weaponMenu.movement(-1);
 		}
 
-		if(testSDLKeyOnce(SDLK_DOWN))
+		if(testSDLKeyOnce(SDL_SCANCODE_DOWN))
 		{
 			sfx.play(common, 25);
 			weaponMenu.movement(1);
 		}
 
-		if(testSDLKeyOnce(SDLK_LEFT))
+		if(testSDLKeyOnce(SDL_SCANCODE_LEFT))
 		{
 			weaponMenu.onLeftRight(common, -1);
 		}
-		if(testSDLKeyOnce(SDLK_RIGHT))
+		if(testSDLKeyOnce(SDL_SCANCODE_RIGHT))
 		{
 			weaponMenu.onLeftRight(common, 1);
 		}
 
 		if(settings->extensions)
 		{
-			if(testSDLKeyOnce(SDLK_PAGEUP))
+			if(testSDLKeyOnce(SDL_SCANCODE_PAGEUP))
 			{
 				sfx.play(common, 26);
 
 				weaponMenu.movementPage(-1);
 			}
 
-			if(testSDLKeyOnce(SDLK_PAGEDOWN))
+			if(testSDLKeyOnce(SDL_SCANCODE_PAGEDOWN))
 			{
 				sfx.play(common, 25);
 
@@ -1390,7 +1561,7 @@ void Gfx::weaponOptions()
 		menuFlip();
 		process();
 
-		if(testSDLKeyOnce(SDLK_ESCAPE))
+		if(testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
 		{
 			int count = 0;
 
@@ -1414,8 +1585,8 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 
 	if(clearScreen)
 	{
-		pal = common->exepal;
-		fill(screenBmp, bgColor);
+		playRenderer.pal = common->exepal;
+		fill(playRenderer.bmp, bgColor);
 	}
 
 	int height;
@@ -1424,8 +1595,8 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	int cx = x - width/2 - 2;
 	int cy = y - height/2 - 2;
 
-	drawRoundedBox(screenBmp, cx, cy, 0, height+1, width+1);
-	common->font.drawText(screenBmp, text, cx+2, cy+2, 6);
+	drawRoundedBox(playRenderer.bmp, cx, cy, 0, height+1, width+1);
+	common->font.drawText(playRenderer.bmp, text, cx+2, cy+2, 6);
 
 	flip();
 	process();
@@ -1434,7 +1605,7 @@ void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
 	clearKeys();
 
 	if(clearScreen)
-		fill(screenBmp, bgColor);
+		fill(playRenderer.bmp, bgColor);
 }
 
 bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int), std::string const& prefix, bool centered)
@@ -1453,47 +1624,68 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 
 		int clrX = x - 10 - adjust;
 
+		SDL_Event ev;
+
 		//int offset = clrX + y*320; // TODO: Unhardcode 320
 
-		blitImageNoKeyColour(screenBmp, &frozenScreen.getPixel(clrX, y), clrX, y, clrX + 10 + width, 8, frozenScreen.pitch);
+		blitImageNoKeyColour(playRenderer.bmp, &frozenScreen.getPixel(clrX, y), clrX, y, clrX + 10 + width, 8, frozenScreen.pitch);
 
-		drawRoundedBox(screenBmp, x - 2 - adjust, y, 0, 7, width);
+		drawRoundedBox(playRenderer.bmp, x - 2 - adjust, y, 0, 7, width);
 
-		font.drawText(screenBmp, str, x - adjust, y + 1, 50);
+		font.drawText(playRenderer.bmp, str, x - adjust, y + 1, 50);
 		flip();
-		SDL_keysym key(waitForKey());
 
-		switch(key.sym)
+		SDL_StartTextInput();
+		SDL_WaitEvent(&ev);
+		processEvent(ev);
+
+		switch (ev.type)
 		{
-		case SDLK_BACKSPACE:
-			if(!buffer.empty())
+			case SDL_KEYDOWN:
+				switch (ev.key.keysym.scancode)
+				{
+					case SDL_SCANCODE_BACKSPACE:
+						if(!buffer.empty())
+						{
+							buffer.erase(buffer.size() - 1);
+						}
+						break;
+
+					case SDL_SCANCODE_RETURN:
+					case SDL_SCANCODE_KP_ENTER:
+						dest = buffer;
+						sfx.play(*common, 27);
+						clearKeys();
+						return true;
+
+					case SDL_SCANCODE_ESCAPE:
+						clearKeys();
+						return false;
+
+					default:
+						break;
+				}
+				break;
+
+			case SDL_TEXTINPUT:
 			{
-				buffer.erase(buffer.size() - 1);
+				int k = utf8ToDOS(ev.text.text);
+				if (k && buffer.size() < maxLen &&
+					(!filter || (k = filter(k))))
+				{
+					buffer += char(k);
+				}
+				break;
 			}
-		break;
+			case SDL_TEXTEDITING:
+				// since there's no support for any characters that can use a
+				// complex IME input (like East Asian languages), we naively
+				// discard this event
+				break;
 
-		case SDLK_RETURN:
-		case SDLK_KP_ENTER:
-			dest = buffer;
-			sfx.play(*common, 27);
-			clearKeys();
-			return true;
-
-		case SDLK_ESCAPE:
-			clearKeys();
-			return false;
-
-		default:
-			int k = unicodeToDOS(key.unicode);
-			if(k
-			&& buffer.size() < maxLen
-			&& (
-			    !filter
-			 || (k = filter(k))))
-			{
-				buffer += char(k);
-			}
-		}
+			default:
+				break;
+        }
 	}
 }
 
@@ -1525,14 +1717,14 @@ void PlayerMenu::drawItemOverlay(Common& common, MenuItem& item, int x, int y, b
 
 		if(selected)
 		{
-			drawRoundedBox(gfx.screenBmp, x + 24, y, 168, 7, ws->rgb[rgbcol] - 1);
+			drawRoundedBox(gfx.playRenderer.bmp, x + 24, y, 168, 7, ws->rgb[rgbcol] - 1);
 		}
 		else // CE98
 		{
-			drawRoundedBox(gfx.screenBmp, x + 24, y, 0, 7, ws->rgb[rgbcol] - 1);
+			drawRoundedBox(gfx.playRenderer.bmp, x + 24, y, 0, 7, ws->rgb[rgbcol] - 1);
 		}
 
-		fillRect(gfx.screenBmp, x + 25, y + 1, ws->rgb[rgbcol], 5, ws->color);
+		fillRect(gfx.playRenderer.bmp, x + 25, y + 1, ws->rgb[rgbcol], 5, ws->color);
 	} // CED9
 }
 
@@ -1616,13 +1808,19 @@ restart:
 		controller->swapLevel(newLevel);
 	}
 
-	controller->currentGame()->focus(*this);
+	controller->currentGame()->focus(this->playRenderer);
+	controller->currentGame()->focus(this->singleScreenRenderer);
+
 	// TODO: Unfocus game when necessary
 
 	while(true)
 	{
-		clear();
-		controller->draw(*this);
+		playRenderer.clear();
+		controller->draw(this->playRenderer, false);
+
+		singleScreenRenderer.clear();
+		controller->draw(this->singleScreenRenderer, true);
+
 
 		int selection = menuLoop();
 
@@ -1651,7 +1849,10 @@ restart:
 		}
 		else if(selection == MainMenu::MaResumeGame)
 		{
-
+			if (controller->isReplay())
+			{
+				primaryRenderer = &singleScreenRenderer;
+			}
 		}
 		else if(selection == MainMenu::MaQuit) // QUIT TO OS
 		{
@@ -1659,7 +1860,10 @@ restart:
 		}
 		else if(selection == MainMenu::MaReplay)
 		{
-			//controller.reset(new ReplayController(common/*, settings*/));
+			if (settings->singleScreenReplay)
+			{
+				primaryRenderer = &singleScreenRenderer;
+			}
 		}
 		else if (selection == MainMenu::MaTc)
 		{
@@ -1672,12 +1876,19 @@ restart:
 		{
 			if(!controller->process())
 				break;
-			clear();
-			controller->draw(*this);
+			playRenderer.clear();
+			controller->draw(this->playRenderer, false);
+
+			singleScreenRenderer.clear();
+			controller->draw(this->singleScreenRenderer, true);
+
+			++gfx.menuCycles;
 
 			flip();
 			process(controller.get());
 		}
+
+		primaryRenderer = &playRenderer;
 
 		controller->unfocus();
 
@@ -1708,9 +1919,44 @@ bool Gfx::loadSettingsLegacy(FsNode node)
 
 void Gfx::drawBasicMenu(/*int curSel*/)
 {
-	screenBmp.copy(frozenScreen);
+	playRenderer.bmp.copy(frozenScreen);
 
-	mainMenu.draw(*common, curMenu != &mainMenu, -1, true);
+	mainMenu.draw(*common, playRenderer, curMenu != &mainMenu, -1, true);
+}
+
+void Gfx::drawSpectatorInfo()
+{
+	Common& common = *this->common;
+	int centerX = singleScreenRenderer.renderResX / 2;
+	int centerY = singleScreenRenderer.renderResY / 4;
+
+	singleScreenRenderer.bmp.copy(frozenSpectatorScreen);
+	if(settings->levelFile.empty())
+	{
+		common.font.drawCenteredText(singleScreenRenderer.bmp, LS(LevelRandom), centerX, centerY - 32, 7, 2);
+	}
+	else
+	{
+		auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
+		common.font.drawCenteredText(singleScreenRenderer.bmp, LS(LevelIs1) + levelName + LS(LevelIs2), centerX, centerY - 32, 7, 2);
+	}
+
+	std::string vsText = settings->wormSettings[0]->name + " vs " + settings->wormSettings[1]->name;
+	int textSize = common.font.getDims(vsText) * 2;
+	common.font.drawCenteredText(singleScreenRenderer.bmp, vsText, centerX, centerY, 7, 2);
+	fillRect(singleScreenRenderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
+	fillRect(singleScreenRenderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, settings->wormSettings[0]->color);
+	fillRect(singleScreenRenderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
+	fillRect(singleScreenRenderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, settings->wormSettings[1]->color);
+
+	if (controller->running())
+	{
+		common.font.drawCenteredText(singleScreenRenderer.bmp, "PAUSED", centerX, centerY + 48, 7, 2);
+	}
+	else
+	{
+		common.font.drawCenteredText(singleScreenRenderer.bmp, "SETUP", centerX, centerY + 48, 7, 2);
+	}
 }
 
 int upperCaseOnly(int k)
@@ -1737,12 +1983,15 @@ void Gfx::openHiddenMenu()
 int Gfx::menuLoop()
 {
 	Common& common = *this->common;
-	std::memset(pal.entries, 0, sizeof(pal.entries));
+	int centerX = singleScreenRenderer.renderResX / 2;
+
+	std::memset(playRenderer.pal.entries, 0, sizeof(playRenderer.pal.entries));
+	std::memset(singleScreenRenderer.pal.entries, 0, sizeof(singleScreenRenderer.pal.entries));
 	flip();
 	process();
 
-	fillRect(screenBmp, 0, 151, 160, 7, 0);
-	common.font.drawText(screenBmp, LS(Copyright2), 2, 152, 19);
+	fillRect(playRenderer.bmp, 0, 151, 160, 7, 0);
+	common.font.drawText(playRenderer.bmp, LS(Copyright2), 2, 152, 19);
 
 	int startItemId;
 	if (controller->running())
@@ -1763,24 +2012,28 @@ int Gfx::menuLoop()
 	settingsMenu.moveToFirstVisible();
 	settingsMenu.updateItems(common);
 
-	fadeValue = 0;
+	playRenderer.fadeValue = 0;
+	singleScreenRenderer.fadeValue = 0;
 	curMenu = &mainMenu;
 
-	frozenScreen.copy(screenBmp);
+	frozenScreen.copy(playRenderer.bmp);
+	singleScreenRenderer.clear();
+	controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 126, singleScreenRenderer.renderResY - 176, 2);
+	frozenSpectatorScreen.copy(singleScreenRenderer.bmp);
 
 	menuCycles = 0;
 	int selected = -1;
-
 	do
 	{
 		drawBasicMenu();
+		drawSpectatorInfo();
 
 		if(curMenu == &mainMenu)
-			settingsMenu.draw(common, true);
+			settingsMenu.draw(common, playRenderer, true);
 		else
-			curMenu->draw(common, false);
+			curMenu->draw(common, playRenderer, false);
 
-		if(testSDLKeyOnce(SDLK_ESCAPE))
+		if(testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
 		{
 			if(curMenu == &mainMenu)
 				mainMenu.moveToId(MainMenu::MaQuit);
@@ -1788,20 +2041,20 @@ int Gfx::menuLoop()
 				curMenu = &mainMenu;
 		}
 
-		if(testSDLKeyOnce(SDLK_UP))
+		if(testSDLKeyOnce(SDL_SCANCODE_UP))
 		{
 			sfx.play(common, 26);
 			curMenu->movement(-1);
 		}
 
-		if(testSDLKeyOnce(SDLK_DOWN))
+		if(testSDLKeyOnce(SDL_SCANCODE_DOWN))
 		{
 			sfx.play(common, 25);
 			curMenu->movement(1);
 		}
 
-		if(testSDLKeyOnce(SDLK_RETURN)
-		|| testSDLKeyOnce(SDLK_KP_ENTER))
+		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
+		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
 		{
 			if(curMenu == &mainMenu)
 			{
@@ -1859,42 +2112,42 @@ int Gfx::menuLoop()
 			}
 		}
 
-		if(testSDLKeyOnce(SDLK_F1))
+		if(testSDLKeyOnce(SDL_SCANCODE_F1))
 		{
 			curMenu = &mainMenu;
 			mainMenu.moveToId(startItemId);
 			selected = startItemId;
 		}
-		if(testSDLKeyOnce(SDLK_F2))
+		if(testSDLKeyOnce(SDL_SCANCODE_F2))
 		{
 			mainMenu.moveToId(MainMenu::MaAdvanced);
 			openHiddenMenu();
 		}
-		if(testSDLKeyOnce(SDLK_F3))
+		if(testSDLKeyOnce(SDL_SCANCODE_F3))
 		{
 			curMenu = &mainMenu;
 			mainMenu.moveToId(MainMenu::MaReplays);
 			selected = curMenu->onEnter(common);
 		}
 
-		if (testSDLKeyOnce(SDLK_F5))
+		if (testSDLKeyOnce(SDL_SCANCODE_F5))
 		{
 			mainMenu.moveToId(MainMenu::MaPlayer1Settings);
 			playerSettings(0);
 		}
-		if (testSDLKeyOnce(SDLK_F6))
+		if (testSDLKeyOnce(SDL_SCANCODE_F6))
 		{
 			mainMenu.moveToId(MainMenu::MaPlayer2Settings);
 			playerSettings(1);
 		}
-		if (testSDLKeyOnce(SDLK_F7))
+		if (testSDLKeyOnce(SDL_SCANCODE_F7))
 		{
 			mainMenu.moveToId(MainMenu::MaSettings);
 			curMenu = &settingsMenu; // Go into settings menu
 		}
 
 #if 1
-		if (testSDLKeyOnce(SDLK_F8))
+		if (testSDLKeyOnce(SDL_SCANCODE_F8))
 		{
 			uint32 s = 14;
 
@@ -2015,25 +2268,25 @@ int Gfx::menuLoop()
 		}
 #endif
 
-		if(testSDLKey(SDLK_LEFT))
+		if(testSDLKey(SDL_SCANCODE_LEFT))
 		{
 			if(!curMenu->onLeftRight(common, -1))
 				resetLeftRight();
 		}
-		if(testSDLKey(SDLK_RIGHT))
+		if(testSDLKey(SDL_SCANCODE_RIGHT))
 		{
 			if(!curMenu->onLeftRight(common, 1))
 				resetLeftRight();
 		}
 
-		if(testSDLKeyOnce(SDLK_PAGEUP))
+		if(testSDLKeyOnce(SDL_SCANCODE_PAGEUP))
 		{
 			sfx.play(common, 26);
 
 			curMenu->movementPage(-1);
 		}
 
-		if(testSDLKeyOnce(SDLK_PAGEDOWN))
+		if(testSDLKeyOnce(SDL_SCANCODE_PAGEDOWN))
 		{
 			sfx.play(common, 25);
 
@@ -2045,7 +2298,7 @@ int Gfx::menuLoop()
 	}
 	while(selected < 0);
 
-	for(fadeValue = 32; fadeValue > 0; --fadeValue)
+	for (playRenderer.fadeValue = 32; playRenderer.fadeValue > 0; --playRenderer.fadeValue)
 	{
 		menuFlip(true);
 		process();

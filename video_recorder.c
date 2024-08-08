@@ -1,16 +1,16 @@
 #include "video_recorder.h"
 
-#include "libavutil/mathematics.h"
+#include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
+#include "libavutil/avutil.h"
+#include "libavutil/error.h"
+#include "libavutil/opt.h"
+#include "assert.h"
 
 #define STREAM_PIX_FMT    PIX_FMT_YUV420P
 #define SOURCE_PIX_FMT    PIX_FMT_BGRA
 
 static int sws_flags = SWS_BICUBIC;
-
-#include "libavutil/audioconvert.h"
-#include "libavutil/avutil.h"
 
 static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 {
@@ -18,7 +18,7 @@ static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 	uint8_t *picture_buf;
 	int size;
 
-	picture = avcodec_alloc_frame();
+	picture = av_frame_alloc();
 	if (!picture)
 		return NULL;
 	size        = avpicture_get_size(pix_fmt, width, height);
@@ -35,9 +35,11 @@ static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 int vidrec_init(video_recorder* self, char const* filename, int width, int height, AVRational framerate)
 {
 	memset(self, 0, sizeof(*self));
-	self->fmt = av_guess_format("mp4", NULL, NULL);
+
+	self->fmt = av_guess_format("mp4", NULL, "video/h264");
 	self->oc = avformat_alloc_context();
 	self->oc->oformat = self->fmt;
+	self->pts = 0;
 
 	{
 		AVCodecContext *c;
@@ -58,8 +60,8 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 
 		c = self->video_st->codec;
 
-		/* Put sample parameters. */
-		c->bit_rate = 400000;
+		self->video_st->time_base = framerate;
+
 		/* Resolution must be a multiple of two. */
 		c->width    = width;
 		c->height   = height;
@@ -68,67 +70,14 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 		 * timebase should be 1/framerate and timestamp increments should be
 		 * identical to 1. */
 		c->time_base = framerate;
-		c->gop_size      = 12; /* emit one intra frame every twelve frames at most */
-		c->pix_fmt       = STREAM_PIX_FMT;
+		/* This is configured according to what Youtube wants, see:
+		 * https://support.google.com/youtube/answer/1722171?hl=en */
+		c->pix_fmt = STREAM_PIX_FMT;
+		c->profile = FF_PROFILE_H264_HIGH;
+		c->max_b_frames = 2;
+		c->gop_size = 30;
+		c->bit_rate = 7500000;
 
-#if 0 // for x264
-		c->bit_rate = 500*1000;
-		c->bit_rate_tolerance = 0;
-		c->rc_max_rate = 0;
-		c->rc_buffer_size = 0;
-		c->gop_size = 40;
-		c->max_b_frames = 3;
-		c->b_frame_strategy = 1;
-		c->coder_type = 1;
-		c->me_cmp = 1;
-		c->me_range = 16;
-		c->qmin = 10;
-		c->qmax = 51;
-		c->scenechange_threshold = 40;
-		c->flags |= CODEC_FLAG_LOOP_FILTER;
-		c->me_method = ME_HEX;
-		c->me_subpel_quality = 5;
-		c->i_quant_factor = 0.71f;
-		c->qcompress = 0.6f;
-		c->max_qdiff = 4;
-		//c->directpred = 1;
-		//c->flags2 |= CODEC_FLAG2_FAST;
-#else // Main
-		c->bit_rate = 500*1000;
-		c->bit_rate_tolerance = 0;
-		c->coder_type = 1;  // coder = 1
-		c->flags |= CODEC_FLAG_LOOP_FILTER;   // flags=+loop
-		c->me_cmp |= 1;  // cmp=+chroma, where CHROMA = 1
-		//c->partitions|=X264_PART_I8X8+X264_PART_I4X4+X264_PART_P8X8+X264_PART_B8X8; // partitions=+parti8x8+parti4x4+partp8x8+partb8x8
-		c->me_method = ME_HEX;    // me_method=hex
-		c->me_subpel_quality = 7;   // subq=7
-		c->me_range = 16;   // me_range=16
-		c->gop_size = 250;  // g=250
-		c->keyint_min = 25; // keyint_min=25
-		c->scenechange_threshold = 40;  // sc_threshold=40
-		c->i_quant_factor = 0.71f; // i_qfactor=0.71
-		c->b_frame_strategy = 1;  // b_strategy=1
-		c->qcompress = 0.6f; // qcomp=0.6
-		c->qmin = 10;   // qmin=10
-		c->qmax = 51;   // qmax=51
-		c->max_qdiff = 4;   // qdiff=4
-		c->max_b_frames = 3;    // bf=3
-		c->refs = 3;    // refs=3
-		//c->directpred = 1;  // directpred=1
-		c->trellis = 1; // trellis=1
-		//c->flags2|=CODEC_FLAG2_BPYRAMID+CODEC_FLAG2_MIXED_REFS+CODEC_FLAG2_WPRED+CODEC_FLAG2_8X8DCT+CODEC_FLAG2_FASTPSKIP;  // flags2=+bpyramid+mixed_refs+wpred+dct8x8+fastpskip
-		//c->weighted_p_pred = 2; // wpredp=2
-#endif
-		if (c->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-			/* just for testing, we also add B frames */
-			c->max_b_frames = 2;
-		}
-		if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
-			/* Needed to avoid using macroblocks in which some coeffs overflow.
-			 * This does not happen with normal video, it just happens here as
-			 * the motion of the chroma plane does not match the luma plane. */
-			c->mb_decision = 2;
-		}
 		/* Some formats want stream headers to be separate. */
 		if (self->oc->oformat->flags & AVFMT_GLOBALHEADER)
 			c->flags |= CODEC_FLAG_GLOBAL_HEADER;
@@ -152,24 +101,33 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 			return 1;
 		}
 
+		self->audio_st->time_base = framerate;
 		c = self->audio_st->codec;
-
+		c->time_base = framerate;
 		/* put sample parameters */
-		c->sample_fmt  = AV_SAMPLE_FMT_S16;
-		c->bit_rate    = 64000;
+		c->sample_fmt  = AV_SAMPLE_FMT_FLTP;
+		c->bit_rate    = 128000;
+		/* FIXME: youtube wants 48 khz, but using that causes sync problems
+		 * that I haven't been able to solve so far */
 		c->sample_rate = 44100;
 		c->channels    = 1;
+		c->profile = FF_PROFILE_AAC_LOW;
 		c->channel_layout = AV_CH_LAYOUT_MONO;
-		//c->profile = FF_PROFILE_AAC_MAIN;
-		//c->frame_size = 1024;
-		//c->time_base.num = 1;
-		//c->time_base.num = c->sample_rate;
+		c->strict_std_compliance = -2;
 
 		// some formats want stream headers to be separate
 		if (self->oc->oformat->flags & AVFMT_GLOBALHEADER)
 			c->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
-
+		/* liero samples are 44.1 khz S16, while we need 48 khz FLTP */
+		self->swr = swr_alloc();
+		av_opt_set_int(self->swr, "in_channel_layout",  c->channel_layout, 0);
+		av_opt_set_int(self->swr, "out_channel_layout", c->channel_layout,  0);
+		av_opt_set_int(self->swr, "in_sample_rate",     44100, 0);
+		av_opt_set_int(self->swr, "out_sample_rate",    c->sample_rate, 0);
+		av_opt_set_sample_fmt(self->swr, "in_sample_fmt",  AV_SAMPLE_FMT_S16, 0);
+		av_opt_set_sample_fmt(self->swr, "out_sample_fmt", c->sample_fmt,  0);
+		swr_init(self->swr);
 	}
 
 	{
@@ -199,17 +157,23 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 			fprintf(stderr, "Could not allocate picture\n");
 			return 1;
 		}
+		self->picture->format = c->pix_fmt;
+		self->picture->width = c->width;
+		self->picture->height = c->height;
 
 		/* If the output format is not YUV420P, then a temporary YUV420P
 		 * picture is needed too. It is then converted to the required
 		 * output format. */
 
-		self->tmp_picture = alloc_picture(SOURCE_PIX_FMT, c->width, c->height);
+		self->tmp_picture = alloc_picture(SOURCE_PIX_FMT, 640, 400);
 		if (!self->tmp_picture) {
 			fprintf(stderr, "Could not allocate temporary picture\n");
 			return 1;
 		}
-	}
+		self->tmp_picture->format = SOURCE_PIX_FMT;
+		self->tmp_picture->width = 640;
+		self->tmp_picture->height = 400;
+    }
 
 	{
 		AVCodecContext *c = self->audio_st->codec;
@@ -323,25 +287,33 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 {
 	AVCodecContext *c;
 	AVPacket pkt = { 0 }; // data and size must be 0;
-	AVFrame *frame = avcodec_alloc_frame();
+	AVFrame *frame = av_frame_alloc();
+	// FIXME calculate this properly, this is just a magic number that happens
+	// to be big enough
+	uint8_t *converted_samples = av_malloc(8192);
 	int got_packet;
 	int r;
 
 	av_init_packet(&pkt);
 	c = self->audio_st->codec;
 
-	// get_audio_frame(samples, audio_input_frame_size, c->channels);
+	r = swr_convert(self->swr, &converted_samples, audio_input_frame_size,
+	                (const uint8_t **) &samples, audio_input_frame_size);
+	assert(r >= 0);
 
-	frame->nb_samples = audio_input_frame_size;
+	frame->nb_samples = r;
 	frame->channel_layout = c->channel_layout;
+	frame->pts = self->pts;
 
 	r = avcodec_fill_audio_frame(frame, c->channels, c->sample_fmt,
-								(uint8_t *)samples,
-								audio_input_frame_size *
-								av_get_bytes_per_sample(c->sample_fmt) *
-								c->channels, 1);
+								 converted_samples,
+								 r *
+								 av_get_bytes_per_sample(c->sample_fmt) *
+								 c->channels, 1);
+	assert(r >= 0);
 
 	r = avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+	assert(r >= 0);
 	if (got_packet)
 	{
 		pkt.stream_index = self->audio_st->index;
@@ -352,6 +324,11 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 			return 1;
 		}
 	}
+
+	self->pts += frame->nb_samples;
+
+	av_free(converted_samples);
+	av_frame_free(&frame);
 
 	return 0;
 }
@@ -366,7 +343,7 @@ int vidrec_write_video_frame(video_recorder* self, AVFrame* pic)
 	/* as we only generate a YUV420P picture, we must convert it
 		* to the codec pixel format if needed */
 	if (self->img_convert_ctx == NULL) {
-		self->img_convert_ctx = sws_getContext(c->width, c->height,
+		self->img_convert_ctx = sws_getContext(640, 400,
 											SOURCE_PIX_FMT,
 											c->width, c->height,
 											c->pix_fmt,
@@ -378,8 +355,9 @@ int vidrec_write_video_frame(video_recorder* self, AVFrame* pic)
 		}
 	}
 
-	sws_scale(self->img_convert_ctx, pic->data, pic->linesize,
-				0, c->height, self->picture->data, self->picture->linesize);
+	sws_scale(self->img_convert_ctx, (const uint8_t * const*) pic->data,
+	          pic->linesize, 0, c->height, self->picture->data,
+	          self->picture->linesize);
 
 	{
 		/* encode the image */
@@ -405,7 +383,8 @@ int vidrec_write_video_frame(video_recorder* self, AVFrame* pic)
 		return 1;
 	}
 
-	++self->frame_count;
+	// I have no idea why this needs to be 256. I would think it should be 1
+	self->frame_count+=256;
 
 	return 0;
 }

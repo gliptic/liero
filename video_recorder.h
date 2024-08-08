@@ -3,11 +3,10 @@
 
 #include "tl/platform.h"
 
-#define inline TL_INLINE
-
-#include "libavutil/mathematics.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
+#include "libswresample/swresample.h"
+#define inline TL_INLINE
 
 typedef struct video_recorder {
 	AVFrame *picture, *tmp_picture;
@@ -16,7 +15,9 @@ typedef struct video_recorder {
 	AVOutputFormat *fmt;
 	AVFormatContext *oc;
 	AVStream *audio_st, *video_st;
+    SwrContext *swr;
 	struct SwsContext *img_convert_ctx;
+    int64_t pts;
 } video_recorder;
 
 int  vidrec_init(video_recorder* self, char const* filename, int width, int height, AVRational framerate);
