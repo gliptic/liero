@@ -8,16 +8,16 @@ struct Game;
 struct WeaponSelection
 {
 	WeaponSelection(Game& game);
-	
+
 	void draw();
 	bool processFrame();
 	void finalize();
-	
+
 	void focus();
 	void unfocus();
-	
+
 	Game& game;
-	
+
 	int enabledWeaps;
 	int fadeValue;
 	std::vector<bool> isReady;

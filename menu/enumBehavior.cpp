@@ -15,16 +15,16 @@ bool EnumBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir)
 		sfx.play(common, 25);
 	else
 		sfx.play(common, 26);
-		
+
 	change(menu, item, dir);
-		
+
 	return false;
 }
 
 int EnumBehavior::onEnter(Menu& menu, MenuItem& item)
 {
 	sfx.play(common, 27);
-	
+
 	change(menu, item, 1);
 	return -1;
 }
@@ -33,7 +33,7 @@ void EnumBehavior::change(Menu& menu, MenuItem& item, int dir)
 {
 	uint32_t range = max - min + 1;
 	uint32_t newV = ((v + dir + range - min) % range) + min;
-	
+
 	if(newV != v)
 	{
 		v = newV;

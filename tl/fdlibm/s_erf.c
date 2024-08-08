@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
@@ -16,11 +16,11 @@
  *			     x
  *		      2      |\
  *     fd_erf(x)  =  ---------  | fd_exp(-t*t)dt
- *	 	   fd_sqrt(pi) \| 
+ *	 	   fd_sqrt(pi) \|
  *			     0
  *
  *     fd_erfc(x) =  1-fd_erf(x)
- *  Note that 
+ *  Note that
  *		fd_erf(-x) = -fd_erf(x)
  *		fd_erfc(-x) = 2 - fd_erfc(x)
  *
@@ -33,7 +33,7 @@
  *	   Q is an odd poly of degree 10.
  *						 -57.90
  *			| r - (fd_erf(x)-x)/x | <= 2
- *	
+ *
  *
  *	   Remark. The formula is derived by noting
  *          fd_erf(x) = (2/fd_sqrt(pi))*(x - x^3/3 + x^5/10 - x^7/42 + ....)
@@ -56,14 +56,14 @@
  *	   That is, we use rational approximation to approximate
  *			fd_erf(1+s) - (c = (single)0.84506291151)
  *	   Note that |P1/Q1|< 0.078 for x in [0.84375,1.25]
- *	   where 
+ *	   where
  *		P1(s) = degree 6 poly in s
  *		Q1(s) = degree 6 poly in s
  *
- *      3. For x in [1.25,1/0.35(~2.857143)], 
+ *      3. For x in [1.25,1/0.35(~2.857143)],
  *         	fd_erfc(x) = (1/x)*fd_exp(-x*x-0.5625+R1/S1)
  *         	fd_erf(x)  = 1 - fd_erfc(x)
- *	   where 
+ *	   where
  *		R1(z) = degree 7 poly in z, (z=1/x^2)
  *		S1(z) = degree 8 poly in z
  *
@@ -81,7 +81,7 @@
  *	   To compute fd_exp(-x*x-0.5625+r/S), let s be a single
  *	   precision number and s := x; then
  *		-x*x = -s*s + (s-x)*(s+x)
- *	        fd_exp(-x*x-0.5626+r/S) = 
+ *	        fd_exp(-x*x-0.5626+r/S) =
  *			fd_exp(-s*s-0.5625)*fd_exp((s-x)*(s+x)+r/S);
  *      Note2:
  *	   Here 4 and 5 make use of the asymptotic series
@@ -101,7 +101,7 @@
  *
  *      7. Special case:
  *         	fd_erf(0)  = 0, fd_erf(inf)  = 1, fd_erf(-inf) = -1,
- *         	fd_erfc(0) = 1, fd_erfc(inf) = 0, fd_erfc(-inf) = 2, 
+ *         	fd_erfc(0) = 1, fd_erfc(inf) = 0, fd_erfc(-inf) = 2,
  *	   	fd_erfc/fd_erf(NaN) is NaN
  */
 
@@ -128,7 +128,7 @@ qq3  =  5.08130628187576562776e-03, /* 0x3F74D022, 0xC4D36B0F */
 qq4  =  1.32494738004321644526e-04, /* 0x3F215DC9, 0x221C1A10 */
 qq5  = -3.96022827877536812320e-06, /* 0xBED09C43, 0x42A26120 */
 /*
- * Coefficients for approximation to  fd_erf  in [0.84375,1.25] 
+ * Coefficients for approximation to  fd_erf  in [0.84375,1.25]
  */
 pa0  = -2.36211856075265944077e-03, /* 0xBF6359B8, 0xBEF77538 */
 pa1  =  4.14856118683748331666e-01, /* 0x3FDA8D00, 0xAD92B34D */
@@ -180,7 +180,7 @@ sb5  =  2.55305040643316442583e+03, /* 0x40A3F219, 0xCEDF3BE6 */
 sb6  =  4.74528541206955367215e+02, /* 0x407DA874, 0xE79FE763 */
 sb7  = -2.24409524465858183362e+01; /* 0xC03670E2, 0x42712D62 */
 
-double fd_erf(double x) 
+double fd_erf(double x)
 {
 	int hx,ix,i;
 	double r2,S,P,Q,s,y,z,r;
@@ -193,7 +193,7 @@ double fd_erf(double x)
 
 	if(ix < 0x3feb0000) {		/* |x|<0.84375 */
 	    if(ix < 0x3e300000) { 	/* |x|<2**-28 */
-	        if (ix < 0x00800000) 
+	        if (ix < 0x00800000)
 		    return gM(0.125, gA(gM(8.0,x), gM(efx8,x)));  /*avoid underflow */
 		return gA(x, gM(efx,x));
 	    }
@@ -225,13 +225,13 @@ double fd_erf(double x)
 	    S  = gA(one, gM(s,gA(sb1, gM(s,gA(sb2, gM(s,gA(sb3, gM(s,gA(sb4, gM(s,gA(
 				   sb5, gM(s,gA(sb6, gM(s,sb7))))))))))))));
 	}
-	z  = x;  
+	z  = x;
 	FD_LO(z) = 0;
 	r  =  fd_exp(gS(gM(-z,z), 0.5625)) * fd_exp(gA(gM(gS(z,x),gA(z,x)), gD(r2,S))); // TODO! NOTE! Unwrapped multiply!
 	if(hx>=0) return gS(one, gD(r,x)); else return gS(gD(r,x), one);
 }
 
-double fd_erfc(double x) 
+double fd_erfc(double x)
 {
 	int hx,ix;
 	double r2,S,P,Q,s,y,z,r;

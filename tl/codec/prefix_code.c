@@ -31,7 +31,7 @@ int tl_generate_codes(unsigned num_syms, uint8 const* code_sizes, uint16* codes)
 	}
 
 	next_code[0] = 0;
-         
+
 	for(i = 1; i <= TL_MAX_EXPECTED_CODE_SIZE; i++)	{
 		next_code[i] = code;
 		code = (code + num_codes[i]) << 1;
@@ -49,11 +49,11 @@ int tl_generate_codes(unsigned num_syms, uint8 const* code_sizes, uint16* codes)
 	for(i = 0; i < num_syms; i++) {
 		unsigned c = code_sizes[i];
 		assert(!c || (next_code[c] <= 0xffff));
-            
+
 		codes[i] = (uint16)(next_code[c]++);
 		assert(!c || (tl_top_bit(codes[i]) + 1 <= code_sizes[i]));
 	}
-         
+
 	return 1;
 }
 
@@ -105,7 +105,7 @@ int tl_limit_max_code_size(uint8* code_sizes, unsigned num_syms, unsigned max_co
 	for(i = max_code_size; i; --i)
 		total += (num_codes[i] << (max_code_size - i));
 
-	if(total == (1U << max_code_size))  
+	if(total == (1U << max_code_size))
 		return 1;
 
 	do {

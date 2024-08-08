@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  *
@@ -19,7 +19,7 @@
  * Return cube root of x
  */
 
-static const unsigned 
+static const unsigned
 	B1 = 715094163, /* B1 = (682-0.03306235651)*2**20 */
 	B2 = 696219795; /* B2 = (664-0.03306235651)*2**20 */
 
@@ -30,7 +30,7 @@ E =  1.41428571428571436819e+00, /* 99/70     = 0x3FF6A0EA, 0x0EA0EA0F */
 F =  1.60714285714285720630e+00, /* 45/28     = 0x3FF9B6DB, 0x6DB6DB6E */
 G =  3.57142857142857150787e-01; /* 5/14      = 0x3FD6DB6D, 0xB6DB6DB7 */
 
-double fd_cbrt(double x) 
+double fd_cbrt(double x)
 {
 	int	hx;
 	double r,s,t=0.0,w;
@@ -41,7 +41,7 @@ double fd_cbrt(double x)
 	sign=hx&0x80000000; 		/* sign= sign(x) */
 	hx  ^=sign;
 	if(hx>=0x7ff00000) return gA(x,x); /* fd_cbrt(NaN,INF) is itself */
-	if((hx|FD_LO(x))==0) 
+	if((hx|FD_LO(x))==0)
 	    return(x);		/* fd_cbrt(0) is itself */
 
 	FD_HI(x) = hx;	/* x <- |x| */
@@ -51,7 +51,7 @@ double fd_cbrt(double x)
 	   t = gM(t,x); FD_HI(t)=FD_HI(t)/3+B2;
 	  }
 	else
-	  FD_HI(t)=hx/3+B1;	
+	  FD_HI(t)=hx/3+B1;
 
 
     /* new fd_cbrt to 23 bits, may be implemented in single precision */
@@ -59,7 +59,7 @@ double fd_cbrt(double x)
 	s = gA(C, gM(r,t));
 	t = gM(t, gA(G, gD(F,gA(gA(s, E), gD(D,s)))));
 
-    /* chopped to 20 bits and make it larger than fd_cbrt(x) */ 
+    /* chopped to 20 bits and make it larger than fd_cbrt(x) */
 	FD_LO(t)=0; FD_HI(t)+=0x00000001;
 
 

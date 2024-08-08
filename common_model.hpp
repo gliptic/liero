@@ -72,7 +72,7 @@ void archive_text(Common& common, NObjectType& nobject, Archive& ar)
 		I(startFrame)
 		I(numFrames)
 		I(colorBullets)
-		SObj(createOnExp)	
+		SObj(createOnExp)
 		I(dirtEffect)
 		I(splinterAmount)
 		I(splinterColour)
@@ -82,7 +82,7 @@ void archive_text(Common& common, NObjectType& nobject, Archive& ar)
 		I(leaveObjDelay)
 		I(timeToExplo)
 		I(timeToExploV)
-	
+
 		#undef I
 		#undef B
 		#undef S
@@ -253,7 +253,7 @@ void archive_text(Common& common, Archive& ar)
 				});
 			}
 		});
-		
+
 
 		#define A(n) ar.i32(#n, common.C[C##n]);
 		LIERO_CDEFS(A)

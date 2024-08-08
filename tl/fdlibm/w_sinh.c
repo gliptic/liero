@@ -6,12 +6,12 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
-/* 
+/*
  * wrapper fd_sinh(x)
  */
 
@@ -31,7 +31,7 @@ double fd_sinh(double x)		/* wrapper fd_sinh */
 	ix = jx&0x7fffffff;
 
     /* x is INF or NaN */
-	if(ix>=0x7ff00000) return x+x;	
+	if(ix>=0x7ff00000) return x+x;
 
 	h = 0.5;
 	if (jx<0) h = -h;

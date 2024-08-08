@@ -106,7 +106,7 @@ int tl_png_load(tl_png* self_, uint32 req_comp)
 				depth = get8(self);
 				color = get8(self);
 				if(depth != 8 || self->base.img.w > (1<<24) || self->base.img.h > (1<<24)) return PNGERR_UNSUPPORTED_FORMAT;
-				
+
 				comp = get8(self);
 				filter = get8(self);
 				interlace = get8(self);
@@ -207,7 +207,7 @@ int tl_png_load(tl_png* self_, uint32 req_comp)
 					self->base.img.pixels = img; // Save immediately so that it isn't leaked
 					self->base.img.pitch = self->base.img.w * self->base.img.bpp;
 					out = img;
-					
+
 					scanline_size = self->base.img.w * self->img_n;
 					scanline = malloc(1 + scanline_size);
 
@@ -314,14 +314,14 @@ int tl_png_load(tl_png* self_, uint32 req_comp)
 				// IDAT checks for IHDR, so it's enough to check for IDAT
 				// TODO: if (scan != SCAN_load) return 1;
 				if (NULL == img) return PNGERR_IDAT_NOT_FOUND;
-				
+
 				if (pal_img_n && self->base.img.bpp != 1)
 				{
 					uint8* p = img;
 					uint32 bpp = self->base.img.bpp;
 					// Expand palette to 3 or 4 components
 					assert(bpp == 3 || bpp == 4);
-						
+
 					for (i = self->base.img.w * self->base.img.h; i-- > 0; p += bpp)
 					{
 						uint8 idx = p[0];

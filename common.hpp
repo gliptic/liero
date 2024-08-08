@@ -38,13 +38,13 @@ struct Texts
 	std::string gameModes[4];
 	std::string onoff[2];
 	std::string controllers[3];
-	
+
 	static char const* keyNames[177];
 
 	std::string weapStates[3];
-	
+
 	int copyrightBarFormat;
-	
+
 };
 
 struct ColourAnim
@@ -120,7 +120,7 @@ struct Common : gvl::shared
 	~Common()
 	{
 	}
-	
+
 	static int fireConeOffset[2][7][2];
 
 	void load(FsNode node);
@@ -128,7 +128,7 @@ struct Common : gvl::shared
 	void precompute();
 
 	std::string guessName() const;
-	
+
 	PalIdx* wormSprite(int f, int dir, int w)
 	{
 		return wormSprites.spritePtr(f + dir*7*3 + w*2*7*3);
@@ -138,7 +138,7 @@ struct Common : gvl::shared
 	{
 		return wormSprites[f + dir*7*3 + w*2*7*3];
 	}
-	
+
 	PalIdx* fireConeSprite(int f, int dir)
 	{
 		return fireConeSprites.spritePtr(f + dir*7);
@@ -166,7 +166,7 @@ struct Common : gvl::shared
 	Palette exepal;
 	Font font;
 	vector<SfxSample> sounds;
-	
+
 	int32_t C[MaxC];
 	std::string S[MaxS];
 	bool H[MaxH];

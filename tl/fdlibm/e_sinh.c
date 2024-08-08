@@ -6,21 +6,21 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
 /* _ieee754_sinh(x)
- * Method : 
+ * Method :
  * mathematically fd_sinh(x) if defined to be (fd_exp(x)-fd_exp(-x))/2
- *	1. Replace x by |x| (fd_sinh(-x) = -fd_sinh(x)). 
- *	2. 
+ *	1. Replace x by |x| (fd_sinh(-x) = -fd_sinh(x)).
+ *	2.
  *		                                    E + E/(E+1)
  *	    0        <= x <= 22     :  fd_sinh(x) := --------------, E=fd_expm1(x)
  *			       			        2
  *
- *	    22       <= x <= lnovft :  fd_sinh(x) := fd_exp(x)/2 
+ *	    22       <= x <= lnovft :  fd_sinh(x) := fd_exp(x)/2
  *	    lnovft   <= x <= ln2ovft:  fd_sinh(x) := fd_exp(x/2)/2 * fd_exp(x/2)
  *	    ln2ovft  <  x	    :  fd_sinh(x) := x*shuge (overflow)
  *

@@ -15,16 +15,16 @@ struct Font
 		unsigned char data[8*7];
 		int width;
 	};
-	
+
 	Font()
 	: chars(250)
 	{
 	}
-	
+
 	void drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color);
 	int getDims(char const* str, std::size_t len, int* height = 0);
 	void drawChar(Bitmap& scr, unsigned char ch, int x, int y, int color);
-	
+
 	void drawText(Bitmap& scr, std::string const& str, int x, int y, int color)
 	{
 		drawText(scr, str.data(), str.size(), x, y, color);
@@ -49,14 +49,14 @@ struct Font
 
 		drawText(scr, reinterpret_cast<char const*>(&str.buffer[0]), str.buffer.size(), x, y, color);
 	}
-	
+
 	int getDims(std::string const& str, int* height = 0)
 	{
 		return getDims(str.data(), str.size(), height);
 	}
-	
+
 	void drawFramedText(Bitmap& scr, std::string const& text, int x, int y, int color);
-	
+
 	std::vector<Char> chars;
 };
 

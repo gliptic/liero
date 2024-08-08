@@ -16,7 +16,7 @@
 std::string changeLeaf(std::string const& path, std::string const& newLeaf)
 {
 	std::size_t lastSep = path.find_last_of("\\/");
-	
+
 	if(lastSep == std::string::npos)
 		return newLeaf; // We assume there's only a leaf in the path
 	return path.substr(0, lastSep + 1) + newLeaf;
@@ -25,7 +25,7 @@ std::string changeLeaf(std::string const& path, std::string const& newLeaf)
 std::string getRoot(std::string const& path)
 {
 	std::size_t lastSep = path.find_last_of("\\/");
-	
+
 	if(lastSep == std::string::npos)
 		return "";
 	return path.substr(0, lastSep);
@@ -34,7 +34,7 @@ std::string getRoot(std::string const& path)
 std::string getLeaf(std::string const& path)
 {
 	std::size_t lastSep = path.find_last_of("\\/");
-	
+
 	if (lastSep == std::string::npos)
 		return path;
 	return path.substr(lastSep + 1);
@@ -43,7 +43,7 @@ std::string getLeaf(std::string const& path)
 std::string getBasename(std::string const& path)
 {
 	std::size_t lastSep = path.find_last_of(".");
-	
+
 	if(lastSep == std::string::npos)
 		return path;
 	return path.substr(0, lastSep);
@@ -52,7 +52,7 @@ std::string getBasename(std::string const& path)
 std::string getExtension(std::string const& path)
 {
 	std::size_t lastSep = path.find_last_of(".");
-	
+
 	if(lastSep == std::string::npos)
 		return "";
 	return path.substr(lastSep + 1);
@@ -81,22 +81,22 @@ FILE* tolerantFOpen(std::string const& name, char const* mode)
 	FILE* f = std::fopen(name.c_str(), mode);
 	if(f)
 		return f;
-		
+
 	f = std::fopen(toUpperCase(name).c_str(), mode);
 	if(f)
 		return f;
-		
+
 	f = std::fopen(toLowerCase(name).c_str(), mode);
 	if(f)
 		return f;
-		
+
 	// Try with first letter capital
 	std::string ch(toLowerCase(name));
 	ch[0] = std::toupper(static_cast<unsigned char>(ch[0]));
 	f = std::fopen(ch.c_str(), mode);
 	if(f)
 		return f;
-		
+
 	return 0;
 }
 
@@ -137,22 +137,22 @@ struct filename_result
 	: name(0)
 	{
 	}
-	
+
 	filename_result(char const* name)
 	: name(name)
 	{
-	
+
 	}
-	
+
 	operator void const*()
 	{
 		return name;
 	}
-	
+
 	char const* name;
 };
 
-#if GVL_LINUX || __APPLE__ 
+#if GVL_LINUX || __APPLE__
 
 # define BOOST_HANDLE DIR *
 # define BOOST_INVALID_HANDLE_VALUE 0
@@ -165,7 +165,7 @@ BOOST_HANDLE & handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
 	const char * dummy_first_name = ".";
 	return ( (handle = ::opendir( dir ))
 		== BOOST_INVALID_HANDLE_VALUE ) ? filename_result() : filename_result(dummy_first_name);
-}  
+}
 
 inline void find_close( BOOST_HANDLE handle )
 {
@@ -208,12 +208,12 @@ BOOST_HANDLE & handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 	//    std::cout << "find_first_file " << dir << std::endl;
 	std::string dirpath( std::string(dir) + "/*" );
 	bool fail = ( (handle = ::FindFirstFileA( dirpath.c_str(), &data )) == BOOST_INVALID_HANDLE_VALUE );
-	
+
 	if(fail)
 		return filename_result();
-	
+
 	return filename_result(data.cFileName);
-}  
+}
 
 inline void find_close( BOOST_HANDLE handle )
 {
@@ -235,7 +235,7 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 		}
 		else { return filename_result(); } // end reached
 	}
-	
+
 	return filename_result(data.cFileName);
 }
 
@@ -307,7 +307,7 @@ bool create_directories(std::string const& dir)
             }
 		}
 	}
-    
+
 	return true;
 }
 
@@ -362,7 +362,7 @@ DirectoryListing::DirectoryListing(std::string const& dir)
 						auto& back = subs.back();
 						back.name.erase(subs.back().name.size() - 4);
 						back.isDir = true;
-					}	
+					}
 				}
 			}
 		}
@@ -479,7 +479,7 @@ struct FsNodeZipFile : FsNodeImp
 		archive->root = this;
 
 		auto fileCount = mz_zip_reader_get_num_files(&archive->archive);
-		
+
 		for (mz_uint fileIndex = 0; fileIndex < fileCount; ++fileIndex)
 		{
 			char buf[260];
@@ -498,7 +498,7 @@ struct FsNodeZipFile : FsNodeImp
 				if (isDirSep(filepath[i]))
 				{
 					std::string const& part = filepath.substr(beg, i - beg);
-				
+
 					auto& c = cur->children[part];
 					if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), -1, true));
 					cur = c.get();
@@ -510,7 +510,7 @@ struct FsNodeZipFile : FsNodeImp
 			if (beg != i)
 			{
 				std::string const& part = filepath.substr(beg, i - beg);
-			
+
 				auto& c = cur->children[part];
 				if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), (int)fileIndex, isDir));
 				cur = c.get();
@@ -533,7 +533,7 @@ struct FsNodeZipFile : FsNodeImp
 	{
 		return path;
 	}
-	
+
 	DirectoryListing iter()
 	{
 		//std::unique_ptr<dir_zip_archive_itr_imp> imp(new dir_zip_archive_itr_imp(gvl::shared_ptr<FsNodeZipFile>(this, gvl::shared_ownership())));
@@ -578,7 +578,7 @@ struct FsNodeZipFile : FsNodeImp
 		gvl::source s(new gvl::stream_piece(
 			gvl::make_shared(gvl::bucket_data_mem::create_from((uint8_t const*)ptr, (uint8_t const*)ptr + size, size))));
 		free(ptr);
-	
+
 		return std::move(s);
 	}
 
@@ -643,7 +643,7 @@ struct FsNodeFilesystem : FsNodeImp
 	{
 		return access(path.c_str(), 0) != -1;
 	}
-	
+
 	gvl::source tryToSource()
 	{
 		FILE* f = tolerantFOpen(path.c_str(), "rb");
@@ -718,7 +718,7 @@ FsNode::FsNode(std::string const& path)
 			{
 				imp = imp->go(part);
 			}
-				
+
 			beg = i + 1;
 		}
 	}

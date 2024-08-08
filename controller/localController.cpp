@@ -38,7 +38,7 @@ LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr
 	worm1->health = worm1->settings->health;
 	worm1->index = 0;
 	worm1->ai = createAi(worm1->settings->controller, *worm1, *settings);
-	
+
 	Worm* worm2 = new Worm();
 	worm2->settings = settings->wormSettings[1];
 	worm2->health = worm2->settings->health;
@@ -54,14 +54,14 @@ LocalController::LocalController(gvl::shared_ptr<Common> common, gvl::shared_ptr
 		worm2->index = 1;
 		if(worm2->settings->controller == 1)
 			worm2->ai.reset(new DumbLieroAI(*worm2));
-			
+
 		addWorm(worm2);
 	}
 #endif
-	
+
 	game.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), worm1->index, 0, 504, 350));
 	game.addViewport(new Viewport(gvl::rect(160, 0, 158+160, 158), worm2->index, 218, 504, 350));
-	
+
 	game.addWorm(worm1);
 	game.addWorm(worm2);
 }
@@ -78,13 +78,13 @@ void LocalController::onKey(int key, bool keyState)
 	if(worm)
 	{
 		worm->cleanControlStates.set(control, keyState);
-		
+
 		if(control < Worm::MaxControl)
 		{
-			// Only real controls 
+			// Only real controls
 			worm->setControlState(control, keyState);
 		}
-		
+
 		if(worm->cleanControlStates[WormSettings::Dig])
 		{
 			worm->press(Worm::Left);
@@ -98,7 +98,7 @@ void LocalController::onKey(int key, bool keyState)
 				worm->release(Worm::Right);
 		}
 	}
-			
+
 	if(key == DkEscape && !goingToMenu)
 	{
 		fadeValue = 31;
@@ -173,16 +173,16 @@ bool LocalController::process()
 				}
 			}
 			game.processFrame();
-			
+
 			if(game.isGameOver())
 			{
 				changeState(StateGameEnded);
 			}
 		}
 	}
-	
+
 	//CommonController::process();
-	
+
 	if(goingToMenu)
 	{
 		if(fadeValue > 0)
@@ -206,7 +206,7 @@ bool LocalController::process()
 			fadeValue += 1;
 		}
 	}
-	
+
 	return true;
 }
 
@@ -231,13 +231,13 @@ void LocalController::changeState(State newState)
 	// NOTE: We prepare new state before destroying the old.
 	// e.g. weapon selection is destroyed first after we successfully
 	// started recording.
-	
+
 	// NOTE: Must do this here before starting recording!
 	if(state == StateWeaponSelection)
 	{
 		ws->finalize();
 	}
-	
+
 	if(newState == StateWeaponSelection)
 	{
 		ws.reset(new WeaponSelection(game));
@@ -250,7 +250,7 @@ void LocalController::changeState(State newState)
 			Worm& worm = *game.worms[i];
 			worm.lives = game.settings->lives;
 		}
-		
+
 		if(game.settings->extensions && game.settings->recordReplays)
 		{
 			try
@@ -258,17 +258,17 @@ void LocalController::changeState(State newState)
 #if !ENABLE_TRACING
 				std::time_t ticks = std::time(0);
 				std::tm* now = std::localtime(&ticks);
-				
+
 				char buf[512];
 				std::strftime(buf, sizeof(buf), " %Y-%m-%d %H.%M.%S.lrp", now);
-				
+
 				std::string prefix;
 				for(std::size_t i = 0; i < 2; ++i)
 				{
 					Worm& worm = *game.worms[i];
 					std::string const& name = worm.settings->name;
 					int chars = 0;
-					
+
 					if(i > 0)
 						prefix.push_back('-');
 					for(std::size_t c = 0; c < name.size() && chars < 4; ++c, ++chars)
@@ -311,13 +311,13 @@ void LocalController::changeState(State newState)
 			goingToMenu = true;
 		}
 	}
-	
+
 	if(state == StateWeaponSelection)
 	{
 		fadeValue = 33;
 		ws.reset();
 	}
-	
+
 	state = newState;
 }
 
@@ -328,7 +328,7 @@ void LocalController::endRecord()
 		replay.reset();
 	}
 }
-	
+
 void LocalController::swapLevel(Level& newLevel)
 {
 	currentLevel()->swap(newLevel);
@@ -343,7 +343,7 @@ Game* LocalController::currentGame()
 {
 	return &game;
 }
-	
+
 bool LocalController::running()
 {
 	return state != StateGameEnded && state != StateInitial;

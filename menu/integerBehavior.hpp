@@ -16,11 +16,11 @@ struct IntegerBehavior : ItemBehavior
 	, allowEntry(true)
 	{
 	}
-	
+
 	bool onLeftRight(Menu& menu, MenuItem& item, int dir);
 	int onEnter(Menu& menu, MenuItem& item);
 	void onUpdate(Menu& menu, MenuItem& item);
-	
+
 	Common& common;
 	int& v;
 	int min, max, step;

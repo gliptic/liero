@@ -87,7 +87,7 @@ void normalize(vector<T>& src, size_t limit, bool balance = true)
 	}
 
 	T range = max - min;
-	
+
 	if (range > T())
 	{
 		for (auto& e : src)

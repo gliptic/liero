@@ -30,14 +30,14 @@ typedef struct channel
 struct sfx_mixer
 {
 	channel channel_states[CHANNEL_COUNT];
-	
+
 	int32_t base_frame;
 	int initialized;
 	double output_latency;
 	double sample_rate;
 };
 
-struct sfx_sound 
+struct sfx_sound
 {
 	tl_vector samples;
 };

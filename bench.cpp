@@ -34,14 +34,14 @@ struct FixedObjectList
 	{
 		clear();
 	}
-	
+
 	T* getFreeObject()
 	{
 		assert(count < Limit);
 		T* ptr = &arr[count++];
 		return ptr;
 	}
-	
+
 	T* newObjectReuse()
 	{
 		T* ret;
@@ -52,12 +52,12 @@ struct FixedObjectList
 
 		return ret;
 	}
-	
+
 	T* newObject()
 	{
 		if(count == Limit)
 			return 0;
-			
+
 		T* ret = getFreeObject();
 		return ret;
 	}
@@ -66,29 +66,29 @@ struct FixedObjectList
 	{
 		return range(arr, arr + count);
 	}
-	
+
 	void free(T* ptr)
 	{
 		assert(ptr < &arr[0] + count && ptr >= &arr[0]);
 		*ptr = arr[--count];
 	}
-	
+
 	void free(range& r)
 	{
 		free(--r.cur);
 		--r.end;
 	}
-	
+
 	void clear()
 	{
 		count = 0;
 	}
-	
+
 	std::size_t size() const
 	{
 		return count;
 	}
-	
+
 	T arr[Limit];
 	std::size_t count;
 };
@@ -119,14 +119,14 @@ struct FixedCopyObjectList
 	{
 		clear();
 	}
-	
+
 	T* getFreeObject()
 	{
 		assert(count < Limit);
 		T* ptr = &arr[count++];
 		return ptr;
 	}
-	
+
 	T* newObjectReuse()
 	{
 		T* ret;
@@ -137,22 +137,22 @@ struct FixedCopyObjectList
 
 		return ret;
 	}
-	
+
 	range all()
 	{
 		return range(arr, arr + count);
 	}
-	
+
 	void clear()
 	{
 		count = 0;
 	}
-	
+
 	std::size_t size() const
 	{
 		return count;
 	}
-	
+
 	T arr[Limit];
 	std::size_t count;
 };
@@ -192,7 +192,7 @@ struct CompressObjectList
 	{
 		clear();
 	}
-	
+
 	T* getFreeObject()
 	{
 		assert(next < Limit*2);
@@ -201,7 +201,7 @@ struct CompressObjectList
 		ptr->used = true;
 		return ptr;
 	}
-	
+
 	T* newObjectReuse()
 	{
 		T* ret;
@@ -212,12 +212,12 @@ struct CompressObjectList
 
 		return ret;
 	}
-	
+
 	T* newObject()
 	{
 		if (next == Limit*2)
 			return 0;
-			
+
 		T* ret = getFreeObject();
 		return ret;
 	}
@@ -228,19 +228,19 @@ struct CompressObjectList
 			compact();
 		return range(arr, arr + next);
 	}
-	
+
 	void free(T* ptr)
 	{
 		assert(ptr < &arr[0] + next && ptr >= &arr[0] && ptr->used);
 		ptr->used = false;
 		--count;
 	}
-	
+
 	void free(range& r)
 	{
 		free(r.cur - 1);
 	}
-	
+
 	void clear()
 	{
 		count = 0;
@@ -268,7 +268,7 @@ struct CompressObjectList
 			/* Nothing */;
 
 		std::size_t from = to;
-		
+
 		while (true)
 		{
 			while (from < next && !arr[from].used)
@@ -284,12 +284,12 @@ struct CompressObjectList
 
 		assert(checkCount() == count);
 	}
-	
+
 	std::size_t size() const
 	{
 		return count;
 	}
-	
+
 	T arr[Limit*2];
 	std::size_t count, next;
 };
@@ -322,7 +322,7 @@ struct LinkedObjectList
 	{
 		clear();
 	}
-	
+
 	T* getFreeObject()
 	{
 		assert(count < Limit);
@@ -336,7 +336,7 @@ struct LinkedObjectList
 		++count;
 		return ptr;
 	}
-	
+
 	T* newObjectReuse()
 	{
 		T* ret;
@@ -347,12 +347,12 @@ struct LinkedObjectList
 
 		return ret;
 	}
-	
+
 	T* newObject()
 	{
 		if(count == Limit)
 			return 0;
-			
+
 		T* ret = getFreeObject();
 		return ret;
 	}
@@ -361,7 +361,7 @@ struct LinkedObjectList
 	{
 		return range(sentinel.next, &sentinel);
 	}
-	
+
 	void free(T* ptr)
 	{
 		auto p = ptr->prev, n = ptr->next;
@@ -371,12 +371,12 @@ struct LinkedObjectList
 		freeList = ptr;
 		--count;
 	}
-	
+
 	void free(range& r)
 	{
 		free(r.cur->prev);
 	}
-	
+
 	void clear()
 	{
 		count = 0;
@@ -390,12 +390,12 @@ struct LinkedObjectList
 			freeList = &arr[i];
 		}
 	}
-	
+
 	std::size_t size() const
 	{
 		return count;
 	}
-	
+
 	T arr[Limit];
 	T* freeList;
 	T sentinel;
@@ -426,7 +426,7 @@ struct LinkedObjectList2
 
 			ret = cur;
 			return cur != &parent->sentinel;
-#endif	
+#endif
 		}
 
 		LinkedObjectList2* parent;
@@ -450,7 +450,7 @@ struct LinkedObjectList2
 	{
 		return (loffset)((char*)next - (char*)this);
 	}
-	
+
 	T* getFreeObject()
 	{
 		assert(count < Limit);
@@ -470,7 +470,7 @@ struct LinkedObjectList2
 		++count;
 		return ptr;
 	}
-	
+
 	T* newObjectReuse()
 	{
 		T* ret;
@@ -481,12 +481,12 @@ struct LinkedObjectList2
 
 		return ret;
 	}
-	
+
 	T* newObject()
 	{
 		if(count == Limit)
 			return 0;
-			
+
 		T* ret = getFreeObject();
 		return ret;
 	}
@@ -496,7 +496,7 @@ struct LinkedObjectList2
 		return range(this);
 	}
 
-#if !SINGLE	
+#if !SINGLE
 	void free(T* ptr)
 	{
 		auto p = ptr->prev, n = ptr->next;
@@ -507,10 +507,10 @@ struct LinkedObjectList2
 		--count;
 	}
 #endif
-	
+
 	void free(range& r)
 	{
-#if !SINGLE	
+#if !SINGLE
 		T* c = r.cur;
 		r.cur = go(r.cur->prev);
 		free(c);
@@ -525,11 +525,11 @@ struct LinkedObjectList2
 		--count;
 #endif
 	}
-	
+
 	void clear()
 	{
 		count = 0;
-#if !SINGLE	
+#if !SINGLE
 		sentinel.prev = offs(&sentinel);
 #endif
 		sentinel.next = offs(&sentinel);
@@ -541,12 +541,12 @@ struct LinkedObjectList2
 			freeList = offs(&arr[i]);
 		}
 	}
-	
+
 	std::size_t size() const
 	{
 		return count;
 	}
-	
+
 	T sentinel;
 	T arr[Limit];
 	loffset freeList;
@@ -590,7 +590,7 @@ struct LinkedObjectList3
 	{
 		return (loffset)((char*)next - (char*)this);
 	}
-	
+
 	T* getFreeObject()
 	{
 		assert(count < Limit);
@@ -605,7 +605,7 @@ struct LinkedObjectList3
 		++count;
 		return ptr;
 	}
-	
+
 	T* newObjectReuse()
 	{
 		T* ret;
@@ -616,12 +616,12 @@ struct LinkedObjectList3
 
 		return ret;
 	}
-	
+
 	T* newObject()
 	{
 		if(count == Limit)
 			return 0;
-			
+
 		T* ret = getFreeObject();
 		return ret;
 	}
@@ -655,27 +655,27 @@ struct LinkedObjectList3
 
 		*ptr = *last;
 	}
-	
+
 	void free(range& r)
 	{
 		free(--r.cur);
 		--r.end;
 	}
-	
+
 	void clear()
 	{
 		count = 0;
-#if !SINGLE	
+#if !SINGLE
 		sentinel.prev = offs(&sentinel);
 #endif
 		sentinel.next = offs(&sentinel);
 	}
-	
+
 	std::size_t size() const
 	{
 		return count;
 	}
-	
+
 	T sentinel;
 	T arr[Limit];
 	std::size_t count;
@@ -745,7 +745,7 @@ struct Cellphase
 					y += gridWidth;
 					x = xbeg;
 				}
-				
+
 				++x;
 
 				n = &base[(x + y) & (cellMask | (cellMask << gridShift))];
@@ -781,7 +781,7 @@ struct Cellphase
 		uint32_t cx = (ptr->pos.x >> (16 + cellShift));
 		uint32_t cy = (ptr->pos.y >> (16 + cellShift)) << gridShift;
 		auto newIndex = (cx + cy) & (cellMask | (cellMask << gridShift));
-		
+
 		if (newIndex != ptr->index)
 		{
 			remove(ptr);
@@ -892,7 +892,7 @@ struct Object
 		auto vel = obj.vel;
 		auto pos = obj.pos + vel;
 		auto timeLeft = obj.timeLeft;
-		
+
 		if (pos.x >= itof(512))
 		{
 			pos.x = itof(512) - 1;
@@ -952,12 +952,12 @@ struct LinkedObjectListBase2
 
 struct ObjectLinked2 : LinkedObjectListBase2, Object
 {
-	
+
 };
 
 struct ObjectLinkedC : LinkedCellObjectBase, LinkedObjectListBase2, Object
 {
-	
+
 };
 
 #define BROADPHASE (1)
@@ -980,7 +980,7 @@ struct State
 	, container(new Container)
 	{
 	}
-	
+
 	void bench2()
 	{
 		int frames = 0;
@@ -1158,7 +1158,7 @@ void benchAll()
 	t = gvl::get_ticks() - t;
 	printf("%f\n", t / 1000.0);
 #endif
-	
+
 	/*
 	t = gvl::get_ticks();
 	State<ObjectExact, ExactObjectList<ObjectExact, 1000>> state1;
@@ -1166,7 +1166,7 @@ void benchAll()
 	t = gvl::get_ticks() - t;
 	printf("%f\n", t / 1000.0);
 
-	
+
 	t = gvl::get_ticks();
 	State<Object, FixedObjectList<Object, 1000>> state2;
 	state2.bench();
@@ -1174,9 +1174,9 @@ void benchAll()
 	printf("%f\n", t / 1000.0);
 	*/
 
-	
 
-	
+
+
 
 	/*
 	t = gvl::get_ticks();

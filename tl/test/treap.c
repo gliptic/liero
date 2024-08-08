@@ -32,7 +32,7 @@ tl_test(treap_remove) {
 	treap_testnode tn[64];
 	treap_testnode* r;
 	testtreap_init(&tt);
-	
+
 	for(i = 0; i < 64; ++i)
 	{
 		tn[i].v = i;

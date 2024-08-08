@@ -209,14 +209,14 @@ Texts::Texts()
 	gameModes[1] = "Game of Tag";
 	gameModes[2] = "Holdazone";
 	gameModes[3] = "Scales of Justice";
-	
+
 	onoff[0] = "OFF";
 	onoff[1] = "ON";
-	
+
 	controllers[0] = "Human";
 	controllers[1] = "CPU";
 	controllers[2] = "AI";
-	
+
 	weapStates[0] = "Menu";
 	weapStates[1] = "Bonus";
 	weapStates[2] = "Banned";
@@ -230,12 +230,12 @@ void Common::drawTextSmall(Bitmap& scr, char const* str, int x, int y)
 	for(; *str; ++str)
 	{
 		unsigned char c = *str - 'A';
-		
+
 		if(c < 26)
 		{
 			blitImage(scr, textSprites[c], x, y);
 		}
-		
+
 		x += 4;
 	}
 }
@@ -277,7 +277,7 @@ int readSpriteTga(
 
 	CHECK(gvl::read_uint16_le(r) == 0);
 	CHECK(gvl::read_uint16_le(r) == 0);
-	
+
 	imageWidth = gvl::read_uint16_le(r);
 	imageHeight = gvl::read_uint16_le(r);
 	CHECK(r.get() == 8);
@@ -288,7 +288,7 @@ int readSpriteTga(
 	// TODO: Support more sprites?
 	CHECK(imageWidth == destImageWidth);
 	CHECK(imageHeight == destImageHeight);
-	
+
 	if (pal)
 	{
 		for (auto& entry : pal->entries)
@@ -363,7 +363,7 @@ void Common::load(FsNode node)
 				std::size_t dataSize = gvl::read_uint32_le(r);
 
 				s.originalData.resize(dataSize);
-		
+
 				for (auto& z : s.originalData)
 					z = r.get() - 128;
 
@@ -401,7 +401,7 @@ void Common::load(FsNode node)
 			gvl::octet_reader r((dir / "font.tga").toOctetReader());
 
 			std::vector<uint8_t> data(font.chars.size() * 7 * 8, 10);
-			
+
 			readSpriteTga(r, 7, (int)font.chars.size() * 8, (int)font.chars.size(), &data[0], 0);
 
 			for (std::size_t i = 0; i < font.chars.size(); ++i)
@@ -487,48 +487,48 @@ void Common::precompute()
 
 	// Precompute sprites
 	wormSprites.allocate(16, 16, 2 * 2 * 21);
-	
+
 	for(int i = 0; i < 21; ++i)
 	{
 		for(int y = 0; y < 16; ++y)
 		for(int x = 0; x < 16; ++x)
 		{
 			PalIdx pix = (largeSprites.spritePtr(16 + i) + y*16)[x];
-			
+
 			(wormSprite(i, 1, 0) + y*16)[x] = pix;
 			if(x == 15)
 				(wormSprite(i, 0, 0) + y*16)[15] = 0;
 			else
 				(wormSprite(i, 0, 0) + y*16)[14 - x] = pix;
-			
+
 			if(pix >= 30 && pix <= 34)
 				pix += 9; // Change worm color
-				
+
 			(wormSprite(i, 1, 1) + y*16)[x] = pix;
-			
+
 			if(x == 15)
 				(wormSprite(i, 0, 1) + y*16)[15] = 0; // A bit haxy, but works
 			else
 				(wormSprite(i, 0, 1) + y*16)[14 - x] = pix;
 		}
 	}
-	
+
 	fireConeSprites.allocate(16, 16, 2 * 7);
-	
+
 	for(int i = 0; i < 7; ++i)
 	{
 		for(int y = 0; y < 16; ++y)
 		for(int x = 0; x < 16; ++x)
 		{
 			PalIdx pix = (largeSprites.spritePtr(9 + i) + y*16)[x];
-			
+
 			(fireConeSprite(i, 1) + y*16)[x] = pix;
-			
+
 			if(x == 15)
 				(fireConeSprite(i, 0) + y*16)[15] = 0;
 			else
 				(fireConeSprite(i, 0) + y*16)[14 - x] = pix;
-			
+
 		}
 	}
 }
@@ -556,7 +556,7 @@ void SfxSample::createSound()
 
 	int prev = ((int8_t)originalData[0]) * 30;
 	*ptr++ = prev;
-		
+
 	for(std::size_t j = 1; j < originalData.size(); ++j)
 	{
 		int cur = (int8_t)originalData[j] * 30;
@@ -564,7 +564,7 @@ void SfxSample::createSound()
 		*ptr++ = cur;
 		prev = cur;
 	}
-		
+
 	*ptr++ = prev;
 }
 
@@ -576,7 +576,7 @@ void Common::ltrace(char const* category, uint32 object, char const* attribute, 
 	uint32 attr = *(uint32*)(attribute);
 
 	if (writeTrace)
-	{	
+	{
 		gvl::write_uint32_le(trace_writer, cat);
 		gvl::write_uint32_le(trace_writer, object);
 		gvl::write_uint32_le(trace_writer, attr);

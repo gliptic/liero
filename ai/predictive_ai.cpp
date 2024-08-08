@@ -123,7 +123,7 @@ int obstacles(Game& game, gvl::ivec2 from, gvl::ivec2 to)
 	dvec2 org(from.x, from.y);
 	dvec2 dir(to.x, to.y);
 	dir -= org;
-	
+
 	double l = length(dir);
 	dir /= l;
 
@@ -132,7 +132,7 @@ int obstacles(Game& game, gvl::ivec2 from, gvl::ivec2 to)
 	for (double d = 0; d < l; d += 2.0)
 	{
 		dvec2 p = org + dir * d;
-		
+
 		auto m = game.common->materials[
 			game.level.checkedPixelWrap((int)p.x, (int)p.y)];
 
@@ -199,7 +199,7 @@ double aimingDiff(AiContext& context, Game& game, Worm* from, level_cell* cell)
 
 	double dirx = 0, diry = 0;
 	auto* c = cell;
-	
+
 	//if (from->index == 0)
 	if (true)
 	{
@@ -210,7 +210,7 @@ double aimingDiff(AiContext& context, Game& game, Worm* from, level_cell* cell)
 			c = (level_cell*)c->parent;
 			auto path = context.dlevel.coords_level(c);
 
-			if ((path.x != orgl.x && path.y != orgl.y) 
+			if ((path.x != orgl.x && path.y != orgl.y)
 			 && obstacles(game, orgl, path) > 4)
 				break;
 
@@ -376,7 +376,7 @@ double evaluateState(
 			score += psigmoid((closer / (double)wormCell->g)) * 100.0 * weights.missileWeight;
 		}
 	}
-	
+
 	double meHealth = totalHealthNorm(me);
 	double targetHealth = totalHealthNorm(target);
 
@@ -400,7 +400,7 @@ double evaluateState(
 
 		score += meAmmoWorth * 2.0 * weights.ammoWeight;
 	}
-	
+
 	if (game.settings->gameMode == Settings::GMHoldazone)
 	{
 		double scale = 1.0/4.0;
@@ -453,14 +453,14 @@ double evaluateState(
 	if (ai.maxDamage > 0.1)
 			score -= (c.damage * 10.0) / ai.maxDamage;
 #endif
-	
+
 	if (game.settings->gameMode == Settings::GMHoldazone)
 	{
 		if (game.holdazone.holderIdx == me->index)
 			score += 50.0;
 		if (game.holdazone.contenderIdx == me->index)
 			score += game.holdazone.contenderFrames * 30.0 / 70.0;
-			
+
 		if (game.holdazone.holderIdx == target->index)
 			score -= 50.0;
 		if (game.holdazone.contenderIdx == target->index)
@@ -603,7 +603,7 @@ void evaluate(
 			weaponChangesLeft[j] = changesLeft;
 		}
 	}
-	
+
 	for (std::size_t i = 0; i < planSize; ++i)
 	{
 		if (plan.size() <= i)
@@ -654,7 +654,7 @@ void evaluate(
 						}
 					}
 				}
-				
+
 			}
 		}
 		/*
@@ -675,7 +675,7 @@ void evaluate(
 			targetCopy->controlStates = targetContext.update(targetAi->best->plan[i], copy, targetCopy, *targetAi);
 		else
 			simpleAi.process(copy, *targetCopy);
-		
+
 		copy.processFrame();
 
 		double s = evaluateState(ai, meCopy, copy, context, targetCopy, game, i + 1);
@@ -701,7 +701,7 @@ void mutate(
 {
 	MutationStrategy ms(MtRange, 0, (uint32_t)candidate.size());
 
-	
+
 	{
 		// Find the minimum suffix sum
 		uint32_t j = uint32_t(prevResult.scoreOverTime.size() - 1);
@@ -763,7 +763,7 @@ void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int o
 
 		double dirx = 0, diry = 0;
 		auto* c = cell;
-	
+
 		//if (from->index == 0)
 		{
 			dirx = 1;
@@ -805,7 +805,7 @@ void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int o
 
 #if 0
 	//auto* cell = aiContext.dlevel.cell_from_px(ftoi(worm.x), ftoi(worm.y));
-	
+
 	while (cell)
 	{
 		auto coords = dlevel.coords(cell);
@@ -920,7 +920,7 @@ void FollowAI::process(Game& game, Worm& worm)
 				evaluationBudget -= game.settings->aiFrames / 2;
 				cand.prevResultAge = 0;
 			}
-			
+
 
 			double weightedScore = cand.prevResult.weightedScore();
 			if (weightedScore >= bestScore)
@@ -1065,7 +1065,7 @@ void transToM(Weights& weights, double& p,
 	assert(pa < 3 && pb < 4 && pc < 4);
 	assert(pa2 < 3 && pb2 < 4 && pc2 < 4);
 	assert(facingEnemy < 2 && ninjaropeOut < 2);
-		
+
 	if (pa == 0) p *= select(pa2, 0.1,   0.45,  0.45);  // Start aiming
 	if (pa == 1) p *= select(pa2, 0.025, 0.9,   0.075); // Aiming down
 	if (pa == 2) p *= select(pa2, 0.025, 0.075, 0.9);   // Aiming up
@@ -1183,7 +1183,7 @@ TransModel::TransModel(Weights& weights, bool testing)
 			}
 
 			sum2 += p;
-				
+
 			trans[i][j] = p;
 		}
 

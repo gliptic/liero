@@ -41,7 +41,7 @@ tl_string* tl_stringset_intern(tl_stringset* S, tl_string* str) {
 		}
 		o = o->next;
 	}
-	
+
 	h &= S->mask;
 	str->next = S->table[h];
 	S->table[h] = str;
@@ -51,11 +51,11 @@ tl_string* tl_stringset_intern(tl_stringset* S, tl_string* str) {
 tl_string* tl_stringset_add(tl_stringset* S, char const* str, size_t len) {
 	uint32_t a, b, h = len;
 	tl_string* o;
-	
+
 	// TODO: Check max length
 	if(len > TL_MAX_STR_LEN)
 		return NULL;
-	
+
 	if(len >= 4) {  /* Caveat: unaligned access! */
 		a = tl_getu32(str);
 		h ^= tl_getu32(str + len - 4);
@@ -70,11 +70,11 @@ tl_string* tl_stringset_add(tl_stringset* S, char const* str, size_t len) {
 	} else {
 		a = b = 0;
 	}
-	
+
 	a ^= h; a -= tl_rol32(h, 11);
 	b ^= a; b -= tl_rol32(a, 25);
 	h ^= b; h -= tl_rol32(b, 16);
-	
+
 	o = S->table[h & S->mask];
 	while(o != NULL) {
 		if(o->len == len && memcmp(str, o->data, len) == 0) {
@@ -82,7 +82,7 @@ tl_string* tl_stringset_add(tl_stringset* S, char const* str, size_t len) {
 		}
 		o = o->next;
 	}
-	
+
 	o = malloc(sizeof(tl_string) + len); // Null-terminator included in data size
 	o->reserved0 = 0;
 	o->len = len;

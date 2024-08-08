@@ -92,7 +92,7 @@ int tl_bs_file_source(tl_byte_source_pullable* src, char const* path) {
 	if(!f) return -1;
 
 	tl_bs_init_source(src);
-	
+
 	data = malloc(sizeof(tl_bs_file_data));
 	data->f = f;
 
@@ -110,7 +110,7 @@ int tl_bs_file_sink(tl_byte_sink_pushable* sink, char const* path) {
 	if(!f) return -1;
 
 	tl_bs_init_sink(sink);
-	
+
 	data = malloc(sizeof(tl_bs_file_data));
 	data->f = f;
 
@@ -128,7 +128,7 @@ int tl_bs_file_sink(tl_byte_sink_pushable* sink, char const* path) {
 int tl_bs_mem_sink(tl_byte_sink_pushable* sink) {
 	tl_bs_mem_data* data;
 	tl_bs_init_sink(sink);
-	
+
 	data = malloc(sizeof(tl_bs_mem_data));
 	tl_vector_new_empty(data->vec);
 

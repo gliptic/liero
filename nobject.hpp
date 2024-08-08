@@ -44,7 +44,7 @@ struct NObjectType
 	int leaveObjDelay;
 	int timeToExplo;
 	int timeToExploV;
-	
+
 	int id;
 	std::string idStr;
 };
@@ -52,7 +52,7 @@ struct NObjectType
 struct NObject : ExactObjectListBase
 {
 	void process(Game& game);
-	
+
 	fixedvec pos, vel;
 	int timeLeft;
 	//int id;

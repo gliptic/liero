@@ -15,26 +15,26 @@ struct path_node : gvl::pairing_node<>
 		open,
 		closed
 	};
-	
+
 	path_node()
 	: parent(0)
 	, state(none)
 	{
 	}
-	
+
 	bool operator<(path_node const& b) const
 	{
 		return g < b.g;
 	}
-	
+
 	void reset()
 	{
 		state = none;
 	}
-	
+
 	path_node* parent;
 	int state;
-	
+
 	int g; // TODO: Generic type
 };
 
@@ -52,7 +52,7 @@ struct dijkstra_state
 		open_list.insert(node);
 		node->state = path_node_t::open;
 	}
-	
+
 	// get_node(NodeT) -> path_node_t*
 	// get_node_id(path_node_t*) -> NodeT
 
@@ -89,7 +89,7 @@ struct dijkstra_state
 			NodeT min = derived.get_node_id(min_pn);
 
 			++steps;
-		
+
 			min_pn->state = path_node_t::closed;
 
 			succ_iter.begin(min);
@@ -120,7 +120,7 @@ struct dijkstra_state
 		}
 
 		//printf("failed after %d expansions, %d neighbours\n", expansions, neighbours);
-	
+
 		return stop();
 	}
 };
@@ -152,18 +152,18 @@ struct level_cell_succ
 
 		return true;
 	}
-		
+
 	level_cell* node()
 	{
 		return &c[level_cell_offsets[i]];
 	}
-	
+
 	int cost()
 	{
 		level_cell* n = c + level_cell_offsets[i];
 		return level_cell_costs[i] * n->cost;
 	}
-	
+
 	level_cell* c;
 	level_cell* target;
 	int i;
@@ -268,7 +268,7 @@ struct dijkstra_level : dijkstra_state<level_cell*, dijkstra_level>
 					}
 				}
 			done:
-				
+
 				level_cell* c = cell(lx, ly);
 
 				c->cost = cost;

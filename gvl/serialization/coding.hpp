@@ -89,7 +89,7 @@ void write_aint(Writer& writer, unsigned int v)
 	{
 		int b = v & 0x7f;
 		v >>= 7;
-			
+
 		if(v != 0)
 			writer.put(b | 0x80);
 		else
@@ -119,7 +119,7 @@ unsigned int read_aint(Reader& reader)
 			v = (v << 7) | (b & 0x7f);
 		}
 	}
-		
+
 	throw std::runtime_error("Malformed aint in read_aint");
 }
 

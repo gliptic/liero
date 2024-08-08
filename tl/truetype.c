@@ -61,7 +61,7 @@ typedef char tl_tt__check_size16[sizeof(int16_t)==2 ? 1 : -1];
 	#define ttLONG(p)     (* (int32_t *) (p))
 
 #elif TL_LITTLE_ENDIAN && TL_UNALIGNED_ACCESS
-	
+
 	static uint16_t ttUSHORT(const uint8_t *p) { return tl_byteswap16(*(uint16_t*)p); }
 	static int16_t  ttSHORT(const uint8_t *p)   { return (int16_t)tl_byteswap16(*(int16_t*)p); }
 	static uint32_t ttULONG(const uint8_t *p)  { return tl_byteswap32(*(uint32_t*)p); }
@@ -414,7 +414,7 @@ int tl_tt_GetGlyphShape(const tl_tt_fontinfo *info, int glyph_index, tl_tt_verte
                   tl_tt_setvertex(&vertices[num_vertices++], STBTT_vline,sx,sy,0,0);
             }
 
-            // now start the new one               
+            // now start the new one
             tl_tt_setvertex(&vertices[num_vertices++], STBTT_vmove,x,y,0,0);
             next_move = 1 + ttUSHORT(endPtsOfContours+j*2);
             ++j;
@@ -454,7 +454,7 @@ int tl_tt_GetGlyphShape(const tl_tt_fontinfo *info, int glyph_index, tl_tt_verte
          int comp_num_verts = 0, i;
          tl_tt_vertex *comp_verts = 0, *tmp = 0;
          float mtx[6] = {1,0,0,1,0,0}, m, n;
-         
+
          flags = ttSHORT(comp); comp+=2;
          gidx = ttSHORT(comp); comp+=2;
 
@@ -484,7 +484,7 @@ int tl_tt_GetGlyphShape(const tl_tt_fontinfo *info, int glyph_index, tl_tt_verte
             mtx[2] = ttSHORT(comp)/16384.0f; comp+=2;
             mtx[3] = ttSHORT(comp)/16384.0f; comp+=2;
          }
-         
+
          // Find transformation scales.
          m = (float) sqrt(mtx[0]*mtx[0] + mtx[1]*mtx[1]);
          n = (float) sqrt(mtx[2]*mtx[2] + mtx[3]*mtx[3]);
@@ -674,7 +674,7 @@ static void tl_tt__fill_active_edges(unsigned char *scanline, int len, tl_tt__ac
             }
          }
       }
-      
+
       e = e->next;
    }
 }
@@ -965,7 +965,7 @@ tl_image tl_tt_GetGlyphBitmap(const tl_tt_fontinfo *info, float scale_x, float s
 {
    int ix0,iy0,ix1,iy1;
    tl_image gbm;
-   tl_tt_vertex *vertices;   
+   tl_tt_vertex *vertices;
    int num_verts = tl_tt_GetGlyphShape(info, glyph, &vertices);
 
    gbm.w = 0;
@@ -986,11 +986,11 @@ tl_image tl_tt_GetGlyphBitmap(const tl_tt_fontinfo *info, float scale_x, float s
    gbm.w = (ix1 - ix0);
    gbm.h = (iy1 - iy0);
    gbm.pitch = gbm.w;
-   
+
 
    if (xoff  ) *xoff   = ix0;
    if (yoff  ) *yoff   = iy0;
-   
+
    if (gbm.w && gbm.h) {
       gbm.pixels = (unsigned char *) STBTT_malloc(gbm.w * gbm.h, info->userdata);
       if (gbm.pixels) {
@@ -999,12 +999,12 @@ tl_image tl_tt_GetGlyphBitmap(const tl_tt_fontinfo *info, float scale_x, float s
    }
    STBTT_free(vertices, info->userdata);
    return gbm;
-}   
+}
 
 void tl_tt_MakeGlyphBitmap(const tl_tt_fontinfo *info, tl_image* output, float scale_x, float scale_y, int glyph)
 {
    int ix0,iy0;
-   tl_tt_vertex *vertices;   
+   tl_tt_vertex *vertices;
    int num_verts = tl_tt_GetGlyphShape(info, glyph, &vertices);
    tl_tt_GetGlyphBitmapBox(info, glyph, scale_x, scale_y, &ix0,&iy0,0,0);
 
@@ -1017,7 +1017,7 @@ void tl_tt_MakeGlyphBitmap(const tl_tt_fontinfo *info, tl_image* output, float s
 tl_image tl_tt_GetCodepointBitmap(const tl_tt_fontinfo *info, float scale_x, float scale_y, int codepoint, int *xoff, int *yoff)
 {
    return tl_tt_GetGlyphBitmap(info, scale_x, scale_y, tl_tt_FindGlyphIndex(info,codepoint), xoff,yoff);
-}   
+}
 
 void tl_tt_MakeCodepointBitmap(const tl_tt_fontinfo *info, tl_image* output, float scale_x, float scale_y, int codepoint)
 {
@@ -1103,7 +1103,7 @@ void tl_tt_GetBakedQuad(tl_tt_bakedchar *chardata, int pw, int ph, int char_inde
 //
 
 // check if a utf8 string contains a prefix which is the utf16 string; if so return length of matching utf8 string
-static int32_t tl_tt__CompareUTF8toUTF16_bigendian_prefix(uint8_t *s1, int32_t len1, uint8_t *s2, int32_t len2) 
+static int32_t tl_tt__CompareUTF8toUTF16_bigendian_prefix(uint8_t *s1, int32_t len1, uint8_t *s2, int32_t len2)
 {
    int32_t i=0;
 
@@ -1142,7 +1142,7 @@ static int32_t tl_tt__CompareUTF8toUTF16_bigendian_prefix(uint8_t *s1, int32_t l
    return i;
 }
 
-int tl_tt_CompareUTF8toUTF16_bigendian(const char *s1, int len1, const char *s2, int len2) 
+int tl_tt_CompareUTF8toUTF16_bigendian(const char *s1, int len1, const char *s2, int len2)
 {
    return len1 == tl_tt__CompareUTF8toUTF16_bigendian_prefix((uint8_t*) s1, len1, (uint8_t*) s2, len2);
 }

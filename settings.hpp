@@ -19,7 +19,7 @@ struct Extensions
 	static bool const extensions = true;
 
 	Extensions();
-	
+
 	// Extensions
 	bool recordReplays;
 	bool loadPowerlevelPalette;
@@ -49,21 +49,21 @@ struct Settings : gvl::shared, Extensions
 		GMHoldazone,
 		GMScalesOfJustice
 	};
-	
+
 	static int const selectableWeapons = 5;
 	static int const zoneCaptureTime = 70;
-	
+
 	static int const wormAnimTab[];
-	
+
 	Settings();
-	
+
 	bool load(FsNode node, Rand& rand);
 	bool loadLegacy(FsNode node, Rand& rand);
 	void save(FsNode node, Rand& rand);
 	gvl::gash::value_type& updateHash();
-	
+
 	static void generateName(WormSettings& ws, Rand& rand);
-	
+
 	uint32_t weapTable[40];
 	int32_t maxBonuses;
 	int32_t blood;
@@ -82,7 +82,7 @@ struct Settings : gvl::shared, Extensions
 	bool screenSync;
 
 	gvl::shared_ptr<WormSettings> wormSettings[2];
-	
+
 	gvl::gash::value_type hash;
 };
 
@@ -93,7 +93,7 @@ inline T limit(T v)
 		return (T)H - 1;
 	else if(v < (T)L)
 		return (T)L;
-		
+
 	return v;
 }
 
@@ -116,23 +116,23 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 	.b(settings.namesOnBonuses)
 	.b(settings.regenerateLevel)
 	.b(settings.shadow);
-	
+
 	if(ar.in) settings.wormSettings[0]->controller %= 3;
 	if(ar.in) settings.wormSettings[1]->controller %= 3;
-	
+
 	for(int i = 0; i < 40; ++i)
 	{
 		ar.ui8(settings.weapTable[i]);
 		if(ar.in) settings.weapTable[i] = limit<0, 3>(settings.weapTable[i]);
 	}
-	
+
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 3; ++j)
 	{
 		ar.ui8(settings.wormSettings[i]->rgb[j]);
 		if(ar.in) settings.wormSettings[i]->rgb[j] &= 63;
 	}
-		
+
 	for(int i = 0; i < 2; ++i)
 	{
 		for(int j = 0; j < 5; ++j)
@@ -163,15 +163,15 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 			}
 		}
 	}
-	
+
 	ar.b(settings.loadChange);
-	
+
 	char lieroStr[] = "\x05LIERO\0\0";
 	for(std::size_t i = 0; i < sizeof(lieroStr); ++i)
 	{
 		ar.ui8(lieroStr[i]);
 	}
-	
+
 	for(int i = 0; i < 2; ++i)
 	{
 		for(int j = 0; j < 7; ++j)
@@ -190,16 +190,16 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 			}
 		}
 	}
-	
+
 	ar.pascal_str(settings.levelFile, 9);
 
-	// TODO: Slightly bad way to detect whether extensions exist, no?	
+	// TODO: Slightly bad way to detect whether extensions exist, no?
 	try
 	{
 		// Extensions
 		int fileExtensionVersion = myGameVersion;
 		ar.ui8(fileExtensionVersion);
-		
+
 		bool extDummy = true;
 		uint8_t extDummy8 = 0;
 		ar.b(extDummy);
@@ -208,13 +208,13 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 		ar.ui8(extDummy8);
 		ar.ui16(settings.fullscreenW);
 		ar.ui16(settings.fullscreenH);
-		
+
 		if (fileExtensionVersion >= 4)
 			ar.str(settings.levelFile);
-		
+
 		if (fileExtensionVersion >= 2)
 			ar.b(extDummy);
-			
+
 		for(int i = 0; i < 2; ++i)
 		{
 			for(int c = 0; c < WormSettings::MaxControl; ++c)
@@ -225,7 +225,7 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 					.ui8(dummy, 255);
 			}
 		}
-		
+
 		for(int i = 0; i < 2; ++i)
 		{
 			WormSettings& ws = *settings.wormSettings[i];
@@ -253,7 +253,7 @@ void archive_liero(Archive ar, Settings& settings, Rand& rand)
 	{
 		// Reset to default state
 		settings.Extensions::operator=(Extensions());
-		
+
 		for(int i = 0; i < 2; ++i)
 		{
 			WormSettings& ws = *settings.wormSettings[i];
@@ -271,7 +271,7 @@ void archive(Archive ar, Settings& settings)
 	{
 		ar.ui8(settings.weapTable[i]);
 	}
-	
+
 	ar
 	.ui16(settings.maxBonuses)
 	.ui16(settings.blood)
@@ -288,10 +288,10 @@ void archive(Archive ar, Settings& settings)
 	.b(settings.map)
 	.b(settings.screenSync)
 	.str(settings.levelFile);
-	
+
 	// Extensions
 	int fileExtensionVersion = Extensions::myVersion;
-			
+
 	ar.ui8(fileExtensionVersion);
 
 	bool extDummy = true;
@@ -304,7 +304,7 @@ void archive(Archive ar, Settings& settings)
 	.ui8(extDummy8)
 	.ui16(settings.fullscreenW)
 	.ui16(settings.fullscreenH);
-	
+
 	if (fileExtensionVersion >= 2)
 		ar.b(extDummy);
 
@@ -384,7 +384,7 @@ void archive_text(Settings& settings, Archive& ar)
 			ar.str(S(name));
 			// TODO: Random generation?
 		}
-		
+
 		ar.arr("controls", ws->controlsEx, [&] (uint32_t& c) { ar.u32(0, c); });
 	});
 

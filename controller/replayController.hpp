@@ -27,9 +27,9 @@ struct ReplayController : CommonController
 		StateGame,
 		StateGameEnded
 	};
-	
+
 	ReplayController(gvl::shared_ptr<Common> common, gvl::source source);
-	
+
 	void onKey(int key, bool keyState);
 	// Called when the controller loses focus. When not focused, it will not receive key events among other things.
 	void unfocus();
@@ -42,7 +42,7 @@ struct ReplayController : CommonController
 	Level* currentLevel();
 	Game* currentGame();
 	bool running();
-	
+
 	std::unique_ptr<Game> game;
 
 

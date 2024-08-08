@@ -25,7 +25,7 @@ struct ExactObjectList
 				++cur;
 			}
 		}
-		
+
 		iterator& operator++()
 		{
 			do
@@ -33,27 +33,27 @@ struct ExactObjectList
 				++cur;
 			}
 			while(!cur->used);
-			
+
 			return *this;
 		}
-		
+
 		T& operator*()
 		{
 			assert(cur->used);
 			return *cur;
 		}
-		
+
 		T* operator->()
 		{
 			assert(cur->used);
 			return cur;
 		}
-		
+
 		bool operator!=(iterator b)
 		{
 			return cur != b.cur;
 		}
-		
+
 		T* cur;
 	};
 #endif
@@ -108,7 +108,7 @@ struct ExactObjectList
 
 		return ptr;
 	}
-		
+
 	T* newObjectReuse()
 	{
 		T* ret;
@@ -116,27 +116,27 @@ struct ExactObjectList
 			ret = &arr[Limit - 1];
 		else
 			ret = getFreeObject();
-			
+
 		assert(ret->used && ret >= arr && ret < arr + Limit);
 		return ret;
 	}
-	
+
 	T* newObject()
 	{
 		if(count >= Limit)
 			return 0;
-			
+
 		T* ret = getFreeObject();
 		assert(ret->used && ret >= arr && ret < arr + Limit);
 		return ret;
 	}
-	
+
 #if 0
 	iterator begin()
 	{
 		return iterator(&arr[0]);
 	}
-	
+
 	iterator end()
 	{
 		return iterator(&arr[Limit]);
@@ -147,7 +147,7 @@ struct ExactObjectList
 	{
 		return range(&arr[0], &arr[Limit]);
 	}
-		
+
 #if 1
 	void free(T* ptr)
 	{
@@ -158,23 +158,23 @@ struct ExactObjectList
 			freeList[index >> 5] |= (uint32_t(1) << (index & 31));
 
 			ptr->used = false;
-			
+
 			assert(count > 0);
 			--count;
 		}
 	}
 #endif
-	
+
 	void free(range& r)
 	{
 		free(r.cur - 1);
 	}
-	
+
 	void clear()
 	{
 		std::memset(freeList, 0xff, FreeListSize * sizeof(uint32_t));
 		count = 0;
-		
+
 		for(std::size_t i = 0; i < Limit; ++i)
 			arr[i].used = false;
 
@@ -184,7 +184,7 @@ struct ExactObjectList
 		for(uint32_t index = Limit; index < FreeListSize * 32; ++index)
 			freeList[index >> 5] &= ~(uint32_t(1) << (index & 31));
 	}
-	
+
 	std::size_t size() const
 	{
 		return count;

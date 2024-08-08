@@ -16,44 +16,44 @@ struct FastObjectList
 		: cur(cur_)
 		{
 		}
-		
+
 		iterator& operator++()
 		{
-			++cur;			
+			++cur;
 			return *this;
 		}
-		
+
 		T& operator*()
 		{
 			return *cur;
 		}
-		
+
 		T* operator->()
 		{
 			return cur;
 		}
-		
+
 		bool operator!=(iterator b)
 		{
 			return cur != b.cur;
 		}
-		
+
 		T* cur;
 	};
-	
+
 	FastObjectList(std::size_t limit = 1)
 	: limit(limit), arr(limit)
 	{
 		clear();
 	}
-	
+
 	T* getFreeObject()
 	{
 		assert(count < limit);
 		T* ptr = &arr[count++];
 		return ptr;
 	}
-	
+
 	T* newObjectReuse()
 	{
 		T* ret;
@@ -64,54 +64,54 @@ struct FastObjectList
 
 		return ret;
 	}
-	
+
 	T* newObject()
 	{
 		if(count == limit)
 			return 0;
-			
+
 		T* ret = getFreeObject();
 		return ret;
 	}
-	
+
 	iterator begin()
 	{
 		return iterator(&arr[0]);
 	}
-	
+
 	iterator end()
 	{
 		return iterator(&arr[0] + count);
 	}
-		
+
 	void free(T* ptr)
 	{
 		assert(ptr < &arr[0] + count && ptr >= &arr[0]);
 		*ptr = arr[--count];
 	}
-	
+
 	void free(iterator i)
 	{
 		free(&*i);
 	}
-	
+
 	void clear()
 	{
 		count = 0;
 	}
-	
+
 	void resize(std::size_t newLimit)
 	{
 		limit = newLimit;
 		count = std::min(count, newLimit);
 		arr.resize(newLimit);
 	}
-	
+
 	std::size_t size() const
 	{
 		return count;
 	}
-	
+
 	std::size_t limit;
 	std::vector<T> arr;
 	std::size_t count;

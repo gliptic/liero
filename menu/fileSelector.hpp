@@ -54,7 +54,7 @@ struct FileNode : gvl::shared
 		{
 			for (auto& c : children)
 				menu.addItem(MenuItem(c->folder ? 47 : 48, 7, c->name));
-	
+
 			menu.moveToFirstVisible();
 		}
 
@@ -111,7 +111,7 @@ struct FileNode : gvl::shared
 	vector<shared_ptr<FileNode> > children;
 	bool (*filter)(std::string const& name, std::string const& ext);
 	Menu menu;
-	
+
 	string pathName;
 	bool filled;
 	FsNode fsNode; // Starts out invalid
@@ -163,7 +163,7 @@ struct FileSelector
 	FileSelector(Common& common, int x = 178)
 	: common(common)
 	{
-		
+
 	}
 
 	void fill(string const& path, FileFilter filter) // TODO: Get rid of this
@@ -266,7 +266,7 @@ struct FileSelector
 			return false;
 
 		setFolder(*currentNode->parent);
-		
+
 		return true;
 	}
 
@@ -275,28 +275,28 @@ struct FileSelector
 		if(gfx.testSDLKeyOnce(SDLK_UP))
 		{
 			sfx.play(common, 26);
-			
+
 			menu().movement(-1);
 		}
-		
+
 		if(gfx.testSDLKeyOnce(SDLK_DOWN))
 		{
 			sfx.play(common, 25);
-			
+
 			menu().movement(1);
 		}
 
 		if(gfx.testSDLKeyOnce(SDLK_PAGEUP))
 		{
 			sfx.play(common, 26);
-				
+
 			menu().movementPage(-1);
 		}
-			
+
 		if(gfx.testSDLKeyOnce(SDLK_PAGEDOWN))
 		{
 			sfx.play(common, 25);
-				
+
 			menu().movementPage(1);
 		}
 

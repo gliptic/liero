@@ -46,17 +46,17 @@ struct Game
 {
 	Game(gvl::shared_ptr<Common> common, gvl::shared_ptr<Settings> settings, gvl::shared_ptr<SoundPlayer> soundPlayer);
 	~Game();
-	
+
 	void onKey(uint32_t key, bool state);
 	Worm* findControlForKey(uint32_t key, Worm::Control& control);
 	void releaseControls();
 	void processFrame();
 	void focus(Renderer& renderer);
 	void updateSettings(Renderer& renderer);
-	
+
 	void createBObject(fixedvec pos, fixedvec vel);
 	void createBonus();
-	
+
 	void clearViewports();
 	void addViewport(Viewport*);
 	void processViewports();
@@ -74,7 +74,7 @@ struct Game
 	void postClone(Game& original, bool complete = false);
 
 	void spawnZone();
-		
+
 	Material pixelMat(int x, int y)
 	{
 		return common->materials[level.pixel(x, y)];

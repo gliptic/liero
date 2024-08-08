@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 {
 	std::string configPath; // Default to current dir
 	std::string exePath, tcName;
-	
+
 	for(int i = 1; i < argc; ++i)
 	{
 		if(argv[i][0] == '-')

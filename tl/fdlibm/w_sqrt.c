@@ -6,12 +6,12 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
-/* 
+/*
  * wrapper fd_sqrt(x)
  */
 
@@ -22,7 +22,7 @@ double fd_sqrt(double x)		/* wrapper fd_sqrt */
 {
 #if !TL_TRUST_GSQRT
 	double z;
-	int sign = (int)0x80000000; 
+	int sign = (int)0x80000000;
 	unsigned r,t1,s1,ix1,q1;
 	int ix0,s0,q,m,t,i;
 
@@ -30,10 +30,10 @@ double fd_sqrt(double x)		/* wrapper fd_sqrt */
 	ix1 = FD_LO(x);		/* low word of x */
 
     /* take care of Inf and NaN */
-	if((ix0&0x7ff00000)==0x7ff00000) {			
+	if((ix0&0x7ff00000)==0x7ff00000) {
 	    return gA(gM(x,x),x);		/* fd_sqrt(NaN)=NaN, fd_sqrt(+inf)=+inf
 					   fd_sqrt(-inf)=sNaN */
-	} 
+	}
     /* take care of zero */
 	if(ix0<=0) {
 	    if(((ix0&(~sign))|ix1)==0) return x;/* fd_sqrt(+-0) = +-0 */
@@ -67,12 +67,12 @@ double fd_sqrt(double x)		/* wrapper fd_sqrt */
 	r = 0x00200000;		/* r = moving bit from right to left */
 
 	while(r!=0) {
-	    t = s0+r; 
-	    if(t<=ix0) { 
-		s0   = t+r; 
-		ix0 -= t; 
-		q   += r; 
-	    } 
+	    t = s0+r;
+	    if(t<=ix0) {
+		s0   = t+r;
+		ix0 -= t;
+		q   += r;
+	    }
 	    ix0 += ix0 + ((ix1&sign)>>31);
 	    ix1 += ix1;
 	    r>>=1;
@@ -80,9 +80,9 @@ double fd_sqrt(double x)		/* wrapper fd_sqrt */
 
 	r = sign;
 	while(r!=0) {
-	    t1 = s1+r; 
+	    t1 = s1+r;
 	    t  = s0;
-	    if((t<ix0)||((t==ix0)&&(t1<=ix1))) { 
+	    if((t<ix0)||((t==ix0)&&(t1<=ix1))) {
 		s1  = t1+r;
 		if(((t1&sign)==sign)&&(s1&sign)==0) s0 += 1;
 		ix0 -= t;
@@ -103,7 +103,7 @@ double fd_sqrt(double x)		/* wrapper fd_sqrt */
 	        if (q1==(unsigned)0xffffffff) { q1=0; q += 1;}
 		else if (z>one) {
 		    if (q1==(unsigned)0xfffffffe) q+=1;
-		    q1+=2; 
+		    q1+=2;
 		} else
 	            q1 += (q1&1);
 	    }

@@ -12,30 +12,30 @@ bool IntegerBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir)
 {
 	if ((gfx.menuCycles % scrollInterval) != 0)
 		return true;
-		
+
 	int newV = v;
 	if((dir < 0 && newV > min)
 	|| (dir > 0 && newV < max))
 	{
 		newV += dir * step;
 	}
-		
+
 	if(newV != v)
 	{
 		v = newV;
 		onUpdate(menu, item);
 	}
-	
+
 	return true;
 }
 
 int IntegerBehavior::onEnter(Menu& menu, MenuItem& item)
 {
 	sfx.play(common, 27);
-	
+
 	if(!allowEntry)
 		return -1; // Not allowed
-		
+
 	int x, y;
 	if(menu.itemPosition(item, x, y))
 	{

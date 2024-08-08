@@ -21,13 +21,13 @@ uint32_t gvl_get_ticks()
 	{
 		TIMECAPS caps;
 		setup = 1;
-		
+
 		if(timeGetDevCaps(&caps, sizeof(caps)) == TIMERR_NOERROR)
 		{
-			timeBeginPeriod(min(max(caps.wPeriodMin, 1), caps.wPeriodMax)); 
+			timeBeginPeriod(min(max(caps.wPeriodMin, 1), caps.wPeriodMax));
 		}
 	}
-	
+
 	return (uint32_t)(timeGetTime());
 }
 
@@ -35,7 +35,7 @@ uint64_t gvl_get_hires_ticks()
 {
 	LARGE_INTEGER res;
 	QueryPerformanceCounter(&res);
-	
+
 	return (uint64_t)res.QuadPart;
 }
 
@@ -43,7 +43,7 @@ uint64_t gvl_hires_ticks_per_sec()
 {
 	LARGE_INTEGER res;
 	QueryPerformanceFrequency(&res);
-	
+
 	return (uint64_t)res.QuadPart;
 }
 

@@ -113,13 +113,13 @@ bool ReplayController::process()
 				fadeValue += 1;
 			}
 		}
-		
+
 		if(game->isGameOver())
 		{
 			changeState(StateGameEnded);
 		}
 	}
-	
+
 	CommonController::process();
 
 	if (goingToMenu && fadeValue <= 0)
@@ -138,7 +138,7 @@ bool ReplayController::process()
 		presentStats(static_cast<NormalStatsRecorder&>(*game->statsRecorder), *game);
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -155,7 +155,7 @@ void ReplayController::changeState(State newState)
 {
 	if(state == newState)
 		return;
-	
+
 	if(newState == StateGame)
 	{
 		game->startGame();
@@ -176,7 +176,7 @@ void ReplayController::changeState(State newState)
 
 	state = newState;
 }
-	
+
 void ReplayController::swapLevel(Level& newLevel)
 {
 	currentLevel()->swap(newLevel);

@@ -21,12 +21,12 @@ struct file_bucket_pipe : bucket_pipe
 		FILE* f_init = std::fopen(path, mode);
 		init(f_init);
 	}
-	
+
 	file_bucket_pipe(FILE* f_init)
 	{
 		init(f_init);
 	}
-	
+
 	void init(FILE* f_init)
 	{
 		f = f_init;
@@ -42,7 +42,7 @@ struct file_bucket_pipe : bucket_pipe
 			f = 0;
 		}
 	}
-	
+
 	~file_bucket_pipe()
 	{
 		close();
@@ -80,7 +80,7 @@ struct file_bucket_pipe : bucket_pipe
 		// Everything is flushed
 		return sink_result(sink_result::ok);
 	}
-	
+
 	FILE* f;
 };
 

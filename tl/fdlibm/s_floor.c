@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
@@ -33,7 +33,7 @@ double fd_floor(double x)
 	if(fd_j0<20) {
 	    if(fd_j0<0) { 	/* raise inexact if x != 0 */
 		if(gA(huge, x) > 0.0) {/* return 0*sign(x) if |x|<1 */
-		    if(i0>=0) {i0=i1=0;} 
+		    if(i0>=0) {i0=i1=0;}
 		    else if(((i0&0x7fffffff)|i1)!=0)
 			{ i0=0xbff00000;i1=0;}
 		}
@@ -53,7 +53,7 @@ double fd_floor(double x)
 	    if((i1&i)==0) return x;	/* x is integral */
 	    if(gA(huge, x) > 0.0) { 		/* raise inexact flag */
 		if(i0<0) {
-		    if(fd_j0==20) i0+=1; 
+		    if(fd_j0==20) i0+=1;
 		    else {
 			j = i1+(1<<(52-fd_j0));
 			if(j<i1) i0 +=1 ; 	/* got a carry */

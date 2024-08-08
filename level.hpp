@@ -24,16 +24,16 @@ struct Level
 	{
 		zeroMaterial = common.materials[0];
 	}
-	
+
 	bool load(Common& common, Settings const& settings, gvl::octet_reader r);
-	
+
 	void generateDirtPattern(Common& common, Rand& rand);
 	void generateRandom(Common& common, Settings const& settings, Rand& rand);
 	void makeShadow(Common& common);
 	void generateFromSettings(Common& common, Settings const& settings, Rand& rand);
 	bool selectSpawn(Rand& rand, int w, int h, gvl::ivec2& selected);
 	void drawMiniature(Bitmap& dest, int mapX, int mapY, int step);
-		
+
 	unsigned char pixel(int x, int y)
 	{
 		return data[x + y*width];
@@ -75,7 +75,7 @@ struct Level
 	{
 		return &materials[x + y*width];
 	}
-	
+
 	unsigned char checkedPixelWrap(int x, int y)
 	{
 		unsigned int idx = static_cast<unsigned int>(x + y*width);
@@ -91,7 +91,7 @@ struct Level
 			return materials[idx];
 		return zeroMaterial;
 	}
-	
+
 	bool inside(int x, int y)
 	{
 		return static_cast<unsigned int>(x) < static_cast<unsigned int>(width)
@@ -103,7 +103,7 @@ struct Level
 		return static_cast<unsigned int>(pos.x) < static_cast<unsigned int>(width)
 		    && static_cast<unsigned int>(pos.y) < static_cast<unsigned int>(height);
 	}
-	
+
 	void swap(Level& other)
 	{
 		data.swap(other.data);
@@ -115,17 +115,17 @@ struct Level
 		std::swap(oldLevelFile, other.oldLevelFile);
 		std::swap(zeroMaterial, other.zeroMaterial);
 	}
-	
+
 	gvl::rect rect()
 	{
 		return gvl::rect(0, 0, width, height);
 	}
-	
+
 	void resize(int width_new, int height_new);
-	
+
 	std::vector<unsigned char> data;
 	std::vector<Material> materials;
-	
+
 	bool oldRandomLevel;
 	std::string oldLevelFile;
 	int width, height;

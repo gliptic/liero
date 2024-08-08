@@ -17,7 +17,7 @@ void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, 
 {
 	WObject* obj = game.wobjects.newObjectReuse();
 	Common& common = *game.common;
-	
+
 	obj->type = this;
 	obj->pos = pos;
 	obj->ownerIdx = ownerIdx;
@@ -41,7 +41,7 @@ void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, 
 		obj->vel.x += game.rand(distribution * 2) - distribution;
 		obj->vel.y += game.rand(distribution * 2) - distribution;
 	}
-	
+
 	if(startFrame >= 0)
 	{
 		if(shotType == STNormal)
@@ -60,7 +60,7 @@ void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, 
 		{
 			if(angle > 64)
 				--angle;
-				
+
 			int curFrame = (angle - 12) >> 3;
 			if(curFrame < 0)
 				curFrame = 0;
@@ -79,9 +79,9 @@ void Weapon::fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, 
 	{
 		obj->curFrame = colorBullets - game.rand(2);
 	}
-	
+
 	obj->timeLeft = timeToExplo;
-	
+
 	if(timeToExploV)
 		obj->timeLeft -= game.rand(timeToExploV);
 }
@@ -90,26 +90,26 @@ void WObject::blowUpObject(Game& game, int causeIdx)
 {
 	Common& common = *game.common;
 	Weapon const& w = *type;
-	
+
 	fixed x = this->pos.x;
 	fixed y = this->pos.y;
 	fixed velX = this->vel.x;
 	fixed velY = this->vel.y;
-	
+
 	game.wobjects.free(this);
-	
+
 	if(w.createOnExp >= 0)
 	{
 		common.sobjectTypes[w.createOnExp].create(game, ftoi(x), ftoi(y), causeIdx, firedBy, this);
 	}
-	
+
 	if(w.exploSound >= 0)
 	{
 		game.soundPlayer->play(w.exploSound);
 	}
-	
+
 	int splinters = w.splinterAmount;
-	
+
 	if(splinters > 0)
 	{
 		if(w.splinterScatter == 0)
@@ -143,7 +143,7 @@ void WObject::blowUpObject(Game& game, int causeIdx)
 			}
 		}
 	}
-	
+
 	if(w.dirtEffect >= 0)
 	{
 		int ix = ftoi(x), iy = ftoi(y);
@@ -158,12 +158,12 @@ void WObject::process(Game& game)
 	int iter = 0;
 	bool doExplode = false;
 	bool doRemove = false;
-	
+
 	Common& common = *game.common;
 	Weapon const& w = *type;
 
 	Worm* owner = game.wormByIdx(ownerIdx);
-	
+
 	// As liero would do this while rendering, we try to do it as early as possible
 	if(common.H[HRemExp]
 	&& type - &common.weapons[0] == LC(RemExpObject) - 1)
@@ -174,45 +174,45 @@ void WObject::process(Game& game)
 			timeLeft = 0;
 		}
 	}
-	
+
 	do
 	{
 		++iter;
 		pos += vel;
-				
+
 		if(w.shotType == 2)
 		{
 			fixedvec dir(cossinTable[curFrame]);
 			auto newVel = dir * w.speed / 100;
-			
+
 			if(owner->visible
 			&& owner->pressed(Worm::Up))
 			{
 				newVel += dir * w.addSpeed / 100;
 			}
-			
+
 			vel = ((vel * 8) + newVel) / 9;
 		}
 		else if(w.shotType == 3)
 		{
 			fixedvec dir(cossinTable[curFrame]);
 			auto addVel = dir * w.addSpeed / 100;
-			
+
 			vel += addVel;
-			
+
 			if(w.distribution)
 			{
 				vel.x += game.rand(w.distribution * 2) - w.distribution;
 				vel.y += game.rand(w.distribution * 2) - w.distribution;
 			}
 		}
-		
-		
+
+
 		if(w.bounce > 0)
 		{
 			auto ipos = ftoi(pos);
 			auto inewPos = ftoi(pos + vel);
-			
+
 			if(!game.level.inside(inewPos.x, ipos.y)
 			|| game.pixelMat(inewPos.x, ipos.y).dirtRock())
 			{
@@ -224,7 +224,7 @@ void WObject::process(Game& game)
 				else
 					vel.x = -vel.x;
 			}
-			
+
 			if(!game.level.inside(ipos.x, inewPos.y)
 			|| game.pixelMat(ipos.x, inewPos.y).dirtRock())
 			{
@@ -237,7 +237,7 @@ void WObject::process(Game& game)
 					vel.y = -vel.y;
 			}
 		}
-		
+
 		if(w.multSpeed != 100)
 		{
 			vel = vel * w.multSpeed / 100;
@@ -247,7 +247,7 @@ void WObject::process(Game& game)
 		{
 			common.sobjectTypes[w.objTrailType].create(game, ftoi(pos.x), ftoi(pos.y), ownerIdx, firedBy);
 		}
-		
+
 		if(w.partTrailObj >= 0 && (game.cycles % w.partTrailDelay) == 0)
 		{
 			if(w.partTrailType == 1)
@@ -273,7 +273,7 @@ void WObject::process(Game& game)
 					firedBy);
 			}
 		}
-		
+
 		if(w.collideWithObjects)
 		{
 			auto impulse = vel * w.blowAway / 100;
@@ -293,7 +293,7 @@ void WObject::process(Game& game)
 					}
 				}
 			}
-			
+
 			auto nr = game.nobjects.all();
 			for (NObject* i; (i = nr.next()); )
 			{
@@ -306,9 +306,9 @@ void WObject::process(Game& game)
 				}
 			}
 		}
-		
+
 		auto inewPos = ftoi(pos + vel);
-		
+
 		if(inewPos.x < 0)
 			pos.x = 0;
 		if(inewPos.y < 0)
@@ -317,7 +317,7 @@ void WObject::process(Game& game)
 			pos.x = itof(game.level.width - 1);
 		if(inewPos.y >= game.level.height)
 			pos.y = itof(game.level.height - 1);
-			
+
 		if(!game.level.inside(inewPos)
 		|| game.pixelMat(inewPos.x, inewPos.y).dirtRock())
 		{
@@ -336,7 +336,7 @@ void WObject::process(Game& game)
 		else
 		{
 			vel.y += w.gravity; // The original tested w.gravity first, which doesn't seem like a gain
-			
+
 			if(w.numFrames > 0)
 			{
 				if((game.cycles & 7) == 0)
@@ -362,22 +362,22 @@ void WObject::process(Game& game)
 				}
 			}
 		}
-		
+
 		if(w.timeToExplo > 0)
 		{
 			if(--timeLeft < 0)
 				doExplode = true;
 		}
-		
+
 		for(std::size_t i = 0; i < game.worms.size(); ++i)
 		{
 			Worm& worm = *game.worms[i];
-			
+
 			if((w.hitDamage || w.blowAway || w.bloodOnHit || w.wormCollide)
 			&& checkForSpecWormHit(game, ftoi(pos.x), ftoi(pos.y), w.detectDistance, worm))
 			{
 				worm.vel += vel * w.blowAway / 100;
-				
+
 				game.doDamage(worm, w.hitDamage, ownerIdx);
 				game.statsRecorder->damageDealt(owner, firedBy, &worm, w.hitDamage, hasHit);
 				if (!hasHit)
@@ -385,13 +385,13 @@ void WObject::process(Game& game)
 				hasHit = true;
 
 				int bloodAmount = w.bloodOnHit * game.settings->blood / 100;
-				
+
 				for(int i = 0; i < bloodAmount; ++i)
 				{
 					int angle = game.rand(128);
 					common.nobjectTypes[6].create2(game, angle, vel / 3, pos, 0, worm.index, firedBy);
 				}
-								
+
 				if(w.hitDamage > 0
 				&& worm.health > 0
 				&& game.rand(3) == 0)
@@ -402,14 +402,14 @@ void WObject::process(Game& game)
 						game.soundPlayer->play(snd, &worm);
 					}
 				}
-				
+
 				if(w.wormCollide)
 				{
 					if(game.rand(w.wormCollide) == 0)
 					{
 						if(w.wormExplode)
 							doExplode = true;
-							
+
 						doRemove = true;
 					}
 				}

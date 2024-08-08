@@ -6,15 +6,15 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  *
  */
 
 /* _ieee754_rem_pio2(x,y)
- * 
- * return the fd_remainder of x rem pi/2 in y[0]+y[1] 
+ *
+ * return the fd_remainder of x rem pi/2 in y[0]+y[1]
  * use _kernel_rem_pio2()
  */
 
@@ -22,21 +22,21 @@
 #include "fdlibm_intern.h"
 
 /*
- * Table of constants for 2/pi, 396 Hex digits (476 decimal) of 2/pi 
+ * Table of constants for 2/pi, 396 Hex digits (476 decimal) of 2/pi
  */
 
 static const int two_over_pi[] = {
-0xA2F983, 0x6E4E44, 0x1529FC, 0x2757D1, 0xF534DD, 0xC0DB62, 
-0x95993C, 0x439041, 0xFE5163, 0xABDEBB, 0xC561B7, 0x246E3A, 
-0x424DD2, 0xE00649, 0x2EEA09, 0xD1921C, 0xFE1DEB, 0x1CB129, 
-0xA73EE8, 0x8235F5, 0x2EBB44, 0x84E99C, 0x7026B4, 0x5F7E41, 
-0x3991D6, 0x398353, 0x39F49C, 0x845F8B, 0xBDF928, 0x3B1FF8, 
-0x97FFDE, 0x05980F, 0xEF2F11, 0x8B5A0A, 0x6D1F6D, 0x367ECF, 
-0x27CB09, 0xB74F46, 0x3F669E, 0x5FEA2D, 0x7527BA, 0xC7EBE5, 
-0xF17B3D, 0x0739F7, 0x8A5292, 0xEA6BFB, 0x5FB11F, 0x8D5D08, 
-0x560330, 0x46FC7B, 0x6BABF0, 0xCFBC20, 0x9AF436, 0x1DA9E3, 
-0x91615E, 0xE61B08, 0x659985, 0x5F14A0, 0x68408D, 0xFFD880, 
-0x4D7327, 0x310606, 0x1556CA, 0x73A8C9, 0x60E27B, 0xC08C6B, 
+0xA2F983, 0x6E4E44, 0x1529FC, 0x2757D1, 0xF534DD, 0xC0DB62,
+0x95993C, 0x439041, 0xFE5163, 0xABDEBB, 0xC561B7, 0x246E3A,
+0x424DD2, 0xE00649, 0x2EEA09, 0xD1921C, 0xFE1DEB, 0x1CB129,
+0xA73EE8, 0x8235F5, 0x2EBB44, 0x84E99C, 0x7026B4, 0x5F7E41,
+0x3991D6, 0x398353, 0x39F49C, 0x845F8B, 0xBDF928, 0x3B1FF8,
+0x97FFDE, 0x05980F, 0xEF2F11, 0x8B5A0A, 0x6D1F6D, 0x367ECF,
+0x27CB09, 0xB74F46, 0x3F669E, 0x5FEA2D, 0x7527BA, 0xC7EBE5,
+0xF17B3D, 0x0739F7, 0x8A5292, 0xEA6BFB, 0x5FB11F, 0x8D5D08,
+0x560330, 0x46FC7B, 0x6BABF0, 0xCFBC20, 0x9AF436, 0x1DA9E3,
+0x91615E, 0xE61B08, 0x659985, 0x5F14A0, 0x68408D, 0xFFD880,
+0x4D7327, 0x310606, 0x1556CA, 0x73A8C9, 0x60E27B, 0xC08C6B,
 };
 
 static const int npio2_hw[] = {
@@ -58,7 +58,7 @@ static const int npio2_hw[] = {
  * pio2_3t:  pi/2 - (pio2_1+pio2_2+pio2_3)
  */
 
-static const double 
+static const double
 invpio2 =  6.36619772367581382433e-01, /* 0x3FE45F30, 0x6DC9C883 */
 pio2_1  =  1.57079632673412561417e+00, /* 0x3FF921FB, 0x54400000 */
 pio2_1t =  6.07710050650619224932e-11, /* 0x3DD0B461, 0x1A626331 */
@@ -78,7 +78,7 @@ FDLIBM_INTERNAL int _ieee754_rem_pio2(double x, double *y)
 	if(ix<=0x3fe921fb)   /* |x| ~<= pi/4 , no need for reduction */
 	    {y[0] = x; y[1] = 0; return 0;}
 	if(ix<0x4002d97c) {  /* |x| < 3pi/4, special case with n=+-1 */
-	    if(hx>0) { 
+	    if(hx>0) {
 		z = gS(x, pio2_1);
 		if(ix!=0x3ff921fb) { 	/* 33+53 bit pi is good enough */
 		    y[0] = gS(z, pio2_1t);
@@ -108,11 +108,11 @@ FDLIBM_INTERNAL int _ieee754_rem_pio2(double x, double *y)
 	    fn = (double)n;
 	    r  = gS(t, gM(fn,pio2_1));
 	    w  = gM(fn, pio2_1t);	/* 1st round good to 85 bit */
-	    if(n<32&&ix!=npio2_hw[n-1]) {	
+	    if(n<32&&ix!=npio2_hw[n-1]) {
 		y[0] = gS(r,w);	/* quick check no cancellation */
 	    } else {
 	        j  = ix>>20;
-	        y[0] = gS(r,w); 
+	        y[0] = gS(r,w);
 	        i = j-(((FD_HI(y[0]))>>20)&0x7ff);
 	        if(i>16) {  /* 2nd iteration needed, good to 118 */
 		    t  = r;
@@ -134,7 +134,7 @@ FDLIBM_INTERNAL int _ieee754_rem_pio2(double x, double *y)
 	    if(hx<0) 	{y[0] = -y[0]; y[1] = -y[1]; return -n;}
 	    else	 return n;
 	}
-    /* 
+    /*
      * all other (large) arguments
      */
 	if(ix>=0x7ff00000) {		/* x is inf or NaN */

@@ -13,7 +13,7 @@ void gvl_test_platform()
 	GVL_STATIC_ASSERT(sizeof(int32_t)*CHAR_BIT == 32);
 	GVL_STATIC_ASSERT(sizeof(int16_t)*CHAR_BIT == 16);
 	GVL_STATIC_ASSERT(sizeof(int8_t)*CHAR_BIT == 8);
-	
+
 	// Test endianness
 	uint32_t v = 0xAABBCCDD;
 	uint8_t first = reinterpret_cast<uint8_t*>(&v)[0];
@@ -27,11 +27,11 @@ void gvl_test_platform()
 	// Test integer assumptions
 	GVL_STATIC_ASSERT((-1>>31) == -1); // Signed right-shift must duplicate sign bit
 	GVL_STATIC_ASSERT((-1/2) == 0); // Division must round towards 0
-	
+
 	// Do this last since it may crash the process
 #if GVL_UNALIGNED_ACCESS
 	uint8_t volatile x[150] = {};
-	
+
 	for(int i = 0; i < 100; ++i)
 		*(uint32_t volatile*)(x + i) = 1;
 

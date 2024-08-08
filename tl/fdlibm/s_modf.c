@@ -6,13 +6,13 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
 
 /*
- * fd_modf(double x, double *iptr) 
+ * fd_modf(double x, double *iptr)
  * return fraction part of x, and return x's integral part in *iptr.
  * Method:
  *	Bit twiddling.

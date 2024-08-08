@@ -16,7 +16,7 @@ am_pair am_sincosf(float x)
 		cvttss2si	edx, xmm0
 		mov		ecx, edx
 		mov		esi, edx
-		add		edx, 0x1	
+		add		edx, 0x1
 		shl		ecx, (31 - 1)
 		shl		edx, (31 - 1)
 

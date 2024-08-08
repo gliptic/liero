@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
@@ -15,7 +15,7 @@
  * wrapper fd_jn(int n, double x), fd_yn(int n, double x)
  * floating point Bessel's function of the 1st and 2nd kind
  * of order n
- *          
+ *
  * Special cases:
  *	fd_y0(0)=fd_y1(0)=fd_yn(n,0) = -inf with division by zero signal;
  *	fd_y0(-ve)=fd_y1(-ve)=fd_yn(n,-ve) are NaN with invalid signal.
@@ -34,7 +34,7 @@
  *	fd_yn(n,x) is similar in all respects, except
  *	that forward recursion is used for all
  *	values of n>1.
- *	
+ *
  */
 
 #include "fdlibm.h"

@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
@@ -28,7 +28,7 @@ double fd_logb(double x)
 	if((ix|lx)==0) return gD(-1.0,fd_fabs(x));
 	if(ix>=0x7ff00000) return gM(x,x);
 	if((ix>>=20)==0) 			/* IEEE 754 fd_logb */
-		return -1022.0; 
+		return -1022.0;
 	else
-		return (double) (ix-1023); 
+		return (double) (ix-1023);
 }

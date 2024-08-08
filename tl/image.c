@@ -36,7 +36,7 @@ int tl_image_convert(tl_image* to, tl_image* from)
 	uint32 tpitch = tl_image_pitch(to);
 	uint32 fpitch = tl_image_pitch(from);
 	uint32 i;
-	
+
 	if(to->w != from->w || to->h != from->h)
 		return -1;
 

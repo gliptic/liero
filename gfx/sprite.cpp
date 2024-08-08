@@ -11,7 +11,7 @@ void SpriteSet::allocate(int width, int height, int count)
 	this->height = height;
 	this->spriteSize = width * height;
 	this->count = count;
-	
+
 	int amount = spriteSize * count;
 	data.resize(amount);
 }

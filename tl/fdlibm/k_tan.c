@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
@@ -15,25 +15,25 @@
  * kernel fd_tan function on [-pi/4, pi/4], pi/4 ~ 0.7854
  * Input x is assumed to be bounded by ~pi/4 in magnitude.
  * Input y is the tail of x.
- * Input k indicates whether fd_tan (if k=1) or 
+ * Input k indicates whether fd_tan (if k=1) or
  * -1/fd_tan (if k= -1) is returned.
  *
  * Algorithm
- *	1. Since fd_tan(-x) = -fd_tan(x), we need only to consider positive x. 
+ *	1. Since fd_tan(-x) = -fd_tan(x), we need only to consider positive x.
  *	2. if x < 2^-28 (hx<0x3e300000 0), return x with inexact if x!=0.
  *	3. fd_tan(x) is approximated by a odd polynomial of degree 27 on
  *	   [0,0.67434]
  *		  	         3             27
  *	   	fd_tan(x) ~ x + T1*x + ... + T13*x
  *	   where
- *	
+ *
  * 	        |fd_tan(x)         2     4            26   |     -59.2
  * 	        |----- - (1+T1*x +T2*x +.... +T13*x    )| <= 2
- * 	        |  x 					| 
- * 
+ * 	        |  x 					|
+ *
  *	   Note: fd_tan(x+y) = fd_tan(x) + fd_tan'(x)*y
  *		          ~ fd_tan(x) + (1+x*x)*y
- *	   Therefore, for better accuracy in computing fd_tan(x+y), let 
+ *	   Therefore, for better accuracy in computing fd_tan(x+y), let
  *		     3      2      2       2       2
  *		r = x *(T2+x *(T3+x *(...+x *(T12+x *T13))))
  *	   then
@@ -102,7 +102,7 @@ FDLIBM_INTERNAL double _kernel_tan(double x, double y, int iy)
 	    return (double)(1-((hx>>30)&2))*gS(v, gM(2.0,gS(x, gS(gD(gM(w,w),gA(w, v)), r))));
 	}
 	if(iy==1) return w;
-	else {		/* if allow error up to 2 ulp, 
+	else {		/* if allow error up to 2 ulp,
 			   simply return -1.0/(x+r) here */
      /*  compute -1.0/(x+r) accurately */
 	    double a,t;

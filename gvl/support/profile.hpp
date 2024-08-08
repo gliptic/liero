@@ -14,17 +14,17 @@ namespace gvl
 struct profile_counter
 {
 	profile_counter(char const* desc, char const* func, int line);
-	
+
 	void operator++()
 	{
 		++count;
 	}
-	
+
 	void operator+=(std::size_t n)
 	{
 		count += n;
 	}
-	
+
 	std::size_t count;
 	char const* desc;
 	char const* func;
@@ -34,7 +34,7 @@ struct profile_counter
 struct profile_timer
 {
 	profile_timer(char const* desc, char const* func, int line);
-		
+
 	uint32_t total_time;
 	char const* desc;
 	char const* func;
@@ -49,14 +49,14 @@ struct profile_accum_timer
 	{
 		start_time = get_ticks();
 	}
-	
+
 	~profile_accum_timer()
 	{
 		uint32_t end_time = get_ticks();
 		++timer.count;
 		timer.total_time += (end_time - start_time);
 	}
-	
+
 	uint32_t start_time;
 	profile_timer& timer;
 };

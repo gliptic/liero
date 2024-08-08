@@ -93,7 +93,7 @@ void replayToVideo(
 		tl_vector_reserve(soundBuffer, int16_t, soundBuffer.size + mixerFrames);
 		sfx_mixer_mix(mixer, tl_vector_idx(soundBuffer, int16_t, mixerStart), mixerFrames);
 		tl_vector_post_enlarge(soundBuffer, int16_t, mixerFrames);
-						
+
 		{
 			int16_t* audioSamples = tl_vector_idx(soundBuffer, int16_t, 0);
 			std::size_t samplesLeft = soundBuffer.size;
@@ -104,7 +104,7 @@ void replayToVideo(
 				audioSamples += audioCodecFrames;
 				samplesLeft -= audioCodecFrames;
 			}
-								
+
 			frameDebt = av_add_q(frameDebt, nativeFramerate);
 
 			if (av_cmp_q(frameDebt, framerate) > 0)
@@ -117,7 +117,7 @@ void replayToVideo(
 				std::size_t destPitch = vidrec.tmp_picture->linesize[0];
 				uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
 				std::size_t srcPitch = renderer.screenBmp.pitch;
-								
+
 				uint32_t pal32[256];
 				preparePaletteBgra(realPal, pal32);
 

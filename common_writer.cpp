@@ -96,10 +96,10 @@ void commonSave(Common& common, std::string const& path)
 		gvl::write_uint32_le(w, (uint32_t)s.originalData.size() * 1 * 1); // Data size
 
 		auto curSize = s.originalData.size();
-			
+
 		for (auto& z : s.originalData)
 			w.put(z + 128);
-			
+
 		while (curSize < roundedSize)
 		{
 			w.put(0); // Padding

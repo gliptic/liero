@@ -70,7 +70,7 @@ GVL_INLINE int gvl_trailing_zeroes(uint32_t v)
 GVL_INLINE uint32_t gvl_bswap(uint32_t v)
 {
 	int const ulong_shift = (sizeof(unsigned long) - sizeof(uint32_t)) * CHAR_BIT;
-	
+
 	return (uint32_t)(_byteswap_ulong((unsigned long)v << ulong_shift));
 }
 

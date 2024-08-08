@@ -11,7 +11,7 @@
 typedef struct tl_hybrid_sink {
 	uint8 *buffer, *next, *end;
 	uint8 *reserved_range_bytes[4];
-	
+
 	uint32 low, high;
 
 	tl_byte_sink_pushable sink;
@@ -48,7 +48,7 @@ TL_INLINE void tl_hybsink_flush(tl_hybrid_sink* hs) {
 }
 
 TL_INLINE void tl_hybsink_reserve_range_byte(tl_hybrid_sink* hs) {
-	
+
 	hs->reserved_range_bytes[0] = hs->reserved_range_bytes[1];
 	hs->reserved_range_bytes[1] = hs->reserved_range_bytes[2];
 	hs->reserved_range_bytes[2] = hs->reserved_range_bytes[3];

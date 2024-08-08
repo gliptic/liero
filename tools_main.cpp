@@ -31,10 +31,10 @@ int main(int argc, char *argv[])
 try
 {
 	bool exeSet = false, dir = false;
-	
+
 	std::string exePath;
 	std::string replayPath;
-	
+
 	for(int i = 1; i < argc; ++i)
 	{
 		if(argv[i][0] == '-')
@@ -58,7 +58,7 @@ try
 			exeSet = true;
 		}
 	}
-	
+
 	if(!exeSet)
 		exePath = "LIERO.EXE";
 

@@ -38,11 +38,11 @@ struct prepared_division
 			throw std::domain_error("Prepared division by zero");
 		else if(divisor == 1)
 			throw std::invalid_argument("prepared_division cannot divide by 1");
-			
+
 		int b = top_bit(divisor);
-		
+
 		rshift = b;
-		
+
 		if(is_power_of_two(divisor))
 		{
 			offset = 0;
@@ -51,7 +51,7 @@ struct prepared_division
 			--rshift;
 			return;
 		}
-		
+
 		uint64_t dividend = (0x100000000ull << rshift);
 		uint32_t f = uint32_t(dividend / divisor);
 		uint64_t remainder = dividend - uint64_t(f) * divisor;
@@ -70,12 +70,12 @@ struct prepared_division
 			offset = 0;
 		}
 	}
-	
+
 	uint32_t multiplier;
 	uint32_t offset;
 	uint32_t divisor;
 	int rshift;
-	
+
 	uint32_t quot(uint32_t dividend)
 	{
 #if !CHECK_FF
@@ -88,12 +88,12 @@ struct prepared_division
 			return uint32_t(emulu(dividend, multiplier) >> 32) >> rshift;
 #endif
 	}
-	
+
 	std::pair<uint32_t, uint32_t> quot_rem(uint32_t dividend)
 	{
 		uint32_t quotient = quot(dividend);
 		uint32_t remainder = dividend - quotient * divisor;
-		
+
 		return std::make_pair(quotient, remainder);
 	}
 };

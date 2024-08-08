@@ -6,19 +6,19 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  *
  */
 
 /* _ieee754_lgamma_r(x, signgamp)
- * Reentrant version of the logarithm of the Gamma function 
- * with user provide pointer for the sign of Gamma(x). 
+ * Reentrant version of the logarithm of the Gamma function
+ * with user provide pointer for the sign of Gamma(x).
  *
  * Method:
  *   1. Argument Reduction for 0 < x <= 8
- * 	Since fd_gamma(1+s)=s*fd_gamma(s), for x in [0,8], we may 
+ * 	Since fd_gamma(1+s)=s*fd_gamma(s), for x in [0,8], we may
  * 	reduce x to a number in [1.5,2.5] by
  * 		fd_lgamma(1+s) = fd_log(s) + fd_lgamma(s)
  *	for example,
@@ -56,27 +56,27 @@
  *	by
  *	  			    3       5             11
  *		w = w0 + w1*z + w2*z  + w3*z  + ... + w6*z
- *	where 
+ *	where
  *		|w - f(z)| < 2**-58.74
- *		
+ *
  *   4. For negative x, since (G is fd_gamma function)
  *		-x*G(-x)*G(x) = pi/fd_sin(pi*x),
  * 	we have
  * 		G(x) = pi/(fd_sin(pi*x)*(-x)*G(-x))
  *	since G(-x) is positive, sign(G(x)) = sign(fd_sin(pi*x)) for x<0
- *	Hence, for x<0, fd_signgam = sign(fd_sin(pi*x)) and 
+ *	Hence, for x<0, fd_signgam = sign(fd_sin(pi*x)) and
  *		fd_lgamma(x) = fd_log(|Gamma(x)|)
  *			  = fd_log(pi/(|x*fd_sin(pi*x)|)) - fd_lgamma(-x);
- *	Note: one should avoid compute pi*(-x) directly in the 
+ *	Note: one should avoid compute pi*(-x) directly in the
  *	      computation of fd_sin(pi*(-x)).
- *		
+ *
  *   5. Special Cases
  *		fd_lgamma(2+s) ~ s*(1-Euler) for tiny s
  *		fd_lgamma(1)=fd_lgamma(2)=0
  *		fd_lgamma(x) ~ -fd_log(x) for tiny x
  *		fd_lgamma(0) = fd_lgamma(inf) = inf
  *	 	fd_lgamma(-integer) = +-inf
- *	
+ *
  */
 
 #include "fdlibm.h"

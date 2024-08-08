@@ -6,7 +6,7 @@
  *
  * Developed at SunSoft, a Sun Microsystems, Inc. business.
  * Permission to use, copy, modify, and distribute this
- * software is freely granted, provided that this notice 
+ * software is freely granted, provided that this notice
  * is preserved.
  * ====================================================
  */
@@ -18,7 +18,7 @@
  *	1. Compute and return log2(x) in two pieces:
  *		log2(x) = w1 + w2,
  *	   where w1 has 53-24 = 29 bit trailing zeros.
- *	2. Perform y*log2(x) = n+y' by simulating muti-precision 
+ *	2. Perform y*log2(x) = n+y' by simulating muti-precision
  *	   arithmetic, where |y'|<=0.5.
  *	3. Return x**y = 2**n*fd_exp(y'*log2)
  *
@@ -46,13 +46,13 @@
  * Accuracy:
  *	fd_pow(x,y) returns x**y nearly rounded. In particular
  *			fd_pow(integer,integer)
- *	always returns the correct integer provided it is 
+ *	always returns the correct integer provided it is
  *	representable.
  *
  * Constants :
- * The hexadecimal values are the intended ones for the following 
- * constants. The decimal values may be used, provided that the 
- * compiler will convert from decimal to binary accurately enough 
+ * The hexadecimal values are the intended ones for the following
+ * constants. The decimal values may be used, provided that the
+ * compiler will convert from decimal to binary accurately enough
  * to produce the hexadecimal values shown.
  */
 

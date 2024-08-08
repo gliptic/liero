@@ -51,7 +51,7 @@ struct functor_wrapper
 	: f(&caller<T>)
 	, p(&t)
 	{
-		
+
 	}
 
 	void call()

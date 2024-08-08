@@ -27,7 +27,7 @@ typedef struct tl_inflate_source {
 
 	uint8 window[32768];
 	int window_pos; // = 0
-	
+
 	int num_bits;
 	uint32 code_buffer;
 
@@ -45,7 +45,7 @@ typedef struct tl_inflate_source {
 
 	// Uncompressed block
 	uint8 header[4];
-	
+
 	// Huffman block
 	int dist;
 	int z;
