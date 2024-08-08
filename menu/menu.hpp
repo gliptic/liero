@@ -1,13 +1,14 @@
 #ifndef UUID_3DC24B15AD67494EEAB541B4AE253D0F
 #define UUID_3DC24B15AD67494EEAB541B4AE253D0F
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <cstddef>
 #include <string>
 #include <cstdio>
 #include <vector>
 #include <memory>
 #include "../gfx/color.hpp"
+#include "../gfx/renderer.hpp"
 
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/support/cstdint.hpp>
@@ -52,7 +53,7 @@ struct Menu
 		searchTime = 0;
 	}
 
-	void draw(Common& common, bool disabled, int x = -1, bool showDisabledSelection = false);
+	void draw(Common& common, Renderer& renderer, bool disabled, int x = -1, bool showDisabledSelection = false);
 	void process();
 
 	virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected, bool disabled)
@@ -87,7 +88,7 @@ struct Menu
 		return b->onEnter(*this, *s);
 	}
 
-	void onKeys(SDL_keysym* begin, SDL_keysym* end, bool contains = false);
+	void onKeys(SDL_Keysym* begin, SDL_Keysym* end, bool contains = false);
 
 	void updateItems(Common& common)
 	{

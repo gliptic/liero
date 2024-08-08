@@ -1,10 +1,15 @@
 cmake_minimum_required (VERSION 2.6)
 project (openliero)
 
-Find_Package (SDL REQUIRED)
+# add current path as module path to get required config file for sdl 2
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ".")
+Find_Package (SDL2 REQUIRED)
 include_directories("${PROJECT_SOURCE_DIR}")
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+set(CMAKE_CXX_FLAGS_DEBUG "-g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-s")
 
 set(SOURCES
     bobject.cpp
@@ -21,6 +26,7 @@ set(SOURCES
     rand.cpp
     settings.cpp
     sobject.cpp
+    spectatorviewport.cpp
     stats_recorder.cpp
     sys.cpp
     text.cpp
@@ -85,5 +91,5 @@ endif(APPLE)
 
 add_executable(openliero ${GAME_SOURCES})
 add_executable(tctool ${TC_TOOL_SOURCES})
-include_directories(SYSTEM "${SDL_INCLUDE_DIR}/..")
-target_link_libraries (openliero ${SDL_LIBRARY})
+target_link_libraries (openliero ${SDL2_LIBRARY})
+target_link_libraries (tctool ${SDL2_LIBRARY})

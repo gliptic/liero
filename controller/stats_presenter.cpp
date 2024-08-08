@@ -35,24 +35,24 @@ struct StatsRenderer
 	, game(game)
 	, stats(stats)
 	, common(common)
+	, paneWidth(renderer.renderResX - 20)
 	{
-
 	}
 
 	static int const paneX = 10;
-	static int const paneWidth = 320-20;
+	int paneWidth = 300;
 
 	template<typename P>
 	void pane(int n, int leftX, int topY, P const& p)
 	{
-		offsX = n * 320 + leftX;
+		offsX = n * renderer.renderResX + leftX;
 
-		if (offsX >= -320 && offsX < 320)
+		if (offsX >= -renderer.renderResX && offsX < renderer.renderResX)
 		{
 			y = topY;
 			y += 10;
 
-			drawRoundedBox(renderer.screenBmp, offsX + paneX, y, 0, 2000, paneWidth);
+			drawRoundedBox(renderer.bmp, offsX + paneX, y, 0, 2000, paneWidth);
 
 			y += 10;
 
@@ -64,7 +64,7 @@ struct StatsRenderer
 	bool hblock(int height, B const& b)
 	{
 		bool ran = false;
-		if (y < 200
+		if (y < renderer.renderResY
 		 && y + height > 0)
 		{
 			b();
@@ -79,12 +79,12 @@ struct StatsRenderer
 		hblock(20, [this] {
 			for (int i = 0; i < 2; ++i)
 			{
-				int x = 160 + (i == 0 ? -1 : 1) * (160 / 2) + offsX;
-				blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
+				int x = renderer.renderResX / 2 + (i == 0 ? -1 : 1) * (renderer.renderResX / 4) + offsX;
+				blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
 				cell c(i == 0 ? cell::right : cell::left);
 				common.font.drawText(
-					renderer.screenBmp,
+					renderer.bmp,
 					c << game.worms[i]->settings->name,
 					x + (i == 0 ? -16 : 16),
 					y + 2,
@@ -96,12 +96,12 @@ struct StatsRenderer
 	void drawWorm(int i)
 	{
 		bool visible = hblock(20, [this, i] {
-			int x = 160 + offsX;
-			blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
+			int x = renderer.renderResX / 2 + offsX;
+			blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
 			cell c(i == 0 ? cell::right : cell::left);
 			common.font.drawText(
-				renderer.screenBmp,
+				renderer.bmp,
 				c << game.worms[i]->settings->name,
 				x + (i == 0 ? -16 : 16),
 				y + 2,
@@ -111,7 +111,7 @@ struct StatsRenderer
 		if (!visible)
 		{
 			int x = 18 + offsX;
-			blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, 10);
+			blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, 10);
 		}
 	}
 
@@ -120,19 +120,19 @@ struct StatsRenderer
 	{
 		hblock(11, [this, name, &wormStat] {
 			common.font.drawText(
-				renderer.screenBmp,
-				cell(cell::center).ref() << name, 160 + offsX, y, textColor);
+				renderer.bmp,
+				cell(cell::center).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
 
 			for (int i = 0; i < 2; ++i)
 			{
 				cell::placement p = i == 0 ? cell::right : cell::left;
-				int x = 160 + (i == 0 ? -40 : 40) + offsX;
+				int x = renderer.renderResX / 2 + (i == 0 ? -40 : 40) + offsX;
 
 				WormStats& w = stats.worms[i];
 				cell c(p);
 				wormStat(w, c);
 				common.font.drawText(
-					renderer.screenBmp,
+					renderer.bmp,
 					c, x, y, textColor);
 			}
 		});
@@ -143,15 +143,15 @@ struct StatsRenderer
 	{
 		hblock(11, [this, name, &stat] {
 			common.font.drawText(
-				renderer.screenBmp,
-				cell(cell::right).ref() << name, 160 + offsX, y, textColor);
+				renderer.bmp,
+				cell(cell::right).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
 
-			int x = 160 + 10 + offsX;
+			int x = renderer.renderResX / 2 + 10 + offsX;
 
 			cell c(cell::left);
 			stat(c);
 			common.font.drawText(
-				renderer.screenBmp,
+				renderer.bmp,
 				c, x, y, textColor);
 		});
 	}
@@ -172,7 +172,7 @@ struct StatsRenderer
 		}
 
 		common.font.drawText(
-			renderer.screenBmp,
+			renderer.bmp,
 			c, x, y, color);
 
 		if (level == 0)
@@ -218,7 +218,7 @@ struct StatsRenderer
 		y += 2;
 		hblock(height, [&, this] {
 			int start = 20 + offsX;
-			drawGraph(renderer.screenBmp, data, height, start, y, color, negColor, balanced);
+			drawGraph(renderer.bmp, data, height, start, y, color, negColor, balanced);
 		});
 		y += 7;
 	}
@@ -230,7 +230,7 @@ struct StatsRenderer
 			int startX = paneX + paneWidth / 2 - (hm.width / 2) + offsX;
 			int startY = y;
 
-			drawHeatmap(renderer.screenBmp, startX, startY, hm);
+			drawHeatmap(renderer.bmp, startX, startY, hm);
 		});
 		y += 7;
 	}
@@ -256,9 +256,9 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 	Bitmap bg;
 
-	bg.copy(gfx.screenBmp);
+	bg.copy(gfx.playRenderer.bmp);
 
-	StatsRenderer renderer(gfx, game, recorder, common);
+	StatsRenderer renderer(gfx.playRenderer, game, recorder, common);
 
 	double offset = 0, destOffset = 0;
 	double pane = 0;
@@ -268,7 +268,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 	vector<double> wormDamages[2], wormTotalHp[2];
 
-	int const graphWidth = 280;
+	int const graphWidth = renderer.paneWidth - 20;
 
 	for (int i = 0; i < 2; ++i)
 	{
@@ -301,9 +301,9 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 	while (true)
 	{
-		gfx.screenBmp.copy(bg);
+		gfx.playRenderer.bmp.copy(bg);
 
-		int offsX = (int)std::floor(pane * -320);
+		int offsX = (int)std::floor(pane * -renderer.renderer.renderResX);
 		int offsY = (int)offset;
 
 		renderer.pane(0, offsX, offsY, [&] {
@@ -394,28 +394,29 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 			});
 		}
 
-		gfx.pal = common.exepal; // We don't use gfx.origpal because the colors are unpredictable
+		gfx.playRenderer.pal = common.exepal; // We don't use gfx.origpal because the colors are unpredictable
 
 		gfx.flip();
 		gfx.process();
 
-		if (gfx.testSDLKey(SDLK_DOWN))
+		if (gfx.testSDLKey(SDL_SCANCODE_DOWN))
 		{
 			destOffset = destOffset - 10;
 		}
-		else if (gfx.testSDLKey(SDLK_UP))
+		else if (gfx.testSDLKey(SDL_SCANCODE_UP))
 		{
 			destOffset = std::min(destOffset + 10.0, 0.0);
 		}
-		else if (gfx.testSDLKeyOnce(SDLK_RIGHT))
+		else if (gfx.testSDLKeyOnce(SDL_SCANCODE_RIGHT))
 		{
 			destPane = std::min(destPane + 1.0, 1.0);
 		}
-		else if (gfx.testSDLKeyOnce(SDLK_LEFT))
+		else if (gfx.testSDLKeyOnce(SDL_SCANCODE_LEFT))
 		{
 			destPane = std::max(destPane - 1.0, -1.0);
 		}
-		else if (gfx.testSDLKey(SDLK_RETURN) || gfx.testSDLKey(SDLK_ESCAPE))
+		else if (gfx.testSDLKey(SDL_SCANCODE_RETURN) ||
+		         gfx.testSDLKey(SDL_SCANCODE_ESCAPE))
 		{
 			break;
 		}
@@ -440,7 +441,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 		}
 	}
 
-	fill(gfx.screenBmp, 0);
+	fill(gfx.playRenderer.bmp, 0);
 
 	gfx.clearKeys();
 }

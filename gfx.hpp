@@ -1,7 +1,7 @@
 #ifndef LIERO_GFX_HPP
 #define LIERO_GFX_HPP
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 #include <gvl/resman/shared_ptr.hpp>
 #include <gvl/math/rect.hpp>
 
@@ -115,15 +115,18 @@ struct Joystick {
 };
 
 
-struct Gfx : Renderer
+struct Gfx
 {
 	Gfx();
 
 	void init();
 	void setVideoMode();
+	void onWindowResize(Uint32 windowId);
 	void loadMenus();
 
 	void process(Controller* controller = 0);
+	// draws a given surface onto an SDL texture/renderer, using a given Renderer
+	void draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRenderer, Renderer& renderer);
 	void flip();
 	void menuFlip(bool quitting = false);
 
@@ -161,28 +164,29 @@ struct Gfx : Renderer
 		dosKeys[key] = !dosKeys[key];
 	}
 
-	bool testSDLKeyOnce(SDLKey key)
+	bool testSDLKeyOnce(SDL_Scancode key)
 	{
 		Uint32 k = SDLToDOSKey(key);
 		return k ? testKeyOnce(k) : false;
 	}
 
-	bool testSDLKey(SDLKey key)
+	bool testSDLKey(SDL_Scancode key)
 	{
 		Uint32 k = SDLToDOSKey(key);
 		return k ? testKey(k) : false;
 	}
 
-	void releaseSDLKey(SDLKey key)
+	void releaseSDLKey(SDL_Scancode key)
 	{
 		Uint32 k = SDLToDOSKey(key);
 		if(k)
 			dosKeys[k] = false;
 	}
 
-	SDL_keysym waitForKey();
+	SDL_Keysym waitForKey();
 	uint32_t waitForKeyEx();
 	std::string getKeyName(uint32_t key);
+	void setSpectatorFullscreen(bool newFullscreen);
 	void setFullscreen(bool newFullscreen);
 	void setDoubleRes(bool newDoubleRes);
 
@@ -195,6 +199,7 @@ struct Gfx : Renderer
 	int menuLoop();
 	void mainLoop();
 	void drawBasicMenu(/*int curSel*/);
+	void drawSpectatorInfo();
 	void playerSettings(int player);
 	void openHiddenMenu();
 
@@ -225,6 +230,20 @@ struct Gfx : Renderer
 		return configNode;
 	}
 
+	// PRNG for things that don't affect the game
+	Rand rand;
+
+	// renders everything for actual play
+	Renderer playRenderer;
+	// renders everything on a single screen, for single screen replay and
+	// the spectator window
+	Renderer singleScreenRenderer;
+
+	// the renderer currently in use by the primary window. Usually
+	// playRenderer, but is singleScreenRenderer if watching a replay in
+	// single screen mode.
+	Renderer* primaryRenderer;
+
 	FsNode configNode;
 
 	MainMenu mainMenu;
@@ -238,11 +257,31 @@ struct Gfx : Renderer
 	gvl::shared_ptr<Settings> settings;
 
 	bool dosKeys[177];
-	SDL_Surface* back;
+	// the window to render into
+	SDL_Window* sdlWindow = NULL;
+	// the window to render the spectator view into
+	SDL_Window* sdlSpectatorWindow = NULL;
+	// the SDL renderer to use
+	SDL_Renderer* sdlRenderer = NULL;
+	// the SDL renderer to use for the spectator window
+	SDL_Renderer* sdlSpectatorRenderer = NULL;
+	// full window size texture that represents the window
+	SDL_Texture* sdlTexture = NULL;
+	// full spectator window size texture that represents the spectator window
+	SDL_Texture* sdlSpectatorTexture = NULL;
+	// a software surface to do the actual drawing into
+	SDL_Surface* sdlDrawSurface = NULL;
+	// a software surface to do the actual drawing of the spectator view into
+	SDL_Surface* sdlSpectatorDrawSurface = NULL;
+	// when the menu is open, the ongoing game on the screen is paused and
+	// stored in this bitmap
 	Bitmap frozenScreen;
+	// when the menu is open, the ongoing game on the spectator screen is
+	// paused and stored in this bitmap
+	Bitmap frozenSpectatorScreen;
 
 	bool running;
-	bool fullscreen, doubleRes;
+	bool fullscreen, spectatorFullscreen, doubleRes;
 
 	Uint32 lastFrame;
 	unsigned menuCycles;
@@ -254,7 +293,7 @@ struct Gfx : Renderer
 
 	std::vector<Joystick> joysticks;
 
-	SDL_keysym keyBuf[32], *keyBufPtr;
+	SDL_Keysym keyBuf[32], *keyBufPtr;
 
 	std::vector<std::pair<int, int>> debugPoints;
 	std::string debugInfo;

@@ -252,6 +252,7 @@
     <ClCompile Include="..\rand.cpp" />
     <ClCompile Include="..\settings.cpp" />
     <ClCompile Include="..\sobject.cpp" />
+    <ClCompile Include="..\spectatorviewport.cpp" />
     <ClCompile Include="..\stats_recorder.cpp" />
     <ClCompile Include="..\sys.cpp" />
     <ClCompile Include="..\text.cpp" />
@@ -325,6 +326,7 @@
     <ClInclude Include="..\rand.hpp" />
     <ClInclude Include="..\settings.hpp" />
     <ClInclude Include="..\sobject.hpp" />
+    <ClInclude Include="..\spectatorviewport.hpp" />
     <ClInclude Include="..\stats.hpp" />
     <ClInclude Include="..\stats_recorder.hpp" />
     <ClInclude Include="..\sys.hpp" />

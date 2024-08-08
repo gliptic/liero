@@ -3,6 +3,7 @@
 
 #include <string>
 #include "../gfx/color.hpp"
+#include "../gfx/renderer.hpp"
 
 struct Common;
 
@@ -29,7 +30,7 @@ struct MenuItem
 		return m;
 	}
 
-	void draw(Common& common, int x, int y, bool selected, bool disabled, bool centered, int valueOffsetX);
+	void draw(Common& common, Renderer& renderer, int x, int y, bool selected, bool disabled, bool centered, int valueOffsetX);
 
 	PalIdx color;
 	PalIdx disColour;

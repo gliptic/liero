@@ -10,7 +10,7 @@
 #include <algorithm>
 #include "dijkstra.hpp"
 #include "work_queue.hpp"
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 struct InputState
 {

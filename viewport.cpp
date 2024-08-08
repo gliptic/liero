@@ -90,11 +90,13 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 {
 	Common& common = *game.common;
 	Worm& worm = *game.wormByIdx(wormIdx);
+	int multiplier = renderer.renderResX / 320;
+	int centerX = renderer.renderResX / 2;
 
 	if(worm.visible)
 	{
 		int lifebarWidth = worm.health * 100 / worm.settings->health;
-		drawBar(renderer.screenBmp, inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
+		drawBar(renderer.bmp, worm.statsX, renderer.renderResY - 39, lifebarWidth, lifebarWidth / 10 + 234);
 	}
 	else
 	{
@@ -103,7 +105,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		{
 			if(lifebarWidth > 100)
 				lifebarWidth = 100;
-			drawBar(renderer.screenBmp, inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
+			drawBar(renderer.bmp, worm.statsX, renderer.renderResY - 39, lifebarWidth, lifebarWidth / 10 + 234);
 		}
 	}
 
@@ -118,7 +120,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			int ammoBarWidth = ww.ammo * 100 / ww.type->ammo;
 
 			if(ammoBarWidth > 0)
-				drawBar(renderer.screenBmp, inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
+				drawBar(renderer.bmp, worm.statsX, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
 		}
 	}
 	else
@@ -136,21 +138,23 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		}
 
 		if(ammoBarWidth > 0)
-			drawBar(renderer.screenBmp, inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
+			drawBar(renderer.bmp, worm.statsX, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
 
 		if((game.cycles % 20) > 10
 		&& worm.visible)
 		{
-			common.font.drawText(renderer.screenBmp, LS(Reloading), inGameX, 164, 50);
+			common.font.drawText(renderer.bmp, LS(Reloading), worm.statsX, 164 * multiplier, 50);
 		}
 	}
 
-	common.font.drawText(renderer.screenBmp, (LS(Kills) + toString(worm.kills)), inGameX, 171, 10);
+	common.font.drawText(renderer.bmp, (LS(Kills) + toString(worm.kills)), worm.statsX, renderer.renderResY - 29, 10);
 
 	if(isReplay)
 	{
-		common.font.drawText(renderer.screenBmp, worm.settings->name, inGameX, 192, 4);
-		common.font.drawText(renderer.screenBmp, timeToStringEx(game.cycles * 14), 95, 185, 7);
+		common.font.drawText(renderer.bmp, worm.settings->name, worm.statsX, renderer.renderResY - 15, 7);
+		fillRect(renderer.bmp, worm.statsX, renderer.renderResY - 7 - 1, 8, 8, 7);
+		fillRect(renderer.bmp, worm.statsX + 1, renderer.renderResY - 7, 6, 6, worm.settings->color);
+		common.font.drawText(renderer.bmp, timeToStringEx(game.cycles * 14), 95 * multiplier, renderer.renderResY - 15, 7);
 	}
 
 	int const stateColours[2][2] = {{6, 10}, {79, 4}};
@@ -160,7 +164,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	case Settings::GMKillEmAll:
 	case Settings::GMScalesOfJustice:
 	{
-		common.font.drawText(renderer.screenBmp, (LS(Lives) + toString(worm.lives)), inGameX, 178, 6);
+		common.font.drawText(renderer.bmp, (LS(Lives) + toString(worm.lives)), worm.statsX, renderer.renderResY - 22, 6);
 	}
 	break;
 
@@ -174,7 +178,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 		int color = stateColours[game.holdazone.holderIdx != worm.index][state];
 
-		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5, 106 + 84*worm.index, 161, color);
+		common.font.drawText(renderer.bmp, timeToString(worm.timer), 5 * multiplier, 106 * multiplier + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
 	}
 	break;
 
@@ -188,7 +192,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 		int color = stateColours[game.lastKilledIdx != worm.index][state];
 
-		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5, 106 + 84*worm.index, 161, color);
+		common.font.drawText(renderer.bmp, timeToString(worm.timer), 5 * multiplier, 106 * multiplier + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
 	}
 	break;
 	}
@@ -196,13 +200,13 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	gvl::ivec2 renderPos(x, y);
 
 	{
-		PreserveClipRect pcr(renderer.screenBmp);
+		PreserveClipRect pcr(renderer.bmp);
 
-		renderer.screenBmp.clip_rect = rect;
+		renderer.bmp.clip_rect = rect;
 
 		fixedvec offs = rect.ul() - renderPos;
 
-		blitImageNoKeyColour(renderer.screenBmp, &game.level.data[0], offs.x, offs.y, game.level.width, game.level.height);
+		blitImageNoKeyColour(renderer.bmp, &game.level.data[0], offs.x, offs.y, game.level.width, game.level.height);
 
 		if (game.settings->gameMode == Settings::GMHoldazone)
 		{
@@ -224,7 +228,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				contenderColor = color;
 			}
 
-			drawDashedLineBox(renderer.screenBmp,
+			drawDashedLineBox(renderer.bmp,
 				game.holdazone.rect.x1 + offs.x,
 				game.holdazone.rect.y1 + offs.y,
 				color,
@@ -239,15 +243,15 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		&& worm.killedTimer <= 0
 		&& !worm.ready)
 		{
-			common.font.drawText(renderer.screenBmp, LS(PressFire), rect.center_x() - 30, 76, 0);
-			common.font.drawText(renderer.screenBmp, LS(PressFire), rect.center_x() - 31, 75, 50);
+			common.font.drawText(renderer.bmp, LS(PressFire), rect.center_x() - 30, 76, 0);
+			common.font.drawText(renderer.bmp, LS(PressFire), rect.center_x() - 31, 75, 50);
 
 			if (game.settings->allowViewingSpawnPoint && worm.pressed(Worm::Change))
 			{
 				int tempX = ftoi(worm.pos.x) - 7 + offs.x;
 				int tempY = ftoi(worm.pos.y) - 5 + offs.y;
 
-				blitImageTrans(renderer.screenBmp, common.wormSpriteObj(worm.currentFrame, worm.direction, worm.index), tempX, tempY, game.cycles);
+				blitImageTrans(renderer.bmp, common.wormSpriteObj(worm.currentFrame, worm.direction, worm.index), tempX, tempY, game.cycles);
 			}
 		}
 
@@ -257,8 +261,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			if(game.settings->gameMode == Settings::GMGameOfTag
 			&& game.gotChanged)
 			{
-				common.font.drawText(renderer.screenBmp, LS(YoureIt), rect.x1 + 3, bannerY + 1, 0);
-				common.font.drawText(renderer.screenBmp, LS(YoureIt), rect.x1 + 2, bannerY, 50);
+				common.font.drawText(renderer.bmp, LS(YoureIt), rect.x1 + 3, bannerY + 1, 0);
+				common.font.drawText(renderer.bmp, LS(YoureIt), rect.x1 + 2, bannerY, 50);
 			}
 		}
 
@@ -273,27 +277,27 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				if(otherWorm.lastKilledByIdx == worm.index)
 				{
 					std::string msg(LS(KilledMsg) + otherWorm.settings->name);
-					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
-					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 2, v->bannerY, 50);
+					common.font.drawText(renderer.bmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
+					common.font.drawText(renderer.bmp, msg, rect.x1 + 2, v->bannerY, 50);
 				}
 				else
 				{
 					std::string msg(otherWorm.settings->name + LS(CommittedSuicideMsg));
-					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
-					common.font.drawText(renderer.screenBmp, msg, rect.x1 + 2, v->bannerY, 50);
+					common.font.drawText(renderer.bmp, msg, rect.x1 + 3, v->bannerY + 1, 0);
+					common.font.drawText(renderer.bmp, msg, rect.x1 + 2, v->bannerY, 50);
 				}
 			}
 		}
 
 		auto br = game.bonuses.all();
-		for (Bonus* i; (i = br.next()); )
+		for (Bonus* i; i = br.next(); )
 		{
 			if(i->timer > LC(BonusFlickerTime) || (game.cycles & 3) == 0)
 			{
 				int f = common.bonusFrames[i->frame];
 
 				blitImage(
-					renderer.screenBmp,
+					renderer.bmp,
 					common.smallSprites[f],
 					ftoi(i->x) - 3 + offs.x,
 					ftoi(i->y) - 3 + offs.y);
@@ -302,7 +306,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				{
 					blitShadowImage(
 						common,
-						renderer.screenBmp,
+						renderer.bmp,
 						common.smallSprites.spritePtr(f),
 						ftoi(i->x) - 5 + offs.x, // TODO: Use offsX
 						ftoi(i->y) - 1 + offs.y,
@@ -316,7 +320,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 					int len = int(name.size()) * 4;
 
 					common.drawTextSmall(
-						renderer.screenBmp,
+						renderer.bmp,
 						name.c_str(),
 						ftoi(i->x) - len/2 + offs.x,
 						ftoi(i->y) - 10 + offs.y);
@@ -325,13 +329,13 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		}
 
 		auto sr = game.sobjects.all();
-		for (SObject* i; (i = sr.next()); )
+		for (SObject* i; i = sr.next(); )
 		{
 			SObjectType const& t = common.sobjectTypes[i->id];
 			int frame = i->curFrame + t.startFrame;
 
 			blitImageR(
-				renderer.screenBmp,
+				renderer.bmp,
 				common.largeSprites.spritePtr(frame),
 				i->x + offs.x,
 				i->y + offs.y,
@@ -341,7 +345,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			{
 				blitShadowImage(
 					common,
-					renderer.screenBmp,
+					renderer.bmp,
 					common.largeSprites.spritePtr(frame),
 					i->x + offs.x - 3,
 					i->y + offs.y + 3, // TODO: Original doesn't offset the shadow, which is clearly wrong. Check that this offset is correct.
@@ -350,7 +354,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		}
 
 		auto wr = game.wobjects.all();
-		for (WObject* i; (i = wr.next()); )
+		for (WObject* i; i = wr.next(); )
 		{
 			Weapon const& w = *i->type;
 
@@ -388,7 +392,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				{
 					blitShadowImage(
 						common,
-						renderer.screenBmp,
+						renderer.bmp,
 						common.smallSprites.spritePtr(w.startFrame + curFrame),
 						posX - 3 + offs.x,
 						posY + 3 + offs.y,
@@ -396,7 +400,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				}
 
 				blitImage(
-					renderer.screenBmp,
+					renderer.bmp,
 					common.smallSprites[w.startFrame + curFrame],
 					posX + offs.x,
 					posY + offs.y);
@@ -406,17 +410,17 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				int posX = ftoi(i->pos.x) - x + rect.x1;
 				int posY = ftoi(i->pos.y) - y + rect.y1;
 
-				if(renderer.screenBmp.clip_rect.inside(posX, posY))
-					renderer.screenBmp.getPixel(posX, posY) = static_cast<PalIdx>(i->curFrame);
+				if(renderer.bmp.clip_rect.inside(posX, posY))
+					renderer.bmp.getPixel(posX, posY) = static_cast<PalIdx>(i->curFrame);
 
 				if(game.settings->shadow)
 				{
 					posX -= 3;
 					posY += 3;
 
-					if(renderer.screenBmp.clip_rect.inside(posX, posY))
+					if(renderer.bmp.clip_rect.inside(posX, posY))
 					{
-						PalIdx& pix = renderer.screenBmp.getPixel(posX, posY);
+						PalIdx& pix = renderer.bmp.getPixel(posX, posY);
 						if(common.materials[pix].seeShadow())
 							pix += 4;
 					}
@@ -434,7 +438,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 					int width = int(name.size()) * 4;
 
 					common.drawTextSmall(
-						renderer.screenBmp,
+						renderer.bmp,
 						name.c_str(),
 						ftoi(i->pos.x) - width/2 + offs.x,
 						ftoi(i->pos.y) - 10 + offs.y);
@@ -443,7 +447,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		}
 
 		auto nr = game.nobjects.all();
-		for (NObject* i; (i = nr.next()); )
+		for (NObject* i; i = nr.next(); )
 		{
 			NObjectType const& t = *i->type;
 
@@ -455,7 +459,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				{
 					blitShadowImage(
 						common,
-						renderer.screenBmp,
+						renderer.bmp,
 						common.smallSprites.spritePtr(t.startFrame + i->curFrame),
 						pos.x - 3 + offs.x,
 						pos.y + 3 + offs.y,
@@ -464,7 +468,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				}
 
 				blitImage(
-					renderer.screenBmp,
+					renderer.bmp,
 					common.smallSprites[t.startFrame + i->curFrame],
 					pos.x + offs.x,
 					pos.y + offs.y);
@@ -473,17 +477,17 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			else if(i->curFrame > 1)
 			{
 				auto pos = ftoi(i->pos) + offs;
-				if(renderer.screenBmp.clip_rect.encloses(pos))
-					renderer.screenBmp.getPixel(pos.x, pos.y) = PalIdx(i->curFrame);
+				if(renderer.bmp.clip_rect.encloses(pos))
+					renderer.bmp.getPixel(pos.x, pos.y) = PalIdx(i->curFrame);
 
 				if(game.settings->shadow)
 				{
 					pos.x -= 3;
 					pos.y += 3;
 
-					if(renderer.screenBmp.clip_rect.encloses(pos))
+					if(renderer.bmp.clip_rect.encloses(pos))
 					{
-						PalIdx& pix = renderer.screenBmp.getPixel(pos.x, pos.y);
+						PalIdx& pix = renderer.bmp.getPixel(pos.x, pos.y);
 						if(common.materials[pix].seeShadow())
 							pix += 4;
 					}
@@ -512,12 +516,12 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 					if(weapon.laserSight)
 					{
-						drawLaserSight(renderer.screenBmp, renderer.rand, hotspotX, hotspotY, tempX + 7, tempY + 4);
+						drawLaserSight(renderer.bmp, rand, hotspotX, hotspotY, tempX + 7, tempY + 4);
 					}
 
 					if(ww.type - &common.weapons[0] == LC(LaserWeapon) - 1 && w.pressed(Worm::Fire))
 					{
-						drawLine(renderer.screenBmp, hotspotX, hotspotY, tempX + 7, tempY + 4, weapon.colorBullets);
+						drawLine(renderer.bmp, hotspotX, hotspotY, tempX + 7, tempY + 4, weapon.colorBullets);
 					}
 				}
 
@@ -526,14 +530,14 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 					int ninjaropeX = ftoi(w.ninjarope.pos.x) + offs.x;
 					int ninjaropeY = ftoi(w.ninjarope.pos.y) + offs.y;
 
-					drawNinjarope(common, renderer.screenBmp, ninjaropeX, ninjaropeY, tempX + 7, tempY + 4);
+					drawNinjarope(common, renderer.bmp, ninjaropeX, ninjaropeY, tempX + 7, tempY + 4);
 
-					blitImage(renderer.screenBmp, common.largeSprites[84], ninjaropeX - 1, ninjaropeY - 1);
+					blitImage(renderer.bmp, common.largeSprites[84], ninjaropeX - 1, ninjaropeY - 1);
 
 					if(game.settings->shadow)
 					{
-						drawShadowLine(common, renderer.screenBmp, ninjaropeX - 3, ninjaropeY + 3, tempX + 7 - 3, tempY + 4 + 3);
-						blitShadowImage(common, renderer.screenBmp, common.largeSprites.spritePtr(84), ninjaropeX - 4, ninjaropeY + 2, 16, 16);
+						drawShadowLine(common, renderer.bmp, ninjaropeX - 3, ninjaropeY + 3, tempX + 7 - 3, tempY + 4 + 3);
+						blitShadowImage(common, renderer.bmp, common.largeSprites.spritePtr(84), ninjaropeX - 4, ninjaropeY + 2, 16, 16);
 					}
 
 				}
@@ -545,7 +549,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 					//NOTE! Check function 1071C and see what it actually does*/
 
 					blitFireCone(
-						renderer.screenBmp,
+						renderer.bmp,
 						w.fireCone / 2,
 						common.fireConeSprite(angleFrame, w.direction),
 						common.fireConeOffset[w.direction][angleFrame][0] + tempX,
@@ -553,9 +557,9 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				}
 
 
-				blitImage(renderer.screenBmp, common.wormSpriteObj(w.currentFrame, w.direction, w.index), tempX, tempY);
+				blitImage(renderer.bmp, common.wormSpriteObj(w.currentFrame, w.direction, w.index), tempX, tempY);
 				if(game.settings->shadow)
-					blitShadowImage(common, renderer.screenBmp, common.wormSprite(w.currentFrame, w.direction, w.index), tempX - 3, tempY + 3, 16, 16);
+					blitShadowImage(common, renderer.bmp, common.wormSprite(w.currentFrame, w.direction, w.index), tempX - 3, tempY + 3, 16, 16);
 			}
 
 			if (w.ai)
@@ -570,8 +574,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			int x = ftoi(p.first) + offsX;
 			int y = ftoi(p.second) + offsY;
 
-			if(isInside(renderer.screenBmp.clip_rect, x, y))
-				renderer.screenBmp.getPixel(x, y) = 0;
+			if(isInside(renderer.bmp.clip_rect, x, y))
+				renderer.bmp.getPixel(x, y) = 0;
 		}*/
 
 		if(worm.visible)
@@ -581,7 +585,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			//int tempY = ftoi(worm.pos.y) - 2 + ftoi(sinTable[ftoi(worm.aimingAngle)] * 16) + offs.y;
 
 			blitImage(
-				renderer.screenBmp,
+				renderer.bmp,
 				common.smallSprites[worm.makeSightGreen ? 44 : 43],
 				temp.x,
 				temp.y);
@@ -593,7 +597,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				int len = int(name.size()) * 4; // TODO: Read 4 from exe? (SW_CHARWID)
 
 				common.drawTextSmall(
-					renderer.screenBmp,
+					renderer.bmp,
 					name.c_str(),
 					ftoi(worm.pos.x) - len/2 + 1 + offs.x,
 					ftoi(worm.pos.y) - 10 + offs.y);
@@ -603,17 +607,17 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		for(Game::BObjectList::iterator i = game.bobjects.begin(); i != game.bobjects.end(); ++i)
 		{
 			auto ipos = ftoi(i->pos) + offs;
-			if(renderer.screenBmp.clip_rect.encloses(ipos))
-				renderer.screenBmp.getPixel(ipos.x, ipos.y) = PalIdx(i->color);
+			if(renderer.bmp.clip_rect.encloses(ipos))
+				renderer.bmp.getPixel(ipos.x, ipos.y) = PalIdx(i->color);
 
 			if(game.settings->shadow)
 			{
 				ipos.x -= 3;
 				ipos.y += 3;
 
-				if(renderer.screenBmp.clip_rect.encloses(ipos))
+				if(renderer.bmp.clip_rect.encloses(ipos))
 				{
-					PalIdx& pix = renderer.screenBmp.getPixel(ipos.x, ipos.y);
+					PalIdx& pix = renderer.bmp.getPixel(ipos.x, ipos.y);
 					if(common.materials[pix].seeShadow())
 						pix += 4;
 				}
@@ -623,9 +627,10 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 	if(game.settings->map)
 	{
-		int const mapX = 134, mapY = 162;
+		int mapX = centerX - 26;
+		int mapY = renderer.renderResY - 38;
 
-		game.level.drawMiniature(renderer.screenBmp, mapX, mapY, 10);
+		game.level.drawMiniature(renderer.bmp, mapX, mapY, 10);
 
 		for(std::size_t i = 0; i < game.worms.size(); ++i)
 		{
@@ -636,7 +641,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				int x = ftoi(w.pos.x) / 10 + mapX;
 				int y = ftoi(w.pos.y) / 10 + mapY;
 
-				renderer.screenBmp.getPixel(x, y) = w.minimapColor();
+				renderer.bmp.getPixel(x, y) = w.minimapColor();
 			}
 		}
 
@@ -654,14 +659,14 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 				color = holder->minimapColor();
 			}
 
-			renderer.screenBmp.setPixel(x-1, y, color);
-			renderer.screenBmp.setPixel(x+1, y, color);
-			renderer.screenBmp.setPixel(x, y-1, color);
-			renderer.screenBmp.setPixel(x, y+1, color);
-			renderer.screenBmp.setPixel(x-1, y-1, color);
-			renderer.screenBmp.setPixel(x+1, y-1, color);
-			renderer.screenBmp.setPixel(x-1, y+1, color);
-			renderer.screenBmp.setPixel(x+1, y+1, color);
+			renderer.bmp.setPixel(x-1, y, color);
+			renderer.bmp.setPixel(x+1, y, color);
+			renderer.bmp.setPixel(x, y-1, color);
+			renderer.bmp.setPixel(x, y+1, color);
+			renderer.bmp.setPixel(x-1, y-1, color);
+			renderer.bmp.setPixel(x+1, y-1, color);
+			renderer.bmp.setPixel(x-1, y+1, color);
+			renderer.bmp.setPixel(x+1, y+1, color);
 		}
 	}
 }

@@ -2,6 +2,7 @@
 #define LIERO_WEAPSEL_HPP
 
 #include "menu/menu.hpp"
+#include "gfx/renderer.hpp"
 
 struct Game;
 
@@ -9,7 +10,9 @@ struct WeaponSelection
 {
 	WeaponSelection(Game& game);
 
-	void draw();
+	void draw(Renderer& renderer, bool useSpectatorViewports);
+	void drawNormalViewports(Renderer& renderer);
+	void drawSpectatorViewports(Renderer& renderer);
 	bool processFrame();
 	void finalize();
 
@@ -22,7 +25,7 @@ struct WeaponSelection
 	int fadeValue;
 	std::vector<bool> isReady;
 	std::vector<Menu> menus;
-	bool cachedBackground;
+	bool cachedBackground, cachedSpectatorBackground;
 	bool focused;
 };
 

@@ -1,7 +1,8 @@
 #ifndef LIERO_WORK_QUEUE_HPP
 #define LIERO_WORK_QUEUE_HPP
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
+#include <sstream>
 #include <vector>
 #include "tl/memory.h"
 #include <memory>
@@ -84,7 +85,9 @@ struct WorkQueue
 		std::memset(threads, 0, sizeof(threads));
 		for (int i = 0; i < threadCount; ++i)
 		{
-			threads[i] = SDL_CreateThread(worker, this);
+			std::stringstream thread_name;
+			thread_name << "ai_" << i;
+			threads[i] = SDL_CreateThread(worker, thread_name.str().c_str(), this);
 		}
 	}
 
