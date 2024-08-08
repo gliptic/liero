@@ -35,19 +35,19 @@ struct StatsRenderer
 	, game(game)
 	, stats(stats)
 	, common(common)
+	, paneWidth(renderer.renderResX - 20)
 	{
-
 	}
 
 	static int const paneX = 10;
-	static int const paneWidth = 320-20;
+	int paneWidth = 300;
 
 	template<typename P>
 	void pane(int n, int leftX, int topY, P const& p)
 	{
-		offsX = n * 320 + leftX;
+		offsX = n * renderer.renderResX + leftX;
 
-		if (offsX >= -320 && offsX < 320)
+		if (offsX >= -renderer.renderResX && offsX < renderer.renderResX)
 		{
 			y = topY;
 			y += 10;
@@ -64,7 +64,7 @@ struct StatsRenderer
 	bool hblock(int height, B const& b)
 	{
 		bool ran = false;
-		if (y < 200
+		if (y < renderer.renderResY
 		 && y + height > 0)
 		{
 			b();
@@ -79,7 +79,7 @@ struct StatsRenderer
 		hblock(20, [this] {
 			for (int i = 0; i < 2; ++i)
 			{
-				int x = 160 + (i == 0 ? -1 : 1) * (160 / 2) + offsX;
+				int x = renderer.renderResX / 2 + (i == 0 ? -1 : 1) * (renderer.renderResX / 4) + offsX;
 				blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
 				cell c(i == 0 ? cell::right : cell::left);
@@ -96,7 +96,7 @@ struct StatsRenderer
 	void drawWorm(int i)
 	{
 		bool visible = hblock(20, [this, i] {
-			int x = 160 + offsX;
+			int x = renderer.renderResX / 2 + offsX;
 			blitImage(renderer.screenBmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
 			cell c(i == 0 ? cell::right : cell::left);
@@ -121,12 +121,12 @@ struct StatsRenderer
 		hblock(11, [this, name, &wormStat] {
 			common.font.drawText(
 				renderer.screenBmp,
-				cell(cell::center).ref() << name, 160 + offsX, y, textColor);
+				cell(cell::center).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
 
 			for (int i = 0; i < 2; ++i)
 			{
 				cell::placement p = i == 0 ? cell::right : cell::left;
-				int x = 160 + (i == 0 ? -40 : 40) + offsX;
+				int x = renderer.renderResX / 2 + (i == 0 ? -40 : 40) + offsX;
 
 				WormStats& w = stats.worms[i];
 				cell c(p);
@@ -144,9 +144,9 @@ struct StatsRenderer
 		hblock(11, [this, name, &stat] {
 			common.font.drawText(
 				renderer.screenBmp,
-				cell(cell::right).ref() << name, 160 + offsX, y, textColor);
+				cell(cell::right).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
 
-			int x = 160 + 10 + offsX;
+			int x = renderer.renderResX / 2 + 10 + offsX;
 
 			cell c(cell::left);
 			stat(c);
@@ -268,7 +268,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 
 	vector<double> wormDamages[2], wormTotalHp[2];
 
-	int const graphWidth = 280;
+	int const graphWidth = renderer.paneWidth - 20;
 
 	for (int i = 0; i < 2; ++i)
 	{
@@ -303,7 +303,7 @@ void presentStats(NormalStatsRecorder& recorder, Game& game)
 	{
 		gfx.screenBmp.copy(bg);
 
-		int offsX = (int)std::floor(pane * -320);
+		int offsX = (int)std::floor(pane * -renderer.renderer.renderResX);
 		int offsY = (int)offset;
 
 		renderer.pane(0, offsX, offsY, [&] {

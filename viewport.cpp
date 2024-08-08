@@ -90,11 +90,13 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 {
 	Common& common = *game.common;
 	Worm& worm = *game.wormByIdx(wormIdx);
+	int multiplier = renderer.renderResX / 320;
+	int centerX = renderer.renderResX / 2;
 
 	if(worm.visible)
 	{
 		int lifebarWidth = worm.health * 100 / worm.settings->health;
-		drawBar(renderer.screenBmp, inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
+		drawBar(renderer.screenBmp, inGameX, renderer.renderResY - 39, lifebarWidth, lifebarWidth / 10 + 234);
 	}
 	else
 	{
@@ -103,7 +105,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		{
 			if(lifebarWidth > 100)
 				lifebarWidth = 100;
-			drawBar(renderer.screenBmp, inGameX, 161, lifebarWidth, lifebarWidth/10 + 234);
+			drawBar(renderer.screenBmp, inGameX, renderer.renderResY - 39, lifebarWidth, lifebarWidth / 10 + 234);
 		}
 	}
 
@@ -118,7 +120,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 			int ammoBarWidth = ww.ammo * 100 / ww.type->ammo;
 
 			if(ammoBarWidth > 0)
-				drawBar(renderer.screenBmp, inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
+				drawBar(renderer.screenBmp, inGameX, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
 		}
 	}
 	else
@@ -136,21 +138,21 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		}
 
 		if(ammoBarWidth > 0)
-			drawBar(renderer.screenBmp, inGameX, 166, ammoBarWidth, ammoBarWidth/10 + 245);
+			drawBar(renderer.screenBmp, inGameX, renderer.renderResY - 34, ammoBarWidth, ammoBarWidth / 10 + 245);
 
 		if((game.cycles % 20) > 10
 		&& worm.visible)
 		{
-			common.font.drawText(renderer.screenBmp, LS(Reloading), inGameX, 164, 50);
+			common.font.drawText(renderer.screenBmp, LS(Reloading), inGameX, 164 * multiplier, 50);
 		}
 	}
 
-	common.font.drawText(renderer.screenBmp, (LS(Kills) + toString(worm.kills)), inGameX, 171, 10);
+	common.font.drawText(renderer.screenBmp, (LS(Kills) + toString(worm.kills)), inGameX, renderer.renderResY - 29, 10);
 
 	if(isReplay)
 	{
-		common.font.drawText(renderer.screenBmp, worm.settings->name, inGameX, 192, 4);
-		common.font.drawText(renderer.screenBmp, timeToStringEx(game.cycles * 14), 95, 185, 7);
+		common.font.drawShadowedText(renderer.screenBmp, worm.settings->name, inGameX, renderer.renderResY - 8, worm.settings->color);
+		common.font.drawText(renderer.screenBmp, timeToStringEx(game.cycles * 14), 95 * multiplier, renderer.renderResY - 15, 7);
 	}
 
 	int const stateColours[2][2] = {{6, 10}, {79, 4}};
@@ -160,7 +162,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 	case Settings::GMKillEmAll:
 	case Settings::GMScalesOfJustice:
 	{
-		common.font.drawText(renderer.screenBmp, (LS(Lives) + toString(worm.lives)), inGameX, 178, 6);
+		common.font.drawText(renderer.screenBmp, (LS(Lives) + toString(worm.lives)), inGameX, renderer.renderResY - 22, 6);
 	}
 	break;
 
@@ -174,7 +176,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 		int color = stateColours[game.holdazone.holderIdx != worm.index][state];
 
-		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5, 106 + 84*worm.index, 161, color);
+		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5 * multiplier, 106 * multiplier + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
 	}
 	break;
 
@@ -188,7 +190,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 		int color = stateColours[game.lastKilledIdx != worm.index][state];
 
-		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5, 106 + 84*worm.index, 161, color);
+		common.font.drawText(renderer.screenBmp, timeToString(worm.timer), 5 * multiplier, 106 * multiplier + 84 * worm.index * multiplier, renderer.renderResY - 39, color);
 	}
 	break;
 	}
@@ -286,7 +288,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		}
 
 		auto br = game.bonuses.all();
-		for (Bonus* i; (i = br.next()); )
+		for (Bonus* i; i = br.next(); )
 		{
 			if(i->timer > LC(BonusFlickerTime) || (game.cycles & 3) == 0)
 			{
@@ -325,7 +327,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		}
 
 		auto sr = game.sobjects.all();
-		for (SObject* i; (i = sr.next()); )
+		for (SObject* i; i = sr.next(); )
 		{
 			SObjectType const& t = common.sobjectTypes[i->id];
 			int frame = i->curFrame + t.startFrame;
@@ -350,7 +352,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		}
 
 		auto wr = game.wobjects.all();
-		for (WObject* i; (i = wr.next()); )
+		for (WObject* i; i = wr.next(); )
 		{
 			Weapon const& w = *i->type;
 
@@ -443,7 +445,7 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 		}
 
 		auto nr = game.nobjects.all();
-		for (NObject* i; (i = nr.next()); )
+		for (NObject* i; i = nr.next(); )
 		{
 			NObjectType const& t = *i->type;
 
@@ -623,7 +625,8 @@ void Viewport::draw(Game& game, Renderer& renderer, bool isReplay)
 
 	if(game.settings->map)
 	{
-		int const mapX = 134, mapY = 162;
+		int mapX = centerX - 26;
+		int mapY = renderer.renderResY - 38;
 
 		game.level.drawMiniature(renderer.screenBmp, mapX, mapY, 10);
 

@@ -2,6 +2,7 @@
 
 #include "../game.hpp"
 #include "stats_presenter.hpp"
+#include "../viewport.hpp"
 #include "../sfx.hpp"
 
 ReplayController::ReplayController(
@@ -41,11 +42,7 @@ void ReplayController::focus()
 	{
 		try
 		{
-#if 1 // TEMP
-			game = replay->beginPlayback(common, gvl::shared_ptr<SoundPlayer>(new NullSoundPlayer()));
-#else
 			game = replay->beginPlayback(common, gvl::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)));
-#endif
 		}
 		catch(std::runtime_error& e)
 		{
@@ -158,6 +155,13 @@ void ReplayController::changeState(State newState)
 
 	if(newState == StateGame)
 	{
+		if (gfx.settings->singleScreenReplay) {
+			game->clearViewports();
+			// +68 on x to align the viewport in the middle
+			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[0]->index, 0, 504, 350));
+			// TODO: a bit weird to duplicate this, but it's needed to draw health bars etc
+			game->addViewport(new Viewport(gvl::rect(0, 0, 504 + 68, 350), game->worms[1]->index, 538, 504, 350));
+		}
 		game->startGame();
 #if !ENABLE_TRACING
 		initialGame.reset(new Game(*game));

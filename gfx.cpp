@@ -351,6 +351,7 @@ void Gfx::loadMenus()
 	hiddenMenu.addItem(MenuItem(48, 7, "PALETTE", HiddenMenu::PaletteSelect));
 	hiddenMenu.addItem(MenuItem(48, 7, "BOT WEAPONS", HiddenMenu::SelectBotWeapons));
 	hiddenMenu.addItem(MenuItem(48, 7, "SEE SPAWN POINT", HiddenMenu::AllowViewingSpawnPoint));
+	hiddenMenu.addItem(MenuItem(48, 7, "SINGLE SCREEN REPLAY", HiddenMenu::SingleScreenReplay));
 
 	playerMenu.addItem(MenuItem(3, 7, "PROFILE LOADED", PlayerMenu::PlLoadedProfile));
 	playerMenu.addItem(MenuItem(3, 7, "SAVE PROFILE", PlayerMenu::PlSaveProfile));
@@ -676,9 +677,9 @@ void Gfx::flip()
 
 	{
 		int offsetX, offsetY;
-		int mag = fitScreen(back->w, back->h, screenBmp.w, screenBmp.h, offsetX, offsetY);
+		int mag = fitScreen(back->w, back->h, renderResX, renderResY, offsetX, offsetY);
 
-		gvl::rect newRect(offsetX, offsetY, screenBmp.w * mag, screenBmp.h * mag);
+		gvl::rect newRect(offsetX, offsetY, renderResX * mag, renderResY * mag);
 
 		if(mag != prevMag)
 		{
@@ -703,7 +704,7 @@ void Gfx::flip()
 
 			preparePalette(back->format, realPal, pal32);
 
-			scaleDraw(src, 320, 200, srcPitch, dest, destPitch, mag, pal32);
+			scaleDraw(src, renderResX, renderResY, srcPitch, dest, destPitch, mag, pal32);
 		}
 	}
 
@@ -1181,6 +1182,11 @@ int Gfx::selectReplay()
 
 				// Reset controller before opening the replay, since we may be recording it
 				controller.reset();
+
+				if (settings->singleScreenReplay) {
+					renderResX = 640;
+					renderResY = 400;
+				}
 
 				controller.reset(new ReplayController(common, sel->getFsNode().toSource()));
 
@@ -1678,6 +1684,10 @@ restart:
 			flip();
 			process(controller.get());
 		}
+
+		// reset internal resolution upon exiting any game
+		renderResX = 320;
+		renderResY = 200;
 
 		controller->unfocus();
 
