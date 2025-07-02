@@ -1,5 +1,9 @@
 # Open Liero
 
+Earthworm simulation game based on a real physical model. Features: 2 worms,
+40 weapons, great playability. Four game modes: Kill'em All, Game of Tag,
+Capture the Flag and Simple CtF!
+
 This is a continuation of the openliero project, originally located at
 [github.com/gliptic/liero][0], also known as Liero 1.36.
 
