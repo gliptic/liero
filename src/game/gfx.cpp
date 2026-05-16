@@ -605,20 +605,6 @@ void Gfx::process(Controller* controller)
 	}
 }
 
-SDL_Scancode Gfx::waitForKey()
-{
-	SDL_Event ev;
-	while(SDL_WaitEvent(&ev))
-	{
-		processEvent(ev);
-		if(ev.type == SDL_EVENT_KEY_DOWN)
-		{
-			return ev.key.scancode;
-		}
-	}
-
-	return SDL_SCANCODE_UNKNOWN; // Dummy
-}
 
 std::string Gfx::getKeyName(uint32_t key)
 {
@@ -921,34 +907,6 @@ void SettingsMenu::onUpdate()
 using std::string;
 using std::vector;
 
-void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
-{
-	static int const bgColor = 0;
-
-	if(clearScreen)
-	{
-		playRenderer.pal = common->exepal;
-		fill(playRenderer.bmp, bgColor);
-	}
-
-	int height;
-	int width = common->font.getDims(text, &height);
-
-	int cx = x - width/2 - 2;
-	int cy = y - height/2 - 2;
-
-	drawRoundedBox(playRenderer.bmp, cx, cy, 0, height+1, width+1);
-	common->font.drawText(playRenderer.bmp, text, cx+2, cy+2, 6);
-
-	flip();
-	process();
-
-	waitForKey();
-	clearKeys();
-
-	if(clearScreen)
-		fill(playRenderer.bmp, bgColor);
-}
 
 void PlayerMenu::drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected, bool disabled)
 {

@@ -2,6 +2,7 @@
 
 #include "gfx.hpp"
 #include "statsState.hpp"
+#include "inputState.hpp"
 #include "controller/controller.hpp"
 #include "stats_recorder.hpp"
 #include "game.hpp"
@@ -20,6 +21,16 @@ bool GamePlayState::update()
 {
 	if (!gfx->controller->process())
 	{
+		// Check for pending error message
+		if (!gfx->pendingErrorMessage.empty())
+		{
+			std::string msg = std::move(gfx->pendingErrorMessage);
+			gfx->pendingErrorMessage.clear();
+			gfx->stateStack.replaceTop(
+				std::make_unique<InfoBoxState>(std::move(msg), 320/2, 200/2, true), gfx);
+			return true;
+		}
+
 		// Game ended — show stats if available
 		Game* game = gfx->controller->currentGame();
 		if (game && game->statsRecorder)

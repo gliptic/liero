@@ -46,7 +46,7 @@ void ReplayController::focus()
 		}
 		catch(std::runtime_error& e)
 		{
-			gfx.infoBox(std::string("Error starting replay playback: ") + e.what());
+			gfx.pendingErrorMessage = std::string("Error starting replay playback: ") + e.what();
 			goingToMenu = true;
 			fadeValue = 0;
 			return;
@@ -86,13 +86,13 @@ bool ReplayController::process()
 				}
 				catch(gvl::stream_error& e)
 				{
-					gfx.infoBox(std::string("Stream error in replay: ") + e.what());
+					gfx.pendingErrorMessage = std::string("Stream error in replay: ") + e.what();
 					changeState(StateGameEnded);
 					replay.reset();
 				}
 				catch(gvl::archive_check_error& e)
 				{
-					gfx.infoBox(std::string("Archive error in replay: ") + e.what());
+					gfx.pendingErrorMessage = std::string("Archive error in replay: ") + e.what();
 					changeState(StateGameEnded);
 					replay.reset();
 				}

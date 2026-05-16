@@ -182,7 +182,6 @@ struct Gfx
 			dosKeys[k] = false;
 	}
 
-	SDL_Scancode waitForKey();
 	std::string getKeyName(uint32_t key);
 	void setSpectatorFullscreen(bool newFullscreen);
 	void setFullscreen(bool newFullscreen);
@@ -213,8 +212,6 @@ struct Gfx
 	void drawSpectatorInfo();
 	void playerSettings(int player);
 	void openHiddenMenu();
-
-	void infoBox(std::string const& text, int x = 320/2, int y = 200/2, bool clearScreen = true);
 
 	static void preparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette, Color realPal[256], uint32_t (&pal32)[256]);
 
@@ -298,6 +295,9 @@ struct Gfx
 
 	// Used by sub-states to communicate a menu selection back to MainMenuState
 	int pendingMenuSelection = -1;
+
+	// Error message to display after GamePlayState pops (set by controllers)
+	std::string pendingErrorMessage;
 
 	std::vector<Joystick> joysticks;
 

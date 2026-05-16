@@ -281,7 +281,7 @@ void LocalController::changeState(GameState newState)
 			}
 			catch(std::runtime_error& e)
 			{
-				gfx.infoBox(std::string("Error starting replay recording: ") + e.what());
+				gfx.pendingErrorMessage = std::string("Error starting replay recording: ") + e.what();
 				goingToMenu = true;
 				fadeValue = 0;
 				return;
