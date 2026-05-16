@@ -2,10 +2,7 @@
 
 #include "state.hpp"
 
-// The main menu state. This is a frame-stepped version of the former
-// blocking Gfx::menuLoop(). Sub-menus (playerSettings, hiddenMenu, file
-// selectors) are still called as blocking functions for now — they will
-// be converted to states in subsequent phases.
+// The main menu state. Frame-stepped menu with sub-menus as child states.
 struct MainMenuState : AppState
 {
 	MainMenuState();
@@ -18,7 +15,7 @@ struct MainMenuState : AppState
 	// The menu item that was selected, or -1 if still active.
 	int selection() const { return selected_; }
 
-	// True when fading out (used by runMenu for menuFlip parameter)
+	// True when fading out
 	bool isFadingOut() const { return phase_ == Phase::FadingOut; }
 
 private:

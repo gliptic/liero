@@ -193,7 +193,6 @@ struct Gfx
 
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 
-	int menuLoop();
 	void mainLoop();
 
 	// Initialize the state stack for frame-stepped operation.
