@@ -26,9 +26,9 @@ bool GamePlayState::update()
 		{
 			std::string msg = std::move(gfx->pendingErrorMessage);
 			gfx->pendingErrorMessage.clear();
-			gfx->stateStack.replaceTop(
-				std::make_unique<InfoBoxState>(std::move(msg), 320/2, 200/2, true), gfx);
-			return true;
+			gfx->stateStack.scheduleReplaceTop(
+				std::make_unique<InfoBoxState>(std::move(msg), 320/2, 200/2, true));
+			return false;
 		}
 
 		// Game ended — show stats if available and game actually finished
@@ -38,9 +38,9 @@ bool GamePlayState::update()
 			auto* stats = dynamic_cast<NormalStatsRecorder*>(game->statsRecorder.get());
 			if (stats && stats->gameTime > 0)
 			{
-				gfx->stateStack.replaceTop(
-					std::make_unique<StatsState>(*stats, *game), gfx);
-				return true;
+				gfx->stateStack.scheduleReplaceTop(
+					std::make_unique<StatsState>(*stats, *game));
+				return false;
 			}
 		}
 		return false;

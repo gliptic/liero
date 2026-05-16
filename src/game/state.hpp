@@ -67,10 +67,20 @@ public:
 	}
 
 	// Replace the top state with a new one.
+	// When called from outside a state's update(), this takes effect immediately.
+	// When called from inside update(), prefer scheduleReplaceTop() instead to
+	// avoid destroying the calling state while still inside its update() method.
 	void replaceTop(std::unique_ptr<AppState> state, Gfx* gfx)
 	{
 		pop();
 		push(std::move(state), gfx);
+	}
+
+	// Schedule a replacement of the top state, applied after update() returns.
+	// Safe to call from inside a state's update() — avoids destroying `this`.
+	void scheduleReplaceTop(std::unique_ptr<AppState> state)
+	{
+		pendingReplace_ = std::move(state);
 	}
 
 	// Access the topmost state, or nullptr if empty.
@@ -96,7 +106,18 @@ public:
 		if (stack_.empty())
 			return false;
 
-		if (!stack_.back()->update())
+		bool keepRunning = stack_.back()->update();
+		Gfx* g = stack_.back()->gfx;
+
+		// Apply deferred replacement (set via scheduleReplaceTop)
+		if (pendingReplace_)
+		{
+			pop();
+			push(std::move(pendingReplace_), g);
+			return !stack_.empty();
+		}
+
+		if (!keepRunning)
 		{
 			pop();
 			// The state completed. If there's still something on the
@@ -129,4 +150,5 @@ public:
 
 private:
 	std::vector<std::unique_ptr<AppState>> stack_;
+	std::unique_ptr<AppState> pendingReplace_;
 };
