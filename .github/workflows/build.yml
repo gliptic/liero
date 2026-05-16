@@ -9,6 +9,8 @@ on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - master
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 permissions:
@@ -79,7 +81,12 @@ jobs:
             libdbus-1-dev \
             libudev-dev \
             libwayland-dev \
-            libdecor-0-dev
+            libdecor-0-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswresample-dev \
+            libswscale-dev
 
       - name: Get cmake/ninja
         uses: lukka/get-cmake@latest
@@ -96,6 +103,12 @@ jobs:
         with:
           workflowPreset: '${{ matrix.workflow_preset }}'
 
+      - name: Build videotool (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cmake --preset linux-x64-ci -DOPENLIERO_BUILD_VIDEOTOOL=ON
+          cmake --build build/linux-x64-ci --target videotool
+
         # build x86_64 binaries so we can create
         # universal binaries for macOS
       - name: Run cmake (macos-x64)
@@ -108,6 +121,7 @@ jobs:
         if: runner.os == 'linux'
         run: |
           cmake --install build/linux-x64-ci --config Release
+          cp build/linux-x64-ci/videotool install/linux-x64-ci/
           cd install/linux-x64-ci
           tar cvf ../openliero-linux-x64.tar.gz .
 
@@ -142,69 +156,81 @@ jobs:
           name: ${{ matrix.name }}-build
           path: install/openliero*
 
-  build-videotool:
-    name: videotool (linux)
+  pre-release:
+    name: Pre-release
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.10
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            autoconf \
-            autoconf-archive \
-            automake \
-            libtool \
-            pkg-config \
-            libasound2-dev \
-            libpulse-dev \
-            libaudio-dev \
-            libjack-dev \
-            libsndio-dev \
-            libx11-dev \
-            libxext-dev \
-            libxrandr-dev \
-            libxcursor-dev \
-            libxfixes-dev \
-            libxi-dev \
-            libxss-dev \
-            libxtst-dev \
-            libxkbcommon-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libgl1-mesa-dev \
-            libgles2-mesa-dev \
-            libegl1-mesa-dev \
-            libdbus-1-dev \
-            libudev-dev \
-            libwayland-dev \
-            libdecor-0-dev \
-            libavcodec-dev \
-            libavformat-dev \
-            libavutil-dev \
-            libswresample-dev \
-            libswscale-dev
-
-      - name: Get cmake/ninja
-        uses: lukka/get-cmake@latest
-
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
         with:
-          vcpkgDirectory: '${{ github.workspace }}/tools/vcpkg/vcpkg'
-          vcpkgConfigurationJsonGlob: 'vcpkg-configuration.json'
-          appendedCacheKey: 'sdl3-v2'
+          path: artifacts
 
-      - name: Build videotool
+      - name: Generate release notes
+        id: notes
         run: |
-          cmake --preset linux-x64-ci -DOPENLIERO_BUILD_VIDEOTOOL=ON
-          cmake --build build/linux-x64-ci --target videotool
+          SHA="${{ github.sha }}"
+          SHORT_SHA="${SHA:0:7}"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "## Pre-release build" > notes.md
+          echo "" >> notes.md
+          echo "Built from commit [\`${SHORT_SHA}\`](https://github.com/${{ github.repository }}/commit/${SHA})." >> notes.md
+          echo "" >> notes.md
+          echo "### Included platforms" >> notes.md
+          echo "- Linux x86_64 (includes videotool)" >> notes.md
+          echo "- Windows x86_64" >> notes.md
+          echo "- macOS universal (arm64 + x86_64)" >> notes.md
+
+      - name: Delete existing pre-release
+        run: gh release delete latest --yes --cleanup-tag || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create pre-release
+        run: |
+          gh release create latest \
+            --prerelease \
+            --title "Latest build (${{ steps.notes.outputs.short_sha }})" \
+            --notes-file notes.md \
+            artifacts/linux-build/* \
+            artifacts/windows-build/* \
+            artifacts/macos-build/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    name: Release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+
+      - name: Create release
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --generate-notes \
+            --title "${{ github.ref_name }}" \
+            artifacts/linux-build/* \
+            artifacts/windows-build/* \
+            artifacts/macos-build/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
