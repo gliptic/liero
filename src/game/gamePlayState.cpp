@@ -31,12 +31,12 @@ bool GamePlayState::update()
 			return true;
 		}
 
-		// Game ended — show stats if available
+		// Game ended — show stats if available and game actually finished
 		Game* game = gfx->controller->currentGame();
 		if (game && game->statsRecorder)
 		{
 			auto* stats = dynamic_cast<NormalStatsRecorder*>(game->statsRecorder.get());
-			if (stats)
+			if (stats && stats->gameTime > 0)
 			{
 				gfx->stateStack.replaceTop(
 					std::make_unique<StatsState>(*stats, *game), gfx);
