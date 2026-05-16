@@ -51,8 +51,8 @@ project(openliero
 )
 
 # find dependencies
-find_package(SDL2 CONFIG REQUIRED)
-find_package(SDL2_image CONFIG REQUIRED)
+find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
+find_package(SDL3_image REQUIRED CONFIG)
 find_package(miniz CONFIG REQUIRED)
 
 # local dependencies
@@ -129,8 +129,8 @@ target_link_libraries(game
   PUBLIC
   miniz::miniz
   gvl
-  $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
-  $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>
+  SDL3::SDL3
+  SDL3_image::SDL3_image
 )
 
 if(APPLE)
@@ -184,7 +184,7 @@ if(OPENLIERO_BUILD_TCTOOL)
     PUBLIC
     miniz::miniz
     gvl
-    $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+    SDL3::SDL3
   )
 
   add_executable(tctool ${TC_TOOL_SOURCES})
@@ -204,7 +204,7 @@ if(OPENLIERO_BUILD_VIDEOTOOL)
     PUBLIC
     miniz
     gvl
-    $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+    SDL3::SDL3
     avcodec
     avformat
     avutil

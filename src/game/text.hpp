@@ -42,4 +42,4 @@ bool ciStartsWith(std::string const& a, std::string const& b);
 bool ciCompare(std::string const& a, std::string const& b);
 bool ciLess(std::string const& a, std::string const& b);
 // converts an extremely limited subset of UTF-8 to extended ASCII
-char utf8ToDOS(char* str);
+char utf8ToDOS(const char* str);

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <cstring>
 #include <vector>
-#include <SDL_atomic.h>
+#include <SDL3/SDL.h>
 
 typedef struct channel
 {

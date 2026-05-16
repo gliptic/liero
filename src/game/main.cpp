@@ -1,5 +1,6 @@
 #include <exception>
 #include <string>
+#include <SDL3/SDL_main.h>
 
 int gameEntry(int argc, char *argv[]);
 

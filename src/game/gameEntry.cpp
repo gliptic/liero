@@ -1,4 +1,4 @@
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include "gfx.hpp"
 #include "sfx.hpp"
@@ -21,7 +21,7 @@ int gameEntry(int argc, char* argv[])
 try
 {
 	// TODO: Better PRNG seeding
-	gfx.rand.seed(Uint32(std::time(0)));
+	gfx.rand.seed(uint32_t(std::time(0)));
 
 	bool tcSet = false;
 
@@ -50,7 +50,7 @@ try
 		}
 	}
 
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD);
 
 	initKeys();
 

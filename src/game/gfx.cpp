@@ -1,5 +1,5 @@
-#include <SDL.h>
-#include <SDL_image.h>
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
@@ -293,25 +293,25 @@ Gfx::Gfx()
 
 void Gfx::init()
 {
-	SDL_ShowCursor(SDL_DISABLE);
-	lastFrame = SDL_GetTicks64();
+	SDL_HideCursor();
+	lastFrame = SDL_GetTicks();
 
 	playRenderer.init(320, 200);
 	singleScreenRenderer.init(640, 400);
-	// Joystick init
-	SDL_GameControllerEventState(SDL_ENABLE);
-	int numJoysticks = SDL_NumJoysticks();
-	joysticks.resize(numJoysticks);
-	for ( int i = 0; i < numJoysticks; ++i ) {
-		joysticks[i].sdlGameController= SDL_GameControllerOpen(i);
+	// Gamepad init
+	SDL_SetGamepadEventsEnabled(true);
+	int numGamepads = 0;
+	SDL_JoystickID *gamepadIds = SDL_GetGamepads(&numGamepads);
+	joysticks.resize(numGamepads);
+	for ( int i = 0; i < numGamepads; ++i ) {
+		joysticks[i].sdlGamepad = SDL_OpenGamepad(gamepadIds[i]);
 		joysticks[i].clearState();
 	}
+	SDL_free(gamepadIds);
 }
 
 void Gfx::setVideoMode()
 {
-	int flags;
-
 	if (sdlSpectatorRenderer)
 	{
 		SDL_DestroyRenderer(sdlSpectatorRenderer);
@@ -319,30 +319,17 @@ void Gfx::setVideoMode()
 	}
 	if (settings->spectatorWindow)
 	{
-		flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
-		if (spectatorFullscreen)
-		{
-			flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-		}
 		if (!sdlSpectatorWindow)
 		{
-      std::string spectatorWindowTitle = std::string("Liero Spectator Window - ") + build_version();
-			sdlSpectatorWindow = SDL_CreateWindow(spectatorWindowTitle.c_str(),
-				SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, windowW, windowH, flags);
+			std::string spectatorWindowTitle = std::string("Liero Spectator Window - ") + build_version();
+			sdlSpectatorWindow = SDL_CreateWindow(spectatorWindowTitle.c_str(), windowW, windowH,
+				SDL_WINDOW_RESIZABLE | (spectatorFullscreen ? SDL_WINDOW_FULLSCREEN : 0));
 		}
 		else
 		{
-			if (spectatorFullscreen)
-			{
-				SDL_SetWindowFullscreen(sdlSpectatorWindow,
-					SDL_WINDOW_FULLSCREEN_DESKTOP);
-			}
-			else
-			{
-				SDL_SetWindowFullscreen(sdlSpectatorWindow, 0);
-			}
+			SDL_SetWindowFullscreen(sdlSpectatorWindow, spectatorFullscreen);
 		}
-		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, -1, 0/*SDL_RENDERER_PRESENTVSYNC*/);
+		sdlSpectatorRenderer = SDL_CreateRenderer(sdlSpectatorWindow, NULL);
 		onWindowResize(SDL_GetWindowID(sdlSpectatorWindow));
 	}
 	else
@@ -354,7 +341,7 @@ void Gfx::setVideoMode()
 		}
 		if (sdlSpectatorDrawSurface)
 		{
-			SDL_FreeSurface(sdlSpectatorDrawSurface);
+			SDL_DestroySurface(sdlSpectatorDrawSurface);
 			sdlSpectatorDrawSurface = NULL;
 		}
 		if (sdlSpectatorWindow)
@@ -364,46 +351,25 @@ void Gfx::setVideoMode()
 		}
 	}
 
-	flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
-
-	if (settings->fullscreen)
-	{
-		flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
-	}
-
 	if (!sdlWindow)
 	{
-		int x = SDL_WINDOWPOS_UNDEFINED;
-		int y = SDL_WINDOWPOS_UNDEFINED;
-		if (sdlSpectatorWindow)
-		{
-			SDL_GetWindowPosition(sdlSpectatorWindow, &x, &y);
-		}
-    std::string windowTitle = std::string("Liero ") + build_version();
-		sdlWindow = SDL_CreateWindow(windowTitle.c_str(), x + 100, y + 50, windowW, windowH, flags);
+		std::string windowTitle = std::string("Liero ") + build_version();
+		sdlWindow = SDL_CreateWindow(windowTitle.c_str(), windowW, windowH,
+			SDL_WINDOW_RESIZABLE | (settings->fullscreen ? SDL_WINDOW_FULLSCREEN : 0));
 
-		// The Mac app will automatically use the .icns icon file located in the
-		// .app bundle, so don't override that here.
 #ifndef __APPLE__
 		std::string s = (getConfigNode() / "Resources" / "icon.png").fullPath();
 		SDL_Surface *icon = IMG_Load(s.c_str());
 		if (icon)
 		{
 			SDL_SetWindowIcon(sdlWindow, icon);
-			SDL_FreeSurface(icon);
+			SDL_DestroySurface(icon);
 		}
 #endif
 	}
 	else
 	{
-		if (settings->fullscreen)
-		{
-			SDL_SetWindowFullscreen(sdlWindow, SDL_WINDOW_FULLSCREEN_DESKTOP);
-		}
-		else
-		{
-			SDL_SetWindowFullscreen(sdlWindow, 0);
-		}
+		SDL_SetWindowFullscreen(sdlWindow, settings->fullscreen);
 	}
 	if (sdlRenderer)
 	{
@@ -412,7 +378,7 @@ void Gfx::setVideoMode()
 	}
 	// vertical sync is always disabled. Frame limiting is done manually below,
 	// to keep the correct speed
-	sdlRenderer = SDL_CreateRenderer(sdlWindow, -1, 0 /*SDL_RENDERER_PRESENTVSYNC*/);
+	sdlRenderer = SDL_CreateRenderer(sdlWindow, NULL);
 	onWindowResize(SDL_GetWindowID(sdlWindow));
 
 	// Set the spectator window's icon after the main window has been initialized.
@@ -427,13 +393,13 @@ void Gfx::setVideoMode()
 		if (spectator_icon)
 		{
 			SDL_SetWindowIcon(sdlSpectatorWindow, spectator_icon);
-			SDL_FreeSurface(spectator_icon);
+			SDL_DestroySurface(spectator_icon);
 		}
 	}
 #endif
 }
 
-void Gfx::onWindowResize(Uint32 windowID)
+void Gfx::onWindowResize(uint32_t windowID)
 {
 	if (windowID == SDL_GetWindowID(sdlWindow))
 	{
@@ -449,16 +415,16 @@ void Gfx::onWindowResize(Uint32 windowID)
 
 		if (sdlDrawSurface)
 		{
-			SDL_FreeSurface(sdlDrawSurface);
+			SDL_DestroySurface(sdlDrawSurface);
 			sdlDrawSurface = NULL;
 		}
-		sdlDrawSurface = SDL_CreateRGBSurface(0, doubleRes ? 640 : 320,
-		                         doubleRes ? 400 : 200, 32, 0, 0, 0, 0);
+		sdlDrawSurface = SDL_CreateSurface(doubleRes ? 640 : 320,
+		                         doubleRes ? 400 : 200, SDL_PIXELFORMAT_ARGB8888);
 		// linear for that old-school chunky look, but consider adding a user
 		// option for this
-		SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-		SDL_RenderSetLogicalSize(sdlRenderer, doubleRes ? 640 : 320,
-		                         doubleRes ? 400 : 200);
+		SDL_SetTextureScaleMode(sdlTexture, SDL_SCALEMODE_LINEAR);
+		SDL_SetRenderLogicalPresentation(sdlRenderer, doubleRes ? 640 : 320,
+		                         doubleRes ? 400 : 200, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 	}
 	else
 	{
@@ -469,7 +435,7 @@ void Gfx::onWindowResize(Uint32 windowID)
 		}
 		if (sdlSpectatorDrawSurface)
 		{
-			SDL_FreeSurface(sdlSpectatorDrawSurface);
+			SDL_DestroySurface(sdlSpectatorDrawSurface);
 			sdlSpectatorDrawSurface = NULL;
 		}
 
@@ -479,9 +445,8 @@ void Gfx::onWindowResize(Uint32 windowID)
 			                                        SDL_PIXELFORMAT_ARGB8888,
 				                           			SDL_TEXTUREACCESS_STREAMING,
 				                           			640, 400);
-			sdlSpectatorDrawSurface = SDL_CreateRGBSurface(0, 640, 400, 32, 0,
-			                                               0, 0, 0);
-			SDL_RenderSetLogicalSize(sdlSpectatorRenderer, 640, 400);
+			sdlSpectatorDrawSurface = SDL_CreateSurface(640, 400, SDL_PIXELFORMAT_ARGB8888);
+			SDL_SetRenderLogicalPresentation(sdlSpectatorRenderer, 640, 400, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 		}
 	}
 }
@@ -630,15 +595,15 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 {
 	switch(ev.type)
 	{
-		case SDL_KEYDOWN:
+		case SDL_EVENT_KEY_DOWN:
 		{
 
-			SDL_Scancode s = ev.key.keysym.scancode;
+			SDL_Scancode s = ev.key.scancode;
 
 			if (keyBufPtr < keyBuf + 32)
-				*keyBufPtr++ = ev.key.keysym;
+				*keyBufPtr++ = ev.key.scancode;
 
-			Uint32 dosScan = SDLToDOSKey(ev.key.keysym.scancode);
+			uint32_t dosScan = SDLToDOSKey(ev.key.scancode);
 			if(dosScan)
 			{
 				dosKeys[dosScan] = true;
@@ -661,11 +626,11 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
-		case SDL_KEYUP:
+		case SDL_EVENT_KEY_UP:
 		{
-			SDL_Scancode s = ev.key.keysym.scancode;
+			SDL_Scancode s = ev.key.scancode;
 
-			Uint32 dosScan = SDLToDOSKey(s);
+			uint32_t dosScan = SDLToDOSKey(s);
 			if(dosScan)
 			{
 				dosKeys[dosScan] = false;
@@ -675,29 +640,19 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
-		case SDL_WINDOWEVENT:
+		case SDL_EVENT_WINDOW_RESIZED:
 		{
-			switch (ev.window.event)
-			{
-				case SDL_WINDOWEVENT_RESIZED:
-				{
-					onWindowResize(ev.window.windowID);
-				}
-				break;
-
-				default:
-				break;
-			}
+			onWindowResize(ev.window.windowID);
 		}
 		break;
 
-		case SDL_QUIT:
+		case SDL_EVENT_QUIT:
 		{
 			running = false;
 		}
 		break;
 
-		case SDL_JOYAXISMOTION:
+		case SDL_EVENT_JOYSTICK_AXIS_MOTION:
 		{
 			Joystick& js = joysticks[ev.jaxis.which];
 			int jbtnBase = 4 + 2 * ev.jaxis.axis;
@@ -721,7 +676,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
-		case SDL_JOYHATMOTION:
+		case SDL_EVENT_JOYSTICK_HAT_MOTION:
 		{
 			Joystick& js = joysticks[ev.jhat.which];
 
@@ -744,12 +699,12 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
-		case SDL_JOYBUTTONDOWN:
-		case SDL_JOYBUTTONUP: /* Fall-through */
+		case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+		case SDL_EVENT_JOYSTICK_BUTTON_UP: /* Fall-through */
 		{
 			Joystick& js = joysticks[ev.jbutton.which];
 			int jbtn = 16 + ev.jbutton.button;
-			js.btnState[jbtn] = (ev.jbutton.state == SDL_PRESSED);
+			js.btnState[jbtn] = ev.jbutton.down;
 			if(controller)
 				controller->onKey(joyButtonToExKey(ev.jbutton.which, jbtn), js.btnState[jbtn]);
 		}
@@ -770,19 +725,19 @@ void Gfx::process(Controller* controller)
 	}
 }
 
-SDL_Keysym Gfx::waitForKey()
+SDL_Scancode Gfx::waitForKey()
 {
 	SDL_Event ev;
 	while(SDL_WaitEvent(&ev))
 	{
 		processEvent(ev);
-		if(ev.type == SDL_KEYDOWN)
+		if(ev.type == SDL_EVENT_KEY_DOWN)
 		{
-			return ev.key.keysym;
+			return ev.key.scancode;
 		}
 	}
 
-	return SDL_Keysym(); // Dummy
+	return SDL_SCANCODE_UNKNOWN; // Dummy
 }
 
 uint32_t Gfx::waitForKeyEx()
@@ -793,17 +748,17 @@ uint32_t Gfx::waitForKeyEx()
 		processEvent(ev);
 		switch (ev.type)
 		{
-		case SDL_KEYDOWN:
-			return SDLToDOSKey(ev.key.keysym);
+		case SDL_EVENT_KEY_DOWN:
+			return SDLToDOSKey(ev.key.scancode);
 
-		case SDL_JOYAXISMOTION:
+		case SDL_EVENT_JOYSTICK_AXIS_MOTION:
 			if(ev.jaxis.value > JoyAxisThreshold)
 				return joyButtonToExKey( ev.jaxis.which, 4 + 2 * ev.jaxis.axis );
 			else if ( ev.jaxis.value < -JoyAxisThreshold )
 				return joyButtonToExKey( ev.jaxis.which, 5 + 2 * ev.jaxis.axis );
 
 			break;
-		case SDL_JOYHATMOTION:
+		case SDL_EVENT_JOYSTICK_HAT_MOTION:
 			if(ev.jhat.value & SDL_HAT_UP)
 				return joyButtonToExKey(ev.jhat.which, 0);
 			else if(ev.jhat.value & SDL_HAT_DOWN)
@@ -814,7 +769,7 @@ uint32_t Gfx::waitForKeyEx()
 				return joyButtonToExKey(ev.jhat.which, 3);
 
 			break;
-		case SDL_JOYBUTTONDOWN:
+		case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
 			return joyButtonToExKey(ev.jbutton.which, 16 + ev.jbutton.button);
 		default:
 			break;
@@ -846,11 +801,11 @@ void Gfx::clearKeys()
 	std::memset(dosKeys, 0, sizeof(dosKeys));
 }
 
-void Gfx::preparePalette(SDL_PixelFormat* format, Color realPal[256], uint32_t (&pal32)[256])
+void Gfx::preparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette, Color realPal[256], uint32_t (&pal32)[256])
 {
 	for(int i = 0; i < 256; ++i)
 	{
-		pal32[i] = SDL_MapRGB(format, realPal[i].r, realPal[i].g, realPal[i].b);
+		pal32[i] = SDL_MapRGB(format, palette, realPal[i].r, realPal[i].g, realPal[i].b);
 	}
 }
 
@@ -888,7 +843,7 @@ void Gfx::draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRend
 	{
 		// Clear background if magnification is decreased to
 		// avoid leftovers.
-		SDL_FillRect(&surface, 0, 0);
+		SDL_FillSurfaceRect(&surface, 0, 0);
 		updateRect = lastUpdateRect | newRect;
 	}
 	else
@@ -898,16 +853,17 @@ void Gfx::draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRend
 	std::size_t destPitch = surface.pitch;
 	std::size_t srcPitch = renderer.bmp.pitch;
 
-	PalIdx* dest = reinterpret_cast<PalIdx*>(surface.pixels) + offsetY * destPitch + offsetX * surface.format->BytesPerPixel;
+	SDL_PixelFormatDetails const* formatDetails = SDL_GetPixelFormatDetails(surface.format);
+	PalIdx* dest = reinterpret_cast<PalIdx*>(surface.pixels) + offsetY * destPitch + offsetX * formatDetails->bytes_per_pixel;
 	PalIdx* src = renderer.bmp.pixels;
 
 	uint32_t pal32[256];
-	preparePalette(surface.format, realPal, pal32);
+	preparePalette(formatDetails, NULL, realPal, pal32);
 	scaleDraw(src, renderer.renderResX, renderer.renderResY, srcPitch, dest, destPitch, mag, pal32);
 
 	SDL_UpdateTexture(&texture, NULL, surface.pixels, surface.w * 4);
 	SDL_RenderClear(&sdlRenderer);
-	SDL_RenderCopy(&sdlRenderer, &texture, NULL, NULL);
+	SDL_RenderTexture(&sdlRenderer, &texture, NULL, NULL);
 	SDL_RenderPresent(&sdlRenderer);
 
 	lastUpdateRect = updateRect;
@@ -930,11 +886,11 @@ void Gfx::flip()
 
 	while(true)
 	{
-		auto now = SDL_GetTicks64();
+		auto now = SDL_GetTicks();
 		if(now >= wantedTime)
 			break;
 
-		SDL_Delay(wantedTime - now);
+		SDL_Delay((uint32_t)(wantedTime - now));
 	}
 
 	lastFrame = wantedTime;
@@ -1675,14 +1631,14 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 		font.drawText(playRenderer.bmp, str, x - adjust, y + 1, 50);
 		flip();
 
-		SDL_StartTextInput();
+		SDL_StartTextInput(sdlWindow);
 		SDL_WaitEvent(&ev);
 		processEvent(ev);
 
 		switch (ev.type)
 		{
-			case SDL_KEYDOWN:
-				switch (ev.key.keysym.scancode)
+			case SDL_EVENT_KEY_DOWN:
+				switch (ev.key.scancode)
 				{
 					case SDL_SCANCODE_BACKSPACE:
 						if(!buffer.empty())
@@ -1707,7 +1663,7 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 				}
 				break;
 
-			case SDL_TEXTINPUT:
+			case SDL_EVENT_TEXT_INPUT:
 			{
 				int k = utf8ToDOS(ev.text.text);
 				if (k && buffer.size() < maxLen &&
@@ -1717,7 +1673,7 @@ bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (
 				}
 				break;
 			}
-			case SDL_TEXTEDITING:
+			case SDL_EVENT_TEXT_EDITING:
 				// since there's no support for any characters that can use a
 				// complex IME input (like East Asian languages), we naively
 				// discard this event

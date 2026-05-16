@@ -1,14 +1,14 @@
 #pragma once
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 //extern int SDLToLieroKeys[SDL_SCANCODE_LAST];
 //extern int lieroToSDLKeys[177];
 
 void initKeys();
 
-Uint32 SDLToDOSKey(SDL_Keysym const& keysym);
-Uint32 SDLToDOSKey(SDL_Scancode scancode);
+uint32_t SDLToDOSKey(SDL_Scancode scancode, SDL_Keymod mod);
+uint32_t SDLToDOSKey(SDL_Scancode scancode);
 
 int const DkEscape = 1;
 

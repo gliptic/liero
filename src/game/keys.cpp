@@ -1,4 +1,4 @@
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <cstddef>
 #include <cassert>
 #include <map>
@@ -57,7 +57,7 @@ SDL_Scancode lieroToSDLKeys[] =
 	Z, Z, Z, Z, Z // 5 zeroes
 };
 
-Uint32 const maxScanCodes = sizeof(lieroToSDLKeys) / sizeof(*lieroToSDLKeys);
+uint32_t const maxScanCodes = sizeof(lieroToSDLKeys) / sizeof(*lieroToSDLKeys);
 
 void initKeys()
 {
@@ -70,17 +70,17 @@ void initKeys()
 	}
 }
 
-Uint32 SDLToDOSKey(SDL_Scancode scancode)
+uint32_t SDLToDOSKey(SDL_Scancode scancode)
 {
-	std::map<int, int>::iterator i = SDLToDOSScanCodes.find(Uint32(scancode));
+	std::map<int, int>::iterator i = SDLToDOSScanCodes.find(uint32_t(scancode));
 	if(i != SDLToDOSScanCodes.end())
 		return i->second;
 	return 89;
 }
 
-Uint32 SDLToDOSKey(SDL_Keysym const& keysym)
+uint32_t SDLToDOSKey(SDL_Scancode scancode, SDL_Keymod /*mod*/)
 {
-	Uint32 key = SDLToDOSKey(keysym.scancode);
+	uint32_t key = SDLToDOSKey(scancode);
 
 	if(key >= 177) // Liero doesn't have keys >= 177
 		return 89; // Arbitrarily translate it to 89
