@@ -187,8 +187,15 @@ bool WaitForKeyState::update()
 
 void WaitForKeyState::draw()
 {
-	// Nothing to draw — the underlying menu state shows the current menu
-	// and the "press a key" prompt is visible from the menu item highlight
+	std::string text = "PRESS A KEY";
+	int height;
+	int width = gfx->common->font.getDims(text, &height);
+
+	int cx = 160 - width / 2 - 2;
+	int cy = 100 - height / 2 - 2;
+
+	drawRoundedBox(gfx->playRenderer.bmp, cx, cy, 0, height + 1, width + 1);
+	gfx->common->font.drawText(gfx->playRenderer.bmp, text, cx + 2, cy + 2, 50);
 }
 
 // --- InfoBoxState ---
