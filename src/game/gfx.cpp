@@ -82,6 +82,87 @@ struct WormNameBehavior : ItemBehavior
 	WormSettings& ws;
 };
 
+struct InputDeviceBehavior : ItemBehavior
+{
+	InputDeviceBehavior(Common& common, WormSettings& ws)
+	: common(common)
+	, ws(ws)
+	{
+	}
+
+	void onUpdate(Menu& menu, MenuItem& item)
+	{
+		if (ws.inputDevice == WormSettingsExtensions::InputKeyboard)
+			item.value = "Keyboard";
+		else
+			item.value = ws.gamepadName.empty() ? "Gamepad (none)" : ws.gamepadName;
+		item.hasValue = true;
+	}
+
+	bool onLeftRight(Menu& menu, MenuItem& item, int dir)
+	{
+		sfx.play(common, dir > 0 ? 25 : 26);
+		cycle(menu, dir);
+		return false;
+	}
+
+	int onEnter(Menu& menu, MenuItem& item)
+	{
+		sfx.play(common, 27);
+		cycle(menu, 1);
+		return -1;
+	}
+
+	void cycle(Menu& menu, int dir)
+	{
+		// Build list of options: keyboard + each connected gamepad name
+		std::vector<std::string> options;
+		options.push_back(""); // keyboard (empty gamepadName)
+		for (int i = 0; i < (int)gfx.joysticks.size(); ++i)
+		{
+			char const* n = SDL_GetGamepadName(gfx.joysticks[i].sdlGamepad);
+			options.push_back(n ? n : "Gamepad");
+		}
+
+		// Find current selection
+		int cur = 0;
+		if (ws.inputDevice != WormSettingsExtensions::InputKeyboard)
+		{
+			for (int i = 1; i < (int)options.size(); ++i)
+			{
+				if (options[i] == ws.gamepadName)
+				{
+					cur = i;
+					break;
+				}
+			}
+			if (cur == 0 && ws.inputDevice != WormSettingsExtensions::InputKeyboard)
+				cur = 1; // fallback if name not found among connected
+		}
+
+		// Cycle
+		int count = (int)options.size();
+		if (count < 1) count = 1;
+		cur = ((cur + dir) % count + count) % count;
+
+		if (cur == 0)
+		{
+			ws.inputDevice = WormSettingsExtensions::InputKeyboard;
+			ws.gamepadName.clear();
+		}
+		else
+		{
+			ws.inputDevice = 1;
+			ws.gamepadName = options[cur];
+		}
+
+		menu.updateItems(common);
+	}
+
+	Common& common;
+	WormSettings& ws;
+};
+
 
 struct ProfileSaveBehavior : ItemBehavior
 {
@@ -638,6 +719,18 @@ int Gfx::findGamepadIndex(SDL_JoystickID id)
 	return -1;
 }
 
+int Gfx::findGamepadByName(std::string const& name)
+{
+	if (name.empty()) return -1;
+	for (int i = 0; i < (int)joysticks.size(); ++i)
+	{
+		char const* n = SDL_GetGamepadName(joysticks[i].sdlGamepad);
+		if (n && name == n)
+			return i;
+	}
+	return -1;
+}
+
 void Gfx::dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Controller* controller)
 {
 	if (gpIdx < 0 || gpIdx >= 2) return;
@@ -663,16 +756,19 @@ void Gfx::dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Contr
 	// Dispatch to the controller for the player who has this gamepad assigned
 	if (controller)
 	{
+		char const* gpName = SDL_GetGamepadName(joysticks[gpIdx].sdlGamepad);
 		for (int p = 0; p < 2; ++p)
 		{
 			WormSettings& ws = *settings->wormSettings[p];
-			if (ws.inputDevice != gpIdx + 1)
+			if (ws.inputDevice == WormSettingsExtensions::InputKeyboard)
+				continue;
+			if (ws.gamepadName.empty() || !gpName || ws.gamepadName != gpName)
 				continue;
 
 			for (int c = 0; c < WormSettings::MaxControlEx; ++c)
 			{
 				if (ws.gamepadControls[c] == gamepadKey)
-					controller->onKey(gamepadControlToExKey(gpIdx, c), state);
+					controller->onKey(gamepadControlToExKey(p, c), state);
 			}
 		}
 	}
@@ -1107,7 +1203,7 @@ ItemBehavior* PlayerMenu::getItemBehavior(Common& common, MenuItem& item)
 		}
 
 		case PlInput:
-			return new ArrayEnumBehavior(common, ws->inputDevice, common.texts.inputDevices);
+			return new InputDeviceBehavior(common, *ws);
 
 		case PlUp: // D2AB
 		case PlDown:

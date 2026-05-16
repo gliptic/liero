@@ -16,15 +16,15 @@ int const MaxJoyButtons = 32;
 
 uint32_t const MaxDOSKey 	= 177;
 uint32_t const JoyKeysStart	= 512;
-// Gamepad control keys start after joystick keys: encode as (gamepad index, control)
+// Gamepad control keys start after joystick keys: encode as (player index, control)
 uint32_t const GamepadControlKeysStart = 1024;
 
 inline uint32_t joyButtonToExKey( int joyNum, int joyButton ) {
 	return JoyKeysStart + MaxJoyButtons * joyNum + joyButton;
 }
 
-inline uint32_t gamepadControlToExKey( int gpIdx, int control ) {
-	return GamepadControlKeysStart + gpIdx * 8 + control;
+inline uint32_t gamepadControlToExKey( int playerIdx, int control ) {
+	return GamepadControlKeysStart + playerIdx * 8 + control;
 }
 
 inline bool isGamepadControlKey( uint32_t k ) {

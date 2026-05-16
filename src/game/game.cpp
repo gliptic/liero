@@ -66,20 +66,15 @@ void Game::onKey(uint32_t key, bool state)
 
 Worm* Game::findControlForKey(uint32_t key, Worm::Control& control)
 {
-	// Gamepad control keys encode the control directly
+	// Gamepad control keys encode the player index and control directly
 	if (isGamepadControlKey(key))
 	{
-		int gpIdx = (key - GamepadControlKeysStart) / 8;
+		int playerIdx = (key - GamepadControlKeysStart) / 8;
 		int c = (key - GamepadControlKeysStart) % 8;
-		// Find which worm has this gamepad assigned
-		for (std::size_t i = 0; i < worms.size(); ++i)
+		if (playerIdx >= 0 && playerIdx < (int)worms.size())
 		{
-			Worm& w = *worms[i];
-			if (w.settings->inputDevice == gpIdx + 1)
-			{
-				control = static_cast<Worm::Control>(c);
-				return &w;
-			}
+			control = static_cast<Worm::Control>(c);
+			return worms[playerIdx];
 		}
 		return 0;
 	}
