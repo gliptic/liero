@@ -96,15 +96,15 @@ jobs:
       - name: Create build artifact (Linux)
         if: runner.os == 'linux'
         run: |
-          cmake --install build/linux-x64-ci
+          cmake --install build/linux-x64-ci --config Release
           cd install/linux-x64-ci
           tar cvf ../openliero-linux-x64.tar.gz .
 
       - name: Create build artifact (macOS)
         if: runner.os == 'macos'
         run: |
-          cmake --install build/macos-arm64-ci
-          cmake --install build/macos-x64-ci
+          cmake --install build/macos-arm64-ci --config Release
+          cmake --install build/macos-x64-ci --config Release
           lipo -create \
             -output install/openliero \
             install/macos-arm64-ci/openliero \
@@ -120,7 +120,7 @@ jobs:
       - name: Create build artifact (Windows)
         if: runner.os == 'windows'
         run: |
-          cmake --install build/windows-x64-ci
+          cmake --install build/windows-x64-ci --config Release
           Compress-Archive `
            -Path install/windows-x64-ci/* `
            -DestinationPath install/openliero-windows-x64.zip
