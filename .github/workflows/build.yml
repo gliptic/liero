@@ -83,6 +83,7 @@ jobs:
         with:
           vcpkgDirectory: '${{ github.workspace }}/tools/vcpkg/vcpkg'
           vcpkgConfigurationJsonGlob: 'vcpkg-configuration.json'
+          appendedCacheKey: 'sdl3-v1'
 
       - name: Run cmake
         uses: lukka/run-cmake@v10
