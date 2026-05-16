@@ -117,7 +117,7 @@ set(GAME_SOURCES ${SOURCES}
   src/game/controller/commonController.cpp
   src/game/controller/localController.cpp
   src/game/controller/replayController.cpp
-  src/game/controller/stats_presenter.cpp
+  src/game/statsState.cpp
   src/game/menu/booleanSwitchBehavior.cpp
   src/game/menu/enumBehavior.cpp
   src/game/menu/hiddenMenu.cpp
