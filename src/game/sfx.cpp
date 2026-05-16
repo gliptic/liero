@@ -29,6 +29,10 @@ void Sfx::init()
 	if(initialized)
 		return;
 
+	// Request a small audio buffer for low latency (~5.8ms at 44100Hz).
+	// Must be set before opening the audio device.
+	SDL_SetHint(SDL_HINT_AUDIO_DEVICE_SAMPLE_FRAMES, "256");
+
 	SDL_InitSubSystem(SDL_INIT_AUDIO);
 
 	mixer = sfx_mixer_create();

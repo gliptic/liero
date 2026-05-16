@@ -499,6 +499,7 @@ std::string Common::guessName() const {
 
 void SfxSample::createSound() {
   std::vector<int16_t>& samples = sfx_sound_data(sound);
+  samples.clear();
 
   int prev = static_cast<int8_t>(originalData[0]) * 30;
   samples.push_back(prev);
