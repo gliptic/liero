@@ -149,7 +149,7 @@ bool MainMenuState::update()
 
 	if(gfx->testSDLKeyOnce(SDL_SCANCODE_UP)
 	|| gfx->testControlOnce(WormSettingsExtensions::Up)
-	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
+	|| gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
 	{
 		sfx.play(common, 26);
 		gfx->curMenu->movement(-1);
@@ -157,7 +157,7 @@ bool MainMenuState::update()
 
 	if(gfx->testSDLKeyOnce(SDL_SCANCODE_DOWN)
 	|| gfx->testControlOnce(WormSettingsExtensions::Down)
-	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
+	|| gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
 	{
 		sfx.play(common, 25);
 		gfx->curMenu->movement(1);
@@ -546,14 +546,14 @@ bool MainMenuState::update()
 
 	if(gfx->testSDLKey(SDL_SCANCODE_LEFT)
 	|| gfx->testControl(WormSettingsExtensions::Left)
-	|| gfx->testGamepadButton(SDL_GAMEPAD_BUTTON_DPAD_LEFT))
+	|| gfx->testGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_LEFT))
 	{
 		if(!gfx->curMenu->onLeftRight(common, -1))
 			resetLeftRight();
 	}
 	if(gfx->testSDLKey(SDL_SCANCODE_RIGHT)
 	|| gfx->testControl(WormSettingsExtensions::Right)
-	|| gfx->testGamepadButton(SDL_GAMEPAD_BUTTON_DPAD_RIGHT))
+	|| gfx->testGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_RIGHT))
 	{
 		if(!gfx->curMenu->onLeftRight(common, 1))
 			resetLeftRight();

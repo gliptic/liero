@@ -112,11 +112,13 @@ struct Joystick {
 	bool btnState[SDL_GAMEPAD_BUTTON_COUNT];
 	bool btnPressed[SDL_GAMEPAD_BUTTON_COUNT]; // Latched on press, cleared by testGamepadButtonOnce
 	bool axisButtonState[12]; // 6 axes * 2 directions
+	bool axisPressed[12];     // Latched on axis threshold cross, cleared by consumer
 
 	void clearState() {
 		std::memset(btnState, 0, sizeof(btnState));
 		std::memset(btnPressed, 0, sizeof(btnPressed));
 		std::memset(axisButtonState, 0, sizeof(axisButtonState));
+		std::memset(axisPressed, 0, sizeof(axisPressed));
 	}
 };
 
@@ -231,6 +233,12 @@ struct Gfx
 
 	// Test if any connected gamepad has a raw button held (non-destructive)
 	bool testGamepadButton(int button);
+
+	// Directional input: checks both DPad button AND left stick axis (one-shot)
+	bool testGamepadDirOnce(int dpadButton);
+
+	// Directional input: checks both DPad button AND left stick axis (held)
+	bool testGamepadDir(int dpadButton);
 
 	// Non-destructive version for held keys (left/right repeat)
 	bool testControl(int control);

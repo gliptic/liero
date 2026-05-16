@@ -698,10 +698,12 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 
 			if (posState != js.axisButtonState[posIdx]) {
 				js.axisButtonState[posIdx] = posState;
+				if (posState) js.axisPressed[posIdx] = true;
 				dispatchGamepadInput(gpIdx, WormSettingsExtensions::gamepadAxisPositive(axis), posState, controller);
 			}
 			if (negState != js.axisButtonState[negIdx]) {
 				js.axisButtonState[negIdx] = negState;
+				if (negState) js.axisPressed[negIdx] = true;
 				dispatchGamepadInput(gpIdx, WormSettingsExtensions::gamepadAxisNegative(axis), negState, controller);
 			}
 		}
@@ -937,6 +939,53 @@ bool Gfx::testGamepadButton(int button)
 	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
 	{
 		if (joysticks[gp].btnState[button])
+			return true;
+	}
+	return false;
+}
+
+// Map DPad button to left stick axis index (-1 if not a directional button)
+static int dpadToAxisIndex(int dpadButton)
+{
+	switch (dpadButton)
+	{
+		case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: return 0; // LEFTX positive
+		case SDL_GAMEPAD_BUTTON_DPAD_LEFT:  return 1; // LEFTX negative
+		case SDL_GAMEPAD_BUTTON_DPAD_DOWN:  return 2; // LEFTY positive
+		case SDL_GAMEPAD_BUTTON_DPAD_UP:    return 3; // LEFTY negative
+		default: return -1;
+	}
+}
+
+bool Gfx::testGamepadDirOnce(int dpadButton)
+{
+	int axisIdx = dpadToAxisIndex(dpadButton);
+	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
+	{
+		if (joysticks[gp].btnPressed[dpadButton])
+		{
+			joysticks[gp].btnPressed[dpadButton] = false;
+			if (axisIdx >= 0) joysticks[gp].axisPressed[axisIdx] = false;
+			return true;
+		}
+		if (axisIdx >= 0 && joysticks[gp].axisPressed[axisIdx])
+		{
+			joysticks[gp].axisPressed[axisIdx] = false;
+			joysticks[gp].btnPressed[dpadButton] = false;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Gfx::testGamepadDir(int dpadButton)
+{
+	int axisIdx = dpadToAxisIndex(dpadButton);
+	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
+	{
+		if (joysticks[gp].btnState[dpadButton])
+			return true;
+		if (axisIdx >= 0 && joysticks[gp].axisButtonState[axisIdx])
 			return true;
 	}
 	return false;
