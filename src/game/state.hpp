@@ -34,6 +34,10 @@ struct AppState
 	// (before this state). Useful for modal dialogs/text input overlays.
 	virtual bool isOverlay() const { return false; }
 
+	// If true, the frame loop calls menuFlip() (palette rotation + flip).
+	// If false, it calls flip() (just present + timing).
+	virtual bool wantsMenuFlip() const { return true; }
+
 	// Back-pointer to the graphics context, set by StateStack on push.
 	Gfx* gfx = nullptr;
 };
@@ -103,8 +107,6 @@ public:
 	}
 
 	// Draw states, respecting overlay transparency.
-	// Walks down from the top to find the lowest visible state, then
-	// draws upward so overlays are drawn on top.
 	void draw()
 	{
 		if (stack_.empty())
@@ -117,6 +119,12 @@ public:
 
 		for (std::size_t i = bottom; i < stack_.size(); ++i)
 			stack_[i]->draw();
+	}
+
+	// Access the topmost state (for querying flip mode, etc.)
+	AppState* top() const
+	{
+		return stack_.empty() ? nullptr : stack_.back().get();
 	}
 
 private:

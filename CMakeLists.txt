@@ -110,6 +110,7 @@ set(GAME_SOURCES ${SOURCES}
   src/game/fileSelectorState.cpp
   src/game/weaponMenuState.cpp
   src/game/inputState.cpp
+  src/game/gamePlayState.cpp
   src/game/replay.cpp
   src/game/sfx.cpp
   src/game/weapsel.cpp
