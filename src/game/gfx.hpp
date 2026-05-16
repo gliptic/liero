@@ -243,7 +243,7 @@ struct Gfx
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 
 	int findGamepadIndex(SDL_JoystickID id);
-	int findGamepadByName(std::string const& name);
+	int findGamepadForPlayer(int playerIdx);
 	void dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Controller* controller);
 
 	void mainLoop();

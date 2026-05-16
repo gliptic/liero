@@ -383,6 +383,7 @@ void archive_text(Settings& settings, Archive& ar) {
 
         ar.u32(S(inputDevice));
         ar.str(S(gamepadName));
+        ar.str(S(gamepadSerial));
         ar.arr("gamepadControls", ws->gamepadControls,
                [&](uint32_t& c) { ar.u32(0, c); });
       });

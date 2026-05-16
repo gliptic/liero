@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cctype>
 #include <vector>
+#include <unordered_map>
 #include <utility>
 #include <algorithm>
 #include <cstdio>
@@ -84,18 +85,89 @@ struct WormNameBehavior : ItemBehavior
 
 struct InputDeviceBehavior : ItemBehavior
 {
+	struct GamepadOption {
+		std::string name;
+		std::string serial;
+		std::string displayName;
+		int joystickIdx;
+	};
+
 	InputDeviceBehavior(Common& common, WormSettings& ws)
 	: common(common)
 	, ws(ws)
 	{
 	}
 
+	std::vector<GamepadOption> buildOptions()
+	{
+		std::vector<GamepadOption> opts;
+		// Count names to detect duplicates
+		std::unordered_map<std::string, int> nameCounts;
+		for (int i = 0; i < (int)gfx.joysticks.size(); ++i)
+		{
+			char const* n = SDL_GetGamepadName(gfx.joysticks[i].sdlGamepad);
+			std::string name = n ? n : "Gamepad";
+			nameCounts[name]++;
+		}
+
+		std::unordered_map<std::string, int> nameSeenSoFar;
+		for (int i = 0; i < (int)gfx.joysticks.size(); ++i)
+		{
+			GamepadOption opt;
+			char const* n = SDL_GetGamepadName(gfx.joysticks[i].sdlGamepad);
+			opt.name = n ? n : "Gamepad";
+			char const* s = SDL_GetGamepadSerial(gfx.joysticks[i].sdlGamepad);
+			opt.serial = s ? s : "";
+			opt.joystickIdx = i;
+
+			// Disambiguate display name if duplicates exist
+			if (nameCounts[opt.name] > 1)
+			{
+				int idx = ++nameSeenSoFar[opt.name];
+				opt.displayName = opt.name + " #" + toString(idx);
+			}
+			else
+			{
+				opt.displayName = opt.name;
+			}
+			opts.push_back(opt);
+		}
+		return opts;
+	}
+
+	int findCurrentOption(std::vector<GamepadOption> const& opts)
+	{
+		if (ws.inputDevice == WormSettingsExtensions::InputKeyboard)
+			return -1;
+		// Try serial match first
+		if (!ws.gamepadSerial.empty())
+		{
+			for (int i = 0; i < (int)opts.size(); ++i)
+				if (opts[i].name == ws.gamepadName && opts[i].serial == ws.gamepadSerial)
+					return i;
+		}
+		// Fall back to name match
+		for (int i = 0; i < (int)opts.size(); ++i)
+			if (opts[i].name == ws.gamepadName)
+				return i;
+		return -1;
+	}
+
 	void onUpdate(Menu& menu, MenuItem& item)
 	{
 		if (ws.inputDevice == WormSettingsExtensions::InputKeyboard)
+		{
 			item.value = "Keyboard";
+		}
 		else
-			item.value = ws.gamepadName.empty() ? "Gamepad (none)" : ws.gamepadName;
+		{
+			auto opts = buildOptions();
+			int cur = findCurrentOption(opts);
+			if (cur >= 0)
+				item.value = opts[cur].displayName;
+			else
+				item.value = ws.gamepadName.empty() ? "Gamepad (none)" : ws.gamepadName + " (disconnected)";
+		}
 		item.hasValue = true;
 	}
 
@@ -115,45 +187,24 @@ struct InputDeviceBehavior : ItemBehavior
 
 	void cycle(Menu& menu, int dir)
 	{
-		// Build list of options: keyboard + each connected gamepad name
-		std::vector<std::string> options;
-		options.push_back(""); // keyboard (empty gamepadName)
-		for (int i = 0; i < (int)gfx.joysticks.size(); ++i)
-		{
-			char const* n = SDL_GetGamepadName(gfx.joysticks[i].sdlGamepad);
-			options.push_back(n ? n : "Gamepad");
-		}
-
-		// Find current selection
-		int cur = 0;
-		if (ws.inputDevice != WormSettingsExtensions::InputKeyboard)
-		{
-			for (int i = 1; i < (int)options.size(); ++i)
-			{
-				if (options[i] == ws.gamepadName)
-				{
-					cur = i;
-					break;
-				}
-			}
-			if (cur == 0 && ws.inputDevice != WormSettingsExtensions::InputKeyboard)
-				cur = 1; // fallback if name not found among connected
-		}
-
-		// Cycle
-		int count = (int)options.size();
-		if (count < 1) count = 1;
+		auto opts = buildOptions();
+		// Options: -1 = keyboard, 0..N-1 = gamepads
+		int count = (int)opts.size() + 1;
+		int cur = findCurrentOption(opts) + 1; // shift so keyboard=0, gamepads=1..N
 		cur = ((cur + dir) % count + count) % count;
 
 		if (cur == 0)
 		{
 			ws.inputDevice = WormSettingsExtensions::InputKeyboard;
 			ws.gamepadName.clear();
+			ws.gamepadSerial.clear();
 		}
 		else
 		{
+			auto& opt = opts[cur - 1];
 			ws.inputDevice = 1;
-			ws.gamepadName = options[cur];
+			ws.gamepadName = opt.name;
+			ws.gamepadSerial = opt.serial;
 		}
 
 		menu.updateItems(common);
@@ -719,16 +770,46 @@ int Gfx::findGamepadIndex(SDL_JoystickID id)
 	return -1;
 }
 
-int Gfx::findGamepadByName(std::string const& name)
+int Gfx::findGamepadForPlayer(int playerIdx)
 {
-	if (name.empty()) return -1;
+	if (!settings || playerIdx < 0 || playerIdx >= 2) return -1;
+	WormSettings& ws = *settings->wormSettings[playerIdx];
+	if (ws.inputDevice == WormSettingsExtensions::InputKeyboard) return -1;
+	if (ws.gamepadName.empty()) return -1;
+
+	// Collect indices of gamepads matching by name
+	std::vector<int> candidates;
 	for (int i = 0; i < (int)joysticks.size(); ++i)
 	{
 		char const* n = SDL_GetGamepadName(joysticks[i].sdlGamepad);
-		if (n && name == n)
-			return i;
+		if (!n || ws.gamepadName != n) continue;
+
+		// Exact serial match is best
+		if (!ws.gamepadSerial.empty())
+		{
+			char const* s = SDL_GetGamepadSerial(joysticks[i].sdlGamepad);
+			if (s && ws.gamepadSerial == s)
+				return i;
+		}
+		candidates.push_back(i);
 	}
-	return -1;
+
+	if (candidates.empty()) return -1;
+
+	// No serial match — resolve by position among same-name candidates.
+	// If the other player also wants a gamepad with the same name,
+	// give the first candidate to player 0 and the second to player 1.
+	int otherPlayer = 1 - playerIdx;
+	WormSettings& otherWs = *settings->wormSettings[otherPlayer];
+	if (candidates.size() >= 2
+	    && otherWs.inputDevice != WormSettingsExtensions::InputKeyboard
+	    && otherWs.gamepadName == ws.gamepadName)
+	{
+		// Both players want same-named gamepad — split by player index
+		return candidates[playerIdx < otherPlayer ? 0 : 1];
+	}
+
+	return candidates[0];
 }
 
 void Gfx::dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Controller* controller)
@@ -756,13 +837,12 @@ void Gfx::dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Contr
 	// Dispatch to the controller for the player who has this gamepad assigned
 	if (controller)
 	{
-		char const* gpName = SDL_GetGamepadName(joysticks[gpIdx].sdlGamepad);
 		for (int p = 0; p < 2; ++p)
 		{
 			WormSettings& ws = *settings->wormSettings[p];
 			if (ws.inputDevice == WormSettingsExtensions::InputKeyboard)
 				continue;
-			if (ws.gamepadName.empty() || !gpName || ws.gamepadName != gpName)
+			if (findGamepadForPlayer(p) != gpIdx)
 				continue;
 
 			for (int c = 0; c < WormSettings::MaxControlEx; ++c)

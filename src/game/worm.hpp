@@ -80,7 +80,8 @@ struct WormSettingsExtensions {
 
   uint32_t gamepadControls[MaxControlEx];
   uint32_t inputDevice;
-  std::string gamepadName; // Stored name to identify the gamepad across sessions
+  std::string gamepadName;   // Human-readable name (e.g., "Xbox Wireless Controller")
+  std::string gamepadSerial; // Hardware serial for disambiguating identical controllers
 };
 
 struct WormSettings : gvl::shared, WormSettingsExtensions {
