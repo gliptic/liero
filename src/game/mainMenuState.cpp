@@ -50,6 +50,8 @@ static void resetLeftRight()
 {
 	gfx.releaseSDLKey(SDL_SCANCODE_LEFT);
 	gfx.releaseSDLKey(SDL_SCANCODE_RIGHT);
+	gfx.releaseControl(WormSettingsExtensions::Left);
+	gfx.releaseControl(WormSettingsExtensions::Right);
 }
 
 MainMenuState::MainMenuState()
@@ -135,7 +137,8 @@ bool MainMenuState::update()
 	// Phase::Active — process input
 	Common& common = *gfx->common;
 
-	if(gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
+	if(gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE)
+	|| gfx->testControlOnce(WormSettingsExtensions::Jump))
 	{
 		if(gfx->curMenu == &gfx->mainMenu)
 			gfx->mainMenu.moveToId(MainMenu::MaQuit);
@@ -143,20 +146,23 @@ bool MainMenuState::update()
 			gfx->curMenu = &gfx->mainMenu;
 	}
 
-	if(gfx->testSDLKeyOnce(SDL_SCANCODE_UP))
+	if(gfx->testSDLKeyOnce(SDL_SCANCODE_UP)
+	|| gfx->testControlOnce(WormSettingsExtensions::Up))
 	{
 		sfx.play(common, 26);
 		gfx->curMenu->movement(-1);
 	}
 
-	if(gfx->testSDLKeyOnce(SDL_SCANCODE_DOWN))
+	if(gfx->testSDLKeyOnce(SDL_SCANCODE_DOWN)
+	|| gfx->testControlOnce(WormSettingsExtensions::Down))
 	{
 		sfx.play(common, 25);
 		gfx->curMenu->movement(1);
 	}
 
 	if(gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN)
-	|| gfx->testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
+	|| gfx->testSDLKeyOnce(SDL_SCANCODE_KP_ENTER)
+	|| gfx->testControlOnce(WormSettingsExtensions::Fire))
 	{
 		if(gfx->curMenu == &gfx->mainMenu)
 		{
@@ -527,12 +533,14 @@ bool MainMenuState::update()
 		}
 	}
 
-	if(gfx->testSDLKey(SDL_SCANCODE_LEFT))
+	if(gfx->testSDLKey(SDL_SCANCODE_LEFT)
+	|| gfx->testControl(WormSettingsExtensions::Left))
 	{
 		if(!gfx->curMenu->onLeftRight(common, -1))
 			resetLeftRight();
 	}
-	if(gfx->testSDLKey(SDL_SCANCODE_RIGHT))
+	if(gfx->testSDLKey(SDL_SCANCODE_RIGHT)
+	|| gfx->testControl(WormSettingsExtensions::Right))
 	{
 		if(!gfx->curMenu->onLeftRight(common, 1))
 			resetLeftRight();

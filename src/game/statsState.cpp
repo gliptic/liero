@@ -302,24 +302,30 @@ void StatsState::handleEvent(SDL_Event& ev)
 
 bool StatsState::update()
 {
-	if (gfx->testSDLKey(SDL_SCANCODE_DOWN))
+	if (gfx->testSDLKey(SDL_SCANCODE_DOWN)
+	|| gfx->testControl(WormSettingsExtensions::Down))
 	{
 		destOffset_ -= 10;
 	}
-	else if (gfx->testSDLKey(SDL_SCANCODE_UP))
+	else if (gfx->testSDLKey(SDL_SCANCODE_UP)
+	|| gfx->testControl(WormSettingsExtensions::Up))
 	{
 		destOffset_ = std::min(destOffset_ + 10.0, 0.0);
 	}
-	else if (gfx->testSDLKeyOnce(SDL_SCANCODE_RIGHT))
+	else if (gfx->testSDLKeyOnce(SDL_SCANCODE_RIGHT)
+	|| gfx->testControlOnce(WormSettingsExtensions::Right))
 	{
 		destPane_ = std::min(destPane_ + 1.0, 1.0);
 	}
-	else if (gfx->testSDLKeyOnce(SDL_SCANCODE_LEFT))
+	else if (gfx->testSDLKeyOnce(SDL_SCANCODE_LEFT)
+	|| gfx->testControlOnce(WormSettingsExtensions::Left))
 	{
 		destPane_ = std::max(destPane_ - 1.0, -1.0);
 	}
 	else if (gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN) ||
-	         gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
+	         gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE) ||
+	         gfx->testControlOnce(WormSettingsExtensions::Fire) ||
+	         gfx->testControlOnce(WormSettingsExtensions::Jump))
 	{
 		fill(gfx->playRenderer.bmp, 0);
 		gfx->clearKeys();

@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <cassert>
+#include <unordered_map>
 
 #include "state.hpp"
 #include "gfx/font.hpp"
@@ -182,6 +183,49 @@ struct Gfx
 			dosKeys[k] = false;
 	}
 
+	// Test any key (both regular DOS keys and extended joystick keys)
+	bool testAnyKeyOnce(uint32_t key)
+	{
+		if(key == 0) return false;
+		if(key < MaxDOSKey)
+			return testKeyOnce(key);
+		auto it = exKeys.find(key);
+		if(it != exKeys.end() && it->second)
+		{
+			it->second = false;
+			return true;
+		}
+		return false;
+	}
+
+	bool testAnyKey(uint32_t key)
+	{
+		if(key == 0) return false;
+		if(key < MaxDOSKey)
+			return testKey(key);
+		auto it = exKeys.find(key);
+		return it != exKeys.end() && it->second;
+	}
+
+	void releaseAnyKey(uint32_t key)
+	{
+		if(key == 0) return;
+		if(key < MaxDOSKey)
+			dosKeys[key] = false;
+		else
+			exKeys[key] = false;
+	}
+
+	// Test if any player's configured control for a given action was pressed.
+	// Uses controlsEx which covers both keyboard and joystick bindings.
+	bool testControlOnce(int control);
+
+	// Non-destructive version for held keys (left/right repeat)
+	bool testControl(int control);
+
+	// Release a control key for all players
+	void releaseControl(int control);
+
 	std::string getKeyName(uint32_t key);
 	void setSpectatorFullscreen(bool newFullscreen);
 	void setFullscreen(bool newFullscreen);
@@ -256,6 +300,7 @@ struct Gfx
 	std::shared_ptr<Settings> settings;
 
 	bool dosKeys[177];
+	std::unordered_map<uint32_t, bool> exKeys;
 	// the window to render into
 	SDL_Window* sdlWindow = NULL;
 	// the window to render the spectator view into
