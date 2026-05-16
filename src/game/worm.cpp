@@ -14,6 +14,22 @@
 #include <gvl/crypt/gash.hpp>
 #include <gvl/io2/fstream.hpp>
 
+#include <SDL3/SDL.h>
+
+void WormSettingsExtensions::initDefaultGamepadControls()
+{
+	// DPad for movement
+	gamepadControls[Up] = SDL_GAMEPAD_BUTTON_DPAD_UP;
+	gamepadControls[Down] = SDL_GAMEPAD_BUTTON_DPAD_DOWN;
+	gamepadControls[Left] = SDL_GAMEPAD_BUTTON_DPAD_LEFT;
+	gamepadControls[Right] = SDL_GAMEPAD_BUTTON_DPAD_RIGHT;
+	// A = Jump, Right trigger = Fire, Right shoulder = Change, Left shoulder = Dig
+	gamepadControls[Jump] = SDL_GAMEPAD_BUTTON_SOUTH;
+	gamepadControls[Fire] = gamepadAxisPositive(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
+	gamepadControls[Change] = SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER;
+	gamepadControls[Dig] = SDL_GAMEPAD_BUTTON_LEFT_SHOULDER;
+}
+
 struct Point
 {
 	int x, y;

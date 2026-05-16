@@ -107,10 +107,13 @@ struct SettingsMenu : Menu
 
 struct Joystick {
 	SDL_Gamepad *sdlGamepad;
-	bool btnState[MaxJoyButtons];
+	SDL_JoystickID instanceId;
+	bool btnState[SDL_GAMEPAD_BUTTON_COUNT];
+	bool axisButtonState[12]; // 6 axes * 2 directions
 
 	void clearState() {
-		for ( int i = 0; i < MaxJoyButtons; ++i ) btnState[i] = false;
+		std::memset(btnState, 0, sizeof(btnState));
+		std::memset(axisButtonState, 0, sizeof(axisButtonState));
 	}
 };
 
@@ -237,6 +240,9 @@ struct Gfx
 
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 
+	int findGamepadIndex(SDL_JoystickID id);
+	void dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Controller* controller);
+
 	void mainLoop();
 
 	// Initialize the state stack.
@@ -301,6 +307,10 @@ struct Gfx
 
 	bool dosKeys[177];
 	std::unordered_map<uint32_t, bool> exKeys;
+
+	// Per-gamepad, per-control pressed state. Indexed [gamepadIdx][control].
+	// Updated by dispatchGamepadInput based on gamepadControls bindings.
+	bool gamepadControlState[2][WormSettingsExtensions::MaxControlEx];
 	// the window to render into
 	SDL_Window* sdlWindow = NULL;
 	// the window to render the spectator view into

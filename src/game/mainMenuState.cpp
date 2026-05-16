@@ -320,13 +320,20 @@ bool MainMenuState::update()
 
 				gfx->stateStack.push(std::make_unique<WaitForKeyState>(
 					extended,
-					[this, keyIdx](uint32_t k) {
+					[this, keyIdx](uint32_t k, bool isGamepad) {
 						auto& ws = *gfx->playerMenu.ws;
 						if (k != DkEscape)
 						{
-							if (!isExtendedKey(k))
-								ws.controls[keyIdx] = k;
-							ws.controlsEx[keyIdx] = k;
+							if (isGamepad)
+							{
+								ws.gamepadControls[keyIdx] = k;
+							}
+							else
+							{
+								if (!isExtendedKey(k))
+									ws.controls[keyIdx] = k;
+								ws.controlsEx[keyIdx] = k;
+							}
 							gfx->playerMenu.updateItems(*gfx->common);
 						}
 					}), gfx);

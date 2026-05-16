@@ -185,6 +185,7 @@ void Gfx::init()
 	joysticks.resize(numGamepads);
 	for ( int i = 0; i < numGamepads; ++i ) {
 		joysticks[i].sdlGamepad = SDL_OpenGamepad(gamepadIds[i]);
+		joysticks[i].instanceId = gamepadIds[i];
 		joysticks[i].clearState();
 	}
 	SDL_free(gamepadIds);
@@ -537,67 +538,40 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
-		case SDL_EVENT_JOYSTICK_AXIS_MOTION:
+		case SDL_EVENT_GAMEPAD_AXIS_MOTION:
 		{
-			Joystick& js = joysticks[ev.jaxis.which];
-			int jbtnBase = 4 + 2 * ev.jaxis.axis;
+			int gpIdx = findGamepadIndex(ev.gaxis.which);
+			if (gpIdx < 0) break;
+			Joystick& js = joysticks[gpIdx];
+			int axis = ev.gaxis.axis;
 
-			bool newBtnStates[2];
-			newBtnStates[0] = (ev.jaxis.value > JoyAxisThreshold);
-			newBtnStates[1] = (ev.jaxis.value < -JoyAxisThreshold);
+			bool posState = (ev.gaxis.value > JoyAxisThreshold);
+			bool negState = (ev.gaxis.value < -JoyAxisThreshold);
 
-			for(int i = 0; i < 2; ++i)
-			{
-				int jbtn = jbtnBase + i;
-				bool newState = newBtnStates[i];
+			int posIdx = axis * 2;
+			int negIdx = axis * 2 + 1;
 
-				if(newState != js.btnState[jbtn])
-				{
-					js.btnState[jbtn] = newState;
-					uint32_t exKey = joyButtonToExKey(ev.jaxis.which, jbtn);
-					exKeys[exKey] = newState;
-					if (controller)
-						controller->onKey(exKey, newState);
-				}
+			if (posState != js.axisButtonState[posIdx]) {
+				js.axisButtonState[posIdx] = posState;
+				dispatchGamepadInput(gpIdx, WormSettingsExtensions::gamepadAxisPositive(axis), posState, controller);
+			}
+			if (negState != js.axisButtonState[negIdx]) {
+				js.axisButtonState[negIdx] = negState;
+				dispatchGamepadInput(gpIdx, WormSettingsExtensions::gamepadAxisNegative(axis), negState, controller);
 			}
 		}
 		break;
 
-		case SDL_EVENT_JOYSTICK_HAT_MOTION:
+		case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+		case SDL_EVENT_GAMEPAD_BUTTON_UP:
 		{
-			Joystick& js = joysticks[ev.jhat.which];
-
-			bool newBtnStates[4];
-			newBtnStates[0] = (ev.jhat.value & SDL_HAT_UP) != 0;
-			newBtnStates[1] = (ev.jhat.value & SDL_HAT_DOWN) != 0;
-			newBtnStates[2] = (ev.jhat.value & SDL_HAT_LEFT) != 0;
-			newBtnStates[3] = (ev.jhat.value & SDL_HAT_RIGHT) != 0;
-
-			for(int jbtn = 0; jbtn < 4; ++jbtn)
-			{
-				bool newState = newBtnStates[jbtn];
-				if(newState != js.btnState[jbtn])
-				{
-					js.btnState[jbtn] = newState;
-					uint32_t exKey = joyButtonToExKey(ev.jhat.which, jbtn);
-					exKeys[exKey] = newState;
-					if(controller)
-						controller->onKey(exKey, newState);
-				}
-			}
-		}
-		break;
-
-		case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-		case SDL_EVENT_JOYSTICK_BUTTON_UP: /* Fall-through */
-		{
-			Joystick& js = joysticks[ev.jbutton.which];
-			int jbtn = 16 + ev.jbutton.button;
-			js.btnState[jbtn] = ev.jbutton.down;
-			uint32_t exKey = joyButtonToExKey(ev.jbutton.which, jbtn);
-			exKeys[exKey] = ev.jbutton.down;
-			if(controller)
-				controller->onKey(exKey, js.btnState[jbtn]);
+			int gpIdx = findGamepadIndex(ev.gbutton.which);
+			if (gpIdx < 0) break;
+			Joystick& js = joysticks[gpIdx];
+			int btn = ev.gbutton.button;
+			bool state = ev.gbutton.down;
+			js.btnState[btn] = state;
+			dispatchGamepadInput(gpIdx, (uint32_t)btn, state, controller);
 		}
 		break;
 
@@ -613,6 +587,47 @@ void Gfx::process(Controller* controller)
 	while(SDL_PollEvent(&ev))
 	{
 		processEvent(ev, controller);
+	}
+}
+
+int Gfx::findGamepadIndex(SDL_JoystickID id)
+{
+	for (int i = 0; i < (int)joysticks.size(); ++i)
+	{
+		if (joysticks[i].instanceId == id)
+			return i;
+	}
+	return -1;
+}
+
+void Gfx::dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Controller* controller)
+{
+	if (gpIdx < 0 || gpIdx >= 2) return;
+
+	// Always update gamepadControlState using default bindings for menu navigation.
+	// Use player 0's gamepad bindings as the reference for control mapping.
+	WormSettings& refWs = *settings->wormSettings[0];
+	for (int c = 0; c < WormSettings::MaxControlEx; ++c)
+	{
+		if (refWs.gamepadControls[c] == gamepadKey)
+			gamepadControlState[gpIdx][c] = state;
+	}
+
+	// Dispatch to the controller for the player who has this gamepad assigned
+	if (controller)
+	{
+		for (int p = 0; p < 2; ++p)
+		{
+			WormSettings& ws = *settings->wormSettings[p];
+			if (ws.inputDevice != gpIdx + 1)
+				continue;
+
+			for (int c = 0; c < WormSettings::MaxControlEx; ++c)
+			{
+				if (ws.gamepadControls[c] == gamepadKey)
+					controller->onKey(gamepadControlToExKey(gpIdx, c), state);
+			}
+		}
 	}
 }
 
@@ -637,11 +652,13 @@ std::string Gfx::getKeyName(uint32_t key)
 void Gfx::clearKeys()
 {
 	std::memset(dosKeys, 0, sizeof(dosKeys));
+	std::memset(gamepadControlState, 0, sizeof(gamepadControlState));
 	exKeys.clear();
 }
 
 bool Gfx::testControlOnce(int control)
 {
+	// Check keyboard bindings for any player
 	for(int p = 0; p < 2; ++p)
 	{
 		uint32_t key = settings->extensions
@@ -649,6 +666,15 @@ bool Gfx::testControlOnce(int control)
 			: settings->wormSettings[p]->controls[control];
 		if(testAnyKeyOnce(key))
 			return true;
+	}
+	// Check any connected gamepad's state for this control (for menu navigation)
+	for(int gp = 0; gp < 2 && gp < (int)joysticks.size(); ++gp)
+	{
+		if(gamepadControlState[gp][control])
+		{
+			gamepadControlState[gp][control] = false;
+			return true;
+		}
 	}
 	return false;
 }
@@ -663,6 +689,11 @@ bool Gfx::testControl(int control)
 		if(testAnyKey(key))
 			return true;
 	}
+	for(int gp = 0; gp < 2 && gp < (int)joysticks.size(); ++gp)
+	{
+		if(gamepadControlState[gp][control])
+			return true;
+	}
 	return false;
 }
 
@@ -675,6 +706,8 @@ void Gfx::releaseControl(int control)
 			: settings->wormSettings[p]->controls[control];
 		releaseAnyKey(key);
 	}
+	for(int gp = 0; gp < 2 && gp < (int)joysticks.size(); ++gp)
+		gamepadControlState[gp][control] = false;
 }
 
 void Gfx::preparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette, Color realPal[256], uint32_t (&pal32)[256])
