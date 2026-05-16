@@ -716,6 +716,8 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			int btn = ev.gbutton.button;
 			bool state = ev.gbutton.down;
 			js.btnState[btn] = state;
+			if (state)
+				js.btnPressed[btn] = true;
 			dispatchGamepadInput(gpIdx, (uint32_t)btn, state, controller);
 		}
 		break;
@@ -921,9 +923,9 @@ bool Gfx::testGamepadButtonOnce(int button)
 {
 	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
 	{
-		if (joysticks[gp].btnState[button])
+		if (joysticks[gp].btnPressed[button])
 		{
-			joysticks[gp].btnState[button] = false;
+			joysticks[gp].btnPressed[button] = false;
 			return true;
 		}
 	}

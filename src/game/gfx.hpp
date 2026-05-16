@@ -110,10 +110,12 @@ struct Joystick {
 	SDL_Gamepad *sdlGamepad;
 	SDL_JoystickID instanceId;
 	bool btnState[SDL_GAMEPAD_BUTTON_COUNT];
+	bool btnPressed[SDL_GAMEPAD_BUTTON_COUNT]; // Latched on press, cleared by testGamepadButtonOnce
 	bool axisButtonState[12]; // 6 axes * 2 directions
 
 	void clearState() {
 		std::memset(btnState, 0, sizeof(btnState));
+		std::memset(btnPressed, 0, sizeof(btnPressed));
 		std::memset(axisButtonState, 0, sizeof(axisButtonState));
 	}
 };
