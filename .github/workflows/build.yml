@@ -137,7 +137,7 @@ jobs:
            -DestinationPath install/openliero-windows-x64.zip
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}-build
           path: install/openliero*
