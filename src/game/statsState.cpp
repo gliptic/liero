@@ -303,22 +303,26 @@ void StatsState::handleEvent(SDL_Event& ev)
 bool StatsState::update()
 {
 	if (gfx->testSDLKey(SDL_SCANCODE_DOWN)
-	|| gfx->testControl(WormSettingsExtensions::Down))
+	|| gfx->testControl(WormSettingsExtensions::Down)
+	|| gfx->testGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
 	{
 		destOffset_ -= 10;
 	}
 	else if (gfx->testSDLKey(SDL_SCANCODE_UP)
-	|| gfx->testControl(WormSettingsExtensions::Up))
+	|| gfx->testControl(WormSettingsExtensions::Up)
+	|| gfx->testGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_UP))
 	{
 		destOffset_ = std::min(destOffset_ + 10.0, 0.0);
 	}
 	else if (gfx->testSDLKeyOnce(SDL_SCANCODE_RIGHT)
-	|| gfx->testControlOnce(WormSettingsExtensions::Right))
+	|| gfx->testControlOnce(WormSettingsExtensions::Right)
+	|| gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_RIGHT))
 	{
 		destPane_ = std::min(destPane_ + 1.0, 1.0);
 	}
 	else if (gfx->testSDLKeyOnce(SDL_SCANCODE_LEFT)
-	|| gfx->testControlOnce(WormSettingsExtensions::Left))
+	|| gfx->testControlOnce(WormSettingsExtensions::Left)
+	|| gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_LEFT))
 	{
 		destPane_ = std::max(destPane_ - 1.0, -1.0);
 	}
