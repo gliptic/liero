@@ -503,6 +503,11 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 				}
 
 			}
+
+			if(s == SDL_SCANCODE_F4 && (ev.key.mod & SDL_KMOD_ALT))
+			{
+				running = false;
+			}
 		}
 		break;
 
@@ -1032,7 +1037,15 @@ bool Gfx::runOneFrame()
 	SDL_Event ev;
 	keyBufPtr = keyBuf;
 	while (SDL_PollEvent(&ev))
+	{
+		if (ev.type == SDL_EVENT_QUIT)
+			return false;
+		if (ev.type == SDL_EVENT_KEY_DOWN
+			&& ev.key.scancode == SDL_SCANCODE_F4
+			&& (ev.key.mod & SDL_KMOD_ALT))
+			return false;
 		stateStack.handleEvent(ev);
+	}
 
 	// Capture menu selection before update() might pop and destroy the state
 	int menuSelection = menuStatePtr_ ? menuStatePtr_->selection() : -1;
