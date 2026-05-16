@@ -138,7 +138,8 @@ bool MainMenuState::update()
 	Common& common = *gfx->common;
 
 	if(gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE)
-	|| gfx->testControlOnce(WormSettingsExtensions::Jump))
+	|| gfx->testControlOnce(WormSettingsExtensions::Jump)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST))
 	{
 		if(gfx->curMenu == &gfx->mainMenu)
 			gfx->mainMenu.moveToId(MainMenu::MaQuit);
@@ -147,14 +148,16 @@ bool MainMenuState::update()
 	}
 
 	if(gfx->testSDLKeyOnce(SDL_SCANCODE_UP)
-	|| gfx->testControlOnce(WormSettingsExtensions::Up))
+	|| gfx->testControlOnce(WormSettingsExtensions::Up)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
 	{
 		sfx.play(common, 26);
 		gfx->curMenu->movement(-1);
 	}
 
 	if(gfx->testSDLKeyOnce(SDL_SCANCODE_DOWN)
-	|| gfx->testControlOnce(WormSettingsExtensions::Down))
+	|| gfx->testControlOnce(WormSettingsExtensions::Down)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
 	{
 		sfx.play(common, 25);
 		gfx->curMenu->movement(1);
@@ -162,7 +165,8 @@ bool MainMenuState::update()
 
 	if(gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN)
 	|| gfx->testSDLKeyOnce(SDL_SCANCODE_KP_ENTER)
-	|| gfx->testControlOnce(WormSettingsExtensions::Fire))
+	|| gfx->testControlOnce(WormSettingsExtensions::Fire)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH))
 	{
 		if(gfx->curMenu == &gfx->mainMenu)
 		{
@@ -541,13 +545,15 @@ bool MainMenuState::update()
 	}
 
 	if(gfx->testSDLKey(SDL_SCANCODE_LEFT)
-	|| gfx->testControl(WormSettingsExtensions::Left))
+	|| gfx->testControl(WormSettingsExtensions::Left)
+	|| gfx->testGamepadButton(SDL_GAMEPAD_BUTTON_DPAD_LEFT))
 	{
 		if(!gfx->curMenu->onLeftRight(common, -1))
 			resetLeftRight();
 	}
 	if(gfx->testSDLKey(SDL_SCANCODE_RIGHT)
-	|| gfx->testControl(WormSettingsExtensions::Right))
+	|| gfx->testControl(WormSettingsExtensions::Right)
+	|| gfx->testGamepadButton(SDL_GAMEPAD_BUTTON_DPAD_RIGHT))
 	{
 		if(!gfx->curMenu->onLeftRight(common, 1))
 			resetLeftRight();

@@ -325,7 +325,9 @@ bool StatsState::update()
 	else if (gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN) ||
 	         gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE) ||
 	         gfx->testControlOnce(WormSettingsExtensions::Fire) ||
-	         gfx->testControlOnce(WormSettingsExtensions::Jump))
+	         gfx->testControlOnce(WormSettingsExtensions::Jump) ||
+	         gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH) ||
+	         gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST))
 	{
 		fill(gfx->playRenderer.bmp, 0);
 		gfx->clearKeys();

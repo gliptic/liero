@@ -60,26 +60,30 @@ bool WeaponMenuState::update()
 	Common& common = *gfx->common;
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_UP)
-	|| gfx->testControlOnce(WormSettingsExtensions::Up))
+	|| gfx->testControlOnce(WormSettingsExtensions::Up)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
 	{
 		sfx.play(common, 26);
 		weaponMenu_->movement(-1);
 	}
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_DOWN)
-	|| gfx->testControlOnce(WormSettingsExtensions::Down))
+	|| gfx->testControlOnce(WormSettingsExtensions::Down)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
 	{
 		sfx.play(common, 25);
 		weaponMenu_->movement(1);
 	}
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_LEFT)
-	|| gfx->testControlOnce(WormSettingsExtensions::Left))
+	|| gfx->testControlOnce(WormSettingsExtensions::Left)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_DPAD_LEFT))
 	{
 		weaponMenu_->onLeftRight(common, -1);
 	}
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_RIGHT)
-	|| gfx->testControlOnce(WormSettingsExtensions::Right))
+	|| gfx->testControlOnce(WormSettingsExtensions::Right)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_DPAD_RIGHT))
 	{
 		weaponMenu_->onLeftRight(common, 1);
 	}
@@ -102,7 +106,8 @@ bool WeaponMenuState::update()
 	weaponMenu_->onKeys(gfx->keyBuf, gfx->keyBufPtr);
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE)
-	|| gfx->testControlOnce(WormSettingsExtensions::Jump))
+	|| gfx->testControlOnce(WormSettingsExtensions::Jump)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST))
 	{
 		int count = 0;
 

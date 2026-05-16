@@ -41,7 +41,8 @@ bool FileSelectorState::update()
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN)
 	 || gfx->testSDLKeyOnce(SDL_SCANCODE_KP_ENTER)
-	 || gfx->testControlOnce(WormSettingsExtensions::Fire))
+	 || gfx->testControlOnce(WormSettingsExtensions::Fire)
+	 || gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH))
 	{
 		sfx.play(*gfx->common, 27);
 

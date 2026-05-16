@@ -830,15 +830,6 @@ void Gfx::dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Contr
 		return;
 	}
 
-	// Always update gamepadControlState using default bindings for menu navigation.
-	// Use player 0's gamepad bindings as the reference for control mapping.
-	WormSettings& refWs = *settings->wormSettings[0];
-	for (int c = 0; c < WormSettings::MaxControlEx; ++c)
-	{
-		if (refWs.gamepadControls[c] == gamepadKey)
-			gamepadControlState[gpIdx][c] = state;
-	}
-
 	// Dispatch to the controller for the player who has this gamepad assigned
 	if (controller)
 	{
@@ -905,8 +896,9 @@ std::string Gfx::getGamepadKeyName(uint32_t gamepadKey)
 void Gfx::clearKeys()
 {
 	std::memset(dosKeys, 0, sizeof(dosKeys));
-	std::memset(gamepadControlState, 0, sizeof(gamepadControlState));
 	exKeys.clear();
+	for (auto& js : joysticks)
+		js.clearState();
 }
 
 bool Gfx::testControlOnce(int control)
@@ -920,14 +912,28 @@ bool Gfx::testControlOnce(int control)
 		if(testAnyKeyOnce(key))
 			return true;
 	}
-	// Check any connected gamepad's state for this control (for menu navigation)
-	for(int gp = 0; gp < 2 && gp < (int)joysticks.size(); ++gp)
+	return false;
+}
+
+bool Gfx::testGamepadButtonOnce(int button)
+{
+	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
 	{
-		if(gamepadControlState[gp][control])
+		if (joysticks[gp].btnState[button])
 		{
-			gamepadControlState[gp][control] = false;
+			joysticks[gp].btnState[button] = false;
 			return true;
 		}
+	}
+	return false;
+}
+
+bool Gfx::testGamepadButton(int button)
+{
+	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
+	{
+		if (joysticks[gp].btnState[button])
+			return true;
 	}
 	return false;
 }
@@ -942,11 +948,6 @@ bool Gfx::testControl(int control)
 		if(testAnyKey(key))
 			return true;
 	}
-	for(int gp = 0; gp < 2 && gp < (int)joysticks.size(); ++gp)
-	{
-		if(gamepadControlState[gp][control])
-			return true;
-	}
 	return false;
 }
 
@@ -959,8 +960,6 @@ void Gfx::releaseControl(int control)
 			: settings->wormSettings[p]->controls[control];
 		releaseAnyKey(key);
 	}
-	for(int gp = 0; gp < 2 && gp < (int)joysticks.size(); ++gp)
-		gamepadControlState[gp][control] = false;
 }
 
 void Gfx::preparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette, Color realPal[256], uint32_t (&pal32)[256])

@@ -224,6 +224,12 @@ struct Gfx
 	// Uses controlsEx which covers both keyboard and joystick bindings.
 	bool testControlOnce(int control);
 
+	// Test if any connected gamepad has a raw button pressed (one-shot)
+	bool testGamepadButtonOnce(int button);
+
+	// Test if any connected gamepad has a raw button held (non-destructive)
+	bool testGamepadButton(int button);
+
 	// Non-destructive version for held keys (left/right repeat)
 	bool testControl(int control);
 
@@ -311,9 +317,6 @@ struct Gfx
 	bool dosKeys[177];
 	std::unordered_map<uint32_t, bool> exKeys;
 
-	// Per-gamepad, per-control pressed state. Indexed [gamepadIdx][control].
-	// Updated by dispatchGamepadInput based on gamepadControls bindings.
-	bool gamepadControlState[2][WormSettingsExtensions::MaxControlEx];
 	// the window to render into
 	SDL_Window* sdlWindow = NULL;
 	// the window to render the spectator view into
