@@ -1796,9 +1796,10 @@ void Gfx::playerSettings(int player)
 	return;
 }
 
-void Gfx::mainLoop()
+void Gfx::initFrameStepping()
 {
-restart:
+	tcChangeRequested_ = false;
+
 	controller.reset(new LocalController(common, settings));
 
 	{
@@ -1812,102 +1813,129 @@ restart:
 
 	// Push the initial menu state
 	auto menuState = std::make_unique<MainMenuState>();
-	auto* menuStatePtr = menuState.get();
+	menuStatePtr_ = menuState.get();
 	stateStack.push(std::move(menuState), this);
+}
 
-	while (!stateStack.empty())
+bool Gfx::runOneFrame()
+{
+	if (stateStack.empty())
+		return false;
+
+	// Poll events
+	SDL_Event ev;
+	keyBufPtr = keyBuf;
+	while (SDL_PollEvent(&ev))
+		stateStack.handleEvent(ev);
+
+	// Capture menu selection before update() might pop and destroy the state
+	int menuSelection = menuStatePtr_ ? menuStatePtr_->selection() : -1;
+	bool menuFadingOut = menuStatePtr_ && menuStatePtr_->isFadingOut();
+
+	if (!stateStack.update())
 	{
-		// Poll events
-		SDL_Event ev;
-		keyBufPtr = keyBuf;
-		while (SDL_PollEvent(&ev))
-			stateStack.handleEvent(ev);
-
-		// Capture menu selection before update() might pop and destroy the state
-		int menuSelection = menuStatePtr ? menuStatePtr->selection() : -1;
-		bool menuFadingOut = menuStatePtr && menuStatePtr->isFadingOut();
-
-		if (!stateStack.update())
+		// Top state popped. Determine what to do next.
+		if (menuSelection >= 0)
 		{
-			// Top state popped. Determine what to do next.
-			if (menuSelection >= 0)
+			menuStatePtr_ = nullptr;
+
+			if (menuSelection == MainMenu::MaQuit)
+				return false;
+
+			if (menuSelection == MainMenu::MaTc)
 			{
-				menuStatePtr = nullptr;
-
-				if (menuSelection == MainMenu::MaQuit)
-					break;
-
-				if (menuSelection == MainMenu::MaTc)
-					goto restart;
-
-				// Handle new game / resume / replay selection
-				if (menuSelection == MainMenu::MaNewGame)
-				{
-					std::unique_ptr<Controller> newController(new LocalController(common, settings));
-					Level* oldLevel = controller->currentLevel();
-
-					if (oldLevel
-						&& !settings->regenerateLevel
-						&& settings->randomLevel == oldLevel->oldRandomLevel
-						&& settings->levelFile == oldLevel->oldLevelFile)
-					{
-						newController->swapLevel(*oldLevel);
-					}
-					else
-					{
-						Level newLevel(*common);
-						newLevel.generateFromSettings(*common, *settings, rand);
-						newController->swapLevel(newLevel);
-					}
-					controller = std::move(newController);
-				}
-				else if (menuSelection == MainMenu::MaResumeGame)
-				{
-					if (controller->isReplay())
-						primaryRenderer = &singleScreenRenderer;
-				}
-				else if (menuSelection == MainMenu::MaReplay)
-				{
-					if (settings->singleScreenReplay)
-						primaryRenderer = &singleScreenRenderer;
-				}
-
-				// Push game state
-				stateStack.push(std::make_unique<GamePlayState>(), this);
+				tcChangeRequested_ = true;
+				controller.reset();
+				return false;
 			}
-			else
+
+			// Handle new game / resume / replay selection
+			if (menuSelection == MainMenu::MaNewGame)
 			{
-				// Game state finished — go back to menu
-				primaryRenderer = &playRenderer;
-				controller->unfocus();
-				clearKeys();
+				std::unique_ptr<Controller> newController(new LocalController(common, settings));
+				Level* oldLevel = controller->currentLevel();
 
-				// Draw one frame so the menu background captures the final game state
-				playRenderer.clear();
-				controller->draw(this->playRenderer, false);
-				singleScreenRenderer.clear();
-				controller->draw(this->singleScreenRenderer, true);
-
-				auto newMenu = std::make_unique<MainMenuState>();
-				menuStatePtr = newMenu.get();
-				stateStack.push(std::move(newMenu), this);
+				if (oldLevel
+					&& !settings->regenerateLevel
+					&& settings->randomLevel == oldLevel->oldRandomLevel
+					&& settings->levelFile == oldLevel->oldLevelFile)
+				{
+					newController->swapLevel(*oldLevel);
+				}
+				else
+				{
+					Level newLevel(*common);
+					newLevel.generateFromSettings(*common, *settings, rand);
+					newController->swapLevel(newLevel);
+				}
+				controller = std::move(newController);
 			}
-			continue;
-		}
+			else if (menuSelection == MainMenu::MaResumeGame)
+			{
+				if (controller->isReplay())
+					primaryRenderer = &singleScreenRenderer;
+			}
+			else if (menuSelection == MainMenu::MaReplay)
+			{
+				if (settings->singleScreenReplay)
+					primaryRenderer = &singleScreenRenderer;
+			}
 
-		stateStack.draw();
-
-		// Flip: game states use plain flip(), menu states use menuFlip()
-		auto* top = stateStack.top();
-		if (top && !top->wantsMenuFlip())
-		{
-			++menuCycles;
-			flip();
+			// Push game state
+			stateStack.push(std::make_unique<GamePlayState>(), this);
 		}
 		else
 		{
-			menuFlip(menuFadingOut);
+			// Game state finished — go back to menu
+			primaryRenderer = &playRenderer;
+			controller->unfocus();
+			clearKeys();
+
+			// Draw one frame so the menu background captures the final game state
+			playRenderer.clear();
+			controller->draw(this->playRenderer, false);
+			singleScreenRenderer.clear();
+			controller->draw(this->singleScreenRenderer, true);
+
+			auto newMenu = std::make_unique<MainMenuState>();
+			menuStatePtr_ = newMenu.get();
+			stateStack.push(std::move(newMenu), this);
 		}
+		return true;
+	}
+
+	stateStack.draw();
+
+	// Flip: game states use plain flip(), menu states use menuFlip()
+	auto* top = stateStack.top();
+	if (top && !top->wantsMenuFlip())
+	{
+		++menuCycles;
+		flip();
+	}
+	else
+	{
+		menuFlip(menuFadingOut);
+	}
+
+	return true;
+}
+
+void Gfx::mainLoop()
+{
+	initFrameStepping();
+
+	while (true)
+	{
+		while (runOneFrame())
+		{
+		}
+
+		if (!tcChangeRequested())
+			break;
+
+		// TC was changed (common reloaded by TcSelectorState) — reinitialize
+		initFrameStepping();
 	}
 
 	controller.reset();

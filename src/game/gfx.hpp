@@ -197,6 +197,19 @@ struct Gfx
 
 	int menuLoop();
 	void mainLoop();
+
+	// Initialize the state stack for frame-stepped operation.
+	// Call once before calling runOneFrame() in a loop.
+	void initFrameStepping();
+
+	// Advance the application by one frame. Returns false when the
+	// application should exit (quit selected or TC change requested).
+	// After a TC change, call initFrameStepping() again.
+	bool runOneFrame();
+
+	// True if a TC change was requested (caller should reload and re-init)
+	bool tcChangeRequested() const { return tcChangeRequested_; }
+
 	void drawBasicMenu(/*int curSel*/);
 	void drawSpectatorInfo();
 	void playerSettings(int player);
@@ -301,6 +314,10 @@ struct Gfx
 
 	std::vector<std::pair<int, int>> debugPoints;
 	std::string debugInfo;
+
+private:
+	struct MainMenuState* menuStatePtr_ = nullptr;
+	bool tcChangeRequested_ = false;
 };
 
 extern Gfx gfx;
