@@ -211,7 +211,7 @@ void ProfileSelectorState::enter()
 	selector_ = std::make_unique<FileSelector>(*gfx->common, 28);
 
 	selector_->fill(gfx->getConfigNode(), [](string const& name, string const& ext) {
-		return ciCompare(ext, "LPF");
+		return ciCompare(ext, "TOML");
 	});
 
 	selector_->setFolder(selector_->rootNode);

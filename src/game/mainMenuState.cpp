@@ -308,7 +308,7 @@ bool MainMenuState::update()
 							if (accepted && !result.empty())
 							{
 								gfx->playerMenu.ws->saveProfile(
-									gfx->getConfigNode() / "Profiles" / (result + ".lpf"));
+									gfx->getConfigNode() / "Profiles" / (result + ".toml"));
 							}
 							sfx.play(*gfx->common, 27);
 							gfx->playerMenu.updateItems(*gfx->common);

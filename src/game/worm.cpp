@@ -9,6 +9,7 @@
 
 #include <gvl/serialization/context.hpp>
 #include <gvl/serialization/archive.hpp>
+#include <gvl/serialization/toml.hpp>
 #include "replay.hpp"
 
 #include <gvl/crypt/gash.hpp>
@@ -53,14 +54,25 @@ void WormSettings::saveProfile(FsNode node)
 	try
 	{
 		auto writer = node.toOctetWriter();
-
 		profileNode = node;
-		GameSerializationContext context;
-		archive(gvl::out_archive<gvl::octet_writer, GameSerializationContext>(writer, context), *this);
+
+		gvl::toml::writer<gvl::octet_writer> ar(writer);
+
+#define S(n) #n, n
+		ar.str(S(name));
+		ar.i32(S(health));
+		ar.arr("controls", controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
+		ar.arr("weapons", weapons, [&](uint32_t& w) { ar.u32(0, w); });
+		ar.arr("color", rgb, [&](int& c) { ar.i32(0, c); });
+		ar.u32(S(inputDevice));
+		ar.str(S(gamepadName));
+		ar.str(S(gamepadSerial));
+		ar.arr("gamepadControls", gamepadControls, [&](uint32_t& c) { ar.u32(0, c); });
+#undef S
 	}
-	catch(gvl::stream_error& e)
+	catch(std::runtime_error& e)
 	{
-		Console::writeWarning(std::string("Stream error saving profile: ") + e.what());
+		Console::writeWarning(std::string("Error saving profile: ") + e.what());
 	}
 }
 
@@ -70,15 +82,28 @@ void WormSettings::loadProfile(FsNode node)
 	try
 	{
 		auto reader = node.toOctetReader();
-
 		profileNode = node;
-		GameSerializationContext context;
-		archive(gvl::in_archive<gvl::octet_reader, GameSerializationContext>(reader, context), *this);
+
+		gvl::toml::reader<gvl::octet_reader> ar(reader);
+
+#define S(n) #n, n
+		ar.str(S(name));
+		ar.i32(S(health));
+		ar.arr("controls", controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
+		ar.arr("weapons", weapons, [&](uint32_t& w) { ar.u32(0, w); });
+		ar.arr("color", rgb, [&](int& c) { ar.i32(0, c); });
+		ar.u32(S(inputDevice));
+		ar.str(S(gamepadName));
+		ar.str(S(gamepadSerial));
+		ar.arr("gamepadControls", gamepadControls, [&](uint32_t& c) { ar.u32(0, c); });
+#undef S
+
+		if (!name.empty())
+			randomName = false;
 	}
-	catch(gvl::stream_error& e)
+	catch(std::runtime_error& e)
 	{
-		Console::writeWarning(std::string("Stream error loading profile: ") + e.what());
-		Console::writeWarning("The profile may just be old, in which case there is nothing to worry about");
+		Console::writeWarning(std::string("Error loading profile: ") + e.what());
 	}
 
 	color = oldColor;  // We preserve the color
