@@ -183,7 +183,6 @@ struct Gfx
 	}
 
 	SDL_Scancode waitForKey();
-	uint32_t waitForKeyEx();
 	std::string getKeyName(uint32_t key);
 	void setSpectatorFullscreen(bool newFullscreen);
 	void setFullscreen(bool newFullscreen);
@@ -215,14 +214,6 @@ struct Gfx
 	void playerSettings(int player);
 	void openHiddenMenu();
 
-	bool inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int) = 0, std::string const& prefix = "", bool centered = true);
-	void inputInteger(int& dest, int min, int max, std::size_t maxLen, int x, int y);
-	void selectLevel();
-	int  selectReplay();
-	void selectProfile(WormSettings& ws);
-	std::unique_ptr<Common> selectTc();
-	void selectOptions();
-	void weaponOptions();
 	void infoBox(std::string const& text, int x = 320/2, int y = 200/2, bool clearScreen = true);
 
 	static void preparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette, Color realPal[256], uint32_t (&pal32)[256]);
