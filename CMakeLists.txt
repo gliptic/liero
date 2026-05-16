@@ -106,6 +106,7 @@ set(GAME_SOURCES ${SOURCES}
   src/game/gfx.cpp
   src/game/keys.cpp
   src/game/gameEntry.cpp
+  src/game/mainMenuState.cpp
   src/game/replay.cpp
   src/game/sfx.cpp
   src/game/weapsel.cpp

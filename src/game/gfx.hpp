@@ -196,6 +196,7 @@ struct Gfx
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 
 	int menuLoop();
+	int runMenu();
 	void mainLoop();
 	void drawBasicMenu(/*int curSel*/);
 	void drawSpectatorInfo();

@@ -27,6 +27,8 @@
 #include "controller/localController.hpp"
 #include "controller/controller.hpp"
 
+#include "mainMenuState.hpp"
+
 #include "gfx/macros.hpp"
 
 #include "menu/arrayEnumBehavior.hpp"
@@ -1793,6 +1795,34 @@ void Gfx::playerSettings(int player)
 	return;
 }
 
+int Gfx::runMenu()
+{
+	auto menuState = std::make_unique<MainMenuState>();
+	auto* menuStatePtr = menuState.get();
+	stateStack.push(std::move(menuState), this);
+
+	int result = -1;
+	while (!stateStack.empty())
+	{
+		// Poll events and dispatch to the top state (which updates dosKeys[])
+		SDL_Event ev;
+		keyBufPtr = keyBuf;
+		while (SDL_PollEvent(&ev))
+		{
+			stateStack.handleEvent(ev);
+		}
+
+		// Capture selection before update() might pop the state
+		result = menuStatePtr->selection();
+
+		if (!stateStack.update())
+			break;
+		stateStack.draw();
+	}
+
+	return result;
+}
+
 void Gfx::mainLoop()
 {
 restart:
@@ -1817,8 +1847,7 @@ restart:
 		singleScreenRenderer.clear();
 		controller->draw(this->singleScreenRenderer, true);
 
-
-		int selection = menuLoop();
+		int selection = runMenu();
 
 		if(selection == MainMenu::MaNewGame)
 		{
