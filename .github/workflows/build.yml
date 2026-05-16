@@ -107,7 +107,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           cmake --preset linux-x64-ci -DOPENLIERO_BUILD_VIDEOTOOL=ON
-          cmake --build build/linux-x64-ci --target videotool
+          cmake --build build/linux-x64-ci --config Release --target videotool
 
         # build x86_64 binaries so we can create
         # universal binaries for macOS
@@ -121,7 +121,6 @@ jobs:
         if: runner.os == 'linux'
         run: |
           cmake --install build/linux-x64-ci --config Release
-          cp build/linux-x64-ci/videotool install/linux-x64-ci/
           cd install/linux-x64-ci
           tar cvf ../openliero-linux-x64.tar.gz .
 
