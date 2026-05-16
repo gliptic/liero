@@ -60,6 +60,7 @@ void WormSettings::saveProfile(FsNode node)
 
 #define S(n) #n, n
 		ar.str(S(name));
+		ar.u32(S(controller));
 		ar.i32(S(health));
 		ar.arr("controls", controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
 		ar.arr("weapons", weapons, [&](uint32_t& w) { ar.u32(0, w); });
@@ -88,6 +89,7 @@ void WormSettings::loadProfile(FsNode node)
 
 #define S(n) #n, n
 		ar.str(S(name));
+		ar.u32(S(controller));
 		ar.i32(S(health));
 		ar.arr("controls", controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
 		ar.arr("weapons", weapons, [&](uint32_t& w) { ar.u32(0, w); });

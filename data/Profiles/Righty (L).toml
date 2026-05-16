@@ -1,0 +1,11 @@
+
+name = ""
+controller = 0
+health = 100
+controls = [21, 35, 34, 36, 30, 31, 32, 0]
+weapons = [19, 36, 29, 9, 31]
+color = [4, 8, 32]
+inputDevice = 0
+gamepadName = ""
+gamepadSerial = ""
+gamepadControls = [11, 12, 13, 14, 110, 10, 0, 9]
