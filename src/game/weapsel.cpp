@@ -282,7 +282,19 @@ bool WeaponSelection::processFrame()
 				menus[i].movement(1);
 			}
 
-			if(worm.pressed(Worm::Fire))
+			// Check Fire control OR A button on assigned gamepad
+			bool confirm = worm.pressed(Worm::Fire);
+			if (!confirm && ws.inputDevice != WormSettingsExtensions::InputKeyboard)
+			{
+				int gpIdx = gfx.findGamepadForPlayer(vp.wormIdx);
+				if (gpIdx >= 0 && gfx.joysticks[gpIdx].btnPressed[SDL_GAMEPAD_BUTTON_SOUTH])
+				{
+					gfx.joysticks[gpIdx].btnPressed[SDL_GAMEPAD_BUTTON_SOUTH] = false;
+					confirm = true;
+				}
+			}
+
+			if(confirm)
 			{
 				if(menus[i].selection() == 0)
 				{
