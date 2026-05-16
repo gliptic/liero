@@ -37,23 +37,30 @@ Gfx gfx;
 
 struct KeyBehavior : ItemBehavior
 {
-	KeyBehavior(Common& common, uint32_t& key, uint32_t& keyEx, bool extended = false)
+	KeyBehavior(Common& common, uint32_t& key, uint32_t& keyEx, uint32_t& gamepadKey, uint32_t& inputDevice, bool extended = false)
 	: common(common)
 	, key(key)
 	, keyEx(keyEx)
+	, gamepadKey(gamepadKey)
+	, inputDevice(inputDevice)
 	, extended(extended)
 	{
 	}
 
 	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		item.value = gfx.getKeyName(extended ? keyEx : key);
+		if (inputDevice != WormSettingsExtensions::InputKeyboard)
+			item.value = gfx.getGamepadKeyName(gamepadKey);
+		else
+			item.value = gfx.getKeyName(extended ? keyEx : key);
 		item.hasValue = true;
 	}
 
 	Common& common;
 	uint32_t& key;
 	uint32_t& keyEx;
+	uint32_t& gamepadKey;
+	uint32_t& inputDevice;
 	bool extended;
 };
 
@@ -358,6 +365,7 @@ void Gfx::loadMenus()
 	playerMenu.addItem(MenuItem(48, 7, "Red", PlayerMenu::PlRed));
 	playerMenu.addItem(MenuItem(48, 7, "Green", PlayerMenu::PlGreen));
 	playerMenu.addItem(MenuItem(48, 7, "Blue", PlayerMenu::PlBlue));
+	playerMenu.addItem(MenuItem(48, 7, "INPUT", PlayerMenu::PlInput));
 	playerMenu.addItem(MenuItem(48, 7, "AIM UP", PlayerMenu::PlUp));
 	playerMenu.addItem(MenuItem(48, 7, "AIM DOWN", PlayerMenu::PlDown));
 	playerMenu.addItem(MenuItem(48, 7, "MOVE LEFT", PlayerMenu::PlLeft));
@@ -647,6 +655,31 @@ std::string Gfx::getKeyName(uint32_t key)
 	}
 
 	return "";
+}
+
+std::string Gfx::getGamepadKeyName(uint32_t gamepadKey)
+{
+	if (WormSettingsExtensions::isGamepadAxis(gamepadKey))
+	{
+		int axis = (gamepadKey - WormSettingsExtensions::GamepadAxisBase) / 2;
+		bool negative = (gamepadKey - WormSettingsExtensions::GamepadAxisBase) % 2;
+		static char const* axisNames[] = {"LX", "LY", "RX", "RY", "LT", "RT"};
+		std::string name = (axis < 6) ? axisNames[axis] : "A" + toString(axis);
+		return name + (negative ? "-" : "+");
+	}
+
+	static char const* buttonNames[] = {
+		"A", "B", "X", "Y",
+		"Back", "Guide", "Start",
+		"LS", "RS",
+		"LB", "RB",
+		"Up", "Down", "Left", "Right"
+	};
+
+	if (gamepadKey < 15)
+		return buttonNames[gamepadKey];
+
+	return "Btn" + toString(gamepadKey);
 }
 
 void Gfx::clearKeys()
@@ -1034,6 +1067,9 @@ ItemBehavior* PlayerMenu::getItemBehavior(Common& common, MenuItem& item)
 			return b;
 		}
 
+		case PlInput:
+			return new ArrayEnumBehavior(common, ws->inputDevice, common.texts.inputDevices);
+
 		case PlUp: // D2AB
 		case PlDown:
 		case PlLeft:
@@ -1041,10 +1077,10 @@ ItemBehavior* PlayerMenu::getItemBehavior(Common& common, MenuItem& item)
 		case PlFire:
 		case PlChange:
 		case PlJump:
-			return new KeyBehavior(common, ws->controls[item.id - PlUp], ws->controlsEx[item.id - PlUp], gfx.settings->extensions);
+			return new KeyBehavior(common, ws->controls[item.id - PlUp], ws->controlsEx[item.id - PlUp], ws->gamepadControls[item.id - PlUp], ws->inputDevice, gfx.settings->extensions);
 
 		case PlDig: // Controls Extension
-			return new KeyBehavior(common, ws->controlsEx[item.id - PlUp], ws->controlsEx[item.id - PlUp], gfx.settings->extensions);
+			return new KeyBehavior(common, ws->controlsEx[item.id - PlUp], ws->controlsEx[item.id - PlUp], ws->gamepadControls[item.id - PlUp], ws->inputDevice, gfx.settings->extensions);
 
 
 		case PlController: // Controller

@@ -380,6 +380,10 @@ void archive_text(Settings& settings, Archive& ar) {
         }
 
         ar.arr("controls", ws->controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
+
+        ar.u32(S(inputDevice));
+        ar.arr("gamepadControls", ws->gamepadControls,
+               [&](uint32_t& c) { ar.u32(0, c); });
       });
 
 #undef S

@@ -79,7 +79,7 @@ struct WormSettingsExtensions {
   static bool isGamepadAxis(uint32_t v) { return v >= GamepadAxisBase; }
 
   uint32_t gamepadControls[MaxControlEx];
-  int32_t inputDevice;
+  uint32_t inputDevice;
 };
 
 struct WormSettings : gvl::shared, WormSettingsExtensions {

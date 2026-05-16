@@ -51,6 +51,7 @@ struct Texts {
   std::string gameModes[Settings::GameModes::MaxGameModes];
   std::string onoff[NUM_ON_OFF];
   std::string controllers[3];
+  std::string inputDevices[3];
 
   static char const* keyNames[177];
 

@@ -49,6 +49,7 @@ struct PlayerMenu : Menu
 		PlName,
 		PlHealth,
 		PlRed, PlGreen, PlBlue,
+		PlInput,
 		PlUp,
 		PlDown,
 		PlLeft,
@@ -230,6 +231,7 @@ struct Gfx
 	void releaseControl(int control);
 
 	std::string getKeyName(uint32_t key);
+	std::string getGamepadKeyName(uint32_t gamepadKey);
 	void setSpectatorFullscreen(bool newFullscreen);
 	void setFullscreen(bool newFullscreen);
 	void setDoubleRes(bool newDoubleRes);
