@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cassert>
 
+#include "state.hpp"
 #include "gfx/font.hpp"
 #include "gfx/blit.hpp"
 #include "gfx/color.hpp"
@@ -288,6 +289,8 @@ struct Gfx
 	gvl::rect lastUpdateRect; // Last region that was updated when flipping
 	std::shared_ptr<Common> common;
 	std::unique_ptr<Controller> controller;
+
+	StateStack stateStack;
 
 	std::vector<Joystick> joysticks;
 
