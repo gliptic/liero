@@ -195,7 +195,7 @@ struct Gfx
 
 	void mainLoop();
 
-	// Initialize the state stack for frame-stepped operation.
+	// Initialize the state stack.
 	// Call once before calling runOneFrame() in a loop.
 	void initFrameStepping();
 

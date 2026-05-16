@@ -3,7 +3,7 @@
 #include "state.hpp"
 #include "menu/menu.hpp"
 
-// Weapon availability settings state. Replaces the blocking weaponOptions() loop.
+// Weapon availability settings state.
 struct WeaponMenuState : AppState
 {
 	WeaponMenuState();

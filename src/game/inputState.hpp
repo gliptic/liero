@@ -6,8 +6,8 @@
 #include <functional>
 #include <cstdint>
 
-// Non-blocking text input state. Replaces the blocking inputString() loop.
-// Draws the input field over the frozen screen and processes key/text events.
+// Text input state. Draws the input field over the frozen screen and
+// processes key/text events.
 struct InputStringState : AppState
 {
 	using Callback = std::function<void(bool accepted, std::string const& result)>;
@@ -32,8 +32,7 @@ private:
 	bool accepted_ = false;
 };
 
-// Non-blocking key binding state. Replaces the blocking waitForKeyEx() loop.
-// Waits for a key/joystick press and returns via callback.
+// Key binding state. Waits for a key/joystick press and returns via callback.
 struct WaitForKeyState : AppState
 {
 	using Callback = std::function<void(uint32_t key)>;
@@ -53,7 +52,7 @@ private:
 	bool done_ = false;
 };
 
-// Non-blocking info box. Shows a message and waits for any key press.
+// Info box. Shows a message and waits for any key press.
 struct InfoBoxState : AppState
 {
 	InfoBoxState(std::string text, int x, int y, bool clearScreen);

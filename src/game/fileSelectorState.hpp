@@ -9,8 +9,7 @@
 #include <memory>
 #include <string>
 
-// Generic file selector state. Handles the common pattern of all file
-// selector blocking loops: draw title, draw selector, navigate, enter/escape.
+// Generic file selector state. Draws title, selector, handles navigation.
 // Subclass and override onSelected() to handle the result.
 struct FileSelectorState : AppState
 {

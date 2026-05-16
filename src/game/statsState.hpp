@@ -7,8 +7,7 @@
 
 struct Game;
 
-// Frame-stepped post-game statistics display.
-// Replaces the blocking presentStats() loop.
+// Post-game statistics display.
 struct StatsState : AppState
 {
 	StatsState(NormalStatsRecorder& recorder, Game& game);

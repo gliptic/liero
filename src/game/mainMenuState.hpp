@@ -2,7 +2,7 @@
 
 #include "state.hpp"
 
-// The main menu state. Frame-stepped menu with sub-menus as child states.
+// The main menu state, with sub-menus as child states.
 struct MainMenuState : AppState
 {
 	MainMenuState();
