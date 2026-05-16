@@ -52,28 +52,31 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            libx11-dev \
-            libxft-dev \
-            libxext-dev \
-            libxcursor-dev \
-            libxrandr-dev \
-            libxi-dev \
-            libxss-dev \
-            libwayland-dev \
-            libxkbcommon-dev \
-            libegl1-mesa-dev \
-            libibus-1.0-dev \
+            pkg-config \
             libasound2-dev \
             libpulse-dev \
             libaudio-dev \
             libjack-dev \
             libsndio-dev \
-            libtool \
-            libltdl-dev \
-            autoconf \
-            automake \
-            autoconf-archive \
-            pkg-config
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxfixes-dev \
+            libxi-dev \
+            libxss-dev \
+            libxtst-dev \
+            libxkbcommon-dev \
+            libdrm-dev \
+            libgbm-dev \
+            libgl1-mesa-dev \
+            libgles2-mesa-dev \
+            libegl1-mesa-dev \
+            libdbus-1-dev \
+            libibus-1.0-dev \
+            libudev-dev \
+            libwayland-dev \
+            libdecor-0-dev
 
       - name: Get cmake/ninja
         uses: lukka/get-cmake@latest
