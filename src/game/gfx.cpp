@@ -903,9 +903,11 @@ void Gfx::clearKeys()
 
 bool Gfx::testControlOnce(int control)
 {
-	// Check keyboard bindings for any player
+	// Check keyboard bindings only for players using keyboard input
 	for(int p = 0; p < 2; ++p)
 	{
+		if (settings->wormSettings[p]->inputDevice != WormSettingsExtensions::InputKeyboard)
+			continue;
 		uint32_t key = settings->extensions
 			? settings->wormSettings[p]->controlsEx[control]
 			: settings->wormSettings[p]->controls[control];
@@ -940,8 +942,11 @@ bool Gfx::testGamepadButton(int button)
 
 bool Gfx::testControl(int control)
 {
+	// Check keyboard bindings only for players using keyboard input
 	for(int p = 0; p < 2; ++p)
 	{
+		if (settings->wormSettings[p]->inputDevice != WormSettingsExtensions::InputKeyboard)
+			continue;
 		uint32_t key = settings->extensions
 			? settings->wormSettings[p]->controlsEx[control]
 			: settings->wormSettings[p]->controls[control];

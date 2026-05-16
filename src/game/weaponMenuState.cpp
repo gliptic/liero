@@ -107,7 +107,8 @@ bool WeaponMenuState::update()
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE)
 	|| gfx->testControlOnce(WormSettingsExtensions::Jump)
-	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST))
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST)
+	|| gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH))
 	{
 		int count = 0;
 
