@@ -1,26 +1,25 @@
 #include <exception>
 #include <string>
+#include <SDL3/SDL_main.h>
+#if _WIN32
+#include <windows.h>
+#endif
 
 int gameEntry(int argc, char *argv[]);
 
-#if _WIN32
-#include <windows.h>
-
-INT WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, INT nCmdShow)
+int main(int argc, char *argv[])
 {
 	try
 	{
-		return gameEntry(__argc, __argv);
+		return gameEntry(argc, argv);
 	}
 	catch(std::exception& ex)
 	{
+#if _WIN32
 		MessageBoxA(NULL, (std::string("Sorry, something went wrong :(\r\n\r\n") + ex.what()).c_str(), "Liero", MB_OK | MB_ICONWARNING);
+#else
+		(void)ex;
+#endif
 		return 1;
 	}
 }
-#else
-int main(int argc, char *argv[])
-{
-	return gameEntry(argc, argv);
-}
-#endif

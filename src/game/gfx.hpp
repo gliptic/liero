@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <gvl/math/rect.hpp>
 
 #include <cstdio>
@@ -104,7 +104,7 @@ struct SettingsMenu : Menu
 };
 
 struct Joystick {
-	SDL_GameController *sdlGameController;
+	SDL_Gamepad *sdlGamepad;
 	bool btnState[MaxJoyButtons];
 
 	void clearState() {
@@ -119,7 +119,7 @@ struct Gfx
 
 	void init();
 	void setVideoMode();
-	void onWindowResize(Uint32 windowId);
+	void onWindowResize(uint32_t windowId);
 	void loadMenus();
 
 	void process(Controller* controller = 0);
@@ -130,58 +130,58 @@ struct Gfx
 
 	void clearKeys();
 
-	bool testKeyOnce(Uint32 key)
+	bool testKeyOnce(uint32_t key)
 	{
 		bool state = dosKeys[key];
 		dosKeys[key] = false;
 		return state;
 	}
 
-	bool testKey(Uint32 key)
+	bool testKey(uint32_t key)
 	{
 		return dosKeys[key];
 	}
 
-	void releaseKey(Uint32 key)
+	void releaseKey(uint32_t key)
 	{
 		dosKeys[key] = false;
 	}
 
-	void pressKey(Uint32 key)
+	void pressKey(uint32_t key)
 	{
 		dosKeys[key] = true;
 	}
 
-	void setKey(Uint32 key, bool state)
+	void setKey(uint32_t key, bool state)
 	{
 		dosKeys[key] = state;
 	}
 
-	void toggleKey(Uint32 key)
+	void toggleKey(uint32_t key)
 	{
 		dosKeys[key] = !dosKeys[key];
 	}
 
 	bool testSDLKeyOnce(SDL_Scancode key)
 	{
-		Uint32 k = SDLToDOSKey(key);
+		uint32_t k = SDLToDOSKey(key);
 		return k ? testKeyOnce(k) : false;
 	}
 
 	bool testSDLKey(SDL_Scancode key)
 	{
-		Uint32 k = SDLToDOSKey(key);
+		uint32_t k = SDLToDOSKey(key);
 		return k ? testKey(k) : false;
 	}
 
 	void releaseSDLKey(SDL_Scancode key)
 	{
-		Uint32 k = SDLToDOSKey(key);
+		uint32_t k = SDLToDOSKey(key);
 		if(k)
 			dosKeys[k] = false;
 	}
 
-	SDL_Keysym waitForKey();
+	SDL_Scancode waitForKey();
 	uint32_t waitForKeyEx();
 	std::string getKeyName(uint32_t key);
 	void setSpectatorFullscreen(bool newFullscreen);
@@ -211,10 +211,10 @@ struct Gfx
 	void weaponOptions();
 	void infoBox(std::string const& text, int x = 320/2, int y = 200/2, bool clearScreen = true);
 
-	static void preparePalette(SDL_PixelFormat* format, Color realPal[256], uint32_t (&pal32)[256]);
+	static void preparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette, Color realPal[256], uint32_t (&pal32)[256]);
 
 	static void overlay(
-		SDL_PixelFormat* format,
+		SDL_PixelFormatDetails const* format,
 		uint8_t* src, int w, int h, std::size_t srcPitch,
 		uint8_t* dest, std::size_t destPitch, int mag);
 
@@ -291,7 +291,7 @@ struct Gfx
 
 	std::vector<Joystick> joysticks;
 
-	SDL_Keysym keyBuf[32], *keyBufPtr;
+	SDL_Scancode keyBuf[32], *keyBufPtr;
 
 	std::vector<std::pair<int, int>> debugPoints;
 	std::string debugInfo;

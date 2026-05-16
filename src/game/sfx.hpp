@@ -2,6 +2,7 @@
 
 #if !DISABLE_SOUND
 #include "mixer/mixer.hpp"
+#include <SDL3/SDL.h>
 #endif
 #include <vector>
 #include "mixer/player.hpp"
@@ -22,6 +23,7 @@ struct Sfx
 
 	Sfx()
 	: initialized(false)
+	, stream(nullptr)
 	{
 	}
 	~Sfx();
@@ -38,6 +40,7 @@ struct Sfx
 #endif
 
 	sfx_mixer* mixer;
+	SDL_AudioStream* stream;
 	bool initialized;
 };
 

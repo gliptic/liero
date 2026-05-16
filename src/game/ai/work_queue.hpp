@@ -1,14 +1,13 @@
 #pragma once
 
-#include <SDL.h>
-#include <SDL_atomic.h>
+#include <SDL3/SDL.h>
 #include <sstream>
 #include <vector>
 #include <memory>
 
 struct LockMutex
 {
-	LockMutex(SDL_mutex* m)
+	LockMutex(SDL_Mutex* m)
 	: m(m)
 	{
 		SDL_LockMutex(m);
@@ -19,7 +18,7 @@ struct LockMutex
 		SDL_UnlockMutex(m);
 	}
 
-	SDL_mutex* m;
+	SDL_Mutex* m;
 };
 
 struct Work
@@ -28,13 +27,13 @@ struct Work
 	: done_(false)
 	{
 		mutex = SDL_CreateMutex();
-		stateCond = SDL_CreateCond();
+		stateCond = SDL_CreateCondition();
 	}
 
 	virtual ~Work()
 	{
 		SDL_DestroyMutex(mutex);
-		SDL_DestroyCond(stateCond);
+		SDL_DestroyCondition(stateCond);
 	}
 
 	bool waitDone()
@@ -42,14 +41,14 @@ struct Work
 		LockMutex m(mutex);
 
 		while (!done_)
-			SDL_CondWait(stateCond, mutex);
+			SDL_WaitCondition(stateCond, mutex);
 
 		return done_;
 	}
 
 	bool done_;
-	SDL_mutex* mutex;
-	SDL_cond* stateCond;
+	SDL_Mutex* mutex;
+	SDL_Condition* stateCond;
 
 	void run()
 	{
@@ -62,7 +61,7 @@ struct Work
 			done_ = true;
 			SDL_MemoryBarrierRelease();
 
-			SDL_CondSignal(stateCond);
+			SDL_SignalCondition(stateCond);
 		}
 	}
 
@@ -80,7 +79,7 @@ struct WorkQueue
 	: queueAlive(true)
 	{
 		queueMutex = SDL_CreateMutex();
-		queueCond = SDL_CreateCond();
+		queueCond = SDL_CreateCondition();
 
 		std::memset(threads, 0, sizeof(threads));
 		for (int i = 0; i < threadCount; ++i)
@@ -97,7 +96,7 @@ struct WorkQueue
 			LockMutex m(queueMutex);
 
 			queueAlive = false;
-			SDL_CondBroadcast(queueCond);
+			SDL_BroadcastCondition(queueCond);
 		}
 
 		for (int i = 0; i < 8; ++i)
@@ -108,14 +107,14 @@ struct WorkQueue
 		}
 
 		SDL_DestroyMutex(queueMutex);
-		SDL_DestroyCond(queueCond);
+		SDL_DestroyCondition(queueCond);
 	}
 
 	void add(std::unique_ptr<Work> work)
 	{
 		LockMutex m(queueMutex);
 		queue.push_back(std::move(work));
-		SDL_CondSignal(queueCond);
+		SDL_SignalCondition(queueCond);
 	}
 
 	std::unique_ptr<Work> waitForWork()
@@ -123,7 +122,7 @@ struct WorkQueue
 		LockMutex m(queueMutex);
 
 		while (queue.empty() && queueAlive)
-			SDL_CondWait(queueCond, queueMutex);
+			SDL_WaitCondition(queueCond, queueMutex);
 
 		if (!queueAlive)
 			throw StopWorker();
@@ -133,7 +132,7 @@ struct WorkQueue
 		return ret;
 	}
 
-	static int worker(void* self)
+	static int SDLCALL worker(void* self)
 	{
 		try
 		{
@@ -153,8 +152,8 @@ struct WorkQueue
 		return 0;
 	}
 
-	SDL_mutex* queueMutex;
-	SDL_cond* queueCond;
+	SDL_Mutex* queueMutex;
+	SDL_Condition* queueCond;
 	std::vector<std::unique_ptr<Work>> queue;
 	bool queueAlive;
 

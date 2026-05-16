@@ -2,7 +2,7 @@
   "dependencies": [
     "miniz",
     {
-      "name": "sdl2",
+      "name": "sdl3",
       "features": [
         "alsa",
         "wayland",
@@ -11,9 +11,9 @@
       "platform": "linux"
     },
     {
-      "name": "sdl2",
+      "name": "sdl3",
       "platform": "!linux"
     },
-    "sdl2-image"
+    "sdl3-image"
   ]
 }

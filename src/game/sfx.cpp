@@ -5,16 +5,22 @@
 #include <vector>
 #include <cassert>
 #if !DISABLE_SOUND
-#	include <SDL.h>
+#	include <SDL3/SDL.h>
 #endif
 
 Sfx sfx;
 
-extern "C" void SDLCALL Sfx_callback(void *userdata, Uint8 *stream, int len)
+static void SDLCALL Sfx_stream_callback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
-	uint32_t frame_count = len / 2;
-
-	sfx_mixer_mix((sfx_mixer*)userdata, stream, frame_count);
+	if (additional_amount > 0) {
+		uint8_t *data = (uint8_t *)SDL_stack_alloc(uint8_t, additional_amount);
+		if (data) {
+			uint32_t frame_count = additional_amount / 2;
+			sfx_mixer_mix((sfx_mixer*)userdata, data, frame_count);
+			SDL_PutAudioStreamData(stream, data, additional_amount);
+			SDL_stack_free(data);
+		}
+	}
 }
 
 void Sfx::init()
@@ -27,25 +33,17 @@ void Sfx::init()
 
 	mixer = sfx_mixer_create();
 
-	SDL_AudioSpec spec;
-	memset(&spec, 0, sizeof(spec));
-	spec.channels = 1;
-	spec.freq = 44100;
-	spec.format = AUDIO_S16SYS;
-	spec.size = 4*512;
-	spec.callback = Sfx_callback;
-	spec.userdata = mixer;
+	const SDL_AudioSpec spec = { SDL_AUDIO_S16, 1, 44100 };
+	stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, Sfx_stream_callback, mixer);
 
-	int ret = SDL_OpenAudio(&spec, NULL);
-
-	if(ret == 0)
+	if(stream)
 	{
 		initialized = true;
-		SDL_PauseAudio(0);
+		SDL_ResumeAudioStreamDevice(stream);
 	}
 	else
 	{
-		Console::writeWarning(std::string("SDL_OpenAudio returned error: ") + SDL_GetError());
+		Console::writeWarning(std::string("SDL_OpenAudioDeviceStream returned error: ") + SDL_GetError());
 	}
 #endif
 }
@@ -57,7 +55,11 @@ void Sfx::deinit()
 		return;
 	initialized = false;
 
-	SDL_CloseAudio();
+	if (stream)
+	{
+		SDL_DestroyAudioStream(stream);
+		stream = nullptr;
+	}
 	SDL_QuitSubSystem(SDL_INIT_AUDIO);
 #endif
 }

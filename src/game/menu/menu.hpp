@@ -1,6 +1,6 @@
 #pragma once
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <cstddef>
 #include <string>
 #include <cstdio>
@@ -90,7 +90,7 @@ struct Menu
 		return b->onEnter(*this, *s);
 	}
 
-	void onKeys(SDL_Keysym* begin, SDL_Keysym* end, bool contains = false);
+	void onKeys(SDL_Scancode* begin, SDL_Scancode* end, bool contains = false);
 
 	void updateItems(Common& common)
 	{
