@@ -45,7 +45,7 @@ jobs:
           fetch-tags: true
 
       - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.5
+        uses: mozilla-actions/sccache-action@v0.0.10
 
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
