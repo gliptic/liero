@@ -179,6 +179,10 @@ jobs:
           SHA="${{ github.sha }}"
           SHORT_SHA="${SHA:0:7}"
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+          # Find the latest non-prerelease tag for the changelog
+          LAST_TAG=$(git describe --tags --abbrev=0 --match 'v*' 2>/dev/null || echo "")
+
           echo "## Pre-release build" > notes.md
           echo "" >> notes.md
           echo "Built from commit [\`${SHORT_SHA}\`](https://github.com/${{ github.repository }}/commit/${SHA})." >> notes.md
@@ -187,6 +191,14 @@ jobs:
           echo "- Linux x86_64 (includes videotool)" >> notes.md
           echo "- Windows x86_64" >> notes.md
           echo "- macOS universal (arm64 + x86_64)" >> notes.md
+
+          if [ -n "$LAST_TAG" ]; then
+            echo "" >> notes.md
+            echo "### Changes since ${LAST_TAG}" >> notes.md
+            echo "" >> notes.md
+            git log "${LAST_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges >> notes.md
+            echo "" >> notes.md
+          fi
 
       - name: Delete existing pre-release
         run: gh release delete latest --yes --cleanup-tag || true
