@@ -212,6 +212,10 @@ Texts::Texts() {
   controllers[1] = "CPU";
   controllers[2] = "AI";
 
+  inputDevices[0] = "Keyboard";
+  inputDevices[1] = "Joystick 1";
+  inputDevices[2] = "Joystick 2";
+
   weapStates[0] = "Menu";
   weapStates[1] = "Bonus";
   weapStates[2] = "Banned";

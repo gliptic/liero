@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cctype>
 #include <vector>
+#include <unordered_map>
 #include <utility>
 #include <algorithm>
 #include <cstdio>
@@ -37,23 +38,30 @@ Gfx gfx;
 
 struct KeyBehavior : ItemBehavior
 {
-	KeyBehavior(Common& common, uint32_t& key, uint32_t& keyEx, bool extended = false)
+	KeyBehavior(Common& common, uint32_t& key, uint32_t& keyEx, uint32_t& gamepadKey, uint32_t& inputDevice, bool extended = false)
 	: common(common)
 	, key(key)
 	, keyEx(keyEx)
+	, gamepadKey(gamepadKey)
+	, inputDevice(inputDevice)
 	, extended(extended)
 	{
 	}
 
 	void onUpdate(Menu& menu, MenuItem& item)
 	{
-		item.value = gfx.getKeyName(extended ? keyEx : key);
+		if (inputDevice != WormSettingsExtensions::InputKeyboard)
+			item.value = gfx.getGamepadKeyName(gamepadKey);
+		else
+			item.value = gfx.getKeyName(extended ? keyEx : key);
 		item.hasValue = true;
 	}
 
 	Common& common;
 	uint32_t& key;
 	uint32_t& keyEx;
+	uint32_t& gamepadKey;
+	uint32_t& inputDevice;
 	bool extended;
 };
 
@@ -69,6 +77,142 @@ struct WormNameBehavior : ItemBehavior
 	{
 		item.value = ws.name;
 		item.hasValue = true;
+	}
+
+	Common& common;
+	WormSettings& ws;
+};
+
+struct InputDeviceBehavior : ItemBehavior
+{
+	struct GamepadOption {
+		std::string name;
+		std::string serial;
+		std::string displayName;
+		int joystickIdx;
+	};
+
+	InputDeviceBehavior(Common& common, WormSettings& ws)
+	: common(common)
+	, ws(ws)
+	{
+	}
+
+	std::vector<GamepadOption> buildOptions()
+	{
+		std::vector<GamepadOption> opts;
+		// Count names to detect duplicates
+		std::unordered_map<std::string, int> nameCounts;
+		for (int i = 0; i < (int)gfx.joysticks.size(); ++i)
+		{
+			char const* n = SDL_GetGamepadName(gfx.joysticks[i].sdlGamepad);
+			std::string name = n ? n : "Gamepad";
+			nameCounts[name]++;
+		}
+
+		std::unordered_map<std::string, int> nameSeenSoFar;
+		for (int i = 0; i < (int)gfx.joysticks.size(); ++i)
+		{
+			GamepadOption opt;
+			char const* n = SDL_GetGamepadName(gfx.joysticks[i].sdlGamepad);
+			opt.name = n ? n : "Gamepad";
+			char const* s = SDL_GetGamepadSerial(gfx.joysticks[i].sdlGamepad);
+			opt.serial = s ? s : "";
+			opt.joystickIdx = i;
+
+			// Disambiguate display name if duplicates exist
+			if (nameCounts[opt.name] > 1)
+			{
+				int idx = ++nameSeenSoFar[opt.name];
+				std::string suffix = " #" + toString(idx);
+				std::string base = opt.name.substr(0, 20 - suffix.size());
+				opt.displayName = base + suffix;
+			}
+			else
+			{
+				opt.displayName = opt.name.substr(0, 20);
+			}
+			opts.push_back(opt);
+		}
+		return opts;
+	}
+
+	int findCurrentOption(std::vector<GamepadOption> const& opts)
+	{
+		if (ws.inputDevice == WormSettingsExtensions::InputKeyboard)
+			return -1;
+		// Try serial match first
+		if (!ws.gamepadSerial.empty())
+		{
+			for (int i = 0; i < (int)opts.size(); ++i)
+				if (opts[i].name == ws.gamepadName && opts[i].serial == ws.gamepadSerial)
+					return i;
+		}
+		// Fall back to name match
+		for (int i = 0; i < (int)opts.size(); ++i)
+			if (opts[i].name == ws.gamepadName)
+				return i;
+		return -1;
+	}
+
+	void onUpdate(Menu& menu, MenuItem& item)
+	{
+		if (ws.inputDevice == WormSettingsExtensions::InputKeyboard)
+		{
+			item.value = "Keyboard";
+		}
+		else
+		{
+			auto opts = buildOptions();
+			int cur = findCurrentOption(opts);
+			if (cur >= 0)
+				item.value = opts[cur].displayName;
+			else
+			{
+				std::string display = ws.gamepadName.empty() ? "Gamepad (none)" : ws.gamepadName.substr(0, 20);
+				item.value = display;
+			}
+		}
+		item.hasValue = true;
+	}
+
+	bool onLeftRight(Menu& menu, MenuItem& item, int dir)
+	{
+		sfx.play(common, dir > 0 ? 25 : 26);
+		cycle(menu, dir);
+		return false;
+	}
+
+	int onEnter(Menu& menu, MenuItem& item)
+	{
+		sfx.play(common, 27);
+		cycle(menu, 1);
+		return -1;
+	}
+
+	void cycle(Menu& menu, int dir)
+	{
+		auto opts = buildOptions();
+		// Options: -1 = keyboard, 0..N-1 = gamepads
+		int count = (int)opts.size() + 1;
+		int cur = findCurrentOption(opts) + 1; // shift so keyboard=0, gamepads=1..N
+		cur = ((cur + dir) % count + count) % count;
+
+		if (cur == 0)
+		{
+			ws.inputDevice = WormSettingsExtensions::InputKeyboard;
+			ws.gamepadName.clear();
+			ws.gamepadSerial.clear();
+		}
+		else
+		{
+			auto& opt = opts[cur - 1];
+			ws.inputDevice = 1;
+			ws.gamepadName = opt.name;
+			ws.gamepadSerial = opt.serial;
+		}
+
+		menu.updateItems(common);
 	}
 
 	Common& common;
@@ -185,6 +329,7 @@ void Gfx::init()
 	joysticks.resize(numGamepads);
 	for ( int i = 0; i < numGamepads; ++i ) {
 		joysticks[i].sdlGamepad = SDL_OpenGamepad(gamepadIds[i]);
+		joysticks[i].instanceId = gamepadIds[i];
 		joysticks[i].clearState();
 	}
 	SDL_free(gamepadIds);
@@ -357,6 +502,7 @@ void Gfx::loadMenus()
 	playerMenu.addItem(MenuItem(48, 7, "Red", PlayerMenu::PlRed));
 	playerMenu.addItem(MenuItem(48, 7, "Green", PlayerMenu::PlGreen));
 	playerMenu.addItem(MenuItem(48, 7, "Blue", PlayerMenu::PlBlue));
+	playerMenu.addItem(MenuItem(48, 7, "INPUT", PlayerMenu::PlInput));
 	playerMenu.addItem(MenuItem(48, 7, "AIM UP", PlayerMenu::PlUp));
 	playerMenu.addItem(MenuItem(48, 7, "AIM DOWN", PlayerMenu::PlDown));
 	playerMenu.addItem(MenuItem(48, 7, "MOVE LEFT", PlayerMenu::PlLeft));
@@ -537,67 +683,74 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
-		case SDL_EVENT_JOYSTICK_AXIS_MOTION:
+		case SDL_EVENT_GAMEPAD_AXIS_MOTION:
 		{
-			Joystick& js = joysticks[ev.jaxis.which];
-			int jbtnBase = 4 + 2 * ev.jaxis.axis;
+			int gpIdx = findGamepadIndex(ev.gaxis.which);
+			if (gpIdx < 0) break;
+			Joystick& js = joysticks[gpIdx];
+			int axis = ev.gaxis.axis;
 
-			bool newBtnStates[2];
-			newBtnStates[0] = (ev.jaxis.value > JoyAxisThreshold);
-			newBtnStates[1] = (ev.jaxis.value < -JoyAxisThreshold);
+			bool posState = (ev.gaxis.value > JoyAxisThreshold);
+			bool negState = (ev.gaxis.value < -JoyAxisThreshold);
 
-			for(int i = 0; i < 2; ++i)
-			{
-				int jbtn = jbtnBase + i;
-				bool newState = newBtnStates[i];
+			int posIdx = axis * 2;
+			int negIdx = axis * 2 + 1;
 
-				if(newState != js.btnState[jbtn])
-				{
-					js.btnState[jbtn] = newState;
-					uint32_t exKey = joyButtonToExKey(ev.jaxis.which, jbtn);
-					exKeys[exKey] = newState;
-					if (controller)
-						controller->onKey(exKey, newState);
-				}
+			if (posState != js.axisButtonState[posIdx]) {
+				js.axisButtonState[posIdx] = posState;
+				if (posState) js.axisPressed[posIdx] = true;
+				dispatchGamepadInput(gpIdx, WormSettingsExtensions::gamepadAxisPositive(axis), posState, controller);
+			}
+			if (negState != js.axisButtonState[negIdx]) {
+				js.axisButtonState[negIdx] = negState;
+				if (negState) js.axisPressed[negIdx] = true;
+				dispatchGamepadInput(gpIdx, WormSettingsExtensions::gamepadAxisNegative(axis), negState, controller);
 			}
 		}
 		break;
 
-		case SDL_EVENT_JOYSTICK_HAT_MOTION:
+		case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+		case SDL_EVENT_GAMEPAD_BUTTON_UP:
 		{
-			Joystick& js = joysticks[ev.jhat.which];
+			int gpIdx = findGamepadIndex(ev.gbutton.which);
+			if (gpIdx < 0) break;
+			Joystick& js = joysticks[gpIdx];
+			int btn = ev.gbutton.button;
+			bool state = ev.gbutton.down;
+			js.btnState[btn] = state;
+			if (state)
+				js.btnPressed[btn] = true;
+			dispatchGamepadInput(gpIdx, (uint32_t)btn, state, controller);
+		}
+		break;
 
-			bool newBtnStates[4];
-			newBtnStates[0] = (ev.jhat.value & SDL_HAT_UP) != 0;
-			newBtnStates[1] = (ev.jhat.value & SDL_HAT_DOWN) != 0;
-			newBtnStates[2] = (ev.jhat.value & SDL_HAT_LEFT) != 0;
-			newBtnStates[3] = (ev.jhat.value & SDL_HAT_RIGHT) != 0;
-
-			for(int jbtn = 0; jbtn < 4; ++jbtn)
+		case SDL_EVENT_GAMEPAD_ADDED:
+		{
+			SDL_JoystickID id = ev.gdevice.which;
+			// Only track up to 2 gamepads
+			if (joysticks.size() < 2)
 			{
-				bool newState = newBtnStates[jbtn];
-				if(newState != js.btnState[jbtn])
-				{
-					js.btnState[jbtn] = newState;
-					uint32_t exKey = joyButtonToExKey(ev.jhat.which, jbtn);
-					exKeys[exKey] = newState;
-					if(controller)
-						controller->onKey(exKey, newState);
-				}
+				Joystick js;
+				js.sdlGamepad = SDL_OpenGamepad(id);
+				js.instanceId = id;
+				js.clearState();
+				joysticks.push_back(js);
 			}
 		}
 		break;
 
-		case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-		case SDL_EVENT_JOYSTICK_BUTTON_UP: /* Fall-through */
+		case SDL_EVENT_GAMEPAD_REMOVED:
 		{
-			Joystick& js = joysticks[ev.jbutton.which];
-			int jbtn = 16 + ev.jbutton.button;
-			js.btnState[jbtn] = ev.jbutton.down;
-			uint32_t exKey = joyButtonToExKey(ev.jbutton.which, jbtn);
-			exKeys[exKey] = ev.jbutton.down;
-			if(controller)
-				controller->onKey(exKey, js.btnState[jbtn]);
+			SDL_JoystickID id = ev.gdevice.which;
+			for (auto it = joysticks.begin(); it != joysticks.end(); ++it)
+			{
+				if (it->instanceId == id)
+				{
+					SDL_CloseGamepad(it->sdlGamepad);
+					joysticks.erase(it);
+					break;
+				}
+			}
 		}
 		break;
 
@@ -613,6 +766,91 @@ void Gfx::process(Controller* controller)
 	while(SDL_PollEvent(&ev))
 	{
 		processEvent(ev, controller);
+	}
+}
+
+int Gfx::findGamepadIndex(SDL_JoystickID id)
+{
+	for (int i = 0; i < (int)joysticks.size(); ++i)
+	{
+		if (joysticks[i].instanceId == id)
+			return i;
+	}
+	return -1;
+}
+
+int Gfx::findGamepadForPlayer(int playerIdx)
+{
+	if (!settings || playerIdx < 0 || playerIdx >= 2) return -1;
+	WormSettings& ws = *settings->wormSettings[playerIdx];
+	if (ws.inputDevice == WormSettingsExtensions::InputKeyboard) return -1;
+	if (ws.gamepadName.empty()) return -1;
+
+	// Collect indices of gamepads matching by name
+	std::vector<int> candidates;
+	for (int i = 0; i < (int)joysticks.size(); ++i)
+	{
+		char const* n = SDL_GetGamepadName(joysticks[i].sdlGamepad);
+		if (!n || ws.gamepadName != n) continue;
+
+		// Exact serial match is best
+		if (!ws.gamepadSerial.empty())
+		{
+			char const* s = SDL_GetGamepadSerial(joysticks[i].sdlGamepad);
+			if (s && ws.gamepadSerial == s)
+				return i;
+		}
+		candidates.push_back(i);
+	}
+
+	if (candidates.empty()) return -1;
+
+	// No serial match — resolve by position among same-name candidates.
+	// If the other player also wants a gamepad with the same name,
+	// give the first candidate to player 0 and the second to player 1.
+	int otherPlayer = 1 - playerIdx;
+	WormSettings& otherWs = *settings->wormSettings[otherPlayer];
+	if (candidates.size() >= 2
+	    && otherWs.inputDevice != WormSettingsExtensions::InputKeyboard
+	    && otherWs.gamepadName == ws.gamepadName)
+	{
+		// Both players want same-named gamepad — split by player index
+		return candidates[playerIdx < otherPlayer ? 0 : 1];
+	}
+
+	return candidates[0];
+}
+
+void Gfx::dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Controller* controller)
+{
+	if (gpIdx < 0 || gpIdx >= 2) return;
+
+	// Start button acts as ESC for menu access
+	if (gamepadKey == (uint32_t)SDL_GAMEPAD_BUTTON_START && state)
+	{
+		dosKeys[DkEscape] = true;
+		if (controller)
+			controller->onKey(DkEscape, true);
+		return;
+	}
+
+	// Dispatch to the controller for the player who has this gamepad assigned
+	if (controller)
+	{
+		for (int p = 0; p < 2; ++p)
+		{
+			WormSettings& ws = *settings->wormSettings[p];
+			if (ws.inputDevice == WormSettingsExtensions::InputKeyboard)
+				continue;
+			if (findGamepadForPlayer(p) != gpIdx)
+				continue;
+
+			for (int c = 0; c < WormSettings::MaxControlEx; ++c)
+			{
+				if (ws.gamepadControls[c] == gamepadKey)
+					controller->onKey(gamepadControlToExKey(p, c), state);
+			}
+		}
 	}
 }
 
@@ -634,16 +872,46 @@ std::string Gfx::getKeyName(uint32_t key)
 	return "";
 }
 
+std::string Gfx::getGamepadKeyName(uint32_t gamepadKey)
+{
+	if (WormSettingsExtensions::isGamepadAxis(gamepadKey))
+	{
+		int axis = (gamepadKey - WormSettingsExtensions::GamepadAxisBase) / 2;
+		bool negative = (gamepadKey - WormSettingsExtensions::GamepadAxisBase) % 2;
+		static char const* axisNames[] = {"LX", "LY", "RX", "RY", "LT", "RT"};
+		std::string name = (axis < 6) ? axisNames[axis] : "A" + toString(axis);
+		return name + (negative ? "-" : "+");
+	}
+
+	static char const* buttonNames[] = {
+		"A", "B", "X", "Y",
+		"Back", "Guide", "Start",
+		"LS", "RS",
+		"LB", "RB",
+		"Up", "Down", "Left", "Right"
+	};
+
+	if (gamepadKey < 15)
+		return buttonNames[gamepadKey];
+
+	return "Btn" + toString(gamepadKey);
+}
+
 void Gfx::clearKeys()
 {
 	std::memset(dosKeys, 0, sizeof(dosKeys));
 	exKeys.clear();
+	for (auto& js : joysticks)
+		js.clearState();
 }
 
 bool Gfx::testControlOnce(int control)
 {
+	// Check keyboard bindings only for players using keyboard input
 	for(int p = 0; p < 2; ++p)
 	{
+		if (settings->wormSettings[p]->inputDevice != WormSettingsExtensions::InputKeyboard)
+			continue;
 		uint32_t key = settings->extensions
 			? settings->wormSettings[p]->controlsEx[control]
 			: settings->wormSettings[p]->controls[control];
@@ -653,10 +921,83 @@ bool Gfx::testControlOnce(int control)
 	return false;
 }
 
+bool Gfx::testGamepadButtonOnce(int button)
+{
+	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
+	{
+		if (joysticks[gp].btnPressed[button])
+		{
+			joysticks[gp].btnPressed[button] = false;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Gfx::testGamepadButton(int button)
+{
+	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
+	{
+		if (joysticks[gp].btnState[button])
+			return true;
+	}
+	return false;
+}
+
+// Map DPad button to left stick axis index (-1 if not a directional button)
+static int dpadToAxisIndex(int dpadButton)
+{
+	switch (dpadButton)
+	{
+		case SDL_GAMEPAD_BUTTON_DPAD_RIGHT: return 0; // LEFTX positive
+		case SDL_GAMEPAD_BUTTON_DPAD_LEFT:  return 1; // LEFTX negative
+		case SDL_GAMEPAD_BUTTON_DPAD_DOWN:  return 2; // LEFTY positive
+		case SDL_GAMEPAD_BUTTON_DPAD_UP:    return 3; // LEFTY negative
+		default: return -1;
+	}
+}
+
+bool Gfx::testGamepadDirOnce(int dpadButton)
+{
+	int axisIdx = dpadToAxisIndex(dpadButton);
+	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
+	{
+		if (joysticks[gp].btnPressed[dpadButton])
+		{
+			joysticks[gp].btnPressed[dpadButton] = false;
+			if (axisIdx >= 0) joysticks[gp].axisPressed[axisIdx] = false;
+			return true;
+		}
+		if (axisIdx >= 0 && joysticks[gp].axisPressed[axisIdx])
+		{
+			joysticks[gp].axisPressed[axisIdx] = false;
+			joysticks[gp].btnPressed[dpadButton] = false;
+			return true;
+		}
+	}
+	return false;
+}
+
+bool Gfx::testGamepadDir(int dpadButton)
+{
+	int axisIdx = dpadToAxisIndex(dpadButton);
+	for (int gp = 0; gp < (int)joysticks.size(); ++gp)
+	{
+		if (joysticks[gp].btnState[dpadButton])
+			return true;
+		if (axisIdx >= 0 && joysticks[gp].axisButtonState[axisIdx])
+			return true;
+	}
+	return false;
+}
+
 bool Gfx::testControl(int control)
 {
+	// Check keyboard bindings only for players using keyboard input
 	for(int p = 0; p < 2; ++p)
 	{
+		if (settings->wormSettings[p]->inputDevice != WormSettingsExtensions::InputKeyboard)
+			continue;
 		uint32_t key = settings->extensions
 			? settings->wormSettings[p]->controlsEx[control]
 			: settings->wormSettings[p]->controls[control];
@@ -1001,6 +1342,9 @@ ItemBehavior* PlayerMenu::getItemBehavior(Common& common, MenuItem& item)
 			return b;
 		}
 
+		case PlInput:
+			return new InputDeviceBehavior(common, *ws);
+
 		case PlUp: // D2AB
 		case PlDown:
 		case PlLeft:
@@ -1008,10 +1352,10 @@ ItemBehavior* PlayerMenu::getItemBehavior(Common& common, MenuItem& item)
 		case PlFire:
 		case PlChange:
 		case PlJump:
-			return new KeyBehavior(common, ws->controls[item.id - PlUp], ws->controlsEx[item.id - PlUp], gfx.settings->extensions);
+			return new KeyBehavior(common, ws->controls[item.id - PlUp], ws->controlsEx[item.id - PlUp], ws->gamepadControls[item.id - PlUp], ws->inputDevice, gfx.settings->extensions);
 
 		case PlDig: // Controls Extension
-			return new KeyBehavior(common, ws->controlsEx[item.id - PlUp], ws->controlsEx[item.id - PlUp], gfx.settings->extensions);
+			return new KeyBehavior(common, ws->controlsEx[item.id - PlUp], ws->controlsEx[item.id - PlUp], ws->gamepadControls[item.id - PlUp], ws->inputDevice, gfx.settings->extensions);
 
 
 		case PlController: // Controller

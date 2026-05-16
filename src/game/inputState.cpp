@@ -137,35 +137,24 @@ void WaitForKeyState::handleEvent(SDL_Event& ev)
 			break;
 		}
 
-		case SDL_EVENT_JOYSTICK_AXIS_MOTION:
-			if (ev.jaxis.value > JoyAxisThreshold)
+		case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+			if (ev.gaxis.value > JoyAxisThreshold)
 			{
-				result_ = joyButtonToExKey(ev.jaxis.which, 4 + 2 * ev.jaxis.axis);
+				result_ = WormSettingsExtensions::gamepadAxisPositive(ev.gaxis.axis);
+				isGamepadResult_ = true;
 				done_ = true;
 			}
-			else if (ev.jaxis.value < -JoyAxisThreshold)
+			else if (ev.gaxis.value < -JoyAxisThreshold)
 			{
-				result_ = joyButtonToExKey(ev.jaxis.which, 5 + 2 * ev.jaxis.axis);
+				result_ = WormSettingsExtensions::gamepadAxisNegative(ev.gaxis.axis);
+				isGamepadResult_ = true;
 				done_ = true;
 			}
 			break;
 
-		case SDL_EVENT_JOYSTICK_HAT_MOTION:
-			if (ev.jhat.value & SDL_HAT_UP)
-				result_ = joyButtonToExKey(ev.jhat.which, 0);
-			else if (ev.jhat.value & SDL_HAT_DOWN)
-				result_ = joyButtonToExKey(ev.jhat.which, 1);
-			else if (ev.jhat.value & SDL_HAT_LEFT)
-				result_ = joyButtonToExKey(ev.jhat.which, 2);
-			else if (ev.jhat.value & SDL_HAT_RIGHT)
-				result_ = joyButtonToExKey(ev.jhat.which, 3);
-			else
-				break;
-			done_ = true;
-			break;
-
-		case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-			result_ = joyButtonToExKey(ev.jbutton.which, 16 + ev.jbutton.button);
+		case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+			result_ = ev.gbutton.button;
+			isGamepadResult_ = true;
 			done_ = true;
 			break;
 
@@ -179,7 +168,7 @@ bool WaitForKeyState::update()
 	if (done_)
 	{
 		gfx->clearKeys();
-		callback_(result_);
+		callback_(result_, isGamepadResult_);
 		return false;
 	}
 	return true;
@@ -217,7 +206,7 @@ void InfoBoxState::handleEvent(SDL_Event& ev)
 	gfx->processEvent(ev);
 
 	if (ev.type == SDL_EVENT_KEY_DOWN
-	 || ev.type == SDL_EVENT_JOYSTICK_BUTTON_DOWN)
+	 || ev.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN)
 		done_ = true;
 }
 

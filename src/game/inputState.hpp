@@ -35,7 +35,7 @@ private:
 // Key binding state. Waits for a key/joystick press and returns via callback.
 struct WaitForKeyState : AppState
 {
-	using Callback = std::function<void(uint32_t key)>;
+	using Callback = std::function<void(uint32_t key, bool isGamepad)>;
 
 	// If extended is false, only non-extended (DOS) keys are accepted.
 	WaitForKeyState(bool extended, Callback callback);
@@ -49,6 +49,7 @@ private:
 	bool extended_;
 	Callback callback_;
 	uint32_t result_ = 0;
+	bool isGamepadResult_ = false;
 	bool done_ = false;
 };
 

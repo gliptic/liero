@@ -573,7 +573,11 @@ struct reader
 		{
 			if (cur.tt != t_object)
 				throw parse_error();
-			return ((object*)cur.u.s)->f.at(name);
+			auto& fields = ((object*)cur.u.s)->f;
+			auto it = fields.find(name);
+			if (it == fields.end())
+				return value(); // Return null for missing keys
+			return it->second;
 		}
 		else
 		{
@@ -596,6 +600,8 @@ struct reader
 	{
 		value parent(cur);
 		value v(f(name));
+		if (v.tt == t_null)
+			return *this; // Missing field, keep defaults
 		if (v.tt != t_array)
 			throw parse_error();
 		array& jv = *(array*)v.u.s;
@@ -622,6 +628,7 @@ struct reader
 	reader& i32(char const* name, int32_t& v)
 	{
 		value jv(f(name));
+		if (jv.tt == t_null) return *this; // Missing field, keep default
 		if (jv.tt != t_integer) throw parse_error();
 		v = jv.u.i;
 		return *this;
@@ -630,6 +637,7 @@ struct reader
 	reader& u32(char const* name, uint32_t& v)
 	{
 		value jv(f(name));
+		if (jv.tt == t_null) return *this; // Missing field, keep default
 		if (jv.tt != t_integer) throw parse_error();
 		v = (uint32_t)jv.u.i;
 		return *this;
@@ -638,6 +646,7 @@ struct reader
 	reader& b(char const* name, bool& v)
 	{
 		value jv(f(name));
+		if (jv.tt == t_null) return *this; // Missing field, keep default
 		if (jv.tt != t_bool) throw parse_error();
 		v = jv.u.i != 0;
 		return *this;
@@ -662,6 +671,7 @@ struct reader
 	reader& str(char const* name, std::string& s)
 	{
 		value jv(f(name));
+		if (jv.tt == t_null) return *this; // Missing field, keep default
 		if (jv.tt != t_string) throw parse_error();
 		s = ((string*)jv.u.s)->s;
 		return *this;

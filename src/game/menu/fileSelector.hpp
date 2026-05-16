@@ -272,7 +272,8 @@ struct FileSelector
 	bool process()
 	{
 		if(gfx.testSDLKeyOnce(SDL_SCANCODE_UP)
-		|| gfx.testControlOnce(WormSettingsExtensions::Up))
+		|| gfx.testControlOnce(WormSettingsExtensions::Up)
+		|| gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
 		{
 			sfx.play(common, 26);
 
@@ -280,7 +281,8 @@ struct FileSelector
 		}
 
 		if(gfx.testSDLKeyOnce(SDL_SCANCODE_DOWN)
-		|| gfx.testControlOnce(WormSettingsExtensions::Down))
+		|| gfx.testControlOnce(WormSettingsExtensions::Down)
+		|| gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
 		{
 			sfx.play(common, 25);
 
@@ -302,19 +304,22 @@ struct FileSelector
 		}
 
 		if (gfx.testSDLKeyOnce(SDL_SCANCODE_ESCAPE)
-		|| gfx.testControlOnce(WormSettingsExtensions::Jump))
+		|| gfx.testControlOnce(WormSettingsExtensions::Jump)
+		|| gfx.testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST))
 		{
 			return false;
 		}
 
 		if (gfx.testSDLKeyOnce(SDL_SCANCODE_LEFT)
-		|| gfx.testControlOnce(WormSettingsExtensions::Left))
+		|| gfx.testControlOnce(WormSettingsExtensions::Left)
+		|| gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_LEFT))
 		{
 			exit();
 		}
 
 		if (gfx.testSDLKeyOnce(SDL_SCANCODE_RIGHT)
-		|| gfx.testControlOnce(WormSettingsExtensions::Right))
+		|| gfx.testControlOnce(WormSettingsExtensions::Right)
+		|| gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_RIGHT))
 		{
 			enter();
 		}

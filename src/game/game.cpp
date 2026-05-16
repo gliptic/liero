@@ -3,6 +3,7 @@
 #include <ctime>
 
 #include "game.hpp"
+#include "keys.hpp"
 #include "viewport.hpp"
 #include "spectatorviewport.hpp"
 #include "worm.hpp"
@@ -49,6 +50,10 @@ void Game::onKey(uint32_t key, bool state)
 	{
 		Worm& w = *worms[i];
 
+		// Only check keyboard controls for players using keyboard input
+		if (w.settings->inputDevice != WormSettingsExtensions::InputKeyboard)
+			continue;
+
 		for(std::size_t control = 0; control < WormSettings::MaxControl; ++control)
 		{
 			if(w.settings->controls[control] == key)
@@ -61,9 +66,26 @@ void Game::onKey(uint32_t key, bool state)
 
 Worm* Game::findControlForKey(uint32_t key, Worm::Control& control)
 {
+	// Gamepad control keys encode the player index and control directly
+	if (isGamepadControlKey(key))
+	{
+		int playerIdx = (key - GamepadControlKeysStart) / 8;
+		int c = (key - GamepadControlKeysStart) % 8;
+		if (playerIdx >= 0 && playerIdx < (int)worms.size())
+		{
+			control = static_cast<Worm::Control>(c);
+			return worms[playerIdx];
+		}
+		return 0;
+	}
+
 	for(std::size_t i = 0; i < worms.size(); ++i)
 	{
 		Worm& w = *worms[i];
+
+		// Only check keyboard bindings for players using keyboard
+		if (w.settings->inputDevice != WormSettingsExtensions::InputKeyboard)
+			continue;
 
 		uint32_t* controls = settings->extensions ? w.settings->controlsEx : w.settings->controls;
 		std::size_t maxControl = settings->extensions ? WormSettings::MaxControlEx : WormSettings::MaxControl;

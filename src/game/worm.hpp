@@ -56,11 +56,32 @@ struct WormSettingsExtensions {
     MaxControl = Dig,
     MaxControlEx
   };
-  // static const int MaxControl = Dig;
 
-  WormSettingsExtensions() { std::memset(controlsEx, 0, sizeof(controlsEx)); }
+  // Input device: 0 = keyboard, 1 = gamepad 0, 2 = gamepad 1, etc.
+  static int const InputKeyboard = 0;
+
+  WormSettingsExtensions() {
+    std::memset(controlsEx, 0, sizeof(controlsEx));
+    std::memset(gamepadControls, 0, sizeof(gamepadControls));
+    inputDevice = InputKeyboard;
+    initDefaultGamepadControls();
+  }
+
+  void initDefaultGamepadControls();
 
   uint32_t controlsEx[MaxControlEx];
+
+  // Gamepad binding: stores SDL_GamepadButton or encoded axis for each control
+  // Encoding: 0-99 = SDL_GamepadButton, 100+axis*2 = axis positive, 101+axis*2 = axis negative
+  static uint32_t const GamepadAxisBase = 100;
+  static uint32_t gamepadAxisPositive(int axis) { return GamepadAxisBase + axis * 2; }
+  static uint32_t gamepadAxisNegative(int axis) { return GamepadAxisBase + axis * 2 + 1; }
+  static bool isGamepadAxis(uint32_t v) { return v >= GamepadAxisBase; }
+
+  uint32_t gamepadControls[MaxControlEx];
+  uint32_t inputDevice;
+  std::string gamepadName;   // Human-readable name (e.g., "Xbox Wireless Controller")
+  std::string gamepadSerial; // Hardware serial for disambiguating identical controllers
 };
 
 struct WormSettings : gvl::shared, WormSettingsExtensions {

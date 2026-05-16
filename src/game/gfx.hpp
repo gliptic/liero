@@ -49,6 +49,7 @@ struct PlayerMenu : Menu
 		PlName,
 		PlHealth,
 		PlRed, PlGreen, PlBlue,
+		PlInput,
 		PlUp,
 		PlDown,
 		PlLeft,
@@ -107,10 +108,17 @@ struct SettingsMenu : Menu
 
 struct Joystick {
 	SDL_Gamepad *sdlGamepad;
-	bool btnState[MaxJoyButtons];
+	SDL_JoystickID instanceId;
+	bool btnState[SDL_GAMEPAD_BUTTON_COUNT];
+	bool btnPressed[SDL_GAMEPAD_BUTTON_COUNT]; // Latched on press, cleared by testGamepadButtonOnce
+	bool axisButtonState[12]; // 6 axes * 2 directions
+	bool axisPressed[12];     // Latched on axis threshold cross, cleared by consumer
 
 	void clearState() {
-		for ( int i = 0; i < MaxJoyButtons; ++i ) btnState[i] = false;
+		std::memset(btnState, 0, sizeof(btnState));
+		std::memset(btnPressed, 0, sizeof(btnPressed));
+		std::memset(axisButtonState, 0, sizeof(axisButtonState));
+		std::memset(axisPressed, 0, sizeof(axisPressed));
 	}
 };
 
@@ -220,6 +228,18 @@ struct Gfx
 	// Uses controlsEx which covers both keyboard and joystick bindings.
 	bool testControlOnce(int control);
 
+	// Test if any connected gamepad has a raw button pressed (one-shot)
+	bool testGamepadButtonOnce(int button);
+
+	// Test if any connected gamepad has a raw button held (non-destructive)
+	bool testGamepadButton(int button);
+
+	// Directional input: checks both DPad button AND left stick axis (one-shot)
+	bool testGamepadDirOnce(int dpadButton);
+
+	// Directional input: checks both DPad button AND left stick axis (held)
+	bool testGamepadDir(int dpadButton);
+
 	// Non-destructive version for held keys (left/right repeat)
 	bool testControl(int control);
 
@@ -227,6 +247,7 @@ struct Gfx
 	void releaseControl(int control);
 
 	std::string getKeyName(uint32_t key);
+	std::string getGamepadKeyName(uint32_t gamepadKey);
 	void setSpectatorFullscreen(bool newFullscreen);
 	void setFullscreen(bool newFullscreen);
 	void setDoubleRes(bool newDoubleRes);
@@ -236,6 +257,10 @@ struct Gfx
 	bool loadSettingsLegacy(FsNode node);
 
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
+
+	int findGamepadIndex(SDL_JoystickID id);
+	int findGamepadForPlayer(int playerIdx);
+	void dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Controller* controller);
 
 	void mainLoop();
 
@@ -301,6 +326,7 @@ struct Gfx
 
 	bool dosKeys[177];
 	std::unordered_map<uint32_t, bool> exKeys;
+
 	// the window to render into
 	SDL_Window* sdlWindow = NULL;
 	// the window to render the spectator view into

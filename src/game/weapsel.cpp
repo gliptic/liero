@@ -229,9 +229,18 @@ bool WeaponSelection::processFrame()
 
 		if(!isReady[i])
 		{
+			// Find this player's gamepad (if using one)
+			int gpIdx = -1;
+			if (ws.inputDevice != WormSettingsExtensions::InputKeyboard)
+				gpIdx = gfx.findGamepadForPlayer(vp.wormIdx);
+
 			if(weapID >= 0 && weapID < Settings::selectableWeapons)
 			{
-				if(worm.pressed(Worm::Left))
+				bool left = worm.pressed(Worm::Left);
+				if (!left && gpIdx >= 0 && gfx.joysticks[gpIdx].axisButtonState[1]) // LEFTX negative
+					left = true;
+
+				if(left)
 				{
 					worm.release(Worm::Left);
 
@@ -250,7 +259,11 @@ bool WeaponSelection::processFrame()
 					menus[i].selected()->string = common.weapons[w].name;
 				}
 
-				if(worm.pressed(Worm::Right))
+				bool right = worm.pressed(Worm::Right);
+				if (!right && gpIdx >= 0 && gfx.joysticks[gpIdx].axisButtonState[0]) // LEFTX positive
+					right = true;
+
+				if(right)
 				{
 					worm.release(Worm::Right);
 
@@ -270,19 +283,39 @@ bool WeaponSelection::processFrame()
 				}
 			}
 
-			if(worm.pressedOnce(Worm::Up))
+			bool up = worm.pressedOnce(Worm::Up);
+			if (!up && gpIdx >= 0 && gfx.joysticks[gpIdx].axisPressed[3]) // LEFTY negative
+			{
+				gfx.joysticks[gpIdx].axisPressed[3] = false;
+				up = true;
+			}
+			if(up)
 			{
 				game.soundPlayer->play(26);
 				menus[i].movement(-1);
 			}
 
-			if(worm.pressedOnce(Worm::Down))
+			bool down = worm.pressedOnce(Worm::Down);
+			if (!down && gpIdx >= 0 && gfx.joysticks[gpIdx].axisPressed[2]) // LEFTY positive
+			{
+				gfx.joysticks[gpIdx].axisPressed[2] = false;
+				down = true;
+			}
+			if(down)
 			{
 				game.soundPlayer->play(25);
 				menus[i].movement(1);
 			}
 
-			if(worm.pressed(Worm::Fire))
+			// Check Fire control OR A button on assigned gamepad
+			bool confirm = worm.pressed(Worm::Fire);
+			if (!confirm && gpIdx >= 0 && gfx.joysticks[gpIdx].btnPressed[SDL_GAMEPAD_BUTTON_SOUTH])
+			{
+				gfx.joysticks[gpIdx].btnPressed[SDL_GAMEPAD_BUTTON_SOUTH] = false;
+				confirm = true;
+			}
+
+			if(confirm)
 			{
 				if(menus[i].selection() == 0)
 				{

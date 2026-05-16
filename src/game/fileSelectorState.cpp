@@ -41,7 +41,8 @@ bool FileSelectorState::update()
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN)
 	 || gfx->testSDLKeyOnce(SDL_SCANCODE_KP_ENTER)
-	 || gfx->testControlOnce(WormSettingsExtensions::Fire))
+	 || gfx->testControlOnce(WormSettingsExtensions::Fire)
+	 || gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH))
 	{
 		sfx.play(*gfx->common, 27);
 
@@ -210,7 +211,7 @@ void ProfileSelectorState::enter()
 	selector_ = std::make_unique<FileSelector>(*gfx->common, 28);
 
 	selector_->fill(gfx->getConfigNode(), [](string const& name, string const& ext) {
-		return ciCompare(ext, "LPF");
+		return ciCompare(ext, "TOML");
 	});
 
 	selector_->setFolder(selector_->rootNode);
