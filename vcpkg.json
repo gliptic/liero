@@ -5,6 +5,7 @@
       "name": "sdl3",
       "features": [
         "alsa",
+        "ibus",
         "wayland",
         "x11"
       ],
