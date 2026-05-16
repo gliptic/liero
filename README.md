@@ -44,8 +44,33 @@ cmake --workflow --preset $PRESET-debug
 cmake --install build/$PRESET --config Debug
 ```
 
-Note: This only builds `openliero` & `tctool`, not `videotool`. That one needs
-some work due to ffmpeg updates.
+Note: This only builds `openliero` & `tctool`, not `videotool`. See below for
+videotool build instructions.
+
+### Building videotool
+
+The videotool converts `.lrp` replay files to video. It requires ffmpeg
+development libraries installed on your system.
+
+#### Build
+
+```bash
+cmake --preset $PRESET -DOPENLIERO_BUILD_VIDEOTOOL=ON
+cmake --build build/$PRESET --target videotool
+```
+
+#### Usage
+
+```bash
+# Convert a single replay
+./videotool -r path/to/replay.lrp
+
+# Convert with spectator view
+./videotool -s -r path/to/replay.lrp
+
+# Convert all replays in a directory
+./videotool -d -r "path/to/replays/*.lrp"
+```
 
 ### Extracting game data for total conversions
 

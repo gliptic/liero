@@ -1,19 +1,21 @@
 #pragma once
 
-#include "libavformat/avformat.h"
-#include "libswscale/swscale.h"
-#include "libswresample/swresample.h"
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
+#include <libswresample/swresample.h>
 
 typedef struct video_recorder {
 	AVFrame *picture, *tmp_picture;
-	uint8_t *video_outbuf;
-	int frame_count, video_outbuf_size;
-	AVOutputFormat *fmt;
+	int frame_count;
+	const AVOutputFormat *fmt;
 	AVFormatContext *oc;
 	AVStream *audio_st, *video_st;
-    SwrContext *swr;
+	AVCodecContext *video_enc, *audio_enc;
+	AVPacket *tmp_pkt;
+	SwrContext *swr;
 	struct SwsContext *img_convert_ctx;
-    int64_t pts;
+	int64_t audio_pts;
 } video_recorder;
 
 int  vidrec_init(video_recorder* self, char const* filename, int width, int height, AVRational framerate);

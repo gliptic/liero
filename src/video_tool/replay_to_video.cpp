@@ -77,7 +77,6 @@ void replayToVideo(
 	nativeFramerate.num = 1;
 	nativeFramerate.den = 70;
 
-	av_register_all();
 	video_recorder vidrec;
 	vidrec_init(&vidrec, replayVideoName.c_str(), w, h, framerate);
 
@@ -111,6 +110,7 @@ void replayToVideo(
 		sampleDebt.num -= mixerFrames * sampleDebt.den; // sampleDebt -= mixerFrames
 
 		std::size_t mixerStart = soundBuffer.size();
+		soundBuffer.resize(mixerStart + mixerFrames);
 
 		sfx_mixer_mix(mixer, &soundBuffer[mixerStart], mixerFrames);
 
@@ -146,10 +146,9 @@ void replayToVideo(
 				vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
 			}
 
-			// Move rest to the beginning of the buffer
-			assert(audioSamples[samplesLeft] == soundBuffer.back());
-			soundBuffer.resize(samplesLeft);
-			std::copy(audioSamples, audioSamples + samplesLeft, soundBuffer.begin());
+			// Move remaining samples to the beginning of the buffer
+			std::size_t offset = audioSamples - &soundBuffer[0];
+			soundBuffer.erase(soundBuffer.begin(), soundBuffer.begin() + offset);
 		}
 
 		if ((f % (70 * 5)) == 0)

@@ -197,6 +197,15 @@ if(OPENLIERO_BUILD_TCTOOL)
 endif()
 
 if(OPENLIERO_BUILD_VIDEOTOOL)
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET
+    libavcodec
+    libavformat
+    libavutil
+    libswresample
+    libswscale
+  )
+
   set(VIDEO_TOOL_SOURCES ${SOURCES}
     src/game/replay.cpp
     src/video_tool/replay_to_video.cpp
@@ -207,27 +216,12 @@ if(OPENLIERO_BUILD_VIDEOTOOL)
 
   target_link_libraries(vt
     PUBLIC
-    miniz
+    miniz::miniz
     gvl
     SDL3::SDL3
-    avcodec
-    avformat
-    avutil
-    dl
-    pthread
-    swresample
-    swscale
-    x264
+    PkgConfig::FFMPEG
   )
-  target_include_directories(vt ffmpeg)
-  target_link_directories(vt
-    ffmpeg/libavcodec
-    ffmpeg/libavformat
-    ffmpeg/libavutil
-    ffmpeg/libswresample
-    ffmpeg/libswscale
-    x264
-  )
+
   add_executable(videotool ${VIDEO_TOOL_SOURCES})
   target_link_libraries(videotool PRIVATE vt)
 endif()
