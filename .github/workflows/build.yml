@@ -141,3 +141,70 @@ jobs:
         with:
           name: ${{ matrix.name }}-build
           path: install/openliero*
+
+  build-videotool:
+    name: videotool (linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup sccache
+        uses: mozilla-actions/sccache-action@v0.0.10
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            autoconf \
+            autoconf-archive \
+            automake \
+            libtool \
+            pkg-config \
+            libasound2-dev \
+            libpulse-dev \
+            libaudio-dev \
+            libjack-dev \
+            libsndio-dev \
+            libx11-dev \
+            libxext-dev \
+            libxrandr-dev \
+            libxcursor-dev \
+            libxfixes-dev \
+            libxi-dev \
+            libxss-dev \
+            libxtst-dev \
+            libxkbcommon-dev \
+            libdrm-dev \
+            libgbm-dev \
+            libgl1-mesa-dev \
+            libgles2-mesa-dev \
+            libegl1-mesa-dev \
+            libdbus-1-dev \
+            libudev-dev \
+            libwayland-dev \
+            libdecor-0-dev \
+            libavcodec-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswresample-dev \
+            libswscale-dev
+
+      - name: Get cmake/ninja
+        uses: lukka/get-cmake@latest
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/tools/vcpkg/vcpkg'
+          vcpkgConfigurationJsonGlob: 'vcpkg-configuration.json'
+          appendedCacheKey: 'sdl3-v2'
+
+      - name: Build videotool
+        run: |
+          cmake --preset linux-x64-ci -DOPENLIERO_BUILD_VIDEOTOOL=ON
+          cmake --build build/linux-x64-ci --target videotool
