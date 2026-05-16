@@ -6,6 +6,9 @@
 #include "../gfx.hpp"
 #include "../common.hpp"
 #include "../text.hpp"
+#include "../inputState.hpp"
+
+#include <cmath>
 
 bool IntegerBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir)
 {
@@ -28,6 +31,11 @@ bool IntegerBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir)
 	return true;
 }
 
+static int filterDigits(int k)
+{
+	return std::isdigit(k) ? k : 0;
+}
+
 int IntegerBehavior::onEnter(Menu& menu, MenuItem& item)
 {
 	sfx.play(common, 27);
@@ -40,8 +48,27 @@ int IntegerBehavior::onEnter(Menu& menu, MenuItem& item)
 	{
 		x += menu.valueOffsetX;
 		int digits = 1 + int(std::floor(std::log10(double(max))));
-		gfx.inputInteger(v, min, max, digits, x + 2, y);
-		onUpdate(menu, item);
+
+		int* destPtr = &v;
+		int minVal = min, maxVal = max;
+		bool pct = percentage;
+
+		gfx.stateStack.push(std::make_unique<InputStringState>(
+			toString(v), digits, x + 2, y, filterDigits, "", false,
+			[destPtr, minVal, maxVal, pct, &menu, &item](bool accepted, std::string const& result) {
+				if (accepted && !result.empty())
+				{
+					int val = std::atoi(result.c_str());
+					if (val < minVal) val = minVal;
+					else if (val > maxVal) val = maxVal;
+					*destPtr = val;
+				}
+				// Update the menu item display
+				item.value = toString(*destPtr);
+				item.hasValue = true;
+				if (pct)
+					item.value += "%";
+			}), &gfx);
 	}
 	return -1;
 }
