@@ -5,17 +5,46 @@
 #include "text.hpp"
 #include "keys.hpp"
 #include "level.hpp"
+#include "filesystem.hpp"
 #include "controller/controller.hpp"
 #include "menu/mainMenu.hpp"
 #include "fileSelectorState.hpp"
 #include "weaponMenuState.hpp"
+#include "inputState.hpp"
 #include "rand.hpp"
 
 #include <cstring>
 #include <random>
 #include <vector>
+#include <limits>
+#include <algorithm>
+#include <cctype>
 
 using std::vector;
+
+#define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
+
+static int levenshtein(char const *s1, char const *s2) {
+	std::size_t x, y, s1len, s2len;
+	s1len = strlen(s1);
+	s2len = strlen(s2);
+	std::size_t w = s1len + 1;
+	std::vector<unsigned> matrix(w * (s2len + 1));
+	matrix[0] = 0;
+	for (x = 1; x <= s2len; x++)
+		matrix[x * w] = matrix[(x - 1) * w] + 1;
+	for (y = 1; y <= s1len; y++)
+		matrix[y] = matrix[y - 1] + 1;
+	for (x = 1; x <= s2len; x++)
+		for (y = 1; y <= s1len; y++)
+		{
+			int c = std::tolower(s1[y - 1]) == std::tolower(s2[x - 1]) ? 0 : 1;
+			matrix[x * w + y] = MIN3(matrix[(x - 1) * w + y] + 1, matrix[x * w + y - 1] + 1, matrix[(x - 1) * w + y - 1] + c);
+		}
+	return (int)(matrix[s2len * w + s1len]);
+}
+
+#undef MIN3
 
 static void resetLeftRight()
 {
@@ -194,6 +223,29 @@ bool MainMenuState::update()
 					gfx->stateStack.push(std::make_unique<OptionsSelectorState>(), gfx);
 					break;
 
+				case SettingsMenu::SaveOptions:
+				{
+					sfx.play(common, 27);
+					int x, y;
+					auto* item = gfx->settingsMenu.itemFromId(SettingsMenu::SaveOptions);
+					if (item && gfx->settingsMenu.itemPosition(*item, x, y))
+					{
+						x += gfx->settingsMenu.valueOffsetX + 2;
+						std::string name = getBasename(getLeaf(gfx->settingsNode.fullPath()));
+						gfx->stateStack.push(std::make_unique<InputStringState>(
+							name, 30, x, y, nullptr, "", false,
+							[this](bool accepted, std::string const& result) {
+								if (accepted && !result.empty())
+								{
+									gfx->saveSettings(gfx->getConfigNode() / "Setups" / (result + ".cfg"));
+								}
+								sfx.play(*gfx->common, 27);
+								gfx->settingsMenu.updateItems(*gfx->common);
+							}), gfx);
+					}
+					break;
+				}
+
 				default:
 					gfx->settingsMenu.onEnter(common);
 					break;
@@ -202,11 +254,113 @@ bool MainMenuState::update()
 		else if(gfx->curMenu == &gfx->playerMenu)
 		{
 			int itemId = gfx->playerMenu.selectedId();
+
 			if (itemId == PlayerMenu::PlLoadProfile)
 			{
 				sfx.play(common, 27);
 				gfx->stateStack.push(
 					std::make_unique<ProfileSelectorState>(*gfx->playerMenu.ws), gfx);
+			}
+			else if (itemId == PlayerMenu::PlName)
+			{
+				sfx.play(common, 27);
+				auto& ws = *gfx->playerMenu.ws;
+				int x, y;
+				auto* item = gfx->playerMenu.itemFromId(itemId);
+				if (item && gfx->playerMenu.itemPosition(*item, x, y))
+				{
+					x += gfx->playerMenu.valueOffsetX + 2;
+					gfx->stateStack.push(std::make_unique<InputStringState>(
+						ws.name, 20, x, y, nullptr, "", false,
+						[this](bool accepted, std::string const& result) {
+							auto& ws = *gfx->playerMenu.ws;
+							if (accepted)
+								ws.name = result;
+							if (ws.name.empty())
+								Settings::generateName(ws, gfx->rand);
+							ws.randomName = false;
+							sfx.play(*gfx->common, 27);
+							gfx->playerMenu.updateItems(*gfx->common);
+						}), gfx);
+				}
+			}
+			else if (itemId == PlayerMenu::PlSaveProfileAs)
+			{
+				sfx.play(common, 27);
+				int x, y;
+				auto* item = gfx->playerMenu.itemFromId(itemId);
+				if (item && gfx->playerMenu.itemPosition(*item, x, y))
+				{
+					x += gfx->playerMenu.valueOffsetX + 2;
+					gfx->stateStack.push(std::make_unique<InputStringState>(
+						"", 30, x, y, nullptr, "", false,
+						[this](bool accepted, std::string const& result) {
+							if (accepted && !result.empty())
+							{
+								gfx->playerMenu.ws->saveProfile(
+									gfx->getConfigNode() / "Profiles" / (result + ".lpf"));
+							}
+							sfx.play(*gfx->common, 27);
+							gfx->playerMenu.updateItems(*gfx->common);
+						}), gfx);
+				}
+			}
+			else if ((itemId >= PlayerMenu::PlUp && itemId <= PlayerMenu::PlJump)
+				|| itemId == PlayerMenu::PlDig)
+			{
+				sfx.play(common, 27);
+				bool extended = gfx->settings->extensions;
+				int keyIdx = itemId - PlayerMenu::PlUp;
+
+				gfx->stateStack.push(std::make_unique<WaitForKeyState>(
+					extended,
+					[this, keyIdx](uint32_t k) {
+						auto& ws = *gfx->playerMenu.ws;
+						if (k != DkEscape)
+						{
+							if (!isExtendedKey(k))
+								ws.controls[keyIdx] = k;
+							ws.controlsEx[keyIdx] = k;
+							gfx->playerMenu.updateItems(*gfx->common);
+						}
+					}), gfx);
+			}
+			else if (itemId >= PlayerMenu::PlWeap0 && itemId < PlayerMenu::PlWeap0 + 5)
+			{
+				sfx.play(common, 27);
+				int x, y;
+				auto* item = gfx->playerMenu.itemFromId(itemId);
+				if (item && gfx->playerMenu.itemPosition(*item, x, y))
+				{
+					x += gfx->playerMenu.valueOffsetX + 2;
+					int weapIdx = itemId - PlayerMenu::PlWeap0;
+					gfx->stateStack.push(std::make_unique<InputStringState>(
+						"", 10, x, y, nullptr, "", false,
+						[this, weapIdx](bool accepted, std::string const& result) {
+							if (accepted && !result.empty())
+							{
+								Common& common = *gfx->common;
+								auto& ws = *gfx->playerMenu.ws;
+								uint32_t numWeapons = (uint32_t)common.weapons.size();
+
+								uint32_t best = ws.weapons[weapIdx];
+								double bestDist = std::numeric_limits<double>::max();
+								for (uint32_t i = 1; i <= numWeapons; ++i)
+								{
+									std::string& name = common.weapons[common.weapOrder[i - 1]].name;
+									double dist = levenshtein(name.c_str(), result.c_str())
+										/ (double)name.length();
+									if (dist < bestDist)
+									{
+										best = i;
+										bestDist = dist;
+									}
+								}
+								ws.weapons[weapIdx] = best;
+								gfx->playerMenu.updateItems(common);
+							}
+						}), gfx);
+				}
 			}
 			else
 			{
@@ -234,7 +388,7 @@ bool MainMenuState::update()
 	{
 		gfx->curMenu = &gfx->mainMenu;
 		gfx->mainMenu.moveToId(MainMenu::MaReplays);
-		selected_ = gfx->curMenu->onEnter(common);
+		gfx->stateStack.push(std::make_unique<ReplaySelectorState>(), gfx);
 	}
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_F5))

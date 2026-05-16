@@ -6,6 +6,7 @@
 #include "keys.hpp"
 #include "common.hpp"
 #include "settings.hpp"
+#include "inputState.hpp"
 #include "menu/arrayEnumBehavior.hpp"
 
 struct WeaponMenu : Menu
@@ -112,7 +113,7 @@ bool WeaponMenuState::update()
 			return false;
 		}
 
-		gfx->infoBox(LS(NoWeaps), 223, 68, false);
+		gfx->stateStack.push(std::make_unique<InfoBoxState>(LS(NoWeaps), 223, 68, false), gfx);
 	}
 
 	return true;
