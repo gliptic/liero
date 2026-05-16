@@ -1,7 +1,6 @@
 #include "replayController.hpp"
 
 #include "../game.hpp"
-#include "stats_presenter.hpp"
 #include "../spectatorviewport.hpp"
 #include "../viewport.hpp"
 #include "../sfx.hpp"
@@ -47,7 +46,7 @@ void ReplayController::focus()
 		}
 		catch(std::runtime_error& e)
 		{
-			gfx.infoBox(std::string("Error starting replay playback: ") + e.what());
+			gfx.pendingErrorMessage = std::string("Error starting replay playback: ") + e.what();
 			goingToMenu = true;
 			fadeValue = 0;
 			return;
@@ -87,13 +86,13 @@ bool ReplayController::process()
 				}
 				catch(gvl::stream_error& e)
 				{
-					gfx.infoBox(std::string("Stream error in replay: ") + e.what());
+					gfx.pendingErrorMessage = std::string("Stream error in replay: ") + e.what();
 					changeState(StateGameEnded);
 					replay.reset();
 				}
 				catch(gvl::archive_check_error& e)
 				{
-					gfx.infoBox(std::string("Archive error in replay: ") + e.what());
+					gfx.pendingErrorMessage = std::string("Archive error in replay: ") + e.what();
 					changeState(StateGameEnded);
 					replay.reset();
 				}
@@ -126,7 +125,6 @@ bool ReplayController::process()
 		if (state == StateGameEnded)
 		{
 			game->statsRecorder->finish(*game);
-			presentStats(static_cast<NormalStatsRecorder&>(*game->statsRecorder), *game);
 		}
 		return false;
 	}
@@ -134,7 +132,6 @@ bool ReplayController::process()
 	if (!replay.get() && state == StateGame)
 	{
 		game->statsRecorder->finish(*game);
-		presentStats(static_cast<NormalStatsRecorder&>(*game->statsRecorder), *game);
 		return false;
 	}
 

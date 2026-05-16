@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cassert>
 
+#include "state.hpp"
 #include "gfx/font.hpp"
 #include "gfx/blit.hpp"
 #include "gfx/color.hpp"
@@ -181,8 +182,6 @@ struct Gfx
 			dosKeys[k] = false;
 	}
 
-	SDL_Scancode waitForKey();
-	uint32_t waitForKeyEx();
 	std::string getKeyName(uint32_t key);
 	void setSpectatorFullscreen(bool newFullscreen);
 	void setFullscreen(bool newFullscreen);
@@ -194,22 +193,24 @@ struct Gfx
 
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 
-	int menuLoop();
 	void mainLoop();
+
+	// Initialize the state stack.
+	// Call once before calling runOneFrame() in a loop.
+	void initFrameStepping();
+
+	// Advance the application by one frame. Returns false when the
+	// application should exit (quit selected or TC change requested).
+	// After a TC change, call initFrameStepping() again.
+	bool runOneFrame();
+
+	// True if a TC change was requested (caller should reload and re-init)
+	bool tcChangeRequested() const { return tcChangeRequested_; }
+
 	void drawBasicMenu(/*int curSel*/);
 	void drawSpectatorInfo();
 	void playerSettings(int player);
 	void openHiddenMenu();
-
-	bool inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int) = 0, std::string const& prefix = "", bool centered = true);
-	void inputInteger(int& dest, int min, int max, std::size_t maxLen, int x, int y);
-	void selectLevel();
-	int  selectReplay();
-	void selectProfile(WormSettings& ws);
-	std::unique_ptr<Common> selectTc();
-	void selectOptions();
-	void weaponOptions();
-	void infoBox(std::string const& text, int x = 320/2, int y = 200/2, bool clearScreen = true);
 
 	static void preparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette, Color realPal[256], uint32_t (&pal32)[256]);
 
@@ -289,12 +290,24 @@ struct Gfx
 	std::shared_ptr<Common> common;
 	std::unique_ptr<Controller> controller;
 
+	StateStack stateStack;
+
+	// Used by sub-states to communicate a menu selection back to MainMenuState
+	int pendingMenuSelection = -1;
+
+	// Error message to display after GamePlayState pops (set by controllers)
+	std::string pendingErrorMessage;
+
 	std::vector<Joystick> joysticks;
 
 	SDL_Scancode keyBuf[32], *keyBufPtr;
 
 	std::vector<std::pair<int, int>> debugPoints;
 	std::string debugInfo;
+
+private:
+	struct MainMenuState* menuStatePtr_ = nullptr;
+	bool tcChangeRequested_ = false;
 };
 
 extern Gfx gfx;

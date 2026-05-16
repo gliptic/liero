@@ -127,7 +127,7 @@ struct ChildSort
 	}
 };
 
-void FileNode::fill()
+inline void FileNode::fill()
 {
 	assert(fsNode);
 	DirectoryListing di(fsNode.iter());

@@ -106,13 +106,18 @@ set(GAME_SOURCES ${SOURCES}
   src/game/gfx.cpp
   src/game/keys.cpp
   src/game/gameEntry.cpp
+  src/game/mainMenuState.cpp
+  src/game/fileSelectorState.cpp
+  src/game/weaponMenuState.cpp
+  src/game/inputState.cpp
+  src/game/gamePlayState.cpp
   src/game/replay.cpp
   src/game/sfx.cpp
   src/game/weapsel.cpp
   src/game/controller/commonController.cpp
   src/game/controller/localController.cpp
   src/game/controller/replayController.cpp
-  src/game/controller/stats_presenter.cpp
+  src/game/statsState.cpp
   src/game/menu/booleanSwitchBehavior.cpp
   src/game/menu/enumBehavior.cpp
   src/game/menu/hiddenMenu.cpp

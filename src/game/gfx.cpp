@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <cstdio>
 #include <memory>
-#include <limits>
 #include <random>
 
 #include "gfx.hpp"
@@ -27,10 +26,12 @@
 #include "controller/localController.hpp"
 #include "controller/controller.hpp"
 
+#include "mainMenuState.hpp"
+#include "gamePlayState.hpp"
+
 #include "gfx/macros.hpp"
 
 #include "menu/arrayEnumBehavior.hpp"
-#include "menu/fileSelector.hpp"
 
 Gfx gfx;
 
@@ -42,31 +43,6 @@ struct KeyBehavior : ItemBehavior
 	, keyEx(keyEx)
 	, extended(extended)
 	{
-	}
-
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		sfx.play(common, 27);
-		uint32_t k;
-		bool isEx;
-		do
-		{
-			k = gfx.waitForKeyEx();
-			isEx = isExtendedKey(k);
-		}
-		while(!extended && isEx);
-
-		if(k != DkEscape)
-		{
-			if(!isEx)
-				key = k;
-			keyEx = k;
-
-			onUpdate(menu, item);
-		}
-
-		gfx.clearKeys();
-		return -1;
 	}
 
 	void onUpdate(Menu& menu, MenuItem& item)
@@ -87,29 +63,6 @@ struct WormNameBehavior : ItemBehavior
 	: common(common)
 	, ws(ws)
 	{
-	}
-
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		sfx.play(common, 27);
-
-		ws.randomName = false;
-
-		int x, y;
-		if(!menu.itemPosition(item, x, y))
-			return -1;
-
-		x += menu.valueOffsetX + 2;
-
-		gfx.inputString(ws.name, 20, x, y);
-
-		if(ws.name.empty())
-		{
-			Settings::generateName(ws, gfx.rand);
-		}
-		sfx.play(common, 27);
-		onUpdate(menu, item);
-		return -1;
 	}
 
 	void onUpdate(Menu& menu, MenuItem& item)
@@ -136,25 +89,9 @@ struct ProfileSaveBehavior : ItemBehavior
 	{
 		sfx.play(common, 27);
 
-		int x, y;
-		if(!menu.itemPosition(item, x, y))
-			return -1;
-
-		x += menu.valueOffsetX + 2;
-
-		if(saveAs)
-		{
-			std::string name;
-			if(gfx.inputString(name, 30, x, y) && !name.empty())
-			{
-				//ws.saveProfile(joinPath(joinPath(configRoot, "Profiles"), name));
-				ws.saveProfile(gfx.getConfigNode() / "Profiles" / (name + ".lpf"));
-			}
-
-			sfx.play(common, 27);
-		}
-		else
+		if(!saveAs)
 			ws.saveProfile(ws.profileNode);
+		// saveAs path is intercepted by MainMenuState
 
 		menu.updateItems(common);
 		return -1;
@@ -201,29 +138,6 @@ struct ProfileLoadedBehavior : ItemBehavior
 	WormSettings& ws;
 };
 
-#define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
-
-int levenshtein(char const *s1, char const *s2) {
-    std::size_t x, y, s1len, s2len;
-    s1len = strlen(s1);
-    s2len = strlen(s2);
-	std::size_t w = s1len+1;
-	std::vector<unsigned> matrix(w * (s2len + 1));
-    matrix[0] = 0;
-    for (x = 1; x <= s2len; x++)
-        matrix[x*w] = matrix[(x-1)*w] + 1;
-    for (y = 1; y <= s1len; y++)
-        matrix[y] = matrix[y-1] + 1;
-    for (x = 1; x <= s2len; x++)
-        for (y = 1; y <= s1len; y++)
-		{
-			int c = std::tolower(s1[y-1]) == std::tolower(s2[x-1]) ? 0 : 1;
-            matrix[x*w + y] = MIN3(matrix[(x-1)*w + y] + 1, matrix[x*w + y - 1] + 1, matrix[(x-1)*w + y - 1] + c);
-		}
-
-    return(matrix[s2len*w + s1len]);
-}
-
 struct WeaponEnumBehavior : EnumBehavior
 {
 	WeaponEnumBehavior(Common& common, uint32_t& v)
@@ -235,40 +149,6 @@ struct WeaponEnumBehavior : EnumBehavior
 	{
 		item.value = common.weapons[common.weapOrder[v - 1]].name;
 		item.hasValue = true;
-	}
-
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		sfx.play(common, 27);
-
-		int x, y;
-		if(!menu.itemPosition(item, x, y))
-			return -1;
-
-		x += menu.valueOffsetX + 2;
-
-		std::string search;
-		if (gfx.inputString(search, 10, x, y))
-		{
-			uint32_t minimumi;
-			double minimum = std::numeric_limits<double>::max();
-			for (uint32_t i = min; i <= max; ++i)
-			{
-				std::string& name = common.weapons[common.weapOrder[i - 1]].name;
-
-				double dist = levenshtein(name.c_str(), search.c_str()) / (double)name.length();
-				if (dist < minimum)
-				{
-					minimumi = i;
-					minimum = dist;
-				}
-			}
-
-			v = minimumi;
-			menu.updateItems(common);
-		}
-
-		return -1;
 	}
 };
 
@@ -509,8 +389,8 @@ void Gfx::loadMenus()
 	settingsMenu.addItem(MenuItem(48, 7, "SAVE SETUP AS...", SettingsMenu::SaveOptions));
 	settingsMenu.addItem(MenuItem(48, 7, "LOAD SETUP", SettingsMenu::LoadOptions));
 
-	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaResumeGame)); // string set in menuLoop
-	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaNewGame)); // string set in menuLoop
+	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaResumeGame)); // string set in MainMenuState::enter()
+	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaNewGame)); // string set in MainMenuState::enter()
 	mainMenu.addItem(MenuItem(48, 48, "OPTIONS (F2)", MainMenu::MaAdvanced));
 	mainMenu.addItem(MenuItem(48, 48, "REPLAYS (F3)", MainMenu::MaReplays));
 	mainMenu.addItem(MenuItem(48, 48, "TC", MainMenu::MaTc));
@@ -725,59 +605,6 @@ void Gfx::process(Controller* controller)
 	}
 }
 
-SDL_Scancode Gfx::waitForKey()
-{
-	SDL_Event ev;
-	while(SDL_WaitEvent(&ev))
-	{
-		processEvent(ev);
-		if(ev.type == SDL_EVENT_KEY_DOWN)
-		{
-			return ev.key.scancode;
-		}
-	}
-
-	return SDL_SCANCODE_UNKNOWN; // Dummy
-}
-
-uint32_t Gfx::waitForKeyEx()
-{
-	SDL_Event ev;
-	while(SDL_WaitEvent(&ev))
-	{
-		processEvent(ev);
-		switch (ev.type)
-		{
-		case SDL_EVENT_KEY_DOWN:
-			return SDLToDOSKey(ev.key.scancode);
-
-		case SDL_EVENT_JOYSTICK_AXIS_MOTION:
-			if(ev.jaxis.value > JoyAxisThreshold)
-				return joyButtonToExKey( ev.jaxis.which, 4 + 2 * ev.jaxis.axis );
-			else if ( ev.jaxis.value < -JoyAxisThreshold )
-				return joyButtonToExKey( ev.jaxis.which, 5 + 2 * ev.jaxis.axis );
-
-			break;
-		case SDL_EVENT_JOYSTICK_HAT_MOTION:
-			if(ev.jhat.value & SDL_HAT_UP)
-				return joyButtonToExKey(ev.jhat.which, 0);
-			else if(ev.jhat.value & SDL_HAT_DOWN)
-				return joyButtonToExKey(ev.jhat.which, 1);
-			else if (ev.jhat.value & SDL_HAT_LEFT)
-				return joyButtonToExKey(ev.jhat.which, 2);
-			else if (ev.jhat.value & SDL_HAT_RIGHT)
-				return joyButtonToExKey(ev.jhat.which, 3);
-
-			break;
-		case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-			return joyButtonToExKey(ev.jbutton.which, 16 + ev.jbutton.button);
-		default:
-			break;
-		}
-	}
-
-	return 0; // Dummy
-}
 
 std::string Gfx::getKeyName(uint32_t key)
 {
@@ -935,54 +762,17 @@ struct ProfileLoadBehavior : ItemBehavior
 	{
 	}
 
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		sfx.play(common, 27);
-		gfx.selectProfile(ws);
-		sfx.play(common, 27);
-		menu.updateItems(common);
-		return -1;
-	}
-
 	Common& common;
 	WormSettings& ws;
 };
 
 
 
-struct PlayerSettingsBehavior : ItemBehavior
-{
-	PlayerSettingsBehavior(Common& common, int player)
-	: common(common)
-	, player(player)
-	{
-	}
-
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		sfx.play(common, 27);
-		gfx.playerSettings(player);
-		return -1;
-	}
-
-	Common& common;
-	int player;
-};
-
 struct LevelSelectBehavior : ItemBehavior
 {
 	LevelSelectBehavior(Common& common)
 	: common(common)
 	{
-	}
-
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		sfx.play(common, 27);
-		gfx.selectLevel();
-		sfx.play(common, 27);
-		onUpdate(menu, item);
-		return -1;
 	}
 
 	void onUpdate(Menu& menu, MenuItem& item)
@@ -1010,14 +800,6 @@ struct WeaponOptionsBehavior : ItemBehavior
 	{
 	}
 
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		sfx.play(common, 27);
-		gfx.weaponOptions();
-		sfx.play(common, 27);
-		return -1;
-	}
-
 	Common& common;
 };
 
@@ -1026,29 +808,6 @@ struct OptionsSaveBehavior : ItemBehavior
 	OptionsSaveBehavior(Common& common)
 	: common(common)
 	{
-	}
-
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		sfx.play(common, 27);
-
-		int x, y;
-		if(!menu.itemPosition(item, x, y))
-			return -1;
-
-		x += menu.valueOffsetX + 2;
-
-		std::string name = getBasename(getLeaf(gfx.settingsNode.fullPath()));
-		if(gfx.inputString(name, 30, x, y) && !name.empty())
-		{
-			//gfx.saveSettings(joinPath(configRoot, name + ".cfg"));
-			gfx.saveSettings(gfx.getConfigNode() / "Setups" / (name + ".cfg"));
-		}
-
-		sfx.play(common, 27);
-
-		onUpdate(menu, item);
-		return -1;
 	}
 
 	void onUpdate(Menu& menu, MenuItem& item)
@@ -1065,15 +824,6 @@ struct OptionsSelectBehavior : ItemBehavior
 	OptionsSelectBehavior(Common& common)
 	: common(common)
 	{
-	}
-
-	int onEnter(Menu& menu, MenuItem& item)
-	{
-		sfx.play(common, 27);
-		gfx.selectOptions();
-		sfx.play(common, 27);
-		menu.updateItems(common);
-		return -1;
 	}
 
 	Common& common;
@@ -1156,554 +906,7 @@ void SettingsMenu::onUpdate()
 
 using std::string;
 using std::vector;
-using std::pair;
-using std::shared_ptr;
 
-void Gfx::selectLevel()
-{
-	Common& common = *this->common;
-	FileSelector levSel(common);
-
-	shared_ptr<FileNode> random(new FileNode(
-		LS(Random), "", "", false, &levSel.rootNode));
-
-	{
-		levSel.fill(getConfigNode(), [](string const& name, string const& ext) { return ciCompare(ext, "LEV"); });
-
-		random->id = 1;
-		levSel.rootNode.children.insert(levSel.rootNode.children.begin(), random);
-		levSel.setFolder(levSel.rootNode);
-		levSel.select(settings->levelFile);
-	}
-
-	FileNode* previewNode = 0;
-
-	do
-	{
-		playRenderer.bmp.copy(frozenScreen);
-
-		string title = LS(SelLevel);
-		if (!levSel.currentNode->fullPath.empty())
-		{
-			title += ' ';
-			title += levSel.currentNode->fullPath;
-		}
-
-		int wid = common.font.getDims(title);
-
-		drawRoundedBox(playRenderer.bmp, 178, 20, 0, 7, wid);
-		common.font.drawText(playRenderer.bmp, title, 180, 21, 50);
-
-		FileNode* sel = levSel.curSel();
-		if (previewNode != sel && sel && sel != random.get() && !sel->folder)
-		{
-			Level level(common);
-
-			ReaderFile f;
-
-			try
-			{
-				if (level.load(common, *settings, sel->getFsNode().toOctetReader()))
-				{
-					int centerX = singleScreenRenderer.renderResX / 2;
-
-					level.drawMiniature(frozenScreen, 134, 162, 10);
-					level.drawMiniature(frozenSpectatorScreen, centerX - 126, singleScreenRenderer.renderResY - 208, 2);
-				}
-			}
-			catch (std::runtime_error&)
-			{
-				// Ignore
-			}
-
-			previewNode = sel;
-		}
-
-		levSel.draw();
-
-		if (!levSel.process())
-			break;
-
-		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
-		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
-		{
-			sfx.play(common, 27);
-
-			auto* sel = levSel.enter();
-
-			if (sel)
-			{
-				if (sel == random.get())
-				{
-					settings->randomLevel = true;
-					settings->levelFile.clear();
-				}
-				else
-				{
-					settings->randomLevel = false;
-					settings->levelFile = sel->fullPath;
-				}
-				break;
-			}
-		}
-
-		menuFlip();
-		process();
-	}
-	while(true);
-}
-
-void Gfx::selectProfile(WormSettings& ws)
-{
-	FileSelector profileSel(*common, 28);
-
-	{
-		profileSel.fill(getConfigNode(), [](string const& name, string const& ext) { return ciCompare(ext, "LPF"); });
-
-		profileSel.setFolder(profileSel.rootNode);
-		profileSel.select(joinPath(getConfigNode().fullPath(), "Profiles"));
-	}
-
-	do
-	{
-		playRenderer.bmp.copy(frozenScreen);
-
-		string title = "Select profile:";
-		if (!profileSel.currentNode->fullPath.empty())
-		{
-			title += ' ';
-			title += profileSel.currentNode->fullPath;
-		}
-
-		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
-
-		profileSel.draw();
-
-		if (!profileSel.process())
-			break;
-
-		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
-		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
-		{
-			auto* sel = profileSel.enter();
-
-			if (sel)
-			{
-				ws.loadProfile(sel->getFsNode());
-				return;
-			}
-		}
-
-		menuFlip();
-		process();
-	}
-	while(true);
-
-	return;
-}
-
-int Gfx::selectReplay()
-{
-	FileSelector replaySel(*common, 28);
-
-	{
-		replaySel.fill(getConfigNode(), [](string const& name, string const& ext) { return ciCompare(ext, "LRP"); });
-
-		replaySel.setFolder(replaySel.rootNode);
-		if (prevSelectedReplayPath.empty()
-		  || !replaySel.select(prevSelectedReplayPath))
-		{
-			replaySel.select(joinPath(getConfigNode().fullPath(), "Replays"));
-		}
-	}
-
-	do
-	{
-		playRenderer.bmp.copy(frozenScreen);
-
-		string title = "Select replay:";
-		if (!replaySel.currentNode->fullPath.empty())
-		{
-			title += ' ';
-			title += replaySel.currentNode->fullPath;
-		}
-
-		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
-
-		replaySel.draw();
-
-		if (!replaySel.process())
-			break;
-
-		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
-		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
-		{
-			auto* sel = replaySel.enter();
-
-			if (sel)
-			{
-				prevSelectedReplayPath = sel->fullPath;
-
-				// Reset controller before opening the replay, since we may be recording it
-				controller.reset();
-
-				controller.reset(new ReplayController(common, sel->getFsNode().toSource()));
-
-				return MainMenu::MaReplay;
-			}
-		}
-		menuFlip();
-		process();
-	}
-	while(true);
-
-	return -1;
-}
-
-void Gfx::selectOptions()
-{
-	FileSelector optionsSel(*common, 28);
-
-	{
-		optionsSel.fill(getConfigNode(), [](string const& name, string const& ext) {
-			return ciCompare(ext, "CFG");
-		});
-
-		optionsSel.setFolder(optionsSel.rootNode);
-		optionsSel.select(joinPath(getConfigNode().fullPath(), "Setups"));
-	}
-
-	do
-	{
-		playRenderer.bmp.copy(frozenScreen);
-
-		string title = "Select options:";
-		if (!optionsSel.currentNode->fullPath.empty())
-		{
-			title += ' ';
-			title += optionsSel.currentNode->fullPath;
-		}
-
-		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
-
-		optionsSel.draw();
-
-		if (!optionsSel.process())
-			break;
-
-		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
-		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
-		{
-			auto* sel = optionsSel.enter();
-
-			if (sel)
-			{
-				gfx.loadSettings(sel->getFsNode());
-				return;
-			}
-		}
-		menuFlip();
-		process();
-	}
-	while(true);
-}
-
-std::unique_ptr<Common> Gfx::selectTc()
-{
-	FileSelector tcSel(*common, 28);
-
-	{
-		tcSel.fill(getConfigNode() / "TC", 0);
-
-		tcSel.setFolder(tcSel.rootNode);
-
-		auto end = std::remove_if(tcSel.rootNode.children.begin(), tcSel.rootNode.children.end(), [](shared_ptr<FileNode> const& n) {
-			auto tc = n->getFsNode() / "tc.cfg";
-			return !tc.exists();
-		});
-
-		tcSel.rootNode.children.erase(end, tcSel.rootNode.children.end());
-
-		for (auto& c : tcSel.rootNode.children)
-		{
-			c->folder = false;
-		}
-	}
-
-	do
-	{
-		playRenderer.bmp.copy(frozenScreen);
-
-		string title = "Select TC:";
-		if (!tcSel.currentNode->fullPath.empty())
-		{
-			title += ' ';
-			title += tcSel.currentNode->fullPath;
-		}
-
-		common->font.drawFramedText(playRenderer.bmp, title, 178, 20, 50);
-
-		tcSel.draw();
-
-		if (!tcSel.process())
-			break;
-
-		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
-		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
-		{
-			auto* sel = tcSel.enter();
-
-			if (sel)
-			{
-				gvl::unique_ptr<Common> common(new Common());
-				common->load(sel->getFsNode());
-				settings->tc = sel->name;
-				return common;
-			}
-		}
-		menuFlip();
-		process();
-	}
-	while(true);
-
-	return std::unique_ptr<Common>();
-}
-
-struct WeaponMenu : Menu
-{
-	WeaponMenu(int x, int y)
-	: Menu(x, y)
-	{
-	}
-
-	ItemBehavior* getItemBehavior(Common& common, MenuItem& item)
-	{
-		int index = common.weapOrder[item.id];
-		return new ArrayEnumBehavior(common, gfx.settings->weapTable[index], common.texts.weapStates);
-	}
-};
-
-void Gfx::weaponOptions()
-{
-	Common& common = *this->common;
-	WeaponMenu weaponMenu(179, 28);
-
-	weaponMenu.setHeight(14);
-	weaponMenu.valueOffsetX = 89;
-
-	for(int i = 0; i < (int)common.weapons.size(); ++i)
-	{
-		int index = common.weapOrder[i];
-		weaponMenu.addItem(MenuItem(48, 7, common.weapons[index].name, i));
-	}
-
-	weaponMenu.moveToFirstVisible();
-	weaponMenu.updateItems(common);
-
-	while(true)
-	{
-		playRenderer.bmp.copy(frozenScreen);
-
-		drawBasicMenu();
-
-		drawRoundedBox(playRenderer.bmp, 179, 20, 0, 7, common.font.getDims(LS(Weapon)));
-		drawRoundedBox(playRenderer.bmp, 249, 20, 0, 7, common.font.getDims(LS(Availability)));
-
-		common.font.drawText(playRenderer.bmp, LS(Weapon), 181, 21, 50);
-		common.font.drawText(playRenderer.bmp, LS(Availability), 251, 21, 50);
-
-		weaponMenu.draw(common, playRenderer, false);
-
-		if(testSDLKeyOnce(SDL_SCANCODE_UP))
-		{
-			sfx.play(common, 26);
-			weaponMenu.movement(-1);
-		}
-
-		if(testSDLKeyOnce(SDL_SCANCODE_DOWN))
-		{
-			sfx.play(common, 25);
-			weaponMenu.movement(1);
-		}
-
-		if(testSDLKeyOnce(SDL_SCANCODE_LEFT))
-		{
-			weaponMenu.onLeftRight(common, -1);
-		}
-		if(testSDLKeyOnce(SDL_SCANCODE_RIGHT))
-		{
-			weaponMenu.onLeftRight(common, 1);
-		}
-
-		if(settings->extensions)
-		{
-			if(testSDLKeyOnce(SDL_SCANCODE_PAGEUP))
-			{
-				sfx.play(common, 26);
-
-				weaponMenu.movementPage(-1);
-			}
-
-			if(testSDLKeyOnce(SDL_SCANCODE_PAGEDOWN))
-			{
-				sfx.play(common, 25);
-
-				weaponMenu.movementPage(1);
-			}
-		}
-
-		weaponMenu.onKeys(gfx.keyBuf, gfx.keyBufPtr);
-
-		menuFlip();
-		process();
-
-		if(testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
-		{
-			int count = 0;
-
-			for(int i = 0; i < 40; ++i)
-			{
-				if(settings->weapTable[i] == 0)
-					++count;
-			}
-
-			if(count > 0)
-				break; // Enough weapons available
-
-			infoBox(LS(NoWeaps), 223, 68, false);
-		}
-	}
-}
-
-void Gfx::infoBox(std::string const& text, int x, int y, bool clearScreen)
-{
-	static int const bgColor = 0;
-
-	if(clearScreen)
-	{
-		playRenderer.pal = common->exepal;
-		fill(playRenderer.bmp, bgColor);
-	}
-
-	int height;
-	int width = common->font.getDims(text, &height);
-
-	int cx = x - width/2 - 2;
-	int cy = y - height/2 - 2;
-
-	drawRoundedBox(playRenderer.bmp, cx, cy, 0, height+1, width+1);
-	common->font.drawText(playRenderer.bmp, text, cx+2, cy+2, 6);
-
-	flip();
-	process();
-
-	waitForKey();
-	clearKeys();
-
-	if(clearScreen)
-		fill(playRenderer.bmp, bgColor);
-}
-
-bool Gfx::inputString(std::string& dest, std::size_t maxLen, int x, int y, int (*filter)(int), std::string const& prefix, bool centered)
-{
-	std::string buffer = dest;
-
-	while(true)
-	{
-		std::string str = prefix + buffer + '_';
-
-		Font& font = common->font;
-
-		int width = font.getDims(str);
-
-		int adjust = centered ? width/2 : 0;
-
-		int clrX = x - 10 - adjust;
-
-		SDL_Event ev;
-
-		//int offset = clrX + y*320; // TODO: Unhardcode 320
-
-		blitImageNoKeyColour(playRenderer.bmp, &frozenScreen.getPixel(clrX, y), clrX, y, clrX + 10 + width, 8, frozenScreen.pitch);
-
-		drawRoundedBox(playRenderer.bmp, x - 2 - adjust, y, 0, 7, width);
-
-		font.drawText(playRenderer.bmp, str, x - adjust, y + 1, 50);
-		flip();
-
-		SDL_StartTextInput(sdlWindow);
-		SDL_WaitEvent(&ev);
-		processEvent(ev);
-
-		switch (ev.type)
-		{
-			case SDL_EVENT_KEY_DOWN:
-				switch (ev.key.scancode)
-				{
-					case SDL_SCANCODE_BACKSPACE:
-						if(!buffer.empty())
-						{
-							buffer.erase(buffer.size() - 1);
-						}
-						break;
-
-					case SDL_SCANCODE_RETURN:
-					case SDL_SCANCODE_KP_ENTER:
-						dest = buffer;
-						sfx.play(*common, 27);
-						clearKeys();
-						return true;
-
-					case SDL_SCANCODE_ESCAPE:
-						clearKeys();
-						return false;
-
-					default:
-						break;
-				}
-				break;
-
-			case SDL_EVENT_TEXT_INPUT:
-			{
-				int k = utf8ToDOS(ev.text.text);
-				if (k && buffer.size() < maxLen &&
-					(!filter || (k = filter(k))))
-				{
-					buffer += char(k);
-				}
-				break;
-			}
-			case SDL_EVENT_TEXT_EDITING:
-				// since there's no support for any characters that can use a
-				// complex IME input (like East Asian languages), we naively
-				// discard this event
-				break;
-
-			default:
-				break;
-        }
-	}
-}
-
-int filterDigits(int k)
-{
-	return std::isdigit(k) ? k : 0;
-}
-
-void Gfx::inputInteger(int& dest, int min, int max, std::size_t maxLen, int x, int y)
-{
-	std::string str(toString(dest));
-
-	if(inputString(str, maxLen, x, y, filterDigits)
-	&& !str.empty())
-	{
-		dest = std::atoi(str.c_str());
-		if(dest < min)
-			dest = min;
-		else if(dest > max)
-			dest = max;
-	}
-}
 
 void PlayerMenu::drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected, bool disabled)
 {
@@ -1793,9 +996,10 @@ void Gfx::playerSettings(int player)
 	return;
 }
 
-void Gfx::mainLoop()
+void Gfx::initFrameStepping()
 {
-restart:
+	tcChangeRequested_ = false;
+
 	controller.reset(new LocalController(common, settings));
 
 	{
@@ -1807,88 +1011,137 @@ restart:
 	controller->currentGame()->focus(this->playRenderer);
 	controller->currentGame()->focus(this->singleScreenRenderer);
 
-	// TODO: Unfocus game when necessary
+	// Draw the initial game state so the menu has a proper background
+	playRenderer.clear();
+	controller->draw(this->playRenderer, false);
+	singleScreenRenderer.clear();
+	controller->draw(this->singleScreenRenderer, true);
 
-	while(true)
+	// Push the initial menu state
+	auto menuState = std::make_unique<MainMenuState>();
+	menuStatePtr_ = menuState.get();
+	stateStack.push(std::move(menuState), this);
+}
+
+bool Gfx::runOneFrame()
+{
+	if (stateStack.empty())
+		return false;
+
+	// Poll events
+	SDL_Event ev;
+	keyBufPtr = keyBuf;
+	while (SDL_PollEvent(&ev))
+		stateStack.handleEvent(ev);
+
+	// Capture menu selection before update() might pop and destroy the state
+	int menuSelection = menuStatePtr_ ? menuStatePtr_->selection() : -1;
+	bool menuFadingOut = menuStatePtr_ && menuStatePtr_->isFadingOut();
+
+	if (!stateStack.update())
 	{
-		playRenderer.clear();
-		controller->draw(this->playRenderer, false);
-
-		singleScreenRenderer.clear();
-		controller->draw(this->singleScreenRenderer, true);
-
-
-		int selection = menuLoop();
-
-		if(selection == MainMenu::MaNewGame)
+		// Top state popped. Determine what to do next.
+		if (menuSelection >= 0)
 		{
-			std::unique_ptr<Controller> newController(new LocalController(common, settings));
+			menuStatePtr_ = nullptr;
 
-			Level* oldLevel = controller->currentLevel();
+			if (menuSelection == MainMenu::MaQuit)
+				return false;
 
-			if(oldLevel
-			&& !settings->regenerateLevel
-			&& settings->randomLevel == oldLevel->oldRandomLevel
-			&& settings->levelFile == oldLevel->oldLevelFile)
+			if (menuSelection == MainMenu::MaTc)
 			{
-				// Take level and palette from old game
-				newController->swapLevel(*oldLevel);
-			}
-			else
-			{
-				Level newLevel(*common);
-				newLevel.generateFromSettings(*common, *settings, rand);
-				newController->swapLevel(newLevel);
+				tcChangeRequested_ = true;
+				controller.reset();
+				return false;
 			}
 
-			controller = std::move(newController);
-		}
-		else if(selection == MainMenu::MaResumeGame)
-		{
-			if (controller->isReplay())
+			// Handle new game / resume / replay selection
+			if (menuSelection == MainMenu::MaNewGame)
 			{
-				primaryRenderer = &singleScreenRenderer;
+				std::unique_ptr<Controller> newController(new LocalController(common, settings));
+				Level* oldLevel = controller->currentLevel();
+
+				if (oldLevel
+					&& !settings->regenerateLevel
+					&& settings->randomLevel == oldLevel->oldRandomLevel
+					&& settings->levelFile == oldLevel->oldLevelFile)
+				{
+					newController->swapLevel(*oldLevel);
+				}
+				else
+				{
+					Level newLevel(*common);
+					newLevel.generateFromSettings(*common, *settings, rand);
+					newController->swapLevel(newLevel);
+				}
+				controller = std::move(newController);
 			}
-		}
-		else if(selection == MainMenu::MaQuit) // QUIT TO OS
-		{
-			break;
-		}
-		else if(selection == MainMenu::MaReplay)
-		{
-			if (settings->singleScreenReplay)
+			else if (menuSelection == MainMenu::MaResumeGame)
 			{
-				primaryRenderer = &singleScreenRenderer;
+				if (controller->isReplay())
+					primaryRenderer = &singleScreenRenderer;
 			}
-		}
-		else if (selection == MainMenu::MaTc)
-		{
-			goto restart;
-		}
+			else if (menuSelection == MainMenu::MaReplay)
+			{
+				if (settings->singleScreenReplay)
+					primaryRenderer = &singleScreenRenderer;
+			}
 
-		controller->focus();
-
-		while(true)
+			// Push game state
+			stateStack.push(std::make_unique<GamePlayState>(), this);
+		}
+		else
 		{
-			if(!controller->process())
-				break;
+			// Game state finished — go back to menu
+			primaryRenderer = &playRenderer;
+			controller->unfocus();
+			clearKeys();
+
+			// Draw one frame so the menu background captures the final game state
 			playRenderer.clear();
 			controller->draw(this->playRenderer, false);
-
 			singleScreenRenderer.clear();
 			controller->draw(this->singleScreenRenderer, true);
 
-			++gfx.menuCycles;
+			auto newMenu = std::make_unique<MainMenuState>();
+			menuStatePtr_ = newMenu.get();
+			stateStack.push(std::move(newMenu), this);
+		}
+		return true;
+	}
 
-			flip();
-			process(controller.get());
+	stateStack.draw();
+
+	// Flip: game states use plain flip(), menu states use menuFlip()
+	auto* top = stateStack.top();
+	if (top && !top->wantsMenuFlip())
+	{
+		++menuCycles;
+		flip();
+	}
+	else
+	{
+		menuFlip(menuFadingOut);
+	}
+
+	return true;
+}
+
+void Gfx::mainLoop()
+{
+	initFrameStepping();
+
+	while (true)
+	{
+		while (runOneFrame())
+		{
 		}
 
-		primaryRenderer = &playRenderer;
+		if (!tcChangeRequested())
+			break;
 
-		controller->unfocus();
-
-		clearKeys();
+		// TC was changed (common reloaded by TcSelectorState) — reinitialize
+		initFrameStepping();
 	}
 
 	controller.reset();
@@ -1975,333 +1228,4 @@ void Gfx::openHiddenMenu()
 	curMenu = &hiddenMenu;
 	curMenu->updateItems(*common);
 	curMenu->moveToFirstVisible();
-}
-
-int Gfx::menuLoop()
-{
-	Common& common = *this->common;
-	int centerX = singleScreenRenderer.renderResX / 2;
-
-	std::memset(playRenderer.pal.entries, 0, sizeof(playRenderer.pal.entries));
-	std::memset(singleScreenRenderer.pal.entries, 0, sizeof(singleScreenRenderer.pal.entries));
-	flip();
-	process();
-
-	fillRect(playRenderer.bmp, 0, 151, 160, 7, 0);
-	common.font.drawText(playRenderer.bmp, LS(Copyright2), 2, 152, 19);
-
-	int startItemId;
-	if (controller->running())
-	{
-		mainMenu.setVisibility(MainMenu::MaResumeGame, true);
-		mainMenu.itemFromId(MainMenu::MaResumeGame)->string = "RESUME GAME (F1)";
-		mainMenu.itemFromId(MainMenu::MaNewGame)->string = "NEW GAME";
-		startItemId = MainMenu::MaResumeGame;
-	}
-	else
-	{
-		mainMenu.setVisibility(MainMenu::MaResumeGame, false);
-		mainMenu.itemFromId(MainMenu::MaNewGame)->string = "NEW GAME (F1)";
-		startItemId = MainMenu::MaNewGame;
-	}
-
-	mainMenu.moveToFirstVisible();
-	settingsMenu.moveToFirstVisible();
-	settingsMenu.updateItems(common);
-
-	playRenderer.fadeValue = 0;
-	singleScreenRenderer.fadeValue = 0;
-	curMenu = &mainMenu;
-
-	frozenScreen.copy(playRenderer.bmp);
-	singleScreenRenderer.clear();
-	if (controller->currentLevel())
-	{
-		controller->currentLevel()->drawMiniature(singleScreenRenderer.bmp, centerX - 126, singleScreenRenderer.renderResY - 208, 2);
-	}
-	frozenSpectatorScreen.copy(singleScreenRenderer.bmp);
-
-	menuCycles = 0;
-	int selected = -1;
-	do
-	{
-		drawBasicMenu();
-		drawSpectatorInfo();
-
-		if(curMenu == &mainMenu)
-			settingsMenu.draw(common, playRenderer, true);
-		else
-			curMenu->draw(common, playRenderer, false);
-
-		if(testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
-		{
-			if(curMenu == &mainMenu)
-				mainMenu.moveToId(MainMenu::MaQuit);
-			else
-				curMenu = &mainMenu;
-		}
-
-		if(testSDLKeyOnce(SDL_SCANCODE_UP))
-		{
-			sfx.play(common, 26);
-			curMenu->movement(-1);
-		}
-
-		if(testSDLKeyOnce(SDL_SCANCODE_DOWN))
-		{
-			sfx.play(common, 25);
-			curMenu->movement(1);
-		}
-
-		if(testSDLKeyOnce(SDL_SCANCODE_RETURN)
-		|| testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
-		{
-			if(curMenu == &mainMenu)
-			{
-				sfx.play(common, 27);
-
-				int s = mainMenu.selectedId();
-				switch (s)
-				{
-					case MainMenu::MaSettings:
-					{
-						curMenu = &settingsMenu; // Go into settings menu
-						break;
-					}
-
-					case MainMenu::MaPlayer1Settings:
-					case MainMenu::MaPlayer2Settings:
-					{
-						playerSettings(s - MainMenu::MaPlayer1Settings);
-						break;
-					}
-
-					case MainMenu::MaAdvanced:
-					{
-						openHiddenMenu();
-						break;
-					}
-
-					case MainMenu::MaReplays:
-					{
-						selected = curMenu->onEnter(common);
-						break;
-					}
-
-					case MainMenu::MaTc:
-					{
-						if (curMenu->onEnter(common) == MainMenu::MaTc)
-							return MainMenu::MaTc;
-						break;
-					}
-
-					default:
-					{
-						curMenu = &mainMenu;
-						selected = s;
-					}
-				}
-			}
-			else if(curMenu == &settingsMenu)
-			{
-				settingsMenu.onEnter(common);
-			}
-			else
-			{
-				selected = curMenu->onEnter(common);
-			}
-		}
-
-		if(testSDLKeyOnce(SDL_SCANCODE_F1))
-		{
-			curMenu = &mainMenu;
-			mainMenu.moveToId(startItemId);
-			selected = startItemId;
-		}
-		if(testSDLKeyOnce(SDL_SCANCODE_F2))
-		{
-			mainMenu.moveToId(MainMenu::MaAdvanced);
-			openHiddenMenu();
-		}
-		if(testSDLKeyOnce(SDL_SCANCODE_F3))
-		{
-			curMenu = &mainMenu;
-			mainMenu.moveToId(MainMenu::MaReplays);
-			selected = curMenu->onEnter(common);
-		}
-
-		if (testSDLKeyOnce(SDL_SCANCODE_F5))
-		{
-			mainMenu.moveToId(MainMenu::MaPlayer1Settings);
-			playerSettings(0);
-		}
-		if (testSDLKeyOnce(SDL_SCANCODE_F6))
-		{
-			mainMenu.moveToId(MainMenu::MaPlayer2Settings);
-			playerSettings(1);
-		}
-		if (testSDLKeyOnce(SDL_SCANCODE_F7))
-		{
-			mainMenu.moveToId(MainMenu::MaSettings);
-			curMenu = &settingsMenu; // Go into settings menu
-		}
-
-		if (testSDLKeyOnce(SDL_SCANCODE_F8))
-		{
-			uint32_t s = 14;
-
-			Rand r;
-			r.seed(s);
-
-			Common& common = *this->common;
-
-			vector<std::size_t> nobjMap;
-
-			for (std::size_t i = 0; i < common.nobjectTypes.size(); ++i)
-			{
-				nobjMap.push_back(i);
-			}
-			std::random_device rd;
-			std::mt19937 g(rd());
-			std::shuffle(nobjMap.begin(), nobjMap.end(), g);
-
-			for (auto& w : common.weapons)
-			{
-				w.addSpeed = r(30) - 5;
-				w.affectByExplosions = r(2) == 0;
-				w.affectByWorm = r(3) == 0;
-				w.ammo = r(20) + 1;
-				w.bloodOnHit = r(50);
-				w.blowAway = r(10);
-				w.bounce = r(90);
-				w.collideWithObjects = r(10) == 0;
-				w.colorBullets = 3 + r(250);
-				w.createOnExp = r(common.sobjectTypes.size());
-				w.delay = r(70);
-				w.detectDistance = r(20);
-				w.dirtEffect = r(9);
-				w.distribution = r(5000) - 2500;
-				w.explGround = r(2) == 0;
-				w.exploSound = r(common.sounds.size());
-				w.fireCone = r(10);
-				w.gravity = r(2000) - 1000;
-				w.hitDamage = r(20);
-				w.laserSight = r(5) == 0;
-				w.launchSound = r(common.sounds.size());
-				w.leaveShellDelay = r(30);
-				w.leaveShells = r(1) == 0;
-				w.loadingTime = r(70 * 3);
-				w.loopAnim = r(10) == 0;
-				w.loopSound = false;
-				w.multSpeed = r(2) ? 100 : 99 + r(5);
-				w.objTrailDelay = 10 + r(70);
-				w.objTrailType = r(4) == 0 ? r(common.sobjectTypes.size()) : -1;
-				w.parts = r(2) == 0 ? r(10) : 1;
-				w.partTrailDelay = 10 + r(70);
-				w.partTrailObj = r(4) == 0 ? r(common.nobjectTypes.size()) : -1;
-				w.partTrailType = r(2);
-				w.playReloadSound = r(2) == 0;
-				w.recoil = r(20);
-				w.shadow = r(2) == 0;
-				w.shotType = r(5);
-				w.speed = r(200);
-				w.splinterAmount = r(5) == 0 ? r(10) : 0;
-				w.splinterColour = r(256);
-				w.splinterScatter = r(2);
-				w.splinterType = r(common.nobjectTypes.size());
-				w.startFrame = r((uint32_t)common.smallSprites.count - 13);
-				w.numFrames = r(5);
-				w.timeToExplo = 50 + r(200);
-				w.timeToExploV = 10 + r(50);
-				w.wormCollide = r(3) > 0;
-				w.wormExplode = r(3) > 0;
-			}
-
-			//for (auto& n : common.nobjectTypes)
-			for (std::size_t idx = 0; idx < common.nobjectTypes.size(); ++idx)
-			{
-				auto& n = common.nobjectTypes[nobjMap[idx]];
-				n.affectByExplosions = r(5) == 0;
-				n.bloodOnHit = r(5);
-				n.bloodTrail = r(10) == 0;
-				n.bloodTrailDelay = r(20) + 3;
-				n.blowAway = r(10);
-				n.bounce = r(90);
-				n.colorBullets = 3 + r(250);
-				n.createOnExp = r(3) == 0 ? r(common.sobjectTypes.size()) : -1;
-				n.detectDistance = r(20);
-				n.dirtEffect = r(9);
-				n.distribution = r(5000) - 2500;
-				n.drawOnMap = r(20) == 0;
-				n.explGround = r(4) > 0;
-				n.gravity = r(2000) - 1000;
-				n.hitDamage = r(10);
-				n.leaveObj = r(5) == 0 ? r(common.sobjectTypes.size()) : -1;
-				n.leaveObjDelay = 10 + r(80);
-				n.startFrame = r((uint32_t)common.smallSprites.count - 13);
-				n.numFrames = r(5);
-				n.speed = r(150);
-				n.splinterAmount = idx > 0 && r(5) == 0 ? r(10) : 0;
-				n.splinterColour = r(256);
-				n.splinterType = idx > 0 ? nobjMap[r(idx)] : 0;
-				n.timeToExplo = 50 + r(70 * 3);
-				n.timeToExploV = r(30);
-				n.wormDestroy = r(3) == 0;
-				n.wormExplode = r(2) == 0;
-			}
-
-			for (auto& s : common.sobjectTypes)
-			{
-				s.animDelay = 1 + r(10);
-				s.blowAway = r(2) == 0 ? r(10000) : 0;
-				s.damage = r(30);
-				s.detectRange = r(20);
-				s.dirtEffect = r(9);
-				s.flash = r(5);
-				s.startFrame = r((uint32_t)common.largeSprites.count - 7);
-				s.numFrames = r(7);
-				s.startSound = r(common.sounds.size());
-				s.shake = r(10);
-				s.shadow = r(2);
-				s.numSounds = 1;
-			}
-		}
-
-		if(testSDLKey(SDL_SCANCODE_LEFT))
-		{
-			if(!curMenu->onLeftRight(common, -1))
-				resetLeftRight();
-		}
-		if(testSDLKey(SDL_SCANCODE_RIGHT))
-		{
-			if(!curMenu->onLeftRight(common, 1))
-				resetLeftRight();
-		}
-
-		if(testSDLKeyOnce(SDL_SCANCODE_PAGEUP))
-		{
-			sfx.play(common, 26);
-
-			curMenu->movementPage(-1);
-		}
-
-		if(testSDLKeyOnce(SDL_SCANCODE_PAGEDOWN))
-		{
-			sfx.play(common, 25);
-
-			curMenu->movementPage(1);
-		}
-
-		menuFlip();
-		process();
-	}
-	while(selected < 0);
-
-	for (playRenderer.fadeValue = 32; playRenderer.fadeValue > 0; --playRenderer.fadeValue)
-	{
-		menuFlip(true);
-		process();
-	}
-
-	return selected;
 }

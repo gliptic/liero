@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <gvl/io2/fstream.hpp>
-#include "stats_presenter.hpp"
 #include "../keys.hpp"
 #include "../gfx.hpp"
 #include "../sfx.hpp"
@@ -186,8 +185,6 @@ bool LocalController::process()
 			{
 				endRecord();
 				game.statsRecorder->finish(game);
-				// TODO: Get rid of cast.
-				presentStats(static_cast<NormalStatsRecorder&>(*game.statsRecorder), game);
 			}
 			return false;
 		}
@@ -284,7 +281,7 @@ void LocalController::changeState(GameState newState)
 			}
 			catch(std::runtime_error& e)
 			{
-				gfx.infoBox(std::string("Error starting replay recording: ") + e.what());
+				gfx.pendingErrorMessage = std::string("Error starting replay recording: ") + e.what();
 				goingToMenu = true;
 				fadeValue = 0;
 				return;
