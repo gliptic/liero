@@ -1811,6 +1811,12 @@ void Gfx::initFrameStepping()
 	controller->currentGame()->focus(this->playRenderer);
 	controller->currentGame()->focus(this->singleScreenRenderer);
 
+	// Draw the initial game state so the menu has a proper background
+	playRenderer.clear();
+	controller->draw(this->playRenderer, false);
+	singleScreenRenderer.clear();
+	controller->draw(this->singleScreenRenderer, true);
+
 	// Push the initial menu state
 	auto menuState = std::make_unique<MainMenuState>();
 	menuStatePtr_ = menuState.get();
