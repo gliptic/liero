@@ -65,8 +65,10 @@ jobs:
             libjack-dev \
             libsndio-dev \
             libtool \
+            libltdl-dev \
             autoconf \
             automake \
+            autoconf-archive \
             pkg-config
 
       - name: Get cmake/ninja
