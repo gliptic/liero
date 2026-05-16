@@ -583,6 +583,36 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 		}
 		break;
 
+		case SDL_EVENT_GAMEPAD_ADDED:
+		{
+			SDL_JoystickID id = ev.gdevice.which;
+			// Only track up to 2 gamepads
+			if (joysticks.size() < 2)
+			{
+				Joystick js;
+				js.sdlGamepad = SDL_OpenGamepad(id);
+				js.instanceId = id;
+				js.clearState();
+				joysticks.push_back(js);
+			}
+		}
+		break;
+
+		case SDL_EVENT_GAMEPAD_REMOVED:
+		{
+			SDL_JoystickID id = ev.gdevice.which;
+			for (auto it = joysticks.begin(); it != joysticks.end(); ++it)
+			{
+				if (it->instanceId == id)
+				{
+					SDL_CloseGamepad(it->sdlGamepad);
+					joysticks.erase(it);
+					break;
+				}
+			}
+		}
+		break;
+
 		default:
 			break;
 	}
@@ -611,6 +641,15 @@ int Gfx::findGamepadIndex(SDL_JoystickID id)
 void Gfx::dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Controller* controller)
 {
 	if (gpIdx < 0 || gpIdx >= 2) return;
+
+	// Start button acts as ESC for menu access
+	if (gamepadKey == (uint32_t)SDL_GAMEPAD_BUTTON_START && state)
+	{
+		dosKeys[DkEscape] = true;
+		if (controller)
+			controller->onKey(DkEscape, true);
+		return;
+	}
 
 	// Always update gamepadControlState using default bindings for menu navigation.
 	// Use player 0's gamepad bindings as the reference for control mapping.
