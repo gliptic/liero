@@ -124,11 +124,13 @@ struct InputDeviceBehavior : ItemBehavior
 			if (nameCounts[opt.name] > 1)
 			{
 				int idx = ++nameSeenSoFar[opt.name];
-				opt.displayName = opt.name + " #" + toString(idx);
+				std::string suffix = " #" + toString(idx);
+				std::string base = opt.name.substr(0, 20 - suffix.size());
+				opt.displayName = base + suffix;
 			}
 			else
 			{
-				opt.displayName = opt.name;
+				opt.displayName = opt.name.substr(0, 20);
 			}
 			opts.push_back(opt);
 		}
@@ -166,7 +168,10 @@ struct InputDeviceBehavior : ItemBehavior
 			if (cur >= 0)
 				item.value = opts[cur].displayName;
 			else
-				item.value = ws.gamepadName.empty() ? "Gamepad (none)" : ws.gamepadName + " (disconnected)";
+			{
+				std::string display = ws.gamepadName.empty() ? "Gamepad (none)" : ws.gamepadName.substr(0, 20);
+				item.value = display;
+			}
 		}
 		item.hasValue = true;
 	}
