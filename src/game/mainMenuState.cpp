@@ -7,6 +7,8 @@
 #include "level.hpp"
 #include "controller/controller.hpp"
 #include "menu/mainMenu.hpp"
+#include "fileSelectorState.hpp"
+#include "weaponMenuState.hpp"
 #include "rand.hpp"
 
 #include <cstring>
@@ -94,6 +96,13 @@ bool MainMenuState::update()
 		return false;
 	}
 
+	// Check if a sub-state left a result for us
+	if (gfx->pendingMenuSelection >= 0)
+	{
+		selected_ = gfx->pendingMenuSelection;
+		gfx->pendingMenuSelection = -1;
+	}
+
 	// Phase::Active — process input
 	Common& common = *gfx->common;
 
@@ -148,16 +157,13 @@ bool MainMenuState::update()
 
 				case MainMenu::MaReplays:
 				{
-					selected_ = gfx->curMenu->onEnter(common);
+					gfx->stateStack.push(std::make_unique<ReplaySelectorState>(), gfx);
 					break;
 				}
 
 				case MainMenu::MaTc:
 				{
-					if (gfx->curMenu->onEnter(common) == MainMenu::MaTc)
-					{
-						selected_ = MainMenu::MaTc;
-					}
+					gfx->stateStack.push(std::make_unique<TcSelectorState>(), gfx);
 					break;
 				}
 
@@ -170,7 +176,42 @@ bool MainMenuState::update()
 		}
 		else if(gfx->curMenu == &gfx->settingsMenu)
 		{
-			gfx->settingsMenu.onEnter(common);
+			int itemId = gfx->settingsMenu.selectedId();
+			switch (itemId)
+			{
+				case SettingsMenu::SiLevel:
+					sfx.play(common, 27);
+					gfx->stateStack.push(std::make_unique<LevelSelectorState>(), gfx);
+					break;
+
+				case SettingsMenu::SiWeaponOptions:
+					sfx.play(common, 27);
+					gfx->stateStack.push(std::make_unique<WeaponMenuState>(), gfx);
+					break;
+
+				case SettingsMenu::LoadOptions:
+					sfx.play(common, 27);
+					gfx->stateStack.push(std::make_unique<OptionsSelectorState>(), gfx);
+					break;
+
+				default:
+					gfx->settingsMenu.onEnter(common);
+					break;
+			}
+		}
+		else if(gfx->curMenu == &gfx->playerMenu)
+		{
+			int itemId = gfx->playerMenu.selectedId();
+			if (itemId == PlayerMenu::PlLoadProfile)
+			{
+				sfx.play(common, 27);
+				gfx->stateStack.push(
+					std::make_unique<ProfileSelectorState>(*gfx->playerMenu.ws), gfx);
+			}
+			else
+			{
+				selected_ = gfx->curMenu->onEnter(common);
+			}
 		}
 		else
 		{
@@ -377,6 +418,4 @@ void MainMenuState::draw()
 		gfx->settingsMenu.draw(common, gfx->playRenderer, true);
 	else
 		gfx->curMenu->draw(common, gfx->playRenderer, false);
-
-	gfx->menuFlip(phase_ == Phase::FadingOut);
 }

@@ -293,6 +293,9 @@ struct Gfx
 
 	StateStack stateStack;
 
+	// Used by sub-states to communicate a menu selection back to MainMenuState
+	int pendingMenuSelection = -1;
+
 	std::vector<Joystick> joysticks;
 
 	SDL_Scancode keyBuf[32], *keyBufPtr;

@@ -1818,6 +1818,9 @@ int Gfx::runMenu()
 		if (!stateStack.update())
 			break;
 		stateStack.draw();
+
+		// Single flip point: palette updates + frame timing
+		menuFlip(menuStatePtr->isFadingOut());
 	}
 
 	return result;

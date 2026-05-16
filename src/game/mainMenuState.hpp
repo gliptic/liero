@@ -18,6 +18,9 @@ struct MainMenuState : AppState
 	// The menu item that was selected, or -1 if still active.
 	int selection() const { return selected_; }
 
+	// True when fading out (used by runMenu for menuFlip parameter)
+	bool isFadingOut() const { return phase_ == Phase::FadingOut; }
+
 private:
 	enum class Phase { Active, FadingOut };
 
