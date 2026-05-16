@@ -554,8 +554,10 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 				if(newState != js.btnState[jbtn])
 				{
 					js.btnState[jbtn] = newState;
+					uint32_t exKey = joyButtonToExKey(ev.jaxis.which, jbtn);
+					exKeys[exKey] = newState;
 					if (controller)
-						controller->onKey(joyButtonToExKey(ev.jaxis.which, jbtn), newState);
+						controller->onKey(exKey, newState);
 				}
 			}
 		}
@@ -577,8 +579,10 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 				if(newState != js.btnState[jbtn])
 				{
 					js.btnState[jbtn] = newState;
+					uint32_t exKey = joyButtonToExKey(ev.jhat.which, jbtn);
+					exKeys[exKey] = newState;
 					if(controller)
-						controller->onKey(joyButtonToExKey(ev.jhat.which, jbtn), newState);
+						controller->onKey(exKey, newState);
 				}
 			}
 		}
@@ -590,8 +594,10 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			Joystick& js = joysticks[ev.jbutton.which];
 			int jbtn = 16 + ev.jbutton.button;
 			js.btnState[jbtn] = ev.jbutton.down;
+			uint32_t exKey = joyButtonToExKey(ev.jbutton.which, jbtn);
+			exKeys[exKey] = ev.jbutton.down;
 			if(controller)
-				controller->onKey(joyButtonToExKey(ev.jbutton.which, jbtn), js.btnState[jbtn]);
+				controller->onKey(exKey, js.btnState[jbtn]);
 		}
 		break;
 
@@ -631,6 +637,44 @@ std::string Gfx::getKeyName(uint32_t key)
 void Gfx::clearKeys()
 {
 	std::memset(dosKeys, 0, sizeof(dosKeys));
+	exKeys.clear();
+}
+
+bool Gfx::testControlOnce(int control)
+{
+	for(int p = 0; p < 2; ++p)
+	{
+		uint32_t key = settings->extensions
+			? settings->wormSettings[p]->controlsEx[control]
+			: settings->wormSettings[p]->controls[control];
+		if(testAnyKeyOnce(key))
+			return true;
+	}
+	return false;
+}
+
+bool Gfx::testControl(int control)
+{
+	for(int p = 0; p < 2; ++p)
+	{
+		uint32_t key = settings->extensions
+			? settings->wormSettings[p]->controlsEx[control]
+			: settings->wormSettings[p]->controls[control];
+		if(testAnyKey(key))
+			return true;
+	}
+	return false;
+}
+
+void Gfx::releaseControl(int control)
+{
+	for(int p = 0; p < 2; ++p)
+	{
+		uint32_t key = settings->extensions
+			? settings->wormSettings[p]->controlsEx[control]
+			: settings->wormSettings[p]->controls[control];
+		releaseAnyKey(key);
+	}
 }
 
 void Gfx::preparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette, Color realPal[256], uint32_t (&pal32)[256])

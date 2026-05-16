@@ -59,23 +59,27 @@ bool WeaponMenuState::update()
 
 	Common& common = *gfx->common;
 
-	if (gfx->testSDLKeyOnce(SDL_SCANCODE_UP))
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_UP)
+	|| gfx->testControlOnce(WormSettingsExtensions::Up))
 	{
 		sfx.play(common, 26);
 		weaponMenu_->movement(-1);
 	}
 
-	if (gfx->testSDLKeyOnce(SDL_SCANCODE_DOWN))
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_DOWN)
+	|| gfx->testControlOnce(WormSettingsExtensions::Down))
 	{
 		sfx.play(common, 25);
 		weaponMenu_->movement(1);
 	}
 
-	if (gfx->testSDLKeyOnce(SDL_SCANCODE_LEFT))
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_LEFT)
+	|| gfx->testControlOnce(WormSettingsExtensions::Left))
 	{
 		weaponMenu_->onLeftRight(common, -1);
 	}
-	if (gfx->testSDLKeyOnce(SDL_SCANCODE_RIGHT))
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_RIGHT)
+	|| gfx->testControlOnce(WormSettingsExtensions::Right))
 	{
 		weaponMenu_->onLeftRight(common, 1);
 	}
@@ -97,7 +101,8 @@ bool WeaponMenuState::update()
 
 	weaponMenu_->onKeys(gfx->keyBuf, gfx->keyBufPtr);
 
-	if (gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE)
+	|| gfx->testControlOnce(WormSettingsExtensions::Jump))
 	{
 		int count = 0;
 

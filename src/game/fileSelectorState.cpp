@@ -40,7 +40,8 @@ bool FileSelectorState::update()
 	}
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN)
-	 || gfx->testSDLKeyOnce(SDL_SCANCODE_KP_ENTER))
+	 || gfx->testSDLKeyOnce(SDL_SCANCODE_KP_ENTER)
+	 || gfx->testControlOnce(WormSettingsExtensions::Fire))
 	{
 		sfx.play(*gfx->common, 27);
 

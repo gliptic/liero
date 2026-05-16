@@ -216,7 +216,8 @@ void InfoBoxState::handleEvent(SDL_Event& ev)
 {
 	gfx->processEvent(ev);
 
-	if (ev.type == SDL_EVENT_KEY_DOWN)
+	if (ev.type == SDL_EVENT_KEY_DOWN
+	 || ev.type == SDL_EVENT_JOYSTICK_BUTTON_DOWN)
 		done_ = true;
 }
 

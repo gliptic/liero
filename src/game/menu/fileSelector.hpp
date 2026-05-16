@@ -4,6 +4,7 @@
 #include <vector>
 #include <utility>
 #include "../text.hpp"
+#include "../worm.hpp"
 #include "menu.hpp"
 #include "../common.hpp"
 
@@ -270,14 +271,16 @@ struct FileSelector
 
 	bool process()
 	{
-		if(gfx.testSDLKeyOnce(SDL_SCANCODE_UP))
+		if(gfx.testSDLKeyOnce(SDL_SCANCODE_UP)
+		|| gfx.testControlOnce(WormSettingsExtensions::Up))
 		{
 			sfx.play(common, 26);
 
 			menu().movement(-1);
 		}
 
-		if(gfx.testSDLKeyOnce(SDL_SCANCODE_DOWN))
+		if(gfx.testSDLKeyOnce(SDL_SCANCODE_DOWN)
+		|| gfx.testControlOnce(WormSettingsExtensions::Down))
 		{
 			sfx.play(common, 25);
 
@@ -298,17 +301,20 @@ struct FileSelector
 			menu().movementPage(1);
 		}
 
-		if (gfx.testSDLKeyOnce(SDL_SCANCODE_ESCAPE))
+		if (gfx.testSDLKeyOnce(SDL_SCANCODE_ESCAPE)
+		|| gfx.testControlOnce(WormSettingsExtensions::Jump))
 		{
 			return false;
 		}
 
-		if (gfx.testSDLKeyOnce(SDL_SCANCODE_LEFT))
+		if (gfx.testSDLKeyOnce(SDL_SCANCODE_LEFT)
+		|| gfx.testControlOnce(WormSettingsExtensions::Left))
 		{
 			exit();
 		}
 
-		if (gfx.testSDLKeyOnce(SDL_SCANCODE_RIGHT))
+		if (gfx.testSDLKeyOnce(SDL_SCANCODE_RIGHT)
+		|| gfx.testControlOnce(WormSettingsExtensions::Right))
 		{
 			enter();
 		}
