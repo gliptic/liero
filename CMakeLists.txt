@@ -228,12 +228,12 @@ if(OPENLIERO_BUILD_VIDEOTOOL)
 endif()
 
 # binaries
-install(TARGETS openliero CONFIGURATIONS Release DESTINATION .)
+install(TARGETS openliero DESTINATION .)
 if(OPENLIERO_BUILD_TCTOOL)
-  install(TARGETS tctool CONFIGURATIONS Release DESTINATION .)
+  install(TARGETS tctool DESTINATION .)
 endif()
 if(OPENLIERO_BUILD_VIDEOTOOL)
-  install(TARGETS videotool CONFIGURATIONS Release DESTINATION .)
+  install(TARGETS videotool DESTINATION .)
 endif()
 
 # assets

@@ -30,11 +30,18 @@ PRESET=$OS-$ARCH
 cmake --workflow --preset $PRESET
 
 # copy binaries and game data to a predefined directory (install/$PRESET)
-cmake --install build/$PRESET
+cmake --install build/$PRESET --config Release
 
 # play
 cd install/$PRESET
 ./openliero
+```
+
+For a debug build:
+
+```bash
+cmake --workflow --preset $PRESET-debug
+cmake --install build/$PRESET --config Debug
 ```
 
 Note: This only builds `openliero` & `tctool`, not `videotool`. That one needs
