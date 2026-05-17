@@ -494,6 +494,11 @@ void NetworkController::draw(Renderer& renderer, bool useSpectatorViewports) {
     int cx = renderer.renderResX / 2;
     int cy = renderer.renderResY / 2 - 20;
 
+    // Apply palette rotation for blinking menu selection
+    renderer.pal = game.common->exepal;
+    renderer.pal.rotateFrom(game.common->exepal, 168, 174, gfx.menuCycles);
+    renderer.pal.fade(fadeValue);
+
     if (localPaused_) {
       std::string title = "GAME PAUSED";
       int tw = font.getDims(title);
