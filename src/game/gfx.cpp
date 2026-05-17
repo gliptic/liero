@@ -630,6 +630,8 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 	{
 		case SDL_EVENT_KEY_DOWN:
 		{
+			if (ev.key.repeat)
+				break;
 
 			SDL_Scancode s = ev.key.scancode;
 

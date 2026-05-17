@@ -68,21 +68,23 @@ void NetworkController::onKey(int key, bool keyState) {
   if (worm && worm->index == localIdx) {
     worm->cleanControlStates.set(control, keyState);
 
+    // Update localControlState (used for network packing) independently
+    // from worm->controlStates. Edge detection in advanceSimulation/
+    // advanceWeaponSelection is the sole writer of worm->controlStates.
     if (control < Worm::MaxControl) {
-      worm->setControlState(control, keyState);
+      localControlState.set(control, keyState);
     }
 
+    // Synthesize dig (Left+Right when Dig is held)
     if (worm->cleanControlStates[WormSettings::Dig]) {
-      worm->press(Worm::Left);
-      worm->press(Worm::Right);
+      localControlState.set(Worm::Left, true);
+      localControlState.set(Worm::Right, true);
     } else {
       if (!worm->cleanControlStates[Worm::Left])
-        worm->release(Worm::Left);
+        localControlState.set(Worm::Left, false);
       if (!worm->cleanControlStates[Worm::Right])
-        worm->release(Worm::Right);
+        localControlState.set(Worm::Right, false);
     }
-
-    localControlState = worm->controlStates;
   }
 
   if (key == DkEscape && !goingToMenu) {
