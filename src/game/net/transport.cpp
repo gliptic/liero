@@ -18,6 +18,11 @@ NetTransport::NetTransport()
 }
 
 NetTransport::~NetTransport() {
+  disconnect();
+  enet_deinitialize();
+}
+
+void NetTransport::disconnect() {
   if (peer_) {
     enet_peer_disconnect_now(peer_, 0);
     peer_ = nullptr;
@@ -26,7 +31,7 @@ NetTransport::~NetTransport() {
     enet_host_destroy(enetHost_);
     enetHost_ = nullptr;
   }
-  enet_deinitialize();
+  state_ = Disconnected;
 }
 
 bool NetTransport::host(uint16_t port) {

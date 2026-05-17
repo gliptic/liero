@@ -84,8 +84,7 @@ void NetSession::update() {
 }
 
 void NetSession::disconnect() {
-  transport_.~NetTransport();
-  new (&transport_) NetTransport();
+  transport_.disconnect();
   wireCallbacks();
   sessionState_ = Idle;
   controller_.reset();

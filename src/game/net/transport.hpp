@@ -54,6 +54,9 @@ struct NetTransport {
   NetTransport();
   ~NetTransport();
 
+  // Disconnect and release resources (returns to initial state).
+  void disconnect();
+
   // Host a game on the given port. Returns true if listening started.
   bool host(uint16_t port);
 
