@@ -269,6 +269,20 @@ else()
   install(DIRECTORY data/TC DESTINATION .)
 endif()
 
+# tests
+option(OPENLIERO_BUILD_TESTS "Build tests" OFF)
+if(OPENLIERO_BUILD_TESTS)
+  find_package(Catch2 3 REQUIRED)
+  include(CTest)
+  include(Catch)
+
+  add_executable(test_determinism src/tests/test_determinism.cpp)
+  target_link_libraries(test_determinism PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_determinism
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  )
+endif()
+
 # documentation
 install(FILES README.md DESTINATION .)
 

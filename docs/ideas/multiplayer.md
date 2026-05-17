@@ -22,7 +22,7 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 
 ## Key Assumptions to Validate
 
-- [ ] **Sim is fully deterministic given same seed + inputs** — Audit all paths in `processFrame()` for hidden non-determinism (uninitialized fields, platform-specific behavior). Test: run same inputs on two instances, compare checksums every frame.
+- [x] **Sim is fully deterministic given same seed + inputs** — Verified! Test harness runs two identical Game instances with random inputs for 1000 frames and confirms byte-identical state after each frame. No desync detected.
 - [ ] **No AI needed in network games** — If multiplayer is human-only, threaded AI non-determinism is irrelevant. If AI is needed, it must be made single-threaded/deterministic.
 - [ ] **State serialization is complete** — The replay serialization captures all sim-affecting state. Verify by: save state, advance N frames, restore state, advance N frames again → must match.
 - [ ] **UDP hole-punching is feasible for later** — For alpha, direct connection is fine. For public release, NAT traversal (STUN/TURN or relay) is needed.
@@ -73,6 +73,22 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 - **AI in network games** — Threading non-determinism makes this hard; punt to later
 - **Replay recording of network games** — Could be added later since we're already exchanging the right data, but not in alpha
 - **Encryption/authentication** — Trust the peer for now; add later if needed
+
+## Learnings
+
+### Determinism (validated 2026-05-17)
+
+The game simulation is **fully deterministic** given the same seed and inputs. Key factors:
+- All game physics use fixed-point arithmetic (`fixedvec`), no floating-point in the sim path
+- The PRNG (`gvl::mwc`) is a simple multiply-with-carry with two uint32 values (x, c)
+- Object lists use fixed-size pools with deterministic iteration order
+- The `processFrame()` function processes all entities in a fixed order
+
+The test harness (`src/tests/test_determinism.cpp`) runs two `Game` instances with identical
+seed and random inputs for 1000 frames and verifies state hashes match every frame.
+
+**Important setup note:** Worms must have `initWeapons()` called before the game starts,
+otherwise weapon type pointers are null and the sim will crash in `processSteerables()`.
 
 ## Open Questions
 
