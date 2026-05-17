@@ -47,6 +47,26 @@ cmake --install build/$PRESET --config Debug
 Note: This only builds `openliero` & `tctool`, not `videotool`. See below for
 videotool build instructions.
 
+### Building for the web (Emscripten)
+
+You can build Open Liero as a WebAssembly application that runs in the browser.
+
+#### Prerequisites
+
+* [Emscripten](https://emscripten.org/) (via [EMSDK](https://emscripten.org/docs/getting_started/downloads.html) or your package manager, e.g. `brew install emscripten`)
+
+#### Build
+
+```bash
+cmake --preset emscripten
+cmake --build build/emscripten --config Release
+cmake --install build/emscripten --config Release
+```
+
+The output is in `install/emscripten/` — serve it with any HTTP server
+(e.g. `python3 -m http.server -d install/emscripten`) and open
+`openliero.html` in a browser.
+
 ### Building videotool
 
 The videotool converts `.lrp` replay files to video. It requires ffmpeg

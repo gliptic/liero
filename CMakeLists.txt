@@ -12,6 +12,11 @@ include(GenerateVersion) # generate version metadata from git
 
 # configure vcpkg
 if(OPENLIERO_USE_VCPKG)
+  # For Emscripten builds, find and set the chainload toolchain before vcpkg
+  if(VCPKG_TARGET_TRIPLET STREQUAL "wasm32-emscripten" AND NOT DEFINED VCPKG_CHAINLOAD_TOOLCHAIN_FILE)
+    include(FindEmscriptenToolchain)
+  endif()
+
   set(VCPKG_TOOLCHAIN_PATH
     "scripts/buildsystems/vcpkg.cmake"
     CACHE STRING "General path to vcpkg toolchain file"
@@ -170,6 +175,19 @@ if(APPLE)
 #  add_executable(openliero MACOSX_BUNDLE src/game/main.cpp "${RESOURCE_FILES}")
 elseif(WIN32)
   add_executable(openliero WIN32 src/game/main.cpp packaging/icons/openliero.rc)
+elseif(EMSCRIPTEN)
+  add_executable(openliero src/game/main.cpp)
+  target_link_options(openliero PRIVATE
+    -sALLOW_MEMORY_GROWTH=1
+    -sMAX_WEBGL_VERSION=2
+    -sEXPORTED_RUNTIME_METHODS=FS
+    "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/data/Profiles@/openliero/Profiles"
+    "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/data/Resources@/openliero/Resources"
+    "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/data/Setups@/openliero/Setups"
+    "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/data/TC@/openliero/TC"
+  )
+  set_target_properties(openliero PROPERTIES SUFFIX ".html")
+  target_compile_definitions(game PUBLIC OPENLIERO_EMSCRIPTEN=1)
 else()
   add_executable(openliero src/game/main.cpp)
 endif()
@@ -235,11 +253,21 @@ if(OPENLIERO_BUILD_VIDEOTOOL)
   install(TARGETS videotool DESTINATION .)
 endif()
 
-# assets
-install(DIRECTORY data/Profiles DESTINATION .)
-install(DIRECTORY data/Resources DESTINATION .)
-install(DIRECTORY data/Setups DESTINATION .)
-install(DIRECTORY data/TC DESTINATION .)
+if(EMSCRIPTEN)
+  # Emscripten produces companion .js and .wasm files alongside the .html
+  install(FILES
+    $<TARGET_FILE_DIR:openliero>/openliero.js
+    $<TARGET_FILE_DIR:openliero>/openliero.wasm
+    $<TARGET_FILE_DIR:openliero>/openliero.data
+    DESTINATION .
+  )
+else()
+  # assets
+  install(DIRECTORY data/Profiles DESTINATION .)
+  install(DIRECTORY data/Resources DESTINATION .)
+  install(DIRECTORY data/Setups DESTINATION .)
+  install(DIRECTORY data/TC DESTINATION .)
+endif()
 
 # documentation
 install(FILES README.md DESTINATION .)

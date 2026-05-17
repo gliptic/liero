@@ -194,6 +194,15 @@
 					}
 				]
 			}
+		},
+		{
+			"name": "arch-wasm32-emscripten",
+			"hidden": true,
+			"cacheVariables": {
+				"VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+				"OPENLIERO_BUILD_TCTOOL": "OFF",
+				"OPENLIERO_BUILD_VIDEOTOOL": "OFF"
+			}
 		}
 	]
 }

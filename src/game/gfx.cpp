@@ -12,6 +12,10 @@
 #include <memory>
 #include <random>
 
+#if OPENLIERO_EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 #include "gfx.hpp"
 #include "reader.hpp"
 #include "game.hpp"
@@ -1532,6 +1536,23 @@ void Gfx::mainLoop()
 {
 	initFrameStepping();
 
+#if OPENLIERO_EMSCRIPTEN
+	emscripten_set_main_loop_arg([](void* arg) {
+		Gfx* self = static_cast<Gfx*>(arg);
+		if (!self->runOneFrame())
+		{
+			if (self->tcChangeRequested())
+			{
+				self->initFrameStepping();
+			}
+			else
+			{
+				self->controller.reset();
+				emscripten_cancel_main_loop();
+			}
+		}
+	}, this, 0, true);
+#else
 	while (true)
 	{
 		while (runOneFrame())
@@ -1546,6 +1567,7 @@ void Gfx::mainLoop()
 	}
 
 	controller.reset();
+#endif
 }
 
 void Gfx::saveSettings(FsNode node)
