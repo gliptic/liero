@@ -43,16 +43,22 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Fetch all releases that have a web asset via gh CLI
+          # Fetch all releases via gh CLI, then check each for the web asset
           echo '{"releases":[],"dev":[]}' > builds_new.json
 
           gh release list --repo "${{ github.repository }}" --limit 50 \
-            --json tagName,isPrerelease,createdAt,assets | \
-          jq -c '.[] | select(.assets | map(.name) | any(. == "openliero-web.tar.gz"))' | \
+            --json tagName,isPrerelease,createdAt | \
+          jq -c '.[]' | \
           while IFS= read -r release; do
             TAG=$(echo "$release" | jq -r '.tagName')
             IS_PRE=$(echo "$release" | jq -r '.isPrerelease')
             CREATED=$(echo "$release" | jq -r '.createdAt')
+
+            # Check if this release has the web asset
+            if ! gh release view "$TAG" --repo "${{ github.repository }}" --json assets \
+              --jq '.assets[].name' 2>/dev/null | grep -q '^openliero-web\.tar\.gz$'; then
+              continue
+            fi
 
             if [ "$IS_PRE" = "true" ]; then
               TYPE="dev"
