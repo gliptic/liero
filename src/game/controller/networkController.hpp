@@ -97,8 +97,8 @@ struct NetworkController : CommonController {
   // Per-bit hold duration counters for deterministic key repeat
   static constexpr int KEY_REPEAT_INITIAL = 12; // ~170ms at 70fps
   static constexpr int KEY_REPEAT_INTERVAL = 3; // ~43ms at 70fps
-  std::array<uint8_t, 8> localHeldFrames;
-  std::array<uint8_t, 8> remoteHeldFrames;
+  std::array<uint16_t, 8> localHeldFrames;
+  std::array<uint16_t, 8> remoteHeldFrames;
 
   bool skipWeaponSelection;
   bool levelPreloaded;  // true if level was loaded via loadLevelFromData()
