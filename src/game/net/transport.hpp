@@ -18,6 +18,8 @@ struct NetTransport {
     PacketPlayerInfo = 4, // Player info: [type(1) | weapons(5*4) | color(4) | rgb(3*4)]
     PacketMatchSettings = 5, // Host-authoritative: [type(1) | settings blob]
     PacketMapData = 6,    // Compressed map: [type(1) | width(2) | height(2) | compressedData...]
+    PacketPause = 7,      // Pause request: [type(1)]
+    PacketResume = 8,     // Resume request: [type(1)]
   };
 
   // Player info exchanged between peers (weapons + cosmetics)
@@ -80,6 +82,10 @@ struct NetTransport {
   // Send compressed map data (host only)
   void sendMapData(const void* data, size_t len);
 
+  // Send pause/resume notifications
+  void sendPause();
+  void sendResume();
+
   State state() const { return state_; }
 
   // Callbacks set by the controller
@@ -89,6 +95,8 @@ struct NetTransport {
   std::function<void(const PlayerInfo& info)> onPlayerInfo;
   std::function<void(const MatchSettingsData& data)> onMatchSettings;
   std::function<void(const void* data, size_t len)> onMapData;
+  std::function<void()> onPause;
+  std::function<void()> onResume;
   std::function<void()> onConnected;
   std::function<void()> onDisconnected;
 

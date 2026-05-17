@@ -10,6 +10,7 @@
 #include "../game.hpp"
 #include "../worm.hpp"
 #include "../weapsel.hpp"
+#include "../menu/menu.hpp"
 
 // Callback type for sending local input to the transport layer.
 // Called each frame with: (frame_number, local_input_byte)
@@ -40,6 +41,16 @@ struct NetworkController : CommonController {
 
   // Directly inject inputs for a given frame (for testing without network)
   void injectRemoteInput(uint32_t frame, uint8_t input);
+
+  // Pause control (called by NetSession when remote peer pauses/resumes)
+  void setRemotePaused(bool paused) { remotePaused_ = paused; }
+  bool isPaused() const { return localPaused_ || remotePaused_; }
+
+  // Set callbacks for pause/resume notification to remote peer
+  void setPauseCallbacks(std::function<void()> pauseCb, std::function<void()> resumeCb) {
+    onLocalPause = std::move(pauseCb);
+    onLocalResume = std::move(resumeCb);
+  }
 
   // Skip weapon selection and go directly to game (for testing)
   void setSkipWeaponSelection(bool skip) { skipWeaponSelection = skip; }
@@ -92,8 +103,17 @@ struct NetworkController : CommonController {
   bool skipWeaponSelection;
   bool levelPreloaded;  // true if level was loaded via loadLevelFromData()
 
+  // Pause state
+  bool localPaused_;
+  bool remotePaused_;
+  Menu pauseMenu_;
+
   InputSendCallback sendInput;
   InputRecvCallback recvInput;
+
+  // Callbacks for pause/resume (set by session)
+  std::function<void()> onLocalPause;
+  std::function<void()> onLocalResume;
 
   // Weapon selection (active during StateWeaponSelection)
   std::unique_ptr<WeaponSelection> ws;

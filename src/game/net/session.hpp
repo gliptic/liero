@@ -48,6 +48,10 @@ struct NetSession {
   // The session keeps a raw pointer for injecting remote inputs.
   std::unique_ptr<NetworkController> releaseController();
 
+  // Send pause/resume to remote peer
+  void sendPause();
+  void sendResume();
+
   // Access the transport (for testing)
   NetTransport& transport() { return transport_; }
 
@@ -58,6 +62,8 @@ struct NetSession {
   void onPlayerInfo(const NetTransport::PlayerInfo& info);
   void onMatchSettings(const NetTransport::MatchSettingsData& data);
   void onMapData(const void* data, size_t len);
+  void onPause();
+  void onResume();
   void onRemoteInput(uint32_t frame, uint8_t input);
   void wireCallbacks();
   void tryStartGame();

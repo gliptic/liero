@@ -29,6 +29,14 @@ NetworkController::NetworkController(
   remoteHeldFrames.fill(0);
   skipWeaponSelection = false;
   levelPreloaded = false;
+  localPaused_ = false;
+  remotePaused_ = false;
+
+  // Set up pause menu
+  pauseMenu_.init(true);  // centered
+  pauseMenu_.addItem(MenuItem(7, 6, "RESUME", 0));
+  pauseMenu_.addItem(MenuItem(7, 6, "DISCONNECT", 1));
+
   localInputs.fill(0);
   remoteInputs.fill(0);
   remoteInputReady.fill(false);
@@ -155,9 +163,21 @@ void NetworkController::onKey(int key, bool keyState) {
     }
   }
 
-  if (key == DkEscape && !goingToMenu) {
-    fadeValue = 31;
-    goingToMenu = true;
+  if (key == DkEscape && keyState) {
+    if (localPaused_) {
+      // Already paused locally — Escape resumes
+      localPaused_ = false;
+      if (onLocalResume) onLocalResume();
+    } else if (remotePaused_ && !goingToMenu) {
+      // Remote paused, local wants to disconnect
+      fadeValue = 0;
+      goingToMenu = true;
+    } else if (!goingToMenu) {
+      // Pause the game
+      localPaused_ = true;
+      pauseMenu_.moveToFirstVisible();
+      if (onLocalPause) onLocalPause();
+    }
   }
 }
 
@@ -199,6 +219,48 @@ void NetworkController::focus() {
 }
 
 bool NetworkController::process() {
+  if (isPaused()) {
+    // While paused, don't advance simulation — just keep fade visible
+    if (fadeValue < 33)
+      fadeValue += 1;
+
+    // Handle pause menu input (same as main menu navigation)
+    if (localPaused_) {
+      if (gfx.testSDLKeyOnce(SDL_SCANCODE_UP)
+       || gfx.testControlOnce(WormSettingsExtensions::Up)
+       || gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP)) {
+        sfx.play(*game.common, 26);
+        pauseMenu_.movement(-1);
+      }
+
+      if (gfx.testSDLKeyOnce(SDL_SCANCODE_DOWN)
+       || gfx.testControlOnce(WormSettingsExtensions::Down)
+       || gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN)) {
+        sfx.play(*game.common, 25);
+        pauseMenu_.movement(1);
+      }
+
+      if (gfx.testSDLKeyOnce(SDL_SCANCODE_RETURN)
+       || gfx.testSDLKeyOnce(SDL_SCANCODE_KP_ENTER)
+       || gfx.testControlOnce(WormSettingsExtensions::Fire)
+       || gfx.testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH)) {
+        int sel = pauseMenu_.selectedId();
+        if (sel == 0) {
+          // Resume
+          localPaused_ = false;
+          if (onLocalResume) onLocalResume();
+        } else {
+          // Disconnect
+          localPaused_ = false;
+          fadeValue = 0;
+          goingToMenu = true;
+        }
+      }
+    }
+
+    return true;
+  }
+
   if (state == StateWeaponSelection) {
     advanceWeaponSelection();
   } else if (state == StateGame || state == StateGameEnded) {
@@ -382,6 +444,33 @@ void NetworkController::draw(Renderer& renderer, bool useSpectatorViewports) {
     game.draw(renderer, state, useSpectatorViewports);
   }
   renderer.fadeValue = fadeValue;
+
+  // Draw pause overlay
+  if (isPaused()) {
+    fill(renderer.bmp, 0);
+    Common& common = *game.common;
+    Font& font = common.font;
+    int cx = renderer.renderResX / 2;
+    int cy = renderer.renderResY / 2 - 20;
+
+    if (localPaused_) {
+      std::string title = "GAME PAUSED";
+      int tw = font.getDims(title);
+      font.drawText(renderer.bmp, title, cx - tw / 2, cy, 50);
+
+      pauseMenu_.place(cx, cy + 16);
+      pauseMenu_.draw(common, renderer, false);
+    } else {
+      // Remote paused — show info and disconnect option
+      std::string title = "PAUSED BY PEER";
+      int tw = font.getDims(title);
+      font.drawText(renderer.bmp, title, cx - tw / 2, cy, 50);
+
+      std::string hint = "PRESS ESC TO DISCONNECT";
+      int hw = font.getDims(hint);
+      font.drawText(renderer.bmp, hint, cx - hw / 2, cy + 16, 6);
+    }
+  }
 }
 
 void NetworkController::swapLevel(Level& newLevel) {

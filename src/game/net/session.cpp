@@ -207,6 +207,24 @@ void NetSession::onMapData(const void* data, size_t len) {
     tryStartGame();
 }
 
+void NetSession::onPause() {
+  if (controllerPtr_)
+    controllerPtr_->setRemotePaused(true);
+}
+
+void NetSession::onResume() {
+  if (controllerPtr_)
+    controllerPtr_->setRemotePaused(false);
+}
+
+void NetSession::sendPause() {
+  transport_.sendPause();
+}
+
+void NetSession::sendResume() {
+  transport_.sendResume();
+}
+
 void NetSession::wireCallbacks() {
   transport_.onConnected = [this]() { onConnected(); };
   transport_.onDisconnected = [this]() { onDisconnected(); };
@@ -225,6 +243,8 @@ void NetSession::wireCallbacks() {
   transport_.onMapData = [this](const void* data, size_t len) {
     onMapData(data, len);
   };
+  transport_.onPause = [this]() { onPause(); };
+  transport_.onResume = [this]() { onResume(); };
 }
 
 void NetSession::tryStartGame() {
@@ -259,6 +279,11 @@ void NetSession::tryStartGame() {
       },
       nullptr  // We use injectRemoteInput via onRemoteInput callback instead
   );
+
+  // Wire pause/resume callbacks
+  controller_->setPauseCallbacks(
+      [this]() { transport_.sendPause(); },
+      [this]() { transport_.sendResume(); });
 
   // Pre-fill the input delay window with empty inputs so both sides
   // can advance past the initial frames without stalling.

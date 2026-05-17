@@ -143,6 +143,14 @@ bool NetTransport::poll() {
                 onMapData(data + 1, len - 1);
               }
               break;
+
+            case PacketPause:
+              if (onPause) onPause();
+              break;
+
+            case PacketResume:
+              if (onResume) onResume();
+              break;
           }
         }
 
@@ -216,6 +224,16 @@ void NetTransport::sendMapData(const void* data, size_t len) {
   ENetPacket* packet =
       enet_packet_create(buf.data(), buf.size(), ENET_PACKET_FLAG_RELIABLE);
   if (packet) enet_peer_send(peer_, CHANNEL_RELIABLE, packet);
+}
+
+void NetTransport::sendPause() {
+  uint8_t buf[1] = {PacketPause};
+  sendPacket(buf, sizeof(buf));
+}
+
+void NetTransport::sendResume() {
+  uint8_t buf[1] = {PacketResume};
+  sendPacket(buf, sizeof(buf));
 }
 
 void NetTransport::sendPacket(const void* data, size_t len) {
