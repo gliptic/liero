@@ -15,6 +15,7 @@ struct NetTransport {
     PacketInput = 1,      // Frame input: [type(1) | frame(4) | input(1)]
     PacketHandshake = 2,  // Initial sync: [type(1) | seed(4) | settingsHash(4)]
     PacketChecksum = 3,   // Desync check: [type(1) | frame(4) | checksum(4)]
+    PacketWeapons = 4,    // Weapon sync: [type(1) | weapons(5*4)]
   };
 
   // Connection state
@@ -48,12 +49,16 @@ struct NetTransport {
   // Send handshake (seed + settings hash)
   void sendHandshake(uint32_t seed, uint32_t settingsHash);
 
+  // Send local player's weapon loadout (5 weapon indices)
+  void sendWeapons(const uint32_t weapons[5]);
+
   State state() const { return state_; }
 
   // Callbacks set by the controller
   std::function<void(uint32_t frame, uint8_t input)> onRemoteInput;
   std::function<void(uint32_t seed, uint32_t settingsHash)> onHandshake;
   std::function<void(uint32_t frame, uint32_t checksum)> onChecksum;
+  std::function<void(const uint32_t weapons[5])> onWeapons;
   std::function<void()> onConnected;
   std::function<void()> onDisconnected;
 

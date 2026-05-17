@@ -54,9 +54,10 @@ struct NetSession {
   void onConnected();
   void onDisconnected();
   void onHandshake(uint32_t seed, uint32_t settingsHash);
+  void onWeapons(const uint32_t weapons[5]);
   void onRemoteInput(uint32_t frame, uint8_t input);
   void wireCallbacks();
-  void startGame();
+  void tryStartGame();
   uint32_t computeSettingsHash() const;
 
   Role role_;
@@ -72,6 +73,8 @@ struct NetSession {
   uint32_t localSettingsHash_;
   bool handshakeReceived_;
   bool handshakeSent_;
+  bool weaponsReceived_;
+  uint32_t remoteWeapons_[5];
 
   static constexpr uint16_t DEFAULT_PORT = 19532;
 };

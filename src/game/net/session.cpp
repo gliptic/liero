@@ -1,5 +1,6 @@
 #include "session.hpp"
 
+#include <cstring>
 #include <ctime>
 
 NetSession::NetSession(std::shared_ptr<Common> common,
@@ -13,7 +14,9 @@ NetSession::NetSession(std::shared_ptr<Common> common,
     , localSettingsHash_(0)
     , handshakeReceived_(false)
     , handshakeSent_(false)
+    , weaponsReceived_(false)
 {
+  std::memset(remoteWeapons_, 0, sizeof(remoteWeapons_));
   localSettingsHash_ = computeSettingsHash();
   wireCallbacks();
 }
@@ -86,6 +89,7 @@ void NetSession::disconnect() {
   controllerPtr_ = nullptr;
   handshakeReceived_ = false;
   handshakeSent_ = false;
+  weaponsReceived_ = false;
 }
 
 void NetSession::onConnected() {
@@ -97,9 +101,13 @@ void NetSession::onConnected() {
   transport_.sendHandshake(seedToSend, localSettingsHash_);
   handshakeSent_ = true;
 
-  // If we somehow already received the handshake (unlikely), try to start
-  if (handshakeReceived_)
-    startGame();
+  // Send local player's weapon settings
+  int localIdx = (role_ == Host) ? 0 : 1;
+  transport_.sendWeapons(settings_->wormSettings[localIdx]->weapons);
+
+  // Check if we can start (all data received)
+  if (handshakeReceived_ && weaponsReceived_)
+    tryStartGame();
 }
 
 void NetSession::onDisconnected() {
@@ -120,13 +128,21 @@ void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
 
   handshakeReceived_ = true;
 
-  if (handshakeSent_)
-    startGame();
+  if (handshakeSent_ && weaponsReceived_)
+    tryStartGame();
 }
 
 void NetSession::onRemoteInput(uint32_t frame, uint8_t input) {
   if (controllerPtr_)
     controllerPtr_->injectRemoteInput(frame, input);
+}
+
+void NetSession::onWeapons(const uint32_t weapons[5]) {
+  std::memcpy(remoteWeapons_, weapons, sizeof(remoteWeapons_));
+  weaponsReceived_ = true;
+
+  if (handshakeSent_ && handshakeReceived_)
+    tryStartGame();
 }
 
 void NetSession::wireCallbacks() {
@@ -138,11 +154,19 @@ void NetSession::wireCallbacks() {
   transport_.onRemoteInput = [this](uint32_t frame, uint8_t input) {
     onRemoteInput(frame, input);
   };
+  transport_.onWeapons = [this](const uint32_t weapons[5]) {
+    onWeapons(weapons);
+  };
 }
 
-void NetSession::startGame() {
+void NetSession::tryStartGame() {
   if (sessionState_ == Playing)
     return;
+
+  // Apply remote player's weapons to the remote worm's settings
+  int remoteIdx = (role_ == Host) ? 1 : 0;
+  for (int i = 0; i < 5; ++i)
+    settings_->wormSettings[remoteIdx]->weapons[i] = remoteWeapons_[i];
 
   // Seed the game's RNG so both peers have identical state
   controller_->game.rand.seed(gameSeed_);

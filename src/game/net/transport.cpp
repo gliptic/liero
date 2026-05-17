@@ -120,6 +120,14 @@ bool NetTransport::poll() {
                 onChecksum(frame, checksum);
               }
               break;
+
+            case PacketWeapons:
+              if (len == 21 && onWeapons) {
+                uint32_t weapons[5];
+                std::memcpy(weapons, data + 1, 20);
+                onWeapons(weapons);
+              }
+              break;
           }
         }
 
@@ -167,6 +175,13 @@ void NetTransport::sendHandshake(uint32_t seed, uint32_t settingsHash) {
   buf[0] = PacketHandshake;
   std::memcpy(buf + 1, &seed, 4);
   std::memcpy(buf + 5, &settingsHash, 4);
+  sendPacket(buf, sizeof(buf));
+}
+
+void NetTransport::sendWeapons(const uint32_t weapons[5]) {
+  uint8_t buf[21];
+  buf[0] = PacketWeapons;
+  std::memcpy(buf + 1, weapons, 20);
   sendPacket(buf, sizeof(buf));
 }
 
