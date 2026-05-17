@@ -60,10 +60,12 @@ You can build Open Liero as a WebAssembly application that runs in the browser.
 ```bash
 cmake --preset emscripten
 cmake --build build/emscripten --config Release
+cmake --install build/emscripten --config Release
 ```
 
-The output is in `build/emscripten/Release/` — serve `openliero.html` with any
-HTTP server (e.g. `python3 -m http.server`) and open it in a browser.
+The output is in `install/emscripten/` — serve it with any HTTP server
+(e.g. `python3 -m http.server -d install/emscripten`) and open
+`openliero.html` in a browser.
 
 ### Building videotool
 

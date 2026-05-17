@@ -253,11 +253,21 @@ if(OPENLIERO_BUILD_VIDEOTOOL)
   install(TARGETS videotool DESTINATION .)
 endif()
 
-# assets
-install(DIRECTORY data/Profiles DESTINATION .)
-install(DIRECTORY data/Resources DESTINATION .)
-install(DIRECTORY data/Setups DESTINATION .)
-install(DIRECTORY data/TC DESTINATION .)
+if(EMSCRIPTEN)
+  # Emscripten produces companion .js and .wasm files alongside the .html
+  install(FILES
+    $<TARGET_FILE_DIR:openliero>/openliero.js
+    $<TARGET_FILE_DIR:openliero>/openliero.wasm
+    $<TARGET_FILE_DIR:openliero>/openliero.data
+    DESTINATION .
+  )
+else()
+  # assets
+  install(DIRECTORY data/Profiles DESTINATION .)
+  install(DIRECTORY data/Resources DESTINATION .)
+  install(DIRECTORY data/Setups DESTINATION .)
+  install(DIRECTORY data/TC DESTINATION .)
+endif()
 
 # documentation
 install(FILES README.md DESTINATION .)

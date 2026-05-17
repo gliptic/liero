@@ -38,6 +38,9 @@ jobs:
           - name: macos
             os: macos-latest
             workflow_preset: macos-arm64-ci
+          - name: emscripten
+            os: ubuntu-latest
+            preset: emscripten
 
     steps:
       - name: Checkout repository
@@ -50,7 +53,7 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.10
 
       - name: Install dependencies (Linux)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.name != 'emscripten'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -88,6 +91,10 @@ jobs:
             libswresample-dev \
             libswscale-dev
 
+      - name: Setup Emscripten
+        if: matrix.name == 'emscripten'
+        uses: mymindstorm/setup-emsdk@v14
+
       - name: Get cmake/ninja
         uses: lukka/get-cmake@latest
 
@@ -99,12 +106,19 @@ jobs:
           appendedCacheKey: 'sdl3-v2'
 
       - name: Run cmake
+        if: matrix.workflow_preset
         uses: lukka/run-cmake@v10
         with:
           workflowPreset: '${{ matrix.workflow_preset }}'
 
+      - name: Build (Emscripten)
+        if: matrix.preset == 'emscripten'
+        run: |
+          cmake --preset emscripten
+          cmake --build build/emscripten --config Release
+
       - name: Build videotool (Linux)
-        if: runner.os == 'Linux'
+        if: matrix.name == 'linux'
         run: |
           cmake --preset linux-x64-ci -DOPENLIERO_BUILD_VIDEOTOOL=ON
           cmake --build build/linux-x64-ci --config Release --target videotool
@@ -118,7 +132,7 @@ jobs:
           workflowPreset: 'macos-x64-ci'
 
       - name: Create build artifact (Linux)
-        if: runner.os == 'linux'
+        if: matrix.name == 'linux'
         run: |
           cmake --install build/linux-x64-ci --config Release
           cd install/linux-x64-ci
@@ -148,6 +162,13 @@ jobs:
           Compress-Archive `
            -Path install/windows-x64-ci/* `
            -DestinationPath install/openliero-windows-x64.zip
+
+      - name: Create build artifact (Emscripten)
+        if: matrix.name == 'emscripten'
+        run: |
+          cmake --install build/emscripten --config Release
+          cd install/emscripten
+          tar cvf ../openliero-web.tar.gz .
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
@@ -191,6 +212,7 @@ jobs:
           echo "- Linux x86_64 (includes videotool)" >> notes.md
           echo "- Windows x86_64" >> notes.md
           echo "- macOS universal (arm64 + x86_64)" >> notes.md
+          echo "- Web (Emscripten/WebAssembly)" >> notes.md
 
           if [ -n "$LAST_TAG" ]; then
             echo "" >> notes.md
@@ -210,7 +232,8 @@ jobs:
             --target "${{ github.sha }}" \
             artifacts/linux-build/* \
             artifacts/windows-build/* \
-            artifacts/macos-build/*
+            artifacts/macos-build/* \
+            artifacts/emscripten-build/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -239,6 +262,7 @@ jobs:
             --title "${{ github.ref_name }}" \
             artifacts/linux-build/* \
             artifacts/windows-build/* \
-            artifacts/macos-build/*
+            artifacts/macos-build/* \
+            artifacts/emscripten-build/*
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
