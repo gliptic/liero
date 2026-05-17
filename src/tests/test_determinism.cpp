@@ -7,6 +7,7 @@
 #include "math.hpp"
 #include "mixer/player.hpp"
 #include "viewport.hpp"
+#include "weapon.hpp"
 #include "worm.hpp"
 
 // Hash the simulation-relevant state of a Game into a single 32-bit value.
@@ -46,6 +47,7 @@ static uint32_t hashGameState(Game& game) {
       h = h * 31 + static_cast<uint32_t>(w->weapons[i].ammo);
       h = h * 31 + static_cast<uint32_t>(w->weapons[i].delayLeft);
       h = h * 31 + static_cast<uint32_t>(w->weapons[i].loadingLeft);
+      if (w->weapons[i].type) h = h * 31 + static_cast<uint32_t>(w->weapons[i].type->id);
     }
 
     // Ninjarope
@@ -60,6 +62,58 @@ static uint32_t hashGameState(Game& game) {
     for (; br != game.bobjects.end(); ++br) {
       h = h * 31 + static_cast<uint32_t>(br->pos.x);
       h = h * 31 + static_cast<uint32_t>(br->pos.y);
+    }
+  }
+
+  // Bonuses
+  {
+    auto r = game.bonuses.all();
+    Bonus* b;
+    while ((b = r.next())) {
+      h = h * 31 + static_cast<uint32_t>(b->x);
+      h = h * 31 + static_cast<uint32_t>(b->y);
+      h = h * 31 + static_cast<uint32_t>(b->timer);
+      h = h * 31 + static_cast<uint32_t>(b->weapon);
+      h = h * 31 + static_cast<uint32_t>(b->frame);
+    }
+  }
+
+  // SObjects
+  {
+    auto r = game.sobjects.all();
+    SObject* s;
+    while ((s = r.next())) {
+      h = h * 31 + static_cast<uint32_t>(s->id);
+      h = h * 31 + static_cast<uint32_t>(s->curFrame);
+    }
+  }
+
+  // NObjects
+  {
+    auto r = game.nobjects.all();
+    NObject* n;
+    while ((n = r.next())) {
+      h = h * 31 + static_cast<uint32_t>(n->pos.x);
+      h = h * 31 + static_cast<uint32_t>(n->pos.y);
+      h = h * 31 + static_cast<uint32_t>(n->vel.x);
+      h = h * 31 + static_cast<uint32_t>(n->vel.y);
+      h = h * 31 + static_cast<uint32_t>(n->curFrame);
+      if (n->type) h = h * 31 + static_cast<uint32_t>(n->type->id);
+    }
+  }
+
+  // WObjects (projectiles)
+  {
+    auto r = game.wobjects.all();
+    WObject* wo;
+    while ((wo = r.next())) {
+      h = h * 31 + static_cast<uint32_t>(wo->pos.x);
+      h = h * 31 + static_cast<uint32_t>(wo->pos.y);
+      h = h * 31 + static_cast<uint32_t>(wo->vel.x);
+      h = h * 31 + static_cast<uint32_t>(wo->vel.y);
+      h = h * 31 + static_cast<uint32_t>(wo->curFrame);
+      h = h * 31 + static_cast<uint32_t>(wo->timeLeft);
+      if (wo->type) h = h * 31 + static_cast<uint32_t>(wo->type->id);
     }
   }
 
