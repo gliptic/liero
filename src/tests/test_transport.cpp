@@ -16,14 +16,8 @@ static void pollUntil(NetTransport& t, NetTransport::State target, int maxMs = 2
 TEST_CASE("Transport connects host and client", "[transport]") {
   NetTransport host;
   REQUIRE(host.host(0));  // Bind to any available port
-
-  // We need to get the actual port. ENet doesn't expose this easily,
-  // so let's use a fixed port for testing.
-  host.~NetTransport();
-  new (&host) NetTransport();
-
-  uint16_t port = 19532;
-  REQUIRE(host.host(port));
+  uint16_t port = host.listeningPort();
+  REQUIRE(port != 0);
   REQUIRE(host.state() == NetTransport::Listening);
 
   bool hostConnected = false;
@@ -50,10 +44,9 @@ TEST_CASE("Transport connects host and client", "[transport]") {
 }
 
 TEST_CASE("Transport delivers input packets", "[transport]") {
-  uint16_t port = 19533;
-
   NetTransport host;
-  REQUIRE(host.host(port));
+  REQUIRE(host.host(0));
+  uint16_t port = host.listeningPort();
 
   NetTransport client;
   REQUIRE(client.connect("127.0.0.1", port));
@@ -93,10 +86,9 @@ TEST_CASE("Transport delivers input packets", "[transport]") {
 }
 
 TEST_CASE("Transport delivers handshake", "[transport]") {
-  uint16_t port = 19534;
-
   NetTransport host;
-  REQUIRE(host.host(port));
+  REQUIRE(host.host(0));
+  uint16_t port = host.listeningPort();
 
   NetTransport client;
   REQUIRE(client.connect("127.0.0.1", port));
@@ -132,10 +124,9 @@ TEST_CASE("Transport delivers handshake", "[transport]") {
 }
 
 TEST_CASE("Transport delivers player info", "[transport]") {
-  uint16_t port = 19536;
-
   NetTransport host;
-  REQUIRE(host.host(port));
+  REQUIRE(host.host(0));
+  uint16_t port = host.listeningPort();
 
   NetTransport client;
   REQUIRE(client.connect("127.0.0.1", port));
@@ -182,10 +173,9 @@ TEST_CASE("Transport delivers player info", "[transport]") {
 }
 
 TEST_CASE("Transport delivers match settings", "[transport]") {
-  uint16_t port = 19537;
-
   NetTransport host;
-  REQUIRE(host.host(port));
+  REQUIRE(host.host(0));
+  uint16_t port = host.listeningPort();
 
   NetTransport client;
   REQUIRE(client.connect("127.0.0.1", port));
@@ -243,10 +233,9 @@ TEST_CASE("Transport delivers match settings", "[transport]") {
 }
 
 TEST_CASE("Transport bidirectional input exchange", "[transport]") {
-  uint16_t port = 19535;
-
   NetTransport host;
-  REQUIRE(host.host(port));
+  REQUIRE(host.host(0));
+  uint16_t port = host.listeningPort();
 
   NetTransport client;
   REQUIRE(client.connect("127.0.0.1", port));

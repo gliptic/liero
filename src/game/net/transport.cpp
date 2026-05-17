@@ -34,6 +34,10 @@ void NetTransport::disconnect() {
   state_ = Disconnected;
 }
 
+uint16_t NetTransport::listeningPort() const {
+  return enetHost_ ? enetHost_->address.port : 0;
+}
+
 bool NetTransport::host(uint16_t port) {
   if (enetHost_) return false;
 

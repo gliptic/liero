@@ -45,8 +45,8 @@ TEST_CASE("NetSession host and client connect and handshake", "[session]") {
   NetSession host(f.common, f.settings);
   NetSession client(f.common, f.settings);
 
-  uint16_t port = 19540;
-  REQUIRE(host.hostGame(port));
+  REQUIRE(host.hostGame(0));
+  uint16_t port = host.transport().listeningPort();
   REQUIRE(host.sessionState() == NetSession::WaitingForPeer);
 
   REQUIRE(client.joinGame("127.0.0.1", port));
@@ -86,8 +86,8 @@ TEST_CASE("NetSession syncs host settings to client", "[session]") {
   NetSession host(f.common, f.settings);
   NetSession client(f.common, settingsB);
 
-  uint16_t port = 19541;
-  REQUIRE(host.hostGame(port));
+  REQUIRE(host.hostGame(0));
+  uint16_t port = host.transport().listeningPort();
   REQUIRE(client.joinGame("127.0.0.1", port));
 
   // Poll until both reach Playing — host settings are authoritative
@@ -144,8 +144,8 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
   NetSession host(f.common, settingsHost);
   NetSession client(f.common, settingsClient);
 
-  uint16_t port = 19543;
-  REQUIRE(host.hostGame(port));
+  REQUIRE(host.hostGame(0));
+  uint16_t port = host.transport().listeningPort();
   REQUIRE(client.joinGame("127.0.0.1", port));
 
   bool ready = pollUntil(host, client, [&]() {
@@ -183,8 +183,8 @@ TEST_CASE("NetSession plays frames over real network", "[session]") {
   NetSession host(f.common, f.settings);
   NetSession client(f.common, f.settings);
 
-  uint16_t port = 19542;
-  REQUIRE(host.hostGame(port));
+  REQUIRE(host.hostGame(0));
+  uint16_t port = host.transport().listeningPort();
   REQUIRE(client.joinGame("127.0.0.1", port));
 
   // Wait for Playing state
@@ -228,8 +228,8 @@ TEST_CASE("NetSession client detects host disconnect", "[session]") {
   NetSession host(f.common, f.settings);
   NetSession client(f.common, f.settings);
 
-  uint16_t port = 19548;
-  REQUIRE(host.hostGame(port));
+  REQUIRE(host.hostGame(0));
+  uint16_t port = host.transport().listeningPort();
   REQUIRE(client.joinGame("127.0.0.1", port));
 
   bool ready = pollUntil(host, client, [&]() {

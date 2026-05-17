@@ -91,6 +91,9 @@ struct NetTransport {
 
   State state() const { return state_; }
 
+  // Returns the port the host is listening on (useful when binding to port 0).
+  uint16_t listeningPort() const;
+
   // Callbacks set by the controller
   std::function<void(uint32_t frame, uint8_t input)> onRemoteInput;
   std::function<void(uint32_t seed, uint32_t settingsHash)> onHandshake;
