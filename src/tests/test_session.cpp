@@ -221,3 +221,53 @@ TEST_CASE("NetSession plays frames over real network", "[session]") {
   REQUIRE(host.controller()->game.rand.x == client.controller()->game.rand.x);
   REQUIRE(host.controller()->game.rand.c == client.controller()->game.rand.c);
 }
+
+TEST_CASE("NetSession client detects host disconnect", "[session]") {
+  SessionFixture f;
+
+  NetSession host(f.common, f.settings);
+  NetSession client(f.common, f.settings);
+
+  uint16_t port = 19548;
+  REQUIRE(host.hostGame(port));
+  REQUIRE(client.joinGame("127.0.0.1", port));
+
+  bool ready = pollUntil(host, client, [&]() {
+    return host.sessionState() == NetSession::Playing &&
+           client.sessionState() == NetSession::Playing;
+  });
+  REQUIRE(ready);
+
+  // Host disconnects
+  host.disconnect();
+  REQUIRE(host.sessionState() == NetSession::Idle);
+
+  // Client should detect the disconnect
+  bool disconnected = false;
+  auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+  while (!disconnected && std::chrono::steady_clock::now() < deadline) {
+    client.update();
+    disconnected = (client.sessionState() == NetSession::Disconnected);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  REQUIRE(disconnected);
+}
+
+TEST_CASE("NetSession connect to non-existent host fails", "[session]") {
+  SessionFixture f;
+
+  NetSession client(f.common, f.settings);
+  // Connect to a port where nobody is listening
+  REQUIRE(client.joinGame("127.0.0.1", 19599));
+
+  // Poll — should eventually fail or stay in WaitingForPeer
+  auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+  while (client.sessionState() == NetSession::WaitingForPeer &&
+         std::chrono::steady_clock::now() < deadline) {
+    client.update();
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  // Should not be in Playing state
+  REQUIRE(client.sessionState() != NetSession::Playing);
+}
