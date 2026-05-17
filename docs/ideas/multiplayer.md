@@ -56,10 +56,10 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 
 ### Implementation steps:
 
-1. **Determinism harness** — Run two `Game` instances in-process with same seed/inputs, assert state matches after every frame
-2. **NetworkController** — Implements `Controller` interface; owns UDP socket; buffers local+remote inputs; advances sim when both available
-3. **Input delay buffer** — Ring buffer holding N frames of inputs; sim runs N frames behind real-time
-4. **Protocol** — Frame number + input byte + periodic CRC32 checksum of game state
+1. ~~**Determinism harness**~~ ✅ — Run two `Game` instances in-process with same seed/inputs, assert state matches after every frame
+2. ~~**NetworkController**~~ ✅ — Implements `Controller` interface; buffers local+remote inputs; advances sim when both available
+3. **UDP transport** ⬅️ next — Send/receive input bytes between two peers over UDP
+4. **Input delay buffer** — (integrated into NetworkController already, but needs protocol-level handling)
 5. **Connection flow** — Host listens on port, peer connects, exchange game settings + seed, start game
 6. **UI** — Menu option to host/join, IP entry field
 
@@ -90,19 +90,50 @@ seed and random inputs for 1000 frames and verifies state hashes match every fra
 **Important setup note:** Worms must have `initWeapons()` called before the game starts,
 otherwise weapon type pointers are null and the sim will crash in `processSteerables()`.
 
+### NetworkController design (2026-05-17)
+
+The `NetworkController` (`src/game/controller/networkController.hpp`) implements the existing
+`Controller` interface. Key design decisions:
+
+- **Separation of concerns:** The controller itself has no socket code. It communicates via
+  `InputSendCallback` and `InputRecvCallback` function objects, plus a `injectRemoteInput()`
+  method for direct injection. This makes it testable without a network.
+- **Input delay buffer:** A ring buffer of 256 slots. The local player's input is written at
+  `simFrame + inputDelay` (default 3 frames ahead). The sim only advances when both local and
+  remote inputs are available for `simFrame`.
+- **Stalling:** If remote input isn't available, the controller simply doesn't advance. No
+  prediction, no interpolation. This is the lockstep guarantee.
+- **Local-only input:** `onKey()` only accepts keys for the local player's worm index.
+  The remote player's inputs come exclusively via `injectRemoteInput()`.
+- **Game initialization:** Currently skips weapon selection and uses default weapons. For the
+  full implementation, both peers will need to exchange weapon selections before starting.
+
+**Architecture for next steps:** The UDP transport will be a separate class that owns the socket
+and calls `injectRemoteInput()` on the controller. This keeps networking concerns out of the
+game logic.
+
+### Answered open questions
+
+- **PRNG state:** `gvl::mwc` has exactly two uint32 fields (`x` and `c`). Synchronizing the
+  seed before game start is sufficient — verified by tests showing both games maintain identical
+  `rand.x` and `rand.c` after hundreds of frames.
+- **Input delay already integrated:** The 3-frame buffer is part of the NetworkController.
+  The next step is just the wire protocol (frame number + input byte over UDP).
+
 ## Open Questions
 
 - What UDP library to use? Options: raw BSD sockets, SDL_net, ENet (reliable UDP with channels), or GameNetworkingSockets (Valve's library, has NAT traversal)
 - Should the input delay be adaptive (based on measured RTT) or fixed?
 - How to handle disconnection gracefully? Pause + timeout + forfeit?
 - Should we sync game settings/TC data hash to prevent mismatched clients from playing?
-- Is there any state in `gvl::mwc` (the PRNG) beyond the two 32-bit values that needs synchronizing?
+- ~~Is there any state in `gvl::mwc` (the PRNG) beyond the two 32-bit values that needs synchronizing?~~ **Answered:** No, just `x` and `c`. Seed sync is sufficient.
+- How should weapon selection work in multiplayer? Options: both players select locally then exchange, or use a shared selection screen with one player choosing at a time.
 
 ## Technical Risk Assessment
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| Hidden non-determinism | Medium | Critical (desync) | Determinism test harness running in CI |
-| Input delay feels bad at >80ms RTT | High | Medium (UX) | Document as "alpha limitation", plan rollback for Phase 2 |
-| NAT/firewall blocks connections | High | High (unusable) | Alpha = direct IP only; document port forwarding; Phase 2 adds hole-punching |
-| Platform-specific fixed-point behavior | Low | Critical | Fixed-point is integer-based, should be identical; verify in harness |
+| Risk | Likelihood | Impact | Mitigation | Status |
+|------|-----------|--------|------------|--------|
+| Hidden non-determinism | ~~Medium~~ **Low** | Critical (desync) | Determinism test harness running in CI | ✅ Validated — 1000 frames, no desync |
+| Input delay feels bad at >80ms RTT | High | Medium (UX) | Document as "alpha limitation", plan rollback for Phase 2 | Pending |
+| NAT/firewall blocks connections | High | High (unusable) | Alpha = direct IP only; document port forwarding; Phase 2 adds hole-punching | Pending |
+| Platform-specific fixed-point behavior | Low | Critical | Fixed-point is integer-based, should be identical; verify in harness | Pending (cross-platform CI) |
