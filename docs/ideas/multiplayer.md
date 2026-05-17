@@ -204,10 +204,34 @@ The UI integration uses the existing state stack and menu system:
 - How should weapon selection work in multiplayer? Options: both players select locally then exchange, or use a shared selection screen with one player choosing at a time. Currently uses default weapons.
 - Port configuration — currently hardcoded to 19532. Could add a port input field.
 
+### Weapon selection in multiplayer (2026-05-17)
+
+The weapon selection screen is now fully integrated with the lockstep network protocol.
+Two issues had to be resolved:
+
+1. **Weapon RNG desync:** The `WeaponSelection` constructor previously used `gfx.rand`
+   (a local, non-synced RNG) for initial weapon randomization. Changed to `game.rand`
+   (the synced game RNG) so both peers produce identical random weapons.
+
+2. **`pressedOnce()` broken by lockstep `unpack()`:** In local play, `onKey()` only fires
+   on actual key events, so `pressedOnce()` (which reads-and-clears a control bit) works
+   correctly for one-shot navigation. In network play, `advanceWeaponSelection()` calls
+   `unpack()` every frame, re-setting control bits that `pressedOnce()` had cleared — causing
+   held keys to auto-repeat every frame. Fixed by implementing **edge detection**: tracking
+   the previous frame's packed input state and only applying bits that transition from 0→1
+   (rising edge). This matches the local behavior of receiving a key event only on press.
+
+3. **Divergent wormSettings:** Each machine has different saved player profiles, so
+   `wormSettings->weapons[]` differ between peers. Since the weapon selection constructor
+   conditionally calls `game.rand()` based on whether `weapons[j] == 0`, different initial
+   values cause different RNG call sequences → desync. Fixed by clearing all weapon
+   preferences to 0 before constructing `WeaponSelection` in multiplayer, ensuring both
+   peers take the identical randomization path.
+
 ## Future Work
 
 - **Desync detection:** Periodic checksum comparison using the existing `PacketChecksum` packet type (already in the wire protocol, not yet wired up)
-- **Weapon selection:** Exchange weapon choices before game start
+- **Weapon settings sync:** Consider syncing player name/color over the network
 - **Replay recording of network games** — the data is already available (frame inputs)
 - **Rollback netcode (Phase 2)** — GGPO-style prediction/rollback for internet play
 - **NAT traversal** — STUN/TURN or relay server for connections through firewalls

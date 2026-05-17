@@ -20,6 +20,9 @@ NetworkController::NetworkController(
     , simFrame(0)
     , inputDelay(3)
 {
+  localPrevInput = 0;
+  remotePrevInput = 0;
+  skipWeaponSelection = false;
   localInputs.fill(0);
   remoteInputs.fill(0);
   remoteInputReady.fill(false);
@@ -103,8 +106,28 @@ void NetworkController::focus() {
     ws->focus();
   if (state == StateInitial) {
     game.level.generateFromSettings(*game.common, *game.settings, game.rand);
-    state = StateWeaponSelection;
-    ws = std::make_unique<WeaponSelection>(game);
+
+    if (skipWeaponSelection) {
+      // Test mode: skip weapon selection, go straight to game
+      for (auto* w : game.worms)
+        w->initWeapons(game);
+      for (auto* w : game.worms)
+        w->lives = game.settings->lives;
+      game.startGame();
+      game.resetWorms();
+      state = StateGame;
+    } else {
+      state = StateWeaponSelection;
+
+      // Clear saved weapon preferences so both peers take the same RNG path
+      // during randomization (each machine has different local player profiles)
+      for (auto* w : game.worms) {
+        for (int j = 0; j < Settings::selectableWeapons; ++j)
+          w->settings->weapons[j] = 0;
+      }
+
+      ws = std::make_unique<WeaponSelection>(game);
+    }
   }
   game.focus(gfx.playRenderer);
   game.focus(gfx.singleScreenRenderer);
@@ -161,9 +184,17 @@ void NetworkController::advanceWeaponSelection() {
     return;  // Stall — waiting for remote input
   }
 
-  // Apply inputs to worms so weapon selection can read them
-  game.worms[localIdx]->controlStates.unpack(localInputs[currentSlot]);
-  game.worms[remoteIdx]->controlStates.unpack(remoteInputs[currentSlot]);
+  // Apply inputs using edge detection — only newly pressed buttons trigger,
+  // preventing held keys from auto-repeating every frame.
+  uint8_t curLocal = localInputs[currentSlot];
+  uint8_t curRemote = remoteInputs[currentSlot];
+  uint8_t risingLocal = curLocal & ~localPrevInput;
+  uint8_t risingRemote = curRemote & ~remotePrevInput;
+  localPrevInput = curLocal;
+  remotePrevInput = curRemote;
+
+  game.worms[localIdx]->controlStates.unpack(risingLocal);
+  game.worms[remoteIdx]->controlStates.unpack(risingRemote);
 
   // Clear the slot for reuse
   remoteInputReady[currentSlot] = false;
@@ -173,6 +204,10 @@ void NetworkController::advanceWeaponSelection() {
     // Both players are ready — finalize and start the game
     ws->finalize();
     ws.reset();
+
+    // Reset edge detection for the gameplay phase
+    localPrevInput = 0;
+    remotePrevInput = 0;
 
     for (auto* w : game.worms) {
       w->lives = game.settings->lives;

@@ -36,6 +36,10 @@ struct LoopbackFixture {
     controllerA = std::make_unique<NetworkController>(common, settings, 0);
     controllerB = std::make_unique<NetworkController>(common, settings, 1);
 
+    // Skip weapon selection in tests — we're testing game simulation determinism
+    controllerA->setSkipWeaponSelection(true);
+    controllerB->setSkipWeaponSelection(true);
+
     // Seed both games identically
     uint32_t seed = 42;
     controllerA->game.rand.seed(seed);

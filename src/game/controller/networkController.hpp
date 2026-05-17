@@ -41,6 +41,9 @@ struct NetworkController : CommonController {
   // Directly inject inputs for a given frame (for testing without network)
   void injectRemoteInput(uint32_t frame, uint8_t input);
 
+  // Skip weapon selection and go directly to game (for testing)
+  void setSkipWeaponSelection(bool skip) { skipWeaponSelection = skip; }
+
   // Get current simulation frame number
   uint32_t currentFrame() const { return simFrame; }
 
@@ -68,6 +71,12 @@ struct NetworkController : CommonController {
 
   // Current local control state (from keyboard)
   Worm::ControlState localControlState;
+
+  // Previous frame's packed input (for edge detection during weapon selection)
+  uint8_t localPrevInput;
+  uint8_t remotePrevInput;
+
+  bool skipWeaponSelection;
 
   InputSendCallback sendInput;
   InputRecvCallback recvInput;
