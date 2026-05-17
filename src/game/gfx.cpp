@@ -1517,7 +1517,11 @@ bool Gfx::runOneFrame()
 					if (closeBracket != std::string::npos) {
 						std::string ip6 = addr.substr(1, closeBracket - 1);
 						if (closeBracket + 1 < addr.size() && addr[closeBracket + 1] == ':') {
-							port = static_cast<uint16_t>(std::stoi(addr.substr(closeBracket + 2)));
+							try {
+								port = static_cast<uint16_t>(std::stoi(addr.substr(closeBracket + 2)));
+							} catch (...) {
+								// Malformed port, keep default
+							}
 						}
 						addr = ip6;
 					}
@@ -1529,7 +1533,11 @@ bool Gfx::runOneFrame()
 						// (multiple colons = bare IPv6 without port)
 						auto firstColon = addr.find(':');
 						if (firstColon == lastColon) {
-							port = static_cast<uint16_t>(std::stoi(addr.substr(lastColon + 1)));
+							try {
+								port = static_cast<uint16_t>(std::stoi(addr.substr(lastColon + 1)));
+							} catch (...) {
+								// Malformed port, keep default
+							}
 							addr = addr.substr(0, lastColon);
 						}
 					}
