@@ -22,6 +22,8 @@ NetworkController::NetworkController(
 {
   localPrevInput = 0;
   remotePrevInput = 0;
+  localHeldFrames.fill(0);
+  remoteHeldFrames.fill(0);
   skipWeaponSelection = false;
   localInputs.fill(0);
   remoteInputs.fill(0);
@@ -202,6 +204,8 @@ void NetworkController::advanceWeaponSelection() {
     // Reset edge detection for the gameplay phase
     localPrevInput = 0;
     remotePrevInput = 0;
+    localHeldFrames.fill(0);
+    remoteHeldFrames.fill(0);
 
     for (auto* w : game.worms) {
       w->lives = game.settings->lives;
@@ -240,10 +244,9 @@ void NetworkController::advanceSimulation() {
     return;
   }
 
-  // Apply inputs preserving pressedOnce semantics.
+  // Apply inputs preserving pressedOnce semantics with deterministic key repeat.
   // Rising edges (newly pressed) set the bit. Released bits clear it.
-  // Held bits (set in both prev and current) are left in whatever state
-  // the game left them — if pressedOnce() consumed them, they stay cleared.
+  // Held bits are periodically re-set to emulate key repeat (matching local SDL behavior).
   uint8_t curLocal = localInputs[currentSlot];
   uint8_t curRemote = remoteInputs[currentSlot];
   uint8_t risingLocal = curLocal & ~localPrevInput;
@@ -257,6 +260,35 @@ void NetworkController::advanceSimulation() {
   // Clear released bits
   game.worms[localIdx]->controlStates.istate &= ~releasedLocal;
   game.worms[remoteIdx]->controlStates.istate &= ~releasedRemote;
+
+  // Deterministic key repeat for held bits
+  for (int bit = 0; bit < 7; ++bit) {
+    uint8_t mask = 1 << bit;
+    // Local
+    if (risingLocal & mask) {
+      localHeldFrames[bit] = 0;
+    } else if (curLocal & mask) {
+      ++localHeldFrames[bit];
+      if (localHeldFrames[bit] >= KEY_REPEAT_INITIAL &&
+          (localHeldFrames[bit] - KEY_REPEAT_INITIAL) % KEY_REPEAT_INTERVAL == 0) {
+        game.worms[localIdx]->controlStates.istate |= mask;
+      }
+    } else {
+      localHeldFrames[bit] = 0;
+    }
+    // Remote
+    if (risingRemote & mask) {
+      remoteHeldFrames[bit] = 0;
+    } else if (curRemote & mask) {
+      ++remoteHeldFrames[bit];
+      if (remoteHeldFrames[bit] >= KEY_REPEAT_INITIAL &&
+          (remoteHeldFrames[bit] - KEY_REPEAT_INITIAL) % KEY_REPEAT_INTERVAL == 0) {
+        game.worms[remoteIdx]->controlStates.istate |= mask;
+      }
+    } else {
+      remoteHeldFrames[bit] = 0;
+    }
+  }
 
   localPrevInput = curLocal;
   remotePrevInput = curRemote;

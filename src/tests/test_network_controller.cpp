@@ -208,18 +208,30 @@ TEST_CASE("NetworkController pressedOnce fires only on rising edge", "[network]"
   ctrl->injectRemoteInput(frame, changeOnly);
   ctrl->process();
 
-  // Next 10 frames: Change+Left held
+  // Next 10 frames: Change+Left held (within initial delay — should fire once)
   for (int tick = 0; tick < 10; ++tick) {
     frame = ctrl->currentFrame();
     ctrl->injectRemoteInput(frame, changeLeft);
     ctrl->process();
   }
 
-  // Weapon should have changed exactly once (Left = decrement, wraps)
-  int finalWeapon = ctrl->game.worms[1]->currentWeapon;
-  int expected = (initialWeapon - 1 + 5) % 5;
-  INFO("Initial: " << initialWeapon << ", Final: " << finalWeapon << ", Expected: " << expected);
-  REQUIRE(finalWeapon == expected);
+  // Weapon should have changed exactly once during initial delay period
+  int weaponAfterFirst = ctrl->game.worms[1]->currentWeapon;
+  int expected1 = (initialWeapon - 1 + 5) % 5;
+  INFO("After initial press: " << weaponAfterFirst << ", expected: " << expected1);
+  REQUIRE(weaponAfterFirst == expected1);
+
+  // Continue holding for 20 more frames (past initial delay of 12, repeats every 3)
+  // Should get additional weapon changes from auto-repeat
+  for (int tick = 0; tick < 20; ++tick) {
+    frame = ctrl->currentFrame();
+    ctrl->injectRemoteInput(frame, changeLeft);
+    ctrl->process();
+  }
+
+  int weaponAfterRepeat = ctrl->game.worms[1]->currentWeapon;
+  INFO("After repeat: " << weaponAfterRepeat << " (should differ from " << expected1 << ")");
+  REQUIRE(weaponAfterRepeat != expected1);
 }
 
 TEST_CASE("Weapon selection uses synced game.rand", "[network]") {
