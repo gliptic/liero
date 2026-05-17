@@ -43,41 +43,32 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Fetch all releases via gh CLI, then check each for the web asset
           echo '{"releases":[],"dev":[]}' > builds_new.json
 
-          gh release list --repo "${{ github.repository }}" --limit 50 \
-            --json tagName,isPrerelease,createdAt | \
-          jq -c '.[]' | \
-          while IFS= read -r release; do
-            TAG=$(echo "$release" | jq -r '.tagName')
-            IS_PRE=$(echo "$release" | jq -r '.isPrerelease')
-            CREATED=$(echo "$release" | jq -r '.createdAt')
+          # Helper: process a release entry (download if needed, add to manifest)
+          process_release() {
+            local TAG="$1" TYPE="$2" CREATED="$3"
+            local DIR
 
-            # Check if this release has the web asset
-            if ! gh release view "$TAG" --repo "${{ github.repository }}" --json assets \
-              --jq '.assets[].name' 2>/dev/null | grep -q '^openliero-web\.tar\.gz$'; then
-              continue
-            fi
-
-            if [ "$IS_PRE" = "true" ]; then
-              TYPE="dev"
+            if [ "$TYPE" = "dev" ]; then
               DIR="dev/${TAG}"
             else
-              TYPE="release"
               DIR="releases/${TAG}"
             fi
 
             # Skip download if already deployed
             if [ ! -d "$DIR" ]; then
               mkdir -p "$DIR"
-              gh release download "$TAG" --repo "${{ github.repository }}" \
-                --pattern "openliero-web.tar.gz" --dir /tmp/dl --clobber
+              if ! gh release download "$TAG" --repo "${{ github.repository }}" \
+                --pattern "openliero-web.tar.gz" --dir /tmp/dl --clobber 2>/dev/null; then
+                # No web asset in this release, skip
+                rm -rf "$DIR"
+                return
+              fi
               tar xf /tmp/dl/openliero-web.tar.gz -C "$DIR"
               rm -f /tmp/dl/openliero-web.tar.gz
             fi
 
-            # Add to manifest
             python3 -c "
           import json
           with open('builds_new.json') as f:
@@ -87,6 +78,26 @@ jobs:
           with open('builds_new.json', 'w') as f:
               json.dump(m, f, indent=2)
           "
+          }
+
+          # Fetch all stable releases (should be few)
+          gh release list --repo "${{ github.repository }}" --limit 50 \
+            --exclude-pre-releases --json tagName,createdAt | \
+          jq -c '.[]' | \
+          while IFS= read -r release; do
+            TAG=$(echo "$release" | jq -r '.tagName')
+            CREATED=$(echo "$release" | jq -r '.createdAt')
+            process_release "$TAG" "release" "$CREATED"
+          done
+
+          # Fetch only the last 10 pre-releases
+          gh release list --repo "${{ github.repository }}" --limit 10 \
+            --exclude-stable --json tagName,createdAt | \
+          jq -c '.[]' | \
+          while IFS= read -r release; do
+            TAG=$(echo "$release" | jq -r '.tagName')
+            CREATED=$(echo "$release" | jq -r '.createdAt')
+            process_release "$TAG" "dev" "$CREATED"
           done
 
           # Sort, prune, and clean up old directories
