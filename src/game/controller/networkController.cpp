@@ -348,17 +348,49 @@ void NetworkController::advanceWeaponSelection() {
     return;  // Stall — waiting for remote input
   }
 
-  // Apply inputs using edge detection — only newly pressed buttons trigger,
-  // preventing held keys from auto-repeating every frame.
+  // Apply inputs with key repeat for Left, Right, and Fire (used by weapon
+  // cycling and randomize). Up/Down only need rising edges (pressedOnce).
   uint8_t curLocal = localInputs[currentSlot];
   uint8_t curRemote = remoteInputs[currentSlot];
   uint8_t risingLocal = curLocal & ~localPrevInput;
   uint8_t risingRemote = curRemote & ~remotePrevInput;
+  uint8_t releasedLocal = localPrevInput & ~curLocal;
+  uint8_t releasedRemote = remotePrevInput & ~curRemote;
+
+  game.worms[localIdx]->controlStates.istate |= risingLocal;
+  game.worms[remoteIdx]->controlStates.istate |= risingRemote;
+  game.worms[localIdx]->controlStates.istate &= ~releasedLocal;
+  game.worms[remoteIdx]->controlStates.istate &= ~releasedRemote;
+
+  // Key repeat for held bits (same logic as game phase)
+  for (int bit = 0; bit < 7; ++bit) {
+    uint8_t mask = 1 << bit;
+    if (risingLocal & mask) {
+      localHeldFrames[bit] = 0;
+    } else if (curLocal & mask) {
+      ++localHeldFrames[bit];
+      if (localHeldFrames[bit] >= KEY_REPEAT_INITIAL &&
+          (localHeldFrames[bit] - KEY_REPEAT_INITIAL) % KEY_REPEAT_INTERVAL == 0) {
+        game.worms[localIdx]->controlStates.istate |= mask;
+      }
+    } else {
+      localHeldFrames[bit] = 0;
+    }
+    if (risingRemote & mask) {
+      remoteHeldFrames[bit] = 0;
+    } else if (curRemote & mask) {
+      ++remoteHeldFrames[bit];
+      if (remoteHeldFrames[bit] >= KEY_REPEAT_INITIAL &&
+          (remoteHeldFrames[bit] - KEY_REPEAT_INITIAL) % KEY_REPEAT_INTERVAL == 0) {
+        game.worms[remoteIdx]->controlStates.istate |= mask;
+      }
+    } else {
+      remoteHeldFrames[bit] = 0;
+    }
+  }
+
   localPrevInput = curLocal;
   remotePrevInput = curRemote;
-
-  game.worms[localIdx]->controlStates.unpack(risingLocal);
-  game.worms[remoteIdx]->controlStates.unpack(risingRemote);
 
   // Clear the slot for reuse
   remoteInputReady[currentSlot] = false;
