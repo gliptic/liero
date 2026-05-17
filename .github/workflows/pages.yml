@@ -90,10 +90,10 @@ jobs:
             process_release "$TAG" "release" "$CREATED"
           done
 
-          # Fetch only the last 10 pre-releases
-          gh release list --repo "${{ github.repository }}" --limit 10 \
-            --exclude-stable --json tagName,createdAt | \
-          jq -c '.[]' | \
+          # Fetch only the last 10 pre-releases (fetch extra, filter with jq)
+          gh release list --repo "${{ github.repository }}" --limit 30 \
+            --json tagName,isPrerelease,createdAt | \
+          jq -c '[.[] | select(.isPrerelease == true)] | .[:10] | .[]' | \
           while IFS= read -r release; do
             TAG=$(echo "$release" | jq -r '.tagName')
             CREATED=$(echo "$release" | jq -r '.createdAt')
