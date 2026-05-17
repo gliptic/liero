@@ -60,10 +60,11 @@ bool GamePlayState::update()
 		}
 
 		// Clear framebuffer so menu doesn't capture stale overlay content
-		if (gfx->netSession)
+		if (gfx->netSession) {
 			gfx->netSession.reset();
-		fill(gfx->playRenderer.bmp, 0);
-		fill(gfx->singleScreenRenderer.bmp, 0);
+			fill(gfx->playRenderer.bmp, 0);
+			fill(gfx->singleScreenRenderer.bmp, 0);
+		}
 		return false;
 	}
 
