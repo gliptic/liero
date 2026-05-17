@@ -88,7 +88,10 @@ void NetworkController::onKey(int key, bool keyState) {
   }
 }
 
-void NetworkController::unfocus() {}
+void NetworkController::unfocus() {
+  if (state == StateWeaponSelection && ws)
+    ws->unfocus();
+}
 
 void NetworkController::focus() {
   if (state == StateGameEnded) {
@@ -96,16 +99,12 @@ void NetworkController::focus() {
     fadeValue = 0;
     return;
   }
+  if (state == StateWeaponSelection)
+    ws->focus();
   if (state == StateInitial) {
-    // Skip weapon selection for now — use default weapons
-    for (auto* w : game.worms) {
-      w->initWeapons(game);
-      w->lives = game.settings->lives;
-    }
     game.level.generateFromSettings(*game.common, *game.settings, game.rand);
-    game.startGame();
-    game.resetWorms();
-    state = StateGame;
+    state = StateWeaponSelection;
+    ws = std::make_unique<WeaponSelection>(game);
   }
   game.focus(gfx.playRenderer);
   game.focus(gfx.singleScreenRenderer);
@@ -114,7 +113,9 @@ void NetworkController::focus() {
 }
 
 bool NetworkController::process() {
-  if (state == StateGame || state == StateGameEnded) {
+  if (state == StateWeaponSelection) {
+    advanceWeaponSelection();
+  } else if (state == StateGame || state == StateGameEnded) {
     advanceSimulation();
   }
 
@@ -133,6 +134,55 @@ bool NetworkController::process() {
   }
 
   return true;
+}
+
+void NetworkController::advanceWeaponSelection() {
+  // Buffer the local input for this frame
+  uint32_t inputFrame = simFrame + inputDelay;
+  uint32_t slot = inputFrame % INPUT_BUFFER_SIZE;
+  localInputs[slot] = localControlState.pack() & 0x7f;
+
+  // Send local input via callback
+  if (sendInput) {
+    sendInput(inputFrame, localInputs[slot]);
+  }
+
+  // Try to get remote input via callback
+  if (recvInput) {
+    int result = recvInput(simFrame);
+    if (result >= 0) {
+      injectRemoteInput(simFrame, static_cast<uint8_t>(result));
+    }
+  }
+
+  // Check if we have remote input for the current frame
+  uint32_t currentSlot = simFrame % INPUT_BUFFER_SIZE;
+  if (!remoteInputReady[currentSlot]) {
+    return;  // Stall — waiting for remote input
+  }
+
+  // Apply inputs to worms so weapon selection can read them
+  game.worms[localIdx]->controlStates.unpack(localInputs[currentSlot]);
+  game.worms[remoteIdx]->controlStates.unpack(remoteInputs[currentSlot]);
+
+  // Clear the slot for reuse
+  remoteInputReady[currentSlot] = false;
+
+  // Advance weapon selection
+  if (ws->processFrame()) {
+    // Both players are ready — finalize and start the game
+    ws->finalize();
+    ws.reset();
+
+    for (auto* w : game.worms) {
+      w->lives = game.settings->lives;
+    }
+    game.startGame();
+    game.resetWorms();
+    state = StateGame;
+  }
+
+  ++simFrame;
 }
 
 void NetworkController::advanceSimulation() {
@@ -181,7 +231,9 @@ void NetworkController::advanceSimulation() {
 }
 
 void NetworkController::draw(Renderer& renderer, bool useSpectatorViewports) {
-  if (state == StateGame || state == StateGameEnded) {
+  if (state == StateWeaponSelection) {
+    ws->draw(renderer, state, useSpectatorViewports);
+  } else if (state == StateGame || state == StateGameEnded) {
     game.draw(renderer, state, useSpectatorViewports);
   }
   renderer.fadeValue = fadeValue;

@@ -9,6 +9,7 @@
 #include "commonController.hpp"
 #include "../game.hpp"
 #include "../worm.hpp"
+#include "../weapsel.hpp"
 
 // Callback type for sending local input to the transport layer.
 // Called each frame with: (frame_number, local_input_byte)
@@ -47,6 +48,7 @@ struct NetworkController : CommonController {
 
  private:
   void advanceSimulation();
+  void advanceWeaponSelection();
 
   int localIdx;    // 0 or 1 — which worm is the local player
   int remoteIdx;   // the other worm
@@ -69,4 +71,7 @@ struct NetworkController : CommonController {
 
   InputSendCallback sendInput;
   InputRecvCallback recvInput;
+
+  // Weapon selection (active during StateWeaponSelection)
+  std::unique_ptr<WeaponSelection> ws;
 };
