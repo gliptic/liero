@@ -1,5 +1,6 @@
 #include "gamePlayState.hpp"
 
+#include <cstdio>
 #include "gfx.hpp"
 #include "statsState.hpp"
 #include "inputState.hpp"
@@ -30,6 +31,16 @@ bool GamePlayState::update()
 			gfx->netSession.reset();
 			gfx->stateStack.scheduleReplaceTop(
 				std::make_unique<InfoBoxState>("PEER DISCONNECTED", 320/2, 200/2, true));
+			return false;
+		}
+		if (gfx->netSession->desyncDetected())
+		{
+			uint32_t frame = gfx->netSession->desyncFrame();
+			char msg[64];
+			snprintf(msg, sizeof(msg), "DESYNC AT FRAME %u", frame);
+			gfx->netSession.reset();
+			gfx->stateStack.scheduleReplaceTop(
+				std::make_unique<InfoBoxState>(msg, 320/2, 200/2, true));
 			return false;
 		}
 	}

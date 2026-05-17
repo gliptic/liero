@@ -477,6 +477,11 @@ void NetworkController::advanceSimulation() {
   game.processFrame();
   ++simFrame;
 
+  // Send checksum for desync detection
+  if (sendChecksum) {
+    sendChecksum(simFrame - 1, fastGameChecksum(game));
+  }
+
   if (game.isGameOver()) {
     state = StateGameEnded;
     if (!goingToMenu) {

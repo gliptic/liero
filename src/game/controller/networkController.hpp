@@ -20,6 +20,9 @@ using InputSendCallback = std::function<void(uint32_t frame, uint8_t input)>;
 // Called each frame with: (frame_number) -> input byte, or -1 if not yet available
 using InputRecvCallback = std::function<int(uint32_t frame)>;
 
+// Callback type for sending a checksum to the remote peer for desync detection.
+using ChecksumSendCallback = std::function<void(uint32_t frame, uint32_t checksum)>;
+
 struct NetworkController : CommonController {
   NetworkController(std::shared_ptr<Common> common,
                     std::shared_ptr<Settings> settings,
@@ -38,6 +41,9 @@ struct NetworkController : CommonController {
 
   // Set the callbacks for input transport
   void setInputCallbacks(InputSendCallback send, InputRecvCallback recv);
+
+  // Set the callback for sending checksums
+  void setChecksumCallback(ChecksumSendCallback cb) { sendChecksum = std::move(cb); }
 
   // Directly inject inputs for a given frame (for testing without network)
   void injectRemoteInput(uint32_t frame, uint8_t input);
@@ -116,6 +122,7 @@ struct NetworkController : CommonController {
 
   InputSendCallback sendInput;
   InputRecvCallback recvInput;
+  ChecksumSendCallback sendChecksum;
 
   // Callbacks for pause/resume (set by session)
   std::function<void()> onLocalPause;

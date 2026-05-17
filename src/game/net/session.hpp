@@ -70,6 +70,10 @@ struct NetSession {
   bool remoteReady() const { return remoteReady_; }
   bool isHost() const { return role_ == Host; }
 
+  // Desync detection
+  bool desyncDetected() const { return desyncDetected_; }
+  uint32_t desyncFrame() const { return desyncFrame_; }
+
   // Access the transport (for testing)
   NetTransport& transport() { return transport_; }
 
@@ -116,6 +120,11 @@ struct NetSession {
 
   // Stored compressed map data (client receives from host)
   std::vector<uint8_t> receivedMapData_;
+
+  // Desync detection
+  bool desyncDetected_;
+  uint32_t desyncFrame_;
+  void onChecksum(uint32_t frame, uint32_t checksum);
 
   static constexpr uint16_t DEFAULT_PORT = 19532;
 };

@@ -20,6 +20,8 @@ NetSession::NetSession(std::shared_ptr<Common> common,
     , mapDataReceived_(false)
     , localReady_(false)
     , remoteReady_(false)
+    , desyncDetected_(false)
+    , desyncFrame_(0)
 {
   std::memset(&remotePlayerInfo_, 0, sizeof(remotePlayerInfo_));
   localSettingsHash_ = computeSettingsHash();
@@ -274,6 +276,9 @@ void NetSession::wireCallbacks() {
   transport_.onPause = [this]() { onPause(); };
   transport_.onResume = [this]() { onResume(); };
   transport_.onEndMatch = [this]() { onRemoteEndMatch(); };
+  transport_.onChecksum = [this](uint32_t frame, uint32_t checksum) {
+    onChecksum(frame, checksum);
+  };
   transport_.onRematchReady = [this](bool ready) { onRematchReady(ready); };
   transport_.onRematchLevel = [this](bool random, std::string file) {
     onRematchLevel(random, std::move(file));
@@ -317,6 +322,12 @@ void NetSession::tryStartGame() {
       },
       nullptr  // We use injectRemoteInput via onRemoteInput callback instead
   );
+
+  // Wire checksum sending for desync detection
+  controller_->setChecksumCallback(
+      [this](uint32_t frame, uint32_t checksum) {
+        transport_.sendChecksum(frame, checksum);
+      });
 
   // Wire pause/resume callbacks
   controller_->setPauseCallbacks(
@@ -577,4 +588,19 @@ uint32_t NetSession::computeSettingsHash() const {
   mix(settings_->loadingTime);
 
   return hash;
+}
+
+void NetSession::onChecksum(uint32_t frame, uint32_t remoteChecksum) {
+  if (desyncDetected_ || sessionState_ != Playing || !controllerPtr_)
+    return;
+
+  // Compute our local checksum for the same frame
+  uint32_t localChecksum = fastGameChecksum(controllerPtr_->game);
+
+  if (localChecksum != remoteChecksum) {
+    desyncDetected_ = true;
+    desyncFrame_ = frame;
+    fprintf(stderr, "DESYNC DETECTED at frame %u! local=%08x remote=%08x\n",
+            frame, localChecksum, remoteChecksum);
+  }
 }
