@@ -1,0 +1,240 @@
+---
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+
+      - name: Get cmake/ninja
+        uses: lukka/get-cmake@latest
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgDirectory: '${{ github.workspace }}/tools/vcpkg/vcpkg'
+          vcpkgConfigurationJsonGlob: 'vcpkg-configuration.json'
+          appendedCacheKey: 'emscripten-v1'
+
+      - name: Build
+        run: |
+          cmake --preset emscripten
+          cmake --build build/emscripten --config Release
+          cmake --install build/emscripten --config Release
+
+      - name: Determine build info
+        id: info
+        run: |
+          SHA="${{ github.sha }}"
+          SHORT_SHA="${SHA:0:7}"
+
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${{ github.ref_name }}"
+            echo "type=release" >> "$GITHUB_OUTPUT"
+            echo "name=${TAG}" >> "$GITHUB_OUTPUT"
+            echo "dir=releases/${TAG}" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=dev" >> "$GITHUB_OUTPUT"
+            echo "name=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+            echo "dir=dev/${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Deploy to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Fetch gh-pages or create it
+          if git fetch origin gh-pages; then
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . || true
+            echo '{"releases":[],"dev":[]}' > builds.json
+            git add builds.json
+            git commit -m "Initialize gh-pages"
+          fi
+
+          # Add the new build
+          BUILD_DIR="${{ steps.info.outputs.dir }}"
+          mkdir -p "$BUILD_DIR"
+          cp -r install/emscripten/* "$BUILD_DIR/"
+
+          # Update builds.json
+          python3 << 'EOF'
+          import json, os, time
+
+          manifest_path = "builds.json"
+          if os.path.exists(manifest_path):
+              with open(manifest_path) as f:
+                  manifest = json.load(f)
+          else:
+              manifest = {"releases": [], "dev": []}
+
+          build_type = "${{ steps.info.outputs.type }}"
+          build_name = "${{ steps.info.outputs.name }}"
+          build_dir = "${{ steps.info.outputs.dir }}"
+          timestamp = "${{ github.event.head_commit.timestamp }}" or time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+          entry = {"name": build_name, "dir": build_dir, "timestamp": timestamp}
+
+          if build_type == "release":
+              # Don't duplicate
+              if not any(r["name"] == build_name for r in manifest["releases"]):
+                  manifest["releases"].insert(0, entry)
+          else:
+              # Don't duplicate
+              manifest["dev"] = [d for d in manifest["dev"] if d["name"] != build_name]
+              manifest["dev"].insert(0, entry)
+
+              # Prune to last 10 dev builds
+              removed = manifest["dev"][10:]
+              manifest["dev"] = manifest["dev"][:10]
+
+              # Remove old build directories
+              for old in removed:
+                  old_dir = old["dir"]
+                  if os.path.isdir(old_dir):
+                      import shutil
+                      shutil.rmtree(old_dir)
+
+          with open(manifest_path, "w") as f:
+              json.dump(manifest, f, indent=2)
+          EOF
+
+          # Generate index.html
+          python3 << 'EOF'
+          import json
+
+          with open("builds.json") as f:
+              manifest = json.load(f)
+
+          html = """<!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Open Liero - Web Builds</title>
+            <style>
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: #1a1a2e;
+                color: #e0e0e0;
+                min-height: 100vh;
+                padding: 2rem;
+              }
+              .container { max-width: 700px; margin: 0 auto; }
+              h1 {
+                text-align: center;
+                margin-bottom: 0.5rem;
+                color: #fff;
+                font-size: 2rem;
+              }
+              .subtitle {
+                text-align: center;
+                color: #888;
+                margin-bottom: 2rem;
+              }
+              h2 {
+                color: #4fc3f7;
+                margin: 1.5rem 0 0.75rem;
+                padding-bottom: 0.25rem;
+                border-bottom: 1px solid #333;
+              }
+              .build-list { list-style: none; }
+              .build-list li {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0.6rem 0.8rem;
+                border-radius: 6px;
+                margin-bottom: 0.4rem;
+                background: #16213e;
+              }
+              .build-list li:hover { background: #1a2a4a; }
+              .build-name { font-weight: 600; }
+              .build-date { color: #888; font-size: 0.85rem; }
+              .build-link {
+                background: #4fc3f7;
+                color: #1a1a2e;
+                text-decoration: none;
+                padding: 0.3rem 0.8rem;
+                border-radius: 4px;
+                font-weight: 600;
+                font-size: 0.85rem;
+              }
+              .build-link:hover { background: #81d4fa; }
+              .empty { color: #666; font-style: italic; padding: 0.5rem 0; }
+              a { color: #4fc3f7; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>🪱 Open Liero</h1>
+              <p class="subtitle">Select a build to play in your browser</p>
+          """
+
+          # Releases section
+          html += "    <h2>Releases</h2>\\n"
+          if manifest["releases"]:
+              html += '    <ul class="build-list">\\n'
+              for build in manifest["releases"]:
+                  date = build["timestamp"][:10] if build.get("timestamp") else ""
+                  html += f'      <li><span class="build-name">{build["name"]}</span>'
+                  html += f'<span class="build-date">{date}</span>'
+                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a></li>\\n'
+              html += "    </ul>\\n"
+          else:
+              html += '    <p class="empty">No releases yet</p>\\n'
+
+          # Dev builds section
+          html += "    <h2>Development Builds</h2>\\n"
+          if manifest["dev"]:
+              html += '    <ul class="build-list">\\n'
+              for build in manifest["dev"]:
+                  date = build["timestamp"][:10] if build.get("timestamp") else ""
+                  html += f'      <li><span class="build-name">{build["name"]}</span>'
+                  html += f'<span class="build-date">{date}</span>'
+                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a></li>\\n'
+              html += "    </ul>\\n"
+          else:
+              html += '    <p class="empty">No development builds yet</p>\\n'
+
+          html += """    <p style="text-align:center; margin-top:2rem; color:#666; font-size:0.8rem;">
+                <a href="https://github.com/openliero/openliero">Source on GitHub</a>
+              </p>
+            </div>
+          </body>
+          </html>"""
+
+          with open("index.html", "w") as f:
+              f.write(html)
+          EOF
+
+          # Commit and push
+          git add -A
+          git commit -m "Deploy ${{ steps.info.outputs.type }} build: ${{ steps.info.outputs.name }}" || echo "No changes"
+          git push origin gh-pages
