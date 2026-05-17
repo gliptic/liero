@@ -194,6 +194,25 @@
 					}
 				]
 			}
+		},
+		{
+			"name": "arch-wasm32-emscripten",
+			"hidden": true,
+			"cacheVariables": {
+				"VCPKG_TARGET_TRIPLET": "wasm32-emscripten",
+				"VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+				"OPENLIERO_BUILD_TCTOOL": "OFF",
+				"OPENLIERO_BUILD_VIDEOTOOL": "OFF"
+			}
+		},
+		{
+			"name": "condition-emscripten",
+			"hidden": true,
+			"condition": {
+				"type": "notEquals",
+				"lhs": "$penv{EMSDK}",
+				"rhs": ""
+			}
 		}
 	]
 }

@@ -84,6 +84,15 @@
 					}
 				]
 			}
+		},
+		{
+			"name": "condition-emscripten",
+			"hidden": true,
+			"condition": {
+				"type": "notEquals",
+				"lhs": "$penv{EMSDK}",
+				"rhs": ""
+			}
 		}
 	]
 }

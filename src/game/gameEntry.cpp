@@ -26,7 +26,11 @@ try
 	bool tcSet = false;
 
 	std::string tcName;
+#if OPENLIERO_EMSCRIPTEN
+	std::string configPath = "/openliero";
+#else
 	std::string configPath; // Default to current dir
+#endif
 
 	for(int i = 1; i < argc; ++i)
 	{

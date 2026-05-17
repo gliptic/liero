@@ -122,6 +122,15 @@
 				"arch-arm64-windows",
 				"condition-windows"
 			]
+		},
+		{
+			"name": "emscripten",
+			"displayName": "Emscripten (wasm32)",
+			"inherits": [
+				"default",
+				"arch-wasm32-emscripten",
+				"condition-emscripten"
+			]
 		}
 	],
 	"buildPresets": [
@@ -285,6 +294,24 @@
 				"condition-windows"
 			],
 			"configurePreset": "windows-arm64",
+			"configuration": "Debug"
+		},
+		{
+			"name": "emscripten",
+			"displayName": "Emscripten (wasm32)",
+			"inherits": [
+				"condition-emscripten"
+			],
+			"configurePreset": "emscripten",
+			"configuration": "Release"
+		},
+		{
+			"name": "emscripten-debug",
+			"displayName": "Emscripten (wasm32) - Debug",
+			"inherits": [
+				"condition-emscripten"
+			],
+			"configurePreset": "emscripten",
 			"configuration": "Debug"
 		}
 	],
@@ -538,6 +565,34 @@
 				{
 					"type": "build",
 					"name": "windows-arm64-debug"
+				}
+			]
+		},
+		{
+			"name": "emscripten",
+			"displayName": "Emscripten (wasm32)",
+			"steps": [
+				{
+					"type": "configure",
+					"name": "emscripten"
+				},
+				{
+					"type": "build",
+					"name": "emscripten"
+				}
+			]
+		},
+		{
+			"name": "emscripten-debug",
+			"displayName": "Emscripten (wasm32) - Debug",
+			"steps": [
+				{
+					"type": "configure",
+					"name": "emscripten"
+				},
+				{
+					"type": "build",
+					"name": "emscripten-debug"
 				}
 			]
 		}

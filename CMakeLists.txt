@@ -170,6 +170,19 @@ if(APPLE)
 #  add_executable(openliero MACOSX_BUNDLE src/game/main.cpp "${RESOURCE_FILES}")
 elseif(WIN32)
   add_executable(openliero WIN32 src/game/main.cpp packaging/icons/openliero.rc)
+elseif(EMSCRIPTEN)
+  add_executable(openliero src/game/main.cpp)
+  target_link_options(openliero PRIVATE
+    -sALLOW_MEMORY_GROWTH=1
+    -sMAX_WEBGL_VERSION=2
+    -sEXPORTED_RUNTIME_METHODS=FS
+    --preload-file ${CMAKE_SOURCE_DIR}/data/Profiles@/openliero/Profiles
+    --preload-file ${CMAKE_SOURCE_DIR}/data/Resources@/openliero/Resources
+    --preload-file ${CMAKE_SOURCE_DIR}/data/Setups@/openliero/Setups
+    --preload-file ${CMAKE_SOURCE_DIR}/data/TC@/openliero/TC
+  )
+  set_target_properties(openliero PROPERTIES SUFFIX ".html")
+  target_compile_definitions(game PUBLIC OPENLIERO_EMSCRIPTEN=1)
 else()
   add_executable(openliero src/game/main.cpp)
 endif()
