@@ -221,17 +221,17 @@ TEST_CASE("NetworkController pressedOnce fires only on rising edge", "[network]"
   INFO("After initial press: " << weaponAfterFirst << ", expected: " << expected1);
   REQUIRE(weaponAfterFirst == expected1);
 
-  // Continue holding for 20 more frames (past initial delay of 12, repeats every 3)
-  // Should get additional weapon changes from auto-repeat
+  // Continue holding for 20 more frames — should NOT get additional weapon
+  // changes (no key repeat in game phase, matching local controller behavior)
   for (int tick = 0; tick < 20; ++tick) {
     frame = ctrl->currentFrame();
     ctrl->injectRemoteInput(frame, changeLeft);
     ctrl->process();
   }
 
-  int weaponAfterRepeat = ctrl->game.worms[1]->currentWeapon;
-  INFO("After repeat: " << weaponAfterRepeat << " (should differ from " << expected1 << ")");
-  REQUIRE(weaponAfterRepeat != expected1);
+  int weaponAfterHold = ctrl->game.worms[1]->currentWeapon;
+  INFO("After holding: " << weaponAfterHold << " (should still be " << expected1 << ")");
+  REQUIRE(weaponAfterHold == expected1);
 }
 
 TEST_CASE("Weapon selection uses synced game.rand", "[network]") {

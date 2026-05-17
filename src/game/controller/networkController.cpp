@@ -444,9 +444,9 @@ void NetworkController::advanceSimulation() {
     return;
   }
 
-  // Apply inputs preserving pressedOnce semantics with deterministic key repeat.
-  // Rising edges (newly pressed) set the bit. Released bits clear it.
-  // Held bits are periodically re-set to emulate key repeat (matching local SDL behavior).
+  // Apply inputs using rising/released edge detection only (no key repeat).
+  // The game phase relies on pressedOnce() to consume one-shot actions (rope
+  // throw, weapon cycling, respawn confirm). Key repeat would re-trigger these.
   uint8_t curLocal = localInputs[currentSlot];
   uint8_t curRemote = remoteInputs[currentSlot];
   uint8_t risingLocal = curLocal & ~localPrevInput;
@@ -460,35 +460,6 @@ void NetworkController::advanceSimulation() {
   // Clear released bits
   game.worms[localIdx]->controlStates.istate &= ~releasedLocal;
   game.worms[remoteIdx]->controlStates.istate &= ~releasedRemote;
-
-  // Deterministic key repeat for held bits
-  for (int bit = 0; bit < 7; ++bit) {
-    uint8_t mask = 1 << bit;
-    // Local
-    if (risingLocal & mask) {
-      localHeldFrames[bit] = 0;
-    } else if (curLocal & mask) {
-      ++localHeldFrames[bit];
-      if (localHeldFrames[bit] >= KEY_REPEAT_INITIAL &&
-          (localHeldFrames[bit] - KEY_REPEAT_INITIAL) % KEY_REPEAT_INTERVAL == 0) {
-        game.worms[localIdx]->controlStates.istate |= mask;
-      }
-    } else {
-      localHeldFrames[bit] = 0;
-    }
-    // Remote
-    if (risingRemote & mask) {
-      remoteHeldFrames[bit] = 0;
-    } else if (curRemote & mask) {
-      ++remoteHeldFrames[bit];
-      if (remoteHeldFrames[bit] >= KEY_REPEAT_INITIAL &&
-          (remoteHeldFrames[bit] - KEY_REPEAT_INITIAL) % KEY_REPEAT_INTERVAL == 0) {
-        game.worms[remoteIdx]->controlStates.istate |= mask;
-      }
-    } else {
-      remoteHeldFrames[bit] = 0;
-    }
-  }
 
   localPrevInput = curLocal;
   remotePrevInput = curRemote;
