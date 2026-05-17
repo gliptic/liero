@@ -10,6 +10,7 @@
 #include "../console.hpp"
 #include <gvl/serialization/except.hpp>
 #include <ctime>
+#include <array>
 
 struct WeaponSelection;
 struct ReplayWriter;
@@ -39,4 +40,9 @@ struct LocalController : CommonController
 	int fadeValue;
 	bool goingToMenu;
 	std::unique_ptr<ReplayWriter> replay;
+
+	// Per-worm key repeat counters for weapon selection
+	static constexpr int KEY_REPEAT_INITIAL = 12;
+	static constexpr int KEY_REPEAT_INTERVAL = 3;
+	std::array<std::array<uint16_t, 7>, 2> wormHeldFrames{};
 };

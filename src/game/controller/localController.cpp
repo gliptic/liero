@@ -131,6 +131,31 @@ bool LocalController::process()
 {
 	if(state == StateWeaponSelection)
 	{
+		// Apply key repeat for held keys during weapon selection.
+		// Without SDL repeat events, we need to re-set control bits that
+		// were consumed by WeaponSelection (via release/pressedOnce).
+		for (std::size_t wi = 0; wi < game.worms.size(); ++wi) {
+			Worm& worm = *game.worms[wi];
+			for (int bit = 0; bit < 7; ++bit) {
+				bool held = worm.cleanControlStates[bit];
+				if (held) {
+					if (!worm.controlStates[bit]) {
+						// Key is physically held but bit was consumed — apply repeat logic
+						++wormHeldFrames[wi][bit];
+						if (wormHeldFrames[wi][bit] >= KEY_REPEAT_INITIAL &&
+						    (wormHeldFrames[wi][bit] - KEY_REPEAT_INITIAL) % KEY_REPEAT_INTERVAL == 0) {
+							worm.press(static_cast<Worm::Control>(bit));
+						}
+					} else {
+						// Bit is set (initial press frame or just re-set) — reset counter
+						wormHeldFrames[wi][bit] = 0;
+					}
+				} else {
+					wormHeldFrames[wi][bit] = 0;
+				}
+			}
+		}
+
 		if(ws->processFrame())
 			changeState(StateGame);
 	}

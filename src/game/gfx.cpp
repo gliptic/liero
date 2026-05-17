@@ -640,7 +640,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			if(dosScan)
 			{
 				dosKeys[dosScan] = true;
-				if(controller)
+				if(controller && !ev.key.repeat)
 					controller->onKey(dosScan, true);
 			}
 
