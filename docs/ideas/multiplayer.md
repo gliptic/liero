@@ -232,7 +232,7 @@ Two issues had to be resolved:
 
 ## Future Work
 
-- **Desync detection:** Periodic checksum comparison using the existing `PacketChecksum` packet type (already in the wire protocol, not yet wired up)
+- ~~**Desync detection:** Periodic checksum comparison using the existing `PacketChecksum` packet type (already in the wire protocol, not yet wired up)~~ ✅ Wired up — `fastGameChecksum()` sent every frame, compared on receipt
 - **Replay recording of network games** — the data is already available (frame inputs)
 - **Rollback netcode (Phase 2)** — GGPO-style prediction/rollback for internet play
 - **NAT traversal** — STUN/TURN or relay server for connections through firewalls
@@ -299,11 +299,35 @@ on both peers. Since both peers run the same edge detection on the same packed i
 only the edge detection code should write to `controlStates`. Any other writer (like `onKey`)
 creates a local-only modification invisible to the remote peer.
 
+### Uninitialized Bonus::weapon desync (2026-05-17)
+
+The object pool (`ExactObjectList`) reuses slots without reinitializing them. When
+`createBonus()` creates a health bonus (`frame==1`), it never set the `weapon` field —
+leaving stale data from a previous pool occupant. While `weapon` is only read for weapon
+bonuses (`frame==0`) in current game logic, this caused hash-based desync detection to
+report false divergence between two identically-running game instances (different memory
+layouts = different garbage).
+
+**Fix:** Initialize `bonus->weapon = 0` in `createBonus()` unconditionally, and zero-init
+all fields in the `Bonus` constructor.
+
+**Lesson:** Any field that's included in state hashing must be deterministically
+initialized, even if it's logically irrelevant for some object subtypes. Object pool
+reuse means constructors only run once — all fields must be set at allocation time.
+
+### Runtime desync detection (2026-05-17)
+
+Wired up the existing `PacketChecksum` transport to actually send/compare checksums:
+- `advanceSimulation()` computes `fastGameChecksum()` after every `processFrame()`
+- Sent over unreliable channel (losing one is fine — next frame catches it)
+- `NetSession::onChecksum()` compares local vs remote, sets `desyncDetected_` flag
+- `GamePlayState` shows "DESYNC AT FRAME N" message and logs to stderr
+
 ## Technical Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation | Status |
 |------|-----------|--------|------------|--------|
-| Hidden non-determinism | ~~Medium~~ **Low** | Critical (desync) | Determinism test harness running in CI | ✅ Validated — 1000 frames, no desync |
+| Hidden non-determinism | ~~Medium~~ **Low** | Critical (desync) | Determinism + death fuzz test (5000+ frames per seed, 5 seeds) | ✅ Validated with fix |
 | Input delay feels bad at >80ms RTT | High | Medium (UX) | Document as "alpha limitation", plan rollback for Phase 2 | Pending |
 | NAT/firewall blocks connections | High | High (unusable) | Alpha = direct IP only; document port forwarding; Phase 2 adds hole-punching | Pending |
 | Platform-specific fixed-point behavior | Low | Critical | Fixed-point is integer-based, should be identical; verify in harness | Pending (cross-platform CI) |
