@@ -13,6 +13,7 @@
 
 RematchState::RematchState(Game& lastGame)
 : lastGame_(lastGame)
+, menu_(true)  // centered
 {
 }
 
@@ -23,11 +24,48 @@ void RematchState::enter()
 
 	prevRandomLevel_ = gfx->settings->randomLevel;
 	prevLevelFile_ = gfx->settings->levelFile;
+
+	// Build menu items
+	bool isHost = gfx->netSession && gfx->netSession->isHost();
+
+	menu_.addItem(MenuItem(48, 7, "LEVEL", RmLevel));
+	menu_.addItem(MenuItem(48, 7, "READY", RmReady));
+	menu_.addItem(MenuItem(48, 7, "DISCONNECT", RmDisconnect));
+
+	// Only host can select the level item
+	if (!isHost)
+		menu_.items[0].selectable = false;
+
+	menu_.valueOffsetX = 80;
+	menu_.place(120, 90);
+	menu_.moveToId(RmReady);
 }
 
 void RematchState::handleEvent(SDL_Event& ev)
 {
 	gfx->processEvent(ev);
+}
+
+void RematchState::updateMenuItems()
+{
+	if (!gfx->netSession)
+		return;
+
+	// Update level display
+	auto* levelItem = menu_.itemFromId(RmLevel);
+	if (levelItem)
+	{
+		levelItem->hasValue = true;
+		levelItem->value = '"' + levelDisplayName() + '"';
+	}
+
+	// Update ready item text
+	auto* readyItem = menu_.itemFromId(RmReady);
+	if (readyItem)
+	{
+		bool localReady = gfx->netSession->localReady();
+		readyItem->string = localReady ? "NOT READY" : "READY";
+	}
 }
 
 bool RematchState::update()
@@ -59,8 +97,6 @@ bool RematchState::update()
 	// Check if a level selector was open and just closed
 	if (levelSelectorOpen_)
 	{
-		// LevelSelectorState was pushed on top of us; if we're updating,
-		// it has already popped. Check if settings changed.
 		levelSelectorOpen_ = false;
 
 		bool changed = (gfx->settings->randomLevel != prevRandomLevel_) ||
@@ -76,12 +112,29 @@ bool RematchState::update()
 		prevLevelFile_ = gfx->settings->levelFile;
 	}
 
-	// Handle input
-	bool isHost = gfx->netSession->isHost();
+	Common& common = *gfx->common;
+
+	// Menu navigation
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_UP)
+	 || gfx->testControlOnce(WormSettingsExtensions::Up)
+	 || gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
+	{
+		sfx.play(common, 26);
+		menu_.movement(-1);
+	}
+
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_DOWN)
+	 || gfx->testControlOnce(WormSettingsExtensions::Down)
+	 || gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
+	{
+		sfx.play(common, 25);
+		menu_.movement(1);
+	}
 
 	// Escape = disconnect
-	if (gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE) ||
-	    gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST))
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE)
+	 || gfx->testControlOnce(WormSettingsExtensions::Jump)
+	 || gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST))
 	{
 		gfx->netSession->disconnect();
 		gfx->netSession.reset();
@@ -90,24 +143,38 @@ bool RematchState::update()
 		return false;
 	}
 
-	// Enter/Fire = toggle ready
-	if (gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN) ||
-	    gfx->testControlOnce(WormSettingsExtensions::Fire) ||
-	    gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH))
+	// Enter/Fire = activate selected item
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN)
+	 || gfx->testSDLKeyOnce(SDL_SCANCODE_KP_ENTER)
+	 || gfx->testControlOnce(WormSettingsExtensions::Fire)
+	 || gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH))
 	{
-		gfx->netSession->toggleReady();
+		int sel = menu_.selectedId();
+		switch (sel)
+		{
+			case RmLevel:
+				// Host opens level selector
+				sfx.play(common, 27);
+				levelSelectorOpen_ = true;
+				gfx->stateStack.push(std::make_unique<LevelSelectorState>(), gfx);
+				break;
+
+			case RmReady:
+				sfx.play(common, 27);
+				gfx->netSession->toggleReady();
+				break;
+
+			case RmDisconnect:
+				sfx.play(common, 27);
+				gfx->netSession->disconnect();
+				gfx->netSession.reset();
+				fill(gfx->playRenderer.bmp, 0);
+				fill(gfx->singleScreenRenderer.bmp, 0);
+				return false;
+		}
 	}
 
-	// Host: open level selector
-	if (isHost &&
-	    (gfx->testSDLKeyOnce(SDL_SCANCODE_TAB) ||
-	     gfx->testControlOnce(WormSettingsExtensions::Change) ||
-	     gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_NORTH)))
-	{
-		levelSelectorOpen_ = true;
-		gfx->stateStack.push(std::make_unique<LevelSelectorState>(), gfx);
-	}
-
+	updateMenuItems();
 	return true;
 }
 
@@ -133,7 +200,7 @@ void RematchState::draw()
 	std::string title = "REMATCH";
 	int tw = font.getDims(title);
 	font.drawText(gfx->playRenderer.bmp, title, cx - tw / 2, y, 50);
-	y += 16;
+	y += 14;
 
 	// Score summary from last game
 	{
@@ -148,60 +215,23 @@ void RematchState::draw()
 			int sw = font.getDims(score);
 			font.drawText(gfx->playRenderer.bmp, score, cx - sw / 2, y, 7);
 		}
-		y += 16;
+		y += 14;
 	}
 
-	// Level
-	std::string levelLine = "LEVEL: " + levelDisplayName();
-	int lw = font.getDims(levelLine);
-	font.drawText(gfx->playRenderer.bmp, levelLine, cx - lw / 2, y, 7);
-	y += 16;
-
-	if (!gfx->netSession)
-		return;
-
-	bool isHost = gfx->netSession->isHost();
-
-	// Ready indicators
+	// Peer ready status
+	if (gfx->netSession)
 	{
-		bool localReady = gfx->netSession->localReady();
+		bool isHost = gfx->netSession->isHost();
 		bool remoteReady = gfx->netSession->remoteReady();
 
-		std::string you = isHost ? "HOST (YOU)" : "CLIENT (YOU)";
 		std::string peer = isHost ? "CLIENT" : "HOST";
-
-		std::string localLine = you + ": " + (localReady ? "READY" : "NOT READY");
 		std::string remoteLine = peer + ": " + (remoteReady ? "READY" : "NOT READY");
-
-		int localColor = localReady ? 63 : 18;
 		int remoteColor = remoteReady ? 63 : 18;
-
-		int llw = font.getDims(localLine);
-		font.drawText(gfx->playRenderer.bmp, localLine, cx - llw / 2, y, localColor);
-		y += 10;
 
 		int rlw = font.getDims(remoteLine);
 		font.drawText(gfx->playRenderer.bmp, remoteLine, cx - rlw / 2, y, remoteColor);
-		y += 20;
 	}
 
-	// Instructions
-	{
-		std::string readyHint = "ENTER/FIRE = TOGGLE READY";
-		int rw = font.getDims(readyHint);
-		font.drawText(gfx->playRenderer.bmp, readyHint, cx - rw / 2, y, 6);
-		y += 10;
-
-		if (isHost)
-		{
-			std::string levelHint = "TAB/CHANGE = CHANGE LEVEL";
-			int chw = font.getDims(levelHint);
-			font.drawText(gfx->playRenderer.bmp, levelHint, cx - chw / 2, y, 6);
-			y += 10;
-		}
-
-		std::string escHint = "ESC = DISCONNECT";
-		int ew = font.getDims(escHint);
-		font.drawText(gfx->playRenderer.bmp, escHint, cx - ew / 2, y, 6);
-	}
+	// Draw menu
+	menu_.draw(common, gfx->playRenderer, false);
 }

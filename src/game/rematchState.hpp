@@ -1,6 +1,7 @@
 #pragma once
 
 #include "state.hpp"
+#include "menu/menu.hpp"
 
 #include <string>
 
@@ -11,6 +12,13 @@ struct Game;
 // When both are ready, starts a new game.
 struct RematchState : AppState
 {
+	enum Items
+	{
+		RmLevel,
+		RmReady,
+		RmDisconnect,
+	};
+
 	RematchState(Game& lastGame);
 
 	void enter() override;
@@ -21,8 +29,10 @@ struct RematchState : AppState
 
 private:
 	std::string levelDisplayName() const;
+	void updateMenuItems();
 
 	Game& lastGame_;
+	Menu menu_;
 	bool levelSelectorOpen_ = false;
 
 	// Snapshot of level settings to detect changes from LevelSelectorState
