@@ -162,7 +162,11 @@ void NetConnectState::draw()
 
 		for (auto& addr : localAddresses_)
 		{
-			std::string display = addr.ip + ":" + std::to_string(port_);
+			std::string display;
+			if (addr.isIPv6)
+				display = "[" + addr.ip + "]:" + std::to_string(port_);
+			else
+				display = addr.ip + ":" + std::to_string(port_);
 			int wd = font.getDims(display);
 			font.drawText(gfx->playRenderer.bmp, display, cx - wd / 2, addrY, 7);
 			addrY += 10;
