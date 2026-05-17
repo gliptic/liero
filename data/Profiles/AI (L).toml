@@ -1,5 +1,5 @@
 
-name = ""
+name = "AI Joe"
 controller = 2
 health = 100
 controls = [17, 31, 30, 32, 20, 21, 22, 0]

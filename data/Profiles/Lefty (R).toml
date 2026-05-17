@@ -1,5 +1,5 @@
 
-name = ""
+name = "etc"
 controller = 0
 health = 100
 controls = [160, 168, 163, 165, 79, 80, 81, 0]
