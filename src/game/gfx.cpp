@@ -914,8 +914,8 @@ void Gfx::clearKeys()
 
 bool Gfx::testControlOnce(int control)
 {
-	// Check keyboard bindings only for players using keyboard input
-	for(int p = 0; p < 2; ++p)
+	// Check keyboard bindings for all player profiles (left, right, network)
+	for(int p = 0; p < Settings::NumWormSettings; ++p)
 	{
 		if (settings->wormSettings[p]->inputDevice != WormSettingsExtensions::InputKeyboard)
 			continue;
@@ -1000,8 +1000,8 @@ bool Gfx::testGamepadDir(int dpadButton)
 
 bool Gfx::testControl(int control)
 {
-	// Check keyboard bindings only for players using keyboard input
-	for(int p = 0; p < 2; ++p)
+	// Check keyboard bindings for all player profiles (left, right, network)
+	for(int p = 0; p < Settings::NumWormSettings; ++p)
 	{
 		if (settings->wormSettings[p]->inputDevice != WormSettingsExtensions::InputKeyboard)
 			continue;
@@ -1016,7 +1016,7 @@ bool Gfx::testControl(int control)
 
 void Gfx::releaseControl(int control)
 {
-	for(int p = 0; p < 2; ++p)
+	for(int p = 0; p < Settings::NumWormSettings; ++p)
 	{
 		uint32_t key = settings->extensions
 			? settings->wormSettings[p]->controlsEx[control]
