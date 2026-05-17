@@ -113,28 +113,33 @@ TEST_CASE("NetSession syncs host settings to client", "[session]") {
 TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]") {
   SessionFixture f;
 
-  // Give each player distinct colors and weapons
+  // Give each player distinct colors and weapons in the network player slot
   auto settingsHost = std::make_shared<Settings>(*f.settings);
-  settingsHost->wormSettings[0]->color = 3;
-  settingsHost->wormSettings[0]->rgb[0] = 255;
-  settingsHost->wormSettings[0]->rgb[1] = 0;
-  settingsHost->wormSettings[0]->rgb[2] = 0;
-  settingsHost->wormSettings[0]->weapons[0] = 10;
-  settingsHost->wormSettings[0]->weapons[1] = 20;
-  settingsHost->wormSettings[0]->weapons[2] = 30;
-  settingsHost->wormSettings[0]->weapons[3] = 5;
-  settingsHost->wormSettings[0]->weapons[4] = 15;
+  // Create distinct WormSettings objects so shared_ptr sharing doesn't cause issues
+  for (int i = 0; i < Settings::NumWormSettings; ++i)
+    settingsHost->wormSettings[i] = std::make_shared<WormSettings>(*settingsHost->wormSettings[i]);
+  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->color = 3;
+  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->rgb[0] = 255;
+  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->rgb[1] = 0;
+  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->rgb[2] = 0;
+  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[0] = 10;
+  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[1] = 20;
+  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[2] = 30;
+  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[3] = 5;
+  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[4] = 15;
 
   auto settingsClient = std::make_shared<Settings>(*f.settings);
-  settingsClient->wormSettings[1]->color = 6;
-  settingsClient->wormSettings[1]->rgb[0] = 0;
-  settingsClient->wormSettings[1]->rgb[1] = 255;
-  settingsClient->wormSettings[1]->rgb[2] = 128;
-  settingsClient->wormSettings[1]->weapons[0] = 35;
-  settingsClient->wormSettings[1]->weapons[1] = 8;
-  settingsClient->wormSettings[1]->weapons[2] = 22;
-  settingsClient->wormSettings[1]->weapons[3] = 14;
-  settingsClient->wormSettings[1]->weapons[4] = 40;
+  for (int i = 0; i < Settings::NumWormSettings; ++i)
+    settingsClient->wormSettings[i] = std::make_shared<WormSettings>(*settingsClient->wormSettings[i]);
+  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->color = 6;
+  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->rgb[0] = 0;
+  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->rgb[1] = 255;
+  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->rgb[2] = 128;
+  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[0] = 35;
+  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[1] = 8;
+  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[2] = 22;
+  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[3] = 14;
+  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[4] = 40;
 
   NetSession host(f.common, settingsHost);
   NetSession client(f.common, settingsClient);
@@ -149,21 +154,27 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
   });
   REQUIRE(ready);
 
-  // Host should have client's worm 1 color/weapons
-  REQUIRE(settingsHost->wormSettings[1]->color == 6);
-  REQUIRE(settingsHost->wormSettings[1]->rgb[0] == 0);
-  REQUIRE(settingsHost->wormSettings[1]->rgb[1] == 255);
-  REQUIRE(settingsHost->wormSettings[1]->rgb[2] == 128);
-  REQUIRE(settingsHost->wormSettings[1]->weapons[0] == 35);
-  REQUIRE(settingsHost->wormSettings[1]->weapons[4] == 40);
+  // Host's remote worm (index 1) should have client's color/weapons
+  Worm* hostRemoteWorm = host.controller()->game.wormByIdx(1);
+  REQUIRE(hostRemoteWorm->settings->color == 6);
+  REQUIRE(hostRemoteWorm->settings->rgb[0] == 0);
+  REQUIRE(hostRemoteWorm->settings->rgb[1] == 255);
+  REQUIRE(hostRemoteWorm->settings->rgb[2] == 128);
+  REQUIRE(hostRemoteWorm->settings->weapons[0] == 35);
+  REQUIRE(hostRemoteWorm->settings->weapons[4] == 40);
 
-  // Client should have host's worm 0 color/weapons
-  REQUIRE(settingsClient->wormSettings[0]->color == 3);
-  REQUIRE(settingsClient->wormSettings[0]->rgb[0] == 255);
-  REQUIRE(settingsClient->wormSettings[0]->rgb[1] == 0);
-  REQUIRE(settingsClient->wormSettings[0]->rgb[2] == 0);
-  REQUIRE(settingsClient->wormSettings[0]->weapons[0] == 10);
-  REQUIRE(settingsClient->wormSettings[0]->weapons[4] == 15);
+  // Client's remote worm (index 0) should have host's color/weapons
+  Worm* clientRemoteWorm = client.controller()->game.wormByIdx(0);
+  REQUIRE(clientRemoteWorm->settings->color == 3);
+  REQUIRE(clientRemoteWorm->settings->rgb[0] == 255);
+  REQUIRE(clientRemoteWorm->settings->rgb[1] == 0);
+  REQUIRE(clientRemoteWorm->settings->rgb[2] == 0);
+  REQUIRE(clientRemoteWorm->settings->weapons[0] == 10);
+  REQUIRE(clientRemoteWorm->settings->weapons[4] == 15);
+
+  // Persistent settings should NOT be modified
+  REQUIRE(settingsHost->wormSettings[1]->color != 6);
+  REQUIRE(settingsClient->wormSettings[0]->color != 3);
 }
 
 TEST_CASE("NetSession plays frames over real network", "[session]") {

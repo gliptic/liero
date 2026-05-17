@@ -189,6 +189,12 @@ bool MainMenuState::update()
 					break;
 				}
 
+				case MainMenu::MaNetPlayerSettings:
+				{
+					gfx->playerSettings(Settings::NetworkPlayerIdx);
+					break;
+				}
+
 				case MainMenu::MaAdvanced:
 				{
 					gfx->openHiddenMenu();
@@ -438,6 +444,12 @@ bool MainMenuState::update()
 	{
 		gfx->mainMenu.moveToId(MainMenu::MaSettings);
 		gfx->curMenu = &gfx->settingsMenu;
+	}
+
+	if (gfx->testSDLKeyOnce(SDL_SCANCODE_F9))
+	{
+		gfx->mainMenu.moveToId(MainMenu::MaNetPlayerSettings);
+		gfx->playerSettings(Settings::NetworkPlayerIdx);
 	}
 
 	if (gfx->testSDLKeyOnce(SDL_SCANCODE_F8))

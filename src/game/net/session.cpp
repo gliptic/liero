@@ -107,14 +107,14 @@ void NetSession::onConnected() {
   transport_.sendHandshake(seedToSend, localSettingsHash_);
   handshakeSent_ = true;
 
-  // Send local player's info (weapons + color)
-  int localIdx = (role_ == Host) ? 0 : 1;
+  // Send local player's info from the network player profile
+  auto& netWs = settings_->wormSettings[Settings::NetworkPlayerIdx];
   NetTransport::PlayerInfo info;
   for (int i = 0; i < 5; ++i)
-    info.weapons[i] = settings_->wormSettings[localIdx]->weapons[i];
-  info.color = settings_->wormSettings[localIdx]->color;
+    info.weapons[i] = netWs->weapons[i];
+  info.color = netWs->color;
   for (int i = 0; i < 3; ++i)
-    info.rgb[i] = settings_->wormSettings[localIdx]->rgb[i];
+    info.rgb[i] = netWs->rgb[i];
   transport_.sendPlayerInfo(info);
 
   // Host sends authoritative match settings
@@ -251,13 +251,17 @@ void NetSession::tryStartGame() {
   if (sessionState_ == Playing)
     return;
 
-  // Apply remote player's info to the remote worm's settings
+  // Apply remote player's info to the remote worm directly (not the persistent settings)
   int remoteIdx = (role_ == Host) ? 1 : 0;
+  Worm* remoteWorm = controller_->game.wormByIdx(remoteIdx);
+  // Create a distinct copy so we don't mutate the saved player profile
+  auto remoteWs = std::make_shared<WormSettings>(*remoteWorm->settings);
   for (int i = 0; i < 5; ++i)
-    settings_->wormSettings[remoteIdx]->weapons[i] = remotePlayerInfo_.weapons[i];
-  settings_->wormSettings[remoteIdx]->color = remotePlayerInfo_.color;
+    remoteWs->weapons[i] = remotePlayerInfo_.weapons[i];
+  remoteWs->color = remotePlayerInfo_.color;
   for (int i = 0; i < 3; ++i)
-    settings_->wormSettings[remoteIdx]->rgb[i] = remotePlayerInfo_.rgb[i];
+    remoteWs->rgb[i] = remotePlayerInfo_.rgb[i];
+  remoteWorm->settings = remoteWs;
 
   // Seed the game's RNG so both peers have identical state
   controller_->game.rand.seed(gameSeed_);

@@ -44,7 +44,10 @@ NetworkController::NetworkController(
   // Create worms
   for (int idx = 0; idx < 2; ++idx) {
     Worm* worm = new Worm();
-    worm->settings = settings->wormSettings[idx];
+    // Local player uses network player profile; remote uses their slot
+    worm->settings = (idx == localIdx)
+        ? settings->wormSettings[Settings::NetworkPlayerIdx]
+        : settings->wormSettings[idx];
     worm->health = worm->settings->health;
     worm->index = idx;
     worm->statsX = idx == 0 ? 0 : 218;

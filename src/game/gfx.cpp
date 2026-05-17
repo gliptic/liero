@@ -551,6 +551,7 @@ void Gfx::loadMenus()
 	mainMenu.addItem(MenuItem::space());
 	mainMenu.addItem(MenuItem(48, 48, "LEFT PLAYER (F5)", MainMenu::MaPlayer1Settings));
 	mainMenu.addItem(MenuItem(48, 48, "RIGHT PLAYER (F6)", MainMenu::MaPlayer2Settings));
+	mainMenu.addItem(MenuItem(48, 48, "NETWORK PLAYER (F9)", MainMenu::MaNetPlayerSettings));
 	mainMenu.addItem(MenuItem(48, 48, "MATCH SETUP (F7)", MainMenu::MaSettings));
 
 	settingsMenu.valueOffsetX = 100;
@@ -1043,10 +1044,14 @@ void Gfx::menuFlip(bool quitting)
 	playRenderer.pal = playRenderer.origpal;
 	playRenderer.pal.rotateFrom(playRenderer.origpal, 168, 174, menuCycles);
 	playRenderer.pal.setWormColours(*settings);
+	if (curMenu == &playerMenu && playerMenu.ws == settings->wormSettings[Settings::NetworkPlayerIdx])
+		playRenderer.pal.setWormColour(0, *playerMenu.ws);
 	playRenderer.pal.fade(playRenderer.fadeValue);
 	singleScreenRenderer.pal = singleScreenRenderer.origpal;
 	singleScreenRenderer.pal.rotateFrom(singleScreenRenderer.origpal, 168, 174, menuCycles);
 	singleScreenRenderer.pal.setWormColours(*settings);
+	if (curMenu == &playerMenu && playerMenu.ws == settings->wormSettings[Settings::NetworkPlayerIdx])
+		singleScreenRenderer.pal.setWormColour(0, *playerMenu.ws);
 	singleScreenRenderer.pal.fade(singleScreenRenderer.fadeValue);
 	flip();
 }

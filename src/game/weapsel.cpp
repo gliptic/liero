@@ -109,14 +109,16 @@ void WeaponSelection::drawSpectatorViewports(Renderer& renderer, GameState state
 			common.font.drawCenteredText(renderer.bmp, LS(LevelIs1) + levelName + LS(LevelIs2), centerX, centerY - 32, 7, 2);
 		}
 
-		std::string vsText = game.settings->wormSettings[0]->name + " vs " + game.settings->wormSettings[1]->name;
+		Worm& worm0 = *game.wormByIdx(0);
+		Worm& worm1 = *game.wormByIdx(1);
+		std::string vsText = worm0.settings->name + " vs " + worm1.settings->name;
 		// put worm color boxes on a nice spot even if no player names have been entered
 		int textSize = std::max(common.font.getDims(vsText) * 2, 48);
 		common.font.drawCenteredText(renderer.bmp, vsText, centerX, centerY, 7, 2);
 		fillRect(renderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
-		fillRect(renderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, game.settings->wormSettings[0]->color);
+		fillRect(renderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14, Palette::wormSpriteColorBase[0]);
 		fillRect(renderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
-		fillRect(renderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, game.settings->wormSettings[1]->color);
+		fillRect(renderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14, Palette::wormSpriteColorBase[1]);
 		common.font.drawCenteredText(renderer.bmp, "WEAPON SELECTION", centerX, centerY + 48, 7, 2);
 		game.level.drawMiniature(renderer.bmp, centerX - 126, renderer.renderResY - 208, 2);
 
