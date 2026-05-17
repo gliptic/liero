@@ -8,6 +8,7 @@
 #include "stats.hpp"
 #include "game.hpp"
 #include "gfx.hpp"
+#include "rematchState.hpp"
 
 using gvl::cell;
 using std::vector;
@@ -249,9 +250,10 @@ static void sortWeaponStats(vector<WeaponStats>& ws)
 		[](WeaponStats const& a, WeaponStats const& b) { return a.actualHp > b.actualHp; });
 }
 
-StatsState::StatsState(NormalStatsRecorder& recorder, Game& game)
+StatsState::StatsState(NormalStatsRecorder& recorder, Game& game, bool isMultiplayer)
 : recorder_(recorder)
 , game_(game)
+, isMultiplayer_(isMultiplayer)
 {
 }
 
@@ -335,6 +337,14 @@ bool StatsState::update()
 	{
 		fill(gfx->playRenderer.bmp, 0);
 		gfx->clearKeys();
+
+		if (isMultiplayer_ && gfx->netSession)
+		{
+			gfx->stateStack.scheduleReplaceTop(
+				std::make_unique<RematchState>(game_));
+			return true;
+		}
+
 		return false; // pop
 	}
 

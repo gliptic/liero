@@ -167,6 +167,23 @@ bool NetTransport::poll() {
             case PacketResume:
               if (onResume) onResume();
               break;
+
+            case PacketRematchReady:
+              if (len == 2 && onRematchReady) {
+                onRematchReady(data[1] != 0);
+              }
+              break;
+
+            case PacketRematchLevel:
+              if (len >= 2 && onRematchLevel) {
+                bool random = data[1] != 0;
+                std::string file;
+                if (len > 2) {
+                  file.assign(reinterpret_cast<const char*>(data + 2), len - 2);
+                }
+                onRematchLevel(random, std::move(file));
+              }
+              break;
           }
         }
 
@@ -253,6 +270,23 @@ void NetTransport::sendPause() {
 void NetTransport::sendResume() {
   uint8_t buf[1] = {PacketResume};
   sendPacket(buf, sizeof(buf));
+}
+
+void NetTransport::sendRematchReady(bool ready) {
+  uint8_t buf[2];
+  buf[0] = PacketRematchReady;
+  buf[1] = ready ? 1 : 0;
+  sendPacket(buf, sizeof(buf));
+}
+
+void NetTransport::sendRematchLevel(bool randomLevel, const std::string& levelFile) {
+  std::vector<uint8_t> buf(2 + levelFile.size());
+  buf[0] = PacketRematchLevel;
+  buf[1] = randomLevel ? 1 : 0;
+  if (!levelFile.empty()) {
+    std::memcpy(buf.data() + 2, levelFile.data(), levelFile.size());
+  }
+  sendPacket(buf.data(), buf.size());
 }
 
 void NetTransport::sendPacket(const void* data, size_t len) {

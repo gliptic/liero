@@ -18,6 +18,7 @@ struct NetSession {
     WaitingForPeer,  // Listening (host) or connecting (client)
     Handshaking,     // Connected, exchanging handshakes
     Playing,         // Game running
+    Rematch,         // Post-game rematch screen
     Disconnected,    // Peer left
     Failed,          // Connection failed
   };
@@ -52,6 +53,23 @@ struct NetSession {
   void sendPause();
   void sendResume();
 
+  // Transition from Playing to Rematch state (keeps connection alive)
+  void enterRematch();
+
+  // Toggle local player's ready state and notify peer
+  void toggleReady();
+
+  // Change the level selection (host only) and notify peer
+  void setRematchLevel(bool randomLevel, const std::string& levelFile);
+
+  // Start the rematch game (called when both players are ready)
+  void startRematch();
+
+  // Rematch state accessors
+  bool localReady() const { return localReady_; }
+  bool remoteReady() const { return remoteReady_; }
+  bool isHost() const { return role_ == Host; }
+
   // Access the transport (for testing)
   NetTransport& transport() { return transport_; }
 
@@ -64,9 +82,12 @@ struct NetSession {
   void onMapData(const void* data, size_t len);
   void onPause();
   void onResume();
+  void onRematchReady(bool ready);
+  void onRematchLevel(bool randomLevel, std::string levelFile);
   void onRemoteInput(uint32_t frame, uint8_t input);
   void wireCallbacks();
   void tryStartGame();
+  void startRematchClient();
   void generateAndSendMap();
   uint32_t computeSettingsHash() const;
 
@@ -87,6 +108,10 @@ struct NetSession {
   bool matchSettingsReceived_;  // client only; host always has settings
   bool mapDataReceived_;        // client only; host generates locally
   NetTransport::PlayerInfo remotePlayerInfo_;
+
+  // Rematch state
+  bool localReady_;
+  bool remoteReady_;
 
   // Stored compressed map data (client receives from host)
   std::vector<uint8_t> receivedMapData_;

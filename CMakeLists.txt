@@ -129,6 +129,7 @@ set(GAME_SOURCES ${SOURCES}
   src/game/net/localaddr.cpp
   src/game/netConnectState.cpp
   src/game/statsState.cpp
+  src/game/rematchState.cpp
   src/game/menu/booleanSwitchBehavior.cpp
   src/game/menu/enumBehavior.cpp
   src/game/menu/hiddenMenu.cpp

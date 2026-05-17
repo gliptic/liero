@@ -18,6 +18,8 @@ NetSession::NetSession(std::shared_ptr<Common> common,
     , playerInfoReceived_(false)
     , matchSettingsReceived_(false)
     , mapDataReceived_(false)
+    , localReady_(false)
+    , remoteReady_(false)
 {
   std::memset(&remotePlayerInfo_, 0, sizeof(remotePlayerInfo_));
   localSettingsHash_ = computeSettingsHash();
@@ -94,6 +96,8 @@ void NetSession::disconnect() {
   playerInfoReceived_ = false;
   matchSettingsReceived_ = false;
   mapDataReceived_ = false;
+  localReady_ = false;
+  remoteReady_ = false;
   receivedMapData_.clear();
 }
 
@@ -152,6 +156,13 @@ void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
     gameSeed_ = seed;
   }
 
+  if (sessionState_ == Rematch) {
+    // During rematch, handshake signals the host is starting the game.
+    // Client needs to wait for map data before creating the controller.
+    handshakeReceived_ = true;
+    return;
+  }
+
   handshakeReceived_ = true;
 
   if (handshakeSent_ && playerInfoReceived_ && matchSettingsReceived_ &&
@@ -208,6 +219,12 @@ void NetSession::onMapData(const void* data, size_t len) {
                           static_cast<const uint8_t*>(data) + len);
   mapDataReceived_ = true;
 
+  if (sessionState_ == Rematch && handshakeReceived_) {
+    // We have the seed and map — start the client-side rematch
+    startRematchClient();
+    return;
+  }
+
   if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
       matchSettingsReceived_)
     tryStartGame();
@@ -251,6 +268,10 @@ void NetSession::wireCallbacks() {
   };
   transport_.onPause = [this]() { onPause(); };
   transport_.onResume = [this]() { onResume(); };
+  transport_.onRematchReady = [this](bool ready) { onRematchReady(ready); };
+  transport_.onRematchLevel = [this](bool random, std::string file) {
+    onRematchLevel(random, std::move(file));
+  };
 }
 
 void NetSession::tryStartGame() {
@@ -303,6 +324,165 @@ void NetSession::tryStartGame() {
   }
 
   controllerPtr_ = controller_.get();
+  sessionState_ = Playing;
+}
+
+void NetSession::enterRematch() {
+  if (sessionState_ != Playing)
+    return;
+
+  sessionState_ = Rematch;
+  localReady_ = false;
+  remoteReady_ = false;
+
+  // The old controller is still owned by Gfx. Clear our raw pointer since
+  // it will be replaced when the rematch starts.
+  controllerPtr_ = nullptr;
+
+  // Reset per-game handshake flags for the next round
+  mapDataReceived_ = (role_ == Host);  // host generates locally
+  receivedMapData_.clear();
+}
+
+void NetSession::toggleReady() {
+  if (sessionState_ != Rematch)
+    return;
+
+  localReady_ = !localReady_;
+  transport_.sendRematchReady(localReady_);
+
+  // Only host initiates the rematch start
+  if (role_ == Host && localReady_ && remoteReady_)
+    startRematch();
+}
+
+void NetSession::setRematchLevel(bool randomLevel, const std::string& levelFile) {
+  if (sessionState_ != Rematch || role_ != Host)
+    return;
+
+  settings_->randomLevel = randomLevel;
+  settings_->levelFile = levelFile;
+
+  transport_.sendRematchLevel(randomLevel, levelFile);
+
+  // Reset ready states when level changes
+  if (localReady_) {
+    localReady_ = false;
+    transport_.sendRematchReady(false);
+  }
+  if (remoteReady_)
+    remoteReady_ = false;
+}
+
+void NetSession::onRematchReady(bool ready) {
+  if (sessionState_ != Rematch)
+    return;
+
+  remoteReady_ = ready;
+
+  // Only host initiates the rematch start
+  if (role_ == Host && localReady_ && remoteReady_)
+    startRematch();
+}
+
+void NetSession::onRematchLevel(bool randomLevel, std::string levelFile) {
+  if (sessionState_ != Rematch || role_ != Client)
+    return;
+
+  settings_->randomLevel = randomLevel;
+  settings_->levelFile = std::move(levelFile);
+
+  // Reset ready states when level changes
+  localReady_ = false;
+  remoteReady_ = false;
+}
+
+void NetSession::startRematch() {
+  // Only the host calls this directly. The client starts via onHandshake+onMapData.
+  if (sessionState_ != Rematch || role_ != Host)
+    return;
+
+  // Generate a new seed
+  gameSeed_ = static_cast<uint32_t>(std::time(nullptr));
+
+  // Create a fresh controller (host = player 0)
+  controller_ = std::make_unique<NetworkController>(common_, settings_, 0);
+
+  // Apply remote player info
+  Worm* remoteWorm = controller_->game.wormByIdx(1);
+  auto remoteWs = std::make_shared<WormSettings>(*remoteWorm->settings);
+  for (int i = 0; i < 5; ++i)
+    remoteWs->weapons[i] = remotePlayerInfo_.weapons[i];
+  remoteWs->color = remotePlayerInfo_.color;
+  for (int i = 0; i < 3; ++i)
+    remoteWs->rgb[i] = remotePlayerInfo_.rgb[i];
+  remoteWs->name = remotePlayerInfo_.name;
+  remoteWorm->settings = remoteWs;
+
+  controller_->game.rand.seed(gameSeed_);
+
+  // Send seed to client, then generate and send map
+  transport_.sendHandshake(gameSeed_, 0);
+  generateAndSendMap();
+  controller_->setLevelPreloaded();
+
+  // Wire controller
+  controller_->setInputCallbacks(
+      [this](uint32_t frame, uint8_t input) {
+        transport_.sendInput(frame, input);
+      },
+      nullptr);
+  controller_->setPauseCallbacks(
+      [this]() { transport_.sendPause(); },
+      [this]() { transport_.sendResume(); });
+  for (uint32_t i = 0; i < 3; ++i)
+    controller_->injectRemoteInput(i, 0);
+
+  controllerPtr_ = controller_.get();
+  localReady_ = false;
+  remoteReady_ = false;
+  sessionState_ = Playing;
+}
+
+void NetSession::startRematchClient() {
+  // Called on the client side when handshake (seed) + map data are both received
+  if (sessionState_ != Rematch || role_ != Client)
+    return;
+
+  // Create a fresh controller (client = player 1)
+  controller_ = std::make_unique<NetworkController>(common_, settings_, 1);
+
+  // Apply remote player info (host = player 0)
+  Worm* remoteWorm = controller_->game.wormByIdx(0);
+  auto remoteWs = std::make_shared<WormSettings>(*remoteWorm->settings);
+  for (int i = 0; i < 5; ++i)
+    remoteWs->weapons[i] = remotePlayerInfo_.weapons[i];
+  remoteWs->color = remotePlayerInfo_.color;
+  for (int i = 0; i < 3; ++i)
+    remoteWs->rgb[i] = remotePlayerInfo_.rgb[i];
+  remoteWs->name = remotePlayerInfo_.name;
+  remoteWorm->settings = remoteWs;
+
+  controller_->game.rand.seed(gameSeed_);
+  controller_->loadLevelFromData(receivedMapData_);
+  receivedMapData_.clear();
+
+  // Wire controller
+  controller_->setInputCallbacks(
+      [this](uint32_t frame, uint8_t input) {
+        transport_.sendInput(frame, input);
+      },
+      nullptr);
+  controller_->setPauseCallbacks(
+      [this]() { transport_.sendPause(); },
+      [this]() { transport_.sendResume(); });
+  for (uint32_t i = 0; i < 3; ++i)
+    controller_->injectRemoteInput(i, 0);
+
+  controllerPtr_ = controller_.get();
+  localReady_ = false;
+  remoteReady_ = false;
+  handshakeReceived_ = false;
   sessionState_ = Playing;
 }
 

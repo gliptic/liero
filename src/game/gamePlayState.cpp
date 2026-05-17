@@ -53,8 +53,14 @@ bool GamePlayState::update()
 			auto* stats = dynamic_cast<NormalStatsRecorder*>(game->statsRecorder.get());
 			if (stats && stats->gameTime > 0)
 			{
+				bool isMultiplayer = gfx->netSession != nullptr;
+
+				// Transition network session to rematch state to keep connection alive
+				if (isMultiplayer)
+					gfx->netSession->enterRematch();
+
 				gfx->stateStack.scheduleReplaceTop(
-					std::make_unique<StatsState>(*stats, *game));
+					std::make_unique<StatsState>(*stats, *game, isMultiplayer));
 				return false;
 			}
 		}

@@ -10,7 +10,7 @@ struct Game;
 // Post-game statistics display.
 struct StatsState : AppState
 {
-	StatsState(NormalStatsRecorder& recorder, Game& game);
+	StatsState(NormalStatsRecorder& recorder, Game& game, bool isMultiplayer = false);
 
 	void enter() override;
 	void handleEvent(SDL_Event& ev) override;
@@ -21,6 +21,7 @@ struct StatsState : AppState
 private:
 	NormalStatsRecorder& recorder_;
 	Game& game_;
+	bool isMultiplayer_;
 
 	Bitmap bg_;
 	double offset_ = 0, destOffset_ = 0;
