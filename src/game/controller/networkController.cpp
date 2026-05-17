@@ -99,6 +99,10 @@ void NetworkController::loadLevelFromData(const std::vector<uint8_t>& data) {
   std::memcpy(&w, raw.data(), 2);
   std::memcpy(&h, raw.data() + 2, 2);
 
+  // Validate dimensions to prevent integer overflow in w*h
+  if (w == 0 || h == 0 || w > 4096 || h > 4096)
+    return;
+
   uint32_t randX, randC;
   std::memcpy(&randX, raw.data() + 4, 4);
   std::memcpy(&randC, raw.data() + 8, 4);
