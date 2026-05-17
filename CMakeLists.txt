@@ -12,6 +12,11 @@ include(GenerateVersion) # generate version metadata from git
 
 # configure vcpkg
 if(OPENLIERO_USE_VCPKG)
+  # For Emscripten builds, find and set the chainload toolchain before vcpkg
+  if(VCPKG_TARGET_TRIPLET STREQUAL "wasm32-emscripten" AND NOT DEFINED VCPKG_CHAINLOAD_TOOLCHAIN_FILE)
+    include(FindEmscriptenToolchain)
+  endif()
+
   set(VCPKG_TOOLCHAIN_PATH
     "scripts/buildsystems/vcpkg.cmake"
     CACHE STRING "General path to vcpkg toolchain file"
@@ -176,10 +181,10 @@ elseif(EMSCRIPTEN)
     -sALLOW_MEMORY_GROWTH=1
     -sMAX_WEBGL_VERSION=2
     -sEXPORTED_RUNTIME_METHODS=FS
-    --preload-file ${CMAKE_SOURCE_DIR}/data/Profiles@/openliero/Profiles
-    --preload-file ${CMAKE_SOURCE_DIR}/data/Resources@/openliero/Resources
-    --preload-file ${CMAKE_SOURCE_DIR}/data/Setups@/openliero/Setups
-    --preload-file ${CMAKE_SOURCE_DIR}/data/TC@/openliero/TC
+    "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/data/Profiles@/openliero/Profiles"
+    "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/data/Resources@/openliero/Resources"
+    "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/data/Setups@/openliero/Setups"
+    "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/data/TC@/openliero/TC"
   )
   set_target_properties(openliero PROPERTIES SUFFIX ".html")
   target_compile_definitions(game PUBLIC OPENLIERO_EMSCRIPTEN=1)

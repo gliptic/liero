@@ -128,9 +128,12 @@
 			"displayName": "Emscripten (wasm32)",
 			"inherits": [
 				"default",
-				"arch-wasm32-emscripten",
-				"condition-emscripten"
-			]
+				"arch-wasm32-emscripten"
+			],
+			"cacheVariables": {
+				"OPENLIERO_BUILD_TCTOOL": "OFF",
+				"OPENLIERO_BUILD_VIDEOTOOL": "OFF"
+			}
 		}
 	],
 	"buildPresets": [
@@ -299,18 +302,12 @@
 		{
 			"name": "emscripten",
 			"displayName": "Emscripten (wasm32)",
-			"inherits": [
-				"condition-emscripten"
-			],
 			"configurePreset": "emscripten",
 			"configuration": "Release"
 		},
 		{
 			"name": "emscripten-debug",
 			"displayName": "Emscripten (wasm32) - Debug",
-			"inherits": [
-				"condition-emscripten"
-			],
 			"configurePreset": "emscripten",
 			"configuration": "Debug"
 		}
