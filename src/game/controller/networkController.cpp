@@ -240,6 +240,16 @@ void NetworkController::focus() {
       state = StateGame;
     } else {
       state = StateWeaponSelection;
+
+      // Clear saved weapon preferences so both peers take the same RNG path
+      // during randomization (each machine has different local player profiles).
+      // Also force controller=0 (human) so isReady/randomWeapons are consistent.
+      for (auto* w : game.worms) {
+        for (int j = 0; j < Settings::selectableWeapons; ++j)
+          w->settings->weapons[j] = 0;
+        w->settings->controller = 0;
+      }
+
       ws = std::make_unique<WeaponSelection>(game);
     }
   }
