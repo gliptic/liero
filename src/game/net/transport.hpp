@@ -27,6 +27,7 @@ struct NetTransport {
     uint32_t weapons[5];
     int32_t color;
     int32_t rgb[3];
+    char name[24];  // Fixed-size, null-terminated
   };
 
   // Match settings sent from host to client

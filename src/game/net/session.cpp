@@ -108,12 +108,14 @@ void NetSession::onConnected() {
 
   // Send local player's info from the network player profile
   auto& netWs = settings_->wormSettings[Settings::NetworkPlayerIdx];
-  NetTransport::PlayerInfo info;
+  NetTransport::PlayerInfo info{};
   for (int i = 0; i < 5; ++i)
     info.weapons[i] = netWs->weapons[i];
   info.color = netWs->color;
   for (int i = 0; i < 3; ++i)
     info.rgb[i] = netWs->rgb[i];
+  std::strncpy(info.name, netWs->name.c_str(), sizeof(info.name) - 1);
+  info.name[sizeof(info.name) - 1] = '\0';
   transport_.sendPlayerInfo(info);
 
   // Host sends authoritative match settings
@@ -265,6 +267,7 @@ void NetSession::tryStartGame() {
   remoteWs->color = remotePlayerInfo_.color;
   for (int i = 0; i < 3; ++i)
     remoteWs->rgb[i] = remotePlayerInfo_.rgb[i];
+  remoteWs->name = remotePlayerInfo_.name;
   remoteWorm->settings = remoteWs;
 
   // Seed the game's RNG so both peers have identical state
