@@ -327,3 +327,138 @@ TEST_CASE("Same inputs produce same state regardless of construction order",
 
   REQUIRE(hashGameState(game1) == hashGameState(game2));
 }
+
+TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
+  // Stress-test the death/respawn path with aggressive inputs over many frames.
+  // Uses low health so deaths occur frequently, and biases inputs toward combat
+  // (fire held + movement) to maximize projectile/death interactions.
+  //
+  // This targets the known desync risk in beginRespawn() where the RNG-based
+  // position search depends on level pixel state.
+
+  precomputeTables();
+
+  auto common = std::make_shared<Common>();
+  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tcRoot));
+
+  auto settings = std::make_shared<Settings>();
+  settings->lives = 50;       // Many lives = many death/respawn cycles
+  settings->loadingTime = 0;  // Fast weapon reload
+  settings->randomLevel = true;
+  settings->gameMode = Settings::GMKillEmAll;
+  settings->blood = 100;
+
+  // Use multiple seeds to cover different level layouts
+  uint32_t seeds[] = { 42, 1337, 99999, 0xDEAD, 0xBEEF };
+
+  for (uint32_t seed : seeds) {
+    auto spA = std::make_shared<NullSoundPlayer>();
+    auto spB = std::make_shared<NullSoundPlayer>();
+
+    Game gameA(common, settings, spA);
+    Game gameB(common, settings, spB);
+
+    gameA.rand.seed(seed);
+    gameB.rand.seed(seed);
+
+    for (int idx = 0; idx < 2; ++idx) {
+      Worm* wA = new Worm();
+      wA->settings = settings->wormSettings[idx];
+      wA->health = 25;  // Low health for quick deaths
+      wA->index = idx;
+      wA->statsX = idx == 0 ? 0 : 218;
+      gameA.addWorm(wA);
+
+      Worm* wB = new Worm();
+      wB->settings = settings->wormSettings[idx];
+      wB->health = 25;
+      wB->index = idx;
+      wB->statsX = idx == 0 ? 0 : 218;
+      gameB.addWorm(wB);
+    }
+
+    gameA.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), 0, 504, 350));
+    gameA.addViewport(new Viewport(gvl::rect(160, 0, 318, 158), 1, 504, 350));
+    gameB.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), 0, 504, 350));
+    gameB.addViewport(new Viewport(gvl::rect(160, 0, 318, 158), 1, 504, 350));
+
+    gameA.level.generateFromSettings(*common, *settings, gameA.rand);
+    gameB.level.generateFromSettings(*common, *settings, gameB.rand);
+
+    for (auto* w : gameA.worms) w->initWeapons(gameA);
+    for (auto* w : gameB.worms) w->initWeapons(gameB);
+
+    gameA.paused = false;
+    gameB.paused = false;
+    gameA.startGame();
+    gameB.startGame();
+    gameA.resetWorms();
+    gameB.resetWorms();
+
+    gvl::mwc inputRng(seed ^ 0x12345678);
+
+    constexpr int NUM_FRAMES = 5000;
+    int deathCount = 0;
+
+    for (int frame = 0; frame < NUM_FRAMES; ++frame) {
+      for (int idx = 0; idx < 2; ++idx) {
+        uint32_t input = inputRng() & 0x7f;
+        // Bias toward combat: 60% chance fire is held
+        if ((inputRng() % 10) < 6)
+          input |= (1 << 4);  // Fire bit
+        // 40% chance of movement toward opponent
+        if ((inputRng() % 10) < 4)
+          input |= (1 << (idx == 0 ? 1 : 0));  // Left/Right toward other
+
+        gameA.worms[idx]->controlStates.unpack(input);
+        gameB.worms[idx]->controlStates.unpack(input);
+      }
+
+      gameA.processFrame();
+      gameB.processFrame();
+
+      // Track deaths for info output
+      for (auto* w : gameA.worms) {
+        if (!w->visible && w->killedTimer == 149)
+          ++deathCount;
+      }
+
+      // Check state every frame
+      uint32_t hashA = hashGameState(gameA);
+      uint32_t hashB = hashGameState(gameB);
+
+      if (hashA != hashB) {
+        // Identify which component diverged
+        uint32_t rngA = gameA.rand.x * 31 + gameA.rand.c;
+        uint32_t rngB = gameB.rand.x * 31 + gameB.rand.c;
+        bool rngMatch = (rngA == rngB);
+
+        bool wormsMatch = true;
+        for (size_t i = 0; i < gameA.worms.size(); ++i) {
+          if (gameA.worms[i]->pos.x != gameB.worms[i]->pos.x ||
+              gameA.worms[i]->pos.y != gameB.worms[i]->pos.y ||
+              gameA.worms[i]->visible != gameB.worms[i]->visible) {
+            wormsMatch = false;
+            break;
+          }
+        }
+
+        INFO("Desync at frame " << frame << " (seed=" << seed
+             << ", deaths=" << deathCount << ")"
+             << " RNG match=" << rngMatch
+             << " Worms match=" << wormsMatch
+             << " hashA=0x" << std::hex << hashA
+             << " hashB=0x" << hashB);
+        REQUIRE(hashA == hashB);
+      }
+
+      // Stop if game is over
+      if (gameA.isGameOver())
+        break;
+    }
+
+    INFO("Seed " << seed << " completed: " << deathCount << " deaths observed");
+    REQUIRE(deathCount > 0);  // Sanity check: we actually tested deaths
+  }
+}
