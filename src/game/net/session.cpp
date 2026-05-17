@@ -358,7 +358,6 @@ void NetSession::generateAndSendMap() {
 }
 
 std::unique_ptr<NetworkController> NetSession::releaseController() {
-  controllerPtr_ = nullptr;
   return std::move(controller_);
 }
 
