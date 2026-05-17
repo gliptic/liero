@@ -150,10 +150,26 @@ void NetworkController::injectRemoteInput(uint32_t frame, uint8_t input) {
 
 void NetworkController::onKey(int key, bool keyState) {
   Worm::Control control;
-  Worm* worm = game.findControlForKey(key, control);
+  // Only check the local worm's key bindings to avoid conflicts with
+  // the remote worm having the same default bindings.
+  Worm* worm = game.worms[localIdx];
+  bool found = false;
 
-  // Only accept input for the local player
-  if (worm && worm->index == localIdx) {
+  if (worm->settings->inputDevice == WormSettingsExtensions::InputKeyboard) {
+    uint32_t* controls = game.settings->extensions
+        ? worm->settings->controlsEx : worm->settings->controls;
+    std::size_t maxControl = game.settings->extensions
+        ? WormSettings::MaxControlEx : WormSettings::MaxControl;
+    for (std::size_t c = 0; c < maxControl; ++c) {
+      if (controls[c] == static_cast<uint32_t>(key)) {
+        control = static_cast<Worm::Control>(c);
+        found = true;
+        break;
+      }
+    }
+  }
+
+  if (found) {
     worm->cleanControlStates.set(control, keyState);
 
     // Update localControlState (used for network packing) independently
