@@ -125,6 +125,7 @@ set(GAME_SOURCES ${SOURCES}
   src/game/controller/networkController.cpp
   src/game/controller/replayController.cpp
   src/game/net/transport.cpp
+  src/game/net/session.cpp
   src/game/statsState.cpp
   src/game/menu/booleanSwitchBehavior.cpp
   src/game/menu/enumBehavior.cpp
@@ -295,6 +296,12 @@ if(OPENLIERO_BUILD_TESTS)
   add_executable(test_transport src/tests/test_transport.cpp)
   target_link_libraries(test_transport PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_transport)
+
+  add_executable(test_session src/tests/test_session.cpp)
+  target_link_libraries(test_session PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_session
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  )
 endif()
 
 # documentation

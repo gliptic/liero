@@ -59,8 +59,8 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 1. ~~**Determinism harness**~~ ✅ — Run two `Game` instances in-process with same seed/inputs, assert state matches after every frame
 2. ~~**NetworkController**~~ ✅ — Implements `Controller` interface; buffers local+remote inputs; advances sim when both available
 3. ~~**UDP transport**~~ ✅ — ENet-based reliable UDP transport with input, handshake, and checksum packet types
-4. **Connection flow** ⬅️ next — Host listens on port, peer connects, exchange game settings + seed, start game
-5. **UI** — Menu option to host/join, IP entry field
+4. ~~**Connection flow**~~ ✅ — `NetSession` wires controller + transport: handshake exchange, seed sync, settings validation
+5. **UI** ⬅️ next — Menu option to host/join, IP entry field
 
 ## Not Doing (and Why)
 
@@ -140,12 +140,33 @@ The `NetTransport` (`src/game/net/transport.hpp`) wraps ENet and provides:
 frameworks. A frame input is exactly 6 bytes on the wire. At 70fps, that's ~420 bytes/sec
 per direction — essentially zero bandwidth.
 
+### Connection flow / NetSession (2026-05-17)
+
+The `NetSession` (`src/game/net/session.hpp`) wires `NetworkController` and `NetTransport`
+together. It manages the full connection lifecycle:
+
+- **State machine:** Idle → WaitingForPeer → Handshaking → Playing → Disconnected/Failed
+- **Role assignment:** Host = player 0, Client = player 1
+- **Handshake protocol:** Both peers send a handshake packet containing a seed (host-
+  authoritative, client sends 0) and a settings hash. If hashes don't match, the session
+  moves to Failed state — prevents playing with incompatible settings.
+- **Settings hash:** FNV-1a hash of gameplay-affecting settings (lives, loading time,
+  game mode, blood, max bonuses, time to lose, flags to win, load change).
+- **RNG sync:** The host generates a random seed from `std::time()`. After handshake
+  completes, both peers `game.rand.seed(gameSeed_)` before starting the game, ensuring
+  identical simulation state.
+- **Callback wiring:** Transport's `onRemoteInput` → controller's `injectRemoteInput()`;
+  controller's `sendInput` callback → transport's `sendInput()`.
+- **Tested end-to-end:** Session tests verify handshake completion, settings mismatch
+  rejection, and actual frame-advancing over real localhost UDP sockets with deterministic
+  state verification.
+
 ## Open Questions
 
 - ~~What UDP library to use?~~ **Answered:** zpl-c/enet v2.6.5 via vcpkg overlay port. IPv6, reliable channels, lightweight.
+- ~~Should we sync game settings/TC data hash to prevent mismatched clients from playing?~~ **Answered:** Yes. `NetSession::computeSettingsHash()` computes an FNV-1a hash of gameplay-affecting settings and both peers exchange it during handshake. Mismatch → Failed state.
 - Should the input delay be adaptive (based on measured RTT) or fixed?
 - How to handle disconnection gracefully? Pause + timeout + forfeit?
-- Should we sync game settings/TC data hash to prevent mismatched clients from playing?
 - ~~Is there any state in `gvl::mwc` (the PRNG) beyond the two 32-bit values that needs synchronizing?~~ **Answered:** No, just `x` and `c`. Seed sync is sufficient.
 - How should weapon selection work in multiplayer? Options: both players select locally then exchange, or use a shared selection screen with one player choosing at a time.
 
