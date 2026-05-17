@@ -261,6 +261,25 @@ the same rising-edge detection pattern in `advanceSimulation()`:
 `doRespawning()` checks `ready` before making worm visible. With edge detection, this
 works correctly — Fire on rising edge triggers once, `ready` persists across frames.
 
+### Input ownership separation (2026-05-17)
+
+Two additional bugs caused weapon switch desync and rapid-fire:
+
+1. **SDL key repeats** — SDL3 fires `SDL_EVENT_KEY_DOWN` repeatedly while a key is held.
+   These repeat events were calling `onKey()`, which re-set bits in `controlStates` that
+   `pressedOnce()` had consumed. Fix: filter `ev.key.repeat` in `processEvent()`.
+
+2. **onKey() bypassing edge detection** — `NetworkController::onKey()` directly modified
+   `worm->controlStates`, but the remote peer only sees edge-detected network inputs.
+   This caused the local peer to process different game state than the remote peer → desync.
+   Fix: `onKey()` now only updates `localControlState` (the network packing source).
+   Edge detection in `advanceSimulation()` is the sole writer of `worm->controlStates`.
+
+**Design principle:** In network play, `worm->controlStates` must be modified identically
+on both peers. Since both peers run the same edge detection on the same packed input bytes,
+only the edge detection code should write to `controlStates`. Any other writer (like `onKey`)
+creates a local-only modification invisible to the remote peer.
+
 ## Technical Risk Assessment
 
 | Risk | Likelihood | Impact | Mitigation | Status |
