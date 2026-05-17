@@ -58,10 +58,9 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 
 1. ~~**Determinism harness**~~ ✅ — Run two `Game` instances in-process with same seed/inputs, assert state matches after every frame
 2. ~~**NetworkController**~~ ✅ — Implements `Controller` interface; buffers local+remote inputs; advances sim when both available
-3. **UDP transport** ⬅️ next — Send/receive input bytes between two peers over UDP
-4. **Input delay buffer** — (integrated into NetworkController already, but needs protocol-level handling)
-5. **Connection flow** — Host listens on port, peer connects, exchange game settings + seed, start game
-6. **UI** — Menu option to host/join, IP entry field
+3. ~~**UDP transport**~~ ✅ — ENet-based reliable UDP transport with input, handshake, and checksum packet types
+4. **Connection flow** ⬅️ next — Host listens on port, peer connects, exchange game settings + seed, start game
+5. **UI** — Menu option to host/join, IP entry field
 
 ## Not Doing (and Why)
 
@@ -119,10 +118,31 @@ game logic.
   `rand.x` and `rand.c` after hundreds of frames.
 - **Input delay already integrated:** The 3-frame buffer is part of the NetworkController.
   The next step is just the wire protocol (frame number + input byte over UDP).
+- **UDP library:** Using [zpl-c/enet](https://github.com/zpl-c/enet) (v2.6.5), the IPv6-enabled
+  fork of ENet. Added as a vcpkg overlay port in `tools/vcpkg/overlay-ports/enet/`. Provides
+  reliable ordered delivery on channel 0 (inputs, handshake) and unreliable delivery on
+  channel 1 (checksums). The library is a single-header C implementation — very lightweight.
+
+### Transport design (2026-05-17)
+
+The `NetTransport` (`src/game/net/transport.hpp`) wraps ENet and provides:
+
+- **Three packet types:** `PacketInput` (6 bytes: type + frame + input), `PacketHandshake`
+  (9 bytes: type + seed + settingsHash), `PacketChecksum` (9 bytes: type + frame + checksum)
+- **Two ENet channels:** Channel 0 = reliable ordered (inputs, handshake), Channel 1 =
+  unreliable (checksums — losing one is fine)
+- **Callback-based:** `onRemoteInput`, `onHandshake`, `onChecksum`, `onConnected`,
+  `onDisconnected` callbacks drive the controller without polling
+- **Non-blocking poll:** `poll()` returns immediately; call it once per game frame
+- **IPv6 ready:** Uses zpl-c/enet which supports dual-stack (IPv4 + IPv6)
+
+**Wire format is intentionally simple and fixed-size** — no varints, no serialization
+frameworks. A frame input is exactly 6 bytes on the wire. At 70fps, that's ~420 bytes/sec
+per direction — essentially zero bandwidth.
 
 ## Open Questions
 
-- What UDP library to use? Options: raw BSD sockets, SDL_net, ENet (reliable UDP with channels), or GameNetworkingSockets (Valve's library, has NAT traversal)
+- ~~What UDP library to use?~~ **Answered:** zpl-c/enet v2.6.5 via vcpkg overlay port. IPv6, reliable channels, lightweight.
 - Should the input delay be adaptive (based on measured RTT) or fixed?
 - How to handle disconnection gracefully? Pause + timeout + forfeit?
 - Should we sync game settings/TC data hash to prevent mismatched clients from playing?

@@ -1,0 +1,17 @@
+{
+  "name": "enet",
+  "version": "2.6.5",
+  "description": "An IPv6-enabled fork of ENet reliable UDP networking library",
+  "homepage": "https://github.com/zpl-c/enet",
+  "license": "MIT",
+  "dependencies": [
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    },
+    {
+      "name": "vcpkg-cmake-config",
+      "host": true
+    }
+  ]
+}

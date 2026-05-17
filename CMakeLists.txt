@@ -59,6 +59,7 @@ project(openliero
 find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
 find_package(SDL3_image REQUIRED CONFIG)
 find_package(miniz CONFIG REQUIRED)
+find_package(enet CONFIG REQUIRED PATHS "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/cmake/enet")
 
 # local dependencies
 add_subdirectory(src/gvl)
@@ -123,6 +124,7 @@ set(GAME_SOURCES ${SOURCES}
   src/game/controller/localController.cpp
   src/game/controller/networkController.cpp
   src/game/controller/replayController.cpp
+  src/game/net/transport.cpp
   src/game/statsState.cpp
   src/game/menu/booleanSwitchBehavior.cpp
   src/game/menu/enumBehavior.cpp
@@ -142,6 +144,7 @@ target_link_libraries(game
   gvl
   SDL3::SDL3
   SDL3_image::SDL3_image
+  enet::enet_static
 )
 
 if(APPLE)
@@ -288,6 +291,10 @@ if(OPENLIERO_BUILD_TESTS)
   catch_discover_tests(test_network_controller
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   )
+
+  add_executable(test_transport src/tests/test_transport.cpp)
+  target_link_libraries(test_transport PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_transport)
 endif()
 
 # documentation
