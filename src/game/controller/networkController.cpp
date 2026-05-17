@@ -35,6 +35,7 @@ NetworkController::NetworkController(
   // Set up pause menu
   pauseMenu_.init(true);  // centered
   pauseMenu_.addItem(MenuItem(7, 6, "RESUME", 0));
+  pauseMenu_.addItem(MenuItem(7, 6, "END MATCH", 2));
   pauseMenu_.addItem(MenuItem(7, 6, "DISCONNECT", 1));
 
   localInputs.fill(0);
@@ -288,6 +289,12 @@ bool NetworkController::process() {
           // Resume
           localPaused_ = false;
           if (onLocalResume) onLocalResume();
+        } else if (sel == 2) {
+          // End match
+          localPaused_ = false;
+          if (onLocalResume) onLocalResume();
+          if (onEndMatch) onEndMatch();
+          endMatch();
         } else {
           // Disconnect
           localPaused_ = false;
@@ -530,4 +537,12 @@ Game* NetworkController::currentGame() { return &game; }
 
 bool NetworkController::running() {
   return state != StateGameEnded && state != StateInitial;
+}
+
+void NetworkController::endMatch() {
+  if (state == StateGame || state == StateWeaponSelection) {
+    state = StateGameEnded;
+    goingToMenu = true;
+    fadeValue = 33;
+  }
 }

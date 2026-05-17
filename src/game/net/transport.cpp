@@ -184,6 +184,10 @@ bool NetTransport::poll() {
                 onRematchLevel(random, std::move(file));
               }
               break;
+
+            case PacketEndMatch:
+              if (onEndMatch) onEndMatch();
+              break;
           }
         }
 
@@ -287,6 +291,11 @@ void NetTransport::sendRematchLevel(bool randomLevel, const std::string& levelFi
     std::memcpy(buf.data() + 2, levelFile.data(), levelFile.size());
   }
   sendPacket(buf.data(), buf.size());
+}
+
+void NetTransport::sendEndMatch() {
+  uint8_t buf[1] = {PacketEndMatch};
+  sendPacket(buf, sizeof(buf));
 }
 
 void NetTransport::sendPacket(const void* data, size_t len) {

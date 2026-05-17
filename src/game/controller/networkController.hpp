@@ -52,6 +52,12 @@ struct NetworkController : CommonController {
     onLocalResume = std::move(resumeCb);
   }
 
+  // Set callback for end-match notification to remote peer
+  void setEndMatchCallback(std::function<void()> cb) { onEndMatch = std::move(cb); }
+
+  // Force-end the current match (triggered locally or by remote peer)
+  void endMatch();
+
   // Skip weapon selection and go directly to game (for testing)
   void setSkipWeaponSelection(bool skip) { skipWeaponSelection = skip; }
 
@@ -114,6 +120,7 @@ struct NetworkController : CommonController {
   // Callbacks for pause/resume (set by session)
   std::function<void()> onLocalPause;
   std::function<void()> onLocalResume;
+  std::function<void()> onEndMatch;
 
   // Weapon selection (active during StateWeaponSelection)
   std::unique_ptr<WeaponSelection> ws;

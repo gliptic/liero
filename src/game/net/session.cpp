@@ -240,6 +240,11 @@ void NetSession::onResume() {
     controllerPtr_->setRemotePaused(false);
 }
 
+void NetSession::onRemoteEndMatch() {
+  if (controllerPtr_)
+    controllerPtr_->endMatch();
+}
+
 void NetSession::sendPause() {
   transport_.sendPause();
 }
@@ -268,6 +273,7 @@ void NetSession::wireCallbacks() {
   };
   transport_.onPause = [this]() { onPause(); };
   transport_.onResume = [this]() { onResume(); };
+  transport_.onEndMatch = [this]() { onRemoteEndMatch(); };
   transport_.onRematchReady = [this](bool ready) { onRematchReady(ready); };
   transport_.onRematchLevel = [this](bool random, std::string file) {
     onRematchLevel(random, std::move(file));
@@ -316,6 +322,8 @@ void NetSession::tryStartGame() {
   controller_->setPauseCallbacks(
       [this]() { transport_.sendPause(); },
       [this]() { transport_.sendResume(); });
+  controller_->setEndMatchCallback(
+      [this]() { transport_.sendEndMatch(); });
 
   // Pre-fill the input delay window with empty inputs so both sides
   // can advance past the initial frames without stalling.
@@ -435,6 +443,8 @@ void NetSession::startRematch() {
   controller_->setPauseCallbacks(
       [this]() { transport_.sendPause(); },
       [this]() { transport_.sendResume(); });
+  controller_->setEndMatchCallback(
+      [this]() { transport_.sendEndMatch(); });
   for (uint32_t i = 0; i < 3; ++i)
     controller_->injectRemoteInput(i, 0);
 
@@ -476,6 +486,8 @@ void NetSession::startRematchClient() {
   controller_->setPauseCallbacks(
       [this]() { transport_.sendPause(); },
       [this]() { transport_.sendResume(); });
+  controller_->setEndMatchCallback(
+      [this]() { transport_.sendEndMatch(); });
   for (uint32_t i = 0; i < 3; ++i)
     controller_->injectRemoteInput(i, 0);
 

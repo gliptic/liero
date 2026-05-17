@@ -82,6 +82,7 @@ struct NetSession {
   void onMapData(const void* data, size_t len);
   void onPause();
   void onResume();
+  void onRemoteEndMatch();
   void onRematchReady(bool ready);
   void onRematchLevel(bool randomLevel, std::string levelFile);
   void onRemoteInput(uint32_t frame, uint8_t input);

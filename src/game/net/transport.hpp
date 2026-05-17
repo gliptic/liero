@@ -22,6 +22,7 @@ struct NetTransport {
     PacketResume = 8,     // Resume request: [type(1)]
     PacketRematchReady = 9,  // Ready toggle: [type(1) | ready(1)]
     PacketRematchLevel = 10, // Level selection: [type(1) | randomLevel(1) | levelFile(N)]
+    PacketEndMatch = 11,     // End match request: [type(1)]
   };
 
   // Player info exchanged between peers (weapons + cosmetics)
@@ -98,6 +99,9 @@ struct NetTransport {
   // Send rematch level selection (host only)
   void sendRematchLevel(bool randomLevel, const std::string& levelFile);
 
+  // Send end-match request (either player can end the match early)
+  void sendEndMatch();
+
   State state() const { return state_; }
 
   // Returns the port the host is listening on (useful when binding to port 0).
@@ -114,6 +118,7 @@ struct NetTransport {
   std::function<void()> onResume;
   std::function<void(bool ready)> onRematchReady;
   std::function<void(bool randomLevel, std::string levelFile)> onRematchLevel;
+  std::function<void()> onEndMatch;
   std::function<void()> onConnected;
   std::function<void()> onDisconnected;
 
