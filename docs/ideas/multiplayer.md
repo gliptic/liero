@@ -61,6 +61,7 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 3. ~~**UDP transport**~~ ✅ — ENet-based reliable UDP transport with input, handshake, and checksum packet types
 4. ~~**Connection flow**~~ ✅ — `NetSession` wires controller + transport: handshake exchange, seed sync, settings validation
 5. ~~**UI**~~ ✅ — HOST GAME / JOIN GAME menu options, IP address input, connection status screen
+6. ~~**Weapon selection + settings sync**~~ ✅ — Integrated weapon selection screen, synced RNG, player info exchange, host-authoritative match settings, edge detection for pressedOnce semantics
 
 ## How to Play
 
@@ -231,11 +232,34 @@ Two issues had to be resolved:
 ## Future Work
 
 - **Desync detection:** Periodic checksum comparison using the existing `PacketChecksum` packet type (already in the wire protocol, not yet wired up)
-- **Weapon settings sync:** Consider syncing player name/color over the network
 - **Replay recording of network games** — the data is already available (frame inputs)
 - **Rollback netcode (Phase 2)** — GGPO-style prediction/rollback for internet play
 - **NAT traversal** — STUN/TURN or relay server for connections through firewalls
 - **Graceful disconnection** — pause + timeout + forfeit instead of immediate exit
+
+### Settings and player info sync (2026-05-17)
+
+Host-authoritative match settings model implemented:
+- Both peers exchange `PacketPlayerInfo` (weapons[5] + color + rgb[3]) for their worm
+- Host sends `PacketMatchSettings` with all gameplay settings; client applies them
+- Game starts only when handshake + playerInfo + matchSettings all received
+- Settings hash mismatch rejection removed (host is authority)
+
+### In-game pressedOnce edge detection (2026-05-17)
+
+The same `pressedOnce()` bug from weapon selection also affected in-game weapon scrolling
+(holding Change+Left/Right cycled weapons every frame instead of once). The fix applies
+the same rising-edge detection pattern in `advanceSimulation()`:
+
+- Track `localPrevInput` / `remotePrevInput` per frame
+- Rising edges (0→1): set bit via `|=`
+- Released bits (1→0): clear bit via `&= ~`
+- Held bits (1→1): leave unchanged — preserves `pressedOnce()` consumed state
+- Both prev states reset to 0 on state transitions (weapon selection → game)
+
+**Key discovery:** Worm respawn requires `pressedOnce(Fire)` to set `ready=true`, then
+`doRespawning()` checks `ready` before making worm visible. With edge detection, this
+works correctly — Fire on rising edge triggers once, `ready` persists across frames.
 
 ## Technical Risk Assessment
 
