@@ -103,6 +103,13 @@ bool NetTransport::poll() {
         uint8_t* data = event.packet->data;
         size_t len = event.packet->dataLength;
 
+        // Defense-in-depth: reject packets larger than 10MB
+        static constexpr size_t MaxPacketSize = 10 * 1024 * 1024;
+        if (len > MaxPacketSize) {
+          enet_packet_destroy(event.packet);
+          break;
+        }
+
         if (len >= 1) {
           switch (data[0]) {
             case PacketInput:
