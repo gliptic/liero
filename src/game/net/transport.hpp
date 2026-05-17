@@ -15,7 +15,28 @@ struct NetTransport {
     PacketInput = 1,      // Frame input: [type(1) | frame(4) | input(1)]
     PacketHandshake = 2,  // Initial sync: [type(1) | seed(4) | settingsHash(4)]
     PacketChecksum = 3,   // Desync check: [type(1) | frame(4) | checksum(4)]
-    PacketWeapons = 4,    // Weapon sync: [type(1) | weapons(5*4)]
+    PacketPlayerInfo = 4, // Player info: [type(1) | weapons(5*4) | color(4) | rgb(3*4)]
+    PacketMatchSettings = 5, // Host-authoritative: [type(1) | settings blob]
+  };
+
+  // Player info exchanged between peers (weapons + cosmetics)
+  struct PlayerInfo {
+    uint32_t weapons[5];
+    int32_t color;
+    int32_t rgb[3];
+  };
+
+  // Match settings sent from host to client
+  struct MatchSettingsData {
+    int32_t lives;
+    int32_t loadingTime;
+    uint32_t gameMode;
+    int32_t blood;
+    int32_t maxBonuses;
+    int32_t timeToLose;
+    int32_t flagsToWin;
+    uint8_t loadChange;
+    uint32_t weapTable[40];
   };
 
   // Connection state
@@ -49,8 +70,11 @@ struct NetTransport {
   // Send handshake (seed + settings hash)
   void sendHandshake(uint32_t seed, uint32_t settingsHash);
 
-  // Send local player's weapon loadout (5 weapon indices)
-  void sendWeapons(const uint32_t weapons[5]);
+  // Send local player's info (weapons + color)
+  void sendPlayerInfo(const PlayerInfo& info);
+
+  // Send match settings (host only)
+  void sendMatchSettings(const MatchSettingsData& data);
 
   State state() const { return state_; }
 
@@ -58,7 +82,8 @@ struct NetTransport {
   std::function<void(uint32_t frame, uint8_t input)> onRemoteInput;
   std::function<void(uint32_t seed, uint32_t settingsHash)> onHandshake;
   std::function<void(uint32_t frame, uint32_t checksum)> onChecksum;
-  std::function<void(const uint32_t weapons[5])> onWeapons;
+  std::function<void(const PlayerInfo& info)> onPlayerInfo;
+  std::function<void(const MatchSettingsData& data)> onMatchSettings;
   std::function<void()> onConnected;
   std::function<void()> onDisconnected;
 

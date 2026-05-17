@@ -67,7 +67,7 @@ TEST_CASE("NetSession host and client connect and handshake", "[session]") {
   REQUIRE(host.controller()->game.rand.c == client.controller()->game.rand.c);
 }
 
-TEST_CASE("NetSession rejects mismatched settings", "[session]") {
+TEST_CASE("NetSession syncs host settings to client", "[session]") {
   SessionFixture f;
 
   auto settingsB = std::make_shared<Settings>(*f.settings);
@@ -80,13 +80,15 @@ TEST_CASE("NetSession rejects mismatched settings", "[session]") {
   REQUIRE(host.hostGame(port));
   REQUIRE(client.joinGame("127.0.0.1", port));
 
-  // Poll — one side should fail due to settings mismatch
-  bool failed = pollUntil(host, client, [&]() {
-    return host.sessionState() == NetSession::Failed ||
-           client.sessionState() == NetSession::Failed;
+  // Poll until both reach Playing — host settings are authoritative
+  bool ready = pollUntil(host, client, [&]() {
+    return host.sessionState() == NetSession::Playing &&
+           client.sessionState() == NetSession::Playing;
   });
 
-  REQUIRE(failed);
+  REQUIRE(ready);
+  // Client should have received and applied host's settings
+  REQUIRE(settingsB->lives == f.settings->lives);
 }
 
 TEST_CASE("NetSession plays frames over real network", "[session]") {

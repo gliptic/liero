@@ -54,7 +54,8 @@ struct NetSession {
   void onConnected();
   void onDisconnected();
   void onHandshake(uint32_t seed, uint32_t settingsHash);
-  void onWeapons(const uint32_t weapons[5]);
+  void onPlayerInfo(const NetTransport::PlayerInfo& info);
+  void onMatchSettings(const NetTransport::MatchSettingsData& data);
   void onRemoteInput(uint32_t frame, uint8_t input);
   void wireCallbacks();
   void tryStartGame();
@@ -73,8 +74,9 @@ struct NetSession {
   uint32_t localSettingsHash_;
   bool handshakeReceived_;
   bool handshakeSent_;
-  bool weaponsReceived_;
-  uint32_t remoteWeapons_[5];
+  bool playerInfoReceived_;
+  bool matchSettingsReceived_;  // client only; host always has settings
+  NetTransport::PlayerInfo remotePlayerInfo_;
 
   static constexpr uint16_t DEFAULT_PORT = 19532;
 };

@@ -14,9 +14,10 @@ NetSession::NetSession(std::shared_ptr<Common> common,
     , localSettingsHash_(0)
     , handshakeReceived_(false)
     , handshakeSent_(false)
-    , weaponsReceived_(false)
+    , playerInfoReceived_(false)
+    , matchSettingsReceived_(false)
 {
-  std::memset(remoteWeapons_, 0, sizeof(remoteWeapons_));
+  std::memset(&remotePlayerInfo_, 0, sizeof(remotePlayerInfo_));
   localSettingsHash_ = computeSettingsHash();
   wireCallbacks();
 }
@@ -89,7 +90,8 @@ void NetSession::disconnect() {
   controllerPtr_ = nullptr;
   handshakeReceived_ = false;
   handshakeSent_ = false;
-  weaponsReceived_ = false;
+  playerInfoReceived_ = false;
+  matchSettingsReceived_ = false;
 }
 
 void NetSession::onConnected() {
@@ -101,12 +103,35 @@ void NetSession::onConnected() {
   transport_.sendHandshake(seedToSend, localSettingsHash_);
   handshakeSent_ = true;
 
-  // Send local player's weapon settings
+  // Send local player's info (weapons + color)
   int localIdx = (role_ == Host) ? 0 : 1;
-  transport_.sendWeapons(settings_->wormSettings[localIdx]->weapons);
+  NetTransport::PlayerInfo info;
+  for (int i = 0; i < 5; ++i)
+    info.weapons[i] = settings_->wormSettings[localIdx]->weapons[i];
+  info.color = settings_->wormSettings[localIdx]->color;
+  for (int i = 0; i < 3; ++i)
+    info.rgb[i] = settings_->wormSettings[localIdx]->rgb[i];
+  transport_.sendPlayerInfo(info);
+
+  // Host sends authoritative match settings
+  if (role_ == Host) {
+    NetTransport::MatchSettingsData msd;
+    msd.lives = settings_->lives;
+    msd.loadingTime = settings_->loadingTime;
+    msd.gameMode = settings_->gameMode;
+    msd.blood = settings_->blood;
+    msd.maxBonuses = settings_->maxBonuses;
+    msd.timeToLose = settings_->timeToLose;
+    msd.flagsToWin = settings_->flagsToWin;
+    msd.loadChange = settings_->loadChange ? 1 : 0;
+    for (int i = 0; i < 40; ++i)
+      msd.weapTable[i] = settings_->weapTable[i];
+    transport_.sendMatchSettings(msd);
+    matchSettingsReceived_ = true;  // Host already has correct settings
+  }
 
   // Check if we can start (all data received)
-  if (handshakeReceived_ && weaponsReceived_)
+  if (handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_)
     tryStartGame();
 }
 
@@ -115,12 +140,6 @@ void NetSession::onDisconnected() {
 }
 
 void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
-  if (settingsHash != localSettingsHash_) {
-    // Settings mismatch — cannot play together
-    sessionState_ = Failed;
-    return;
-  }
-
   // Client uses the host's seed
   if (role_ == Client) {
     gameSeed_ = seed;
@@ -128,7 +147,7 @@ void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
 
   handshakeReceived_ = true;
 
-  if (handshakeSent_ && weaponsReceived_)
+  if (handshakeSent_ && playerInfoReceived_ && matchSettingsReceived_)
     tryStartGame();
 }
 
@@ -137,11 +156,32 @@ void NetSession::onRemoteInput(uint32_t frame, uint8_t input) {
     controllerPtr_->injectRemoteInput(frame, input);
 }
 
-void NetSession::onWeapons(const uint32_t weapons[5]) {
-  std::memcpy(remoteWeapons_, weapons, sizeof(remoteWeapons_));
-  weaponsReceived_ = true;
+void NetSession::onPlayerInfo(const NetTransport::PlayerInfo& info) {
+  remotePlayerInfo_ = info;
+  playerInfoReceived_ = true;
 
-  if (handshakeSent_ && handshakeReceived_)
+  if (handshakeSent_ && handshakeReceived_ && matchSettingsReceived_)
+    tryStartGame();
+}
+
+void NetSession::onMatchSettings(const NetTransport::MatchSettingsData& data) {
+  // Client applies host's authoritative settings
+  if (role_ == Client) {
+    settings_->lives = data.lives;
+    settings_->loadingTime = data.loadingTime;
+    settings_->gameMode = data.gameMode;
+    settings_->blood = data.blood;
+    settings_->maxBonuses = data.maxBonuses;
+    settings_->timeToLose = data.timeToLose;
+    settings_->flagsToWin = data.flagsToWin;
+    settings_->loadChange = data.loadChange != 0;
+    for (int i = 0; i < 40; ++i)
+      settings_->weapTable[i] = data.weapTable[i];
+  }
+
+  matchSettingsReceived_ = true;
+
+  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_)
     tryStartGame();
 }
 
@@ -154,8 +194,11 @@ void NetSession::wireCallbacks() {
   transport_.onRemoteInput = [this](uint32_t frame, uint8_t input) {
     onRemoteInput(frame, input);
   };
-  transport_.onWeapons = [this](const uint32_t weapons[5]) {
-    onWeapons(weapons);
+  transport_.onPlayerInfo = [this](const NetTransport::PlayerInfo& info) {
+    onPlayerInfo(info);
+  };
+  transport_.onMatchSettings = [this](const NetTransport::MatchSettingsData& data) {
+    onMatchSettings(data);
   };
 }
 
@@ -163,10 +206,13 @@ void NetSession::tryStartGame() {
   if (sessionState_ == Playing)
     return;
 
-  // Apply remote player's weapons to the remote worm's settings
+  // Apply remote player's info to the remote worm's settings
   int remoteIdx = (role_ == Host) ? 1 : 0;
   for (int i = 0; i < 5; ++i)
-    settings_->wormSettings[remoteIdx]->weapons[i] = remoteWeapons_[i];
+    settings_->wormSettings[remoteIdx]->weapons[i] = remotePlayerInfo_.weapons[i];
+  settings_->wormSettings[remoteIdx]->color = remotePlayerInfo_.color;
+  for (int i = 0; i < 3; ++i)
+    settings_->wormSettings[remoteIdx]->rgb[i] = remotePlayerInfo_.rgb[i];
 
   // Seed the game's RNG so both peers have identical state
   controller_->game.rand.seed(gameSeed_);

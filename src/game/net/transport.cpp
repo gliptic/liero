@@ -121,11 +121,19 @@ bool NetTransport::poll() {
               }
               break;
 
-            case PacketWeapons:
-              if (len == 21 && onWeapons) {
-                uint32_t weapons[5];
-                std::memcpy(weapons, data + 1, 20);
-                onWeapons(weapons);
+            case PacketPlayerInfo:
+              if (len == 1 + sizeof(PlayerInfo) && onPlayerInfo) {
+                PlayerInfo info;
+                std::memcpy(&info, data + 1, sizeof(PlayerInfo));
+                onPlayerInfo(info);
+              }
+              break;
+
+            case PacketMatchSettings:
+              if (len == 1 + sizeof(MatchSettingsData) && onMatchSettings) {
+                MatchSettingsData msd;
+                std::memcpy(&msd, data + 1, sizeof(MatchSettingsData));
+                onMatchSettings(msd);
               }
               break;
           }
@@ -178,10 +186,17 @@ void NetTransport::sendHandshake(uint32_t seed, uint32_t settingsHash) {
   sendPacket(buf, sizeof(buf));
 }
 
-void NetTransport::sendWeapons(const uint32_t weapons[5]) {
-  uint8_t buf[21];
-  buf[0] = PacketWeapons;
-  std::memcpy(buf + 1, weapons, 20);
+void NetTransport::sendPlayerInfo(const PlayerInfo& info) {
+  uint8_t buf[1 + sizeof(PlayerInfo)];
+  buf[0] = PacketPlayerInfo;
+  std::memcpy(buf + 1, &info, sizeof(PlayerInfo));
+  sendPacket(buf, sizeof(buf));
+}
+
+void NetTransport::sendMatchSettings(const MatchSettingsData& data) {
+  uint8_t buf[1 + sizeof(MatchSettingsData)];
+  buf[0] = PacketMatchSettings;
+  std::memcpy(buf + 1, &data, sizeof(MatchSettingsData));
   sendPacket(buf, sizeof(buf));
 }
 
