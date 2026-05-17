@@ -238,9 +238,26 @@ void NetworkController::advanceSimulation() {
     return;
   }
 
-  // Apply inputs and advance
-  game.worms[localIdx]->controlStates.unpack(localInputs[currentSlot]);
-  game.worms[remoteIdx]->controlStates.unpack(remoteInputs[currentSlot]);
+  // Apply inputs preserving pressedOnce semantics.
+  // Rising edges (newly pressed) set the bit. Released bits clear it.
+  // Held bits (set in both prev and current) are left in whatever state
+  // the game left them — if pressedOnce() consumed them, they stay cleared.
+  uint8_t curLocal = localInputs[currentSlot];
+  uint8_t curRemote = remoteInputs[currentSlot];
+  uint8_t risingLocal = curLocal & ~localPrevInput;
+  uint8_t risingRemote = curRemote & ~remotePrevInput;
+  uint8_t releasedLocal = localPrevInput & ~curLocal;
+  uint8_t releasedRemote = remotePrevInput & ~curRemote;
+
+  // Set newly pressed bits
+  game.worms[localIdx]->controlStates.istate |= risingLocal;
+  game.worms[remoteIdx]->controlStates.istate |= risingRemote;
+  // Clear released bits
+  game.worms[localIdx]->controlStates.istate &= ~releasedLocal;
+  game.worms[remoteIdx]->controlStates.istate &= ~releasedRemote;
+
+  localPrevInput = curLocal;
+  remotePrevInput = curRemote;
 
   // Clear the slot for reuse
   remoteInputReady[currentSlot] = false;

@@ -30,6 +30,7 @@ struct LoopbackFixture {
     settings = std::make_shared<Settings>();
     settings->lives = 10;
     settings->loadingTime = 0;
+    settings->loadChange = true;
     settings->randomLevel = true;
     settings->gameMode = Settings::GMKillEmAll;
 
@@ -151,6 +152,74 @@ TEST_CASE("NetworkController produces deterministic state", "[network]") {
   REQUIRE(f.controllerA->currentFrame() == f.controllerB->currentFrame());
   REQUIRE(f.controllerA->game.rand.x == f.controllerB->game.rand.x);
   REQUIRE(f.controllerA->game.rand.c == f.controllerB->game.rand.c);
+}
+
+TEST_CASE("NetworkController pressedOnce fires only on rising edge", "[network]") {
+  // Standalone test with a single controller to precisely control inputs
+  precomputeTables();
+
+  auto common = std::make_shared<Common>();
+  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tcRoot));
+
+  auto settings = std::make_shared<Settings>();
+  settings->lives = 10;
+  settings->loadingTime = 0;
+  settings->loadChange = true;
+  settings->randomLevel = true;
+  settings->gameMode = Settings::GMKillEmAll;
+
+  auto ctrl = std::make_unique<NetworkController>(common, settings, 0);
+  ctrl->setSkipWeaponSelection(true);
+  ctrl->game.rand.seed(42);
+
+  // Use null send callback (we don't need loopback for this test)
+  ctrl->setInputCallbacks([](uint32_t, uint8_t) {}, nullptr);
+
+  ctrl->focus();
+
+  // Pre-fill input delay frames (frames 0-2)
+  for (uint32_t i = 0; i < 3; ++i)
+    ctrl->injectRemoteInput(i, 0);
+
+  // Run frames until worm 0 becomes visible.
+  // killedTimer starts at 150. After it expires, worm needs Fire to become ready.
+  // We'll inject Fire at the right time.
+  uint8_t fireInput = (1 << Worm::Fire);
+  for (int tick = 0; tick < 200; ++tick) {
+    uint32_t nextFrame = ctrl->currentFrame();
+    // Inject remote input: Fire at frame 150-155 to trigger ready, otherwise empty
+    uint8_t remoteIn = (nextFrame >= 150 && nextFrame <= 155) ? fireInput : 0;
+    ctrl->injectRemoteInput(nextFrame, remoteIn);
+    ctrl->process();
+  }
+
+  // Worm 1 (remote) should be visible by now
+  REQUIRE(ctrl->game.worms[1]->visible == true);
+
+  // Record initial weapon
+  int initialWeapon = ctrl->game.worms[1]->currentWeapon;
+
+  // Now test: inject Change only for 1 frame, then Change+Left for several frames
+  uint8_t changeOnly = (1 << Worm::Change);
+  uint8_t changeLeft = (1 << Worm::Change) | (1 << Worm::Left);
+
+  uint32_t frame = ctrl->currentFrame();
+  ctrl->injectRemoteInput(frame, changeOnly);
+  ctrl->process();
+
+  // Next 10 frames: Change+Left held
+  for (int tick = 0; tick < 10; ++tick) {
+    frame = ctrl->currentFrame();
+    ctrl->injectRemoteInput(frame, changeLeft);
+    ctrl->process();
+  }
+
+  // Weapon should have changed exactly once (Left = decrement, wraps)
+  int finalWeapon = ctrl->game.worms[1]->currentWeapon;
+  int expected = (initialWeapon - 1 + 5) % 5;
+  INFO("Initial: " << initialWeapon << ", Final: " << finalWeapon << ", Expected: " << expected);
+  REQUIRE(finalWeapon == expected);
 }
 
 TEST_CASE("Weapon selection uses synced game.rand", "[network]") {
