@@ -62,6 +62,7 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 4. ~~**Connection flow**~~ ✅ — `NetSession` wires controller + transport: handshake exchange, seed sync, settings validation
 5. ~~**UI**~~ ✅ — HOST GAME / JOIN GAME menu options, IP address input, connection status screen
 6. ~~**Weapon selection + settings sync**~~ ✅ — Integrated weapon selection screen, synced RNG, player info exchange, host-authoritative match settings, edge detection for pressedOnce semantics
+7. ~~**Map transfer**~~ ✅ — Host generates the level and sends compressed map data to client during handshake, ensuring identical levels regardless of local files
 
 ## How to Play
 
@@ -202,7 +203,7 @@ The UI integration uses the existing state stack and menu system:
 - ~~Is there any state in `gvl::mwc` (the PRNG) beyond the two 32-bit values that needs synchronizing?~~ **Answered:** No, just `x` and `c`. Seed sync is sufficient.
 - Should the input delay be adaptive (based on measured RTT) or fixed?
 - How to handle disconnection more gracefully? Currently disconnects immediately; could add pause + timeout + reconnect.
-- How should weapon selection work in multiplayer? Options: both players select locally then exchange, or use a shared selection screen with one player choosing at a time. Currently uses default weapons.
+- ~~How should weapon selection work in multiplayer?~~ **Answered:** Both players select locally in lockstep; inputs exchanged via the same frame-synced protocol.
 - Port configuration — currently hardcoded to 19532. Could add a port input field.
 
 ### Weapon selection in multiplayer (2026-05-17)
@@ -236,6 +237,24 @@ Two issues had to be resolved:
 - **Rollback netcode (Phase 2)** — GGPO-style prediction/rollback for internet play
 - **NAT traversal** — STUN/TURN or relay server for connections through firewalls
 - **Graceful disconnection** — pause + timeout + forfeit instead of immediate exit
+
+### Map transfer (2026-05-17)
+
+The host generates the level and sends compressed map data to the client during handshake.
+This ensures both peers have byte-identical level data regardless of what level files are
+available locally.
+
+- **New packet type:** `PacketMapData` (type 6) carries compressed level data over reliable channel
+- **Serialization format:** `compressed_flag(1) + uncompressed_size(4) + payload` where payload
+  is zlib-compressed `width(2) + height(2) + rand_x(4) + rand_c(4) + pixels(w*h) + palette(768)`
+- **RNG sync:** The post-generation RNG state (x, c) is included in the map data so the client's
+  RNG matches the host's after level generation (which consumes variable RNG calls depending on
+  level type)
+- **Compression:** Uses miniz (already a vcpkg dependency). A typical 504×350 level (~177KB raw)
+  compresses to ~10-50KB depending on content
+- **Flow:** `tryStartGame()` → host calls `generateAndSendMap()` → client receives via
+  `onMapData()` callback → `loadLevelFromData()` restores level + RNG state →
+  `NetworkController::focus()` skips `generateFromSettings()` since `levelPreloaded` is set
 
 ### Settings and player info sync (2026-05-17)
 

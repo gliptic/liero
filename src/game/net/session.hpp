@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "../controller/networkController.hpp"
 #include "transport.hpp"
@@ -56,9 +57,11 @@ struct NetSession {
   void onHandshake(uint32_t seed, uint32_t settingsHash);
   void onPlayerInfo(const NetTransport::PlayerInfo& info);
   void onMatchSettings(const NetTransport::MatchSettingsData& data);
+  void onMapData(const void* data, size_t len);
   void onRemoteInput(uint32_t frame, uint8_t input);
   void wireCallbacks();
   void tryStartGame();
+  void generateAndSendMap();
   uint32_t computeSettingsHash() const;
 
   Role role_;
@@ -76,7 +79,11 @@ struct NetSession {
   bool handshakeSent_;
   bool playerInfoReceived_;
   bool matchSettingsReceived_;  // client only; host always has settings
+  bool mapDataReceived_;        // client only; host generates locally
   NetTransport::PlayerInfo remotePlayerInfo_;
+
+  // Stored compressed map data (client receives from host)
+  std::vector<uint8_t> receivedMapData_;
 
   static constexpr uint16_t DEFAULT_PORT = 19532;
 };

@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <ctime>
+#include <miniz.h>
 
 NetSession::NetSession(std::shared_ptr<Common> common,
                        std::shared_ptr<Settings> settings)
@@ -16,6 +17,7 @@ NetSession::NetSession(std::shared_ptr<Common> common,
     , handshakeSent_(false)
     , playerInfoReceived_(false)
     , matchSettingsReceived_(false)
+    , mapDataReceived_(false)
 {
   std::memset(&remotePlayerInfo_, 0, sizeof(remotePlayerInfo_));
   localSettingsHash_ = computeSettingsHash();
@@ -92,6 +94,8 @@ void NetSession::disconnect() {
   handshakeSent_ = false;
   playerInfoReceived_ = false;
   matchSettingsReceived_ = false;
+  mapDataReceived_ = false;
+  receivedMapData_.clear();
 }
 
 void NetSession::onConnected() {
@@ -128,10 +132,12 @@ void NetSession::onConnected() {
       msd.weapTable[i] = settings_->weapTable[i];
     transport_.sendMatchSettings(msd);
     matchSettingsReceived_ = true;  // Host already has correct settings
+    mapDataReceived_ = true;        // Host generates locally
   }
 
   // Check if we can start (all data received)
-  if (handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_)
+  if (handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ &&
+      mapDataReceived_)
     tryStartGame();
 }
 
@@ -147,7 +153,8 @@ void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
 
   handshakeReceived_ = true;
 
-  if (handshakeSent_ && playerInfoReceived_ && matchSettingsReceived_)
+  if (handshakeSent_ && playerInfoReceived_ && matchSettingsReceived_ &&
+      mapDataReceived_)
     tryStartGame();
 }
 
@@ -160,7 +167,8 @@ void NetSession::onPlayerInfo(const NetTransport::PlayerInfo& info) {
   remotePlayerInfo_ = info;
   playerInfoReceived_ = true;
 
-  if (handshakeSent_ && handshakeReceived_ && matchSettingsReceived_)
+  if (handshakeSent_ && handshakeReceived_ && matchSettingsReceived_ &&
+      mapDataReceived_)
     tryStartGame();
 }
 
@@ -181,7 +189,21 @@ void NetSession::onMatchSettings(const NetTransport::MatchSettingsData& data) {
 
   matchSettingsReceived_ = true;
 
-  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_)
+  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
+      mapDataReceived_)
+    tryStartGame();
+}
+
+void NetSession::onMapData(const void* data, size_t len) {
+  if (role_ != Client)
+    return;
+
+  receivedMapData_.assign(static_cast<const uint8_t*>(data),
+                          static_cast<const uint8_t*>(data) + len);
+  mapDataReceived_ = true;
+
+  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
+      matchSettingsReceived_)
     tryStartGame();
 }
 
@@ -200,6 +222,9 @@ void NetSession::wireCallbacks() {
   transport_.onMatchSettings = [this](const NetTransport::MatchSettingsData& data) {
     onMatchSettings(data);
   };
+  transport_.onMapData = [this](const void* data, size_t len) {
+    onMapData(data, len);
+  };
 }
 
 void NetSession::tryStartGame() {
@@ -217,6 +242,16 @@ void NetSession::tryStartGame() {
   // Seed the game's RNG so both peers have identical state
   controller_->game.rand.seed(gameSeed_);
 
+  if (role_ == Host) {
+    // Host generates the level and sends it to the client
+    generateAndSendMap();
+    controller_->setLevelPreloaded();
+  } else {
+    // Client loads the level from received compressed map data
+    controller_->loadLevelFromData(receivedMapData_);
+    receivedMapData_.clear();
+  }
+
   // Wire the controller to send inputs via transport
   controller_->setInputCallbacks(
       [this](uint32_t frame, uint8_t input) {
@@ -233,6 +268,60 @@ void NetSession::tryStartGame() {
 
   controllerPtr_ = controller_.get();
   sessionState_ = Playing;
+}
+
+void NetSession::generateAndSendMap() {
+  // Generate the level on the host
+  controller_->game.level.generateFromSettings(
+      *controller_->game.common, *controller_->game.settings,
+      controller_->game.rand);
+
+  Level& level = controller_->game.level;
+
+  // Serialize: width(2) + height(2) + rand_x(4) + rand_c(4) + pixel_data(w*h) + palette(768)
+  uint16_t w = static_cast<uint16_t>(level.width);
+  uint16_t h = static_cast<uint16_t>(level.height);
+  uint32_t randX = controller_->game.rand.x;
+  uint32_t randC = controller_->game.rand.c;
+  size_t pixelDataSize = static_cast<size_t>(w) * h;
+  size_t rawSize = 4 + 8 + pixelDataSize + 768;
+
+  std::vector<uint8_t> raw(rawSize);
+  std::memcpy(raw.data(), &w, 2);
+  std::memcpy(raw.data() + 2, &h, 2);
+  std::memcpy(raw.data() + 4, &randX, 4);
+  std::memcpy(raw.data() + 8, &randC, 4);
+  std::memcpy(raw.data() + 12, level.data.data(), pixelDataSize);
+
+  // Palette
+  uint8_t* palPtr = raw.data() + 12 + pixelDataSize;
+  for (int i = 0; i < 256; ++i) {
+    palPtr[i * 3 + 0] = level.origpal.entries[i].r;
+    palPtr[i * 3 + 1] = level.origpal.entries[i].g;
+    palPtr[i * 3 + 2] = level.origpal.entries[i].b;
+  }
+
+  // Compress with miniz
+  mz_ulong compBound = mz_compressBound(static_cast<mz_ulong>(rawSize));
+  std::vector<uint8_t> compressed(compBound);
+  mz_ulong compSize = compBound;
+  int status = mz_compress(compressed.data(), &compSize, raw.data(),
+                           static_cast<mz_ulong>(rawSize));
+  if (status == MZ_OK) {
+    compressed.resize(compSize);
+  } else {
+    // Fallback: send uncompressed
+    compressed = std::move(raw);
+  }
+
+  // Send: compressed flag(1) + uncompressedSize(4) + data
+  std::vector<uint8_t> packet(1 + 4 + compressed.size());
+  packet[0] = (status == MZ_OK) ? 1 : 0;
+  uint32_t rawSize32 = static_cast<uint32_t>(rawSize);
+  std::memcpy(packet.data() + 1, &rawSize32, 4);
+  std::memcpy(packet.data() + 5, compressed.data(), compressed.size());
+
+  transport_.sendMapData(packet.data(), packet.size());
 }
 
 std::unique_ptr<NetworkController> NetSession::releaseController() {

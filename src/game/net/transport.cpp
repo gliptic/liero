@@ -1,6 +1,7 @@
 #include "transport.hpp"
 
 #include <cstring>
+#include <vector>
 
 #define ENET_IMPLEMENTATION
 #include <enet.h>
@@ -136,6 +137,12 @@ bool NetTransport::poll() {
                 onMatchSettings(msd);
               }
               break;
+
+            case PacketMapData:
+              if (len > 5 && onMapData) {
+                onMapData(data + 1, len - 1);
+              }
+              break;
           }
         }
 
@@ -198,6 +205,17 @@ void NetTransport::sendMatchSettings(const MatchSettingsData& data) {
   buf[0] = PacketMatchSettings;
   std::memcpy(buf + 1, &data, sizeof(MatchSettingsData));
   sendPacket(buf, sizeof(buf));
+}
+
+void NetTransport::sendMapData(const void* data, size_t len) {
+  std::vector<uint8_t> buf(1 + len);
+  buf[0] = PacketMapData;
+  std::memcpy(buf.data() + 1, data, len);
+
+  if (!peer_) return;
+  ENetPacket* packet =
+      enet_packet_create(buf.data(), buf.size(), ENET_PACKET_FLAG_RELIABLE);
+  if (packet) enet_peer_send(peer_, CHANNEL_RELIABLE, packet);
 }
 
 void NetTransport::sendPacket(const void* data, size_t len) {

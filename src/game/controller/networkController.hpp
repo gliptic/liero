@@ -44,6 +44,13 @@ struct NetworkController : CommonController {
   // Skip weapon selection and go directly to game (for testing)
   void setSkipWeaponSelection(bool skip) { skipWeaponSelection = skip; }
 
+  // Load level from serialized map data (received from host).
+  // After calling this, focus() will skip generateFromSettings().
+  void loadLevelFromData(const std::vector<uint8_t>& data);
+
+  // Mark the level as already generated (host side).
+  void setLevelPreloaded() { levelPreloaded = true; }
+
   // Get current simulation frame number
   uint32_t currentFrame() const { return simFrame; }
 
@@ -83,6 +90,7 @@ struct NetworkController : CommonController {
   std::array<uint8_t, 8> remoteHeldFrames;
 
   bool skipWeaponSelection;
+  bool levelPreloaded;  // true if level was loaded via loadLevelFromData()
 
   InputSendCallback sendInput;
   InputRecvCallback recvInput;

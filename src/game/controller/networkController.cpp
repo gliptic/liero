@@ -6,6 +6,9 @@
 #include "../viewport.hpp"
 #include "../spectatorviewport.hpp"
 
+#include <cstring>
+#include <miniz.h>
+
 NetworkController::NetworkController(
     std::shared_ptr<Common> common,
     std::shared_ptr<Settings> settings,
@@ -25,6 +28,7 @@ NetworkController::NetworkController(
   localHeldFrames.fill(0);
   remoteHeldFrames.fill(0);
   skipWeaponSelection = false;
+  levelPreloaded = false;
   localInputs.fill(0);
   remoteInputs.fill(0);
   remoteInputReady.fill(false);
@@ -49,6 +53,68 @@ NetworkController::NetworkController(
 }
 
 NetworkController::~NetworkController() {}
+
+void NetworkController::loadLevelFromData(const std::vector<uint8_t>& data) {
+  // Format: compressed_flag(1) + uncompressed_size(4) + payload
+  if (data.size() < 5)
+    return;
+
+  bool isCompressed = (data[0] != 0);
+  uint32_t rawSize;
+  std::memcpy(&rawSize, data.data() + 1, 4);
+
+  std::vector<uint8_t> raw;
+  if (isCompressed) {
+    raw.resize(rawSize);
+    mz_ulong destLen = rawSize;
+    int status = mz_uncompress(raw.data(), &destLen, data.data() + 5,
+                               static_cast<mz_ulong>(data.size() - 5));
+    if (status != MZ_OK)
+      return;
+  } else {
+    raw.assign(data.begin() + 5, data.end());
+  }
+
+  // Deserialize: width(2) + height(2) + rand_x(4) + rand_c(4) + pixel_data(w*h) + palette(768)
+  if (raw.size() < 12)
+    return;
+
+  uint16_t w, h;
+  std::memcpy(&w, raw.data(), 2);
+  std::memcpy(&h, raw.data() + 2, 2);
+
+  uint32_t randX, randC;
+  std::memcpy(&randX, raw.data() + 4, 4);
+  std::memcpy(&randC, raw.data() + 8, 4);
+
+  size_t pixelDataSize = static_cast<size_t>(w) * h;
+  if (raw.size() < 12 + pixelDataSize + 768)
+    return;
+
+  game.level.resize(w, h);
+  Common& common = *game.common;
+
+  // Load pixel data and rebuild materials
+  const uint8_t* pixels = raw.data() + 12;
+  for (size_t i = 0; i < pixelDataSize; ++i) {
+    game.level.data[i] = pixels[i];
+    game.level.materials[i] = common.materials[pixels[i]];
+  }
+
+  // Load palette
+  const uint8_t* palData = raw.data() + 12 + pixelDataSize;
+  for (int i = 0; i < 256; ++i) {
+    game.level.origpal.entries[i].r = palData[i * 3 + 0];
+    game.level.origpal.entries[i].g = palData[i * 3 + 1];
+    game.level.origpal.entries[i].b = palData[i * 3 + 2];
+  }
+
+  // Restore RNG state to match host's post-generation state
+  game.rand.x = randX;
+  game.rand.c = randC;
+
+  levelPreloaded = true;
+}
 
 void NetworkController::setInputCallbacks(InputSendCallback send,
                                           InputRecvCallback recv) {
@@ -109,7 +175,8 @@ void NetworkController::focus() {
   if (state == StateWeaponSelection)
     ws->focus();
   if (state == StateInitial) {
-    game.level.generateFromSettings(*game.common, *game.settings, game.rand);
+    if (!levelPreloaded)
+      game.level.generateFromSettings(*game.common, *game.settings, game.rand);
 
     if (skipWeaponSelection) {
       // Test mode: skip weapon selection, go straight to game
