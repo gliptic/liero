@@ -228,7 +228,10 @@ void NetTransport::sendMapData(const void* data, size_t len) {
   if (!peer_) return;
   ENetPacket* packet =
       enet_packet_create(buf.data(), buf.size(), ENET_PACKET_FLAG_RELIABLE);
-  if (packet) enet_peer_send(peer_, CHANNEL_RELIABLE, packet);
+  if (!packet) return;
+  if (enet_peer_send(peer_, CHANNEL_RELIABLE, packet) < 0) {
+    enet_packet_destroy(packet);
+  }
 }
 
 void NetTransport::sendPause() {
@@ -245,5 +248,9 @@ void NetTransport::sendPacket(const void* data, size_t len) {
   if (!peer_) return;
   ENetPacket* packet =
       enet_packet_create(data, len, ENET_PACKET_FLAG_RELIABLE);
-  if (packet) enet_peer_send(peer_, CHANNEL_RELIABLE, packet);
+  if (!packet) return;
+  if (enet_peer_send(peer_, CHANNEL_RELIABLE, packet) < 0) {
+    // Send failed — ENet does NOT destroy the packet on failure
+    enet_packet_destroy(packet);
+  }
 }
