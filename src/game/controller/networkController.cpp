@@ -241,12 +241,10 @@ void NetworkController::focus() {
     } else {
       state = StateWeaponSelection;
 
-      // Clear saved weapon preferences so both peers take the same RNG path
-      // during randomization (each machine has different local player profiles).
-      // Also force controller=0 (human) so isReady/randomWeapons are consistent.
+      // Force controller=0 (human) so isReady/randomWeapons logic is consistent
+      // across both peers. Weapon preferences are already synced via PlayerInfo
+      // exchange in NetSession, so both machines have identical data per worm.
       for (auto* w : game.worms) {
-        for (int j = 0; j < Settings::selectableWeapons; ++j)
-          w->settings->weapons[j] = 0;
         w->settings->controller = 0;
       }
 

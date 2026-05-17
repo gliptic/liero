@@ -250,8 +250,10 @@ TEST_CASE("Weapon selection uses synced game.rand", "[network]") {
   settings->randomLevel = true;
   settings->gameMode = Settings::GMKillEmAll;
 
-  // Give both worms the same weapon settings (simulating synced state)
-  for (int w = 0; w < 2; ++w) {
+  // Give all worm profiles the same weapon settings (simulating synced state).
+  // In real play, NetSession syncs weapons via PlayerInfo so all three profiles
+  // (worm 0, worm 1, NetworkPlayerIdx) end up with consistent values per worm.
+  for (int w = 0; w < 3; ++w) {
     for (int i = 0; i < 5; ++i)
       settings->wormSettings[w]->weapons[i] = 5 + i;
   }
