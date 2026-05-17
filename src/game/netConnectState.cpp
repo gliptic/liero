@@ -7,6 +7,7 @@
 #include "gamePlayState.hpp"
 #include "inputState.hpp"
 #include "controller/controller.hpp"
+#include "net/localaddr.hpp"
 
 #include <memory>
 #include <string>
@@ -24,7 +25,11 @@ void NetConnectState::enter()
 
 	bool ok = false;
 	if (role_ == NetSession::Host)
+	{
 		ok = session->hostGame(port_);
+		if (ok)
+			localAddresses_ = getLocalAddresses();
+	}
 	else
 		ok = session->joinGame(address_, port_);
 
@@ -137,14 +142,38 @@ void NetConnectState::draw()
 
 	std::string line3 = "PRESS ESC TO CANCEL";
 
-	int w1 = font.getDims(line1);
-	int w2 = font.getDims(line2);
-	int w3 = font.getDims(line3);
-
 	int cx = 160;
-	int cy = 80;
+	int cy = 60;
 
+	int w1 = font.getDims(line1);
 	font.drawText(gfx->playRenderer.bmp, line1, cx - w1 / 2, cy, 50);
+
+	int w2 = font.getDims(line2);
 	font.drawText(gfx->playRenderer.bmp, line2, cx - w2 / 2, cy + 12, 7);
-	font.drawText(gfx->playRenderer.bmp, line3, cx - w3 / 2, cy + 30, 6);
+
+	// Show local addresses when hosting
+	if (role_ == NetSession::Host && !localAddresses_.empty())
+	{
+		int addrY = cy + 30;
+		std::string hdr = "CONNECT USING:";
+		int wh = font.getDims(hdr);
+		font.drawText(gfx->playRenderer.bmp, hdr, cx - wh / 2, addrY, 6);
+		addrY += 10;
+
+		for (auto& addr : localAddresses_)
+		{
+			std::string display = addr.ip + ":" + std::to_string(port_);
+			int wd = font.getDims(display);
+			font.drawText(gfx->playRenderer.bmp, display, cx - wd / 2, addrY, 7);
+			addrY += 10;
+		}
+
+		int w3 = font.getDims(line3);
+		font.drawText(gfx->playRenderer.bmp, line3, cx - w3 / 2, addrY + 6, 6);
+	}
+	else
+	{
+		int w3 = font.getDims(line3);
+		font.drawText(gfx->playRenderer.bmp, line3, cx - w3 / 2, cy + 30, 6);
+	}
 }

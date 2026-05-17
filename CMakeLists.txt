@@ -126,6 +126,7 @@ set(GAME_SOURCES ${SOURCES}
   src/game/controller/replayController.cpp
   src/game/net/transport.cpp
   src/game/net/session.cpp
+  src/game/net/localaddr.cpp
   src/game/netConnectState.cpp
   src/game/statsState.cpp
   src/game/menu/booleanSwitchBehavior.cpp

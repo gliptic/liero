@@ -2,8 +2,10 @@
 
 #include "state.hpp"
 #include "net/session.hpp"
+#include "net/localaddr.hpp"
 
 #include <string>
+#include <vector>
 #include <cstdint>
 
 // Connection state — shows status while waiting for a peer to connect.
@@ -22,4 +24,5 @@ private:
 	std::string address_;
 	uint16_t port_;
 	bool cancel_ = false;
+	std::vector<LocalAddress> localAddresses_;
 };
