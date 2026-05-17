@@ -152,3 +152,84 @@ TEST_CASE("NetworkController produces deterministic state", "[network]") {
   REQUIRE(f.controllerA->game.rand.x == f.controllerB->game.rand.x);
   REQUIRE(f.controllerA->game.rand.c == f.controllerB->game.rand.c);
 }
+
+TEST_CASE("Weapon selection uses synced game.rand", "[network]") {
+  // Two controllers with weapon selection enabled (not skipped).
+  // Both have identical worm weapon settings → weapon selection constructor
+  // should use game.rand identically on both sides.
+  precomputeTables();
+
+  auto common = std::make_shared<Common>();
+  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tcRoot));
+
+  auto settings = std::make_shared<Settings>();
+  settings->lives = 10;
+  settings->loadingTime = 0;
+  settings->randomLevel = true;
+  settings->gameMode = Settings::GMKillEmAll;
+
+  // Give both worms the same weapon settings (simulating synced state)
+  for (int w = 0; w < 2; ++w) {
+    for (int i = 0; i < 5; ++i)
+      settings->wormSettings[w]->weapons[i] = 5 + i;
+  }
+
+  auto ctrlA = std::make_unique<NetworkController>(common, settings, 0);
+  auto ctrlB = std::make_unique<NetworkController>(common, settings, 1);
+
+  // Do NOT skip weapon selection
+  uint32_t seed = 77;
+  ctrlA->game.rand.seed(seed);
+  ctrlB->game.rand.seed(seed);
+
+  // Wire loopback
+  std::queue<std::pair<uint32_t, uint8_t>> aToB, bToA;
+  ctrlA->setInputCallbacks(
+      [&](uint32_t frame, uint8_t input) { aToB.push({frame, input}); },
+      [&](uint32_t frame) -> int {
+        if (!bToA.empty() && bToA.front().first == frame) {
+          int v = bToA.front().second; bToA.pop(); return v;
+        }
+        return -1;
+      });
+  ctrlB->setInputCallbacks(
+      [&](uint32_t frame, uint8_t input) { bToA.push({frame, input}); },
+      [&](uint32_t frame) -> int {
+        if (!aToB.empty() && aToB.front().first == frame) {
+          int v = aToB.front().second; aToB.pop(); return v;
+        }
+        return -1;
+      });
+
+  ctrlA->focus();
+  ctrlB->focus();
+
+  // After focus, both should be in weapon selection with identical RNG state
+  REQUIRE(ctrlA->game.rand.x == ctrlB->game.rand.x);
+  REQUIRE(ctrlA->game.rand.c == ctrlB->game.rand.c);
+
+  // Run a few frames of weapon selection with no input (just idle)
+  for (uint32_t i = 0; i < 3; ++i) {
+    ctrlA->injectRemoteInput(i, 0);
+    ctrlB->injectRemoteInput(i, 0);
+  }
+
+  for (int tick = 0; tick < 10; ++tick) {
+    ctrlA->process();
+    ctrlB->process();
+    // Deliver
+    while (!aToB.empty()) {
+      auto [frame, input] = aToB.front(); aToB.pop();
+      ctrlB->injectRemoteInput(frame, input);
+    }
+    while (!bToA.empty()) {
+      auto [frame, input] = bToA.front(); bToA.pop();
+      ctrlA->injectRemoteInput(frame, input);
+    }
+  }
+
+  // RNG should still be identical after weapon selection frames
+  REQUIRE(ctrlA->game.rand.x == ctrlB->game.rand.x);
+  REQUIRE(ctrlA->game.rand.c == ctrlB->game.rand.c);
+}

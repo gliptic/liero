@@ -71,7 +71,17 @@ TEST_CASE("NetSession syncs host settings to client", "[session]") {
   SessionFixture f;
 
   auto settingsB = std::make_shared<Settings>(*f.settings);
-  settingsB->lives = 99;  // Different from host
+  settingsB->lives = 99;
+  settingsB->blood = 200;
+  settingsB->loadingTime = 50;
+  settingsB->gameMode = Settings::GMGameOfTag;
+  settingsB->maxBonuses = 7;
+  settingsB->timeToLose = 999;
+  settingsB->flagsToWin = 3;
+  settingsB->loadChange = true;
+  // Modify some weapTable entries
+  for (int i = 0; i < 40; ++i)
+    settingsB->weapTable[i] = (i < 10) ? 2 : 0;
 
   NetSession host(f.common, f.settings);
   NetSession client(f.common, settingsB);
@@ -89,6 +99,71 @@ TEST_CASE("NetSession syncs host settings to client", "[session]") {
   REQUIRE(ready);
   // Client should have received and applied host's settings
   REQUIRE(settingsB->lives == f.settings->lives);
+  REQUIRE(settingsB->blood == f.settings->blood);
+  REQUIRE(settingsB->loadingTime == f.settings->loadingTime);
+  REQUIRE(settingsB->gameMode == f.settings->gameMode);
+  REQUIRE(settingsB->maxBonuses == f.settings->maxBonuses);
+  REQUIRE(settingsB->timeToLose == f.settings->timeToLose);
+  REQUIRE(settingsB->flagsToWin == f.settings->flagsToWin);
+  REQUIRE(settingsB->loadChange == f.settings->loadChange);
+  for (int i = 0; i < 40; ++i)
+    REQUIRE(settingsB->weapTable[i] == f.settings->weapTable[i]);
+}
+
+TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]") {
+  SessionFixture f;
+
+  // Give each player distinct colors and weapons
+  auto settingsHost = std::make_shared<Settings>(*f.settings);
+  settingsHost->wormSettings[0]->color = 3;
+  settingsHost->wormSettings[0]->rgb[0] = 255;
+  settingsHost->wormSettings[0]->rgb[1] = 0;
+  settingsHost->wormSettings[0]->rgb[2] = 0;
+  settingsHost->wormSettings[0]->weapons[0] = 10;
+  settingsHost->wormSettings[0]->weapons[1] = 20;
+  settingsHost->wormSettings[0]->weapons[2] = 30;
+  settingsHost->wormSettings[0]->weapons[3] = 5;
+  settingsHost->wormSettings[0]->weapons[4] = 15;
+
+  auto settingsClient = std::make_shared<Settings>(*f.settings);
+  settingsClient->wormSettings[1]->color = 6;
+  settingsClient->wormSettings[1]->rgb[0] = 0;
+  settingsClient->wormSettings[1]->rgb[1] = 255;
+  settingsClient->wormSettings[1]->rgb[2] = 128;
+  settingsClient->wormSettings[1]->weapons[0] = 35;
+  settingsClient->wormSettings[1]->weapons[1] = 8;
+  settingsClient->wormSettings[1]->weapons[2] = 22;
+  settingsClient->wormSettings[1]->weapons[3] = 14;
+  settingsClient->wormSettings[1]->weapons[4] = 40;
+
+  NetSession host(f.common, settingsHost);
+  NetSession client(f.common, settingsClient);
+
+  uint16_t port = 19543;
+  REQUIRE(host.hostGame(port));
+  REQUIRE(client.joinGame("127.0.0.1", port));
+
+  bool ready = pollUntil(host, client, [&]() {
+    return host.sessionState() == NetSession::Playing &&
+           client.sessionState() == NetSession::Playing;
+  });
+  REQUIRE(ready);
+
+  // Host should have client's worm 1 color/weapons
+  REQUIRE(settingsHost->wormSettings[1]->color == 6);
+  REQUIRE(settingsHost->wormSettings[1]->rgb[0] == 0);
+  REQUIRE(settingsHost->wormSettings[1]->rgb[1] == 255);
+  REQUIRE(settingsHost->wormSettings[1]->rgb[2] == 128);
+  REQUIRE(settingsHost->wormSettings[1]->weapons[0] == 35);
+  REQUIRE(settingsHost->wormSettings[1]->weapons[4] == 40);
+
+  // Client should have host's worm 0 color/weapons
+  REQUIRE(settingsClient->wormSettings[0]->color == 3);
+  REQUIRE(settingsClient->wormSettings[0]->rgb[0] == 255);
+  REQUIRE(settingsClient->wormSettings[0]->rgb[1] == 0);
+  REQUIRE(settingsClient->wormSettings[0]->rgb[2] == 0);
+  REQUIRE(settingsClient->wormSettings[0]->weapons[0] == 10);
+  REQUIRE(settingsClient->wormSettings[0]->weapons[4] == 15);
 }
 
 TEST_CASE("NetSession plays frames over real network", "[session]") {

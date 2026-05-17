@@ -131,6 +131,117 @@ TEST_CASE("Transport delivers handshake", "[transport]") {
   REQUIRE(rxHash == 0xDEADBEEF);
 }
 
+TEST_CASE("Transport delivers player info", "[transport]") {
+  uint16_t port = 19536;
+
+  NetTransport host;
+  REQUIRE(host.host(port));
+
+  NetTransport client;
+  REQUIRE(client.connect("127.0.0.1", port));
+
+  // Wait for connection
+  auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+  while ((host.state() != NetTransport::Connected ||
+          client.state() != NetTransport::Connected) &&
+         std::chrono::steady_clock::now() < deadline) {
+    host.poll();
+    client.poll();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  REQUIRE(host.state() == NetTransport::Connected);
+
+  NetTransport::PlayerInfo received{};
+  bool got = false;
+  host.onPlayerInfo = [&](const NetTransport::PlayerInfo& info) {
+    received = info;
+    got = true;
+  };
+
+  NetTransport::PlayerInfo sent{};
+  sent.weapons[0] = 5; sent.weapons[1] = 12; sent.weapons[2] = 30;
+  sent.weapons[3] = 1; sent.weapons[4] = 40;
+  sent.color = 7;
+  sent.rgb[0] = 200; sent.rgb[1] = 100; sent.rgb[2] = 50;
+
+  client.sendPlayerInfo(sent);
+
+  deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+  while (!got && std::chrono::steady_clock::now() < deadline) {
+    host.poll();
+    client.poll();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+  REQUIRE(got);
+  for (int i = 0; i < 5; ++i)
+    REQUIRE(received.weapons[i] == sent.weapons[i]);
+  REQUIRE(received.color == sent.color);
+  for (int i = 0; i < 3; ++i)
+    REQUIRE(received.rgb[i] == sent.rgb[i]);
+}
+
+TEST_CASE("Transport delivers match settings", "[transport]") {
+  uint16_t port = 19537;
+
+  NetTransport host;
+  REQUIRE(host.host(port));
+
+  NetTransport client;
+  REQUIRE(client.connect("127.0.0.1", port));
+
+  // Wait for connection
+  auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+  while ((host.state() != NetTransport::Connected ||
+          client.state() != NetTransport::Connected) &&
+         std::chrono::steady_clock::now() < deadline) {
+    host.poll();
+    client.poll();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  REQUIRE(host.state() == NetTransport::Connected);
+
+  NetTransport::MatchSettingsData received{};
+  bool got = false;
+  client.onMatchSettings = [&](const NetTransport::MatchSettingsData& data) {
+    received = data;
+    got = true;
+  };
+
+  NetTransport::MatchSettingsData sent{};
+  sent.lives = 15;
+  sent.loadingTime = 100;
+  sent.gameMode = 2;
+  sent.blood = 500;
+  sent.maxBonuses = 3;
+  sent.timeToLose = 600;
+  sent.flagsToWin = 5;
+  sent.loadChange = 1;
+  for (int i = 0; i < 40; ++i)
+    sent.weapTable[i] = (i % 4 == 0) ? 1 : 0;
+
+  host.sendMatchSettings(sent);
+
+  deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+  while (!got && std::chrono::steady_clock::now() < deadline) {
+    host.poll();
+    client.poll();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+  REQUIRE(got);
+  REQUIRE(received.lives == sent.lives);
+  REQUIRE(received.loadingTime == sent.loadingTime);
+  REQUIRE(received.gameMode == sent.gameMode);
+  REQUIRE(received.blood == sent.blood);
+  REQUIRE(received.maxBonuses == sent.maxBonuses);
+  REQUIRE(received.timeToLose == sent.timeToLose);
+  REQUIRE(received.flagsToWin == sent.flagsToWin);
+  REQUIRE(received.loadChange == sent.loadChange);
+  for (int i = 0; i < 40; ++i)
+    REQUIRE(received.weapTable[i] == sent.weapTable[i]);
+}
+
 TEST_CASE("Transport bidirectional input exchange", "[transport]") {
   uint16_t port = 19535;
 
