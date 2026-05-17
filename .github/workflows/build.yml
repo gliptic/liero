@@ -200,17 +200,14 @@ jobs:
             echo "" >> notes.md
           fi
 
-      - name: Delete existing pre-release
-        run: gh release delete latest --yes --cleanup-tag || true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Create pre-release
         run: |
-          gh release create latest \
+          TAG="build-${{ steps.notes.outputs.short_sha }}"
+          gh release create "$TAG" \
             --prerelease \
-            --title "Latest build (${{ steps.notes.outputs.short_sha }})" \
+            --title "Build ${{ steps.notes.outputs.short_sha }}" \
             --notes-file notes.md \
+            --target "${{ github.sha }}" \
             artifacts/linux-build/* \
             artifacts/windows-build/* \
             artifacts/macos-build/*
