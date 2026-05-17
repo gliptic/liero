@@ -198,6 +198,11 @@ void NetSession::onMapData(const void* data, size_t len) {
   if (role_ != Client)
     return;
 
+  // Reject oversized map data to prevent memory exhaustion
+  static constexpr size_t MAX_MAP_DATA = 10 * 1024 * 1024;  // 10 MB
+  if (len > MAX_MAP_DATA)
+    return;
+
   receivedMapData_.assign(static_cast<const uint8_t*>(data),
                           static_cast<const uint8_t*>(data) + len);
   mapDataReceived_ = true;
