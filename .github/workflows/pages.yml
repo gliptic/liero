@@ -194,6 +194,16 @@ jobs:
                 font-size: 0.85rem;
               }
               .build-link:hover { background: #81d4fa; }
+              .dl-link {
+                background: #333;
+                color: #e0e0e0;
+                text-decoration: none;
+                padding: 0.3rem 0.5rem;
+                border-radius: 4px;
+                font-size: 0.75rem;
+              }
+              .dl-link:hover { background: #444; color: #fff; }
+              .build-actions { display: flex; gap: 0.3rem; align-items: center; }
               .empty { color: #666; font-style: italic; padding: 0.5rem 0; }
               a { color: #4fc3f7; }
             </style>
@@ -204,14 +214,23 @@ jobs:
               <p class="subtitle">Select a build to play in your browser</p>
           """
 
+          REPO = "openliero/openliero"
+          DL = f"https://github.com/{REPO}/releases/download"
+
           html += "    <h2>Releases</h2>\n"
           if manifest["releases"]:
               html += '    <ul class="build-list">\n'
               for build in manifest["releases"]:
+                  tag = build["name"]
                   date = build["timestamp"][:10] if build.get("timestamp") else ""
-                  html += f'      <li><span class="build-name">{build["name"]}</span>'
+                  html += f'      <li><span class="build-name">{tag}</span>'
                   html += f'<span class="build-date">{date}</span>'
-                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a></li>\n'
+                  html += '<span class="build-actions">'
+                  html += f'<a class="dl-link" href="{DL}/{tag}/openliero-linux-x64.tar.gz" title="Linux x64">🐧</a>'
+                  html += f'<a class="dl-link" href="{DL}/{tag}/openliero-windows-x64.zip" title="Windows x64">🪟</a>'
+                  html += f'<a class="dl-link" href="{DL}/{tag}/openliero-macos.tar.gz" title="macOS">🍎</a>'
+                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a>'
+                  html += '</span></li>\n'
               html += "    </ul>\n"
           else:
               html += '    <p class="empty">No releases yet</p>\n'
@@ -220,10 +239,16 @@ jobs:
           if manifest["dev"]:
               html += '    <ul class="build-list">\n'
               for build in manifest["dev"]:
+                  tag = build["name"]
                   date = build["timestamp"][:10] if build.get("timestamp") else ""
-                  html += f'      <li><span class="build-name">{build["name"]}</span>'
+                  html += f'      <li><span class="build-name">{tag}</span>'
                   html += f'<span class="build-date">{date}</span>'
-                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a></li>\n'
+                  html += '<span class="build-actions">'
+                  html += f'<a class="dl-link" href="{DL}/{tag}/openliero-linux-x64.tar.gz" title="Linux x64">🐧</a>'
+                  html += f'<a class="dl-link" href="{DL}/{tag}/openliero-windows-x64.zip" title="Windows x64">🪟</a>'
+                  html += f'<a class="dl-link" href="{DL}/{tag}/openliero-macos.tar.gz" title="macOS">🍎</a>'
+                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a>'
+                  html += '</span></li>\n'
               html += "    </ul>\n"
           else:
               html += '    <p class="empty">No development builds yet</p>\n'
