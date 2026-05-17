@@ -170,6 +170,7 @@ void NetworkController::onKey(int key, bool keyState) {
       if (onLocalResume) onLocalResume();
     } else if (remotePaused_ && !goingToMenu) {
       // Remote paused, local wants to disconnect
+      remotePaused_ = false;
       fadeValue = 0;
       goingToMenu = true;
     } else if (!goingToMenu) {
@@ -184,6 +185,8 @@ void NetworkController::onKey(int key, bool keyState) {
 void NetworkController::unfocus() {
   if (state == StateWeaponSelection && ws)
     ws->unfocus();
+  localPaused_ = false;
+  remotePaused_ = false;
 }
 
 void NetworkController::focus() {

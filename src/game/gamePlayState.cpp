@@ -27,8 +27,9 @@ bool GamePlayState::update()
 		auto state = gfx->netSession->sessionState();
 		if (state == NetSession::Disconnected || state == NetSession::Failed)
 		{
-			gfx->pendingErrorMessage = "PEER DISCONNECTED";
 			gfx->netSession.reset();
+			gfx->stateStack.scheduleReplaceTop(
+				std::make_unique<InfoBoxState>("PEER DISCONNECTED", 320/2, 200/2, true));
 			return false;
 		}
 	}
@@ -57,6 +58,12 @@ bool GamePlayState::update()
 				return false;
 			}
 		}
+
+		// Clear framebuffer so menu doesn't capture stale overlay content
+		if (gfx->netSession)
+			gfx->netSession.reset();
+		fill(gfx->playRenderer.bmp, 0);
+		fill(gfx->singleScreenRenderer.bmp, 0);
 		return false;
 	}
 
