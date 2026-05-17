@@ -9,6 +9,7 @@
 #include "game.hpp"
 #include "gfx.hpp"
 #include "rematchState.hpp"
+#include "net/session.hpp"
 
 using gvl::cell;
 using std::vector;
@@ -304,6 +305,18 @@ void StatsState::handleEvent(SDL_Event& ev)
 
 bool StatsState::update()
 {
+	// Keep the network session alive while viewing stats
+	if (isMultiplayer_ && gfx->netSession)
+	{
+		gfx->netSession->update();
+		auto state = gfx->netSession->sessionState();
+		if (state == NetSession::Disconnected || state == NetSession::Failed)
+		{
+			gfx->netSession.reset();
+			isMultiplayer_ = false;
+		}
+	}
+
 	if (gfx->testSDLKey(SDL_SCANCODE_DOWN)
 	|| gfx->testControl(WormSettingsExtensions::Down)
 	|| gfx->testGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
