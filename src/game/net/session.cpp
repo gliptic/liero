@@ -155,6 +155,12 @@ void NetSession::startGame() {
       nullptr  // We use injectRemoteInput via onRemoteInput callback instead
   );
 
+  // Pre-fill the input delay window with empty inputs so both sides
+  // can advance past the initial frames without stalling.
+  for (uint32_t i = 0; i < 3; ++i) {
+    controller_->injectRemoteInput(i, 0);
+  }
+
   controllerPtr_ = controller_.get();
   sessionState_ = Playing;
 }
