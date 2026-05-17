@@ -20,6 +20,7 @@ RematchState::RematchState(Game& lastGame)
 void RematchState::enter()
 {
 	fill(gfx->playRenderer.bmp, 0);
+	gfx->playRenderer.origpal = gfx->common->exepal;
 	gfx->clearKeys();
 
 	prevRandomLevel_ = gfx->settings->randomLevel;
@@ -64,7 +65,8 @@ void RematchState::updateMenuItems()
 	if (readyItem)
 	{
 		bool localReady = gfx->netSession->localReady();
-		readyItem->string = localReady ? "NOT READY" : "READY";
+		readyItem->string = localReady ? "CANCEL" : "READY UP";
+		readyItem->color = localReady ? 18 : 63;
 	}
 }
 
@@ -190,7 +192,6 @@ void RematchState::draw()
 	Common& common = *gfx->common;
 	Font& font = common.font;
 
-	gfx->playRenderer.pal = common.exepal;
 	fill(gfx->playRenderer.bmp, 0);
 
 	int cx = 160;
@@ -222,14 +223,34 @@ void RematchState::draw()
 	if (gfx->netSession)
 	{
 		bool isHost = gfx->netSession->isHost();
+		bool localReady = gfx->netSession->localReady();
 		bool remoteReady = gfx->netSession->remoteReady();
 
 		std::string peer = isHost ? "CLIENT" : "HOST";
-		std::string remoteLine = peer + ": " + (remoteReady ? "READY" : "NOT READY");
-		int remoteColor = remoteReady ? 63 : 18;
+		std::string you = isHost ? "HOST" : "CLIENT";
 
+		// Draw local player status
+		std::string localLine = you + ":";
+		int llw = font.getDims(localLine);
+		font.drawText(gfx->playRenderer.bmp, localLine, cx - llw / 2 - 10, y, 7);
+		// Draw indicator after text
+		int localIndX = cx - llw / 2 - 10 + llw + 4;
+		if (localReady)
+			font.drawText(gfx->playRenderer.bmp, "READY", localIndX, y, 63);
+		else
+			font.drawText(gfx->playRenderer.bmp, "X", localIndX, y, 18);
+		y += 10;
+
+		// Draw remote player status
+		std::string remoteLine = peer + ":";
 		int rlw = font.getDims(remoteLine);
-		font.drawText(gfx->playRenderer.bmp, remoteLine, cx - rlw / 2, y, remoteColor);
+		font.drawText(gfx->playRenderer.bmp, remoteLine, cx - rlw / 2 - 10, y, 7);
+		int remoteIndX = cx - rlw / 2 - 10 + rlw + 4;
+		if (remoteReady)
+			font.drawText(gfx->playRenderer.bmp, "READY", remoteIndX, y, 63);
+		else
+			font.drawText(gfx->playRenderer.bmp, "X", remoteIndX, y, 18);
+		y += 14;
 	}
 
 	// Draw menu

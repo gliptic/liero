@@ -25,7 +25,7 @@ struct RematchState : AppState
 	void handleEvent(SDL_Event& ev) override;
 	bool update() override;
 	void draw() override;
-	bool wantsMenuFlip() const override { return false; }
+	bool wantsMenuFlip() const override { return true; }
 
 private:
 	std::string levelDisplayName() const;
