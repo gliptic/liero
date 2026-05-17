@@ -272,3 +272,49 @@ TEST_CASE("Transport bidirectional input exchange", "[transport]") {
   REQUIRE(hostReceived == 100);
   REQUIRE(clientReceived == 100);
 }
+
+TEST_CASE("Transport delivers large map data (100KB+)", "[transport]") {
+  NetTransport host;
+  REQUIRE(host.host(0));
+  uint16_t port = host.listeningPort();
+
+  NetTransport client;
+  REQUIRE(client.connect("127.0.0.1", port));
+
+  // Wait for connection
+  auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+  while ((host.state() != NetTransport::Connected ||
+          client.state() != NetTransport::Connected) &&
+         std::chrono::steady_clock::now() < deadline) {
+    host.poll();
+    client.poll();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+  REQUIRE(host.state() == NetTransport::Connected);
+
+  // Create a 150KB payload with a recognizable pattern
+  const size_t payloadSize = 150 * 1024;
+  std::vector<uint8_t> sendData(payloadSize);
+  for (size_t i = 0; i < payloadSize; ++i) {
+    sendData[i] = static_cast<uint8_t>(i * 7 + i / 256);
+  }
+
+  std::vector<uint8_t> receivedData;
+  client.onMapData = [&](const void* data, size_t len) {
+    auto* bytes = static_cast<const uint8_t*>(data);
+    receivedData.assign(bytes, bytes + len);
+  };
+
+  host.sendMapData(sendData.data(), sendData.size());
+
+  // Poll until received (may require multiple poll cycles for fragmentation)
+  deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+  while (receivedData.empty() && std::chrono::steady_clock::now() < deadline) {
+    host.poll();
+    client.poll();
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+  REQUIRE(receivedData.size() == payloadSize);
+  REQUIRE(receivedData == sendData);
+}
