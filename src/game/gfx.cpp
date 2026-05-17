@@ -1502,8 +1502,36 @@ bool Gfx::runOneFrame()
 			}
 			else if (menuSelection == MainMenu::MaJoinGame)
 			{
+				// Parse address — support "host:port" and "[ipv6]:port" formats
+				std::string addr = std::move(pendingNetAddress);
+				uint16_t port = 19532;
+
+				if (!addr.empty() && addr[0] == '[') {
+					// IPv6 bracket notation: [::1]:port
+					auto closeBracket = addr.find(']');
+					if (closeBracket != std::string::npos) {
+						std::string ip6 = addr.substr(1, closeBracket - 1);
+						if (closeBracket + 1 < addr.size() && addr[closeBracket + 1] == ':') {
+							port = static_cast<uint16_t>(std::stoi(addr.substr(closeBracket + 2)));
+						}
+						addr = ip6;
+					}
+				} else {
+					// IPv4 or hostname: check for last colon
+					auto lastColon = addr.rfind(':');
+					if (lastColon != std::string::npos) {
+						// Only treat as port separator if there's at most one colon
+						// (multiple colons = bare IPv6 without port)
+						auto firstColon = addr.find(':');
+						if (firstColon == lastColon) {
+							port = static_cast<uint16_t>(std::stoi(addr.substr(lastColon + 1)));
+							addr = addr.substr(0, lastColon);
+						}
+					}
+				}
+
 				stateStack.push(std::make_unique<NetConnectState>(
-					NetSession::Client, std::move(pendingNetAddress), 19532), this);
+					NetSession::Client, std::move(addr), port), this);
 				return true;
 			}
 
