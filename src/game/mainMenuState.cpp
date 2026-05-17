@@ -12,6 +12,7 @@
 #include "weaponMenuState.hpp"
 #include "inputState.hpp"
 #include "rand.hpp"
+#include "net/session.hpp"
 
 #include <cstring>
 #include <random>
@@ -203,6 +204,21 @@ bool MainMenuState::update()
 				case MainMenu::MaTc:
 				{
 					gfx->stateStack.push(std::make_unique<TcSelectorState>(), gfx);
+					break;
+				}
+
+				case MainMenu::MaJoinGame:
+				{
+					sfx.play(common, 27);
+					gfx->stateStack.push(std::make_unique<InputStringState>(
+						"", 40, 10, 80, nullptr, "ADDRESS: ", false,
+						[this](bool accepted, std::string const& result) {
+							if (accepted && !result.empty())
+							{
+								gfx->pendingNetAddress = result;
+								gfx->pendingMenuSelection = MainMenu::MaJoinGame;
+							}
+						}), gfx);
 					break;
 				}
 

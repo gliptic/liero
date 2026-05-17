@@ -8,6 +8,7 @@ NetSession::NetSession(std::shared_ptr<Common> common,
     , sessionState_(Idle)
     , common_(std::move(common))
     , settings_(std::move(settings))
+    , controllerPtr_(nullptr)
     , gameSeed_(0)
     , localSettingsHash_(0)
     , handshakeReceived_(false)
@@ -82,6 +83,7 @@ void NetSession::disconnect() {
   wireCallbacks();
   sessionState_ = Idle;
   controller_.reset();
+  controllerPtr_ = nullptr;
   handshakeReceived_ = false;
   handshakeSent_ = false;
 }
@@ -123,8 +125,8 @@ void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
 }
 
 void NetSession::onRemoteInput(uint32_t frame, uint8_t input) {
-  if (controller_)
-    controller_->injectRemoteInput(frame, input);
+  if (controllerPtr_)
+    controllerPtr_->injectRemoteInput(frame, input);
 }
 
 void NetSession::wireCallbacks() {
@@ -153,7 +155,12 @@ void NetSession::startGame() {
       nullptr  // We use injectRemoteInput via onRemoteInput callback instead
   );
 
+  controllerPtr_ = controller_.get();
   sessionState_ = Playing;
+}
+
+std::unique_ptr<NetworkController> NetSession::releaseController() {
+  return std::move(controller_);
 }
 
 uint32_t NetSession::computeSettingsHash() const {

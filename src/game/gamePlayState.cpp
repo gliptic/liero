@@ -6,6 +6,7 @@
 #include "controller/controller.hpp"
 #include "stats_recorder.hpp"
 #include "game.hpp"
+#include "net/session.hpp"
 
 void GamePlayState::enter()
 {
@@ -19,6 +20,19 @@ void GamePlayState::handleEvent(SDL_Event& ev)
 
 bool GamePlayState::update()
 {
+	// Poll network session if active
+	if (gfx->netSession)
+	{
+		gfx->netSession->update();
+		auto state = gfx->netSession->sessionState();
+		if (state == NetSession::Disconnected || state == NetSession::Failed)
+		{
+			gfx->pendingErrorMessage = "PEER DISCONNECTED";
+			gfx->netSession.reset();
+			return false;
+		}
+	}
+
 	if (!gfx->controller->process())
 	{
 		// Check for pending error message

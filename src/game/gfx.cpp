@@ -33,6 +33,7 @@
 
 #include "mainMenuState.hpp"
 #include "gamePlayState.hpp"
+#include "netConnectState.hpp"
 
 #include "gfx/macros.hpp"
 
@@ -541,6 +542,8 @@ void Gfx::loadMenus()
 
 	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaResumeGame)); // string set in MainMenuState::enter()
 	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaNewGame)); // string set in MainMenuState::enter()
+	mainMenu.addItem(MenuItem(48, 48, "HOST GAME", MainMenu::MaHostGame));
+	mainMenu.addItem(MenuItem(48, 48, "JOIN GAME", MainMenu::MaJoinGame));
 	mainMenu.addItem(MenuItem(48, 48, "OPTIONS (F2)", MainMenu::MaAdvanced));
 	mainMenu.addItem(MenuItem(48, 48, "REPLAYS (F3)", MainMenu::MaReplays));
 	mainMenu.addItem(MenuItem(48, 48, "TC", MainMenu::MaTc));
@@ -1463,6 +1466,7 @@ bool Gfx::runOneFrame()
 			// Handle new game / resume / replay selection
 			if (menuSelection == MainMenu::MaNewGame)
 			{
+				netSession.reset();
 				std::unique_ptr<Controller> newController(new LocalController(common, settings));
 				Level* oldLevel = controller->currentLevel();
 
@@ -1491,6 +1495,18 @@ bool Gfx::runOneFrame()
 				if (settings->singleScreenReplay)
 					primaryRenderer = &singleScreenRenderer;
 			}
+			else if (menuSelection == MainMenu::MaHostGame)
+			{
+				stateStack.push(std::make_unique<NetConnectState>(
+					NetSession::Host, "", 19532), this);
+				return true;
+			}
+			else if (menuSelection == MainMenu::MaJoinGame)
+			{
+				stateStack.push(std::make_unique<NetConnectState>(
+					NetSession::Client, std::move(pendingNetAddress), 19532), this);
+				return true;
+			}
 
 			// Push game state
 			stateStack.push(std::make_unique<GamePlayState>(), this);
@@ -1498,6 +1514,7 @@ bool Gfx::runOneFrame()
 		else
 		{
 			// Game state finished — go back to menu
+			netSession.reset();
 			primaryRenderer = &playRenderer;
 			controller->unfocus();
 			clearKeys();

@@ -41,7 +41,11 @@ struct NetSession {
 
   // The controller. Valid after construction but game doesn't start
   // until Playing state. Returns null if not yet created.
-  NetworkController* controller() { return controller_.get(); }
+  NetworkController* controller() { return controllerPtr_; }
+
+  // Release ownership of the controller (for handing to Gfx).
+  // The session keeps a raw pointer for injecting remote inputs.
+  std::unique_ptr<NetworkController> releaseController();
 
   // Access the transport (for testing)
   NetTransport& transport() { return transport_; }
@@ -61,6 +65,8 @@ struct NetSession {
   std::unique_ptr<NetworkController> controller_;
   std::shared_ptr<Common> common_;
   std::shared_ptr<Settings> settings_;
+
+  NetworkController* controllerPtr_;  // non-owning, survives releaseController()
 
   uint32_t gameSeed_;
   uint32_t localSettingsHash_;

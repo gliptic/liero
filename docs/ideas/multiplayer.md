@@ -60,7 +60,15 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 2. ~~**NetworkController**~~ ✅ — Implements `Controller` interface; buffers local+remote inputs; advances sim when both available
 3. ~~**UDP transport**~~ ✅ — ENet-based reliable UDP transport with input, handshake, and checksum packet types
 4. ~~**Connection flow**~~ ✅ — `NetSession` wires controller + transport: handshake exchange, seed sync, settings validation
-5. **UI** ⬅️ next — Menu option to host/join, IP entry field
+5. ~~**UI**~~ ✅ — HOST GAME / JOIN GAME menu options, IP address input, connection status screen
+
+## How to Play
+
+1. Both players configure match settings (Match Setup) before connecting
+2. Player A: select **HOST GAME** from the main menu — shows "HOSTING ON PORT 19532"
+3. Player B: select **JOIN GAME**, type the host's IP address, press Enter
+4. Both see connection status, then the game starts automatically
+5. Press Escape during gameplay to disconnect and return to menu
 
 ## Not Doing (and Why)
 
@@ -157,18 +165,53 @@ together. It manages the full connection lifecycle:
   identical simulation state.
 - **Callback wiring:** Transport's `onRemoteInput` → controller's `injectRemoteInput()`;
   controller's `sendInput` callback → transport's `sendInput()`.
+- **Controller release:** `NetSession::releaseController()` transfers ownership of the
+  NetworkController to `Gfx::controller` while keeping a raw pointer (`controllerPtr_`)
+  for remote input injection. This lets the session continue polling the transport while
+  the controller is owned by the main game loop.
 - **Tested end-to-end:** Session tests verify handshake completion, settings mismatch
   rejection, and actual frame-advancing over real localhost UDP sockets with deterministic
   state verification.
+
+### Multiplayer UI (2026-05-17)
+
+The UI integration uses the existing state stack and menu system:
+
+- **Menu items:** `HOST GAME` and `JOIN GAME` added to `MainMenu` enum and loaded in
+  `Gfx::loadMenus()`.
+- **Host flow:** Select HOST GAME → fades out → `Gfx::runOneFrame()` pushes
+  `NetConnectState(Host)` which creates a `NetSession`, calls `hostGame(19532)`, and
+  shows "HOSTING ON PORT 19532 / WAITING FOR PEER...". When the peer connects and
+  handshake completes, `NetConnectState` releases the controller to `gfx->controller`
+  and replaces itself with `GamePlayState` via `scheduleReplaceTop()`.
+- **Join flow:** Select JOIN GAME → pushes `InputStringState` for the IP address →
+  callback stores the address in `gfx->pendingNetAddress` and sets
+  `gfx->pendingMenuSelection = MaJoinGame` → menu fades out → `runOneFrame()` pushes
+  `NetConnectState(Client, address)` → connects to host → same flow as above.
+- **Error handling:** Connection failures and disconnects are shown via `InfoBoxState`.
+  During gameplay, `GamePlayState::update()` polls `gfx->netSession->update()` and
+  detects disconnection, showing "PEER DISCONNECTED" if the peer drops.
+- **Cleanup:** `gfx->netSession` is reset when returning to menu (game ended) or when
+  starting a new local game (`MaNewGame`).
 
 ## Open Questions
 
 - ~~What UDP library to use?~~ **Answered:** zpl-c/enet v2.6.5 via vcpkg overlay port. IPv6, reliable channels, lightweight.
 - ~~Should we sync game settings/TC data hash to prevent mismatched clients from playing?~~ **Answered:** Yes. `NetSession::computeSettingsHash()` computes an FNV-1a hash of gameplay-affecting settings and both peers exchange it during handshake. Mismatch → Failed state.
-- Should the input delay be adaptive (based on measured RTT) or fixed?
-- How to handle disconnection gracefully? Pause + timeout + forfeit?
 - ~~Is there any state in `gvl::mwc` (the PRNG) beyond the two 32-bit values that needs synchronizing?~~ **Answered:** No, just `x` and `c`. Seed sync is sufficient.
-- How should weapon selection work in multiplayer? Options: both players select locally then exchange, or use a shared selection screen with one player choosing at a time.
+- Should the input delay be adaptive (based on measured RTT) or fixed?
+- How to handle disconnection more gracefully? Currently disconnects immediately; could add pause + timeout + reconnect.
+- How should weapon selection work in multiplayer? Options: both players select locally then exchange, or use a shared selection screen with one player choosing at a time. Currently uses default weapons.
+- Port configuration — currently hardcoded to 19532. Could add a port input field.
+
+## Future Work
+
+- **Desync detection:** Periodic checksum comparison using the existing `PacketChecksum` packet type (already in the wire protocol, not yet wired up)
+- **Weapon selection:** Exchange weapon choices before game start
+- **Replay recording of network games** — the data is already available (frame inputs)
+- **Rollback netcode (Phase 2)** — GGPO-style prediction/rollback for internet play
+- **NAT traversal** — STUN/TURN or relay server for connections through firewalls
+- **Graceful disconnection** — pause + timeout + forfeit instead of immediate exit
 
 ## Technical Risk Assessment
 
