@@ -3,128 +3,118 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches:
-      - master
-    tags:
-      - 'v*'
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build"]
+    types: [completed]
+    branches: [master]
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
-  build:
-    name: Build
+  deploy:
+    name: Deploy
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
 
     steps:
-      - name: Checkout repository
+      - name: Checkout gh-pages
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-          fetch-tags: true
+          ref: gh-pages
+          fetch-depth: 1
+        continue-on-error: true
+        id: checkout
 
-      - name: Setup Emscripten
-        uses: mymindstorm/setup-emsdk@v14
-
-      - name: Get cmake/ninja
-        uses: lukka/get-cmake@latest
-
-      - name: Setup vcpkg
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgDirectory: '${{ github.workspace }}/tools/vcpkg/vcpkg'
-          vcpkgConfigurationJsonGlob: 'vcpkg-configuration.json'
-          appendedCacheKey: 'emscripten-v1'
-
-      - name: Build
+      - name: Initialize gh-pages branch
+        if: steps.checkout.outcome == 'failure'
         run: |
-          cmake --preset emscripten
-          cmake --build build/emscripten --config Release
-          cmake --install build/emscripten --config Release
-
-      - name: Determine build info
-        id: info
-        run: |
-          SHA="${{ github.sha }}"
-          SHORT_SHA="${SHA:0:7}"
-
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
-            TAG="${{ github.ref_name }}"
-            echo "type=release" >> "$GITHUB_OUTPUT"
-            echo "name=${TAG}" >> "$GITHUB_OUTPUT"
-            echo "dir=releases/${TAG}" >> "$GITHUB_OUTPUT"
-          else
-            echo "type=dev" >> "$GITHUB_OUTPUT"
-            echo "name=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-            echo "dir=dev/${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Deploy to gh-pages
-        run: |
+          git init
+          git checkout --orphan gh-pages
+          echo '{}' > builds.json
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "Initialize gh-pages"
 
-          # Fetch gh-pages or create it
-          if git fetch origin gh-pages; then
-            git checkout gh-pages
-          else
-            git checkout --orphan gh-pages
-            git rm -rf . || true
-            echo '{"releases":[],"dev":[]}' > builds.json
-            git add builds.json
-            git commit -m "Initialize gh-pages"
-          fi
+      - name: Enumerate releases and deploy builds
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
 
-          # Add the new build
-          BUILD_DIR="${{ steps.info.outputs.dir }}"
-          mkdir -p "$BUILD_DIR"
-          cp -r install/emscripten/* "$BUILD_DIR/"
+          # Fetch all releases that have a web asset via gh CLI
+          echo '{"releases":[],"dev":[]}' > builds_new.json
 
-          # Update builds.json
-          python3 << 'EOF'
-          import json, os, time
+          gh release list --repo "${{ github.repository }}" --limit 50 \
+            --json tagName,isPrerelease,createdAt,assets | \
+          jq -c '.[] | select(.assets | map(.name) | any(. == "openliero-web.tar.gz"))' | \
+          while IFS= read -r release; do
+            TAG=$(echo "$release" | jq -r '.tagName')
+            IS_PRE=$(echo "$release" | jq -r '.isPrerelease')
+            CREATED=$(echo "$release" | jq -r '.createdAt')
 
-          manifest_path = "builds.json"
-          if os.path.exists(manifest_path):
-              with open(manifest_path) as f:
-                  manifest = json.load(f)
-          else:
-              manifest = {"releases": [], "dev": []}
+            if [ "$IS_PRE" = "true" ]; then
+              TYPE="dev"
+              DIR="dev/${TAG}"
+            else
+              TYPE="release"
+              DIR="releases/${TAG}"
+            fi
 
-          build_type = "${{ steps.info.outputs.type }}"
-          build_name = "${{ steps.info.outputs.name }}"
-          build_dir = "${{ steps.info.outputs.dir }}"
-          timestamp = "${{ github.event.head_commit.timestamp }}" or time.strftime("%Y-%m-%dT%H:%M:%SZ")
+            # Skip download if already deployed
+            if [ ! -d "$DIR" ]; then
+              mkdir -p "$DIR"
+              gh release download "$TAG" --repo "${{ github.repository }}" \
+                --pattern "openliero-web.tar.gz" --dir /tmp/dl --clobber
+              tar xf /tmp/dl/openliero-web.tar.gz -C "$DIR"
+              rm -f /tmp/dl/openliero-web.tar.gz
+            fi
 
-          entry = {"name": build_name, "dir": build_dir, "timestamp": timestamp}
+            # Add to manifest
+            python3 -c "
+          import json
+          with open('builds_new.json') as f:
+              m = json.load(f)
+          entry = {'name': '$TAG', 'dir': '$DIR', 'timestamp': '$CREATED'}
+          m['$TYPE'].append(entry)
+          with open('builds_new.json', 'w') as f:
+              json.dump(m, f, indent=2)
+          "
+          done
 
-          if build_type == "release":
-              # Don't duplicate
-              if not any(r["name"] == build_name for r in manifest["releases"]):
-                  manifest["releases"].insert(0, entry)
-          else:
-              # Don't duplicate
-              manifest["dev"] = [d for d in manifest["dev"] if d["name"] != build_name]
-              manifest["dev"].insert(0, entry)
+          # Sort, prune, and clean up old directories
+          python3 << 'PYEOF'
+          import json, os, shutil
 
-              # Prune to last 10 dev builds
-              removed = manifest["dev"][10:]
-              manifest["dev"] = manifest["dev"][:10]
+          with open("builds_new.json") as f:
+              manifest = json.load(f)
 
-              # Remove old build directories
-              for old in removed:
-                  old_dir = old["dir"]
-                  if os.path.isdir(old_dir):
-                      import shutil
-                      shutil.rmtree(old_dir)
+          manifest["releases"].sort(key=lambda x: x["timestamp"], reverse=True)
+          manifest["dev"].sort(key=lambda x: x["timestamp"], reverse=True)
 
-          with open(manifest_path, "w") as f:
+          # Keep all releases, last 10 dev builds
+          removed = manifest["dev"][10:]
+          manifest["dev"] = manifest["dev"][:10]
+          for old in removed:
+              if os.path.isdir(old["dir"]):
+                  shutil.rmtree(old["dir"])
+
+          # Remove deployed dirs no longer in manifest
+          keep_dirs = {b["dir"] for b in manifest["releases"] + manifest["dev"]}
+          for prefix in ["releases", "dev"]:
+              if os.path.isdir(prefix):
+                  for entry in os.listdir(prefix):
+                      path = f"{prefix}/{entry}"
+                      if path not in keep_dirs and os.path.isdir(path):
+                          shutil.rmtree(path)
+
+          with open("builds.json", "w") as f:
               json.dump(manifest, f, indent=2)
-          EOF
+          PYEOF
 
-          # Generate index.html
+      - name: Generate index.html
+        run: |
           python3 << 'EOF'
           import json
 
@@ -197,31 +187,29 @@ jobs:
               <p class="subtitle">Select a build to play in your browser</p>
           """
 
-          # Releases section
-          html += "    <h2>Releases</h2>\\n"
+          html += "    <h2>Releases</h2>\n"
           if manifest["releases"]:
-              html += '    <ul class="build-list">\\n'
+              html += '    <ul class="build-list">\n'
               for build in manifest["releases"]:
                   date = build["timestamp"][:10] if build.get("timestamp") else ""
                   html += f'      <li><span class="build-name">{build["name"]}</span>'
                   html += f'<span class="build-date">{date}</span>'
-                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a></li>\\n'
-              html += "    </ul>\\n"
+                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a></li>\n'
+              html += "    </ul>\n"
           else:
-              html += '    <p class="empty">No releases yet</p>\\n'
+              html += '    <p class="empty">No releases yet</p>\n'
 
-          # Dev builds section
-          html += "    <h2>Development Builds</h2>\\n"
+          html += "    <h2>Development Builds</h2>\n"
           if manifest["dev"]:
-              html += '    <ul class="build-list">\\n'
+              html += '    <ul class="build-list">\n'
               for build in manifest["dev"]:
                   date = build["timestamp"][:10] if build.get("timestamp") else ""
                   html += f'      <li><span class="build-name">{build["name"]}</span>'
                   html += f'<span class="build-date">{date}</span>'
-                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a></li>\\n'
-              html += "    </ul>\\n"
+                  html += f'<a class="build-link" href="{build["dir"]}/openliero.html">Play</a></li>\n'
+              html += "    </ul>\n"
           else:
-              html += '    <p class="empty">No development builds yet</p>\\n'
+              html += '    <p class="empty">No development builds yet</p>\n'
 
           html += """    <p style="text-align:center; margin-top:2rem; color:#666; font-size:0.8rem;">
                 <a href="https://github.com/openliero/openliero">Source on GitHub</a>
@@ -234,7 +222,10 @@ jobs:
               f.write(html)
           EOF
 
-          # Commit and push
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Deploy ${{ steps.info.outputs.type }} build: ${{ steps.info.outputs.name }}" || echo "No changes"
+          git commit -m "Update pages from releases" || echo "No changes"
           git push origin gh-pages
