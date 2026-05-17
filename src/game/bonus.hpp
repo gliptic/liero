@@ -9,6 +9,8 @@ struct Bonus : ExactObjectListBase
 {
 	Bonus()
 	: frame(-1)
+	, x(0), y(0), velY(0)
+	, timer(0), weapon(0)
 	{
 	}
 

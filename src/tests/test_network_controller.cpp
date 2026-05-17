@@ -316,3 +316,86 @@ TEST_CASE("Weapon selection uses synced game.rand", "[network]") {
   REQUIRE(ctrlA->game.rand.x == ctrlB->game.rand.x);
   REQUIRE(ctrlA->game.rand.c == ctrlB->game.rand.c);
 }
+
+TEST_CASE("NetworkController determinism fuzz with deaths", "[network][death]") {
+  // Full network-layer fuzz: two NetworkControllers wired in loopback,
+  // with random inputs delivered through the proper edge detection path.
+  // This is the test most likely to reproduce the desync seen in real play.
+  LoopbackFixture f;
+
+  // Override to low health for frequent deaths
+  for (auto* w : f.controllerA->game.worms)
+    w->health = 30;
+  for (auto* w : f.controllerB->game.worms)
+    w->health = 30;
+  for (auto* w : f.controllerA->game.worms)
+    w->lives = 30;
+  for (auto* w : f.controllerB->game.worms)
+    w->lives = 30;
+
+  // Pre-fill input delay
+  for (uint32_t i = 0; i < 3; ++i) {
+    f.controllerA->injectRemoteInput(i, 0);
+    f.controllerB->injectRemoteInput(i, 0);
+  }
+
+  gvl::mwc inputRng(0xDEAD);
+
+  constexpr int NUM_TICKS = 10000;
+  int deathCount = 0;
+
+  for (int tick = 0; tick < NUM_TICKS; ++tick) {
+    // Generate random inputs for both players
+    uint8_t inputA = inputRng() & 0x7f;
+    uint8_t inputB = inputRng() & 0x7f;
+
+    // Bias toward combat: high chance of fire
+    if ((inputRng() % 10) < 6) inputA |= (1 << Worm::Fire);
+    if ((inputRng() % 10) < 6) inputB |= (1 << Worm::Fire);
+
+    // Set local control state for each controller.
+    // Controller A is player 0: its local input is inputA.
+    // Controller B is player 1: its local input is inputB.
+    // The edge detection in advanceSimulation() packs localControlState
+    // into localInputs[], sends it to the remote, and applies edges.
+    f.controllerA->setLocalControlState(inputA);
+    f.controllerB->setLocalControlState(inputB);
+
+    f.controllerA->process();
+    f.controllerB->process();
+    f.deliverAll();
+
+    // Track deaths
+    for (auto* w : f.controllerA->game.worms) {
+      if (!w->visible && w->killedTimer == 149)
+        ++deathCount;
+    }
+
+    // Compare state every frame
+    uint32_t frameA = f.controllerA->currentFrame();
+    uint32_t frameB = f.controllerB->currentFrame();
+
+    if (frameA == frameB && frameA > 0) {
+      uint32_t checksumA = fastGameChecksum(f.controllerA->game);
+      uint32_t checksumB = fastGameChecksum(f.controllerB->game);
+
+      if (checksumA != checksumB) {
+        INFO("DESYNC at tick " << tick << " (simFrame=" << frameA
+             << ", deaths=" << deathCount << ")"
+             << "\n  RNG A: x=" << f.controllerA->game.rand.x
+             << " c=" << f.controllerA->game.rand.c
+             << "\n  RNG B: x=" << f.controllerB->game.rand.x
+             << " c=" << f.controllerB->game.rand.c);
+        REQUIRE(checksumA == checksumB);
+      }
+    }
+
+    // Stop if game is over
+    if (f.controllerA->game.isGameOver())
+      break;
+  }
+
+  INFO("Network fuzz completed: " << deathCount << " deaths, "
+       << f.controllerA->currentFrame() << " sim frames");
+  REQUIRE(deathCount > 0);
+}

@@ -267,6 +267,7 @@ void Game::createBonus()
 			bonus->velY = 0;
 			bonus->frame = frame;
 			bonus->timer = rand(common.bonusRandTimer[frame][1]) + common.bonusRandTimer[frame][0];
+			bonus->weapon = 0;
 
 			if(frame == 0)
 			{

@@ -77,6 +77,9 @@ struct NetworkController : CommonController {
   // Get current simulation frame number
   uint32_t currentFrame() const { return simFrame; }
 
+  // Set the local control state directly (for testing without key bindings)
+  void setLocalControlState(uint8_t packed) { localControlState.unpack(packed); }
+
   Game game;
 
  private:
