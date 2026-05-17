@@ -121,6 +121,7 @@ set(GAME_SOURCES ${SOURCES}
   src/game/weapsel.cpp
   src/game/controller/commonController.cpp
   src/game/controller/localController.cpp
+  src/game/controller/networkController.cpp
   src/game/controller/replayController.cpp
   src/game/statsState.cpp
   src/game/menu/booleanSwitchBehavior.cpp
@@ -279,6 +280,12 @@ if(OPENLIERO_BUILD_TESTS)
   add_executable(test_determinism src/tests/test_determinism.cpp)
   target_link_libraries(test_determinism PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_determinism
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  )
+
+  add_executable(test_network_controller src/tests/test_network_controller.cpp)
+  target_link_libraries(test_network_controller PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_network_controller
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   )
 endif()
