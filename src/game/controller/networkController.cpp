@@ -74,6 +74,11 @@ void NetworkController::loadLevelFromData(const std::vector<uint8_t>& data) {
   uint32_t rawSize;
   std::memcpy(&rawSize, data.data() + 1, 4);
 
+  // Guard against decompression bombs from malicious peers
+  static constexpr uint32_t MAX_RAW_SIZE = 10 * 1024 * 1024;  // 10 MB
+  if (rawSize > MAX_RAW_SIZE)
+    return;
+
   std::vector<uint8_t> raw;
   if (isCompressed) {
     raw.resize(rawSize);
