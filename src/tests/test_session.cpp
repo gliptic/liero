@@ -1,12 +1,14 @@
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <thread>
 
 #include "game.hpp"
 #include "math.hpp"
 #include "net/session.hpp"
+#include "net/tcArchive.hpp"
 
 struct SessionFixture {
   std::shared_ptr<Common> common;
@@ -271,4 +273,117 @@ TEST_CASE("NetSession connect to non-existent host fails", "[session]") {
 
   // Should not be in Playing state
   REQUIRE(client.sessionState() != NetSession::Playing);
+}
+
+TEST_CASE("NetSession TC sync transfers data when hashes differ", "[session][tc]") {
+  SessionFixture f;
+
+  // Create a modified TC in a temp directory so the client has a different hash.
+  // Copy the real TC and append a byte to tc.cfg to change the hash.
+  std::string tempTcDir = "/tmp/openliero_test_tc_modified";
+
+  // Pack the real TC, unpack to temp dir, then modify a file
+  auto archive = TcArchive::pack(f.tcRoot);
+  auto files = TcArchive::unpack(archive.data(), archive.size());
+  REQUIRE(!files.empty());
+
+  // Write files to temp dir
+  {
+    std::string cmd = "rm -rf " + tempTcDir + " && mkdir -p " + tempTcDir;
+    system(cmd.c_str());
+  }
+
+  for (auto& file : files) {
+    std::string fullPath = tempTcDir + "/" + file.name;
+    // Ensure parent dirs exist
+    std::string parentCmd = "mkdir -p \"$(dirname '" + fullPath + "')\"";
+    system(parentCmd.c_str());
+    FILE* fp = fopen(fullPath.c_str(), "wb");
+    REQUIRE(fp != nullptr);
+    fwrite(file.data.data(), 1, file.data.size(), fp);
+    fclose(fp);
+  }
+
+  // Modify a sound file to change the hash without breaking TOML parsing
+  {
+    std::string wavPath = tempTcDir + "/sounds/shotgun.wav";
+    FILE* fp = fopen(wavPath.c_str(), "ab");
+    REQUIRE(fp != nullptr);
+    fputc(0, fp);
+    fclose(fp);
+  }
+
+  FsNode clientTcRoot(tempTcDir);
+  uint32_t clientHash = TcArchive::computeHash(clientTcRoot);
+  uint32_t hostHash = TcArchive::computeHash(f.tcRoot);
+  REQUIRE(clientHash != hostHash);  // Ensure hashes actually differ
+
+  // Client uses the modified TC
+  auto clientCommon = std::make_shared<Common>();
+  clientCommon->load(clientTcRoot);
+
+  auto clientSettings = std::make_shared<Settings>(*f.settings);
+
+  // Track if onTcReloaded fires
+  bool tcReloaded = false;
+  std::shared_ptr<Common> receivedCommon;
+
+  NetSession host(f.common, f.settings, f.tcRoot);
+  NetSession client(clientCommon, clientSettings, clientTcRoot);
+
+  client.onTcReloaded = [&](std::shared_ptr<Common> newCommon) {
+    tcReloaded = true;
+    receivedCommon = newCommon;
+  };
+
+  REQUIRE(host.hostGame(0));
+  uint16_t port = host.transport().listeningPort();
+  REQUIRE(client.joinGame("127.0.0.1", port));
+
+  // Poll until both reach Playing state (TC transfer included)
+  bool ready = pollUntil(host, client, [&]() {
+    return host.sessionState() == NetSession::Playing &&
+           client.sessionState() == NetSession::Playing;
+  }, 10000);  // Allow more time for TC transfer
+
+  INFO("Host state: " << (int)host.sessionState());
+  INFO("Client state: " << (int)client.sessionState());
+  REQUIRE(ready);
+
+  // TC should have been reloaded on the client
+  REQUIRE(tcReloaded);
+  REQUIRE(receivedCommon != nullptr);
+
+  // Both games should have the same RNG seed (basic sanity)
+  REQUIRE(host.controller()->game.rand.x == client.controller()->game.rand.x);
+
+  // Clean up
+  system(("rm -rf " + tempTcDir).c_str());
+}
+
+TEST_CASE("NetSession TC sync skips transfer when hashes match", "[session][tc]") {
+  SessionFixture f;
+
+  // Both sides use the same TC — no transfer should happen
+  bool tcReloaded = false;
+
+  NetSession host(f.common, f.settings, f.tcRoot);
+  NetSession client(f.common, f.settings, f.tcRoot);
+
+  client.onTcReloaded = [&](std::shared_ptr<Common>) {
+    tcReloaded = true;
+  };
+
+  REQUIRE(host.hostGame(0));
+  uint16_t port = host.transport().listeningPort();
+  REQUIRE(client.joinGame("127.0.0.1", port));
+
+  bool ready = pollUntil(host, client, [&]() {
+    return host.sessionState() == NetSession::Playing &&
+           client.sessionState() == NetSession::Playing;
+  });
+
+  REQUIRE(ready);
+  // TC should NOT have been reloaded (same hash → skip)
+  REQUIRE_FALSE(tcReloaded);
 }

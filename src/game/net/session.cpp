@@ -361,14 +361,14 @@ void NetSession::onTcData(const void* data, size_t len) {
 
   // Write TC files to a temporary directory and reload Common
   std::string tempDir = "/tmp/openliero_tc_" + settings_->tc;
-  create_directories(tempDir);
+  create_directories(tempDir + "/");
 
   for (auto& file : files) {
     std::string fullPath = joinPath(tempDir, file.name);
-    // Ensure subdirectories exist
+    // Ensure subdirectories exist (pass with trailing / to create final segment)
     std::string dir = getRoot(fullPath);
     if (!dir.empty())
-      create_directories(dir);
+      create_directories(dir + "/");
     FILE* f = fopen(fullPath.c_str(), "wb");
     if (f) {
       fwrite(file.data.data(), 1, file.data.size(), f);
