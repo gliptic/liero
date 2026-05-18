@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.25..3.30)
 # options at top so they're easy to find
 option(OPENLIERO_BUILD_TCTOOL "Build tctool" OFF)
 option(OPENLIERO_BUILD_VIDEOTOOL "Build videotool" OFF)
+option(OPENLIERO_BUILD_FUZZER "Build desync fuzzer" OFF)
 option(OPENLIERO_USE_VCPKG "Use vcpkg to manage dependencies" ON)
 
 # tell cmake we have goodies in the cmake/ directory
@@ -305,6 +306,13 @@ if(OPENLIERO_BUILD_TESTS)
   catch_discover_tests(test_session
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   )
+endif()
+
+# desync fuzzer
+if(OPENLIERO_BUILD_FUZZER)
+  find_package(Threads REQUIRED)
+  add_executable(desync_fuzzer src/tools/desync_fuzzer.cpp)
+  target_link_libraries(desync_fuzzer PRIVATE game Threads::Threads)
 endif()
 
 # documentation
