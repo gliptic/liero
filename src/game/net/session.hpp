@@ -8,6 +8,7 @@
 
 #include "../controller/networkController.hpp"
 #include "../filesystem.hpp"
+#include "memoryFs.hpp"
 #include "transport.hpp"
 
 // Wires NetworkController and NetTransport together.
@@ -138,6 +139,7 @@ struct NetSession {
   FsNode tcRoot_;           // Root directory of the local TC
   uint32_t localTcHash_;    // Hash of local TC contents
   bool tcResolved_;         // True when TC exchange is complete
+  std::shared_ptr<MemoryFs> tcMemFs_;  // Keeps received TC data alive in memory
 
   // Desync detection
   bool desyncDetected_;

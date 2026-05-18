@@ -4,6 +4,7 @@
 #include <ctime>
 #include <miniz.h>
 
+#include "memoryFs.hpp"
 #include "tcArchive.hpp"
 
 NetSession::NetSession(std::shared_ptr<Common> common,
@@ -361,27 +362,18 @@ void NetSession::onTcData(const void* data, size_t len) {
   auto files = TcArchive::unpack(static_cast<const uint8_t*>(data), len);
   if (files.empty()) return;
 
-  // Write TC files to a temporary directory and reload Common
-  std::string tempDir = "/tmp/openliero_tc_" + settings_->tc;
-  create_directories(tempDir + "/");
-
+  // Load TC from memory (no disk writes — platform-agnostic)
+  auto memFs = std::make_shared<MemoryFs>();
   for (auto& file : files) {
-    std::string fullPath = joinPath(tempDir, file.name);
-    // Ensure subdirectories exist (pass with trailing / to create final segment)
-    std::string dir = getRoot(fullPath);
-    if (!dir.empty())
-      create_directories(dir + "/");
-    FILE* f = fopen(fullPath.c_str(), "wb");
-    if (f) {
-      fwrite(file.data.data(), 1, file.data.size(), f);
-      fclose(f);
-    }
+    memFs->files[file.name] = std::move(file.data);
   }
 
-  // Reload Common from the received TC
-  FsNode tcNode(tempDir);
+  // Keep the MemoryFs alive by storing it in the session
+  tcMemFs_ = memFs;
+
+  // Reload Common from the in-memory TC
   auto newCommon = std::make_shared<Common>();
-  newCommon->load(tcNode);
+  newCommon->load(memFs->root());
 
   common_ = newCommon;
   controller_ = std::make_unique<NetworkController>(common_, settings_, 1);
