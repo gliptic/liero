@@ -27,6 +27,8 @@ NetSession::NetSession(std::shared_ptr<Common> common,
     , tcRoot_(std::move(tcRoot))
     , localTcHash_(0)
     , tcResolved_(false)
+    , originalTcName_(settings_->tc)
+    , originalCommon_(common_)
     , desyncDetected_(false)
     , desyncFrame_(0)
 {
@@ -109,6 +111,15 @@ void NetSession::disconnect() {
   localReady_ = false;
   remoteReady_ = false;
   receivedMapData_.clear();
+
+  // Restore client's original TC if it was changed during the session
+  if (role_ == Client && tcMemFs_) {
+    settings_->tc = originalTcName_;
+    if (onTcReloaded)
+      onTcReloaded(originalCommon_);
+    common_ = originalCommon_;
+    tcMemFs_.reset();
+  }
 }
 
 void NetSession::onConnected() {

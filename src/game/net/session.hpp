@@ -140,6 +140,8 @@ struct NetSession {
   uint32_t localTcHash_;    // Hash of local TC contents
   bool tcResolved_;         // True when TC exchange is complete
   std::shared_ptr<MemoryFs> tcMemFs_;  // Keeps received TC data alive in memory
+  std::string originalTcName_;         // Client's original TC name (restored on disconnect)
+  std::shared_ptr<Common> originalCommon_;  // Client's original Common (restored on disconnect)
 
   // Desync detection
   bool desyncDetected_;
