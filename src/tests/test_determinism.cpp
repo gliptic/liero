@@ -287,7 +287,7 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
     gameA.resetWorms();
     gameB.resetWorms();
 
-    gvl::mwc inputRng(seed ^ 0x12345678);
+    gvl::mwc inputRng(seed * 2654435761u + 1);
 
     constexpr int NUM_FRAMES = 5000;
     int deathCount = 0;
