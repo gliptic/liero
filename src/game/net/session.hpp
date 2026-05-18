@@ -114,6 +114,10 @@ struct NetSession {
 
   NetworkController* controllerPtr_;  // non-owning, survives releaseController()
 
+  // Buffer for inputs arriving before controller is ready
+  struct PendingInput { uint32_t frame; uint8_t input; };
+  std::vector<PendingInput> pendingInputs_;
+
   uint32_t gameSeed_;
   uint32_t localSettingsHash_;
   bool handshakeReceived_;

@@ -193,6 +193,8 @@ void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
 void NetSession::onRemoteInput(uint32_t frame, uint8_t input) {
   if (controllerPtr_)
     controllerPtr_->injectRemoteInput(frame, input);
+  else
+    pendingInputs_.push_back({frame, input});
 }
 
 void NetSession::onPlayerInfo(const NetTransport::PlayerInfo& info) {
@@ -453,6 +455,13 @@ void NetSession::tryStartGame() {
   }
 
   controllerPtr_ = controller_.get();
+
+  // Flush any inputs that arrived before the controller was ready
+  for (auto& pi : pendingInputs_) {
+    controllerPtr_->injectRemoteInput(pi.frame, pi.input);
+  }
+  pendingInputs_.clear();
+
   sessionState_ = Playing;
 }
 
@@ -570,6 +579,13 @@ void NetSession::startRematch() {
     controller_->injectRemoteInput(i, 0);
 
   controllerPtr_ = controller_.get();
+
+  // Flush any inputs that arrived before the controller was ready
+  for (auto& pi : pendingInputs_) {
+    controllerPtr_->injectRemoteInput(pi.frame, pi.input);
+  }
+  pendingInputs_.clear();
+
   localReady_ = false;
   remoteReady_ = false;
   sessionState_ = Playing;
@@ -613,6 +629,13 @@ void NetSession::startRematchClient() {
     controller_->injectRemoteInput(i, 0);
 
   controllerPtr_ = controller_.get();
+
+  // Flush any inputs that arrived before the controller was ready
+  for (auto& pi : pendingInputs_) {
+    controllerPtr_->injectRemoteInput(pi.frame, pi.input);
+  }
+  pendingInputs_.clear();
+
   localReady_ = false;
   remoteReady_ = false;
   handshakeReceived_ = false;
