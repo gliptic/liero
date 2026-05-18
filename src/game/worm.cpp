@@ -483,7 +483,7 @@ void Worm::process(Game& game)
 				}
 
 				visible = false;
-				killedTimer = 150;
+				killedTimer = KilledTimerInitial;
 
 				int max = 120 * game.settings->blood / 100;
 

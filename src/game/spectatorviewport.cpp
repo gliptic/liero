@@ -12,8 +12,7 @@ void SpectatorViewport::process(Game& game)
 	int realShake = ftoi(shake);
 
 	// FIXME this is a bit broken
-	// TODO: This depends on what is the starting killedTimer
-	if (game.wormByIdx(0)->killedTimer == 150 || game.wormByIdx(1)->killedTimer == 150)
+	if (game.wormByIdx(0)->killedTimer == Worm::KilledTimerInitial || game.wormByIdx(1)->killedTimer == Worm::KilledTimerInitial)
 	{
 		bannerY = -8;
 	}

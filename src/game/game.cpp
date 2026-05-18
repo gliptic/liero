@@ -176,7 +176,7 @@ void Game::resetWorms()
 		w.lives = settings->lives; // Not in the original!
 		w.kills = 0;
 		w.visible = false;
-		w.killedTimer = 150;
+		w.killedTimer = Worm::KilledTimerInitial;
 
 		w.currentWeapon = 1;
 	}

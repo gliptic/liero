@@ -309,9 +309,10 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
       gameA.processFrame();
       gameB.processFrame();
 
-      // Track deaths for info output
+      // Track deaths for info output — killedTimer is set to 150 on death,
+      // then decremented each frame, so 149 means "just died this frame"
       for (auto* w : gameA.worms) {
-        if (!w->visible && w->killedTimer == 149)
+        if (!w->visible && w->killedTimer == Worm::KilledTimerInitial - 1)
           ++deathCount;
       }
 
