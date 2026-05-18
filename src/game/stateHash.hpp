@@ -108,10 +108,12 @@ inline uint32_t hashGameState(Game& game) {
 }
 
 // Per-component hashes for diagnostic output on desync.
+static constexpr size_t NumPlayers = 2;
+
 struct ComponentHashes {
   uint32_t rng;
   uint32_t level;
-  uint32_t worms[2];
+  uint32_t worms[NumPlayers];
   uint32_t bobjects;
   uint32_t bonuses;
   uint32_t sobjects;
@@ -131,7 +133,7 @@ inline ComponentHashes hashGameComponents(Game& game) {
     c.level = h;
   }
 
-  for (size_t wi = 0; wi < game.worms.size() && wi < 2; ++wi) {
+  for (size_t wi = 0; wi < game.worms.size() && wi < NumPlayers; ++wi) {
     auto* w = game.worms[wi];
     uint32_t h = 1;
     h = h * 31 + static_cast<uint32_t>(w->pos.x);
