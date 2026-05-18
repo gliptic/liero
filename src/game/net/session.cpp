@@ -573,6 +573,11 @@ void NetSession::startRematch() {
         transport_.sendInput(frame, input);
       },
       nullptr);
+  controller_->setChecksumCallback(
+      [this](uint32_t frame, uint32_t checksum) {
+        transport_.sendChecksum(frame, checksum);
+        onLocalChecksum(frame, checksum);
+      });
   controller_->setPauseCallbacks(
       [this]() { transport_.sendPause(); },
       [this]() { transport_.sendResume(); });
@@ -623,6 +628,11 @@ void NetSession::startRematchClient() {
         transport_.sendInput(frame, input);
       },
       nullptr);
+  controller_->setChecksumCallback(
+      [this](uint32_t frame, uint32_t checksum) {
+        transport_.sendChecksum(frame, checksum);
+        onLocalChecksum(frame, checksum);
+      });
   controller_->setPauseCallbacks(
       [this]() { transport_.sendPause(); },
       [this]() { transport_.sendResume(); });
