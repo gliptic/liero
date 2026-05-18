@@ -436,6 +436,7 @@ void NetSession::tryStartGame() {
   controller_->setChecksumCallback(
       [this](uint32_t frame, uint32_t checksum) {
         transport_.sendChecksum(frame, checksum);
+        onLocalChecksum(frame, checksum);
       });
 
   // Wire pause/resume callbacks
@@ -708,13 +709,41 @@ void NetSession::onChecksum(uint32_t frame, uint32_t remoteChecksum) {
   if (desyncDetected_ || sessionState_ != Playing || !controllerPtr_)
     return;
 
-  // Compute our local checksum for the same frame
-  uint32_t localChecksum = fastGameChecksum(controllerPtr_->game);
+  // Look up our stored local checksum for this exact frame
+  size_t slot = frame % CHECKSUM_BUFFER_SIZE;
+  if (checksumBuffer_[slot].valid && checksumBuffer_[slot].frame == frame) {
+    if (checksumBuffer_[slot].checksum != remoteChecksum) {
+      desyncDetected_ = true;
+      desyncFrame_ = frame;
+      fprintf(stderr, "DESYNC DETECTED at frame %u! local=%08x remote=%08x\n",
+              frame, checksumBuffer_[slot].checksum, remoteChecksum);
+    }
+  } else {
+    // We haven't processed this frame yet — store for later comparison
+    if (pendingRemoteCount_ < CHECKSUM_BUFFER_SIZE) {
+      pendingRemoteChecksums_[pendingRemoteCount_++] = {frame, remoteChecksum};
+    }
+  }
+}
 
-  if (localChecksum != remoteChecksum) {
-    desyncDetected_ = true;
-    desyncFrame_ = frame;
-    fprintf(stderr, "DESYNC DETECTED at frame %u! local=%08x remote=%08x\n",
-            frame, localChecksum, remoteChecksum);
+void NetSession::onLocalChecksum(uint32_t frame, uint32_t checksum) {
+  // Store in ring buffer
+  size_t slot = frame % CHECKSUM_BUFFER_SIZE;
+  checksumBuffer_[slot] = {frame, checksum, true};
+
+  // Check pending remote checksums
+  for (size_t i = 0; i < pendingRemoteCount_;) {
+    if (pendingRemoteChecksums_[i].frame == frame) {
+      if (pendingRemoteChecksums_[i].checksum != checksum) {
+        desyncDetected_ = true;
+        desyncFrame_ = frame;
+        fprintf(stderr, "DESYNC DETECTED at frame %u! local=%08x remote=%08x\n",
+                frame, checksum, pendingRemoteChecksums_[i].checksum);
+      }
+      // Remove by swapping with last
+      pendingRemoteChecksums_[i] = pendingRemoteChecksums_[--pendingRemoteCount_];
+    } else {
+      ++i;
+    }
   }
 }

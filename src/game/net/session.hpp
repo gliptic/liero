@@ -139,6 +139,16 @@ struct NetSession {
   bool desyncDetected_;
   uint32_t desyncFrame_;
   void onChecksum(uint32_t frame, uint32_t checksum);
+  void onLocalChecksum(uint32_t frame, uint32_t checksum);
+
+  // Ring buffer of local checksums for frame-accurate comparison
+  static constexpr size_t CHECKSUM_BUFFER_SIZE = 128;
+  struct FrameChecksum { uint32_t frame; uint32_t checksum; bool valid; };
+  FrameChecksum checksumBuffer_[CHECKSUM_BUFFER_SIZE] = {};
+  // Pending remote checksums waiting for local frame to catch up
+  struct PendingRemote { uint32_t frame; uint32_t checksum; };
+  PendingRemote pendingRemoteChecksums_[CHECKSUM_BUFFER_SIZE] = {};
+  size_t pendingRemoteCount_ = 0;
 
   static constexpr uint16_t DEFAULT_PORT = 19532;
 };
