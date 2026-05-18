@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "../controller/networkController.hpp"
+#include "../filesystem.hpp"
 #include "transport.hpp"
 
 // Wires NetworkController and NetTransport together.
@@ -23,7 +24,8 @@ struct NetSession {
     Failed,          // Connection failed
   };
 
-  NetSession(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings);
+  NetSession(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings,
+             FsNode tcRoot);
   ~NetSession();
 
   // Start as host. Listens on the given port.
@@ -74,6 +76,10 @@ struct NetSession {
   bool desyncDetected() const { return desyncDetected_; }
   uint32_t desyncFrame() const { return desyncFrame_; }
 
+  // TC sync: called when client needs to reload Common with new TC data.
+  // The callback receives the new Common. Caller must update gfx.common.
+  std::function<void(std::shared_ptr<Common>)> onTcReloaded;
+
   // Access the transport (for testing)
   NetTransport& transport() { return transport_; }
 
@@ -90,6 +96,9 @@ struct NetSession {
   void onRematchReady(bool ready);
   void onRematchLevel(bool randomLevel, std::string levelFile);
   void onRemoteInput(uint32_t frame, uint8_t input);
+  void onTcInfo(uint32_t hash, std::string name);
+  void onTcResponse(bool needData);
+  void onTcData(const void* data, size_t len);
   void wireCallbacks();
   void tryStartGame();
   void startRematchClient();
@@ -120,6 +129,11 @@ struct NetSession {
 
   // Stored compressed map data (client receives from host)
   std::vector<uint8_t> receivedMapData_;
+
+  // TC sync state
+  FsNode tcRoot_;           // Root directory of the local TC
+  uint32_t localTcHash_;    // Hash of local TC contents
+  bool tcResolved_;         // True when TC exchange is complete
 
   // Desync detection
   bool desyncDetected_;

@@ -11,13 +11,14 @@
 struct SessionFixture {
   std::shared_ptr<Common> common;
   std::shared_ptr<Settings> settings;
+  FsNode tcRoot;
 
   SessionFixture() {
     precomputeTables();
 
     common = std::make_shared<Common>();
-    FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-    common->load(std::move(tcRoot));
+    tcRoot = FsNode("data") / "TC" / "openliero";
+    common->load(tcRoot);
 
     settings = std::make_shared<Settings>();
     settings->lives = 10;
@@ -42,8 +43,8 @@ static bool pollUntil(NetSession& a, NetSession& b, Pred pred, int maxMs = 3000)
 TEST_CASE("NetSession host and client connect and handshake", "[session]") {
   SessionFixture f;
 
-  NetSession host(f.common, f.settings);
-  NetSession client(f.common, f.settings);
+  NetSession host(f.common, f.settings, f.tcRoot);
+  NetSession client(f.common, f.settings, f.tcRoot);
 
   REQUIRE(host.hostGame(0));
   uint16_t port = host.transport().listeningPort();
@@ -83,8 +84,8 @@ TEST_CASE("NetSession syncs host settings to client", "[session]") {
   for (int i = 0; i < 40; ++i)
     settingsB->weapTable[i] = (i < 10) ? 2 : 0;
 
-  NetSession host(f.common, f.settings);
-  NetSession client(f.common, settingsB);
+  NetSession host(f.common, f.settings, f.tcRoot);
+  NetSession client(f.common, settingsB, f.tcRoot);
 
   REQUIRE(host.hostGame(0));
   uint16_t port = host.transport().listeningPort();
@@ -141,8 +142,8 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
   settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[3] = 14;
   settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[4] = 40;
 
-  NetSession host(f.common, settingsHost);
-  NetSession client(f.common, settingsClient);
+  NetSession host(f.common, settingsHost, f.tcRoot);
+  NetSession client(f.common, settingsClient, f.tcRoot);
 
   REQUIRE(host.hostGame(0));
   uint16_t port = host.transport().listeningPort();
@@ -180,8 +181,8 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
 TEST_CASE("NetSession plays frames over real network", "[session]") {
   SessionFixture f;
 
-  NetSession host(f.common, f.settings);
-  NetSession client(f.common, f.settings);
+  NetSession host(f.common, f.settings, f.tcRoot);
+  NetSession client(f.common, f.settings, f.tcRoot);
 
   REQUIRE(host.hostGame(0));
   uint16_t port = host.transport().listeningPort();
@@ -225,8 +226,8 @@ TEST_CASE("NetSession plays frames over real network", "[session]") {
 TEST_CASE("NetSession client detects host disconnect", "[session]") {
   SessionFixture f;
 
-  NetSession host(f.common, f.settings);
-  NetSession client(f.common, f.settings);
+  NetSession host(f.common, f.settings, f.tcRoot);
+  NetSession client(f.common, f.settings, f.tcRoot);
 
   REQUIRE(host.hostGame(0));
   uint16_t port = host.transport().listeningPort();
@@ -256,7 +257,7 @@ TEST_CASE("NetSession client detects host disconnect", "[session]") {
 TEST_CASE("NetSession connect to non-existent host fails", "[session]") {
   SessionFixture f;
 
-  NetSession client(f.common, f.settings);
+  NetSession client(f.common, f.settings, f.tcRoot);
   // Connect to a port where nobody is listening
   REQUIRE(client.joinGame("127.0.0.1", 19599));
 

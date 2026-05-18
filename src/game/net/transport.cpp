@@ -188,6 +188,29 @@ bool NetTransport::poll() {
             case PacketEndMatch:
               if (onEndMatch) onEndMatch();
               break;
+
+            case PacketTcInfo:
+              if (len >= 5 && onTcInfo) {
+                uint32_t hash;
+                std::memcpy(&hash, data + 1, 4);
+                std::string name;
+                if (len > 5)
+                  name.assign(reinterpret_cast<const char*>(data + 5), len - 5);
+                onTcInfo(hash, std::move(name));
+              }
+              break;
+
+            case PacketTcResponse:
+              if (len == 2 && onTcResponse) {
+                onTcResponse(data[1] != 0);
+              }
+              break;
+
+            case PacketTcData:
+              if (len > 1 && onTcData) {
+                onTcData(data + 1, len - 1);
+              }
+              break;
           }
         }
 
@@ -296,6 +319,35 @@ void NetTransport::sendRematchLevel(bool randomLevel, const std::string& levelFi
 void NetTransport::sendEndMatch() {
   uint8_t buf[1] = {PacketEndMatch};
   sendPacket(buf, sizeof(buf));
+}
+
+void NetTransport::sendTcInfo(uint32_t hash, const std::string& name) {
+  std::vector<uint8_t> buf(1 + 4 + name.size());
+  buf[0] = PacketTcInfo;
+  std::memcpy(buf.data() + 1, &hash, 4);
+  std::memcpy(buf.data() + 5, name.data(), name.size());
+  sendPacket(buf.data(), buf.size());
+}
+
+void NetTransport::sendTcResponse(bool needData) {
+  uint8_t buf[2];
+  buf[0] = PacketTcResponse;
+  buf[1] = needData ? 1 : 0;
+  sendPacket(buf, sizeof(buf));
+}
+
+void NetTransport::sendTcData(const void* data, size_t len) {
+  std::vector<uint8_t> buf(1 + len);
+  buf[0] = PacketTcData;
+  std::memcpy(buf.data() + 1, data, len);
+
+  if (!peer_) return;
+  ENetPacket* packet =
+      enet_packet_create(buf.data(), buf.size(), ENET_PACKET_FLAG_RELIABLE);
+  if (!packet) return;
+  if (enet_peer_send(peer_, CHANNEL_RELIABLE, packet) < 0) {
+    enet_packet_destroy(packet);
+  }
 }
 
 void NetTransport::sendPacket(const void* data, size_t len) {

@@ -21,7 +21,14 @@ NetConnectState::NetConnectState(NetSession::Role role, std::string address, uin
 
 void NetConnectState::enter()
 {
-	auto session = std::make_unique<NetSession>(gfx->common, gfx->settings);
+	FsNode tcRoot = gfx->getConfigNode() / "TC" / gfx->settings->tc;
+	auto session = std::make_unique<NetSession>(gfx->common, gfx->settings, tcRoot);
+
+	// When client receives a new TC, update global gfx.common
+	session->onTcReloaded = [](std::shared_ptr<Common> newCommon) {
+		::gfx.common = newCommon;
+		::gfx.playRenderer.loadPalette(*newCommon);
+	};
 
 	bool ok = false;
 	if (role_ == NetSession::Host)

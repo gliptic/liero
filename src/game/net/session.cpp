@@ -4,8 +4,11 @@
 #include <ctime>
 #include <miniz.h>
 
+#include "tcArchive.hpp"
+
 NetSession::NetSession(std::shared_ptr<Common> common,
-                       std::shared_ptr<Settings> settings)
+                       std::shared_ptr<Settings> settings,
+                       FsNode tcRoot)
     : role_(Host)
     , sessionState_(Idle)
     , common_(std::move(common))
@@ -20,11 +23,15 @@ NetSession::NetSession(std::shared_ptr<Common> common,
     , mapDataReceived_(false)
     , localReady_(false)
     , remoteReady_(false)
+    , tcRoot_(std::move(tcRoot))
+    , localTcHash_(0)
+    , tcResolved_(false)
     , desyncDetected_(false)
     , desyncFrame_(0)
 {
   std::memset(&remotePlayerInfo_, 0, sizeof(remotePlayerInfo_));
   localSettingsHash_ = computeSettingsHash();
+  localTcHash_ = TcArchive::computeHash(tcRoot_);
   wireCallbacks();
 }
 
@@ -106,6 +113,12 @@ void NetSession::disconnect() {
 void NetSession::onConnected() {
   sessionState_ = Handshaking;
 
+  // Host sends TC info first so client can verify/request TC data
+  if (role_ == Host) {
+    transport_.sendTcInfo(localTcHash_, settings_->tc);
+    tcResolved_ = true;  // Host always has correct TC
+  }
+
   // Both sides send their handshake.
   // Host includes the seed; client sends 0 (host's seed is authoritative).
   uint32_t seedToSend = (role_ == Host) ? gameSeed_ : 0;
@@ -126,7 +139,7 @@ void NetSession::onConnected() {
 
   // Host sends authoritative match settings
   if (role_ == Host) {
-    NetTransport::MatchSettingsData msd;
+    NetTransport::MatchSettingsData msd{};
     msd.lives = settings_->lives;
     msd.loadingTime = settings_->loadingTime;
     msd.gameMode = settings_->gameMode;
@@ -137,6 +150,10 @@ void NetSession::onConnected() {
     msd.loadChange = settings_->loadChange ? 1 : 0;
     for (int i = 0; i < 40; ++i)
       msd.weapTable[i] = settings_->weapTable[i];
+    msd.regenerateLevel = settings_->regenerateLevel ? 1 : 0;
+    msd.shadow = settings_->shadow ? 1 : 0;
+    msd.namesOnBonuses = settings_->namesOnBonuses ? 1 : 0;
+    msd.bloodParticleMax = settings_->bloodParticleMax;
     transport_.sendMatchSettings(msd);
     matchSettingsReceived_ = true;  // Host already has correct settings
     mapDataReceived_ = true;        // Host generates locally
@@ -144,7 +161,7 @@ void NetSession::onConnected() {
 
   // Check if we can start (all data received)
   if (handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ &&
-      mapDataReceived_)
+      mapDataReceived_ && tcResolved_)
     tryStartGame();
 }
 
@@ -168,7 +185,7 @@ void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
   handshakeReceived_ = true;
 
   if (handshakeSent_ && playerInfoReceived_ && matchSettingsReceived_ &&
-      mapDataReceived_)
+      mapDataReceived_ && tcResolved_)
     tryStartGame();
 }
 
@@ -182,7 +199,7 @@ void NetSession::onPlayerInfo(const NetTransport::PlayerInfo& info) {
   playerInfoReceived_ = true;
 
   if (handshakeSent_ && handshakeReceived_ && matchSettingsReceived_ &&
-      mapDataReceived_)
+      mapDataReceived_ && tcResolved_)
     tryStartGame();
 }
 
@@ -199,12 +216,16 @@ void NetSession::onMatchSettings(const NetTransport::MatchSettingsData& data) {
     settings_->loadChange = data.loadChange != 0;
     for (int i = 0; i < 40; ++i)
       settings_->weapTable[i] = data.weapTable[i];
+    settings_->regenerateLevel = data.regenerateLevel != 0;
+    settings_->shadow = data.shadow != 0;
+    settings_->namesOnBonuses = data.namesOnBonuses != 0;
+    settings_->bloodParticleMax = data.bloodParticleMax;
   }
 
   matchSettingsReceived_ = true;
 
   if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
-      mapDataReceived_)
+      mapDataReceived_ && tcResolved_)
     tryStartGame();
 }
 
@@ -228,7 +249,7 @@ void NetSession::onMapData(const void* data, size_t len) {
   }
 
   if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
-      matchSettingsReceived_)
+      matchSettingsReceived_ && tcResolved_)
     tryStartGame();
 }
 
@@ -283,6 +304,92 @@ void NetSession::wireCallbacks() {
   transport_.onRematchLevel = [this](bool random, std::string file) {
     onRematchLevel(random, std::move(file));
   };
+  transport_.onTcInfo = [this](uint32_t hash, std::string name) {
+    onTcInfo(hash, std::move(name));
+  };
+  transport_.onTcResponse = [this](bool needData) {
+    onTcResponse(needData);
+  };
+  transport_.onTcData = [this](const void* data, size_t len) {
+    onTcData(data, len);
+  };
+}
+
+void NetSession::onTcInfo(uint32_t hash, std::string name) {
+  // Client receives TC info from host
+  if (role_ != Client) return;
+
+  if (name == settings_->tc && hash == localTcHash_) {
+    // Same TC, no transfer needed
+    transport_.sendTcResponse(false);
+    tcResolved_ = true;
+
+    if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
+        matchSettingsReceived_ && mapDataReceived_)
+      tryStartGame();
+  } else {
+    // Different TC — request the data
+    settings_->tc = name;
+    transport_.sendTcResponse(true);
+  }
+}
+
+void NetSession::onTcResponse(bool needData) {
+  // Host receives client's response about TC
+  if (role_ != Host) return;
+
+  if (needData) {
+    // Client needs the TC archive — pack and send it
+    auto archive = TcArchive::pack(tcRoot_);
+    transport_.sendTcData(archive.data(), archive.size());
+  }
+  // If !needData, the client already has the TC — nothing more to do
+}
+
+void NetSession::onTcData(const void* data, size_t len) {
+  // Client receives TC archive from host
+  if (role_ != Client) return;
+
+  // Reject oversized TC data
+  static constexpr size_t MAX_TC_DATA = 50 * 1024 * 1024;  // 50 MB
+  if (len > MAX_TC_DATA) return;
+
+  auto files = TcArchive::unpack(static_cast<const uint8_t*>(data), len);
+  if (files.empty()) return;
+
+  // Write TC files to a temporary directory and reload Common
+  std::string tempDir = "/tmp/openliero_tc_" + settings_->tc;
+  create_directories(tempDir);
+
+  for (auto& file : files) {
+    std::string fullPath = joinPath(tempDir, file.name);
+    // Ensure subdirectories exist
+    std::string dir = getRoot(fullPath);
+    if (!dir.empty())
+      create_directories(dir);
+    FILE* f = fopen(fullPath.c_str(), "wb");
+    if (f) {
+      fwrite(file.data.data(), 1, file.data.size(), f);
+      fclose(f);
+    }
+  }
+
+  // Reload Common from the received TC
+  FsNode tcNode(tempDir);
+  auto newCommon = std::make_shared<Common>();
+  newCommon->load(tcNode);
+
+  common_ = newCommon;
+  controller_ = std::make_unique<NetworkController>(common_, settings_, 1);
+
+  if (onTcReloaded)
+    onTcReloaded(newCommon);
+
+  tcResolved_ = true;
+
+  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
+      matchSettingsReceived_ && mapDataReceived_)
+    tryStartGame();
 }
 
 void NetSession::tryStartGame() {
@@ -586,6 +693,10 @@ uint32_t NetSession::computeSettingsHash() const {
   mix(settings_->flagsToWin);
   mix(static_cast<uint32_t>(settings_->gameMode));
   mix(settings_->loadingTime);
+  mix(settings_->regenerateLevel ? 1u : 0u);
+  mix(settings_->shadow ? 1u : 0u);
+  mix(settings_->namesOnBonuses ? 1u : 0u);
+  mix(static_cast<uint32_t>(settings_->bloodParticleMax));
 
   return hash;
 }

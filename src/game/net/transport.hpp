@@ -23,6 +23,9 @@ struct NetTransport {
     PacketRematchReady = 9,  // Ready toggle: [type(1) | ready(1)]
     PacketRematchLevel = 10, // Level selection: [type(1) | randomLevel(1) | levelFile(N)]
     PacketEndMatch = 11,     // End match request: [type(1)]
+    PacketTcInfo = 12,       // TC info: [type(1) | hash(4) | name(N)]
+    PacketTcResponse = 13,   // TC response: [type(1) | needData(1)]
+    PacketTcData = 14,       // TC archive: [type(1) | data(N)]
   };
 
   // Player info exchanged between peers (weapons + cosmetics)
@@ -44,6 +47,11 @@ struct NetTransport {
     int32_t flagsToWin;
     uint8_t loadChange;
     uint32_t weapTable[40];
+    // Additional synced settings
+    uint8_t regenerateLevel;
+    uint8_t shadow;
+    uint8_t namesOnBonuses;
+    int32_t bloodParticleMax;
   };
 
   // Connection state
@@ -102,6 +110,15 @@ struct NetTransport {
   // Send end-match request (either player can end the match early)
   void sendEndMatch();
 
+  // Send TC info (name + hash) — host sends after connect
+  void sendTcInfo(uint32_t hash, const std::string& name);
+
+  // Send TC response (client tells host whether it needs the TC data)
+  void sendTcResponse(bool needData);
+
+  // Send TC archive data (host sends if client needs it)
+  void sendTcData(const void* data, size_t len);
+
   State state() const { return state_; }
 
   // Returns the port the host is listening on (useful when binding to port 0).
@@ -119,6 +136,9 @@ struct NetTransport {
   std::function<void(bool ready)> onRematchReady;
   std::function<void(bool randomLevel, std::string levelFile)> onRematchLevel;
   std::function<void()> onEndMatch;
+  std::function<void(uint32_t hash, std::string name)> onTcInfo;
+  std::function<void(bool needData)> onTcResponse;
+  std::function<void(const void* data, size_t len)> onTcData;
   std::function<void()> onConnected;
   std::function<void()> onDisconnected;
 
