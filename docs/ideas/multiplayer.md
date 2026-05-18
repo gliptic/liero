@@ -1,5 +1,7 @@
 # Multiplayer for Open Liero
 
+> **⚠️ Keep this document up to date.** When multiplayer-related code changes, update the relevant sections here. This is the single source of truth for multiplayer architecture decisions, protocol details, and learnings.
+
 ## Problem Statement
 
 How might we enable two-player networked multiplayer in Open Liero while preserving 100% gameplay fidelity with the local experience?
@@ -63,6 +65,7 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 5. ~~**UI**~~ ✅ — HOST GAME / JOIN GAME menu options, IP address input, connection status screen
 6. ~~**Weapon selection + settings sync**~~ ✅ — Integrated weapon selection screen, synced RNG, player info exchange, host-authoritative match settings, edge detection for pressedOnce semantics
 7. ~~**Map transfer**~~ ✅ — Host generates the level and sends compressed map data to client during handshake, ensuring identical levels regardless of local files
+8. ~~**TC + full settings sync**~~ ✅ — Two-phase TC exchange (hash check → archive transfer if needed), plus all gameplay-affecting settings synced from host to client
 
 ## How to Play
 
@@ -138,7 +141,10 @@ game logic.
 The `NetTransport` (`src/game/net/transport.hpp`) wraps ENet and provides:
 
 - **Three packet types:** `PacketInput` (6 bytes: type + frame + input), `PacketHandshake`
-  (9 bytes: type + seed + settingsHash), `PacketChecksum` (9 bytes: type + frame + checksum)
+  (9 bytes: type + seed + settingsHash), `PacketChecksum` (9 bytes: type + frame + checksum).
+  Additional types: `PacketPlayerInfo` (4), `PacketMatchSettings` (5), `PacketMapData` (6),
+  `PacketPause` (7), `PacketResume` (8), `PacketRematchReady` (9), `PacketRematchLevel` (10),
+  `PacketEndMatch` (11), `PacketTcInfo` (12), `PacketTcResponse` (13), `PacketTcData` (14).
 - **Two ENet channels:** Channel 0 = reliable ordered (inputs, handshake), Channel 1 =
   unreliable (checksums — losing one is fine)
 - **Callback-based:** `onRemoteInput`, `onHandshake`, `onChecksum`, `onConnected`,
@@ -161,7 +167,8 @@ together. It manages the full connection lifecycle:
   authoritative, client sends 0) and a settings hash. If hashes don't match, the session
   moves to Failed state — prevents playing with incompatible settings.
 - **Settings hash:** FNV-1a hash of gameplay-affecting settings (lives, loading time,
-  game mode, blood, max bonuses, time to lose, flags to win, load change).
+  game mode, blood, max bonuses, time to lose, flags to win, load change, regenerate level,
+  shadow, names on bonuses, blood particle max, zone timeout).
 - **RNG sync:** The host generates a random seed from `std::time()`. After handshake
   completes, both peers `game.rand.seed(gameSeed_)` before starting the game, ensuring
   identical simulation state.
@@ -199,7 +206,7 @@ The UI integration uses the existing state stack and menu system:
 ## Open Questions
 
 - ~~What UDP library to use?~~ **Answered:** zpl-c/enet v2.6.5 via vcpkg overlay port. IPv6, reliable channels, lightweight.
-- ~~Should we sync game settings/TC data hash to prevent mismatched clients from playing?~~ **Answered:** Yes. `NetSession::computeSettingsHash()` computes an FNV-1a hash of gameplay-affecting settings and both peers exchange it during handshake. Mismatch → Failed state.
+- ~~Should we sync game settings/TC data hash to prevent mismatched clients from playing?~~ **Answered:** Yes. Full TC data is transferred if hashes differ (two-phase: name+hash → need/skip → archive). All gameplay settings synced via `MatchSettingsData`. Settings hash includes all synced fields.
 - ~~Is there any state in `gvl::mwc` (the PRNG) beyond the two 32-bit values that needs synchronizing?~~ **Answered:** No, just `x` and `c`. Seed sync is sufficient.
 - Should the input delay be adaptive (based on measured RTT) or fixed?
 - How to handle disconnection more gracefully? Currently disconnects immediately; could add pause + timeout + reconnect.
@@ -256,13 +263,48 @@ available locally.
   `onMapData()` callback → `loadLevelFromData()` restores level + RNG state →
   `NetworkController::focus()` skips `generateFromSettings()` since `levelPreloaded` is set
 
-### Settings and player info sync (2026-05-17)
+### TC (total conversion) sync (2026-05-18)
+
+The TC defines weapons, objects, sprites, sounds, materials, and constants. Both peers must
+use identical TC data for deterministic simulation. A two-phase protocol avoids transferring
+data when both players already have the same TC:
+
+- **New packet types:** `PacketTcInfo` (type 12: hash + name), `PacketTcResponse` (type 13:
+  needData flag), `PacketTcData` (type 14: compressed archive)
+- **Protocol flow:**
+  1. Host sends `PacketTcInfo` (FNV-1a hash of all TC file contents + TC name) on connect
+  2. Client compares name and hash with local TC
+  3. If match → client replies `PacketTcResponse(needData=false)` → TC resolved
+  4. If mismatch → client replies `PacketTcResponse(needData=true)` → host packs and sends archive
+- **Archive format:** `compressed_flag(1) + rawSize(4) + payload`. Raw payload is:
+  `numFiles(4)` then per file `nameLen(2) + name + dataLen(4) + data`. Compressed with miniz.
+- **TC hashing:** Files are collected recursively and sorted lexicographically by relative path.
+  FNV-1a is computed over all filenames and file contents in order. This ensures deterministic
+  hash regardless of filesystem enumeration order.
+- **Client reload:** On receiving TC data, the client extracts files to `/tmp/openliero_tc_<name>`,
+  creates a new `Common`, and fires `onTcReloaded` callback so `NetConnectState` can update
+  `gfx.common` and reload the palette.
+- **Implementation:** `src/game/net/tcArchive.hpp/cpp` provides `computeHash()`, `pack()`, and
+  `unpack()` utilities.
+- **Game start gating:** `tryStartGame()` requires `tcResolved_ == true` in addition to all
+  other handshake flags.
+
+### Settings and player info sync (2026-05-17, updated 2026-05-18)
 
 Host-authoritative match settings model implemented:
 - Both peers exchange `PacketPlayerInfo` (weapons[5] + color + rgb[3]) for their worm
 - Host sends `PacketMatchSettings` with all gameplay settings; client applies them
-- Game starts only when handshake + playerInfo + matchSettings all received
+- Game starts only when handshake + playerInfo + matchSettings + TC sync all received
 - Settings hash mismatch rejection removed (host is authority)
+
+**Full list of synced settings in `MatchSettingsData`:**
+- `lives`, `loadingTime`, `gameMode`, `blood`, `maxBonuses`, `timeToLose`, `flagsToWin`
+- `loadChange`, `weapTable[40]`
+- `regenerateLevel` — whether level regenerates between rounds
+- `shadow` — worm shadow rendering
+- `namesOnBonuses` — bonus label display
+- `bloodParticleMax` — maximum blood particles
+- `zoneTimeout` — Holdazone capture/decay timing
 
 ### In-game pressedOnce edge detection (2026-05-17)
 
