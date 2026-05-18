@@ -116,6 +116,9 @@ cmake --build build/$PRESET --target desync_fuzzer
 # Long run with more parallelism
 ./build/$PRESET/desync_fuzzer --iterations 1000 --frames 30000 -j 32
 
+# Test with simulated network jitter (random packet delay)
+./build/$PRESET/desync_fuzzer --iterations 100 --frames 10000 --jitter 5
+
 # Reproduce a specific failure
 ./build/$PRESET/desync_fuzzer --seed 12345 --iterations 1
 ```
@@ -125,6 +128,7 @@ Options:
 - `--frames N` — simulation frames per iteration (default: 30000)
 - `--seed N` — fixed base seed for reproducibility (default: time-based)
 - `--jobs N`, `-j N` — parallel worker threads (default: 16)
+- `--jitter N` — random packet delivery delay of 0-N ticks (default: 0 = instant)
 
 ### Extracting game data for total conversions
 
