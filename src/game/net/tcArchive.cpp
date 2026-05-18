@@ -134,6 +134,10 @@ std::vector<FileEntry> unpack(const uint8_t* data, size_t len) {
   uint32_t rawSize;
   std::memcpy(&rawSize, data + 1, 4);
 
+  // Prevent decompression bombs: limit uncompressed size to 64 MB
+  static constexpr uint32_t MaxUncompressedSize = 64 * 1024 * 1024;
+  if (rawSize > MaxUncompressedSize) return result;
+
   std::vector<uint8_t> raw;
   if (isCompressed) {
     raw.resize(rawSize);
