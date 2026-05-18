@@ -2,6 +2,8 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <filesystem>
+#include <fstream>
 #include <memory>
 #include <thread>
 
@@ -288,29 +290,24 @@ TEST_CASE("NetSession TC sync transfers data when hashes differ", "[session][tc]
   REQUIRE(!files.empty());
 
   // Write files to temp dir
-  {
-    std::string cmd = "rm -rf " + tempTcDir + " && mkdir -p " + tempTcDir;
-    system(cmd.c_str());
-  }
+  std::filesystem::remove_all(tempTcDir);
+  std::filesystem::create_directories(tempTcDir);
 
   for (auto& file : files) {
-    std::string fullPath = tempTcDir + "/" + file.name;
-    // Ensure parent dirs exist
-    std::string parentCmd = "mkdir -p \"$(dirname '" + fullPath + "')\"";
-    system(parentCmd.c_str());
-    FILE* fp = fopen(fullPath.c_str(), "wb");
-    REQUIRE(fp != nullptr);
-    fwrite(file.data.data(), 1, file.data.size(), fp);
-    fclose(fp);
+    std::filesystem::path fullPath = std::filesystem::path(tempTcDir) / file.name;
+    std::filesystem::create_directories(fullPath.parent_path());
+    std::ofstream ofs(fullPath, std::ios::binary);
+    REQUIRE(ofs.is_open());
+    ofs.write(reinterpret_cast<const char*>(file.data.data()),
+              static_cast<std::streamsize>(file.data.size()));
   }
 
   // Modify a sound file to change the hash without breaking TOML parsing
   {
-    std::string wavPath = tempTcDir + "/sounds/shotgun.wav";
-    FILE* fp = fopen(wavPath.c_str(), "ab");
-    REQUIRE(fp != nullptr);
-    fputc(0, fp);
-    fclose(fp);
+    std::filesystem::path wavPath = std::filesystem::path(tempTcDir) / "sounds/shotgun.wav";
+    std::ofstream ofs(wavPath, std::ios::binary | std::ios::app);
+    REQUIRE(ofs.is_open());
+    ofs.put('\0');
   }
 
   FsNode clientTcRoot(tempTcDir);
@@ -358,7 +355,7 @@ TEST_CASE("NetSession TC sync transfers data when hashes differ", "[session][tc]
   REQUIRE(host.controller()->game.rand.x == client.controller()->game.rand.x);
 
   // Clean up
-  system(("rm -rf " + tempTcDir).c_str());
+  std::filesystem::remove_all(tempTcDir);
 }
 
 TEST_CASE("NetSession TC sync skips transfer when hashes match", "[session][tc]") {
