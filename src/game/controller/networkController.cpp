@@ -22,6 +22,7 @@ NetworkController::NetworkController(
     , goingToMenu(false)
     , simFrame(0)
     , inputDelay(3)
+    , lastSentFrame(UINT32_MAX)
 {
   localPrevInput = 0;
   remotePrevInput = 0;
@@ -331,14 +332,17 @@ bool NetworkController::process() {
 }
 
 void NetworkController::advanceWeaponSelection() {
-  // Buffer the local input for this frame
+  // Buffer and send local input only once per frame (same rationale as advanceSimulation)
   uint32_t inputFrame = simFrame + inputDelay;
-  uint32_t slot = inputFrame % INPUT_BUFFER_SIZE;
-  localInputs[slot] = localControlState.pack() & 0x7f;
+  if (inputFrame != lastSentFrame) {
+    uint32_t slot = inputFrame % INPUT_BUFFER_SIZE;
+    localInputs[slot] = localControlState.pack() & 0x7f;
+    lastSentFrame = inputFrame;
 
-  // Send local input via callback
-  if (sendInput) {
-    sendInput(inputFrame, localInputs[slot]);
+    // Send local input via callback
+    if (sendInput) {
+      sendInput(inputFrame, localInputs[slot]);
+    }
   }
 
   // Try to get remote input via callback
@@ -426,14 +430,20 @@ void NetworkController::advanceWeaponSelection() {
 }
 
 void NetworkController::advanceSimulation() {
-  // Buffer the local input for this frame
+  // Buffer and send local input for this frame only once.
+  // During stalls, we re-enter this function every tick but must not re-capture
+  // the input — the remote peer would receive a different value than what we
+  // eventually use locally, causing a desync.
   uint32_t inputFrame = simFrame + inputDelay;
-  uint32_t slot = inputFrame % INPUT_BUFFER_SIZE;
-  localInputs[slot] = localControlState.pack() & 0x7f;
+  if (inputFrame != lastSentFrame) {
+    uint32_t slot = inputFrame % INPUT_BUFFER_SIZE;
+    localInputs[slot] = localControlState.pack() & 0x7f;
+    lastSentFrame = inputFrame;
 
-  // Send local input via callback
-  if (sendInput) {
-    sendInput(inputFrame, localInputs[slot]);
+    // Send local input via callback
+    if (sendInput) {
+      sendInput(inputFrame, localInputs[slot]);
+    }
   }
 
   // Try to get remote input via callback

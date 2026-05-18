@@ -95,6 +95,7 @@ struct NetworkController : CommonController {
 
   uint32_t simFrame;       // Current simulation frame number
   uint32_t inputDelay;     // Frames of input delay (default: 3)
+  uint32_t lastSentFrame;  // Last frame for which we sent local input
 
   // Input buffers: frame -> input byte
   static constexpr uint32_t INPUT_BUFFER_SIZE = 256;

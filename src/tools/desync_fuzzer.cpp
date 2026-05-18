@@ -26,6 +26,7 @@ struct FuzzerConfig {
   int iterations = 100;
   int frames = 30000;
   int jobs = 16;
+  int jitter = 0;  // max extra delivery delay in ticks (0 = instant)
   uint32_t seed = 0;  // 0 = time-based
 };
 
@@ -40,12 +41,15 @@ static FuzzerConfig parseArgs(int argc, char* argv[]) {
       cfg.seed = static_cast<uint32_t>(atol(argv[++i]));
     } else if ((strcmp(argv[i], "--jobs") == 0 || strcmp(argv[i], "-j") == 0) && i + 1 < argc) {
       cfg.jobs = atoi(argv[++i]);
+    } else if (strcmp(argv[i], "--jitter") == 0 && i + 1 < argc) {
+      cfg.jitter = atoi(argv[++i]);
     } else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
-      printf("Usage: desync_fuzzer [--iterations N] [--frames N] [--seed N] [--jobs N]\n");
+      printf("Usage: desync_fuzzer [--iterations N] [--frames N] [--seed N] [--jobs N] [--jitter N]\n");
       printf("  --iterations N  Number of iterations (default: 100)\n");
       printf("  --frames N      Frames per iteration (default: 30000)\n");
       printf("  --seed N        Fixed seed (default: time-based)\n");
       printf("  --jobs N, -j N  Parallel workers (default: 16)\n");
+      printf("  --jitter N      Max extra delivery delay in ticks (default: 0 = instant)\n");
       exit(0);
     }
   }
@@ -159,7 +163,7 @@ static void printDesync(const DesyncInfo& info, const Settings& settings) {
 }
 
 // Run one iteration of the fuzzer. Returns true if determinism held.
-static bool runIteration(uint32_t seed, int maxFrames, std::shared_ptr<Common> common) {
+static bool runIteration(uint32_t seed, int maxFrames, int jitter, std::shared_ptr<Common> common) {
   FuzzerRng rng(seed);
 
   auto settings = std::make_shared<Settings>();
@@ -176,7 +180,7 @@ static bool runIteration(uint32_t seed, int maxFrames, std::shared_ptr<Common> c
   controllerA->game.rand.seed(gameSeed);
   controllerB->game.rand.seed(gameSeed);
 
-  // Loopback wiring
+  // Loopback wiring — packets go into pending queues
   std::queue<std::pair<uint32_t, uint8_t>> aToB, bToA;
 
   controllerA->setInputCallbacks(
@@ -210,6 +214,14 @@ static bool runIteration(uint32_t seed, int maxFrames, std::shared_ptr<Common> c
     controllerB->injectRemoteInput(i, 0);
   }
 
+  // Jitter delay buffers: each entry is (deliverAtTick, frame, input)
+  struct DelayedPacket {
+    int deliverAtTick;
+    uint32_t frame;
+    uint8_t input;
+  };
+  std::vector<DelayedPacket> delayedToA, delayedToB;
+
   // Keep last N frames of inputs for diagnostics
   const int historySize = 10;
   std::vector<InputRecord> inputHistory;
@@ -217,26 +229,51 @@ static bool runIteration(uint32_t seed, int maxFrames, std::shared_ptr<Common> c
 
   uint32_t lastFrameA = 0;
 
+  // Each tick generates fresh random inputs. The NetworkController now only
+  // captures input once per frame (on first entry), so changing inputs during
+  // stalls won't cause desyncs.
+  FuzzerRng inputRngA(rng.next());
+  FuzzerRng inputRngB(rng.next());
+
   for (int tick = 0; tick < maxFrames; ++tick) {
-    // Set random inputs
-    uint8_t inputA = randomInput(rng);
-    uint8_t inputB = randomInput(rng);
+    uint8_t inputA = randomInput(inputRngA);
+    uint8_t inputB = randomInput(inputRngB);
     controllerA->setLocalControlState(inputA);
     controllerB->setLocalControlState(inputB);
 
     controllerA->process();
     controllerB->process();
 
-    // Deliver messages
+    // Move packets from send queues into delay buffers
     while (!aToB.empty()) {
       auto [frame, input] = aToB.front();
       aToB.pop();
-      controllerB->injectRemoteInput(frame, input);
+      int delay = jitter > 0 ? static_cast<int>(rng.range(jitter + 1)) : 0;
+      delayedToB.push_back({tick + delay, frame, input});
     }
     while (!bToA.empty()) {
       auto [frame, input] = bToA.front();
       bToA.pop();
-      controllerA->injectRemoteInput(frame, input);
+      int delay = jitter > 0 ? static_cast<int>(rng.range(jitter + 1)) : 0;
+      delayedToA.push_back({tick + delay, frame, input});
+    }
+
+    // Deliver packets whose delay has expired
+    for (auto it = delayedToB.begin(); it != delayedToB.end();) {
+      if (it->deliverAtTick <= tick) {
+        controllerB->injectRemoteInput(it->frame, it->input);
+        it = delayedToB.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    for (auto it = delayedToA.begin(); it != delayedToA.end();) {
+      if (it->deliverAtTick <= tick) {
+        controllerA->injectRemoteInput(it->frame, it->input);
+        it = delayedToA.erase(it);
+      } else {
+        ++it;
+      }
     }
 
     // Record input history
@@ -283,8 +320,8 @@ int main(int argc, char* argv[]) {
         std::chrono::steady_clock::now().time_since_epoch().count() & 0xFFFFFFFF);
   }
 
-  printf("Desync Fuzzer: iterations=%d frames=%d jobs=%d baseSeed=%u\n",
-         cfg.iterations, cfg.frames, cfg.jobs, cfg.seed);
+  printf("Desync Fuzzer: iterations=%d frames=%d jobs=%d jitter=%d baseSeed=%u\n",
+         cfg.iterations, cfg.frames, cfg.jobs, cfg.jitter, cfg.seed);
 
   // Load game data once (read-only, shared across threads)
   precomputeTables();
@@ -304,7 +341,7 @@ int main(int argc, char* argv[]) {
       if (i >= cfg.iterations) break;
 
       uint32_t iterSeed = cfg.seed + static_cast<uint32_t>(i);
-      bool ok = runIteration(iterSeed, cfg.frames, common);
+      bool ok = runIteration(iterSeed, cfg.frames, cfg.jitter, common);
 
       if (ok) {
         int p = passed.fetch_add(1) + 1;
