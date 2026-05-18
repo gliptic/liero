@@ -66,6 +66,7 @@ struct FuzzerRng {
     state ^= state << 5;
     return state;
   }
+  // Note: modulo bias is acceptable for a fuzzer — simplicity over uniformity
   uint32_t range(uint32_t max) { return next() % max; }
 };
 
