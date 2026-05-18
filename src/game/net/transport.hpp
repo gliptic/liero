@@ -52,6 +52,7 @@ struct NetTransport {
     uint8_t shadow;
     uint8_t namesOnBonuses;
     int32_t bloodParticleMax;
+    int32_t zoneTimeout;
   };
 
   // Connection state

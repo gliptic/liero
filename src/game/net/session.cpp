@@ -154,6 +154,7 @@ void NetSession::onConnected() {
     msd.shadow = settings_->shadow ? 1 : 0;
     msd.namesOnBonuses = settings_->namesOnBonuses ? 1 : 0;
     msd.bloodParticleMax = settings_->bloodParticleMax;
+    msd.zoneTimeout = settings_->zoneTimeout;
     transport_.sendMatchSettings(msd);
     matchSettingsReceived_ = true;  // Host already has correct settings
     mapDataReceived_ = true;        // Host generates locally
@@ -220,6 +221,7 @@ void NetSession::onMatchSettings(const NetTransport::MatchSettingsData& data) {
     settings_->shadow = data.shadow != 0;
     settings_->namesOnBonuses = data.namesOnBonuses != 0;
     settings_->bloodParticleMax = data.bloodParticleMax;
+    settings_->zoneTimeout = data.zoneTimeout;
   }
 
   matchSettingsReceived_ = true;
@@ -697,6 +699,7 @@ uint32_t NetSession::computeSettingsHash() const {
   mix(settings_->shadow ? 1u : 0u);
   mix(settings_->namesOnBonuses ? 1u : 0u);
   mix(static_cast<uint32_t>(settings_->bloodParticleMax));
+  mix(static_cast<uint32_t>(settings_->zoneTimeout));
 
   return hash;
 }
