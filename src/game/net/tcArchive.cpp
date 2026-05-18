@@ -92,6 +92,7 @@ std::vector<uint8_t> pack(FsNode root) {
   std::memcpy(raw.data(), &numFiles, 4);
 
   for (auto& [name, data] : files) {
+    if (name.size() > UINT16_MAX) continue;  // Skip files with names too long to encode
     uint16_t nameLen = static_cast<uint16_t>(name.size());
     uint32_t dataLen = static_cast<uint32_t>(data.size());
 
