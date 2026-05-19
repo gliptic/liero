@@ -242,7 +242,7 @@ Two issues had to be resolved:
 - ~~**Desync detection:** Periodic checksum comparison using the existing `PacketChecksum` packet type (already in the wire protocol, not yet wired up)~~ ✅ Wired up — `fastGameChecksum()` sent every frame, compared on receipt
 - **Replay recording of network games** — the data is already available (frame inputs)
 - **Rollback netcode (Phase 2)** — GGPO-style prediction/rollback for internet play
-- **NAT traversal** — STUN/TURN or relay server for connections through firewalls
+- ~~**NAT traversal** — STUN/TURN or relay server for connections through firewalls~~ Partial: STUN-based external IP discovery implemented (see below); hole-punching and TURN pending
 - **Graceful disconnection** — pause + timeout + forfeit instead of immediate exit
 
 ### Map transfer (2026-05-17)
@@ -364,6 +364,24 @@ Wired up the existing `PacketChecksum` transport to actually send/compare checks
 - Sent over unreliable channel (losing one is fine — next frame catches it)
 - `NetSession::onChecksum()` compares local vs remote, sets `desyncDetected_` flag
 - `GamePlayState` shows "DESYNC AT FRAME N" message and logs to stderr
+
+### STUN external IP discovery (2026-05-19)
+
+When hosting a game, the "CONNECT USING:" screen now shows the host's external (public) IP
+addresses alongside local addresses, discovered via STUN (RFC 5389).
+
+**Implementation** (`src/game/net/stun.hpp`, `src/game/net/stun.cpp`):
+- Minimal STUN Binding Request using enet's socket API (`enet_socket_create`, `enet_socket_send`, `enet_socket_receive`)
+- Two sequential queries in a background thread: one to Google's IPv4 STUN server (`74.125.250.129:19302`), one to their IPv6 server (`2001:4860:4864:5:8000::1:19302`)
+- Parses `XOR-MAPPED-ADDRESS` (with `MAPPED-ADDRESS` fallback) from the response
+- 2-second timeout, 2 retries per server — gracefully degrades (shows only local IPs if STUN fails)
+- Results displayed with `(EXTERNAL)` label in the host waiting screen
+
+**Design decisions:**
+- Uses enet's raw socket API rather than adding a new dependency (libcurl, etc.)
+- Direct IP literals for the STUN servers avoid DNS resolution (one fewer failure mode)
+- Background thread avoids blocking the UI — external IPs appear asynchronously
+- This is the foundation for future NAT hole-punching (STUN request/response parsing is reusable)
 
 ## Technical Risk Assessment
 

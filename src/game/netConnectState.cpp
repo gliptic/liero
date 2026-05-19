@@ -35,7 +35,11 @@ void NetConnectState::enter()
 	{
 		ok = session->hostGame(port_);
 		if (ok)
+		{
 			localAddresses_ = getLocalAddresses();
+			stunQuery_ = std::make_unique<StunQuery>();
+			stunQuery_->start();
+		}
 	}
 	else
 		ok = session->joinGame(address_, port_);
@@ -161,6 +165,11 @@ void NetConnectState::draw()
 	// Show local addresses when hosting
 	if (role_ == NetSession::Host && !localAddresses_.empty())
 	{
+		// Check for STUN result
+		if (externalIPs_.ipv4.empty() && externalIPs_.ipv6.empty()
+		    && stunQuery_ && stunQuery_->done())
+			externalIPs_ = stunQuery_->result();
+
 		int addrY = cy + 30;
 		std::string hdr = "CONNECT USING:";
 		int wh = font.getDims(hdr);
@@ -176,6 +185,21 @@ void NetConnectState::draw()
 				display = addr.ip + ":" + std::to_string(port_);
 			int wd = font.getDims(display);
 			font.drawText(gfx->playRenderer.bmp, display, cx - wd / 2, addrY, 7);
+			addrY += 10;
+		}
+
+		if (!externalIPs_.ipv4.empty())
+		{
+			std::string d = externalIPs_.ipv4 + ":" + std::to_string(port_) + " (EXTERNAL)";
+			int wd = font.getDims(d);
+			font.drawText(gfx->playRenderer.bmp, d, cx - wd / 2, addrY, 45);
+			addrY += 10;
+		}
+		if (!externalIPs_.ipv6.empty())
+		{
+			std::string d = "[" + externalIPs_.ipv6 + "]:" + std::to_string(port_) + " (EXTERNAL)";
+			int wd = font.getDims(d);
+			font.drawText(gfx->playRenderer.bmp, d, cx - wd / 2, addrY, 45);
 			addrY += 10;
 		}
 
