@@ -78,6 +78,7 @@ func (s *Server) Run() {
 
 func (s *Server) handlePacket(data []byte, from *net.UDPAddr) {
 	msgType := data[0]
+	log.Printf("Recv msg=0x%02x (%d bytes) from %s", msgType, len(data), from)
 
 	switch msgType {
 	case MsgCreateRoom:
@@ -210,6 +211,7 @@ func (s *Server) handleReportAddr(code string, from *net.UDPAddr, addr PeerAddr)
 
 	room, ok := s.rooms[code]
 	if !ok {
+		log.Printf("Room %s: ReportAddr from %s but room not found", code, from)
 		s.sendError(from, ErrRoomNotFound, "no such room")
 		return
 	}
@@ -217,6 +219,11 @@ func (s *Server) handleReportAddr(code string, from *net.UDPAddr, addr PeerAddr)
 
 	peer := s.findPeer(room, from)
 	if peer == nil {
+		log.Printf("Room %s: ReportAddr from %s but not a known peer (host=%s, client=%v)",
+			code, from, room.Host.Addr, room.Client)
+		if room.Client != nil {
+			log.Printf("  client addr: %s", room.Client.Addr)
+		}
 		s.sendError(from, ErrInvalidMsg, "not in room")
 		return
 	}
@@ -241,11 +248,17 @@ func (s *Server) handlePunchResult(code string, from *net.UDPAddr, ok bool) {
 
 	room, exists := s.rooms[code]
 	if !exists {
+		log.Printf("Room %s: PunchResult from %s but room not found", code, from)
 		return
 	}
 
 	peer := s.findPeer(room, from)
 	if peer == nil {
+		log.Printf("Room %s: PunchResult from %s but not a known peer (host=%s, client=%v)",
+			code, from, room.Host.Addr, room.Client)
+		if room.Client != nil {
+			log.Printf("  client addr: %s", room.Client.Addr)
+		}
 		return
 	}
 
@@ -344,7 +357,16 @@ func udpAddrEqual(a, b *net.UDPAddr) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	return a.IP.Equal(b.IP) && a.Port == b.Port && a.Zone == b.Zone
+	// Normalize to 4-byte IPv4 if it's an IPv4-mapped IPv6 address
+	aIP := a.IP.To4()
+	if aIP == nil {
+		aIP = a.IP
+	}
+	bIP := b.IP.To4()
+	if bIP == nil {
+		bIP = b.IP
+	}
+	return aIP.Equal(bIP) && a.Port == b.Port
 }
 
 func (s *Server) allocateRelayPort() int {
