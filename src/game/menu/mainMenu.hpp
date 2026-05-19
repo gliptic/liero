@@ -18,7 +18,10 @@ struct MainMenu : Menu
 		MaQuit,
 		MaReplays,
 		MaReplay,
-		MaTc
+		MaTc,
+		MaHostGame,
+		MaJoinGame,
+		MaNetPlayerSettings
 	};
 
 	MainMenu(int x, int y)

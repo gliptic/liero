@@ -33,6 +33,7 @@
 
 #include "mainMenuState.hpp"
 #include "gamePlayState.hpp"
+#include "netConnectState.hpp"
 
 #include "gfx/macros.hpp"
 
@@ -541,6 +542,8 @@ void Gfx::loadMenus()
 
 	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaResumeGame)); // string set in MainMenuState::enter()
 	mainMenu.addItem(MenuItem(10, 10, "", MainMenu::MaNewGame)); // string set in MainMenuState::enter()
+	mainMenu.addItem(MenuItem(48, 48, "HOST GAME", MainMenu::MaHostGame));
+	mainMenu.addItem(MenuItem(48, 48, "JOIN GAME", MainMenu::MaJoinGame));
 	mainMenu.addItem(MenuItem(48, 48, "OPTIONS (F2)", MainMenu::MaAdvanced));
 	mainMenu.addItem(MenuItem(48, 48, "REPLAYS (F3)", MainMenu::MaReplays));
 	mainMenu.addItem(MenuItem(48, 48, "TC", MainMenu::MaTc));
@@ -548,6 +551,7 @@ void Gfx::loadMenus()
 	mainMenu.addItem(MenuItem::space());
 	mainMenu.addItem(MenuItem(48, 48, "LEFT PLAYER (F5)", MainMenu::MaPlayer1Settings));
 	mainMenu.addItem(MenuItem(48, 48, "RIGHT PLAYER (F6)", MainMenu::MaPlayer2Settings));
+	mainMenu.addItem(MenuItem(48, 48, "NETWORK PLAYER (F9)", MainMenu::MaNetPlayerSettings));
 	mainMenu.addItem(MenuItem(48, 48, "MATCH SETUP (F7)", MainMenu::MaSettings));
 
 	settingsMenu.valueOffsetX = 100;
@@ -627,7 +631,6 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 	{
 		case SDL_EVENT_KEY_DOWN:
 		{
-
 			SDL_Scancode s = ev.key.scancode;
 
 			if (keyBufPtr < keyBuf + 32)
@@ -637,7 +640,7 @@ void Gfx::processEvent(SDL_Event& ev, Controller* controller)
 			if(dosScan)
 			{
 				dosKeys[dosScan] = true;
-				if(controller)
+				if(controller && !ev.key.repeat)
 					controller->onKey(dosScan, true);
 			}
 
@@ -911,8 +914,8 @@ void Gfx::clearKeys()
 
 bool Gfx::testControlOnce(int control)
 {
-	// Check keyboard bindings only for players using keyboard input
-	for(int p = 0; p < 2; ++p)
+	// Check keyboard bindings for all player profiles (left, right, network)
+	for(int p = 0; p < Settings::NumWormSettings; ++p)
 	{
 		if (settings->wormSettings[p]->inputDevice != WormSettingsExtensions::InputKeyboard)
 			continue;
@@ -997,8 +1000,8 @@ bool Gfx::testGamepadDir(int dpadButton)
 
 bool Gfx::testControl(int control)
 {
-	// Check keyboard bindings only for players using keyboard input
-	for(int p = 0; p < 2; ++p)
+	// Check keyboard bindings for all player profiles (left, right, network)
+	for(int p = 0; p < Settings::NumWormSettings; ++p)
 	{
 		if (settings->wormSettings[p]->inputDevice != WormSettingsExtensions::InputKeyboard)
 			continue;
@@ -1013,7 +1016,7 @@ bool Gfx::testControl(int control)
 
 void Gfx::releaseControl(int control)
 {
-	for(int p = 0; p < 2; ++p)
+	for(int p = 0; p < Settings::NumWormSettings; ++p)
 	{
 		uint32_t key = settings->extensions
 			? settings->wormSettings[p]->controlsEx[control]
@@ -1041,10 +1044,14 @@ void Gfx::menuFlip(bool quitting)
 	playRenderer.pal = playRenderer.origpal;
 	playRenderer.pal.rotateFrom(playRenderer.origpal, 168, 174, menuCycles);
 	playRenderer.pal.setWormColours(*settings);
+	if (curMenu == &playerMenu && playerMenu.ws == settings->wormSettings[Settings::NetworkPlayerIdx])
+		playRenderer.pal.setWormColour(0, *playerMenu.ws);
 	playRenderer.pal.fade(playRenderer.fadeValue);
 	singleScreenRenderer.pal = singleScreenRenderer.origpal;
 	singleScreenRenderer.pal.rotateFrom(singleScreenRenderer.origpal, 168, 174, menuCycles);
 	singleScreenRenderer.pal.setWormColours(*settings);
+	if (curMenu == &playerMenu && playerMenu.ws == settings->wormSettings[Settings::NetworkPlayerIdx])
+		singleScreenRenderer.pal.setWormColour(0, *playerMenu.ws);
 	singleScreenRenderer.pal.fade(singleScreenRenderer.fadeValue);
 	flip();
 }
@@ -1463,6 +1470,7 @@ bool Gfx::runOneFrame()
 			// Handle new game / resume / replay selection
 			if (menuSelection == MainMenu::MaNewGame)
 			{
+				netSession.reset();
 				std::unique_ptr<Controller> newController(new LocalController(common, settings));
 				Level* oldLevel = controller->currentLevel();
 
@@ -1491,6 +1499,54 @@ bool Gfx::runOneFrame()
 				if (settings->singleScreenReplay)
 					primaryRenderer = &singleScreenRenderer;
 			}
+			else if (menuSelection == MainMenu::MaHostGame)
+			{
+				stateStack.push(std::make_unique<NetConnectState>(
+					NetSession::Host, "", 19532), this);
+				return true;
+			}
+			else if (menuSelection == MainMenu::MaJoinGame)
+			{
+				// Parse address — support "host:port" and "[ipv6]:port" formats
+				std::string addr = std::move(pendingNetAddress);
+				uint16_t port = 19532;
+
+				if (!addr.empty() && addr[0] == '[') {
+					// IPv6 bracket notation: [::1]:port
+					auto closeBracket = addr.find(']');
+					if (closeBracket != std::string::npos) {
+						std::string ip6 = addr.substr(1, closeBracket - 1);
+						if (closeBracket + 1 < addr.size() && addr[closeBracket + 1] == ':') {
+							try {
+								port = static_cast<uint16_t>(std::stoi(addr.substr(closeBracket + 2)));
+							} catch (...) {
+								// Malformed port, keep default
+							}
+						}
+						addr = ip6;
+					}
+				} else {
+					// IPv4 or hostname: check for last colon
+					auto lastColon = addr.rfind(':');
+					if (lastColon != std::string::npos) {
+						// Only treat as port separator if there's at most one colon
+						// (multiple colons = bare IPv6 without port)
+						auto firstColon = addr.find(':');
+						if (firstColon == lastColon) {
+							try {
+								port = static_cast<uint16_t>(std::stoi(addr.substr(lastColon + 1)));
+							} catch (...) {
+								// Malformed port, keep default
+							}
+							addr = addr.substr(0, lastColon);
+						}
+					}
+				}
+
+				stateStack.push(std::make_unique<NetConnectState>(
+					NetSession::Client, std::move(addr), port), this);
+				return true;
+			}
 
 			// Push game state
 			stateStack.push(std::make_unique<GamePlayState>(), this);
@@ -1498,6 +1554,7 @@ bool Gfx::runOneFrame()
 		else
 		{
 			// Game state finished — go back to menu
+			netSession.reset();
 			primaryRenderer = &playRenderer;
 			controller->unfocus();
 			clearKeys();

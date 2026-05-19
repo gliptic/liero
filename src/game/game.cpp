@@ -176,7 +176,7 @@ void Game::resetWorms()
 		w.lives = settings->lives; // Not in the original!
 		w.kills = 0;
 		w.visible = false;
-		w.killedTimer = 150;
+		w.killedTimer = Worm::KilledTimerInitial;
 
 		w.currentWeapon = 1;
 	}
@@ -267,6 +267,7 @@ void Game::createBonus()
 			bonus->velY = 0;
 			bonus->frame = frame;
 			bonus->timer = rand(common.bonusRandTimer[frame][1]) + common.bonusRandTimer[frame][0];
+			bonus->weapon = 0;
 
 			if(frame == 0)
 			{

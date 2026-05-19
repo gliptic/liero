@@ -56,9 +56,11 @@ Settings::Settings()
 
 	wormSettings[0].reset(new WormSettings);
 	wormSettings[1].reset(new WormSettings);
+	wormSettings[2].reset(new WormSettings);
 
 	wormSettings[0]->color = 32;
 	wormSettings[1]->color = 41;
+	wormSettings[2]->color = 32;
 
 	unsigned char defControls[2][7] =
 	{
@@ -84,6 +86,17 @@ Settings::Settings()
 		{
 			wormSettings[i]->rgb[j] = defRGB[i][j];
 		}
+	}
+
+	// Network player defaults to left player's controls and color
+	for(int j = 0; j < 7; ++j)
+	{
+		wormSettings[2]->controls[j] = defControls[0][j];
+		wormSettings[2]->controlsEx[j] = defControls[0][j];
+	}
+	for(int j = 0; j < 3; ++j)
+	{
+		wormSettings[2]->rgb[j] = defRGB[0][j];
 	}
 }
 

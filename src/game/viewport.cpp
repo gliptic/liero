@@ -50,7 +50,7 @@ void Viewport::process(Game& game)
 	{
 		setCenter(ftoi(worm.pos.x), ftoi(worm.pos.y));
 
-		if(worm.killedTimer == 150) // TODO: This depends on what is the starting killedTimer
+		if(worm.killedTimer == Worm::KilledTimerInitial)
 			bannerY = -8;
 	}
 

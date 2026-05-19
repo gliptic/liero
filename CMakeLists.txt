@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.25..3.30)
 # options at top so they're easy to find
 option(OPENLIERO_BUILD_TCTOOL "Build tctool" OFF)
 option(OPENLIERO_BUILD_VIDEOTOOL "Build videotool" OFF)
+option(OPENLIERO_BUILD_FUZZER "Build desync fuzzer" OFF)
 option(OPENLIERO_USE_VCPKG "Use vcpkg to manage dependencies" ON)
 
 # tell cmake we have goodies in the cmake/ directory
@@ -59,6 +60,7 @@ project(openliero
 find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
 find_package(SDL3_image REQUIRED CONFIG)
 find_package(miniz CONFIG REQUIRED)
+find_package(enet CONFIG REQUIRED PATHS "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/cmake/enet")
 
 # local dependencies
 add_subdirectory(src/gvl)
@@ -121,8 +123,17 @@ set(GAME_SOURCES ${SOURCES}
   src/game/weapsel.cpp
   src/game/controller/commonController.cpp
   src/game/controller/localController.cpp
+  src/game/controller/networkController.cpp
   src/game/controller/replayController.cpp
+  src/game/net/transport.cpp
+  src/game/net/session.cpp
+  src/game/net/tcArchive.cpp
+  src/game/net/memoryFs.cpp
+  src/game/net/localaddr.cpp
+  src/game/net/stun.cpp
+  src/game/netConnectState.cpp
   src/game/statsState.cpp
+  src/game/rematchState.cpp
   src/game/menu/booleanSwitchBehavior.cpp
   src/game/menu/enumBehavior.cpp
   src/game/menu/hiddenMenu.cpp
@@ -141,6 +152,7 @@ target_link_libraries(game
   gvl
   SDL3::SDL3
   SDL3_image::SDL3_image
+  enet::enet_static
 )
 
 if(APPLE)
@@ -267,6 +279,43 @@ else()
   install(DIRECTORY data/Resources DESTINATION .)
   install(DIRECTORY data/Setups DESTINATION .)
   install(DIRECTORY data/TC DESTINATION .)
+endif()
+
+# tests
+option(OPENLIERO_BUILD_TESTS "Build tests" OFF)
+if(OPENLIERO_BUILD_TESTS)
+  find_package(Catch2 3 REQUIRED)
+  include(CTest)
+  include(Catch)
+
+  add_executable(test_determinism src/tests/test_determinism.cpp)
+  target_link_libraries(test_determinism PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_determinism
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  )
+
+  add_executable(test_network_controller src/tests/test_network_controller.cpp)
+  target_link_libraries(test_network_controller PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_network_controller
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  )
+
+  add_executable(test_transport src/tests/test_transport.cpp)
+  target_link_libraries(test_transport PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_transport)
+
+  add_executable(test_session src/tests/test_session.cpp)
+  target_link_libraries(test_session PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_session
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  )
+endif()
+
+# desync fuzzer
+if(OPENLIERO_BUILD_FUZZER)
+  find_package(Threads REQUIRED)
+  add_executable(desync_fuzzer src/tools/desync_fuzzer.cpp)
+  target_link_libraries(desync_fuzzer PRIVATE game Threads::Threads)
 endif()
 
 # documentation

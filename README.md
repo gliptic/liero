@@ -92,6 +92,44 @@ cmake --build build/$PRESET --target videotool
 ./videotool -d -r "path/to/replays/*.lrp"
 ```
 
+### Building the desync fuzzer
+
+The desync fuzzer stress-tests multiplayer determinism by running randomized
+game simulations in parallel and checking for state divergence.
+
+#### Build
+
+```bash
+cmake --preset $PRESET -DOPENLIERO_BUILD_FUZZER=ON
+cmake --build build/$PRESET --target desync_fuzzer
+```
+
+#### Usage
+
+```bash
+# Run with defaults (100 iterations, 30k frames each, 16 parallel workers)
+./build/$PRESET/desync_fuzzer
+
+# Quick smoke test
+./build/$PRESET/desync_fuzzer --iterations 10 --frames 5000
+
+# Long run with more parallelism
+./build/$PRESET/desync_fuzzer --iterations 1000 --frames 30000 -j 32
+
+# Test with simulated network jitter (random packet delay)
+./build/$PRESET/desync_fuzzer --iterations 100 --frames 10000 --jitter 5
+
+# Reproduce a specific failure
+./build/$PRESET/desync_fuzzer --seed 12345 --iterations 1
+```
+
+Options:
+- `--iterations N` — number of randomized iterations (default: 100)
+- `--frames N` — simulation frames per iteration (default: 30000)
+- `--seed N` — fixed base seed for reproducibility (default: time-based)
+- `--jobs N`, `-j N` — parallel worker threads (default: 16)
+- `--jitter N` — random packet delivery delay of 0-N ticks (default: 0 = instant)
+
 ### Extracting game data for total conversions
 
 For copyright reasons, this repository does not contain the original Liero sound

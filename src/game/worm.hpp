@@ -256,7 +256,7 @@ struct Worm : gvl::shared {
     movable = true;
 
     visible = false;
-    killedTimer = 150;
+    killedTimer = KilledTimerInitial;
   }
 
   bool pressed(Control control) const { return controlStates[control]; }
@@ -319,6 +319,7 @@ struct Worm : gvl::shared {
 
   int timer;        // Timer for GOT
   int killedTimer;  // Time until worm respawns
+  static constexpr int KilledTimerInitial = 150;
   int currentFrame;
 
   int flags;  // How many flags does this worm have?

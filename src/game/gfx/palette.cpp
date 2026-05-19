@@ -83,9 +83,14 @@ void Palette::read(gvl::octet_reader& r)
 
 int const Palette::wormColourIndexes[2] = {0x58, 0x78}; // TODO: Read from EXE?
 
+// Sprite palette bases per worm index (hardcoded in worm sprite precomputation)
+int const Palette::wormSpriteColorBase[2] = {32, 41};
+
 void Palette::setWormColour(int i, WormSettings const& settings)
 {
-	int idx = settings.color;
+	// Always write to the sprite-referenced palette positions for this worm index.
+	// Worm sprites have hardcoded pixel values: 30-34 for worm 0, 39-43 for worm 1.
+	int idx = wormSpriteColorBase[i];
 
 	setWormColoursSpan(idx, settings.rgb);
 

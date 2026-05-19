@@ -1,5 +1,6 @@
 {
   "dependencies": [
+    "enet",
     "miniz",
     {
       "name": "sdl3",
@@ -14,6 +15,7 @@
       "name": "sdl3",
       "platform": "!linux"
     },
-    "sdl3-image"
+    "sdl3-image",
+    "catch2"
   ]
 }

@@ -129,3 +129,7 @@ struct Game
 };
 
 bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x, int y);
+
+// Lightweight checksum of game state for desync detection.
+// Covers RNG state + worm positions/velocities.
+uint32_t fastGameChecksum(Game& game);
