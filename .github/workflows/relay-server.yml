@@ -2,7 +2,7 @@ name: Build and push relay server
 
 on:
   push:
-    branches: [main, multiplayer-2, stun-support]
+    branches: [main]
     paths:
       - 'server/**'
       - '.github/workflows/relay-server.yml'
