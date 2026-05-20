@@ -13,6 +13,9 @@ CMakeUserPresets.json
 # vcpkg repository
 tools/vcpkg/vcpkg/
 
+# Server binary
+server/openliero-relay
+
 # macOS
 ._*
 .DS_Store
