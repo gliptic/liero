@@ -86,6 +86,11 @@ bool NetConnectState::update()
 
 	gfx->netSession->update();
 
+	// Check for STUN result
+	if (externalIPs_.ipv4.empty() && externalIPs_.ipv6.empty()
+	    && stunQuery_ && stunQuery_->done())
+		externalIPs_ = stunQuery_->result();
+
 	auto state = gfx->netSession->sessionState();
 
 	if (state == NetSession::Playing)
@@ -165,11 +170,6 @@ void NetConnectState::draw()
 	// Show local addresses when hosting
 	if (role_ == NetSession::Host && !localAddresses_.empty())
 	{
-		// Check for STUN result
-		if (externalIPs_.ipv4.empty() && externalIPs_.ipv6.empty()
-		    && stunQuery_ && stunQuery_->done())
-			externalIPs_ = stunQuery_->result();
-
 		int addrY = cy + 30;
 		std::string hdr = "CONNECT USING:";
 		int wh = font.getDims(hdr);
