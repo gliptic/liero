@@ -27,7 +27,7 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 - [x] **Sim is fully deterministic given same seed + inputs** — Verified! Test harness runs two identical Game instances with random inputs for 1000 frames and confirms byte-identical state after each frame. No desync detected.
 - [ ] **No AI needed in network games** — If multiplayer is human-only, threaded AI non-determinism is irrelevant. If AI is needed, it must be made single-threaded/deterministic.
 - [ ] **State serialization is complete** — The replay serialization captures all sim-affecting state. Verify by: save state, advance N frames, restore state, advance N frames again → must match.
-- [ ] **UDP hole-punching is feasible for later** — For alpha, direct connection is fine. For public release, NAT traversal (STUN/TURN or relay) is needed.
+- [x] **UDP hole-punching is feasible for later** — STUN external IP+port discovery implemented. Go relay server provides signaling + relay fallback. NAT port remapping remains a known edge case (documented below).
 
 ## MVP Scope (Alpha)
 
@@ -381,7 +381,34 @@ addresses alongside local addresses, discovered via STUN (RFC 5389).
 - Uses enet's raw socket API rather than adding a new dependency (libcurl, etc.)
 - Direct IP literals for the STUN servers avoid DNS resolution (one fewer failure mode)
 - Background thread avoids blocking the UI — external IPs appear asynchronously
+- Extracts both external IP and port from XOR-MAPPED-ADDRESS (port needed for endpoint-dependent NAT mapping detection)
 - This is the foundation for future NAT hole-punching (STUN request/response parsing is reusable)
+
+### Relay server known limitations (2026-05-20)
+
+The Go relay server (`server/`) has several known limitations documented here for future work:
+
+**NAT port remapping:** `findPeer()` matches peers by UDP source address including port.
+If a client's NAT remaps the source port between `CreateRoom` and `ReportAddr` messages,
+the peer won't be found. The debug logging helps diagnose this. Mitigation: the relay
+fallback handles the case where hole-punching fails due to this.
+
+**No authentication:** Any UDP sender can create rooms, join rooms, or claim to be a peer.
+For game matchmaking this is acceptable, but a malicious actor could exhaust the 1000-room
+limit, inject themselves into relay sessions, or spoof PunchOK. Future mitigation: add
+a session token or HMAC-based authentication if abuse becomes an issue.
+
+**Room code entropy:** 6 chars from a 32-char alphabet = ~30 bits of entropy. Brute-forceable
+at ~1M guesses/sec in ~17 minutes. Currently acceptable because rooms are short-lived (60s TTL)
+and there's no incentive to join a stranger's game. Future mitigation: rate limiting per
+source IP, or longer codes.
+
+**Relay peer identification:** `runRelay()` identifies the two relay peers as "first two
+UDP senders" to the relay port. Any UDP sender to that port becomes a participant. Acceptable
+for a game (relay ports are ephemeral and short-lived) but not suitable for sensitive traffic.
+
+**`allocateRelayPort()` is O(n):** Linear scan over the port range. With the default 100
+ports this is fine. If relay-port-count is increased significantly, replace with a free-list.
 
 ## Technical Risk Assessment
 

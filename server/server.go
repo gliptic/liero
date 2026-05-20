@@ -151,6 +151,10 @@ func (s *Server) handleCreateRoom(from *net.UDPAddr) {
 	}
 
 	code := s.generateRoomCode()
+	if code == "" {
+		s.sendError(from, ErrRoomFull, "server full")
+		return
+	}
 	now := time.Now()
 	room := &Room{
 		Host:      &Peer{Addr: from},
@@ -427,17 +431,19 @@ func (s *Server) otherPeer(room *Room, peer *Peer) *Peer {
 
 func (s *Server) generateRoomCode() string {
 	const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // no I/O/0/1 to avoid confusion
+	const maxAttempts = 100
 	b := make([]byte, RoomCodeLen)
-	rand.Read(b)
-	for i := range b {
-		b[i] = chars[b[i]%byte(len(chars))]
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		rand.Read(b)
+		for i := range b {
+			b[i] = chars[b[i]%byte(len(chars))]
+		}
+		code := string(b)
+		if _, exists := s.rooms[code]; !exists {
+			return code
+		}
 	}
-	code := string(b)
-	// Ensure unique
-	if _, exists := s.rooms[code]; exists {
-		return s.generateRoomCode()
-	}
-	return code
+	return "" // caller should check for empty and return ErrRoomFull
 }
 
 func (s *Server) cleanupLoop() {
