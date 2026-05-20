@@ -49,7 +49,7 @@ StunResult StunQuery::result() const {
   return result_;
 }
 
-static std::string parseResponse(const uint8_t* data, size_t len,
+static StunQuery::StunAddress parseResponse(const uint8_t* data, size_t len,
                                   const StunHeader& req) {
   if (len < sizeof(StunHeader)) return {};
 
@@ -75,7 +75,7 @@ static std::string parseResponse(const uint8_t* data, size_t len,
       uint8_t family = attrs[offset + 1];
       if (family == 0x01 && attrLen >= 8) { // IPv4
         uint16_t xorPort = (uint16_t)(attrs[offset + 2] << 8 | attrs[offset + 3]);
-        (void)xorPort;
+        uint16_t port = xorPort ^ (uint16_t)(STUN_MAGIC_COOKIE >> 16);
         uint32_t xorAddr;
         std::memcpy(&xorAddr, attrs + offset + 4, 4);
         uint32_t addr = ntohl(xorAddr) ^ STUN_MAGIC_COOKIE;
@@ -83,8 +83,10 @@ static std::string parseResponse(const uint8_t* data, size_t len,
         snprintf(buf, sizeof(buf), "%u.%u.%u.%u",
                  (addr >> 24) & 0xFF, (addr >> 16) & 0xFF,
                  (addr >> 8) & 0xFF, addr & 0xFF);
-        return buf;
+        return {buf, port};
       } else if (family == 0x02 && attrLen >= 20) { // IPv6
+        uint16_t xorPort = (uint16_t)(attrs[offset + 2] << 8 | attrs[offset + 3]);
+        uint16_t port = xorPort ^ (uint16_t)(STUN_MAGIC_COOKIE >> 16);
         // XOR with magic cookie (4 bytes) + transaction ID (12 bytes)
         uint8_t addrBytes[16];
         std::memcpy(addrBytes, attrs + offset + 4, 16);
@@ -95,11 +97,12 @@ static std::string parseResponse(const uint8_t* data, size_t len,
           addrBytes[4 + i] ^= req.transactionId[i];
         char buf[INET6_ADDRSTRLEN];
         inet_ntop(AF_INET6, addrBytes, buf, sizeof(buf));
-        return buf;
+        return {buf, port};
       }
     } else if (attrType == STUN_ATTR_MAPPED_ADDRESS && attrLen >= 8) {
       uint8_t family = attrs[offset + 1];
       if (family == 0x01) { // IPv4
+        uint16_t port = (uint16_t)(attrs[offset + 2] << 8 | attrs[offset + 3]);
         uint32_t addr;
         std::memcpy(&addr, attrs + offset + 4, 4);
         addr = ntohl(addr);
@@ -107,7 +110,7 @@ static std::string parseResponse(const uint8_t* data, size_t len,
         snprintf(buf, sizeof(buf), "%u.%u.%u.%u",
                  (addr >> 24) & 0xFF, (addr >> 16) & 0xFF,
                  (addr >> 8) & 0xFF, addr & 0xFF);
-        return buf;
+        return {buf, port};
       }
     }
 
@@ -117,7 +120,7 @@ static std::string parseResponse(const uint8_t* data, size_t len,
   return {};
 }
 
-std::string StunQuery::queryServer(const char* serverAddr, uint16_t port) {
+StunQuery::StunAddress StunQuery::queryServer(const char* serverAddr, uint16_t port) {
   ENetSocket sock = enet_socket_create(ENET_SOCKET_TYPE_DATAGRAM);
   if (sock == ENET_SOCKET_NULL) return {};
 
@@ -147,8 +150,8 @@ std::string StunQuery::queryServer(const char* serverAddr, uint16_t port) {
   recvBuf.data = recvData;
   recvBuf.dataLength = sizeof(recvData);
 
-  std::string result;
-  for (int attempt = 0; attempt < STUN_RETRIES && result.empty(); ++attempt) {
+  StunAddress result;
+  for (int attempt = 0; attempt < STUN_RETRIES && result.ip.empty(); ++attempt) {
     int sent = enet_socket_send(sock, &addr, &sendBuf, 1);
     if (sent < 0) break;
 
@@ -171,8 +174,12 @@ std::string StunQuery::queryServer(const char* serverAddr, uint16_t port) {
 
 void StunQuery::run() {
   StunResult res;
-  res.ipv4 = queryServer(STUN_SERVER_IPV4, STUN_PORT);
-  res.ipv6 = queryServer(STUN_SERVER_IPV6, STUN_PORT);
+  auto v4 = queryServer(STUN_SERVER_IPV4, STUN_PORT);
+  res.ipv4 = v4.ip;
+  res.ipv4Port = v4.port;
+  auto v6 = queryServer(STUN_SERVER_IPV6, STUN_PORT);
+  res.ipv6 = v6.ip;
+  res.ipv6Port = v6.port;
 
   {
     std::lock_guard<std::mutex> lock(mutex_);
