@@ -86,6 +86,9 @@ void MainMenuState::enter()
 		startItemId_ = MainMenu::MaNewGame;
 	}
 
+	gfx->mainMenu.itemFromId(MainMenu::MaTc)->string =
+		"TC (" + gfx->settings->tc + ")";
+
 	gfx->mainMenu.moveToFirstVisible();
 	gfx->settingsMenu.moveToFirstVisible();
 	gfx->settingsMenu.updateItems(common);
