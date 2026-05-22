@@ -30,6 +30,16 @@ TEST_CASE("TC loads without errors", "[tc_load]") {
   REQUIRE(common->nobjectTypes.size() > 0);
   REQUIRE(common->sobjectTypes.size() > 0);
   REQUIRE(common->weapOrder.size() == common->weapons.size());
+
+  // Strings from tc.cfg should arrive as UTF-8. The Copyright string contains
+  // 'ä' (U+00E4) which is two bytes in UTF-8 (0xC3 0xA4); historically tc.cfg
+  // stored these as  (a control char), which the parser then yielded as
+  // 0xC2 0x84 — neither of which decode to 'ä'. Anchor that here.
+  std::string const& copy2 = common->S[SCopyright2];
+  REQUIRE(copy2.find("Liero v1.33") == 0);
+  REQUIRE(copy2.find("\xC3\xA4") != std::string::npos);  // 'ä' UTF-8
+  REQUIRE(copy2.find("\xC2\x84") == std::string::npos);  // bogus old form
+  REQUIRE(common->guessName() == "Liero v1.33");
 }
 
 TEST_CASE("TC supports game initialization", "[tc_load]") {

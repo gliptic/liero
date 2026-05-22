@@ -84,6 +84,7 @@ set(SOURCES
   src/game/bonus.cpp
   src/game/common.cpp
   src/game/console.cpp
+  src/game/cp437.cpp
   src/game/constants.cpp
   src/game/filesystem.cpp
   src/game/game.cpp
@@ -332,6 +333,10 @@ if(OPENLIERO_BUILD_TESTS)
   add_executable(test_ice src/tests/test_ice.cpp)
   target_link_libraries(test_ice PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_ice DISCOVERY_MODE PRE_TEST)
+
+  add_executable(test_cp437 src/tests/test_cp437.cpp)
+  target_link_libraries(test_cp437 PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_cp437 DISCOVERY_MODE PRE_TEST)
 
   add_executable(test_settings src/tests/test_settings.cpp)
   target_link_libraries(test_settings PRIVATE game Catch2::Catch2WithMain)

@@ -3,6 +3,7 @@
 #include <gvl/io2/convert.hpp>
 #include <gvl/io2/fstream.hpp>
 #include <cctype>
+#include "game/cp437.hpp"
 #include "game/reader.hpp"
 #include "game/rand.hpp"
 #include "game/filesystem.hpp"
@@ -421,7 +422,9 @@ void loadConstants(Common& common, ReaderFile& exe)
 
 	for(int i = 0; Sstringdesc[i][1] >= 0; ++i)
 	{
-		common.S[Sstringdesc[i][0]] = readPascalStringAt(exe, Sstringdesc[i][1]);
+		// Strings in the EXE are CP437 (DOS Liero); tc.cfg stores UTF-8.
+		common.S[Sstringdesc[i][0]] =
+			cp437::cp437BytesToUtf8(readPascalStringAt(exe, Sstringdesc[i][1]));
 	}
 
 	for(int i = 0; Hhackdesc[i].indicators; ++i)
@@ -617,8 +620,12 @@ void loadWeapons(Common& common, ReaderFile& exe)
 	exe.seekg(0x1B676);
 	for(int i = 0; i < 40; ++i)
 	{
-		common.weapons[i].name = readPascalString(exe, 14);
-		common.weapons[i].idStr = toId(common.weapons[i].name);
+		// Read CP437 bytes from the EXE; derive idStr from those (toId() lowercases
+		// ASCII and replaces everything else with '_', so single-byte input keeps
+		// the id length predictable), then transcode the displayable name to UTF-8.
+		std::string raw = readPascalString(exe, 14);
+		common.weapons[i].idStr = toId(raw);
+		common.weapons[i].name = cp437::cp437BytesToUtf8(raw);
 		common.weapons[i].id = i;
 		common.weapons[i].chainExplosion = i == 34;
 	}

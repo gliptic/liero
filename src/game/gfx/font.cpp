@@ -1,6 +1,7 @@
 #include "font.hpp"
 #include "../reader.hpp"
 #include "../gfx.hpp"
+#include "../cp437.hpp"
 #include "macros.hpp"
 #include "color.hpp"
 
@@ -45,20 +46,37 @@ void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int s
 	}
 }
 
+// Strings reaching the font are UTF-8 (that's what tc.cfg and settings.cfg
+// store). The glyph table is CP437 byte-indexed, so we decode each codepoint
+// and look it up. Codepoints with no CP437 equivalent are silently skipped —
+// drawChar already ignores any byte outside [2, 252), so this stays in sync.
+namespace {
+
+unsigned char codepointToFontByte(char32_t cp)
+{
+	int b = cp437::unicodeToByte(cp);
+	return b < 0 ? 1 : static_cast<unsigned char>(b);  // 1 = skip-no-draw
+}
+
+}  // namespace
+
 void Font::drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color, int size)
 {
 	int orgX = x;
 
-	for(std::size_t i = 0; i < len; ++str, ++i)
+	for(std::size_t i = 0; i < len; )
 	{
-		unsigned char c = static_cast<unsigned char>(*str);
+		char32_t cp = cp437::utf8DecodeNext(str, len, i);
 
-		if(!c)
+		if(cp == 0)
 		{
 			x = orgX;
 			y += 8 * size;
+			continue;
 		}
-		else if(c >= 2 && c < 252)
+
+		unsigned char c = codepointToFontByte(cp);
+		if(c >= 2 && c < 252)
 		{
 			c -= 2;
 
@@ -82,17 +100,21 @@ int Font::getDims(char const* str, std::size_t len, int* height)
 
 	int maxWidth = 0;
 
-	for(std::size_t i = 0; i < len; ++str, ++i)
+	for(std::size_t i = 0; i < len; )
 	{
-		unsigned char c = static_cast<unsigned char>(*str);
-		if(c >= 2 && c < 252)
-			width += chars[c - 2].width;
-		else if(!c)
+		char32_t cp = cp437::utf8DecodeNext(str, len, i);
+
+		if(cp == 0)
 		{
 			maxWidth = std::max(maxWidth, width);
 			width = 0;
 			maxHeight += 8;
+			continue;
 		}
+
+		unsigned char c = codepointToFontByte(cp);
+		if(c >= 2 && c < 252)
+			width += chars[c - 2].width;
 	}
 
 	if(height)
