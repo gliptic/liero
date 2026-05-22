@@ -2,7 +2,7 @@
 #include <gvl/io2/convert.hpp>
 #include <gvl/io2/fstream.hpp>
 #include <gvl/serialization/coding.hpp>
-#include <gvl/serialization/toml.hpp>
+#include <gvl/serialization/toml_adapter.hpp>
 
 #include "game/filesystem.hpp"
 

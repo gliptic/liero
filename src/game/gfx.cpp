@@ -1656,12 +1656,6 @@ bool Gfx::loadSettings(FsNode node)
 	return settings->load(node, rand);
 }
 
-bool Gfx::loadSettingsLegacy(FsNode node)
-{
-	settings.reset(new Settings);
-	return settings->loadLegacy(node, rand);
-}
-
 void Gfx::drawBasicMenu(/*int curSel*/)
 {
 	playRenderer.bmp.copy(frozenScreen);

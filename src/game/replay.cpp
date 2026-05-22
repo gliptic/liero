@@ -227,8 +227,7 @@ void archive(in_archive_t ar, Level& level)
 	unsigned int h = gvl::read_uint16(ar.reader);
 	level.resize(w, h);
 
-	if(ar.context.replayVersion > 1)
-		archive(ar, level.origpal);
+	archive(ar, level.origpal);
 
 	Common& common = *ar.context.game->common;
 
@@ -253,8 +252,7 @@ void archive(gvl::out_archive<Writer, GameSerializationContext> ar, Level& level
 	unsigned int w = level.width;
 	unsigned int h = level.height;
 
-	if(ar.context.replayVersion > 1)
-		archive(ar, level.origpal);
+	archive(ar, level.origpal);
 
 	ar.writer.put(&level.data[0], w * h);
 

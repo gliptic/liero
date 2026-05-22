@@ -75,8 +75,8 @@ jobs:
           cmake --preset linux-x64-ci
           -DOPENLIERO_BUILD_TESTS=ON
 
-      - name: Build tests
-        run: cmake --build build/linux-x64-ci --config Release --target test_determinism test_network_controller test_transport test_session test_stun test_ice
+      - name: Build
+        run: cmake --build build/linux-x64-ci --config Release
 
       - name: Run tests
         run: ctest --test-dir build/linux-x64-ci --build-config Release --output-on-failure

@@ -17,6 +17,7 @@
     },
     "sdl3-image",
     "catch2",
-    "libjuice"
+    "libjuice",
+    "tomlplusplus"
   ]
 }

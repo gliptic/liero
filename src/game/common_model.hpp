@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gvl/serialization/toml.hpp>
+#include <gvl/serialization/toml_adapter.hpp>
 #include "common.hpp"
 #include <gvl/io2/stream.hpp>
 

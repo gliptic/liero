@@ -7,9 +7,8 @@
 #include "filesystem.hpp" // For joinPath
 #include <cstdlib>
 
-#include <gvl/serialization/context.hpp>
 #include <gvl/serialization/archive.hpp>
-#include <gvl/serialization/toml.hpp>
+#include <gvl/serialization/toml_adapter.hpp>
 #include "replay.hpp"
 
 #include <gvl/crypt/gash.hpp>
@@ -38,15 +37,30 @@ struct Point
 
 gvl::gash::value_type& WormSettings::updateHash()
 {
-	GameSerializationContext context;
+	std::string tomlData = toToml();
+
 	gvl::hash_accumulator<gvl::gash> ha;
-
-
-	archive(gvl::out_archive<gvl::hash_accumulator<gvl::gash>, GameSerializationContext>(ha, context), *this);
-
+	for (char c : tomlData)
+		ha.put(static_cast<uint8_t>(c));
 	ha.flush();
 	hash = ha.final();
 	return hash;
+}
+
+std::string WormSettings::toToml() const
+{
+	std::string buf;
+	gvl::string_writer sw(buf);
+	gvl::toml::writer<gvl::string_writer> ar(sw);
+	archive_worm_toml(ar, const_cast<WormSettings&>(*this));
+	return buf;
+}
+
+void WormSettings::fromToml(std::string const& data)
+{
+	gvl::string_reader sr(data);
+	gvl::toml::reader<gvl::string_reader> ar(sr);
+	archive_worm_toml(ar, *this);
 }
 
 void WormSettings::saveProfile(FsNode node)
@@ -57,19 +71,7 @@ void WormSettings::saveProfile(FsNode node)
 		profileNode = node;
 
 		gvl::toml::writer<gvl::octet_writer> ar(writer);
-
-#define S(n) #n, n
-		ar.str(S(name));
-		ar.u32(S(controller));
-		ar.i32(S(health));
-		ar.arr("controls", controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
-		ar.arr("weapons", weapons, [&](uint32_t& w) { ar.u32(0, w); });
-		ar.arr("color", rgb, [&](int& c) { ar.i32(0, c); });
-		ar.u32(S(inputDevice));
-		ar.str(S(gamepadName));
-		ar.str(S(gamepadSerial));
-		ar.arr("gamepadControls", gamepadControls, [&](uint32_t& c) { ar.u32(0, c); });
-#undef S
+		archive_worm_toml(ar, *this);
 	}
 	catch(std::runtime_error& e)
 	{
@@ -86,22 +88,7 @@ void WormSettings::loadProfile(FsNode node)
 		profileNode = node;
 
 		gvl::toml::reader<gvl::octet_reader> ar(reader);
-
-#define S(n) #n, n
-		ar.str(S(name));
-		ar.u32(S(controller));
-		ar.i32(S(health));
-		ar.arr("controls", controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
-		ar.arr("weapons", weapons, [&](uint32_t& w) { ar.u32(0, w); });
-		ar.arr("color", rgb, [&](int& c) { ar.i32(0, c); });
-		ar.u32(S(inputDevice));
-		ar.str(S(gamepadName));
-		ar.str(S(gamepadSerial));
-		ar.arr("gamepadControls", gamepadControls, [&](uint32_t& c) { ar.u32(0, c); });
-#undef S
-
-		if (!name.empty())
-			randomName = false;
+		archive_worm_toml(ar, *this);
 	}
 	catch(std::runtime_error& e)
 	{

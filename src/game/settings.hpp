@@ -3,43 +3,44 @@
 #include <cstdint>
 #include <cstring>
 #include <gvl/crypt/gash.hpp>
-#include <gvl/serialization/archive.hpp>  // For gvl::enable_when
+#include <gvl/serialization/archive.hpp>
 #include <stdexcept>
 #include <string>
-#include "version.hpp"
 #include "worm.hpp"
 
-// We isolate extensions for the benefit of the .dat loader.
-// It can then easily reset the extensions if they fail to load.
-struct Extensions {
-  static int const myVersion = 9;
+// Gameplay-affecting settings (included in hash computation and replays)
+struct GameplayExtensions {
+  GameplayExtensions();
+
   static bool const extensions = true;
 
-  Extensions();
-
-  // Extensions
   bool recordReplays;
   bool loadPowerlevelPalette;
-  int32_t bloodParticleMax;
 
   int aiFrames, aiMutations;
   bool aiTraces;
   int32_t aiParallels;
 
-  bool fullscreen;
-
   int32_t zoneTimeout;
   uint32_t selectBotWeapons;
 
   bool allowViewingSpawnPoint;
+  std::string tc;
+};
+
+// App/UI settings (not included in hash or replays)
+struct AppSettings {
+  AppSettings();
+
+  bool fullscreen;
   bool singleScreenReplay;
   bool spectatorWindow;
-  std::string tc;
+  int32_t bloodParticleMax;
 };
 
 struct Rand;
 
-struct Settings : gvl::shared, Extensions {
+struct Settings : gvl::shared, GameplayExtensions, AppSettings {
   enum GameModes {
     GMKillEmAll,
     GMGameOfTag,
@@ -56,8 +57,9 @@ struct Settings : gvl::shared, Extensions {
   Settings();
 
   bool load(FsNode node, Rand& rand);
-  bool loadLegacy(FsNode node, Rand& rand);
   void save(FsNode node, Rand& rand);
+  std::string toToml() const;
+  void fromToml(std::string const& data);
   gvl::gash::value_type& updateHash();
 
   static void generateName(WormSettings& ws, Rand& rand);
@@ -96,219 +98,61 @@ inline T limit(T v) {
   return v;
 }
 
-template <typename Archive>
-void archive_liero(Archive ar, Settings& settings, Rand& rand) {
-  ar.ui8(settings.maxBonuses)
-      .ui16_le(settings.loadingTime)
-      .ui16_le(settings.lives)
-      .ui16_le(settings.timeToLose)
-      .ui16_le(settings.flagsToWin)
-      .b(settings.screenSync)
-      .b(settings.map)
-      .ui8(settings.wormSettings[0]->controller)
-      .ui8(settings.wormSettings[1]->controller)
-      .b(settings.randomLevel)
-      .ui16_le(settings.blood)
-      .ui8(settings.gameMode)
-      .b(settings.namesOnBonuses)
-      .b(settings.regenerateLevel)
-      .b(settings.shadow);
-
-  if (ar.in)
-    settings.wormSettings[0]->controller %= 3;
-  if (ar.in)
-    settings.wormSettings[1]->controller %= 3;
-
-  for (int i = 0; i < 40; ++i) {
-    ar.ui8(settings.weapTable[i]);
-    if (ar.in)
-      settings.weapTable[i] = limit<0, 3>(settings.weapTable[i]);
-  }
-
-  for (int i = 0; i < 2; ++i)
-    for (int j = 0; j < 3; ++j) {
-      ar.ui8(settings.wormSettings[i]->rgb[j]);
-      if (ar.in)
-        settings.wormSettings[i]->rgb[j] &= 63;
-    }
-
-  for (int i = 0; i < 2; ++i) {
-    for (int j = 0; j < 5; ++j) {
-      ar.ui8(settings.wormSettings[i]->weapons[j]);
-    }
-  }
-
-  ar.ui16_le(settings.wormSettings[0]->health);
-  ar.ui16_le(settings.wormSettings[1]->health);
-
-  for (int i = 0; i < 2; ++i) {
-    if (settings.wormSettings[i]->randomName && ar.out) {
-      std::string empty;
-      ar.pascal_str(empty, 21);
-    } else {
-      ar.pascal_str(settings.wormSettings[i]->name, 21);
-      if (ar.in) {
-        if (settings.wormSettings[i]->name.empty())
-          settings.generateName(*settings.wormSettings[i], rand);
-        else
-          settings.wormSettings[i]->randomName = false;
-      }
-    }
-  }
-
-  ar.b(settings.loadChange);
-
-  char lieroStr[] = "\x05LIERO\0\0";
-  for (std::size_t i = 0; i < sizeof(lieroStr); ++i) {
-    ar.ui8(lieroStr[i]);
-  }
-
-  for (int i = 0; i < 2; ++i) {
-    for (int j = 0; j < 7; ++j) {
-      uint32_t v;
-      if (ar.out) {
-        v = settings.wormSettings[i]->controls[j];
-        v = limit<0, 177>(v);
-      }
-      ar.ui8(v);
-      if (ar.in) {
-        v = limit<0, 177>(v);
-        settings.wormSettings[i]->controls[j] = v;
-      }
-    }
-  }
-
-  ar.pascal_str(settings.levelFile, 9);
-
-  // TODO: Slightly bad way to detect whether extensions exist, no?
-  try {
-    // Extensions
-    int fileExtensionVersion = myGameVersion;
-    ar.ui8(fileExtensionVersion);
-
-    bool extDummy = true;
-    uint8_t extDummy8 = 0;
-    uint32_t extDummy16 = 0;
-    ar.b(extDummy);
-    ar.b(settings.recordReplays);
-    ar.b(settings.loadPowerlevelPalette);
-    ar.ui8(extDummy8);
-    ar.ui16(extDummy16);  // old fullscreenW
-    ar.ui16(extDummy16);  // old fullscreenH
-
-    if (fileExtensionVersion >= 4)
-      ar.str(settings.levelFile);
-
-    if (fileExtensionVersion >= 2)
-      ar.b(extDummy);
-
-    for (int i = 0; i < 2; ++i) {
-      for (int c = 0; c < WormSettings::MaxControl; ++c) {
-        int dummy = 0;
-        gvl::enable_when(ar, fileExtensionVersion >= 2)
-            .ui8(dummy, 255)
-            .ui8(dummy, 255);
-      }
-    }
-
-    for (int i = 0; i < 2; ++i) {
-      WormSettings& ws = *settings.wormSettings[i];
-      for (int c = 0; c < WormSettings::MaxControlEx; ++c) {
-        gvl::enable_when(ar, fileExtensionVersion >= 3)
-            .ui32(ws.controlsEx[c], ws.controls[c]);
-      }
-    }
-
-    gvl::enable_when(ar, fileExtensionVersion >= 4)
-        .ui16(settings.aiMutations, 2)
-        .ui16(settings.aiFrames, 140)
-        .ui8(settings.selectBotWeapons, uint32_t(0))
-        .ui16(settings.zoneTimeout, 30);
-
-    gvl::enable_when(ar, fileExtensionVersion >= 5)
-        .b(settings.aiTraces, false)
-        .ui16(settings.aiParallels, 3);
-
-    gvl::enable_when(ar, fileExtensionVersion >= 6)
-        .b(settings.allowViewingSpawnPoint, false);
-
-    gvl::enable_when(ar, fileExtensionVersion >= 7)
-        .b(settings.singleScreenReplay, false);
-
-    gvl::enable_when(ar, fileExtensionVersion >= 8)
-        .b(settings.spectatorWindow, false);
-
-    gvl::enable_when(ar, fileExtensionVersion >= 9)
-        .b(settings.fullscreen, false);
-
-    gvl::enable_when(ar, fileExtensionVersion >= 10)
-        .str(settings.tc, std::string("openliero"));
-  } catch (std::runtime_error&) {
-    // Reset to default state
-    settings.Extensions::operator=(Extensions());
-
-    for (int i = 0; i < 2; ++i) {
-      WormSettings& ws = *settings.wormSettings[i];
-      ws.WormSettingsExtensions::operator=(WormSettingsExtensions());
-    }
-  }
-}
-
-// Settings archiving, not including player (worm) settings
+// Settings archive for replays: embeds TOML as a string in the binary stream.
 template <typename Archive>
 void archive(Archive ar, Settings& settings) {
-  for (int i = 0; i < 40; ++i) {
-    ar.ui8(settings.weapTable[i]);
+  if (ar.out) {
+    std::string toml = settings.toToml();
+    ar.str(toml);
+  } else {
+    std::string toml;
+    ar.str(toml);
+    settings.fromToml(toml);
   }
-
-  ar.ui16(settings.maxBonuses)
-      .ui16(settings.blood)
-      .ui16(settings.timeToLose)
-      .ui16(settings.flagsToWin)
-      .ui16(settings.gameMode)
-      .b(settings.shadow)
-      .b(settings.loadChange)
-      .b(settings.namesOnBonuses)
-      .b(settings.regenerateLevel)
-      .ui16(settings.lives)
-      .ui16(settings.loadingTime)
-      .b(settings.randomLevel)
-      .b(settings.map)
-      .b(settings.screenSync)
-      .str(settings.levelFile);
-
-  // Extensions
-  int fileExtensionVersion = Extensions::myVersion;
-
-  ar.ui8(fileExtensionVersion);
-
-  bool extDummy = true;
-  uint8_t extDummy8 = 0;
-  int32_t extDummy16 = 0;
-
-  ar.b(extDummy)
-      .b(settings.recordReplays)
-      .b(settings.loadPowerlevelPalette)
-      .ui8(extDummy8)
-      .ui16(extDummy16)   // old fullscreenW
-      .ui16(extDummy16);  // old fullscreenH
-
-  if (fileExtensionVersion >= 2)
-    ar.b(extDummy);
-
-  gvl::enable_when(ar, fileExtensionVersion >= 4)
-      .ui16(settings.zoneTimeout, 30);
-
-  gvl::enable_when(ar, fileExtensionVersion >= 6)
-      .b(settings.allowViewingSpawnPoint, false);
-  gvl::enable_when(ar, fileExtensionVersion >= 7)
-      .b(settings.singleScreenReplay, false);
-  gvl::enable_when(ar, fileExtensionVersion >= 8)
-      .b(settings.spectatorWindow, false);
-  gvl::enable_when(ar, fileExtensionVersion >= 9).b(settings.fullscreen, false);
-  gvl::enable_when(ar, fileExtensionVersion >= 10)
-      .str(settings.tc, std::string("openliero"));
   ar.check();
+}
+
+// Serialize only gameplay-affecting fields (used for hash computation).
+// This ensures that changing UI-only settings doesn't affect the hash.
+template <typename Archive>
+void archive_gameplay_text(Settings& settings, Archive& ar) {
+#define S(n) #n, settings.n
+
+  ar.i32(S(maxBonuses));
+  ar.i32(S(loadingTime));
+  ar.i32(S(lives));
+  ar.i32(S(timeToLose));
+  ar.i32(S(flagsToWin));
+  ar.b(S(screenSync));
+  ar.b(S(map));
+  ar.b(S(randomLevel));
+  ar.i32(S(blood));
+  ar.u32(S(gameMode));
+  ar.b(S(namesOnBonuses));
+  ar.b(S(regenerateLevel));
+  ar.b(S(shadow));
+  ar.b(S(loadChange));
+  ar.str(S(levelFile));
+
+  ar.b(S(recordReplays));
+  ar.b(S(loadPowerlevelPalette));
+
+  ar.i32(S(aiMutations))
+      .i32(S(aiFrames))
+      .u32(S(selectBotWeapons))
+      .i32(S(zoneTimeout));
+
+  ar.b(S(aiTraces)).i32(S(aiParallels));
+  ar.b(S(allowViewingSpawnPoint));
+  ar.str(S(tc));
+
+#undef S
+
+  ar.arr("weapTable", settings.weapTable, [&](uint32_t& v) {
+    ar.u32(0, v);
+    if (ar.in)
+      v = limit<0, 3>(v);
+  });
 }
 
 template <typename Archive>
@@ -348,6 +192,7 @@ void archive_text(Settings& settings, Archive& ar) {
   ar.b(S(spectatorWindow));
   ar.b(S(fullscreen));
   ar.str(S(tc));
+  ar.i32(S(bloodParticleMax));
 
 #undef S
 
@@ -357,75 +202,24 @@ void archive_text(Settings& settings, Archive& ar) {
       v = limit<0, 3>(v);
   });
 
-#define S(n) #n, ws->n
-
   // Serialize the first 2 worms (left/right players) as the "worms" array
-  // for backwards compatibility with old config files
   std::shared_ptr<WormSettings> twoWorms[2] = {
       settings.wormSettings[0], settings.wormSettings[1]};
   ar.array_obj(
       "worms", twoWorms,
       [&](std::shared_ptr<WormSettings> const& ws) {
-        ar.u32(S(controller));
-        if (ar.in)
-          ws->controller = limit<0, 3>(ws->controller);
-        ar.arr("color", ws->rgb, [&](int& c) {
-          ar.i32(0, c);
-          if (ar.in)
-            c &= 63;
-        });
-        ar.arr("weapons", ws->weapons, [&](uint32_t& w) { ar.u32(0, w); });
-        ar.i32(S(health));
-
-        if (ws->randomName && ar.out) {
-          std::string empty;
-          ar.str("name", empty);
-        } else {
-          ar.str(S(name));
-          // TODO: Random generation?
-        }
-
-        ar.arr("controls", ws->controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
-
-        ar.u32(S(inputDevice));
-        ar.str(S(gamepadName));
-        ar.str(S(gamepadSerial));
-        ar.arr("gamepadControls", ws->gamepadControls,
-               [&](uint32_t& c) { ar.u32(0, c); });
+        archive_worm_toml(ar, *ws);
       });
   if (ar.in) {
     settings.wormSettings[0] = twoWorms[0];
     settings.wormSettings[1] = twoWorms[1];
   }
 
-  // Serialize network player as a separate object
+  // Serialize network player as a separate [netPlayer] object
   {
     auto& ws = settings.wormSettings[Settings::NetworkPlayerIdx];
-    ar.u32("netPlayer.controller", ws->controller);
-    if (ar.in)
-      ws->controller = limit<0, 3>(ws->controller);
-    ar.arr("netPlayer.color", ws->rgb, [&](int& c) {
-      ar.i32(0, c);
-      if (ar.in)
-        c &= 63;
+    ar.obj("netPlayer", [&] {
+      archive_worm_toml(ar, *ws);
     });
-    ar.arr("netPlayer.weapons", ws->weapons, [&](uint32_t& w) { ar.u32(0, w); });
-    ar.i32("netPlayer.health", ws->health);
-
-    if (ws->randomName && ar.out) {
-      std::string empty;
-      ar.str("netPlayer.name", empty);
-    } else {
-      ar.str("netPlayer.name", ws->name);
-    }
-
-    ar.arr("netPlayer.controls", ws->controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
-    ar.u32("netPlayer.inputDevice", ws->inputDevice);
-    ar.str("netPlayer.gamepadName", ws->gamepadName);
-    ar.str("netPlayer.gamepadSerial", ws->gamepadSerial);
-    ar.arr("netPlayer.gamepadControls", ws->gamepadControls,
-           [&](uint32_t& c) { ar.u32(0, c); });
   }
-
-#undef S
 }

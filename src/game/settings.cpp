@@ -5,9 +5,7 @@
 #include "filesystem.hpp"
 
 #include <gvl/io2/fstream.hpp>
-#include <gvl/serialization/context.hpp>
-#include <gvl/serialization/archive.hpp>
-#include <gvl/serialization/toml.hpp>
+#include <gvl/serialization/toml_adapter.hpp>
 
 #include <gvl/crypt/gash.hpp>
 
@@ -19,20 +17,24 @@ int const Settings::wormAnimTab[] =
 	14
 };
 
-Extensions::Extensions()
+GameplayExtensions::GameplayExtensions()
 : recordReplays(true)
 , loadPowerlevelPalette(true)
-, bloodParticleMax(700)
 , aiFrames(70*2), aiMutations(2)
 , aiTraces(false)
 , aiParallels(3)
-, fullscreen(false)
 , zoneTimeout(30)
 , selectBotWeapons(true)
 , allowViewingSpawnPoint(false)
+, tc(std::string("openliero"))
+{
+}
+
+AppSettings::AppSettings()
+: fullscreen(false)
 , singleScreenReplay(false)
 , spectatorWindow(false)
-, tc(std::string("openliero"))
+, bloodParticleMax(700)
 {
 }
 
@@ -100,36 +102,13 @@ Settings::Settings()
 	}
 }
 
-typedef gvl::in_archive<gvl::octet_reader> in_archive_t;
-typedef gvl::out_archive<gvl::octet_writer> out_archive_t;
-
 bool Settings::load(FsNode node, Rand& rand)
 {
 	try
 	{
 		auto reader = node.toOctetReader();
-		gvl::default_serialization_context context;
-
 		gvl::toml::reader<gvl::octet_reader> ar(reader);
-
 		archive_text(*this, ar);
-	}
-	catch (std::runtime_error&)
-	{
-		return false;
-	}
-
-	return true;
-}
-
-bool Settings::loadLegacy(FsNode node, Rand& rand)
-{
-	try
-	{
-		auto reader = node.toOctetReader();
-		gvl::default_serialization_context context;
-
-		archive_liero(in_archive_t(reader, context), *this, rand);
 	}
 	catch (std::runtime_error&)
 	{
@@ -141,14 +120,34 @@ bool Settings::loadLegacy(FsNode node, Rand& rand)
 
 gvl::gash::value_type& Settings::updateHash()
 {
-	gvl::default_serialization_context context;
+	std::string buf;
+	gvl::string_writer sw(buf);
+	gvl::toml::writer<gvl::string_writer> ar(sw);
+	archive_gameplay_text(*this, ar);
+	ar.flush();
+
 	gvl::hash_accumulator<gvl::gash> ha;
-
-	archive(gvl::out_archive<gvl::hash_accumulator<gvl::gash>, gvl::default_serialization_context>(ha, context), *this);
-
+	for (char c : buf)
+		ha.put(static_cast<uint8_t>(c));
 	ha.flush();
 	hash = ha.final();
 	return hash;
+}
+
+std::string Settings::toToml() const
+{
+	std::string buf;
+	gvl::string_writer sw(buf);
+	gvl::toml::writer<gvl::string_writer> ar(sw);
+	archive_text(const_cast<Settings&>(*this), ar);
+	return buf;
+}
+
+void Settings::fromToml(std::string const& data)
+{
+	gvl::string_reader sr(data);
+	gvl::toml::reader<gvl::string_reader> ar(sr);
+	archive_text(*this, ar);
 }
 
 void Settings::save(FsNode node, Rand& rand)

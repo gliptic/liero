@@ -255,7 +255,6 @@ struct Gfx
 
 	void saveSettings(FsNode node);
 	bool loadSettings(FsNode node);
-	bool loadSettingsLegacy(FsNode node);
 
 	void processEvent(SDL_Event& ev, Controller* controller = 0);
 

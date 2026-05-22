@@ -62,6 +62,7 @@ find_package(SDL3_image REQUIRED CONFIG)
 find_package(miniz CONFIG REQUIRED)
 find_package(enet CONFIG REQUIRED PATHS "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/cmake/enet")
 find_package(LibJuice CONFIG REQUIRED)
+find_package(tomlplusplus CONFIG REQUIRED)
 
 # local dependencies
 add_subdirectory(src/gvl)
@@ -163,6 +164,7 @@ target_link_libraries(game
   SDL3_image::SDL3_image
   enet::enet_static
   LibJuice::LibJuice
+  tomlplusplus::tomlplusplus
 )
 
 if(APPLE)
@@ -302,31 +304,48 @@ if(OPENLIERO_BUILD_TESTS)
   target_link_libraries(test_determinism PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_determinism
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
   )
 
   add_executable(test_network_controller src/tests/test_network_controller.cpp)
   target_link_libraries(test_network_controller PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_network_controller
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
   )
 
   add_executable(test_transport src/tests/test_transport.cpp)
   target_link_libraries(test_transport PRIVATE game Catch2::Catch2WithMain)
-  catch_discover_tests(test_transport)
+  catch_discover_tests(test_transport DISCOVERY_MODE PRE_TEST)
 
   add_executable(test_session src/tests/test_session.cpp)
   target_link_libraries(test_session PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_session
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
   )
 
   add_executable(test_stun src/tests/test_stun.cpp)
   target_link_libraries(test_stun PRIVATE game Catch2::Catch2WithMain)
-  catch_discover_tests(test_stun)
+  catch_discover_tests(test_stun DISCOVERY_MODE PRE_TEST)
 
   add_executable(test_ice src/tests/test_ice.cpp)
   target_link_libraries(test_ice PRIVATE game Catch2::Catch2WithMain)
-  catch_discover_tests(test_ice)
+  catch_discover_tests(test_ice DISCOVERY_MODE PRE_TEST)
+
+  add_executable(test_settings src/tests/test_settings.cpp)
+  target_link_libraries(test_settings PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_settings
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_tc_load src/tests/test_tc_load.cpp)
+  target_link_libraries(test_tc_load PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_tc_load
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
 endif()
 
 # desync fuzzer

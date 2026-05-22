@@ -75,11 +75,8 @@ try
 
 	if (!gfx.loadSettings(configNode / "Setups" / "liero.cfg"))
 	{
-		if (!gfx.loadSettingsLegacy(configNode / "LIERO.DAT"))
-		{
-			gfx.settings.reset(new Settings);
-			gfx.saveSettings(configNode / "Setups" / "liero.cfg");
-		}
+		gfx.settings.reset(new Settings);
+		gfx.saveSettings(configNode / "Setups" / "liero.cfg");
 	}
 
 	if (tcSet)
