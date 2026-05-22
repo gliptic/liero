@@ -248,6 +248,7 @@ void OptionsSelectorState::enter()
 bool OptionsSelectorState::onSelected(FileNode* node)
 {
 	gfx->loadSettings(node->getFsNode());
+	gfx->settingsMenu.updateItems(*gfx->common);
 	return true;
 }
 
