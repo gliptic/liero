@@ -21,7 +21,9 @@ struct MainMenu : Menu
 		MaTc,
 		MaHostGame,
 		MaJoinGame,
-		MaNetPlayerSettings
+		MaNetPlayerSettings,
+		MaHostOnline,
+		MaJoinOnline,
 	};
 
 	MainMenu(int x, int y)

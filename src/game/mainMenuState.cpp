@@ -228,6 +228,28 @@ bool MainMenuState::update()
 					break;
 				}
 
+				case MainMenu::MaHostOnline:
+				{
+					sfx.play(common, 27);
+					gfx->pendingMenuSelection = MainMenu::MaHostOnline;
+					break;
+				}
+
+				case MainMenu::MaJoinOnline:
+				{
+					sfx.play(common, 27);
+					gfx->stateStack.push(std::make_unique<InputStringState>(
+						"", 6, 10, 80, ::toupper, "ROOM CODE: ", false,
+						[this](bool accepted, std::string const& result) {
+							if (accepted && result.size() == 6)
+							{
+								gfx->pendingNetAddress = result;
+								gfx->pendingMenuSelection = MainMenu::MaJoinOnline;
+							}
+						}), gfx);
+					break;
+				}
+
 				default:
 				{
 					gfx->curMenu = &gfx->mainMenu;

@@ -61,6 +61,7 @@ find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
 find_package(SDL3_image REQUIRED CONFIG)
 find_package(miniz CONFIG REQUIRED)
 find_package(enet CONFIG REQUIRED PATHS "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/cmake/enet")
+find_package(LibJuice CONFIG REQUIRED)
 
 # local dependencies
 add_subdirectory(src/gvl)
@@ -131,7 +132,12 @@ set(GAME_SOURCES ${SOURCES}
   src/game/net/memoryFs.cpp
   src/game/net/localaddr.cpp
   src/game/net/stun.cpp
+  src/game/net/signaling.cpp
+  src/game/net/iceAgent.cpp
+  src/game/net/iceBridge.cpp
+
   src/game/netConnectState.cpp
+  src/game/onlineConnectState.cpp
   src/game/statsState.cpp
   src/game/rematchState.cpp
   src/game/menu/booleanSwitchBehavior.cpp
@@ -146,6 +152,9 @@ set(GAME_SOURCES ${SOURCES}
 
 # game
 add_library(game ${GAME_SOURCES})
+if(WIN32)
+  target_compile_definitions(game PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
+endif()
 target_link_libraries(game
   PUBLIC
   miniz::miniz
@@ -153,6 +162,7 @@ target_link_libraries(game
   SDL3::SDL3
   SDL3_image::SDL3_image
   enet::enet_static
+  LibJuice::LibJuice
 )
 
 if(APPLE)
@@ -309,6 +319,14 @@ if(OPENLIERO_BUILD_TESTS)
   catch_discover_tests(test_session
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
   )
+
+  add_executable(test_stun src/tests/test_stun.cpp)
+  target_link_libraries(test_stun PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_stun)
+
+  add_executable(test_ice src/tests/test_ice.cpp)
+  target_link_libraries(test_ice PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_ice)
 endif()
 
 # desync fuzzer

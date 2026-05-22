@@ -2,13 +2,9 @@ name: Build and push relay server
 
 on:
   push:
-    branches: [master]
     paths:
       - 'server/**'
       - '.github/workflows/relay-server.yml'
-  pull_request:
-    paths:
-      - 'server/**'
 
 env:
   REGISTRY: ghcr.io
@@ -45,6 +41,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: server/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

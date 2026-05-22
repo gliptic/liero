@@ -14,6 +14,7 @@
 #include "console.hpp"
 
 #include <ctime>
+#include <cstdlib>
 #include <exception>
 #include <gvl/math/cmwc.hpp>
 
@@ -43,6 +44,11 @@ try
 				{
 					++i;
 					configPath = argv[i];
+				}
+				else if (std::strcmp(argv[i] + 2, "port") == 0 && i + 1 < argc)
+				{
+					++i;
+					gfx.onlinePort = static_cast<uint16_t>(std::atoi(argv[i]));
 				}
 				break;
 			}

@@ -27,7 +27,7 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 - [x] **Sim is fully deterministic given same seed + inputs** — Verified! Test harness runs two identical Game instances with random inputs for 1000 frames and confirms byte-identical state after each frame. No desync detected.
 - [ ] **No AI needed in network games** — If multiplayer is human-only, threaded AI non-determinism is irrelevant. If AI is needed, it must be made single-threaded/deterministic.
 - [ ] **State serialization is complete** — The replay serialization captures all sim-affecting state. Verify by: save state, advance N frames, restore state, advance N frames again → must match.
-- [x] **UDP hole-punching is feasible for later** — STUN external IP+port discovery implemented. Go relay server provides signaling + relay fallback. NAT port remapping remains a known edge case (documented below).
+- [x] **UDP hole-punching is feasible for later** — Replaced with full ICE (libjuice + coturn). Handles all NAT types including symmetric NATs via TURN relay. See "Online connect flow" section below.
 
 ## MVP Scope (Alpha)
 
@@ -69,17 +69,29 @@ The game's replay system already implements lockstep: deterministic sim + per-fr
 
 ## How to Play
 
+### LAN / Direct IP
+
 1. Both players configure match settings (Match Setup) before connecting
-2. Player A: select **HOST GAME** from the main menu — shows "HOSTING ON PORT 19532"
-3. Player B: select **JOIN GAME**, type the host's IP address, press Enter
+2. Player A: select **HOST LAN GAME** from the main menu — shows "HOSTING ON PORT 19532"
+3. Player B: select **JOIN LAN GAME**, type the host's IP address, press Enter
 4. Both see connection status, then the game starts automatically
 5. Press Escape during gameplay to disconnect and return to menu
+
+### Online (NAT traversal)
+
+1. Player A: select **HOST ONLINE** — discovers external IP via STUN, creates a room on the signaling server, and displays a 6-character room code
+2. Player B: select **JOIN ONLINE**, type the room code, press Enter
+3. Both peers perform STUN to learn their external address+port, then report addresses to the signaling server
+4. The server signals both peers to begin UDP hole-punching simultaneously
+5. If hole-punch succeeds → direct peer-to-peer connection (same as LAN)
+6. If hole-punch fails → server allocates a UDP relay port and both peers connect through it (higher latency)
+7. Press Escape at any point to cancel and return to menu
 
 ## Not Doing (and Why)
 
 - **Rollback/prediction** — Adds massive complexity; lockstep with delay is sufficient for alpha and LAN play
 - **More than 2 players** — The original game is 2-player; network protocol can be designed to allow expansion later but not implementing now
-- **Matchmaking server** — Alpha uses direct IP connection; relay/STUN comes later
+- ~~**Matchmaking server**~~ — Signaling server implemented (Go, `server/`); provides room codes, NAT traversal coordination, and relay fallback
 - **Spectator mode** — Nice-to-have, not core
 - **Web/Emscripten multiplayer** — WebRTC adds complexity; desktop-only for now
 - **AI in network games** — Threading non-determinism makes this hard; punt to later
@@ -182,21 +194,25 @@ together. It manages the full connection lifecycle:
   rejection, and actual frame-advancing over real localhost UDP sockets with deterministic
   state verification.
 
-### Multiplayer UI (2026-05-17)
+### Multiplayer UI (2026-05-17, updated 2026-05-20)
 
 The UI integration uses the existing state stack and menu system:
 
-- **Menu items:** `HOST GAME` and `JOIN GAME` added to `MainMenu` enum and loaded in
-  `Gfx::loadMenus()`.
-- **Host flow:** Select HOST GAME → fades out → `Gfx::runOneFrame()` pushes
+- **Menu items:** `HOST LAN GAME`, `JOIN LAN GAME`, `HOST ONLINE`, `JOIN ONLINE` added to
+  `MainMenu` enum and loaded in `Gfx::loadMenus()`.
+- **LAN host flow:** Select HOST LAN GAME → fades out → `Gfx::runOneFrame()` pushes
   `NetConnectState(Host)` which creates a `NetSession`, calls `hostGame(19532)`, and
   shows "HOSTING ON PORT 19532 / WAITING FOR PEER...". When the peer connects and
   handshake completes, `NetConnectState` releases the controller to `gfx->controller`
   and replaces itself with `GamePlayState` via `scheduleReplaceTop()`.
-- **Join flow:** Select JOIN GAME → pushes `InputStringState` for the IP address →
+- **LAN join flow:** Select JOIN LAN GAME → pushes `InputStringState` for the IP address →
   callback stores the address in `gfx->pendingNetAddress` and sets
   `gfx->pendingMenuSelection = MaJoinGame` → menu fades out → `runOneFrame()` pushes
   `NetConnectState(Client, address)` → connects to host → same flow as above.
+- **Online host flow:** Select HOST ONLINE → pushes `OnlineConnectState(Host)` →
+  STUN → signaling → hole-punch → transitions to `NetConnectState` (see Online Connect Flow).
+- **Online join flow:** Select JOIN ONLINE → input room code → pushes
+  `OnlineConnectState(Client, code)` → same flow as host but joins existing room.
 - **Error handling:** Connection failures and disconnects are shown via `InfoBoxState`.
   During gameplay, `GamePlayState::update()` polls `gfx->netSession->update()` and
   detects disconnection, showing "PEER DISCONNECTED" if the peer drops.
@@ -211,7 +227,7 @@ The UI integration uses the existing state stack and menu system:
 - Should the input delay be adaptive (based on measured RTT) or fixed?
 - How to handle disconnection more gracefully? Currently disconnects immediately; could add pause + timeout + reconnect.
 - ~~How should weapon selection work in multiplayer?~~ **Answered:** Both players select locally in lockstep; inputs exchanged via the same frame-synced protocol.
-- Port configuration — currently hardcoded to 19532. Could add a port input field.
+- ~~Port configuration — currently hardcoded to 19532. Could add a port input field.~~ Low priority: works as default; signaling server makes port forwarding unnecessary for most users.
 
 ### Weapon selection in multiplayer (2026-05-17)
 
@@ -242,7 +258,7 @@ Two issues had to be resolved:
 - ~~**Desync detection:** Periodic checksum comparison using the existing `PacketChecksum` packet type (already in the wire protocol, not yet wired up)~~ ✅ Wired up — `fastGameChecksum()` sent every frame, compared on receipt
 - **Replay recording of network games** — the data is already available (frame inputs)
 - **Rollback netcode (Phase 2)** — GGPO-style prediction/rollback for internet play
-- ~~**NAT traversal** — STUN/TURN or relay server for connections through firewalls~~ Partial: STUN-based external IP discovery implemented (see below); hole-punching and TURN pending
+- ~~**NAT traversal** — STUN/TURN or relay server for connections through firewalls~~ ✅ Implemented: STUN + signaling + hole-punch + relay fallback (see Online Connect Flow below)
 - **Graceful disconnection** — pause + timeout + forfeit instead of immediate exit
 
 ### Map transfer (2026-05-17)
@@ -381,34 +397,62 @@ addresses alongside local addresses, discovered via STUN (RFC 5389).
 - Uses enet's raw socket API rather than adding a new dependency (libcurl, etc.)
 - Direct IP literals for the STUN servers avoid DNS resolution (one fewer failure mode)
 - Background thread avoids blocking the UI — external IPs appear asynchronously
-- Extracts both external IP and port from XOR-MAPPED-ADDRESS (port needed for endpoint-dependent NAT mapping detection)
-- This is the foundation for future NAT hole-punching (STUN request/response parsing is reusable)
+- Extracts both external IP and port from XOR-MAPPED-ADDRESS
+- STUN query binds to the game's local port (19532) for the LAN host screen display
 
-### Relay server known limitations (2026-05-20)
+### Online connect flow (ICE-based, 2026-05-21)
 
-The Go relay server (`server/`) has several known limitations documented here for future work:
+The online multiplayer flow is coordinated by `OnlineConnectState` (`src/game/onlineConnectState.hpp/cpp`),
+using libjuice (RFC 8445 ICE) for NAT traversal and a signaling server for rendezvous.
 
-**NAT port remapping:** `findPeer()` matches peers by UDP source address including port.
-If a client's NAT remaps the source port between `CreateRoom` and `ReportAddr` messages,
-the peer won't be found. The debug logging helps diagnose this. Mitigation: the relay
-fallback handles the case where hole-punching fails due to this.
+**Components:**
+- `IceAgent` (`src/game/net/iceAgent.hpp/cpp`) — libjuice C++ wrapper with thread-safe event queue
+- `IceBridge` (`src/game/net/iceBridge.hpp/cpp`) — loopback UDP proxy between ENet and libjuice
+- `SignalingClient` (`src/game/net/signaling.hpp/cpp`) — UDP-based signaling for room management and ICE credential/candidate exchange
+- `StunQuery` — still used for LAN host screen to show external IP
+- Go signaling server (`server/`) — coordinates rooms, forwards ICE messages, generates TURN credentials
 
-**No authentication:** Any UDP sender can create rooms, join rooms, or claim to be a peer.
-For game matchmaking this is acceptable, but a malicious actor could exhaust the 1000-room
-limit, inject themselves into relay sessions, or spoof PunchOK. Future mitigation: add
-a session token or HMAC-based authentication if abuse becomes an issue.
+**Flow (both host and client):**
+1. `SignalingClient::createRoom()` or `joinRoom()` → server returns room code + optional TURN credentials
+2. Create `IceAgent` with STUN/TURN servers configured
+3. Start gathering → libjuice discovers host, server-reflexive, and relay candidates
+4. Exchange ICE ufrag/pwd via signaling (`IceCredentials` ↔ `PeerCredentials`)
+5. Exchange candidates as they're gathered (`IceCandidate` ↔ `PeerCandidate`)
+6. Signal gather complete (`IceGatherDone` ↔ `PeerGatherDone`)
+7. libjuice performs connectivity checks across all candidate pairs
+8. On ICE Connected → create `IceBridge` (loopback UDP socket pair)
+9. Create `NetTransport` on bridge socket, transition to `NetConnectState`
+
+**TURN relay:** When direct connectivity fails (symmetric NATs, firewalls), libjuice
+automatically uses the TURN relay candidate. No separate fallback path needed — TURN
+is a first-class ICE candidate with appropriate priority.
+
+**TURN credential generation:** The signaling server generates time-limited TURN credentials
+using HMAC-SHA1 shared secret (standard TURN REST API pattern). Credentials expire after
+24 hours. Requires `TURN_SECRET` env var matching the coturn server's `use-auth-secret`.
+
+**Protocol** (binary UDP, must match `server/protocol.go`):
+- Client→Server: `CreateRoom(0x01)`, `JoinRoom(0x02)`, `Keepalive(0x06)`, `IceCredentials(0x07)`, `IceCandidate(0x08)`, `IceGatherDone(0x09)`
+- Server→Client: `RoomCreated(0x81)`, `PeerJoined(0x82)`, `RoomExpired(0x86)`, `PeerCredentials(0x87)`, `PeerCandidate(0x88)`, `PeerGatherDone(0x89)`, `Error(0x8F)`
+- Legacy (ignored): `ReportAddr(0x03)`, `PunchOK(0x04)`, `PunchFail(0x05)`
+
+**Key design decisions:**
+- libjuice handles all NAT traversal (host, srflx, relay candidates + connectivity checks)
+- IceBridge provides ENet a localhost socket, `cb_recv` writes from libjuice's thread safely
+- ENet socket replacement: after `enet_host_create(nullptr, ...)`, swap auto-created socket with bridge socket
+- Signaling uses enet's raw UDP socket API (not an ENet host) to avoid protocol interference
+- Default signaling server: `liero-server.orbmit.org:19533`
+- STUN server: Google's public STUN (`stun.l.google.com:19302`)
+
+### Signaling server known limitations
+
+**No authentication:** Any UDP sender can create rooms or join rooms.
+For game matchmaking this is acceptable. Future mitigation: add HMAC-based auth if abuse becomes an issue.
 
 **Room code entropy:** 6 chars from a 32-char alphabet = ~30 bits of entropy. Brute-forceable
 at ~1M guesses/sec in ~17 minutes. Currently acceptable because rooms are short-lived (60s TTL)
 and there's no incentive to join a stranger's game. Future mitigation: rate limiting per
 source IP, or longer codes.
-
-**Relay peer identification:** `runRelay()` identifies the two relay peers as "first two
-UDP senders" to the relay port. Any UDP sender to that port becomes a participant. Acceptable
-for a game (relay ports are ephemeral and short-lived) but not suitable for sensitive traffic.
-
-**`allocateRelayPort()` is O(n):** Linear scan over the port range. With the default 100
-ports this is fine. If relay-port-count is increased significantly, replace with a free-list.
 
 ## Technical Risk Assessment
 
@@ -416,5 +460,5 @@ ports this is fine. If relay-port-count is increased significantly, replace with
 |------|-----------|--------|------------|--------|
 | Hidden non-determinism | ~~Medium~~ **Low** | Critical (desync) | Determinism + death fuzz test (5000+ frames per seed, 5 seeds) | ✅ Validated with fix |
 | Input delay feels bad at >80ms RTT | High | Medium (UX) | Document as "alpha limitation", plan rollback for Phase 2 | Pending |
-| NAT/firewall blocks connections | High | High (unusable) | Alpha = direct IP only; document port forwarding; Phase 2 adds hole-punching | Pending |
+| NAT/firewall blocks connections | ~~High~~ **Low** | High (unusable) | ICE (libjuice) with TURN relay via coturn — handles all NAT types | ✅ Implemented |
 | Platform-specific fixed-point behavior | Low | Critical | Fixed-point is integer-based, should be identical; verify in harness | Pending (cross-platform CI) |

@@ -11,8 +11,6 @@ import (
 
 func main() {
 	port := flag.Int("port", 19533, "UDP listen port")
-	relayPortBase := flag.Int("relay-port-base", 19600, "Base port for UDP relay allocations")
-	relayPortCount := flag.Int("relay-port-count", 100, "Number of ports available for relay")
 	flag.Parse()
 
 	addr := &net.UDPAddr{Port: *port}
@@ -22,10 +20,12 @@ func main() {
 	}
 	defer conn.Close()
 
-	log.Printf("Signaling server listening on :%d (relay ports %d-%d)",
-		*port, *relayPortBase, *relayPortBase+*relayPortCount-1)
+	log.Printf("Signaling server listening on :%d", *port)
+	if os.Getenv("TURN_SECRET") != "" {
+		log.Printf("TURN credential generation enabled")
+	}
 
-	srv := NewServer(conn, *relayPortBase, *relayPortCount)
+	srv := NewServer(conn)
 
 	// Graceful shutdown
 	sig := make(chan os.Signal, 1)

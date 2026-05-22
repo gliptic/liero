@@ -402,7 +402,12 @@ struct octet_writer : basic_text_writer<octet_writer>
 	{
 		// We keep this function small to encourage
 		// inlining of the common case
-		return (cur_ != end_) ? (*cur_++ = b, sink_result(sink_result::ok)) : overflow_put_(b);
+		if (cur_ != end_)
+		{
+			*cur_++ = b;
+			return sink_result(sink_result::ok);
+		}
+		return overflow_put_(b);
 	}
 
 	sink_result put(uint8_t const* p, std::size_t len)

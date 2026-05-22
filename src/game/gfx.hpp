@@ -315,6 +315,9 @@ struct Gfx
 
 	FsNode configNode;
 
+	// Port for online play (default 19532, configurable via --port)
+	uint16_t onlinePort = 19532;
+
 	MainMenu mainMenu;
 	SettingsMenu settingsMenu;
 	PlayerMenu playerMenu;

@@ -78,6 +78,41 @@ bool NetSession::joinGame(const std::string& address, uint16_t port) {
   return true;
 }
 
+bool NetSession::hostWithTransport(NetTransport&& transport) {
+  if (sessionState_ != Idle)
+    return false;
+
+  role_ = Host;
+  gameSeed_ = static_cast<uint32_t>(std::time(nullptr));
+  controller_ = std::make_unique<NetworkController>(common_, settings_, 0);
+
+  transport_ = std::move(transport);
+  wireCallbacks();
+  sessionState_ = WaitingForPeer;
+  return true;
+}
+
+bool NetSession::connectWithTransport(NetTransport&& transport,
+                                      const std::string& peerAddr, uint16_t peerPort) {
+  if (sessionState_ != Idle)
+    return false;
+
+  role_ = Client;
+  gameSeed_ = 0;
+  controller_ = std::make_unique<NetworkController>(common_, settings_, 1);
+
+  transport_ = std::move(transport);
+  wireCallbacks();
+
+  if (!transport_.connectExisting(peerAddr, peerPort)) {
+    sessionState_ = Failed;
+    return false;
+  }
+
+  sessionState_ = WaitingForPeer;
+  return true;
+}
+
 void NetSession::update() {
   if (sessionState_ == Idle || sessionState_ == Failed ||
       sessionState_ == Disconnected)

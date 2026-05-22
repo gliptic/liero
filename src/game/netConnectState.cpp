@@ -19,6 +19,16 @@ NetConnectState::NetConnectState(NetSession::Role role, std::string address, uin
 {
 }
 
+NetConnectState::NetConnectState(NetSession::Role role, NetTransport&& transport,
+                                 std::string peerAddr, uint16_t peerPort)
+: role_(role)
+, address_(std::move(peerAddr))
+, port_(peerPort)
+, hasTransport_(true)
+, existingTransport_(std::move(transport))
+{
+}
+
 void NetConnectState::enter()
 {
 	FsNode tcRoot = gfx->getConfigNode() / "TC" / gfx->settings->tc;
@@ -31,14 +41,22 @@ void NetConnectState::enter()
 	};
 
 	bool ok = false;
-	if (role_ == NetSession::Host)
+	if (hasTransport_)
+	{
+		// Use the existing transport (from ICE bridge)
+		if (role_ == NetSession::Host)
+			ok = session->hostWithTransport(std::move(existingTransport_));
+		else
+			ok = session->connectWithTransport(std::move(existingTransport_), address_, port_);
+	}
+	else if (role_ == NetSession::Host)
 	{
 		ok = session->hostGame(port_);
 		if (ok)
 		{
 			localAddresses_ = getLocalAddresses();
 			stunQuery_ = std::make_unique<StunQuery>();
-			stunQuery_->start();
+			stunQuery_->start(port_);
 		}
 	}
 	else
@@ -190,14 +208,16 @@ void NetConnectState::draw()
 
 		if (!externalIPs_.ipv4.empty())
 		{
-			std::string d = externalIPs_.ipv4 + ":" + std::to_string(port_) + " (EXTERNAL)";
+			uint16_t extPort = externalIPs_.ipv4Port ? externalIPs_.ipv4Port : port_;
+			std::string d = externalIPs_.ipv4 + ":" + std::to_string(extPort) + " (EXTERNAL)";
 			int wd = font.getDims(d);
 			font.drawText(gfx->playRenderer.bmp, d, cx - wd / 2, addrY, 45);
 			addrY += 10;
 		}
 		if (!externalIPs_.ipv6.empty())
 		{
-			std::string d = "[" + externalIPs_.ipv6 + "]:" + std::to_string(port_) + " (EXTERNAL)";
+			uint16_t extPort = externalIPs_.ipv6Port ? externalIPs_.ipv6Port : port_;
+			std::string d = "[" + externalIPs_.ipv6 + "]:" + std::to_string(extPort) + " (EXTERNAL)";
 			int wd = font.getDims(d);
 			font.drawText(gfx->playRenderer.bmp, d, cx - wd / 2, addrY, 45);
 			addrY += 10;

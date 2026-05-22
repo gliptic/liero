@@ -16,6 +16,7 @@
       "platform": "!linux"
     },
     "sdl3-image",
-    "catch2"
+    "catch2",
+    "libjuice"
   ]
 }

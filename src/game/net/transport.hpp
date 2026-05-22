@@ -1,42 +1,45 @@
 #pragma once
 
+#include "iceBridge.hpp"
+
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string>
+#include <vector>
 
 struct _ENetHost;
 struct _ENetPeer;
+struct IceAgent;
 
 // Handles UDP communication between two peers using ENet.
 // Provides reliable ordered delivery of input packets.
 struct NetTransport {
   // Packet types
   enum PacketType : uint8_t {
-    PacketInput = 1,      // Frame input: [type(1) | frame(4) | input(1)]
-    PacketHandshake = 2,  // Initial sync: [type(1) | seed(4) | settingsHash(4)]
-    PacketChecksum = 3,   // Desync check: [type(1) | frame(4) | checksum(4)]
-    PacketPlayerInfo = 4, // Player info: [type(1) | weapons(5*4) | color(4) | rgb(3*4)]
-    PacketMatchSettings = 5, // Host-authoritative: [type(1) | settings blob]
-    PacketMapData = 6,    // Compressed map: [type(1) | width(2) | height(2) | compressedData...]
-    PacketPause = 7,      // Pause request: [type(1)]
-    PacketResume = 8,     // Resume request: [type(1)]
-    PacketRematchReady = 9,  // Ready toggle: [type(1) | ready(1)]
-    PacketRematchLevel = 10, // Level selection: [type(1) | randomLevel(1) | levelFile(N)]
-    PacketEndMatch = 11,     // End match request: [type(1)]
-    PacketTcInfo = 12,       // TC info: [type(1) | hash(4) | name(N)]
-    PacketTcResponse = 13,   // TC response: [type(1) | needData(1)]
-    PacketTcData = 14,       // TC archive: [type(1) | data(N)]
+    PacketInput = 1,
+    PacketHandshake = 2,
+    PacketChecksum = 3,
+    PacketPlayerInfo = 4,
+    PacketMatchSettings = 5,
+    PacketMapData = 6,
+    PacketPause = 7,
+    PacketResume = 8,
+    PacketRematchReady = 9,
+    PacketRematchLevel = 10,
+    PacketEndMatch = 11,
+    PacketTcInfo = 12,
+    PacketTcResponse = 13,
+    PacketTcData = 14,
   };
 
-  // Player info exchanged between peers (weapons + cosmetics)
   struct PlayerInfo {
     uint32_t weapons[5];
     int32_t color;
     int32_t rgb[3];
-    char name[24];  // Fixed-size, null-terminated
+    char name[24];
   };
 
-  // Match settings sent from host to client
   struct MatchSettingsData {
     int32_t lives;
     int32_t loadingTime;
@@ -47,7 +50,6 @@ struct NetTransport {
     int32_t flagsToWin;
     uint8_t loadChange;
     uint32_t weapTable[40];
-    // Additional synced settings
     uint8_t regenerateLevel;
     uint8_t shadow;
     uint8_t namesOnBonuses;
@@ -67,65 +69,58 @@ struct NetTransport {
   NetTransport();
   ~NetTransport();
 
-  // Disconnect and release resources (returns to initial state).
+  // Movable but not copyable (owns socket)
+  NetTransport(NetTransport&& other) noexcept;
+  NetTransport& operator=(NetTransport&& other) noexcept;
+  NetTransport(const NetTransport&) = delete;
+  NetTransport& operator=(const NetTransport&) = delete;
+
   void disconnect();
 
-  // Host a game on the given port. Returns true if listening started.
+  // Host a game on the given port.
   bool host(uint16_t port);
 
-  // Connect to a host. Returns true if connection attempt started.
+  // Connect to a host directly.
   bool connect(const std::string& address, uint16_t port);
 
-  // Poll for events and deliver received inputs. Call once per frame.
-  // Returns true if still connected.
+  // Connect to a peer using the existing host.
+  // The host must already be created.
+  bool connectExisting(const std::string& address, uint16_t port);
+
+  // Create ENet host using a pre-existing socket (from IceBridge).
+  // The socket should be non-blocking with adequate buffer sizes.
+  bool createHostOnBridgeSocket(BridgeSocket bridgeSocket);
+
+  // Attach ICE bridge and agent — transport takes ownership and polls them.
+  // Must be called after createHostOnBridgeSocket.
+  void attachIce(std::unique_ptr<IceBridge> bridge, std::unique_ptr<IceAgent> agent);
+
+  // --- General ---
+  // Poll for events. Call once per frame.
   bool poll();
 
-  // Send local input for a given frame
   void sendInput(uint32_t frame, uint8_t input);
-
-  // Send a checksum for desync detection
   void sendChecksum(uint32_t frame, uint32_t checksum);
-
-  // Send handshake (seed + settings hash)
   void sendHandshake(uint32_t seed, uint32_t settingsHash);
-
-  // Send local player's info (weapons + color)
   void sendPlayerInfo(const PlayerInfo& info);
-
-  // Send match settings (host only)
   void sendMatchSettings(const MatchSettingsData& data);
-
-  // Send compressed map data (host only)
   void sendMapData(const void* data, size_t len);
-
-  // Send pause/resume notifications
   void sendPause();
   void sendResume();
-
-  // Send rematch ready state
   void sendRematchReady(bool ready);
-
-  // Send rematch level selection (host only)
   void sendRematchLevel(bool randomLevel, const std::string& levelFile);
-
-  // Send end-match request (either player can end the match early)
   void sendEndMatch();
-
-  // Send TC info (name + hash) — host sends after connect
   void sendTcInfo(uint32_t hash, const std::string& name);
-
-  // Send TC response (client tells host whether it needs the TC data)
   void sendTcResponse(bool needData);
-
-  // Send TC archive data (host sends if client needs it)
   void sendTcData(const void* data, size_t len);
 
   State state() const { return state_; }
-
-  // Returns the port the host is listening on (useful when binding to port 0).
   uint16_t listeningPort() const;
 
-  // Callbacks set by the controller
+  // Access the ENet host (for STUN-via-host integration)
+  _ENetHost* enetHost() const { return enetHost_; }
+
+  // Callbacks
   std::function<void(uint32_t frame, uint8_t input)> onRemoteInput;
   std::function<void(uint32_t seed, uint32_t settingsHash)> onHandshake;
   std::function<void(uint32_t frame, uint32_t checksum)> onChecksum;
@@ -142,11 +137,20 @@ struct NetTransport {
   std::function<void(const void* data, size_t len)> onTcData;
   std::function<void()> onConnected;
   std::function<void()> onDisconnected;
+  // Called for each non-ENet packet intercepted (STUN, etc.)
+  // Return true if consumed.
+  std::function<bool(const uint8_t* data, size_t len)> onInterceptedPacket;
 
  private:
   void sendPacket(const void* data, size_t len);
+  bool createHost(uint16_t port);
+  void setupIntercept();
+
+  static int interceptCallback(_ENetHost* host, void* event);
 
   _ENetHost* enetHost_;
   _ENetPeer* peer_;
   State state_;
+  std::unique_ptr<IceBridge> iceBridge_;
+  std::unique_ptr<IceAgent> iceAgent_;
 };

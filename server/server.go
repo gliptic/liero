@@ -1,68 +1,58 @@
 package main
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"net"
+	"os"
 	"sync"
 	"time"
 )
 
 const (
-	roomTTL       = 60 * time.Second
+	roomTTL       = 5 * time.Minute
 	cleanupPeriod = 10 * time.Second
 	maxRooms      = 1000
 )
 
-// PeerAddr holds one discovered address for a peer.
-type PeerAddr struct {
-	Type byte   // AddrIPv4 or AddrIPv6
-	IP   net.IP // 4 or 16 bytes
-	Port uint16
-}
-
 // Peer represents one connected game client.
 type Peer struct {
-	Addr      *net.UDPAddr // UDP source address for sending replies
-	Addresses []PeerAddr   // STUN-discovered external addresses
-	PunchOK   bool
-	PunchFail bool
+	Addr *net.UDPAddr // UDP source address for sending replies
 }
 
-// Room holds two peers trying to connect.
+// Room holds two peers trying to connect via ICE.
 type Room struct {
 	Code      [RoomCodeLen]byte
 	Host      *Peer
 	Client    *Peer
 	CreatedAt time.Time
 	LastSeen  time.Time
-	RelayPort int // 0 = not allocated
 }
 
 type Server struct {
-	conn          *net.UDPConn
-	mu            sync.Mutex
-	rooms         map[string]*Room // code string → room
-	relayPortBase int
-	relayPortMax  int
-	relayPorts    map[int]bool // allocated relay ports
+	conn       *net.UDPConn
+	mu         sync.Mutex
+	rooms      map[string]*Room // code string → room
+	turnSecret string           // shared secret for TURN credential generation (empty = no TURN)
 }
 
-func NewServer(conn *net.UDPConn, relayPortBase, relayPortCount int) *Server {
+func NewServer(conn *net.UDPConn) *Server {
 	return &Server{
-		conn:          conn,
-		rooms:         make(map[string]*Room),
-		relayPortBase: relayPortBase,
-		relayPortMax:  relayPortBase + relayPortCount,
-		relayPorts:    make(map[int]bool),
+		conn:       conn,
+		rooms:      make(map[string]*Room),
+		turnSecret: os.Getenv("TURN_SECRET"),
 	}
 }
 
 func (s *Server) Run() {
 	go s.cleanupLoop()
 
-	buf := make([]byte, 512)
+	buf := make([]byte, 2048)
 	for {
 		n, addr, err := s.conn.ReadFromUDP(buf)
 		if err != nil {
@@ -78,7 +68,6 @@ func (s *Server) Run() {
 
 func (s *Server) handlePacket(data []byte, from *net.UDPAddr) {
 	msgType := data[0]
-	log.Printf("Recv msg=0x%02x (%d bytes) from %s", msgType, len(data), from)
 
 	switch msgType {
 	case MsgCreateRoom:
@@ -90,42 +79,12 @@ func (s *Server) handlePacket(data []byte, from *net.UDPAddr) {
 		}
 		code := string(data[1 : 1+RoomCodeLen])
 		s.handleJoinRoom(code, from)
-	case MsgReportAddr:
-		if len(data) < 1+RoomCodeLen+1+2+4 {
-			s.sendError(from, ErrInvalidMsg, "too short")
-			return
-		}
-		code := string(data[1 : 1+RoomCodeLen])
-		addrType := data[1+RoomCodeLen]
-		port := binary.BigEndian.Uint16(data[1+RoomCodeLen+1:])
-		var ipLen int
-		if addrType == AddrIPv4 {
-			ipLen = 4
-		} else if addrType == AddrIPv6 {
-			ipLen = 16
-		} else {
-			s.sendError(from, ErrInvalidMsg, "bad addr type")
-			return
-		}
-		if len(data) < 1+RoomCodeLen+1+2+ipLen {
-			s.sendError(from, ErrInvalidMsg, "too short for IP")
-			return
-		}
-		ip := make(net.IP, ipLen)
-		copy(ip, data[1+RoomCodeLen+3:1+RoomCodeLen+3+ipLen])
-		s.handleReportAddr(code, from, PeerAddr{Type: addrType, IP: ip, Port: port})
-	case MsgPunchOK:
-		if len(data) < 1+RoomCodeLen {
-			return
-		}
-		code := string(data[1 : 1+RoomCodeLen])
-		s.handlePunchResult(code, from, true)
-	case MsgPunchFail:
-		if len(data) < 1+RoomCodeLen {
-			return
-		}
-		code := string(data[1 : 1+RoomCodeLen])
-		s.handlePunchResult(code, from, false)
+	case MsgIceCredentials:
+		s.handleIceCredentials(data, from)
+	case MsgIceCandidate:
+		s.handleIceCandidate(data, from)
+	case MsgIceGatherDone:
+		s.handleIceGatherDone(data, from)
 	case MsgKeepalive:
 		if len(data) < 1+RoomCodeLen {
 			return
@@ -136,6 +95,8 @@ func (s *Server) handlePacket(data []byte, from *net.UDPAddr) {
 			room.LastSeen = time.Now()
 		}
 		s.mu.Unlock()
+	case MsgReportAddr, MsgPunchOK, MsgPunchFail:
+		// Legacy messages — ignore silently
 	default:
 		s.sendError(from, ErrInvalidMsg, "unknown type")
 	}
@@ -143,15 +104,16 @@ func (s *Server) handlePacket(data []byte, from *net.UDPAddr) {
 
 func (s *Server) handleCreateRoom(from *net.UDPAddr) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	if len(s.rooms) >= maxRooms {
+		s.mu.Unlock()
 		s.sendError(from, ErrRoomFull, "server full")
 		return
 	}
 
 	code := s.generateRoomCode()
 	if code == "" {
+		s.mu.Unlock()
 		s.sendError(from, ErrRoomFull, "server full")
 		return
 	}
@@ -164,244 +126,207 @@ func (s *Server) handleCreateRoom(from *net.UDPAddr) {
 	copy(room.Code[:], code)
 	s.rooms[code] = room
 
+	s.mu.Unlock()
+
 	log.Printf("Room %s created by %s", code, from)
 
-	// Send RoomCreated
-	resp := make([]byte, 1+RoomCodeLen)
-	resp[0] = MsgRoomCreated
-	copy(resp[1:], code)
-	s.conn.WriteToUDP(resp, from)
+	// Send RoomCreated with TURN credentials
+	s.sendRoomResponse(MsgRoomCreated, code, from)
 }
 
 func (s *Server) handleJoinRoom(code string, from *net.UDPAddr) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	room, ok := s.rooms[code]
 	if !ok {
+		s.mu.Unlock()
 		s.sendError(from, ErrRoomNotFound, "no such room")
 		return
 	}
 	if room.Client != nil {
+		s.mu.Unlock()
 		s.sendError(from, ErrRoomFull, "room full")
 		return
 	}
 
 	room.Client = &Peer{Addr: from}
 	room.LastSeen = time.Now()
+	hostAddr := room.Host.Addr
+
+	s.mu.Unlock()
 
 	log.Printf("Room %s: client joined from %s", code, from)
 
-	// Notify host that peer joined
-	msg := make([]byte, 1+RoomCodeLen)
-	msg[0] = MsgPeerJoined
-	copy(msg[1:], code)
-	s.conn.WriteToUDP(msg, room.Host.Addr)
+	// Acknowledge to joining client (with TURN credentials)
+	s.sendRoomResponse(MsgPeerJoined, code, from)
 
-	// Send any addresses the host already reported to the new client
-	for _, a := range room.Host.Addresses {
-		s.sendPeerAddr(from, code, a)
-	}
-
-	// If host has addresses, tell both to start punching
-	if len(room.Host.Addresses) > 0 {
-		s.sendStartPunch(room, code)
-	}
+	// Notify host (with TURN credentials)
+	s.sendRoomResponse(MsgPeerJoined, code, hostAddr)
 }
 
-func (s *Server) handleReportAddr(code string, from *net.UDPAddr, addr PeerAddr) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *Server) handleIceCredentials(data []byte, from *net.UDPAddr) {
+	// Format: [0x07] + [6: room code] + [1: ufrag_len] + [N: ufrag] + [1: pwd_len] + [N: pwd]
+	if len(data) < 1+RoomCodeLen+1 {
+		return
+	}
+	code := string(data[1 : 1+RoomCodeLen])
 
+	s.mu.Lock()
 	room, ok := s.rooms[code]
 	if !ok {
-		log.Printf("Room %s: ReportAddr from %s but room not found", code, from)
+		s.mu.Unlock()
 		s.sendError(from, ErrRoomNotFound, "no such room")
 		return
 	}
 	room.LastSeen = time.Now()
+	other := s.otherPeerAddr(room, from)
+	s.mu.Unlock()
 
-	peer := s.findPeer(room, from)
-	if peer == nil {
-		log.Printf("Room %s: ReportAddr from %s but not a known peer (host=%s, client=%v)",
-			code, from, room.Host.Addr, room.Client)
-		if room.Client != nil {
-			log.Printf("  client addr: %s", room.Client.Addr)
-		}
-		s.sendError(from, ErrInvalidMsg, "not in room")
+	if other == nil {
 		return
 	}
 
-	peer.Addresses = append(peer.Addresses, addr)
-
-	// Forward this address to the other peer
-	other := s.otherPeer(room, peer)
-	if other != nil {
-		s.sendPeerAddr(other.Addr, code, addr)
-
-		// If both have reported addresses, signal start punch
-		if len(room.Host.Addresses) > 0 && room.Client != nil && len(room.Client.Addresses) > 0 {
-			s.sendStartPunch(room, code)
-		}
+	// Parse credentials from the message
+	off := 1 + RoomCodeLen
+	if off >= len(data) {
+		return
 	}
+	ufragLen := int(data[off])
+	off++
+	if off+ufragLen+1 > len(data) {
+		return
+	}
+	ufrag := data[off : off+ufragLen]
+	off += ufragLen
+	pwdLen := int(data[off])
+	off++
+	if off+pwdLen > len(data) {
+		return
+	}
+	pwd := data[off : off+pwdLen]
+
+	// Forward as PeerCredentials to the other peer
+	msg := make([]byte, 1+RoomCodeLen+1+len(ufrag)+1+len(pwd))
+	i := 0
+	msg[i] = MsgPeerCredentials
+	i++
+	copy(msg[i:], code)
+	i += RoomCodeLen
+	msg[i] = byte(len(ufrag))
+	i++
+	copy(msg[i:], ufrag)
+	i += len(ufrag)
+	msg[i] = byte(len(pwd))
+	i++
+	copy(msg[i:], pwd)
+	s.conn.WriteToUDP(msg, other)
 }
 
-func (s *Server) handlePunchResult(code string, from *net.UDPAddr, ok bool) {
+func (s *Server) handleIceCandidate(data []byte, from *net.UDPAddr) {
+	// Format: [0x08] + [6: room code] + [2: candidate_len BE] + [N: candidate]
+	if len(data) < 1+RoomCodeLen+2 {
+		return
+	}
+	code := string(data[1 : 1+RoomCodeLen])
+
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	room, exists := s.rooms[code]
-	if !exists {
-		log.Printf("Room %s: PunchResult from %s but room not found", code, from)
-		return
-	}
-
-	peer := s.findPeer(room, from)
-	if peer == nil {
-		log.Printf("Room %s: PunchResult from %s but not a known peer (host=%s, client=%v)",
-			code, from, room.Host.Addr, room.Client)
-		if room.Client != nil {
-			log.Printf("  client addr: %s", room.Client.Addr)
-		}
-		return
-	}
-
-	if ok {
-		peer.PunchOK = true
-		log.Printf("Room %s: punch OK from %s", code, from)
-		// Both succeeded — room served its purpose, will be cleaned up
-	} else {
-		peer.PunchFail = true
-		log.Printf("Room %s: punch FAILED from %s", code, from)
-
-		// If both failed, offer relay
-		if room.Host.PunchFail && room.Client != nil && room.Client.PunchFail {
-			s.offerRelay(room, code)
-		}
-	}
-}
-
-func (s *Server) offerRelay(room *Room, code string) {
-	port := s.allocateRelayPort()
-	if port == 0 {
-		log.Printf("Room %s: no relay ports available", code)
-		return
-	}
-	room.RelayPort = port
-
-	log.Printf("Room %s: offering relay on port %d", code, port)
-
-	// Start relay goroutine
-	go s.runRelay(room, code, port)
-
-	// Tell both peers to use the relay
-	msg := make([]byte, 1+RoomCodeLen+2)
-	msg[0] = MsgUseRelay
-	copy(msg[1:], code)
-	binary.BigEndian.PutUint16(msg[1+RoomCodeLen:], uint16(port))
-
-	s.conn.WriteToUDP(msg, room.Host.Addr)
-	if room.Client != nil {
-		s.conn.WriteToUDP(msg, room.Client.Addr)
-	}
-}
-
-func (s *Server) runRelay(room *Room, code string, port int) {
-	addr := &net.UDPAddr{Port: port}
-	conn, err := net.ListenUDP("udp", addr)
-	if err != nil {
-		log.Printf("Room %s: failed to start relay on port %d: %v", code, port, err)
-		s.mu.Lock()
-		delete(s.relayPorts, port)
+	room, ok := s.rooms[code]
+	if !ok {
 		s.mu.Unlock()
 		return
 	}
-	defer func() {
-		conn.Close()
-		s.mu.Lock()
-		delete(s.relayPorts, port)
-		s.mu.Unlock()
-		log.Printf("Room %s: relay on port %d stopped", code, port)
-	}()
+	room.LastSeen = time.Now()
+	other := s.otherPeerAddr(room, from)
+	s.mu.Unlock()
 
-	// Set deadline so relay doesn't live forever
-	conn.SetDeadline(time.Now().Add(10 * time.Minute))
-
-	buf := make([]byte, 2048)
-	var peerA, peerB *net.UDPAddr
-
-	for {
-		n, from, err := conn.ReadFromUDP(buf)
-		if err != nil {
-			return
-		}
-
-		// First two senders become the two relay peers
-		if peerA == nil {
-			peerA = from
-		} else if peerB == nil && !udpAddrEqual(from, peerA) {
-			peerB = from
-		}
-
-		// Forward to the other peer
-		var dest *net.UDPAddr
-		if udpAddrEqual(from, peerA) {
-			dest = peerB
-		} else if udpAddrEqual(from, peerB) {
-			dest = peerA
-		}
-
-		if dest != nil {
-			conn.WriteToUDP(buf[:n], dest)
-		}
+	if other == nil {
+		return
 	}
-}
 
-func udpAddrEqual(a, b *net.UDPAddr) bool {
-	if a == nil || b == nil {
-		return false
+	off := 1 + RoomCodeLen
+	candLen := int(binary.BigEndian.Uint16(data[off:]))
+	off += 2
+	if off+candLen > len(data) {
+		return
 	}
-	// Normalize to 4-byte IPv4 if it's an IPv4-mapped IPv6 address
-	aIP := a.IP.To4()
-	if aIP == nil {
-		aIP = a.IP
-	}
-	bIP := b.IP.To4()
-	if bIP == nil {
-		bIP = b.IP
-	}
-	return aIP.Equal(bIP) && a.Port == b.Port
-}
 
-func (s *Server) allocateRelayPort() int {
-	for p := s.relayPortBase; p < s.relayPortMax; p++ {
-		if !s.relayPorts[p] {
-			s.relayPorts[p] = true
-			return p
-		}
-	}
-	return 0
-}
-
-func (s *Server) sendPeerAddr(to *net.UDPAddr, code string, addr PeerAddr) {
-	ipLen := len(addr.IP)
-	msg := make([]byte, 1+RoomCodeLen+1+2+ipLen)
-	msg[0] = MsgPeerAddr
+	// Forward as PeerCandidate
+	msg := make([]byte, 1+RoomCodeLen+2+candLen)
+	msg[0] = MsgPeerCandidate
 	copy(msg[1:], code)
-	msg[1+RoomCodeLen] = addr.Type
-	binary.BigEndian.PutUint16(msg[1+RoomCodeLen+1:], addr.Port)
-	copy(msg[1+RoomCodeLen+3:], addr.IP)
+	binary.BigEndian.PutUint16(msg[1+RoomCodeLen:], uint16(candLen))
+	copy(msg[1+RoomCodeLen+2:], data[off:off+candLen])
+	s.conn.WriteToUDP(msg, other)
+}
+
+func (s *Server) handleIceGatherDone(data []byte, from *net.UDPAddr) {
+	// Format: [0x09] + [6: room code]
+	if len(data) < 1+RoomCodeLen {
+		return
+	}
+	code := string(data[1 : 1+RoomCodeLen])
+
+	s.mu.Lock()
+	room, ok := s.rooms[code]
+	if !ok {
+		s.mu.Unlock()
+		return
+	}
+	room.LastSeen = time.Now()
+	other := s.otherPeerAddr(room, from)
+	s.mu.Unlock()
+
+	if other == nil {
+		return
+	}
+
+	// Forward as PeerGatherDone
+	msg := make([]byte, 1+RoomCodeLen)
+	msg[0] = MsgPeerGatherDone
+	copy(msg[1:], code)
+	s.conn.WriteToUDP(msg, other)
+}
+
+func (s *Server) sendRoomResponse(msgType byte, code string, to *net.UDPAddr) {
+	turnUser, turnPass := s.generateTurnCredentials()
+	msg := make([]byte, 1+RoomCodeLen+1+len(turnUser)+1+len(turnPass))
+	i := 0
+	msg[i] = msgType
+	i++
+	copy(msg[i:], code)
+	i += RoomCodeLen
+	msg[i] = byte(len(turnUser))
+	i++
+	copy(msg[i:], turnUser)
+	i += len(turnUser)
+	msg[i] = byte(len(turnPass))
+	i++
+	copy(msg[i:], turnPass)
 	s.conn.WriteToUDP(msg, to)
 }
 
-func (s *Server) sendStartPunch(room *Room, code string) {
-	msg := make([]byte, 1+RoomCodeLen)
-	msg[0] = MsgStartPunch
-	copy(msg[1:], code)
-	s.conn.WriteToUDP(msg, room.Host.Addr)
-	if room.Client != nil {
-		s.conn.WriteToUDP(msg, room.Client.Addr)
+func (s *Server) generateTurnCredentials() (user, pass string) {
+	if s.turnSecret == "" {
+		return "", ""
 	}
+	expiry := time.Now().Add(24 * time.Hour).Unix()
+	user = fmt.Sprintf("%d", expiry)
+	mac := hmac.New(sha1.New, []byte(s.turnSecret))
+	mac.Write([]byte(user))
+	pass = base64.StdEncoding.EncodeToString(mac.Sum(nil))
+	return
+}
+
+func (s *Server) otherPeerAddr(room *Room, from *net.UDPAddr) *net.UDPAddr {
+	if room.Host != nil && udpAddrEqual(room.Host.Addr, from) {
+		if room.Client != nil {
+			return room.Client.Addr
+		}
+	}
+	if room.Client != nil && udpAddrEqual(room.Client.Addr, from) {
+		return room.Host.Addr
+	}
+	return nil
 }
 
 func (s *Server) sendError(to *net.UDPAddr, code byte, message string) {
@@ -412,25 +337,8 @@ func (s *Server) sendError(to *net.UDPAddr, code byte, message string) {
 	s.conn.WriteToUDP(msg, to)
 }
 
-func (s *Server) findPeer(room *Room, addr *net.UDPAddr) *Peer {
-	if room.Host != nil && udpAddrEqual(room.Host.Addr, addr) {
-		return room.Host
-	}
-	if room.Client != nil && udpAddrEqual(room.Client.Addr, addr) {
-		return room.Client
-	}
-	return nil
-}
-
-func (s *Server) otherPeer(room *Room, peer *Peer) *Peer {
-	if peer == room.Host {
-		return room.Client
-	}
-	return room.Host
-}
-
 func (s *Server) generateRoomCode() string {
-	const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // no I/O/0/1 to avoid confusion
+	const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 	const maxAttempts = 100
 	b := make([]byte, RoomCodeLen)
 	for attempt := 0; attempt < maxAttempts; attempt++ {
@@ -443,31 +351,52 @@ func (s *Server) generateRoomCode() string {
 			return code
 		}
 	}
-	return "" // caller should check for empty and return ErrRoomFull
+	return ""
 }
 
 func (s *Server) cleanupLoop() {
 	ticker := time.NewTicker(cleanupPeriod)
 	defer ticker.Stop()
 	for range ticker.C {
+		type expiredRoom struct {
+			code       string
+			hostAddr   *net.UDPAddr
+			clientAddr *net.UDPAddr
+		}
+		var expired []expiredRoom
+
 		s.mu.Lock()
 		now := time.Now()
 		for code, room := range s.rooms {
 			if now.Sub(room.LastSeen) > roomTTL {
 				log.Printf("Room %s expired", code)
-				// Notify peers
-				msg := make([]byte, 1+RoomCodeLen)
-				msg[0] = MsgRoomExpired
-				copy(msg[1:], code)
+				er := expiredRoom{code: code}
 				if room.Host != nil {
-					s.conn.WriteToUDP(msg, room.Host.Addr)
+					er.hostAddr = room.Host.Addr
 				}
 				if room.Client != nil {
-					s.conn.WriteToUDP(msg, room.Client.Addr)
+					er.clientAddr = room.Client.Addr
 				}
+				expired = append(expired, er)
 				delete(s.rooms, code)
 			}
 		}
 		s.mu.Unlock()
+
+		for _, er := range expired {
+			msg := make([]byte, 1+RoomCodeLen)
+			msg[0] = MsgRoomExpired
+			copy(msg[1:], er.code)
+			if er.hostAddr != nil {
+				s.conn.WriteToUDP(msg, er.hostAddr)
+			}
+			if er.clientAddr != nil {
+				s.conn.WriteToUDP(msg, er.clientAddr)
+			}
+		}
 	}
+}
+
+func udpAddrEqual(a, b *net.UDPAddr) bool {
+	return a.Port == b.Port && a.IP.Equal(b.IP)
 }
