@@ -93,7 +93,7 @@ jobs:
 
       - name: Setup Emscripten
         if: matrix.name == 'emscripten'
-        uses: mymindstorm/setup-emsdk@v14
+        uses: mymindstorm/setup-emsdk@v16
 
       - name: Get cmake/ninja
         uses: lukka/get-cmake@latest
