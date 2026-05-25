@@ -10,7 +10,6 @@
 #include "../weapsel.hpp"
 #include "../replay.hpp"
 #include "../console.hpp"
-#include <gvl/serialization/except.hpp>
 #include <ctime>
 #include "../mixer/mixer.hpp"
 
@@ -18,7 +17,7 @@ struct Game;
 
 struct ReplayController : CommonController
 {
-	ReplayController(std::shared_ptr<Common> common, gvl::source source);
+	ReplayController(std::shared_ptr<Common> common, std::unique_ptr<io::Reader> source);
 
 	bool isReplay() { return true; };
 	void onKey(int key, bool keyState);
@@ -38,7 +37,7 @@ struct ReplayController : CommonController
 
 
 	std::unique_ptr<Game> initialGame;
-	gvl::octet_reader initialReader;
+	std::size_t initialReaderPos = 0;
 
 
 	GameState state;

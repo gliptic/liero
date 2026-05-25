@@ -3,6 +3,7 @@
 #include <string>
 #include "game/replay.hpp"
 #include "game/filesystem.hpp"
+#include "game/io/stream.hpp"
 #include "game/reader.hpp"
 #include "game/mixer/player.hpp"
 #include "game/game.hpp"
@@ -11,7 +12,6 @@
 #include "game/gfx/renderer.hpp"
 #include "game/text.hpp"
 
-#include <gvl/io2/fstream.hpp>
 #include <memory>
 
 extern "C"
@@ -26,9 +26,8 @@ void replayToVideo(
 	std::string const& fullPath,
 	std::string const& replayVideoName)
 {
-	auto replay(
-		gvl::to_source(new gvl::file_bucket_pipe(fullPath.c_str(), "rb")));
-	ReplayReader replayReader(replay);
+	ReplayReader replayReader(
+		std::make_unique<io::FileReader>(fullPath.c_str(), "rb"));
 	Renderer renderer;
 
 	if (spectator)
@@ -61,9 +60,9 @@ void replayToVideo(
 
 	// spectator viewport is always full size
 	// +68 on x to align the viewport in the middle
-	game->addSpectatorViewport(new SpectatorViewport(gvl::rect(0, 0, 504 + 68, 350), 504, 350));
-	game->addViewport(new Viewport(gvl::rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
-	game->addViewport(new Viewport(gvl::rect(160, 0, 158+160, 158), game->worms[1]->index, 504, 350));
+	game->addSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+	game->addViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
+	game->addViewport(new Viewport(Rect(160, 0, 158+160, 158), game->worms[1]->index, 504, 350));
 	game->startGame();
 	game->focus(renderer);
 

@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-#include <gvl/io2/convert.hpp>
+#include "text_cell.hpp"
 
 struct Bitmap;
 
@@ -58,20 +58,20 @@ struct Font
 		drawText(scr, str.data(), str.size(), x, y, color, 1);
 	}
 
-	void drawText(Bitmap& scr, gvl::cell const& str, int x, int y, int color)
+	void drawText(Bitmap& scr, TextCell const& str, int x, int y, int color)
 	{
 		if (str.buffer.empty())
 			return;
 
-		if (str.text_placement != gvl::cell::left)
+		if (str.placement != TextCell::Left)
 		{
 			int w = getDims(
 				reinterpret_cast<char const*>(&str.buffer[0]),
 				str.buffer.size());
 
-			if (str.text_placement == gvl::cell::center)
+			if (str.placement == TextCell::Center)
 				x -= w / 2;
-			else if (str.text_placement == gvl::cell::right)
+			else if (str.placement == TextCell::Right)
 				x -= w;
 		}
 

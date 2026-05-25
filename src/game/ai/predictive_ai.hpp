@@ -5,7 +5,7 @@
 #include "../worm.hpp"
 #include "../math.hpp"
 #include "../rand.hpp"
-#include <gvl/math/vec.hpp>
+#include "math/rect.hpp"
 #include <numeric>
 #include <functional>
 #include <algorithm>
@@ -399,7 +399,7 @@ struct FollowAI : WormAI, AiContext
 	TransModel model;
 	int evaluationBudget;
 
-	std::vector<std::tuple<gvl::ivec2, PalIdx>> evaluatePositions;
+	std::vector<std::tuple<IVec2, PalIdx>> evaluatePositions;
 
 	std::vector<double> negEffect, posEffect;
 	int effectScaler;

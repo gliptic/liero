@@ -4,7 +4,6 @@
 #include "game/constants.hpp"
 #include "game/math.hpp"
 #include "game/console.hpp"
-#include <gvl/support/platform.hpp>
 
 #include <ctime>
 #include <exception>

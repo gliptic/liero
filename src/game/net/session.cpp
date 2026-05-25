@@ -698,23 +698,27 @@ void NetSession::generateAndSendMap() {
 
   Level& level = controller_->game.level;
 
-  // Serialize: width(2) + height(2) + rand_x(4) + rand_c(4) + pixel_data(w*h) + palette(768)
+  // Serialize: width(2) + height(2) + rand_state_len(4) + rand_state(N)
+  //          + rand_last(4) + pixel_data(w*h) + palette(768)
   uint16_t w = static_cast<uint16_t>(level.width);
   uint16_t h = static_cast<uint16_t>(level.height);
-  uint32_t randX = controller_->game.rand.x;
-  uint32_t randC = controller_->game.rand.c;
+  std::string randState = controller_->game.rand.serialize();
+  uint32_t randStateLen = static_cast<uint32_t>(randState.size());
+  uint32_t randLast = controller_->game.rand.last;
   size_t pixelDataSize = static_cast<size_t>(w) * h;
-  size_t rawSize = 4 + 8 + pixelDataSize + 768;
+  size_t rawSize = 4 + 4 + randStateLen + 4 + pixelDataSize + 768;
 
   std::vector<uint8_t> raw(rawSize);
   std::memcpy(raw.data(), &w, 2);
   std::memcpy(raw.data() + 2, &h, 2);
-  std::memcpy(raw.data() + 4, &randX, 4);
-  std::memcpy(raw.data() + 8, &randC, 4);
-  std::memcpy(raw.data() + 12, level.data.data(), pixelDataSize);
+  std::memcpy(raw.data() + 4, &randStateLen, 4);
+  std::memcpy(raw.data() + 8, randState.data(), randStateLen);
+  std::memcpy(raw.data() + 8 + randStateLen, &randLast, 4);
+  size_t pixelsOffset = 8 + randStateLen + 4;
+  std::memcpy(raw.data() + pixelsOffset, level.data.data(), pixelDataSize);
 
   // Palette
-  uint8_t* palPtr = raw.data() + 12 + pixelDataSize;
+  uint8_t* palPtr = raw.data() + pixelsOffset + pixelDataSize;
   for (int i = 0; i < 256; ++i) {
     palPtr[i * 3 + 0] = level.origpal.entries[i].r;
     palPtr[i * 3 + 1] = level.origpal.entries[i].g;

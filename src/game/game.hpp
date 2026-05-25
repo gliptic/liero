@@ -38,7 +38,7 @@ struct Holdazone
 	{
 	}
 
-	gvl::rect rect;
+	Rect rect;
 	int holderIdx;
 
 	int contenderIdx, contenderFrames;
@@ -70,7 +70,7 @@ struct Game
 	void drawViewports(Renderer& renderer, GameState state, bool isReplay = false);
 	void drawSpectatorViewports(Renderer& renderer, GameState state, bool isReplay = false);
 	void clearWorms();
-	void addWorm(Worm*);
+	void addWorm(std::shared_ptr<Worm>);
 	void resetWorms();
 	void draw(Renderer& renderer, GameState state, bool useSpectatorViewports, bool isReplay = false);
 	void startGame();
@@ -91,7 +91,7 @@ struct Game
 	Worm* wormByIdx(int idx)
 	{
 		if (idx < 0) return 0;
-		return worms[idx];
+		return worms[idx].get();
 	}
 
 	std::shared_ptr<Common> common;
@@ -112,7 +112,7 @@ struct Game
 
 	std::vector<Viewport*> viewports;
 	std::vector<SpectatorViewport*> spectatorViewports;
-	std::vector<Worm*> worms;
+	std::vector<std::shared_ptr<Worm>> worms;
 
 	typedef ExactObjectList<Bonus, 99> BonusList;
 	typedef ExactObjectList<WObject, 600> WObjectList;

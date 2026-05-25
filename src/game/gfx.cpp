@@ -25,7 +25,6 @@
 #include "filesystem.hpp"
 #include "metadata.hpp"
 
-#include <gvl/io2/fstream.hpp>
 
 #include "controller/replayController.hpp"
 #include "controller/localController.hpp"
@@ -1061,14 +1060,14 @@ void Gfx::menuFlip(bool quitting)
 
 void Gfx::draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRenderer, Renderer& renderer)
 {
-	gvl::rect updateRect;
+	Rect updateRect;
 	Color realPal[256];
 	renderer.pal.activate(realPal);
 	int offsetX, offsetY;
 	int mag = fitScreen(surface.w, surface.h,
 						renderer.renderResX, renderer.renderResY, offsetX, offsetY);
 
-	gvl::rect newRect(offsetX, offsetY, renderer.renderResX * mag, renderer.renderResY * mag);
+	Rect newRect(offsetX, offsetY, renderer.renderResX * mag, renderer.renderResY * mag);
 
 	if(mag != prevMag)
 	{

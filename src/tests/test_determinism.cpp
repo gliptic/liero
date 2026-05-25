@@ -46,13 +46,13 @@ struct DualGameFixture {
 
     // Create identical worms for both games
     for (int idx = 0; idx < 2; ++idx) {
-      Worm* wA = new Worm();
+      auto wA = std::make_shared<Worm>();
       wA->settings = settings->wormSettings[idx];
       wA->health = wA->settings->health;
       wA->index = idx;
       wA->statsX = idx == 0 ? 0 : 218;
 
-      Worm* wB = new Worm();
+      auto wB = std::make_shared<Worm>();
       wB->settings = settings->wormSettings[idx];
       wB->health = wB->settings->health;
       wB->index = idx;
@@ -63,18 +63,18 @@ struct DualGameFixture {
     }
 
     // Add viewports (needed for processFrame's viewport logic)
-    gameA->addViewport(new Viewport(gvl::rect(0, 0, 158, 158), 0, 504, 350));
-    gameA->addViewport(new Viewport(gvl::rect(160, 0, 318, 158), 1, 504, 350));
-    gameB->addViewport(new Viewport(gvl::rect(0, 0, 158, 158), 0, 504, 350));
-    gameB->addViewport(new Viewport(gvl::rect(160, 0, 318, 158), 1, 504, 350));
+    gameA->addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    gameA->addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    gameB->addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    gameB->addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
     // Generate levels with the same RNG state
     gameA->level.generateFromSettings(*common, *settings, gameA->rand);
     gameB->level.generateFromSettings(*common, *settings, gameB->rand);
 
     // Initialize weapons for all worms
-    for (auto* w : gameA->worms) w->initWeapons(*gameA);
-    for (auto* w : gameB->worms) w->initWeapons(*gameB);
+    for (auto const& w : gameA->worms) w->initWeapons(*gameA);
+    for (auto const& w : gameB->worms) w->initWeapons(*gameB);
 
     // Start games
     gameA->paused = false;
@@ -88,7 +88,7 @@ struct DualGameFixture {
   }
 
   // Apply identical random inputs to both games using a separate PRNG
-  void applyRandomInputs(gvl::mwc& inputRng) {
+  void applyRandomInputs(Rand& inputRng) {
     for (int idx = 0; idx < 2; ++idx) {
       uint32_t input = inputRng() & 0x7f;  // 7 control bits
       gameA->worms[idx]->controlStates.unpack(input);
@@ -100,7 +100,7 @@ struct DualGameFixture {
 TEST_CASE("Dual simulation produces identical state", "[determinism]") {
   DualGameFixture f;
 
-  gvl::mwc inputRng(12345);
+  Rand inputRng(12345);
 
   constexpr int NUM_FRAMES = 1000;
 
@@ -124,7 +124,7 @@ TEST_CASE("Simulation is reproducible across runs", "[determinism]") {
 
   for (int run = 0; run < 2; ++run) {
     DualGameFixture f;
-    gvl::mwc inputRng(99999);
+    Rand inputRng(99999);
 
     constexpr int NUM_FRAMES = 500;
 
@@ -171,29 +171,29 @@ TEST_CASE("Same inputs produce same state regardless of construction order",
 
   // Same worm setup
   for (int idx = 0; idx < 2; ++idx) {
-    Worm* w1 = new Worm();
+    auto w1 = std::make_shared<Worm>();
     w1->settings = settings->wormSettings[idx];
     w1->health = w1->settings->health;
     w1->index = idx;
     game1.addWorm(w1);
 
-    Worm* w2 = new Worm();
+    auto w2 = std::make_shared<Worm>();
     w2->settings = settings->wormSettings[idx];
     w2->health = w2->settings->health;
     w2->index = idx;
     game2.addWorm(w2);
   }
 
-  game1.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), 0, 504, 350));
-  game1.addViewport(new Viewport(gvl::rect(160, 0, 318, 158), 1, 504, 350));
-  game2.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), 0, 504, 350));
-  game2.addViewport(new Viewport(gvl::rect(160, 0, 318, 158), 1, 504, 350));
+  game1.addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+  game1.addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+  game2.addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+  game2.addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
   game1.level.generateFromSettings(*common, *settings, game1.rand);
   game2.level.generateFromSettings(*common, *settings, game2.rand);
 
-  for (auto* w : game1.worms) w->initWeapons(game1);
-  for (auto* w : game2.worms) w->initWeapons(game2);
+  for (auto const& w : game1.worms) w->initWeapons(game1);
+  for (auto const& w : game2.worms) w->initWeapons(game2);
 
   game1.paused = false;
   game2.paused = false;
@@ -202,8 +202,8 @@ TEST_CASE("Same inputs produce same state regardless of construction order",
   game1.resetWorms();
   game2.resetWorms();
 
-  gvl::mwc inputRng1(55555);
-  gvl::mwc inputRng2(55555);
+  Rand inputRng1(55555);
+  Rand inputRng2(55555);
 
   for (int frame = 0; frame < 300; ++frame) {
     for (int idx = 0; idx < 2; ++idx) {
@@ -254,14 +254,14 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
     gameB.rand.seed(seed);
 
     for (int idx = 0; idx < 2; ++idx) {
-      Worm* wA = new Worm();
+      auto wA = std::make_shared<Worm>();
       wA->settings = settings->wormSettings[idx];
       wA->health = 25;  // Low health for quick deaths
       wA->index = idx;
       wA->statsX = idx == 0 ? 0 : 218;
       gameA.addWorm(wA);
 
-      Worm* wB = new Worm();
+      auto wB = std::make_shared<Worm>();
       wB->settings = settings->wormSettings[idx];
       wB->health = 25;
       wB->index = idx;
@@ -269,16 +269,16 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
       gameB.addWorm(wB);
     }
 
-    gameA.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), 0, 504, 350));
-    gameA.addViewport(new Viewport(gvl::rect(160, 0, 318, 158), 1, 504, 350));
-    gameB.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), 0, 504, 350));
-    gameB.addViewport(new Viewport(gvl::rect(160, 0, 318, 158), 1, 504, 350));
+    gameA.addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    gameA.addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    gameB.addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    gameB.addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
     gameA.level.generateFromSettings(*common, *settings, gameA.rand);
     gameB.level.generateFromSettings(*common, *settings, gameB.rand);
 
-    for (auto* w : gameA.worms) w->initWeapons(gameA);
-    for (auto* w : gameB.worms) w->initWeapons(gameB);
+    for (auto const& w : gameA.worms) w->initWeapons(gameA);
+    for (auto const& w : gameB.worms) w->initWeapons(gameB);
 
     gameA.paused = false;
     gameB.paused = false;
@@ -287,7 +287,7 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
     gameA.resetWorms();
     gameB.resetWorms();
 
-    gvl::mwc inputRng(seed * 2654435761u + 1);
+    Rand inputRng(seed * 2654435761u + 1);
 
     constexpr int NUM_FRAMES = 5000;
     int deathCount = 0;
@@ -311,7 +311,7 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
 
       // Track deaths for info output — killedTimer is set to 150 on death,
       // then decremented each frame, so 149 means "just died this frame"
-      for (auto* w : gameA.worms) {
+      for (auto const& w : gameA.worms) {
         if (!w->visible && w->killedTimer == Worm::KilledTimerInitial - 1)
           ++deathCount;
       }
@@ -322,8 +322,8 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
 
       if (hashA != hashB) {
         // Identify which component diverged
-        uint32_t rngA = gameA.rand.x * 31 + gameA.rand.c;
-        uint32_t rngB = gameB.rand.x * 31 + gameB.rand.c;
+        uint32_t rngA = gameA.rand.last;
+        uint32_t rngB = gameB.rand.last;
         bool rngMatch = (rngA == rngB);
 
         bool wormsMatch = true;
@@ -457,7 +457,7 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         // Deep compare worm weapons
         bool weaponsMatch = true;
         for (size_t wi = 0; wi < gameA.worms.size(); ++wi) {
-          auto* wA = gameA.worms[wi]; auto* wB = gameB.worms[wi];
+          auto const& wA = gameA.worms[wi]; auto const& wB = gameB.worms[wi];
           for (int i = 0; i < NUM_WEAPONS; ++i) {
             if (wA->weapons[i].ammo != wB->weapons[i].ammo ||
                 wA->weapons[i].delayLeft != wB->weapons[i].delayLeft ||

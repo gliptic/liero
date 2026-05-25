@@ -8,7 +8,6 @@
 #include "../weapsel.hpp"
 #include "../replay.hpp"
 #include "../console.hpp"
-#include <gvl/serialization/except.hpp>
 #include <ctime>
 #include <array>
 

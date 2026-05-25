@@ -16,10 +16,6 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 	Common& common = *game.common;
 	SObject& obj = *game.sobjects.newObjectReuse();
 
-	LTRACE(rand, 0, sobj, game.rand.x);
-	LTRACE(sobj, &obj - game.sobjects.arr, cxpo, x);
-	LTRACE(sobj, &obj - game.sobjects.arr, cypo, y);
-
 	assert(numSounds < 10);
 
 	if(startSound >= 0)
@@ -215,10 +211,6 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 							i->vel.y -= objBlowAway * power;
 					}
 
-					IF_ENABLE_TRACING(Common& common = *game.common);
-
-					LTRACE(nobj, &*i - game.nobjects.arr, puxp, i->vel.x);
-					LTRACE(nobj, &*i - game.nobjects.arr, puyp, i->vel.y);
 				}
 			}
 		}
@@ -226,7 +218,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		{
 			int width = detectRange / 2;
 
-			gvl::rect rect(x - width, y - width, x + width + 1, y + width + 1);
+			Rect rect(x - width, y - width, x + width + 1, y + width + 1);
 
 			rect.intersect(game.level.rect());
 
@@ -242,7 +234,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 						game,
 						angle,
 						fixedvec(),
-						itof(gvl::ivec2(x, y)),
+						itof(IVec2(x, y)),
 						pix, ownerIdx, firedBy);
 				}
 			}
@@ -255,7 +247,7 @@ void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* fir
 		drawDirtEffect(common, game.rand, game.level, dirtEffect, x - 7, y - 7);
 
 		if(game.settings->shadow)
-			correctShadow(common, game.level, gvl::rect(x - 10, y - 10, x + 11, y + 11));
+			correctShadow(common, game.level, Rect(x - 10, y - 10, x + 11, y + 11));
 	}
 
 	auto br = game.bonuses.all();

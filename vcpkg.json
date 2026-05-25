@@ -17,7 +17,9 @@
     },
     "sdl3-image",
     "catch2",
+    "cereal",
     "libjuice",
-    "tomlplusplus"
+    "tomlplusplus",
+    "xxhash"
   ]
 }

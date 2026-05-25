@@ -4,6 +4,7 @@
 #include "gfx.hpp"
 #include "gfx/color.hpp"
 #include "filesystem.hpp"
+#include "io/stream.hpp"
 
 #include <cstring>
 
@@ -84,9 +85,9 @@ void Level::generateDirtPattern(Common& common, Rand& rand)
 
 bool isNoRock(Common& common, Level& level, int size, int x, int y)
 {
-	gvl::rect rect(x, y, x + size + 1, y + size + 1);
+	Rect rect(x, y, x + size + 1, y + size + 1);
 
-	rect.intersect(gvl::rect(0, 0, level.width, level.height));
+	rect.intersect(Rect(0, 0, level.width, level.height));
 
 	for(int y = rect.y1; y < rect.y2; ++y)
 	for(int x = rect.x1; x < rect.x2; ++x)
@@ -216,7 +217,7 @@ void Level::resize(int width_new, int height_new)
 	materials.resize(width * height);
 }
 
-bool Level::load(Common& common, Settings const& settings, gvl::octet_reader r)
+bool Level::load(Common& common, Settings const& settings, io::Reader& r)
 {
 	resize(504, 350);
 
@@ -266,7 +267,8 @@ void Level::generateFromSettings(Common& common, Settings const& settings, Rand&
 		bool loaded = false;
 		try
 		{
-			loaded = load(common, settings, FsNode(path).toOctetReader());
+			auto r_ptr = FsNode(path).toReader(); io::Reader& r = *r_ptr;
+			loaded = load(common, settings, r);
 		}
 		catch (std::runtime_error&)
 		{
@@ -293,7 +295,7 @@ inline bool free(Material m)
 	return m.background() || m.anyDirt();
 }
 
-bool Level::selectSpawn(Rand& rand, int w, int h, gvl::ivec2& selected)
+bool Level::selectSpawn(Rand& rand, int w, int h, IVec2& selected)
 {
 	vector<int> vruns(width - w + 1);
 	vector<int> vdists(width - w + 1);

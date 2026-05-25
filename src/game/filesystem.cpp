@@ -1,6 +1,6 @@
 #include "filesystem.hpp"
 #include "text.hpp"
-#include <gvl/io2/fstream.hpp>
+#include "io/stream.hpp"
 #include <stdexcept>
 #include <cassert>
 #include <cctype>
@@ -394,7 +394,7 @@ void DirectoryListing::sort()
 
 struct FsNodeZipFile;
 
-struct FsNodeZipArchive : gvl::shared
+struct FsNodeZipArchive
 {
 	FsNodeZipArchive(std::string const& path);
 
@@ -434,20 +434,20 @@ struct FsNodeJoin : FsNodeImp
 		return a->exists() || b->exists();
 	}
 
-	gvl::source tryToSource()
+	std::unique_ptr<io::Reader> tryToReader()
 	{
-		auto s = a->tryToSource();
+		auto s = a->tryToReader();
 		if (s)
 			return s;
-		return b->tryToSource();
+		return b->tryToReader();
 	}
 
-	gvl::sink tryToSink()
+	std::unique_ptr<io::Writer> tryToWriter()
 	{
-		auto s = a->tryToSink();
+		auto s = a->tryToWriter();
 		if (s)
 			return s;
-		return b->tryToSink();
+		return b->tryToWriter();
 	}
 };
 
@@ -534,11 +534,6 @@ struct FsNodeZipFile : FsNodeImp
 
 	DirectoryListing iter()
 	{
-		//std::unique_ptr<dir_zip_archive_itr_imp> imp(new dir_zip_archive_itr_imp(std::shared_ptr<FsNodeZipFile>(this, gvl::shared_ownership())));
-
-		//if (imp->cur == imp->end)
-		//	imp.reset();
-
 		std::vector<NodeName> subs;
 
 		for (auto& i : children)
@@ -562,27 +557,39 @@ struct FsNodeZipFile : FsNodeImp
 		return true;
 	}
 
-	gvl::source tryToSource()
+	std::unique_ptr<io::Reader> tryToReader()
 	{
 		if (fileIndex < 0)
-			return gvl::source();
+			return nullptr;
 
 		std::size_t size;
 		auto* ptr = mz_zip_reader_extract_to_heap(&archive->archive, (mz_uint)fileIndex, &size, 0);
 
 		if (!ptr)
-			return gvl::source();
+			return nullptr;
 
-		gvl::source s(new gvl::stream_piece(
-			gvl::make_shared(gvl::bucket_data_mem::create_from((uint8_t const*)ptr, (uint8_t const*)ptr + size, size))));
+		// Copy the heap-extracted bytes into a vector so we own the lifetime
+		// (mz_zip_reader_extract_to_heap requires the caller to free()).
+		std::vector<uint8_t> data(reinterpret_cast<uint8_t const*>(ptr),
+		                          reinterpret_cast<uint8_t const*>(ptr) + size);
 		free(ptr);
 
-		return s;
+		struct OwnedMemReader : io::Reader {
+			std::vector<uint8_t> data;
+			io::MemReader inner;
+			explicit OwnedMemReader(std::vector<uint8_t>&& d)
+				: data(std::move(d)), inner(data.data(), data.size()) {}
+			uint8_t get() override { return inner.get(); }
+			std::size_t try_get(uint8_t* dst, std::size_t n) override {
+				return inner.try_get(dst, n);
+			}
+		};
+		return std::make_unique<OwnedMemReader>(std::move(data));
 	}
 
-	gvl::sink tryToSink()
+	std::unique_ptr<io::Writer> tryToWriter()
 	{
-		return gvl::sink(); // We don't want to write to .zip files
+		return nullptr; // We don't want to write to .zip files
 	}
 };
 
@@ -639,16 +646,16 @@ struct FsNodeFilesystem : FsNodeImp
 		return access(path.c_str(), 0) != -1;
 	}
 
-	gvl::source tryToSource()
+	std::unique_ptr<io::Reader> tryToReader()
 	{
 		FILE* f = tolerantFOpen(path.c_str(), "rb");
 		if (!f)
-			return gvl::source();
+			return nullptr;
 
-		return gvl::to_source(new gvl::file_bucket_pipe(f));
+		return std::make_unique<io::FileReader>(f, io::FileReader::OwnFile{});
 	}
 
-	gvl::sink tryToSink()
+	std::unique_ptr<io::Writer> tryToWriter()
 	{
 		FILE* f = fopen(path.c_str(), "wb");
 		if (!f)
@@ -657,10 +664,10 @@ struct FsNodeFilesystem : FsNodeImp
 			create_directories(path);
 			f = fopen(path.c_str(), "wb");
 			if (!f)
-				return gvl::sink();
+				return nullptr;
 		}
 
-		return gvl::sink(new gvl::file_bucket_pipe(f));
+		return std::make_unique<io::FileWriter>(f, io::FileWriter::OwnFile{});
 	}
 
 	std::string path;

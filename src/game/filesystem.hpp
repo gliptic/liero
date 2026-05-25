@@ -4,8 +4,9 @@
 #include <cstdio>
 #include <memory>
 #include <map>
-#include <gvl/io2/stream.hpp>
 #include <miniz.h>
+
+#include "io/stream.hpp"
 
 std::string changeLeaf(std::string const& path, std::string const& newLeaf);
 std::string getRoot(std::string const& path);
@@ -73,13 +74,14 @@ struct DirectoryListing
 	void sort();
 };
 
-struct FsNodeImp : gvl::shared
+struct FsNodeImp
 {
+	virtual ~FsNodeImp() = default;
 	virtual std::string const& fullPath() = 0;
 	virtual DirectoryListing iter() = 0;
 	virtual std::shared_ptr<FsNodeImp> go(std::string const& name) = 0;
-	virtual gvl::source tryToSource() = 0;
-	virtual gvl::sink tryToSink() = 0;
+	virtual std::unique_ptr<io::Reader> tryToReader() = 0;
+	virtual std::unique_ptr<io::Writer> tryToWriter() = 0;
 	virtual bool exists() const = 0;
 };
 
@@ -129,29 +131,19 @@ struct FsNode
 	bool exists() const
 	{ return imp && imp->exists(); }
 
-	gvl::octet_reader toOctetReader() const
+	std::unique_ptr<io::Reader> toReader() const
 	{
-		return gvl::octet_reader(toSource());
-	}
-
-	gvl::source toSource() const
-	{
-		auto s = imp->tryToSource();
-		if (!s)
+		auto r = imp->tryToReader();
+		if (!r)
 			throw std::runtime_error("Could not read " + fullPath());
-		return s;
+		return r;
 	}
 
-	gvl::octet_writer toOctetWriter() const
+	std::unique_ptr<io::Writer> toWriter() const
 	{
-		return gvl::octet_writer(toSink());
-	}
-
-	gvl::sink toSink() const
-	{
-		auto s = imp->tryToSink();
-		if (!s)
+		auto w = imp->tryToWriter();
+		if (!w)
 			throw std::runtime_error("Could not write " + fullPath());
-		return s;
+		return w;
 	}
 };

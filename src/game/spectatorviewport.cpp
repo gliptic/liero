@@ -35,7 +35,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 	Common& common = *game.common;
 	int multiplier = renderer.renderResX / 320;
 	int centerX = renderer.renderResX / 2;
-	gvl::ivec2 renderPos(x, y);
+	IVec2 renderPos(x, y);
 	fixedvec offs = rect.ul() - renderPos;
 
 	for (std::size_t i = 0; i < game.worms.size(); ++i)
@@ -152,8 +152,8 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 		{
 			int state = 0;
 
-			for (auto* w : game.worms)
-				if (w != &worm && w->timer <= worm.timer)
+			for (auto const& w : game.worms)
+				if (w.get() != &worm && w->timer <= worm.timer)
 					state = 1;
 
 			int color = stateColours[game.holdazone.holderIdx != worm.index][state];
@@ -166,8 +166,8 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 		{
 			int state = 0;
 
-			for (auto* w : game.worms)
-				if (w != &worm && w->timer >= worm.timer)
+			for (auto const& w : game.worms)
+				if (w.get() != &worm && w->timer >= worm.timer)
 					state = 1;
 
 			int color = stateColours[game.lastKilledIdx != worm.index][state];
@@ -422,7 +422,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 
 		if(t.startFrame > 0)
 		{
-			auto pos = ftoi(i->pos) - gvl::ivec2(3, 3);
+			auto pos = ftoi(i->pos) - IVec2(3, 3);
 
 			if(game.settings->shadow)
 			{
@@ -552,7 +552,7 @@ void SpectatorViewport::draw(Game& game, Renderer& renderer, GameState state, bo
 		Worm const& worm = *game.worms[i];
 		if(worm.visible)
 		{
-			auto temp = ftoi(worm.pos) - gvl::ivec2(1, 2) + ftoi(cossinTable[ftoi(worm.aimingAngle)] * 16) + offs;
+			auto temp = ftoi(worm.pos) - IVec2(1, 2) + ftoi(cossinTable[ftoi(worm.aimingAngle)] * 16) + offs;
 			//int tempX = ftoi(worm.pos.x) - 1 + ftoi(cosTable[ftoi(worm.aimingAngle)] * 16) + offs.x;
 			//int tempY = ftoi(worm.pos.y) - 2 + ftoi(sinTable[ftoi(worm.aimingAngle)] * 16) + offs.y;
 

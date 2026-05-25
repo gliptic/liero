@@ -1,3 +1,3 @@
 #pragma once
 
-static int const myReplayVersion = 5;
+static int const myReplayVersion = 6;

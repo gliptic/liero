@@ -1,12 +1,13 @@
 #include "common.hpp"
 
-#include <gvl/io2/convert.hpp>
-#include <gvl/io2/fstream.hpp>
 #include <map>
+#include <sstream>
 #include <string>
 #include "common_model.hpp"
 #include "filesystem.hpp"
 #include "gfx/blit.hpp"
+#include "io/coding.hpp"
+#include "io/stream.hpp"
 #include "rand.hpp"
 #include "worm.hpp"
 
@@ -235,19 +236,12 @@ void Common::drawTextSmall(Bitmap& scr, char const* str, int x, int y) {
   }
 }
 
-struct OctetTextReader : gvl::octet_reader {
-  OctetTextReader(gvl::octet_reader r)
-      : gvl::octet_reader(std::move(r)), r(*this) {}
-
-  gvl::toml::reader<gvl::octet_reader> r;
-};
-
 #define CHECK(c) \
   if (!(c))      \
   goto fail
 
 int readSpriteTga(
-    gvl::octet_reader& r,
+    io::Reader& r,
     int destImageWidth,
     int destImageHeight,
     int destCount,
@@ -258,17 +252,17 @@ int readSpriteTga(
   CHECK(r.get() == 1);
 
   // Palette spec
-  CHECK(gvl::read_uint16_le(r) == 0);
-  CHECK(gvl::read_uint16_le(r) == 256);
+  CHECK(io::read_uint16_le(r) == 0);
+  CHECK(io::read_uint16_le(r) == 256);
   CHECK(r.get() == 24);
 
   int imageWidth, imageHeight;
 
-  CHECK(gvl::read_uint16_le(r) == 0);
-  CHECK(gvl::read_uint16_le(r) == 0);
+  CHECK(io::read_uint16_le(r) == 0);
+  CHECK(io::read_uint16_le(r) == 0);
 
-  imageWidth = gvl::read_uint16_le(r);
-  imageHeight = gvl::read_uint16_le(r);
+  imageWidth = io::read_uint16_le(r);
+  imageHeight = io::read_uint16_le(r);
   CHECK(r.get() == 8);
   CHECK(r.get() == 0);
 
@@ -300,7 +294,7 @@ fail:
   return 0;
 }
 
-int readSpriteTga(gvl::octet_reader& r, SpriteSet& ss, Palette* pal) {
+int readSpriteTga(io::Reader& r, SpriteSet& ss, Palette* pal) {
   return readSpriteTga(
       r, ss.width, ss.count * ss.height, ss.count, &ss.data[0], pal);
 }
@@ -313,27 +307,36 @@ inline uint32_t quad(char a, char b, char c, char d) {
 }
 
 void Common::load(FsNode node) {
-  OctetTextReader textReader((node / "tc.cfg").toOctetReader());
-  archive_text(*this, textReader.r);
+  {
+    auto textReader_ptr = (node / "tc.cfg").toReader(); io::Reader& textReader = *textReader_ptr;
+    // Read entire content into a string for istringstream
+    std::string content;
+    try {
+      for (;;)
+        content.push_back(static_cast<char>(textReader.get()));
+    } catch (std::runtime_error&) {}
+    std::istringstream is(content);
+    loadTcConfig(*this, is);
+  }
 
   for (auto& s : sounds) {
     auto dir = node / "sounds";
 
-    gvl::octet_reader r((dir / (s.name + ".wav")).toOctetReader());
+    auto r_ptr = (dir / (s.name + ".wav")).toReader(); io::Reader& r = *r_ptr;
 
-    if (gvl::read_uint32_le(r) == quad('R', 'I', 'F', 'F')) {
-      std::size_t roundedSize = gvl::read_uint32_le(r) + 8;
+    if (io::read_uint32_le(r) == quad('R', 'I', 'F', 'F')) {
+      std::size_t roundedSize = io::read_uint32_le(r) + 8;
 
       (void)roundedSize;  // Ignore
 
-      if (gvl::read_uint32_le(r) == quad('W', 'A', 'V', 'E') &&
-          gvl::read_uint32_le(r) == quad('f', 'm', 't', ' ') &&
-          gvl::read_uint32_le(r) == 16 && gvl::read_uint16_le(r) == 1 &&
-          gvl::read_uint16_le(r) == 1 && gvl::read_uint32_le(r) == 22050 &&
-          gvl::read_uint32_le(r) == 22050 * 1 * 1 &&
-          gvl::read_uint16_le(r) == 1 * 1 && gvl::read_uint16_le(r) == 8 &&
-          gvl::read_uint32_le(r) == quad('d', 'a', 't', 'a')) {
-        std::size_t dataSize = gvl::read_uint32_le(r);
+      if (io::read_uint32_le(r) == quad('W', 'A', 'V', 'E') &&
+          io::read_uint32_le(r) == quad('f', 'm', 't', ' ') &&
+          io::read_uint32_le(r) == 16 && io::read_uint16_le(r) == 1 &&
+          io::read_uint16_le(r) == 1 && io::read_uint32_le(r) == 22050 &&
+          io::read_uint32_le(r) == 22050 * 1 * 1 &&
+          io::read_uint16_le(r) == 1 * 1 && io::read_uint16_le(r) == 8 &&
+          io::read_uint32_le(r) == quad('d', 'a', 't', 'a')) {
+        std::size_t dataSize = io::read_uint32_le(r);
 
         s.originalData.resize(dataSize);
 
@@ -355,23 +358,23 @@ void Common::load(FsNode node) {
     textSprites.allocate(4, 4, 26);
 
     {
-      gvl::octet_reader r((dir / "small.tga").toOctetReader());
+      auto r_ptr = (dir / "small.tga").toReader(); io::Reader& r = *r_ptr;
 
       readSpriteTga(r, smallSprites, &exepal);
     }
 
     {
-      gvl::octet_reader r((dir / "large.tga").toOctetReader());
+      auto r_ptr = (dir / "large.tga").toReader(); io::Reader& r = *r_ptr;
       readSpriteTga(r, largeSprites, 0);
     }
 
     {
-      gvl::octet_reader r((dir / "text.tga").toOctetReader());
+      auto r_ptr = (dir / "text.tga").toReader(); io::Reader& r = *r_ptr;
       readSpriteTga(r, textSprites, 0);
     }
 
     {
-      gvl::octet_reader r((dir / "font.tga").toOctetReader());
+      auto r_ptr = (dir / "font.tga").toReader(); io::Reader& r = *r_ptr;
 
       std::vector<uint8_t> data(font.chars.size() * 7 * 8, 10);
 
@@ -404,22 +407,40 @@ void Common::load(FsNode node) {
   for (auto& w : weapons) {
     auto dir = node / "weapons";
 
-    OctetTextReader wReader((dir / (w.idStr + ".cfg")).toOctetReader());
-    archive_text(*this, w, wReader.r);
+    auto wReader_ptr = (dir / (w.idStr + ".cfg")).toReader(); io::Reader& wReader = *wReader_ptr;
+    std::string content;
+    try {
+      for (;;)
+        content.push_back(static_cast<char>(wReader.get()));
+    } catch (std::runtime_error&) {}
+    std::istringstream is(content);
+    loadWeaponConfig(*this, w, is);
   }
 
   for (auto& w : nobjectTypes) {
     auto dir = node / "nobjects";
 
-    OctetTextReader nReader((dir / (w.idStr + ".cfg")).toOctetReader());
-    archive_text(*this, w, nReader.r);
+    auto nReader_ptr = (dir / (w.idStr + ".cfg")).toReader(); io::Reader& nReader = *nReader_ptr;
+    std::string content;
+    try {
+      for (;;)
+        content.push_back(static_cast<char>(nReader.get()));
+    } catch (std::runtime_error&) {}
+    std::istringstream is(content);
+    loadNObjectConfig(*this, w, is);
   }
 
   for (auto& w : sobjectTypes) {
     auto dir = node / "sobjects";
 
-    OctetTextReader sReader((dir / (w.idStr + ".cfg")).toOctetReader());
-    archive_text(*this, w, sReader.r);
+    auto sReader_ptr = (dir / (w.idStr + ".cfg")).toReader(); io::Reader& sReader = *sReader_ptr;
+    std::string content;
+    try {
+      for (;;)
+        content.push_back(static_cast<char>(sReader.get()));
+    } catch (std::runtime_error&) {}
+    std::istringstream is(content);
+    loadSObjectConfig(w, is);
   }
 
   precompute();
@@ -520,39 +541,3 @@ void SfxSample::createSound() {
 
   samples.push_back(prev);
 }
-
-#if ENABLE_TRACING
-void Common::ltrace(
-    char const* category,
-    uint32 object,
-    char const* attribute,
-    uint32 value) {
-  uint32 cat = *(uint32*)(category);
-  uint32 attr = *(uint32*)(attribute);
-
-  if (writeTrace) {
-    gvl::write_uint32_le(trace_writer, cat);
-    gvl::write_uint32_le(trace_writer, object);
-    gvl::write_uint32_le(trace_writer, attr);
-    gvl::write_uint32_le(trace_writer, value);
-  } else {
-    uint32 fcat = gvl::read_uint32_le(trace_reader);
-    uint32 fobject = gvl::read_uint32_le(trace_reader);
-    uint32 fattr = gvl::read_uint32_le(trace_reader);
-    uint32 fvalue = gvl::read_uint32_le(trace_reader);
-
-    if (fcat != cat) {
-      throw std::exception();
-    }
-    if (fobject != object) {
-      throw std::exception();
-    }
-    if (fattr != attr) {
-      throw std::exception();
-    }
-    if (fvalue != value) {
-      throw std::exception();
-    }
-  }
-}
-#endif

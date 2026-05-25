@@ -68,8 +68,7 @@ TEST_CASE("NetSession host and client connect and handshake", "[session]") {
   REQUIRE(client.controller() != nullptr);
 
   // Both games should have the same RNG seed
-  REQUIRE(host.controller()->game.rand.x == client.controller()->game.rand.x);
-  REQUIRE(host.controller()->game.rand.c == client.controller()->game.rand.c);
+  REQUIRE(host.controller()->game.rand == client.controller()->game.rand);
 }
 
 TEST_CASE("NetSession syncs host settings to client", "[session]") {
@@ -223,8 +222,7 @@ TEST_CASE("NetSession plays frames over real network", "[session]") {
   REQUIRE(host.controller()->currentFrame() == client.controller()->currentFrame());
 
   // RNG state should be identical (deterministic lockstep)
-  REQUIRE(host.controller()->game.rand.x == client.controller()->game.rand.x);
-  REQUIRE(host.controller()->game.rand.c == client.controller()->game.rand.c);
+  REQUIRE(host.controller()->game.rand == client.controller()->game.rand);
 }
 
 TEST_CASE("NetSession client detects host disconnect", "[session]") {
@@ -352,7 +350,7 @@ TEST_CASE("NetSession TC sync transfers data when hashes differ", "[session][tc]
   REQUIRE(receivedCommon != nullptr);
 
   // Both games should have the same RNG seed (basic sanity)
-  REQUIRE(host.controller()->game.rand.x == client.controller()->game.rand.x);
+  REQUIRE(host.controller()->game.rand.last == client.controller()->game.rand.last);
 
   // Clean up
   std::filesystem::remove_all(tempTcDir);

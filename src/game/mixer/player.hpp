@@ -1,13 +1,12 @@
 #pragma once
 
-#include <gvl/resman/shared.hpp>
-
 #include "mixer.hpp"
 
 struct Common;
 
-struct SoundPlayer : gvl::shared
+struct SoundPlayer
 {
+	virtual ~SoundPlayer() = default;
 	virtual void play(int sound, void* id = 0, int loops = 0) = 0;
 	virtual bool isPlaying(void* id) = 0;
 	virtual void stop(void* id) = 0;

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <gvl/io2/stream.hpp>
-#include <gvl/serialization/context.hpp>
-#include <gvl/crypt/gash.hpp>
+#include <xxhash.h>
+#include "io/deflate.hpp"
+#include "io/stream.hpp"
 #include "mixer/player.hpp"
 #include <cstring>
 #include <map>
@@ -13,60 +13,31 @@
 
 struct Game;
 
-struct GameSerializationContext : gvl::serialization_context<GameSerializationContext>
-{
-	GameSerializationContext()
-	: game(0)
-	, replayVersion(myReplayVersion)
-	{
-	}
-
-	struct WormData
-	{
-		WormData()
-		: settingsExpired(true)
-		{
-		}
-
-		gvl::gash::value_type lastSettingsHash;
-		bool settingsExpired;
-	};
-
-	int version()
-	{
-		return replayVersion;
-	}
-
-	typedef std::map<Worm*, WormData> WormDataMap;
-
-	Game* game;
-	WormDataMap wormData;
-	int replayVersion;
-};
-
 struct Replay
 {
-	Replay()
-	{
-	}
-
-	GameSerializationContext context;
-
+	Game* game = nullptr;
+	int replayVersion = myReplayVersion;
 };
 
 struct ReplayWriter : Replay
 {
-	ReplayWriter(gvl::sink str_init);
+	ReplayWriter(std::unique_ptr<io::Writer> sink);
 	~ReplayWriter();
 
 	void unfocus();
 	void focus();
 
-	//gvl::filter_ptr str;
-	//gvl::octet_stream_writer writer;
-	gvl::octet_writer writer;
-	gvl::gash::value_type lastSettingsHash;
+	io::DeflateWriter writer;
+	uint64_t lastSettingsHash;
 	bool settingsExpired;
+
+	struct WormData
+	{
+		WormData() : settingsExpired(true) {}
+		uint64_t lastSettingsHash;
+		bool settingsExpired;
+	};
+	std::map<Worm*, WormData> wormData;
 
 	void beginRecord(Game& game);
 	void recordFrame();
@@ -78,20 +49,16 @@ struct Renderer;
 
 struct ReplayReader : Replay
 {
-	ReplayReader(gvl::source str_init);
+	ReplayReader(std::unique_ptr<io::Reader> source);
 
-	void unfocus()
-	{
-		// Nothing
-	}
-
-	void focus()
-	{
-		// Nothing
-	}
+	void unfocus() {}
+	void focus() {}
 
 	std::unique_ptr<Game> beginPlayback(std::shared_ptr<Common> common, std::shared_ptr<SoundPlayer> soundPlayer);
 	bool playbackFrame(Renderer& renderer);
 
-	gvl::octet_reader reader;
+	// The full inflated replay is held in memory so we can rewind to
+	// the recorded initial position when the user presses R.
+	std::vector<uint8_t> data;
+	io::MemReader reader;
 };

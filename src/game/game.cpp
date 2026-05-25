@@ -29,11 +29,7 @@ Game::Game(
 , quickSim(false)
 {
 
-#if ENABLE_TRACING
-	rand.seed(1);
-#else
 	rand.seed(uint32_t(std::time(0)));
-#endif
 
 	cycles = 0;
 }
@@ -74,7 +70,7 @@ Worm* Game::findControlForKey(uint32_t key, Worm::Control& control)
 		if (playerIdx >= 0 && playerIdx < (int)worms.size())
 		{
 			control = static_cast<Worm::Control>(c);
-			return worms[playerIdx];
+			return worms[playerIdx].get();
 		}
 		return 0;
 	}
@@ -178,13 +174,13 @@ void Game::resetWorms()
 		w.visible = false;
 		w.killedTimer = Worm::KilledTimerInitial;
 
-		w.currentWeapon = 1;
+		w.currentWeapon = 0;
 	}
 }
 
-void Game::addWorm(Worm* worm)
+void Game::addWorm(std::shared_ptr<Worm> worm)
 {
-	worms.push_back(worm);
+	worms.push_back(std::move(worm));
 }
 
 void Game::draw(Renderer& renderer, GameState state, bool useSpectatorViewports, bool isReplay)
@@ -215,7 +211,7 @@ void Game::draw(Renderer& renderer, GameState state, bool useSpectatorViewports,
 
 bool checkBonusSpawnPosition(Game& game, int x, int y)
 {
-	gvl::rect rect(x - 2, y - 2, x + 3, y + 3);
+	Rect rect(x - 2, y - 2, x + 3, y + 3);
 
 	rect.intersect(game.level.rect());
 
@@ -284,23 +280,6 @@ void Game::createBonus()
 	} // 234F
 }
 
-#if ENABLE_TRACING
-
-void checkMap(Game& game) {
-	Common& common = *game.common;
-	uint32 h = 1;
-	for (std::size_t i = 0; i < 504*350; ++i) {
-		h = h * 33 ^ game.level.data[i];
-	}
-	LTRACE(maph, 0, pixl, h);
-	h = 1;
-	for (std::size_t i = 0; i < 504*350; ++i) {
-		h = h * 33 ^ game.level.materials[i].flags;
-	}
-	LTRACE(maph, 0, matr, h);
-}
-
-#endif
 
 void Game::processFrame()
 {
@@ -451,7 +430,7 @@ void Game::processFrame()
 		int contenderIdx = -1;
 		int contenders = 0;
 
-		for (Worm* w : worms)
+		for (auto const& w : worms)
 		{
 			int x = ftoi(w->pos.x), y = ftoi(w->pos.y);
 
@@ -556,7 +535,7 @@ void Game::updateSettings(Renderer& renderer)
 
 void Game::spawnZone()
 {
-	gvl::ivec2 pos;
+	IVec2 pos;
 
 	while (holdazone.zoneWidth >= 5)
 	{
@@ -609,7 +588,7 @@ bool Game::isGameOver()
 	}
 	else if(settings->gameMode == Settings::GMHoldazone)
 	{
-		for (auto* w : worms)
+		for (auto const& w : worms)
 			if (w->timer >= settings->timeToLose)
 				return true;
 	}
@@ -662,9 +641,9 @@ void Game::doDamage(Worm& w, int amount, int byIdx)
 				int parts = (int)worms.size() - 1;
 				int left = amount;
 
-				for (Worm* other : worms)
+				for (auto const& other : worms)
 				{
-					if (other != &w)
+					if (other.get() != &w)
 					{
 						int k = left / parts;
 						doHealingDirect(*other, k);
@@ -690,9 +669,9 @@ void Game::doHealing(Worm& w, int amount)
 		int parts = (int)worms.size() - 1;
 		int left = amount;
 
-		for (Worm* other : worms)
+		for (auto const& other : worms)
 		{
-			if (other != &w)
+			if (other.get() != &w)
 			{
 				int k = left / parts;
 				doDamageDirect(*other, k, w.index);
@@ -762,7 +741,7 @@ void Game::postClone(Game& original, bool complete)
 
 	for (auto& w : worms)
 	{
-		w = new Worm(*w);
+		w = std::make_shared<Worm>(*w);
 	}
 
 }

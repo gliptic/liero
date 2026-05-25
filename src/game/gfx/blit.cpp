@@ -7,7 +7,7 @@
 #include "../settings.hpp"
 #include "bitmap.hpp"
 #include "macros.hpp"
-#include <gvl/math/rect.hpp>
+#include "math/rect.hpp"
 #include <cstring>
 #include <cassert>
 #include <cstdlib>
@@ -304,10 +304,7 @@ void blitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y)
 void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int width, int height)
 {
 	int pitch = width;
-	gvl::rect clipRect(0, 0, level.width, level.height);
-
-	LTRACE(blit, 0, xpos, x);
-	LTRACE(blit, 0, ypos, y);
+	Rect clipRect(0, 0, level.width, level.height);
 
 	CLIP_IMAGE(clipRect);
 
@@ -359,7 +356,7 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 	int height = 16;
 	int pitch = width;
 
-	gvl::rect clip(0, 0, level.width, level.height);
+	Rect clip(0, 0, level.width, level.height);
 
 	CLIP_IMAGE(clip);
 
@@ -430,15 +427,12 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 	PalIdx* tFrame = common.largeSprites.spritePtr(tex.sFrame + rand(tex.rFrame));
 	PalIdx* mFrame = common.largeSprites.spritePtr(tex.mFrame);
 
-	LTRACE(draw, dirtEffect, xpos, x);
-	LTRACE(draw, dirtEffect, ypos, y);
-
 	int width = 16;
 	int height = 16;
 	int pitch = width;
 	PalIdx* mem = mFrame;
 
-	gvl::rect clip(0, 0, level.width, level.height - 1);
+	Rect clip(0, 0, level.width, level.height - 1);
 
 	CLIP_IMAGE(clip);
 
@@ -511,9 +505,9 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
 	}
 }
 
-void correctShadow(Common& common, Level& level, gvl::rect rect)
+void correctShadow(Common& common, Level& level, Rect rect)
 {
-	rect.intersect(gvl::rect(0, 3, level.width - 3, level.height));
+	rect.intersect(Rect(0, 3, level.width - 3, level.height));
 
 	for(int x = rect.x1; x < rect.x2; ++x)
 	for(int y = rect.y1; y < rect.y2; ++y)
@@ -568,7 +562,7 @@ void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, i
 {
 	int color = LC(NRColourBegin);
 
-	gvl::rect& clip = scr.clip_rect;
+	Rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
 
@@ -584,7 +578,7 @@ void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, i
 
 void drawLaserSight(Bitmap& scr, Rand& rand, int fromX, int fromY, int toX, int toY)
 {
-	gvl::rect& clip = scr.clip_rect;
+	Rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
 
@@ -601,7 +595,7 @@ void drawLaserSight(Bitmap& scr, Rand& rand, int fromX, int fromY, int toX, int 
 
 void drawShadowLine(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY)
 {
-	gvl::rect& clip = scr.clip_rect;
+	Rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
 
@@ -618,7 +612,7 @@ void drawShadowLine(Common& common, Bitmap& scr, int fromX, int fromY, int toX, 
 
 void drawLine(Bitmap& scr, int fromX, int fromY, int toX, int toY, int color)
 {
-	gvl::rect& clip = scr.clip_rect;
+	Rect& clip = scr.clip_rect;
 	PalIdx* ptr = scr.pixels;
 	unsigned int pitch = scr.pitch;
 

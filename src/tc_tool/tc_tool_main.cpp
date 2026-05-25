@@ -50,16 +50,19 @@ int main(int argc, char *argv[])
 	{
 		if (toUpperCase(name.name).find(".EXE") != std::string::npos)
 		{
-			ReaderFile exe((path / name.name).toSource());
+			auto exeReader_ptr = (path / name.name).toReader(); io::Reader& exeReader = *exeReader_ptr;
+			ReaderFile exe(exeReader);
 
-			if (exe.len >= 135000 && exe.len <= 137000)
+			if (exe.len() >= 135000 && exe.len() <= 137000)
 			{
 				printf("Converting %s...\n", name.name.c_str());
 
 				// TODO: Some TCs change the name of the .SND or .CHR for some reason.
 				// We could read that name from the exe to make them work.
-				ReaderFile gfx((path / "LIERO.CHR").toSource());
-				ReaderFile snd((path / "LIERO.SND").toSource());
+				auto gfxReader_ptr = (path / "LIERO.CHR").toReader(); io::Reader& gfxReader = *gfxReader_ptr;
+				ReaderFile gfx(gfxReader);
+				auto sndReader_ptr = (path / "LIERO.SND").toReader(); io::Reader& sndReader = *sndReader_ptr;
+				ReaderFile snd(sndReader);
 
 				loadFromExe(common, exe, gfx, snd);
 

@@ -82,10 +82,6 @@ void NObject::process(Game& game)
 
 	pos += vel;
 
-	LTRACE(rand, 0, nopr, game.rand.x);
-	LTRACE(nobj, this - game.nobjects.arr, moxp, pos.x);
-	LTRACE(nobj, this - game.nobjects.arr, moyp, pos.y);
-
 	auto inewPos = ftoi(pos + vel);
 	auto ipos = ftoi(pos);
 
@@ -145,7 +141,7 @@ void NObject::process(Game& game)
 					7,
 					7);
 				if(game.settings->shadow)
-					correctShadow(common, game.level, gvl::rect(ipos.x - 8, ipos.y - 8, ipos.x + 9, ipos.y + 9)); // This seems like an overly large rectangle
+					correctShadow(common, game.level, Rect(ipos.x - 8, ipos.y - 8, ipos.x + 9, ipos.y + 9)); // This seems like an overly large rectangle
 			}
 
 			doExplode = true;
@@ -255,7 +251,7 @@ void NObject::process(Game& game)
 			drawDirtEffect(common, game.rand, game.level, t.dirtEffect, ftoi(pos.x) - 7, ftoi(pos.y) - 7);
 
 			if(game.settings->shadow)
-				correctShadow(common, game.level, gvl::rect(ftoi(pos.x) - 10, ftoi(pos.y) - 10, ftoi(pos.x) + 11, ftoi(pos.y) + 11));
+				correctShadow(common, game.level, Rect(ftoi(pos.x) - 10, ftoi(pos.y) - 10, ftoi(pos.x) + 11, ftoi(pos.y) + 11));
 		}
 
 		if(t.splinterAmount > 0)

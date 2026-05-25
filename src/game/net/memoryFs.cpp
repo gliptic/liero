@@ -4,7 +4,7 @@
 #include <cstring>
 #include <set>
 
-#include <gvl/io2/stream.hpp>
+#include "../io/stream.hpp"
 
 namespace {
 
@@ -65,19 +65,17 @@ struct FsNodeMemDir : FsNodeImp {
     return std::make_shared<FsNodeMemDir>(childPath, fs_);
   }
 
-  gvl::source tryToSource() override {
+  std::unique_ptr<io::Reader> tryToReader() override {
     auto it = fs_->files.find(path_);
     if (it == fs_->files.end())
-      return gvl::source();
+      return nullptr;
 
-    auto& data = it->second;
-    auto* mem = gvl::bucket_data_mem::create_from(
-        data.data(), data.data() + data.size(), data.size());
-    return gvl::source(new gvl::stream_piece(
-        gvl::shared_ptr<gvl::bucket_data_mem>(mem)));
+    // The MemoryFs owns the underlying byte buffer (in fs_->files) so we
+    // can hand out a MemReader that just points into it.
+    return std::make_unique<io::MemReader>(it->second);
   }
 
-  gvl::sink tryToSink() override { return gvl::sink(); }
+  std::unique_ptr<io::Writer> tryToWriter() override { return nullptr; }
 
   bool exists() const override {
     // Exists as a file?

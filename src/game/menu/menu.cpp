@@ -253,7 +253,7 @@ void Menu::setVisibility(int id, bool state)
 	int item = indexFromId(id);
 	if (item < 0)
 	{
-		sassert(false);
+		assert(false);
 		return;
 	}
 

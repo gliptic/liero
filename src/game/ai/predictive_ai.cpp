@@ -116,15 +116,15 @@ double aimingDiff(Worm* from, Worm* to)
 }
 
 
-int obstacles(Game& game, gvl::ivec2 from, gvl::ivec2 to)
+int obstacles(Game& game, IVec2 from, IVec2 to)
 {
-	typedef gvl::basic_vec<double, 2> dvec2;
+	typedef BasicVec<double, 2> dvec2;
 
 	dvec2 org(from.x, from.y);
 	dvec2 dir(to.x, to.y);
 	dir -= org;
 
-	double l = length(dir);
+	double l = std::sqrt(dir.x * dir.x + dir.y * dir.y);
 	dir /= l;
 
 	int obst = 0;
@@ -617,7 +617,7 @@ void evaluate(
 		{
 			int t = 119 - (int)(i * (119 - 104 + 1) / planSize);
 
-			ai.evaluatePositions.push_back(std::make_tuple(gvl::ivec2(meCopy->pos.x, meCopy->pos.y), t));
+			ai.evaluatePositions.push_back(std::make_tuple(IVec2(meCopy->pos.x, meCopy->pos.y), t));
 		}
 
 		result.scoreOverTime[i + 1] = s - prevS;
@@ -672,7 +672,7 @@ void FollowAI::drawDebug(Game& game, Worm const& worm, Renderer& renderer, int o
 {
 	for (auto& p : evaluatePositions)
 	{
-		gvl::ivec2 v;
+		IVec2 v;
 		PalIdx t;
 		std::tie(v, t) = p;
 		renderer.bmp.setPixel(ftoi(v.x) + offsX, ftoi(v.y) + offsY, t);
@@ -715,7 +715,7 @@ void FollowAI::process(Game& game, Worm& worm)
 {
 	Common& common = *game.common;
 
-	Worm* target = game.worms[worm.index ^ 1];
+	Worm* target = game.worms[worm.index ^ 1].get();
 
 	{
 		int targetx = ftoi(target->pos.x), targety = ftoi(target->pos.y);

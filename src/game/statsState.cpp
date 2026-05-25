@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <type_traits>
-#include <gvl/io2/convert.hpp>
+#include "gfx/text_cell.hpp"
 #include "text.hpp"
 #include "stats.hpp"
 #include "game.hpp"
@@ -11,7 +11,7 @@
 #include "rematchState.hpp"
 #include "net/session.hpp"
 
-using gvl::cell;
+using cell = TextCell;
 using std::vector;
 
 static std::string percent(int nom, int den)
@@ -84,7 +84,7 @@ struct StatsRenderer
 				int x = renderer.renderResX / 2 + (i == 0 ? -1 : 1) * (renderer.renderResX / 4) + offsX;
 				blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
-				cell c(i == 0 ? cell::right : cell::left);
+				cell c(i == 0 ? TextCell::Right : TextCell::Left);
 				common.font.drawText(
 					renderer.bmp,
 					c << game.worms[i]->settings->name,
@@ -101,7 +101,7 @@ struct StatsRenderer
 			int x = renderer.renderResX / 2 + offsX;
 			blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
-			cell c(i == 0 ? cell::right : cell::left);
+			cell c(i == 0 ? TextCell::Right : TextCell::Left);
 			common.font.drawText(
 				renderer.bmp,
 				c << game.worms[i]->settings->name,
@@ -123,11 +123,11 @@ struct StatsRenderer
 		hblock(11, [this, name, &wormStat] {
 			common.font.drawText(
 				renderer.bmp,
-				cell(cell::center).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
+				cell(TextCell::Center).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
 
 			for (int i = 0; i < 2; ++i)
 			{
-				cell::placement p = i == 0 ? cell::right : cell::left;
+				TextCell::Placement p = i == 0 ? TextCell::Right : TextCell::Left;
 				int x = renderer.renderResX / 2 + (i == 0 ? -40 : 40) + offsX;
 
 				WormStats& w = stats.worms[i];
@@ -146,11 +146,11 @@ struct StatsRenderer
 		hblock(11, [this, name, &stat] {
 			common.font.drawText(
 				renderer.bmp,
-				cell(cell::right).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
+				cell(TextCell::Right).ref() << name, renderer.renderResX / 2 + offsX, y, textColor);
 
 			int x = renderer.renderResX / 2 + 10 + offsX;
 
-			cell c(cell::left);
+			cell c(TextCell::Left);
 			stat(c);
 			common.font.drawText(
 				renderer.bmp,

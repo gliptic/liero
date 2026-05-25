@@ -2,8 +2,7 @@
 
 #include <cstring>
 #include <functional>
-#include <gvl/crypt/gash.hpp>
-#include <gvl/serialization/archive.hpp>
+#include <xxhash.h>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -83,7 +82,7 @@ struct WormSettingsExtensions {
   std::string gamepadSerial; // Hardware serial for disambiguating identical controllers
 };
 
-struct WormSettings : gvl::shared, WormSettingsExtensions {
+struct WormSettings : WormSettingsExtensions {
   WormSettings() : health(100), controller(0), randomName(true), color(0) {
     rgb[0] = 26;
     rgb[1] = 26;
@@ -95,7 +94,7 @@ struct WormSettings : gvl::shared, WormSettingsExtensions {
     std::memset(controls, 0, sizeof(controls));
   }
 
-  gvl::gash::value_type& updateHash();
+  uint64_t& updateHash();
 
   void saveProfile(FsNode node);
   void loadProfile(FsNode node);
@@ -115,57 +114,13 @@ struct WormSettings : gvl::shared, WormSettingsExtensions {
   // std::string profilePath;
   FsNode profileNode;
 
-  gvl::gash::value_type hash;
+  uint64_t hash;
 };
-
-// Shared TOML serialization for worm settings (used by both settings file and profiles)
-template <typename Archive>
-void archive_worm_toml(Archive& ar, WormSettings& ws) {
-  ar.u32("controller", ws.controller);
-  if (ar.in)
-    ws.controller = ws.controller % 3;
-  ar.arr("color", ws.rgb, [&](int& c) {
-    ar.i32(0, c);
-    if (ar.in)
-      c &= 63;
-  });
-  ar.arr("weapons", ws.weapons, [&](uint32_t& w) { ar.u32(0, w); });
-  ar.i32("health", ws.health);
-
-  if (ws.randomName && ar.out) {
-    std::string empty;
-    ar.str("name", empty);
-  } else {
-    ar.str("name", ws.name);
-    if (ar.in && !ws.name.empty())
-      ws.randomName = false;
-  }
-
-  ar.arr("controls", ws.controlsEx, [&](uint32_t& c) { ar.u32(0, c); });
-  ar.u32("inputDevice", ws.inputDevice);
-  ar.str("gamepadName", ws.gamepadName);
-  ar.str("gamepadSerial", ws.gamepadSerial);
-  ar.arr("gamepadControls", ws.gamepadControls,
-         [&](uint32_t& c) { ar.u32(0, c); });
-}
-
-// WormSettings archive for replays: embeds TOML as a string in the binary stream.
-template <typename Archive>
-void archive(Archive ar, WormSettings& ws) {
-  if (ar.out) {
-    std::string toml = ws.toToml();
-    ar.str(toml);
-  } else {
-    std::string toml;
-    ar.str(toml);
-    ws.fromToml(toml);
-  }
-}
 
 struct Viewport;
 struct Renderer;
 
-struct WormAI : gvl::shared {
+struct WormAI {
   virtual void process(Game& game, Worm& worm) = 0;
 
   virtual void drawDebug(
@@ -182,7 +137,7 @@ struct DumbLieroAI : WormAI {
   Rand rand;
 };
 
-struct Worm : gvl::shared {
+struct Worm {
   enum { RFDown, RFLeft, RFUp, RFRight };
 
   enum Control {
@@ -315,7 +270,7 @@ struct Worm : gvl::shared {
 
   fixedvec pos, vel;
 
-  gvl::ivec2 logicRespawn;
+  IVec2 logicRespawn;
 
   int hotspotX, hotspotY;  // Hotspots for laser, laser sight, etc.
   fixed aimingAngle, aimingSpeed;

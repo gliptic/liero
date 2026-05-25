@@ -63,9 +63,8 @@ find_package(miniz CONFIG REQUIRED)
 find_package(enet CONFIG REQUIRED PATHS "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib/cmake/enet")
 find_package(LibJuice CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
-
-# local dependencies
-add_subdirectory(src/gvl)
+find_package(xxHash CONFIG REQUIRED)
+find_package(cereal CONFIG REQUIRED)
 
 # TODO get rid of this kludgy hack
 include_directories(
@@ -160,12 +159,12 @@ endif()
 target_link_libraries(game
   PUBLIC
   miniz::miniz
-  gvl
   SDL3::SDL3
   SDL3_image::SDL3_image
   enet::enet_static
   LibJuice::LibJuice
   tomlplusplus::tomlplusplus
+  xxHash::xxhash
 )
 
 if(APPLE)
@@ -231,8 +230,8 @@ if(OPENLIERO_BUILD_TCTOOL)
   target_link_libraries(tc
     PUBLIC
     miniz::miniz
-    gvl
     SDL3::SDL3
+    xxHash::xxhash
   )
 
   add_executable(tctool ${TC_TOOL_SOURCES})
@@ -260,8 +259,8 @@ if(OPENLIERO_BUILD_VIDEOTOOL)
   target_link_libraries(vt
     PUBLIC
     miniz::miniz
-    gvl
     SDL3::SDL3
+    xxHash::xxhash
     PkgConfig::FFMPEG
   )
 
@@ -338,6 +337,10 @@ if(OPENLIERO_BUILD_TESTS)
   target_link_libraries(test_cp437 PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_cp437 DISCOVERY_MODE PRE_TEST)
 
+  add_executable(test_io src/tests/test_io.cpp)
+  target_link_libraries(test_io PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_io DISCOVERY_MODE PRE_TEST)
+
   add_executable(test_settings src/tests/test_settings.cpp)
   target_link_libraries(test_settings PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_settings
@@ -351,6 +354,31 @@ if(OPENLIERO_BUILD_TESTS)
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     DISCOVERY_MODE PRE_TEST
   )
+
+
+  add_executable(test_toml_archive src/tests/test_toml_archive.cpp)
+  target_link_libraries(test_toml_archive PRIVATE
+    cereal::cereal
+    tomlplusplus::tomlplusplus
+    Catch2::Catch2WithMain)
+  target_include_directories(test_toml_archive PRIVATE src src/game)
+  catch_discover_tests(test_toml_archive DISCOVERY_MODE PRE_TEST)
+
+  add_executable(test_cereal_types src/tests/test_cereal_types.cpp)
+  target_link_libraries(test_cereal_types PRIVATE
+    game
+    cereal::cereal
+    tomlplusplus::tomlplusplus
+    Catch2::Catch2WithMain)
+  catch_discover_tests(test_cereal_types DISCOVERY_MODE PRE_TEST)
+
+  add_executable(test_versioning src/tests/test_versioning.cpp)
+  target_link_libraries(test_versioning PRIVATE
+    game
+    cereal::cereal
+    tomlplusplus::tomlplusplus
+    Catch2::Catch2WithMain)
+  catch_discover_tests(test_versioning DISCOVERY_MODE PRE_TEST)
 endif()
 
 # desync fuzzer

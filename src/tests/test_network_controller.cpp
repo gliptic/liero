@@ -129,7 +129,7 @@ TEST_CASE("NetworkController stalls without remote input", "[network]") {
 TEST_CASE("NetworkController produces deterministic state", "[network]") {
   LoopbackFixture f;
 
-  gvl::mwc inputRng(12345);
+  Rand inputRng(12345);
 
   // Pre-seed input delay frames
   for (uint32_t i = 0; i < 3; ++i) {
@@ -150,8 +150,7 @@ TEST_CASE("NetworkController produces deterministic state", "[network]") {
 
   // Both games should be at the same frame with identical RNG state
   REQUIRE(f.controllerA->currentFrame() == f.controllerB->currentFrame());
-  REQUIRE(f.controllerA->game.rand.x == f.controllerB->game.rand.x);
-  REQUIRE(f.controllerA->game.rand.c == f.controllerB->game.rand.c);
+  REQUIRE(f.controllerA->game.rand == f.controllerB->game.rand);
 }
 
 TEST_CASE("NetworkController pressedOnce fires only on rising edge", "[network]") {
@@ -289,8 +288,7 @@ TEST_CASE("Weapon selection uses synced game.rand", "[network]") {
   ctrlB->focus();
 
   // After focus, both should be in weapon selection with identical RNG state
-  REQUIRE(ctrlA->game.rand.x == ctrlB->game.rand.x);
-  REQUIRE(ctrlA->game.rand.c == ctrlB->game.rand.c);
+  REQUIRE(ctrlA->game.rand == ctrlB->game.rand);
 
   // Run a few frames of weapon selection with no input (just idle)
   for (uint32_t i = 0; i < 3; ++i) {
@@ -313,8 +311,7 @@ TEST_CASE("Weapon selection uses synced game.rand", "[network]") {
   }
 
   // RNG should still be identical after weapon selection frames
-  REQUIRE(ctrlA->game.rand.x == ctrlB->game.rand.x);
-  REQUIRE(ctrlA->game.rand.c == ctrlB->game.rand.c);
+  REQUIRE(ctrlA->game.rand == ctrlB->game.rand);
 }
 
 TEST_CASE("NetworkController determinism fuzz with deaths", "[network][death]") {
@@ -324,13 +321,13 @@ TEST_CASE("NetworkController determinism fuzz with deaths", "[network][death]") 
   LoopbackFixture f;
 
   // Override to low health for frequent deaths
-  for (auto* w : f.controllerA->game.worms)
+  for (auto const& w : f.controllerA->game.worms)
     w->health = 30;
-  for (auto* w : f.controllerB->game.worms)
+  for (auto const& w : f.controllerB->game.worms)
     w->health = 30;
-  for (auto* w : f.controllerA->game.worms)
+  for (auto const& w : f.controllerA->game.worms)
     w->lives = 30;
-  for (auto* w : f.controllerB->game.worms)
+  for (auto const& w : f.controllerB->game.worms)
     w->lives = 30;
 
   // Pre-fill input delay
@@ -339,7 +336,7 @@ TEST_CASE("NetworkController determinism fuzz with deaths", "[network][death]") 
     f.controllerB->injectRemoteInput(i, 0);
   }
 
-  gvl::mwc inputRng(0xDEAD);
+  Rand inputRng(0xDEAD);
 
   constexpr int NUM_TICKS = 10000;
   int deathCount = 0;
@@ -366,7 +363,7 @@ TEST_CASE("NetworkController determinism fuzz with deaths", "[network][death]") 
     f.deliverAll();
 
     // Track deaths
-    for (auto* w : f.controllerA->game.worms) {
+    for (auto const& w : f.controllerA->game.worms) {
       if (!w->visible && w->killedTimer == 149)
         ++deathCount;
     }
@@ -382,10 +379,10 @@ TEST_CASE("NetworkController determinism fuzz with deaths", "[network][death]") 
       if (checksumA != checksumB) {
         INFO("DESYNC at tick " << tick << " (simFrame=" << frameA
              << ", deaths=" << deathCount << ")"
-             << "\n  RNG A: x=" << f.controllerA->game.rand.x
-             << " c=" << f.controllerA->game.rand.c
-             << "\n  RNG B: x=" << f.controllerB->game.rand.x
-             << " c=" << f.controllerB->game.rand.c);
+             << "\n  RNG A: x=" << f.controllerA->game.rand.last
+             << " c=" << f.controllerA->game.rand.serialize().size()
+             << "\n  RNG B: x=" << f.controllerB->game.rand.last
+             << " c=" << f.controllerB->game.rand.serialize().size());
         REQUIRE(checksumA == checksumB);
       }
     }

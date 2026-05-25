@@ -3,14 +3,14 @@
 #include "game.hpp"
 #include "worm.hpp"
 #include "rand.hpp"
-#include <gvl/math/rect.hpp>
+#include "math/rect.hpp"
 #include <ctime>
 
 struct Renderer;
 
 struct Viewport
 {
-	Viewport(gvl::rect rect, int wormIdx, int levwidth, int levheight)
+	Viewport(Rect rect, int wormIdx, int levwidth, int levheight)
 	: wormIdx(wormIdx)
 	, bannerY(-8)
 	, rect(rect)
@@ -35,7 +35,7 @@ struct Viewport
 	int centerX, centerY;
 	int wormIdx;
 	int bannerY;
-	gvl::rect rect;
+	Rect rect;
 	Rand rand;
 
 

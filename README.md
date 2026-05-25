@@ -175,6 +175,10 @@ under their own respective licenses:
 * [SDL + SDL_image][1] ([zlib][3])
 * [miniz][2] ([MIT][4])
 
+The serialization layer in `src/game/serialization/` is adapted from
+[gvl](https://github.com/gliptic/gvl) by Erik Lindroos and Martin Erik Werner
+(BSD-2-Clause).
+
 [0]: https://github.com/gliptic/liero
 [1]: https://www.libsdl.org
 [2]: https://github.com/richgel999/miniz

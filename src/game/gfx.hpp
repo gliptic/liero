@@ -1,7 +1,7 @@
 #pragma once
 
 #include <SDL3/SDL.h>
-#include <gvl/math/rect.hpp>
+#include "math/rect.hpp"
 
 #include <cstdio>
 #include <cassert>
@@ -360,7 +360,7 @@ struct Gfx
 	unsigned menuCycles;
 	int windowW, windowH;
 	int prevMag; // Previous magnification used for drawing
-	gvl::rect lastUpdateRect; // Last region that was updated when flipping
+	Rect lastUpdateRect; // Last region that was updated when flipping
 	std::shared_ptr<Common> common;
 	std::unique_ptr<Controller> controller;
 	std::unique_ptr<NetSession> netSession;

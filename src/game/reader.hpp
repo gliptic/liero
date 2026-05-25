@@ -1,86 +1,73 @@
 #pragma once
 
 #include <cstdint>
-#include <cstdio>
 #include <cstdlib>
-#include <string>
+#include <cstring>
 #include <stdexcept>
-#include <gvl/io2/stream.hpp>
-#include <gvl/serialization/coding.hpp>
+#include <utility>
+#include <vector>
 
-struct ReaderFile : gvl::noncopyable
+#include "io/stream.hpp"
+
+// Random-access in-memory file: slurp an io::Reader once, then use
+// seekg/tellg/skip/get/get(buf, n). Used by the TC asset loaders for
+// sprite/sound/font files.
+struct ReaderFile
 {
-	ReaderFile()
-	: data(0), pos(0), len(0)
+	ReaderFile() = default;
+
+	ReaderFile(ReaderFile const&) = delete;
+	ReaderFile& operator=(ReaderFile const&) = delete;
+
+	ReaderFile(ReaderFile&& other) noexcept
+		: data_(std::move(other.data_)), pos(other.pos)
 	{
+		other.pos = 0;
 	}
 
-	ReaderFile(ReaderFile&& other)
-	: data(other.data), pos(other.pos), len(other.len)
+	explicit ReaderFile(io::Reader& r)
 	{
-		other.data = 0;
-	}
-
-	explicit ReaderFile(gvl::source source)
-	: data(0), pos(0)
-	{
-		len = 0;
-		auto cur = source;
-		while (cur && cur->ensure_data() == gvl::source_result::ok)
-		{
-			len += cur->data->size();
-			cur = cur->next;
-		}
-
-		data = (uint8_t*)malloc(len);
-		uint8_t* p = data;
-
-		cur = source;
-		while (cur && cur->data)
-		{
-			std::memcpy(p, cur->data->begin(), cur->data->size());
-			p += cur->data->size();
-			cur = cur->next;
+		uint8_t buf[4096];
+		for (;;) {
+			std::size_t got = r.try_get(buf, sizeof(buf));
+			if (got == 0)
+				break;
+			data_.insert(data_.end(), buf, buf + got);
 		}
 	}
 
-	~ReaderFile()
-	{
-		std::free(data);
-	}
+	uint8_t* data() { return data_.data(); }
+	uint8_t const* data() const { return data_.data(); }
+	std::size_t len() const { return data_.size(); }
 
-	uint8_t* data;
-	size_t pos, len;
+	std::size_t pos = 0;
 
-	void seekg(size_t newPos)
+	void seekg(std::size_t newPos)
 	{
-		if (newPos > len)
-			throw gvl::stream_read_error(gvl::source_result::eos, "EOF in seekg()");
+		if (newPos > data_.size())
+			throw io::EndOfStream("EOF in seekg()");
 		pos = newPos;
 	}
 
-	size_t tellg()
-	{
-		return pos;
-	}
+	std::size_t tellg() const { return pos; }
 
-	void skip(size_t step)
-	{
-		seekg(pos + step);
-	}
+	void skip(std::size_t step) { seekg(pos + step); }
 
 	uint8_t get()
 	{
-		if (pos >= len)
-			throw gvl::stream_read_error(gvl::source_result::eos, "EOF in get()");
-		return data[pos++];
+		if (pos >= data_.size())
+			throw io::EndOfStream("EOF in get()");
+		return data_[pos++];
 	}
 
-	void get(uint8_t* p, size_t l)
+	void get(uint8_t* p, std::size_t l)
 	{
-		if (pos + l > len)
-			throw gvl::stream_read_error(gvl::source_result::eos, "EOF in get()");
-		std::memcpy(p, data + pos, l);
+		if (pos + l > data_.size())
+			throw io::EndOfStream("EOF in get()");
+		std::memcpy(p, data_.data() + pos, l);
 		pos += l;
 	}
+
+private:
+	std::vector<uint8_t> data_;
 };

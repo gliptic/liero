@@ -11,7 +11,6 @@
 #include "controller/replayController.hpp"
 #include "menu/mainMenu.hpp"
 
-#include <gvl/io2/fstream.hpp>
 
 using std::string;
 using std::shared_ptr;
@@ -134,7 +133,8 @@ void LevelSelectorState::drawExtra()
 
 		try
 		{
-			if (level.load(common, *gfx->settings, sel->getFsNode().toOctetReader()))
+			auto r_ptr = sel->getFsNode().toReader(); io::Reader& r = *r_ptr;
+			if (level.load(common, *gfx->settings, r))
 			{
 				int centerX = gfx->singleScreenRenderer.renderResX / 2;
 
@@ -192,7 +192,7 @@ bool ReplaySelectorState::onSelected(FileNode* node)
 
 	// Reset controller before opening the replay, since we may be recording it
 	gfx->controller.reset();
-	gfx->controller.reset(new ReplayController(gfx->common, node->getFsNode().toSource()));
+	gfx->controller.reset(new ReplayController(gfx->common, node->getFsNode().toReader()));
 
 	gfx->pendingMenuSelection = MainMenu::MaReplay;
 	return true;

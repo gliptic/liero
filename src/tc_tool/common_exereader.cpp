@@ -1,9 +1,8 @@
 #include "common_exereader.hpp"
 
-#include <gvl/io2/convert.hpp>
-#include <gvl/io2/fstream.hpp>
 #include <cctype>
 #include "game/cp437.hpp"
+#include "game/io/coding.hpp"
 #include "game/reader.hpp"
 #include "game/rand.hpp"
 #include "game/filesystem.hpp"
@@ -381,16 +380,16 @@ void loadConstants(Common& common, ReaderFile& exe)
 	for(int i = 0; CSint32desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint32desc[i][1]);
-		int32_t a = (int32_t)gvl::read_uint16_le(exe);
+		int32_t a = (int32_t)io::read_uint16_le(exe);
 		exe.seekg(CSint32desc[i][2]);
-		int32_t b = (int16_t)gvl::read_uint16_le(exe);
+		int32_t b = (int16_t)io::read_uint16_le(exe);
 		common.C[CSint32desc[i][0]] = a + (b << 16);
 	}
 
 	for(int i = 0; CSint24desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint24desc[i][1]);
-		int32_t a = (int32_t)gvl::read_uint16_le(exe);
+		int32_t a = (int32_t)io::read_uint16_le(exe);
 		exe.seekg(CSint24desc[i][2]);
 		int32_t b = (int8_t)exe.get();
 		common.C[CSint24desc[i][0]] = a + (b << 16);
@@ -399,13 +398,13 @@ void loadConstants(Common& common, ReaderFile& exe)
 	for(int i = 0; CSint16desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CSint16desc[i][1]);
-		common.C[CSint16desc[i][0]] = (int16_t)gvl::read_uint16_le(exe);
+		common.C[CSint16desc[i][0]] = (int16_t)io::read_uint16_le(exe);
 	}
 
 	for(int i = 0; CUint16desc[i][1] >= 0; ++i)
 	{
 		exe.seekg(CUint16desc[i][1]);
-		common.C[CUint16desc[i][0]] = gvl::read_uint16_le(exe);
+		common.C[CUint16desc[i][0]] = io::read_uint16_le(exe);
 	}
 
 	for(int i = 0; CSint8desc[i][1] >= 0; ++i)
@@ -507,7 +506,7 @@ struct Read32
 {
 	static inline int32_t run(ReaderFile& f)
 	{
-		return (int32_t)gvl::read_uint32_le(f);
+		return (int32_t)io::read_uint32_le(f);
 	}
 };
 
@@ -515,7 +514,7 @@ struct Read16
 {
 	static inline int32_t run(ReaderFile& f)
 	{
-		return (int32_t)(int16_t)gvl::read_uint16_le(f);
+		return (int32_t)(int16_t)io::read_uint16_le(f);
 	}
 };
 
@@ -707,13 +706,13 @@ void loadOthers(Common& common, ReaderFile& exe)
 
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 2; ++j)
-		common.bonusRandTimer[j][i] = gvl::read_uint16_le(exe);
+		common.bonusRandTimer[j][i] = io::read_uint16_le(exe);
 
 	exe.seekg(0x1AEEE + 2);
 
 	for(int i = 0; i < 2; ++i)
 	for(int j = 0; j < 7; ++j)
-		common.aiParams.k[i][j] = gvl::read_uint16_le(exe);
+		common.aiParams.k[i][j] = io::read_uint16_le(exe);
 
 	exe.seekg(0x1C1E0);
 
@@ -819,7 +818,7 @@ void loadSfx(
 	std::vector<SfxSample>& sounds,
 	ReaderFile& snd)
 {
-	int count = gvl::read_uint16_le(snd);
+	int count = io::read_uint16_le(snd);
 
 	sounds.clear();
 
@@ -829,8 +828,8 @@ void loadSfx(
 		name[8] = 0;
 		snd.get(name, 8);
 
-		int offset = gvl::read_uint32_le(snd);
-		int length = gvl::read_uint32_le(snd);
+		int offset = io::read_uint32_le(snd);
+		int length = io::read_uint32_le(snd);
 
 		auto oldPos = snd.tellg();
 

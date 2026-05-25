@@ -1,12 +1,15 @@
 #pragma once
 
-#include <gvl/containers/pairing_heap.hpp>
-#include <gvl/math/vec.hpp>
+#include <queue>
+#include <utility>
+#include <vector>
+
+#include "math/rect.hpp"
 
 #include "../level.hpp"
 #include "../common.hpp"
 
-struct path_node : gvl::pairing_node<>
+struct path_node
 {
 	enum
 	{
@@ -18,23 +21,19 @@ struct path_node : gvl::pairing_node<>
 	path_node()
 	: parent(0)
 	, state(none)
+	, g(0)
 	{
-	}
-
-	bool operator<(path_node const& b) const
-	{
-		return g < b.g;
 	}
 
 	void reset()
 	{
 		state = none;
+		parent = 0;
 	}
 
 	path_node* parent;
 	int state;
-
-	int g; // TODO: Generic type
+	int g;
 };
 
 template<typename NodeT, typename DerivedT>
@@ -42,22 +41,24 @@ struct dijkstra_state
 {
 	typedef path_node path_node_t;
 
-	// open_list contains elements of nodes, so it's important that open_list is last
-	gvl::pairing_heap<path_node_t, gvl::default_pairing_tag, std::less<path_node_t>, gvl::dummy_delete> open_list;
+	// Lazy-deletion min-heap. When a node's cost is lowered, we push a new
+	// entry; the stale entry remains in the heap and is skipped at pop time
+	// (its cached `g` won't match the node's current `g`).
+	struct Entry { int g; path_node_t* node; };
+	struct EntryGreater { bool operator()(Entry const& a, Entry const& b) const { return a.g > b.g; } };
+	std::priority_queue<Entry, std::vector<Entry>, EntryGreater> open_list;
+
+	bool open_empty() const { return open_list.empty(); }
 
 	void add_open(path_node_t* node)
 	{
-		sassert(node->state != path_node_t::open);
-		open_list.insert(node);
+		open_list.push({node->g, node});
 		node->state = path_node_t::open;
 	}
 
-	// get_node(NodeT) -> path_node_t*
-	// get_node_id(path_node_t*) -> NodeT
-
 	void reset()
 	{
-		open_list.unlink_all();
+		while (!open_list.empty()) open_list.pop();
 	}
 
 	void set_origin(NodeT origin_init)
@@ -75,19 +76,19 @@ struct dijkstra_state
 		typename SuccessorIter>
 	bool run(StopPred stop, SuccessorIter succ_iter)
 	{
-		typedef dijkstra_state<NodeT, DerivedT> dijkstra_state_t;
-		typedef typename dijkstra_state_t::path_node_t path_node_t;
-
 		DerivedT& derived = static_cast<DerivedT&>(*this);
-
-		int steps = 0, expansions = 0, neighbours = 0;
 
 		while(!open_list.empty() && !stop())
 		{
-			path_node_t* min_pn = open_list.unlink_min();
-			NodeT min = derived.get_node_id(min_pn);
+			Entry e = open_list.top();
+			open_list.pop();
 
-			++steps;
+			// Skip stale entries from prior decreased_key operations.
+			if (e.node->state == path_node_t::closed) continue;
+			if (e.g != e.node->g) continue;
+
+			path_node_t* min_pn = e.node;
+			NodeT min = derived.get_node_id(min_pn);
 
 			min_pn->state = path_node_t::closed;
 
@@ -99,26 +100,23 @@ struct dijkstra_state
 				path_node_t* pn = derived.get_node(node);
 				if(pn->state != path_node_t::closed)
 				{
-					++neighbours;
 					int g = min_pn->g + succ_iter.cost();
 					if(pn->state != path_node_t::open)
 					{
 						pn->g = g;
 						pn->parent = min_pn;
 						add_open(pn);
-						++expansions;
 					}
 					else if(g < pn->g)
 					{
 						pn->g = g;
 						pn->parent = min_pn;
-						open_list.decreased_key(pn);
+						// Push a new entry; the older one will be ignored at pop.
+						open_list.push({g, pn});
 					}
 				}
 			}
 		}
-
-		//printf("failed after %d expansions, %d neighbours\n", expansions, neighbours);
 
 		return stop();
 	}
@@ -196,17 +194,17 @@ struct dijkstra_level : dijkstra_state<level_cell*, dijkstra_level>
 		return &cells[(y + 1) * pitch + x + 1];
 	}
 
-	gvl::ivec2 coords(level_cell* c)
+	IVec2 coords(level_cell* c)
 	{
 		int offset = (int)(c - cells);
 		int y = offset / pitch;
 		int x = offset % pitch;
-		return gvl::ivec2(x - 1, y - 1);
+		return IVec2(x - 1, y - 1);
 	}
 
-	gvl::ivec2 coords_level(level_cell* c)
+	IVec2 coords_level(level_cell* c)
 	{
-		return coords(c) * factor + gvl::ivec2(factor / 2, factor / 2);
+		return coords(c) * factor + IVec2(factor / 2, factor / 2);
 	}
 
 	level_cell* cell_from_px(int x, int y)

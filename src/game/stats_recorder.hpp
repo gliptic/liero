@@ -7,7 +7,7 @@
 struct Common;
 struct Renderer;
 
-struct StatsRecorder : gvl::shared
+struct StatsRecorder
 {
 	virtual void damagePotential(Worm* byWorm, WormWeapon* weapon, int hp);
 	virtual void damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp, bool hasHit);
@@ -22,8 +22,6 @@ struct StatsRecorder : gvl::shared
 	virtual void finish(Game& game);
 
 	virtual void aiProcessTime(Worm* worm, std::chrono::nanoseconds time);
-
-	//virtual void write(Common& common, gvl::stream_ptr sink);
 };
 
 struct WeaponStats
@@ -146,7 +144,4 @@ struct NormalStatsRecorder : StatsRecorder
 
 	void finish(Game& game);
 	void aiProcessTime(Worm* worm, std::chrono::nanoseconds time);
-
-
-	//void write(Common& common, gvl::stream_ptr sink);
 };

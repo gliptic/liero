@@ -15,15 +15,14 @@
 inline uint32_t hashGameState(Game& game) {
   uint32_t h = 1;
 
-  h = h * 31 + game.rand.x;
-  h = h * 31 + game.rand.c;
+  h = h * 31 + game.rand.last;
   h = h * 31 + static_cast<uint32_t>(game.cycles);
 
   for (int i = 0; i < game.level.width * game.level.height; ++i) {
     h = h * 33 ^ game.level.data[i];
   }
 
-  for (auto* w : game.worms) {
+  for (auto const& w : game.worms) {
     h = h * 31 + static_cast<uint32_t>(w->pos.x);
     h = h * 31 + static_cast<uint32_t>(w->pos.y);
     h = h * 31 + static_cast<uint32_t>(w->vel.x);
@@ -124,7 +123,7 @@ struct ComponentHashes {
 inline ComponentHashes hashGameComponents(Game& game) {
   ComponentHashes c{};
 
-  c.rng = game.rand.x * 31 + game.rand.c;
+  c.rng = game.rand.last;
 
   {
     uint32_t h = 1;
@@ -134,7 +133,7 @@ inline ComponentHashes hashGameComponents(Game& game) {
   }
 
   for (size_t wi = 0; wi < game.worms.size() && wi < NumPlayers; ++wi) {
-    auto* w = game.worms[wi];
+    auto const& w = game.worms[wi];
     uint32_t h = 1;
     h = h * 31 + static_cast<uint32_t>(w->pos.x);
     h = h * 31 + static_cast<uint32_t>(w->pos.y);

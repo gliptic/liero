@@ -2,7 +2,7 @@
 
 #include "color.hpp"
 #include "sprite.hpp"
-#include <gvl/math/rect.hpp>
+#include "math/rect.hpp"
 #include <vector>
 #include <algorithm>
 
@@ -29,7 +29,7 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 void blitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y);
 void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, int x, int y);
 void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int width, int height);
-void correctShadow(Common& common, Level& level, gvl::rect rect);
+void correctShadow(Common& common, Level& level, Rect rect);
 void drawDashedLineBox(Bitmap& scr, int x, int y, int color, int color2, int num, int den, int width, int height, int phase);
 
 void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY);

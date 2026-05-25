@@ -5,14 +5,15 @@
 #include "constants.hpp"
 #include "console.hpp"
 #include "filesystem.hpp" // For joinPath
+#include "io/stream.hpp"
 #include <cstdlib>
+#include <sstream>
 
-#include <gvl/serialization/archive.hpp>
-#include <gvl/serialization/toml_adapter.hpp>
+#include <serialization/cereal_types.hpp>
+#include <serialization/toml_archive.hpp>
 #include "replay.hpp"
 
-#include <gvl/crypt/gash.hpp>
-#include <gvl/io2/fstream.hpp>
+#include <xxhash.h>
 
 #include <SDL3/SDL.h>
 
@@ -35,43 +36,40 @@ struct Point
 	int x, y;
 };
 
-gvl::gash::value_type& WormSettings::updateHash()
+uint64_t& WormSettings::updateHash()
 {
 	std::string tomlData = toToml();
 
-	gvl::hash_accumulator<gvl::gash> ha;
-	for (char c : tomlData)
-		ha.put(static_cast<uint8_t>(c));
-	ha.flush();
-	hash = ha.final();
+	hash = XXH3_64bits(tomlData.data(), tomlData.size());
 	return hash;
 }
 
 std::string WormSettings::toToml() const
 {
-	std::string buf;
-	gvl::string_writer sw(buf);
-	gvl::toml::writer<gvl::string_writer> ar(sw);
-	archive_worm_toml(ar, const_cast<WormSettings&>(*this));
-	return buf;
+	std::ostringstream ss;
+	{
+		cereal::TomlOutputArchive ar(ss);
+		ar(cereal::make_nvp("ws", const_cast<WormSettings&>(*this)));
+	}
+	return ss.str();
 }
 
 void WormSettings::fromToml(std::string const& data)
 {
-	gvl::string_reader sr(data);
-	gvl::toml::reader<gvl::string_reader> ar(sr);
-	archive_worm_toml(ar, *this);
+	std::istringstream ss(data);
+	cereal::TomlInputArchive ar(ss);
+	ar(cereal::make_nvp("ws", *this));
 }
 
 void WormSettings::saveProfile(FsNode node)
 {
 	try
 	{
-		auto writer = node.toOctetWriter();
+		auto writer_ptr = node.toWriter(); io::Writer& writer = *writer_ptr;
 		profileNode = node;
 
-		gvl::toml::writer<gvl::octet_writer> ar(writer);
-		archive_worm_toml(ar, *this);
+		std::string toml = toToml();
+		writer.put(reinterpret_cast<uint8_t const*>(toml.data()), toml.size());
 	}
 	catch(std::runtime_error& e)
 	{
@@ -84,11 +82,17 @@ void WormSettings::loadProfile(FsNode node)
 	int oldColor = color;
 	try
 	{
-		auto reader = node.toOctetReader();
+		auto reader_ptr = node.toReader(); io::Reader& reader = *reader_ptr;
 		profileNode = node;
 
-		gvl::toml::reader<gvl::octet_reader> ar(reader);
-		archive_worm_toml(ar, *this);
+		std::string content;
+		uint8_t buf[4096];
+		for (;;) {
+			std::size_t got = reader.try_get(buf, sizeof(buf));
+			if (got == 0) break;
+			content.append(reinterpret_cast<char*>(buf), got);
+		}
+		fromToml(content);
 	}
 	catch(std::runtime_error& e)
 	{
@@ -562,7 +566,7 @@ void DumbLieroAI::process(Game& game, Worm& worm)
 	int minLen = 0;
 	for(std::size_t i = 0; i < game.worms.size(); ++i)
 	{
-		Worm* w = game.worms[i];
+		Worm* w = game.worms[i].get();
 		if(w != &worm)
 		{
 			int len = sqrVectorLength(ftoi(worm.pos.x) - ftoi(w->pos.x), ftoi(worm.pos.y) - ftoi(w->pos.y));
@@ -831,7 +835,7 @@ void Worm::beginRespawn(Game& game)
 
 	auto temp = ftoi(pos);
 
-	logicRespawn = temp - gvl::ivec2(80, 80);
+	logicRespawn = temp - IVec2(80, 80);
 
 	auto enemy = temp;
 
@@ -903,7 +907,7 @@ void Worm::doRespawning(Game& game)
 		auto ipos = ftoi(pos);
 		drawDirtEffect(common, game.rand, game.level, 0, ipos.x - 7, ipos.y - 7);
 		if(game.settings->shadow)
-			correctShadow(common, game.level, gvl::rect(ipos.x - 10, ipos.y - 10, ipos.x + 11, ipos.y + 11));
+			correctShadow(common, game.level, Rect(ipos.x - 10, ipos.y - 10, ipos.x + 11, ipos.y + 11));
 
 		ready = false;
 		game.soundPlayer->play(21);
@@ -1064,7 +1068,7 @@ void Worm::processMovement(Game& game)
 				auto idigPos = ftoi(digPos);
 				drawDirtEffect(common, game.rand, game.level, 7, idigPos.x, idigPos.y);
 				if(game.settings->shadow)
-					correctShadow(common, game.level, gvl::rect(idigPos.x - 3, idigPos.y - 3, idigPos.x + 18, idigPos.y + 18));
+					correctShadow(common, game.level, Rect(idigPos.x - 3, idigPos.y - 3, idigPos.x + 18, idigPos.y + 18));
 
 				digPos += dir * 2;
 
@@ -1072,7 +1076,7 @@ void Worm::processMovement(Game& game)
 				idigPos = ftoi(digPos);
 				drawDirtEffect(common, game.rand, game.level, 7, idigPos.x, idigPos.y);
 				if(game.settings->shadow)
-					correctShadow(common, game.level, gvl::rect(idigPos.x - 3, idigPos.y - 3, idigPos.x + 18, idigPos.y + 18));
+					correctShadow(common, game.level, Rect(idigPos.x - 3, idigPos.y - 3, idigPos.x + 18, idigPos.y + 18));
 
 				//NOTE! Maybe the shadow corrections can be joined into one? Mmm?
 			} // 4552
@@ -1352,9 +1356,9 @@ bool checkForSpecWormHit(Game& game, int x, int y, int dist, Worm& w)
 	int deltaX = x - ftoi(w.pos.x) + 7;
 	int deltaY = y - ftoi(w.pos.y) + 5;
 
-	gvl::rect r(deltaX - dist, deltaY - dist, deltaX + dist + 1, deltaY + dist + 1);
+	Rect r(deltaX - dist, deltaY - dist, deltaX + dist + 1, deltaY + dist + 1);
 
-	r.intersect(gvl::rect(0, 0, 16, 16));
+	r.intersect(Rect(0, 0, 16, 16));
 
 	for(int cy = r.y1; cy < r.y2; ++cy)
 	for(int cx = r.x1; cx < r.x2; ++cx)

@@ -15,7 +15,7 @@ using std::shared_ptr;
 
 typedef bool (*FileFilter)(string const& name, string const& ext);
 
-struct FileNode : gvl::shared
+struct FileNode
 {
 	FileNode()
 	: folder(true)

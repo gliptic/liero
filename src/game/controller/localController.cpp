@@ -1,7 +1,6 @@
 #include "localController.hpp"
 
 #include <chrono>
-#include <gvl/io2/fstream.hpp>
 #include "../keys.hpp"
 #include "../gfx.hpp"
 #include "../sfx.hpp"
@@ -32,28 +31,28 @@ LocalController::LocalController(std::shared_ptr<Common> common, std::shared_ptr
 , fadeValue(0)
 , goingToMenu(false)
 {
-	Worm* worm1 = new Worm();
+	auto worm1 = std::make_shared<Worm>();
 	worm1->settings = settings->wormSettings[0];
 	worm1->health = worm1->settings->health;
 	worm1->index = 0;
 	worm1->statsX = 0;
 	worm1->ai = createAi(worm1->settings->controller, *worm1, *settings);
 
-	Worm* worm2 = new Worm();
+	auto worm2 = std::make_shared<Worm>();
 	worm2->settings = settings->wormSettings[1];
 	worm2->health = worm2->settings->health;
 	worm2->index = 1;
 	worm2->statsX = 218;
 	worm2->ai = createAi(worm2->settings->controller, *worm2, *settings);
 
-	game.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), worm1->index, 504, 350));
-	game.addViewport(new Viewport(gvl::rect(160, 0, 158+160, 158), worm2->index, 504, 350));
+	game.addViewport(new Viewport(Rect(0, 0, 158, 158), worm1->index, 504, 350));
+	game.addViewport(new Viewport(Rect(160, 0, 158+160, 158), worm2->index, 504, 350));
 
 	game.addWorm(worm1);
 	game.addWorm(worm2);
 
 	// +68 on x to align the viewport in the middle
-	game.addSpectatorViewport(new SpectatorViewport(gvl::rect(0, 0, 504 + 68, 350), 504, 350));
+	game.addSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
 }
 
 LocalController::~LocalController()
@@ -270,7 +269,6 @@ void LocalController::changeState(GameState newState)
 		{
 			try
 			{
-#if !ENABLE_TRACING
 				std::time_t ticks = std::time(0);
 				std::tm* now = std::localtime(&ticks);
 
@@ -293,14 +291,10 @@ void LocalController::changeState(GameState newState)
 							playerNames.push_back(ch);
 					}
 				}
-#else
-				std::string prefix = "-  Trace";
-				std::string buf = ".lrp";
-#endif
 
 				auto node = gfx.getConfigNode() / "Replays" / (buf + playerNames + ".lrp");
 
-				replay.reset(new ReplayWriter(node.toSink()));
+				replay.reset(new ReplayWriter(node.toWriter()));
 
 				replay->beginRecord(game);
 			}

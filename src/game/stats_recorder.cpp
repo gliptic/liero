@@ -47,11 +47,6 @@ void StatsRecorder::aiProcessTime(Worm* worm, std::chrono::nanoseconds time)
 {
 }
 
-/*
-void StatsRecorder::write(Common& common, gvl::stream_ptr sink)
-{
-}*/
-
 void NormalStatsRecorder::damagePotential(Worm* byWorm, WormWeapon* weapon, int hp)
 {
 	if (!byWorm || !weapon)
@@ -154,7 +149,7 @@ void NormalStatsRecorder::tick(Game& game)
 	auto frameEnd = std::chrono::steady_clock::now();
 	processTimeTotal += std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart).count();
 
-	for (auto* w : game.worms)
+	for (auto const& w : game.worms)
 	{
 		auto& ws = worms[w->index];
 		if (w->visible)
@@ -183,7 +178,7 @@ void NormalStatsRecorder::finish(Game& game)
 {
 	for (int i = 0; i < 2; ++i)
 	{
-		auto* gw = game.worms[i];
+		auto const& gw = game.worms[i];
 		WormStats& w = worms[i];
 		if (w.spawnTime >= 0)
 		{
@@ -203,46 +198,3 @@ void NormalStatsRecorder::aiProcessTime(Worm* worm, std::chrono::nanoseconds tim
 	WormStats& w = worms[worm->index];
 	w.aiProcessTime += time;
 }
-
-/*
-void NormalStatsRecorder::write(Common& common, gvl::stream_ptr sink)
-{
-	gvl::octet_stream_writer w(sink);
-
-	w << "Stats\n\n";
-
-	uint64_t ticks_per_sec = gvl::hires_ticks_per_sec();
-
-	w << "Process time: " << (int)(processTimeTotal * 1000 / ticks_per_sec) << "ms, "
-	  << (int)(frame * ticks_per_sec / processTimeTotal) << " fps\n";
-
-	for (int i = 0; i < 2; ++i)
-	{
-		WormStats& worm = worms[i];
-		w << "Worm " << i << '\n';
-		w << "Damage received: " << worm.damage << '\n';
-		w << "Damage dealt: " << worm.damageDealt << '\n';
-		w << "Damage to self: " << worm.selfDamage << '\n';
-
-		int min, max;
-		worm.lifeStats(min, max);
-		w << "Longest life: " << timeToStringFrames(max) << "\n";
-		w << "Shortest life: " << timeToStringFrames(min) << "\n";
-
-		for (int j = 0; j < 40; ++j)
-		{
-			WeaponStats& weapon = worm.weapons[j];
-			if (weapon.potentialHits > 0)
-			{
-				w << "Weapon " << common.weapons[j].name << '\n';
-				w << "  " << weapon.actualHits << "/" << weapon.potentialHits << " hits (" << (weapon.actualHits * 100 / weapon.potentialHits) << "%)\n";
-				if (weapon.potentialHp > 0)
-					w << "  " << weapon.actualHp << "/" << weapon.potentialHp << " hp (" << (weapon.actualHp * 100 / weapon.potentialHp) << "%)\n";
-				if (weapon.actualHp != weapon.totalHp)
-					w << "  " << weapon.totalHp << " total hp\n";
-			}
-		}
-		w << '\n';
-	}
-}
-*/

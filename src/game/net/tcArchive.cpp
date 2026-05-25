@@ -5,7 +5,6 @@
 #include <miniz.h>
 
 #include "../filesystem.hpp"
-#include <gvl/io2/stream.hpp>
 
 namespace TcArchive {
 
@@ -22,28 +21,15 @@ void collectFiles(FsNode node, const std::string& prefix,
     if (entry.isDir) {
       collectFiles(child, relPath, out);
     } else {
-      // Read file contents using the same pattern as ReaderFile
       try {
-        gvl::source source = child.toSource();
-
-        // First pass: compute total size
-        size_t totalLen = 0;
-        auto cur = source;
-        while (cur && cur->ensure_data() == gvl::source_result::ok) {
-          totalLen += cur->data->size();
-          cur = cur->next;
+        auto r_ptr = child.toReader(); io::Reader& r = *r_ptr;
+        std::vector<uint8_t> data;
+        uint8_t buf[4096];
+        for (;;) {
+          std::size_t got = r.try_get(buf, sizeof(buf));
+          if (got == 0) break;
+          data.insert(data.end(), buf, buf + got);
         }
-
-        // Second pass: copy data
-        std::vector<uint8_t> data(totalLen);
-        uint8_t* p = data.data();
-        cur = source;
-        while (cur && cur->data) {
-          std::memcpy(p, cur->data->begin(), cur->data->size());
-          p += cur->data->size();
-          cur = cur->next;
-        }
-
         out.emplace_back(relPath, std::move(data));
       } catch (...) {
         // Skip files that can't be read

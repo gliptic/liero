@@ -3,6 +3,7 @@
 #include "../settings.hpp"
 #include "../reader.hpp"
 #include "../gfx.hpp"
+#include "io/stream.hpp"
 
 void Palette::activate(Color realPal[256])
 {
@@ -68,7 +69,7 @@ void Palette::clear()
 	std::memset(entries, 0, sizeof(entries));
 }
 
-void Palette::read(gvl::octet_reader& r)
+void Palette::read(io::Reader& r)
 {
 	for(int i = 0; i < 256; ++i)
 	{

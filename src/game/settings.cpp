@@ -3,11 +3,13 @@
 #include "keys.hpp"
 #include "gfx.hpp"
 #include "filesystem.hpp"
+#include "io/stream.hpp"
 
-#include <gvl/io2/fstream.hpp>
-#include <gvl/serialization/toml_adapter.hpp>
+#include <serialization/cereal_types.hpp>
+#include <serialization/toml_archive.hpp>
 
-#include <gvl/crypt/gash.hpp>
+#include <xxhash.h>
+#include <sstream>
 
 int const Settings::wormAnimTab[] =
 {
@@ -53,6 +55,7 @@ Settings::Settings()
 , randomLevel(true)
 , map(true)
 , screenSync(true)
+, bonusTimeout(0)
 {
 	std::memset(weapTable, 0, sizeof(weapTable));
 
@@ -106,57 +109,99 @@ bool Settings::load(FsNode node, Rand& rand)
 {
 	try
 	{
-		auto reader = node.toOctetReader();
-		gvl::toml::reader<gvl::octet_reader> ar(reader);
-		archive_text(*this, ar);
+		auto reader_ptr = node.toReader(); io::Reader& reader = *reader_ptr;
+		std::string content;
+		uint8_t buf[4096];
+		for (;;) {
+			std::size_t got = reader.try_get(buf, sizeof(buf));
+			if (got == 0) break;
+			content.append(reinterpret_cast<char*>(buf), got);
+		}
+		fromToml(content);
 	}
 	catch (std::runtime_error&)
 	{
 		return false;
 	}
 
+	// Validate that wormSettings were deserialized (guards against corrupt
+	// or incompatible config files that lack player sections).
+	for (int i = 0; i < NumWormSettings; ++i)
+		if (!wormSettings[i])
+			return false;
+
 	return true;
 }
 
-gvl::gash::value_type& Settings::updateHash()
+uint64_t& Settings::updateHash()
 {
-	std::string buf;
-	gvl::string_writer sw(buf);
-	gvl::toml::writer<gvl::string_writer> ar(sw);
-	archive_gameplay_text(*this, ar);
-	ar.flush();
-
-	gvl::hash_accumulator<gvl::gash> ha;
-	for (char c : buf)
-		ha.put(static_cast<uint8_t>(c));
-	ha.flush();
-	hash = ha.final();
+	std::ostringstream ss;
+	{
+		cereal::TomlOutputArchive ar(ss);
+		serializeGameplay(ar, *this);
+	}
+	std::string buf = ss.str();
+	hash = XXH3_64bits(buf.data(), buf.size());
 	return hash;
 }
 
 std::string Settings::toToml() const
 {
-	std::string buf;
-	gvl::string_writer sw(buf);
-	gvl::toml::writer<gvl::string_writer> ar(sw);
-	archive_text(const_cast<Settings&>(*this), ar);
-	return buf;
+	std::ostringstream ss;
+	{
+		cereal::TomlOutputArchive ar(ss);
+		// Serialize all scalar fields under [settings]
+		ar.setNextName("settings");
+		ar.startNode();
+		int32_t version = ConfigVersion;
+		ar(cereal::make_nvp("version", version));
+		serializeSettingsScalars(ar, const_cast<Settings&>(*this));
+		serializeArray(ar, "weapTable", const_cast<Settings&>(*this).weapTable);
+		ar.finishNode();
+
+		// Serialize worm settings as sub-tables with descriptive names
+		static const char* wormNames[] = {"player1", "player2", "network_player"};
+		for (int i = 0; i < NumWormSettings; ++i) {
+			if (wormSettings[i]) {
+				ar.setNextName(wormNames[i]);
+				ar.startNode();
+				serializeWormSettingsToml(ar, *wormSettings[i]);
+				ar.finishNode();
+			}
+		}
+	}
+	return ss.str();
 }
 
 void Settings::fromToml(std::string const& data)
 {
-	gvl::string_reader sr(data);
-	gvl::toml::reader<gvl::string_reader> ar(sr);
-	archive_text(*this, ar);
+	std::istringstream ss(data);
+	cereal::TomlInputArchive ar(ss);
+
+	ar.setNextName("settings");
+	ar.startNode();
+	int32_t version = 0;
+	ar(cereal::make_nvp("version", version));
+	serializeSettingsScalars(ar, *this);
+	serializeArray(ar, "weapTable", weapTable);
+	ar.finishNode();
+
+	static const char* wormNames[] = {"player1", "player2", "network_player"};
+	for (int i = 0; i < NumWormSettings; ++i) {
+		ar.setNextName(wormNames[i]);
+		ar.startNode();
+		if (!wormSettings[i])
+			wormSettings[i] = std::make_shared<WormSettings>();
+		serializeWormSettingsToml(ar, *wormSettings[i]);
+		ar.finishNode();
+	}
 }
 
 void Settings::save(FsNode node, Rand& rand)
 {
-	auto writer = node.toOctetWriter();
-
-	gvl::toml::writer<gvl::octet_writer> ar(writer);
-
-	archive_text(*this, ar);
+	auto writer_ptr = node.toWriter(); io::Writer& writer = *writer_ptr;
+	std::string toml = toToml();
+	writer.put(reinterpret_cast<uint8_t const*>(toml.data()), toml.size());
 }
 
 void Settings::generateName(WormSettings& ws, Rand& rand)

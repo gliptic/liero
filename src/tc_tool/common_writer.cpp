@@ -1,24 +1,13 @@
 #include "game/common_model.hpp"
-#include <gvl/io2/convert.hpp>
-#include <gvl/io2/fstream.hpp>
-#include <gvl/serialization/coding.hpp>
-#include <gvl/serialization/toml_adapter.hpp>
-
 #include "game/filesystem.hpp"
+#include "game/io/coding.hpp"
+#include "game/io/stream.hpp"
 
-struct OctetTextWriter : gvl::octet_writer
-{
-	OctetTextWriter(std::string const& path)
-	: gvl::octet_writer(gvl::sink(new gvl::file_bucket_pipe(path.c_str(), "wb")))
-	, w(*this)
-	{
-	}
-
-	gvl::toml::writer<gvl::octet_writer> w;
-};
+#include <fstream>
+#include <sstream>
 
 void writeSpriteTga(
-	gvl::octet_writer& w,
+	io::Writer& w,
 	int imageWidth,
 	int imageHeight,
 	uint8_t* data,
@@ -29,14 +18,14 @@ void writeSpriteTga(
 	w.put(1);
 
 	// Palette spec
-	gvl::write_uint16_le(w, 0);
-	gvl::write_uint16_le(w, 256);
+	io::write_uint16_le(w, 0);
+	io::write_uint16_le(w, 256);
 	w.put(24);
 
-	gvl::write_uint16_le(w, 0);
-	gvl::write_uint16_le(w, 0);
-	gvl::write_uint16_le(w, imageWidth);
-	gvl::write_uint16_le(w, imageHeight);
+	io::write_uint16_le(w, 0);
+	io::write_uint16_le(w, 0);
+	io::write_uint16_le(w, imageWidth);
+	io::write_uint16_le(w, imageHeight);
 	w.put(8); // Bits per pixel
 	w.put(0); // Descriptor
 
@@ -56,7 +45,7 @@ void writeSpriteTga(
 }
 
 void writeSpriteTga(
-	gvl::octet_writer& w,
+	io::Writer& w,
 	SpriteSet& ss,
 	Palette& pal)
 {
@@ -67,33 +56,40 @@ void commonSave(Common& common, std::string const& path)
 {
 	auto cfgPath = joinPath(path, "tc.cfg");
 	create_directories(cfgPath);
-	OctetTextWriter textWriter(cfgPath);
-	archive_text(common, textWriter.w);
+
+	{
+		std::ostringstream ss;
+		saveTcConfig(common, ss);
+		io::FileWriter textWriter(cfgPath.c_str(), "wb");
+		auto str = ss.str();
+		for (char c : str)
+			textWriter.put(c);
+	}
 
 	for (auto& s : common.sounds)
 	{
 		std::string dir(joinPath(path, "sounds/"));
 		create_directories(dir);
 
-		gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, s.name + ".wav").c_str(), "wb")));
+		io::FileWriter w(joinPath(dir, s.name + ".wav").c_str(), "wb");
 
 		auto roundedSize = (s.originalData.size() + 1) & ~1;
 
 		w.put((uint8_t const*)"RIFF", 4);
-		gvl::write_uint32_le(w, (uint32_t)roundedSize - 8);
+		io::write_uint32_le(w, (uint32_t)roundedSize - 8);
 		w.put((uint8_t const*)"WAVE", 4);
 
 		w.put((uint8_t const*)"fmt ", 4);
-		gvl::write_uint32_le(w, 16); // PCM header size
-		gvl::write_uint16_le(w, 1); // PCM
-		gvl::write_uint16_le(w, 1); // Mono
-		gvl::write_uint32_le(w, 22050); // Sample rate
-		gvl::write_uint32_le(w, 22050 * 1 * 1);
-		gvl::write_uint16_le(w, 1 * 1);
-		gvl::write_uint16_le(w, 8);
+		io::write_uint32_le(w, 16); // PCM header size
+		io::write_uint16_le(w, 1); // PCM
+		io::write_uint16_le(w, 1); // Mono
+		io::write_uint32_le(w, 22050); // Sample rate
+		io::write_uint32_le(w, 22050 * 1 * 1);
+		io::write_uint16_le(w, 1 * 1);
+		io::write_uint16_le(w, 8);
 
 		w.put((uint8_t const*)"data", 4);
-		gvl::write_uint32_le(w, (uint32_t)s.originalData.size() * 1 * 1); // Data size
+		io::write_uint32_le(w, (uint32_t)s.originalData.size() * 1 * 1); // Data size
 
 		auto curSize = s.originalData.size();
 
@@ -112,22 +108,22 @@ void commonSave(Common& common, std::string const& path)
 		create_directories(dir);
 
 		{
-			gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, "small.tga").c_str(), "wb")));
+			io::FileWriter w(joinPath(dir, "small.tga").c_str(), "wb");
 			writeSpriteTga(w, common.smallSprites, common.exepal);
 		}
 
 		{
-			gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, "large.tga").c_str(), "wb")));
+			io::FileWriter w(joinPath(dir, "large.tga").c_str(), "wb");
 			writeSpriteTga(w, common.largeSprites, common.exepal);
 		}
 
 		{
-			gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, "text.tga").c_str(), "wb")));
+			io::FileWriter w(joinPath(dir, "text.tga").c_str(), "wb");
 			writeSpriteTga(w, common.textSprites, common.exepal);
 		}
 
 		{
-			gvl::octet_writer w(gvl::sink(new gvl::file_bucket_pipe(joinPath(dir, "font.tga").c_str(), "wb")));
+			io::FileWriter w(joinPath(dir, "font.tga").c_str(), "wb");
 
 			std::vector<uint8_t> data(common.font.chars.size() * 7 * 8, 10);
 			for (std::size_t i = 0; i < common.font.chars.size(); ++i)
@@ -150,8 +146,12 @@ void commonSave(Common& common, std::string const& path)
 		std::string dir(joinPath(path, "weapons/"));
 		create_directories(dir);
 
-		OctetTextWriter wWriter(joinPath(dir, w.idStr + ".cfg"));
-		archive_text(common, w, wWriter.w);
+		std::ostringstream ss;
+		saveWeaponConfig(common, w, ss);
+		io::FileWriter wWriter(joinPath(dir, w.idStr + ".cfg").c_str(), "wb");
+		auto str = ss.str();
+		for (char c : str)
+			wWriter.put(c);
 	}
 
 	for (auto& w : common.nobjectTypes)
@@ -159,8 +159,12 @@ void commonSave(Common& common, std::string const& path)
 		std::string dir(joinPath(path, "nobjects/"));
 		create_directories(dir);
 
-		OctetTextWriter nWriter(joinPath(dir, w.idStr + ".cfg"));
-		archive_text(common, w, nWriter.w);
+		std::ostringstream ss;
+		saveNObjectConfig(common, w, ss);
+		io::FileWriter nWriter(joinPath(dir, w.idStr + ".cfg").c_str(), "wb");
+		auto str = ss.str();
+		for (char c : str)
+			nWriter.put(c);
 	}
 
 	for (auto& w : common.sobjectTypes)
@@ -168,7 +172,11 @@ void commonSave(Common& common, std::string const& path)
 		std::string dir(joinPath(path, "sobjects/"));
 		create_directories(dir);
 
-		OctetTextWriter sWriter(joinPath(dir, w.idStr + ".cfg"));
-		archive_text(common, w, sWriter.w);
+		std::ostringstream ss;
+		saveSObjectConfig(w, ss);
+		io::FileWriter sWriter(joinPath(dir, w.idStr + ".cfg").c_str(), "wb");
+		auto str = ss.str();
+		for (char c : str)
+			sWriter.put(c);
 	}
 }

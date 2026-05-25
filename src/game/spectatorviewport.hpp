@@ -4,14 +4,14 @@
 #include "worm.hpp"
 #include "rand.hpp"
 #include "viewport.hpp"
-#include <gvl/math/rect.hpp>
+#include "math/rect.hpp"
 #include <ctime>
 
 struct Renderer;
 
 struct SpectatorViewport : Viewport
 {
-	SpectatorViewport(gvl::rect rect, int levwidth, int levheight)
+	SpectatorViewport(Rect rect, int levwidth, int levheight)
 	: Viewport(rect, 0, levwidth, levheight)
 	{
 	}

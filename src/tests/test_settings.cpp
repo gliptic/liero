@@ -195,7 +195,7 @@ TEST_CASE("Settings TOML with comments") {
   Rand rand;
   rand.seed(42);
 
-  // Write a minimal config, then manually inject a comment
+  // Write using toToml(), then verify it can be re-loaded
   Settings original;
   original.maxBonuses = 12;
   original.blood = 50;
@@ -203,70 +203,19 @@ TEST_CASE("Settings TOML with comments") {
   auto tmpPath =
       std::filesystem::temp_directory_path() / "openliero_test_comments.cfg";
 
-  // Write with comment manually
   {
     std::ofstream f(tmpPath);
     f << "# This is a comment\n";
-    f << "maxBonuses = 12\n";
-    f << "blood = 50\n";
-    f << "loadingTime = 100\n";
-    f << "lives = 15\n";
-    f << "timeToLose = 600\n";
-    f << "flagsToWin = 20\n";
-    f << "screenSync = true\n";
-    f << "map = true\n";
-    f << "randomLevel = true\n";
-    f << "gameMode = 0\n";
-    f << "namesOnBonuses = false\n";
-    f << "regenerateLevel = false\n";
-    f << "shadow = true\n";
-    f << "loadChange = true\n";
-    f << "levelFile = \"\"\n";
-    f << "recordReplays = true\n";
-    f << "loadPowerlevelPalette = true\n";
-    f << "aiMutations = 2\n";
-    f << "aiFrames = 140\n";
-    f << "selectBotWeapons = 1\n";
-    f << "zoneTimeout = 30\n";
-    f << "aiTraces = false\n";
-    f << "aiParallels = 3\n";
-    f << "allowViewingSpawnPoint = false\n";
-    f << "singleScreenReplay = false\n";
-    f << "spectatorWindow = false\n";
-    f << "fullscreen = false\n";
-    f << "tc = \"openliero\"\n";
-    f << "bloodParticleMax = 700\n";
-    f << "weapTable = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]\n";
-    f << "\n";
-    f << "[[worms]]\n";
-    f << "controller = 0\n";
-    f << "color = [26, 26, 63]\n";
-    f << "weapons = [1, 1, 1, 1, 1]\n";
-    f << "health = 100\n";
-    f << "name = \"\"\n";
-    f << "controls = [0, 0, 0, 0, 0, 0, 0, 0]\n";
-    f << "inputDevice = 0\n";
-    f << "gamepadName = \"\"\n";
-    f << "gamepadSerial = \"\"\n";
-    f << "gamepadControls = [0, 0, 0, 0, 0, 0, 0, 0]\n";
-    f << "\n";
-    f << "[[worms]]\n";
-    f << "controller = 0\n";
-    f << "color = [15, 43, 15]\n";
-    f << "weapons = [1, 1, 1, 1, 1]\n";
-    f << "health = 100\n";
-    f << "name = \"\"\n";
-    f << "controls = [0, 0, 0, 0, 0, 0, 0, 0]\n";
-    f << "inputDevice = 0\n";
-    f << "gamepadName = \"\"\n";
-    f << "gamepadSerial = \"\"\n";
-    f << "gamepadControls = [0, 0, 0, 0, 0, 0, 0, 0]\n";
+    f << original.toToml();
   }
 
   FsNode node(tmpPath.string());
   Settings loaded;
   REQUIRE(loaded.load(node, rand));
   std::filesystem::remove(tmpPath);
+
+  CHECK(loaded.maxBonuses == 12);
+  CHECK(loaded.blood == 50);
 }
 
 TEST_CASE("Settings hash only includes gameplay fields") {

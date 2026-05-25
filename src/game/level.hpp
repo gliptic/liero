@@ -7,8 +7,9 @@
 #include "gfx/palette.hpp"
 #include "material.hpp"
 #include "common.hpp"
-#include <gvl/math/vec.hpp>
-#include <gvl/math/rect.hpp>
+#include "math/rect.hpp"
+
+namespace io { struct Reader; }
 
 struct Game;
 struct Settings;
@@ -24,13 +25,13 @@ struct Level
 		zeroMaterial = common.materials[0];
 	}
 
-	bool load(Common& common, Settings const& settings, gvl::octet_reader r);
+	bool load(Common& common, Settings const& settings, io::Reader& r);
 
 	void generateDirtPattern(Common& common, Rand& rand);
 	void generateRandom(Common& common, Settings const& settings, Rand& rand);
 	void makeShadow(Common& common);
 	void generateFromSettings(Common& common, Settings const& settings, Rand& rand);
-	bool selectSpawn(Rand& rand, int w, int h, gvl::ivec2& selected);
+	bool selectSpawn(Rand& rand, int w, int h, IVec2& selected);
 	void drawMiniature(Bitmap& dest, int mapX, int mapY, int step);
 
 	unsigned char pixel(int x, int y)
@@ -115,9 +116,9 @@ struct Level
 		std::swap(zeroMaterial, other.zeroMaterial);
 	}
 
-	gvl::rect rect()
+	Rect rect()
 	{
-		return gvl::rect(0, 0, width, height);
+		return Rect(0, 0, width, height);
 	}
 
 	void resize(int width_new, int height_new);

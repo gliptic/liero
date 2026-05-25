@@ -69,7 +69,7 @@ TEST_CASE("TC supports game initialization", "[tc_load]") {
   game.rand.seed(42);
 
   for (int idx = 0; idx < 2; ++idx) {
-    Worm* w = new Worm();
+    auto w = std::make_shared<Worm>();
     w->settings = settings->wormSettings[idx];
     w->health = w->settings->health;
     w->index = idx;
@@ -77,12 +77,12 @@ TEST_CASE("TC supports game initialization", "[tc_load]") {
     game.addWorm(w);
   }
 
-  game.addViewport(new Viewport(gvl::rect(0, 0, 158, 158), 0, 504, 350));
-  game.addViewport(new Viewport(gvl::rect(160, 0, 318, 158), 1, 504, 350));
+  game.addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+  game.addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
   REQUIRE_NOTHROW(game.level.generateFromSettings(*common, *settings, game.rand));
 
-  for (auto* w : game.worms)
+  for (auto const& w : game.worms)
     REQUIRE_NOTHROW(w->initWeapons(game));
 
   game.paused = false;
@@ -90,7 +90,7 @@ TEST_CASE("TC supports game initialization", "[tc_load]") {
   game.resetWorms();
 
   // Run a short simulation — validates no crashes during gameplay
-  gvl::mwc inputRng(12345);
+  Rand inputRng(12345);
   constexpr int NUM_FRAMES = 200;
 
   for (int frame = 0; frame < NUM_FRAMES; ++frame) {
