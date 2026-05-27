@@ -66,7 +66,7 @@ struct Weapon
 	/*
 	Loop sound while fire key is pressed and cut off sound as soon as fire key is released. Buggy.
 	*/
-	int loopSound;
+	bool loopSound;
 	/*
 	Sound played when the object explodes. Set -1 for none.
 	*/

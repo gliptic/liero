@@ -166,7 +166,7 @@ static int find_channel(sfx_mixer* self, void* h)
 
 	for (c = 0; c < CHANNEL_COUNT; )
 	{
-		if (self->channel_states[c].id == h)
+		if (self->channel_states[c].id == h && self->channel_states[c].flags != INACTIVE_FLAGS)
 			return (int)c;
 		++c;
 	}

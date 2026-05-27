@@ -388,7 +388,7 @@ void Worm::process(Game& game)
 			{
 				fire(game);
 			}
-			else
+			else if(!pressed(Fire) || pressed(Change) || !weapons[currentWeapon].available())
 			{
 				if(weapons[currentWeapon].type->loopSound)
 					game.soundPlayer->stop(&weapons[currentWeapon]);
