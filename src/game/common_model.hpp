@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "common.hpp"
+#include "console.hpp"
 #include "serialization/toml_archive.hpp"
 
 // Cross-reference resolution helpers
@@ -26,6 +27,21 @@ inline int objRefFromStr(std::string const& str, std::vector<T> const& vec) {
     if (vec[i].idStr == str)
       return (int)i;
   return 0;
+}
+
+// Sound-ref helpers: distinct from objRefFromStr because an unknown
+// non-empty name must resolve to -1 (no sound), not 0 (would spuriously
+// play the first sound).
+inline std::string soundRefToStr(int idx, Common const& common) {
+  if (idx < 0 || idx >= (int)common.sounds.size())
+    return "";
+  return common.sounds[idx].name;
+}
+
+inline int soundRefFromStr(std::string const& str, Common const& common) {
+  if (str.empty())
+    return -1;
+  return common.soundIndex(str);
 }
 
 // Save/load NObjectType config (individual .cfg file)
@@ -116,10 +132,14 @@ inline void loadNObjectConfig(Common& common, NObjectType& n, std::istream& is) 
 }
 
 // Save/load SObjectType config
-inline void saveSObjectConfig(SObjectType const& s, std::ostream& os) {
+inline void saveSObjectConfig(
+    Common const& common, SObjectType const& s, std::ostream& os) {
   cereal::TomlOutputArchive ar(os);
   ar(cereal::make_nvp("shadow", s.shadow));
-  ar(cereal::make_nvp("startSound", s.startSound));
+  {
+    std::string ref = soundRefToStr(s.startSound, common);
+    ar(cereal::make_nvp("startSound", ref));
+  }
   ar(cereal::make_nvp("numSounds", s.numSounds));
   ar(cereal::make_nvp("animDelay", s.animDelay));
   ar(cereal::make_nvp("startFrame", s.startFrame));
@@ -132,10 +152,15 @@ inline void saveSObjectConfig(SObjectType const& s, std::ostream& os) {
   ar(cereal::make_nvp("dirtEffect", s.dirtEffect));
 }
 
-inline void loadSObjectConfig(SObjectType& s, std::istream& is) {
+inline void loadSObjectConfig(
+    Common const& common, SObjectType& s, std::istream& is) {
   cereal::TomlInputArchive ar(is);
   ar(cereal::make_nvp("shadow", s.shadow));
-  ar(cereal::make_nvp("startSound", s.startSound));
+  {
+    std::string ref;
+    ar(cereal::make_nvp("startSound", ref));
+    s.startSound = soundRefFromStr(ref, common);
+  }
   ar(cereal::make_nvp("numSounds", s.numSounds));
   ar(cereal::make_nvp("animDelay", s.animDelay));
   ar(cereal::make_nvp("startFrame", s.startFrame));
@@ -166,9 +191,18 @@ inline void saveWeaponConfig(
   ar(cereal::make_nvp("detectDistance", w.detectDistance));
   ar(cereal::make_nvp("blowAway", w.blowAway));
   ar(cereal::make_nvp("gravity", w.gravity));
-  ar(cereal::make_nvp("launchSound", w.launchSound));
-  ar(cereal::make_nvp("loopSound", w.loopSound));
-  ar(cereal::make_nvp("exploSound", w.exploSound));
+  {
+    std::string ref = soundRefToStr(w.launchSound, common);
+    ar(cereal::make_nvp("launchSound", ref));
+  }
+  {
+    std::string ref = soundRefToStr(w.loopSound, common);
+    ar(cereal::make_nvp("loopSound", ref));
+  }
+  {
+    std::string ref = soundRefToStr(w.exploSound, common);
+    ar(cereal::make_nvp("exploSound", ref));
+  }
   ar(cereal::make_nvp("speed", w.speed));
   ar(cereal::make_nvp("addSpeed", w.addSpeed));
   ar(cereal::make_nvp("distribution", w.distribution));
@@ -232,9 +266,21 @@ inline void loadWeaponConfig(Common& common, Weapon& w, std::istream& is) {
   ar(cereal::make_nvp("detectDistance", w.detectDistance));
   ar(cereal::make_nvp("blowAway", w.blowAway));
   ar(cereal::make_nvp("gravity", w.gravity));
-  ar(cereal::make_nvp("launchSound", w.launchSound));
-  ar(cereal::make_nvp("loopSound", w.loopSound));
-  ar(cereal::make_nvp("exploSound", w.exploSound));
+  {
+    std::string ref;
+    ar(cereal::make_nvp("launchSound", ref));
+    w.launchSound = soundRefFromStr(ref, common);
+  }
+  {
+    std::string ref;
+    ar(cereal::make_nvp("loopSound", ref));
+    w.loopSound = soundRefFromStr(ref, common);
+  }
+  {
+    std::string ref;
+    ar(cereal::make_nvp("exploSound", ref));
+    w.exploSound = soundRefFromStr(ref, common);
+  }
   ar(cereal::make_nvp("speed", w.speed));
   ar(cereal::make_nvp("addSpeed", w.addSpeed));
   ar(cereal::make_nvp("distribution", w.distribution));
@@ -412,6 +458,18 @@ struct Hacks {
   }
 };
 
+struct Sounds {
+  #define DECL_FIELD_SO(n) std::string n;
+  LIERO_SOUNDDEFS(DECL_FIELD_SO)
+  #undef DECL_FIELD_SO
+  template <typename Archive>
+  void serialize(Archive& ar) {
+    #define SER_FIELD_SO(n) ar(cereal::make_nvp(#n, n));
+    LIERO_SOUNDDEFS(SER_FIELD_SO)
+    #undef SER_FIELD_SO
+  }
+};
+
 }  // namespace tc_cfg
 
 // Save/load tc.cfg (top-level Common config)
@@ -478,11 +536,21 @@ inline void saveTcConfig(Common const& common, std::ostream& os) {
   LIERO_HDEFS(COPY_FIELD_H)
   #undef COPY_FIELD_H
 
+  tc_cfg::Sounds sounds;
+  #define COPY_FIELD_SO(n)                                            \
+    sounds.n = (common.soundHook[Sound##n] >= 0 &&                    \
+                common.soundHook[Sound##n] < (int)common.sounds.size()) \
+                   ? common.sounds[common.soundHook[Sound##n]].name   \
+                   : std::string();
+  LIERO_SOUNDDEFS(COPY_FIELD_SO)
+  #undef COPY_FIELD_SO
+
   cereal::TomlOutputArchive ar(os);
   ar(cereal::make_nvp("types", types));
   ar(cereal::make_nvp("constants", constants));
   ar(cereal::make_nvp("texts", texts));
   ar(cereal::make_nvp("hacks", hacks));
+  ar(cereal::make_nvp("sounds", sounds));
 }
 
 inline void loadTcConfig(Common& common, std::istream& is) {
@@ -490,12 +558,14 @@ inline void loadTcConfig(Common& common, std::istream& is) {
   tc_cfg::Constants constants;
   tc_cfg::TextsS texts;
   tc_cfg::Hacks hacks;
+  tc_cfg::Sounds sounds;
 
   cereal::TomlInputArchive ar(is);
   ar(cereal::make_nvp("types", types));
   ar(cereal::make_nvp("constants", constants));
   ar(cereal::make_nvp("texts", texts));
   ar(cereal::make_nvp("hacks", hacks));
+  ar(cereal::make_nvp("sounds", sounds));
 
   // Populate Common from deserialized structs
   common.sounds.clear();
@@ -568,4 +638,38 @@ inline void loadTcConfig(Common& common, std::istream& is) {
   #define COPY_FIELD_H2(n) common.H[H##n] = hacks.n;
   LIERO_HDEFS(COPY_FIELD_H2)
   #undef COPY_FIELD_H2
+
+  // Resolve [sounds] hook names against the now-loaded sound table.
+  // Missing/empty entries fall back to the canonical Liero sound name
+  // for that hook (so TCs whose tc.cfg predates the [sounds] section
+  // still get menu/round/bump/reload sounds). Names that don't match
+  // any loaded sound get a warning and resolve to -1.
+  auto resolveHook = [&](SOUND_DEF_T hook, std::string const& configured,
+                         char const* defaultName,
+                         char const* hookLabel) {
+    if (!configured.empty()) {
+      int idx = common.soundIndex(configured);
+      if (idx < 0)
+        Console::writeWarning(
+            std::string("[sounds] ") + hookLabel +
+            " references unknown sound \"" + configured + "\"");
+      common.soundHook[hook] = idx;
+    } else {
+      common.soundHook[hook] = common.soundIndex(defaultName);
+    }
+  };
+  #define COPY_FIELD_SO2(n) resolveHook(Sound##n, sounds.n, defaultSound##n, #n);
+  // Canonical Liero sound names per hook. Kept in sync with tctool's
+  // extracted sound table; serves as the fallback when [sounds] is
+  // missing from tc.cfg.
+  constexpr char const* defaultSoundMenuMoveUp = "moveup";
+  constexpr char const* defaultSoundMenuMoveDown = "movedown";
+  constexpr char const* defaultSoundMenuSelect = "select";
+  constexpr char const* defaultSoundBump = "bump";
+  constexpr char const* defaultSoundBegin = "begin";
+  constexpr char const* defaultSoundReloaded = "reloaded";
+  constexpr char const* defaultSoundAlive = "alive";
+  constexpr char const* defaultSoundNinjaropeThrow = "throw";
+  LIERO_SOUNDDEFS(COPY_FIELD_SO2)
+  #undef COPY_FIELD_SO2
 }

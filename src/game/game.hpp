@@ -96,6 +96,8 @@ struct Game
 
 	std::shared_ptr<Common> common;
 	std::shared_ptr<SoundPlayer> soundPlayer;
+	SoundPlayer* prevSoundPlayer;
+	bool soundPlayerInstalled;
 	std::shared_ptr<Settings> settings;
 	std::shared_ptr<StatsRecorder> statsRecorder;
 

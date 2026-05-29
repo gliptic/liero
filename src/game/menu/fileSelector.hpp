@@ -275,7 +275,7 @@ struct FileSelector
 		|| gfx.testControlOnce(WormSettingsExtensions::Up)
 		|| gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
 		{
-			sfx.play(common, 26);
+			g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 
 			menu().movement(-1);
 		}
@@ -284,21 +284,21 @@ struct FileSelector
 		|| gfx.testControlOnce(WormSettingsExtensions::Down)
 		|| gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
 		{
-			sfx.play(common, 25);
+			g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 
 			menu().movement(1);
 		}
 
 		if(gfx.testSDLKeyOnce(SDL_SCANCODE_PAGEUP))
 		{
-			sfx.play(common, 26);
+			g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 
 			menu().movementPage(-1);
 		}
 
 		if(gfx.testSDLKeyOnce(SDL_SCANCODE_PAGEDOWN))
 		{
-			sfx.play(common, 25);
+			g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 
 			menu().movementPage(1);
 		}

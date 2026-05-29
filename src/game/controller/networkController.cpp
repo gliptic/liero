@@ -1,7 +1,6 @@
 #include "networkController.hpp"
 
 #include "../gfx.hpp"
-#include "../sfx.hpp"
 #include "../mixer/player.hpp"
 #include "../viewport.hpp"
 #include "../spectatorviewport.hpp"
@@ -13,8 +12,7 @@ NetworkController::NetworkController(
     std::shared_ptr<Common> common,
     std::shared_ptr<Settings> settings,
     int localPlayerIdx)
-    : game(common, settings,
-            std::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)))
+    : game(common, settings, gfx.soundPlayer)
     , localIdx(localPlayerIdx)
     , remoteIdx(localPlayerIdx ^ 1)
     , state(StateInitial)
@@ -282,14 +280,14 @@ bool NetworkController::process() {
       if (gfx.testSDLKeyOnce(SDL_SCANCODE_UP)
        || gfx.testControlOnce(WormSettingsExtensions::Up)
        || gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP)) {
-        sfx.play(*game.common, 26);
+        g_soundPlayer->play(game.common->soundHook[SoundMenuMoveDown]);
         pauseMenu_.movement(-1);
       }
 
       if (gfx.testSDLKeyOnce(SDL_SCANCODE_DOWN)
        || gfx.testControlOnce(WormSettingsExtensions::Down)
        || gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN)) {
-        sfx.play(*game.common, 25);
+        g_soundPlayer->play(game.common->soundHook[SoundMenuMoveUp]);
         pauseMenu_.movement(1);
       }
 

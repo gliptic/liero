@@ -6,7 +6,7 @@
 #include "gamePlayState.hpp"
 #include "fileSelectorState.hpp"
 #include "filesystem.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "keys.hpp"
 #include "net/session.hpp"
 #include "controller/controller.hpp"
@@ -121,7 +121,7 @@ bool RematchState::update()
 	 || gfx->testControlOnce(WormSettingsExtensions::Up)
 	 || gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
 	{
-		sfx.play(common, 26);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 		menu_.movement(-1);
 	}
 
@@ -129,7 +129,7 @@ bool RematchState::update()
 	 || gfx->testControlOnce(WormSettingsExtensions::Down)
 	 || gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
 	{
-		sfx.play(common, 25);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 		menu_.movement(1);
 	}
 
@@ -156,18 +156,18 @@ bool RematchState::update()
 		{
 			case RmLevel:
 				// Host opens level selector
-				sfx.play(common, 27);
+				g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 				levelSelectorOpen_ = true;
 				gfx->stateStack.push(std::make_unique<LevelSelectorState>(), gfx);
 				break;
 
 			case RmReady:
-				sfx.play(common, 27);
+				g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 				gfx->netSession->toggleReady();
 				break;
 
 			case RmDisconnect:
-				sfx.play(common, 27);
+				g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 				gfx->netSession->disconnect();
 				gfx->netSession.reset();
 				fill(gfx->playRenderer.bmp, 0);

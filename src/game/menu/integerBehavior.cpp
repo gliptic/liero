@@ -2,7 +2,7 @@
 
 #include "menu.hpp"
 #include "menuItem.hpp"
-#include "../sfx.hpp"
+#include "../mixer/player.hpp"
 #include "../gfx.hpp"
 #include "../common.hpp"
 #include "../text.hpp"
@@ -38,7 +38,7 @@ static int filterDigits(int k)
 
 int IntegerBehavior::onEnter(Menu& menu, MenuItem& item)
 {
-	sfx.play(common, 27);
+	g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 
 	if(!allowEntry)
 		return -1; // Not allowed

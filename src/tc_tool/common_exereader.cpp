@@ -902,4 +902,21 @@ void loadFromExe(Common& common, ReaderFile& exe, ReaderFile& gfx, ReaderFile& s
 
 	loadGfx(common, exe, gfx);
 	loadSfx(common.sounds, snd);
+
+	// Resolve the engine's named sound hooks against the loaded sound
+	// table so saveTcConfig emits a populated [sounds] section. Without
+	// this, a freshly extracted TC has every hook at -1 and the engine's
+	// menu / round-begin / bump / reload sounds are silent (issue #44).
+	static struct { SOUND_DEF_T hook; char const* name; } const hookNames[] = {
+		{ SoundMenuMoveUp,     "moveup"   },
+		{ SoundMenuMoveDown,   "movedown" },
+		{ SoundMenuSelect,     "select"   },
+		{ SoundBump,           "bump"     },
+		{ SoundBegin,          "begin"    },
+		{ SoundReloaded,       "reloaded" },
+		{ SoundAlive,          "alive"    },
+		{ SoundNinjaropeThrow, "throw"    },
+	};
+	for (auto const& m : hookNames)
+		common.soundHook[m.hook] = common.soundIndex(m.name);
 }

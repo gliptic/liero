@@ -1,6 +1,6 @@
 #include "mainMenu.hpp"
 
-#include "../sfx.hpp"
+#include "../mixer/player.hpp"
 #include "../gfx.hpp"
 
 ItemBehavior* MainMenu::getItemBehavior(Common& common, MenuItem& item)

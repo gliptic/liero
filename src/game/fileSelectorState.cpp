@@ -1,7 +1,7 @@
 #include "fileSelectorState.hpp"
 
 #include "gfx.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "text.hpp"
 #include "keys.hpp"
 #include "level.hpp"
@@ -43,7 +43,7 @@ bool FileSelectorState::update()
 	 || gfx->testControlOnce(WormSettingsExtensions::Fire)
 	 || gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH))
 	{
-		sfx.play(*gfx->common, 27);
+		g_soundPlayer->play(gfx->common->soundHook[SoundMenuSelect]);
 
 		auto* sel = selector_->enter();
 		if (sel)
@@ -287,8 +287,9 @@ bool TcSelectorState::onSelected(FileNode* node)
 	std::unique_ptr<Common> newCommon(new Common());
 	newCommon->load(node->getFsNode());
 	gfx->settings->tc = node->name;
-	// TODO: mixer may still be using sounds from the old common
 	gfx->common.reset(newCommon.release());
+	if (auto* dp = dynamic_cast<DefaultSoundPlayer*>(gfx->soundPlayer.get()))
+		dp->setCommon(*gfx->common);
 	gfx->pendingMenuSelection = MainMenu::MaTc;
 	return true;
 }

@@ -98,10 +98,7 @@ void WObject::blowUpObject(Game& game, int causeIdx)
 		common.sobjectTypes[w.createOnExp].create(game, ftoi(x), ftoi(y), causeIdx, firedBy, this);
 	}
 
-	if(w.exploSound >= 0)
-	{
-		game.soundPlayer->play(w.exploSound);
-	}
+	game.soundPlayer->play(w.exploSound);
 
 	int splinters = w.splinterAmount;
 

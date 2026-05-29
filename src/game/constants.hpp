@@ -120,6 +120,17 @@
 	_(Availability) \
 	_(NoWeaps) \
 
+// Sound hooks the engine plays directly. Sourced from [sounds] in tc.cfg.
+#define LIERO_SOUNDDEFS(_) \
+	_(MenuMoveUp)     \
+	_(MenuMoveDown)   \
+	_(MenuSelect)     \
+	_(Bump)           \
+	_(Begin)          \
+	_(Reloaded)       \
+	_(Alive)          \
+	_(NinjaropeThrow)
+
 // Boolean values describing which hacks are enabled. Sourced from [hacks] in tc.cfg
 #define LIERO_HDEFS(_) \
 	_(FallDamage) \
@@ -137,6 +148,7 @@
 #define DEFENUMS(x) S##x,
 #define DEFENUMC(x) C##x,
 #define DEFENUMH(x) H##x,
+#define DEFENUMSO(x) Sound##x,
 
 enum CONST_DEF_T
 {
@@ -159,9 +171,17 @@ enum HACK_DEF_T
 	MaxH
 };
 
+enum SOUND_DEF_T
+{
+	LIERO_SOUNDDEFS(DEFENUMSO)
+	/* Maximum quantity of sound hooks in SOUND_DEF_T. */
+	MaxSound
+};
+
 #undef DEFENUMS
 #undef DEFENUMC
 #undef DEFENUMH
+#undef DEFENUMSO
 
 #define LC(name) (common.C[C##name])
 #define LS(name) (common.S[S##name])

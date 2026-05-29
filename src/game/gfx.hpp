@@ -20,6 +20,7 @@
 #include "keys.hpp"
 #include "settings.hpp"
 #include "common.hpp"
+#include "mixer/player.hpp"
 #include "filesystem.hpp"
 
 struct Key
@@ -362,6 +363,7 @@ struct Gfx
 	int prevMag; // Previous magnification used for drawing
 	Rect lastUpdateRect; // Last region that was updated when flipping
 	std::shared_ptr<Common> common;
+	std::shared_ptr<SoundPlayer> soundPlayer;
 	std::unique_ptr<Controller> controller;
 	std::unique_ptr<NetSession> netSession;
 	std::string pendingNetAddress;

@@ -1,7 +1,7 @@
 #include "mainMenuState.hpp"
 
 #include "gfx.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "text.hpp"
 #include "keys.hpp"
 #include "level.hpp"
@@ -155,7 +155,7 @@ bool MainMenuState::update()
 	|| gfx->testControlOnce(WormSettingsExtensions::Up)
 	|| gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
 	{
-		sfx.play(common, 26);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 		gfx->curMenu->movement(-1);
 	}
 
@@ -163,7 +163,7 @@ bool MainMenuState::update()
 	|| gfx->testControlOnce(WormSettingsExtensions::Down)
 	|| gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
 	{
-		sfx.play(common, 25);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 		gfx->curMenu->movement(1);
 	}
 
@@ -174,7 +174,7 @@ bool MainMenuState::update()
 	{
 		if(gfx->curMenu == &gfx->mainMenu)
 		{
-			sfx.play(common, 27);
+			g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 
 			int s = gfx->mainMenu.selectedId();
 			switch (s)
@@ -218,7 +218,7 @@ bool MainMenuState::update()
 
 				case MainMenu::MaJoinGame:
 				{
-					sfx.play(common, 27);
+					g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 					gfx->stateStack.push(std::make_unique<InputStringState>(
 						"", 40, 10, 80, nullptr, "ADDRESS: ", false,
 						[this](bool accepted, std::string const& result) {
@@ -233,14 +233,14 @@ bool MainMenuState::update()
 
 				case MainMenu::MaHostOnline:
 				{
-					sfx.play(common, 27);
+					g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 					gfx->pendingMenuSelection = MainMenu::MaHostOnline;
 					break;
 				}
 
 				case MainMenu::MaJoinOnline:
 				{
-					sfx.play(common, 27);
+					g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 					gfx->stateStack.push(std::make_unique<InputStringState>(
 						"", 6, 10, 80, ::toupper, "ROOM CODE: ", false,
 						[this](bool accepted, std::string const& result) {
@@ -266,23 +266,23 @@ bool MainMenuState::update()
 			switch (itemId)
 			{
 				case SettingsMenu::SiLevel:
-					sfx.play(common, 27);
+					g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 					gfx->stateStack.push(std::make_unique<LevelSelectorState>(), gfx);
 					break;
 
 				case SettingsMenu::SiWeaponOptions:
-					sfx.play(common, 27);
+					g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 					gfx->stateStack.push(std::make_unique<WeaponMenuState>(), gfx);
 					break;
 
 				case SettingsMenu::LoadOptions:
-					sfx.play(common, 27);
+					g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 					gfx->stateStack.push(std::make_unique<OptionsSelectorState>(), gfx);
 					break;
 
 				case SettingsMenu::SaveOptions:
 				{
-					sfx.play(common, 27);
+					g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 					int x, y;
 					auto* item = gfx->settingsMenu.itemFromId(SettingsMenu::SaveOptions);
 					if (item && gfx->settingsMenu.itemPosition(*item, x, y))
@@ -296,7 +296,7 @@ bool MainMenuState::update()
 								{
 									gfx->saveSettings(gfx->getConfigNode() / "Setups" / (result + ".cfg"));
 								}
-								sfx.play(*gfx->common, 27);
+								g_soundPlayer->play(gfx->common->soundHook[SoundMenuSelect]);
 								gfx->settingsMenu.updateItems(*gfx->common);
 							}), gfx);
 					}
@@ -314,13 +314,13 @@ bool MainMenuState::update()
 
 			if (itemId == PlayerMenu::PlLoadProfile)
 			{
-				sfx.play(common, 27);
+				g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 				gfx->stateStack.push(
 					std::make_unique<ProfileSelectorState>(*gfx->playerMenu.ws), gfx);
 			}
 			else if (itemId == PlayerMenu::PlName)
 			{
-				sfx.play(common, 27);
+				g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 				auto& ws = *gfx->playerMenu.ws;
 				int x, y;
 				auto* item = gfx->playerMenu.itemFromId(itemId);
@@ -336,14 +336,14 @@ bool MainMenuState::update()
 							if (ws.name.empty())
 								Settings::generateName(ws, gfx->rand);
 							ws.randomName = false;
-							sfx.play(*gfx->common, 27);
+							g_soundPlayer->play(gfx->common->soundHook[SoundMenuSelect]);
 							gfx->playerMenu.updateItems(*gfx->common);
 						}), gfx);
 				}
 			}
 			else if (itemId == PlayerMenu::PlSaveProfileAs)
 			{
-				sfx.play(common, 27);
+				g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 				int x, y;
 				auto* item = gfx->playerMenu.itemFromId(itemId);
 				if (item && gfx->playerMenu.itemPosition(*item, x, y))
@@ -357,7 +357,7 @@ bool MainMenuState::update()
 								gfx->playerMenu.ws->saveProfile(
 									gfx->getConfigNode() / "Profiles" / (result + ".toml"));
 							}
-							sfx.play(*gfx->common, 27);
+							g_soundPlayer->play(gfx->common->soundHook[SoundMenuSelect]);
 							gfx->playerMenu.updateItems(*gfx->common);
 						}), gfx);
 				}
@@ -365,7 +365,7 @@ bool MainMenuState::update()
 			else if ((itemId >= PlayerMenu::PlUp && itemId <= PlayerMenu::PlJump)
 				|| itemId == PlayerMenu::PlDig)
 			{
-				sfx.play(common, 27);
+				g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 				bool extended = gfx->settings->extensions;
 				int keyIdx = itemId - PlayerMenu::PlUp;
 
@@ -391,7 +391,7 @@ bool MainMenuState::update()
 			}
 			else if (itemId >= PlayerMenu::PlWeap0 && itemId < PlayerMenu::PlWeap0 + 5)
 			{
-				sfx.play(common, 27);
+				g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 				int x, y;
 				auto* item = gfx->playerMenu.itemFromId(itemId);
 				if (item && gfx->playerMenu.itemPosition(*item, x, y))
@@ -614,13 +614,13 @@ bool MainMenuState::update()
 
 	if(gfx->testSDLKeyOnce(SDL_SCANCODE_PAGEUP))
 	{
-		sfx.play(common, 26);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 		gfx->curMenu->movementPage(-1);
 	}
 
 	if(gfx->testSDLKeyOnce(SDL_SCANCODE_PAGEDOWN))
 	{
-		sfx.play(common, 25);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 		gfx->curMenu->movementPage(1);
 	}
 

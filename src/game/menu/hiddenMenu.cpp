@@ -3,7 +3,7 @@
 #include "arrayEnumBehavior.hpp"
 
 #include "../gfx.hpp"
-#include "../sfx.hpp"
+#include "../mixer/player.hpp"
 #include "../filesystem.hpp"
 
 static std::string const botWeaponSel[3] =

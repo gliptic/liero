@@ -19,6 +19,8 @@ Game::Game(
 	std::shared_ptr<SoundPlayer> soundPlayer)
 : common(common)
 , soundPlayer(soundPlayer)
+, prevSoundPlayer(g_soundPlayer)
+, soundPlayerInstalled(true)
 , settings(settingsInit)
 , statsRecorder(new NormalStatsRecorder)
 , level(*common)
@@ -28,6 +30,7 @@ Game::Game(
 , paused(true)
 , quickSim(false)
 {
+	g_soundPlayer = soundPlayer.get();
 
 	rand.seed(uint32_t(std::time(0)));
 
@@ -38,6 +41,8 @@ Game::~Game()
 {
 	clearViewports();
 	clearWorms();
+	if (soundPlayerInstalled && g_soundPlayer == soundPlayer.get())
+		g_soundPlayer = prevSoundPlayer;
 }
 
 void Game::onKey(uint32_t key, bool state)
@@ -559,7 +564,7 @@ void Game::spawnZone()
 
 void Game::startGame()
 {
-	soundPlayer->play(22);
+	soundPlayer->play(common->soundHook[SoundBegin]);
 	bobjects.resize(settings->bloodParticleMax);
 
 	if (settings->gameMode == Settings::GMHoldazone)
@@ -723,6 +728,8 @@ bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x,
 
 void Game::postClone(Game& original, bool complete)
 {
+	soundPlayerInstalled = false;
+	prevSoundPlayer = nullptr;
 	if (!complete)
 	{
 		statsRecorder.reset(new StatsRecorder);

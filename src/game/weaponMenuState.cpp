@@ -1,7 +1,7 @@
 #include "weaponMenuState.hpp"
 
 #include "gfx.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "text.hpp"
 #include "keys.hpp"
 #include "common.hpp"
@@ -63,7 +63,7 @@ bool WeaponMenuState::update()
 	|| gfx->testControlOnce(WormSettingsExtensions::Up)
 	|| gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP))
 	{
-		sfx.play(common, 26);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 		weaponMenu_->movement(-1);
 	}
 
@@ -71,7 +71,7 @@ bool WeaponMenuState::update()
 	|| gfx->testControlOnce(WormSettingsExtensions::Down)
 	|| gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN))
 	{
-		sfx.play(common, 25);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 		weaponMenu_->movement(1);
 	}
 
@@ -92,13 +92,13 @@ bool WeaponMenuState::update()
 	{
 		if (gfx->testSDLKeyOnce(SDL_SCANCODE_PAGEUP))
 		{
-			sfx.play(common, 26);
+			g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 			weaponMenu_->movementPage(-1);
 		}
 
 		if (gfx->testSDLKeyOnce(SDL_SCANCODE_PAGEDOWN))
 		{
-			sfx.play(common, 25);
+			g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 			weaponMenu_->movementPage(1);
 		}
 	}

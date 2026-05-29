@@ -216,6 +216,11 @@ void sfx_mixer_stop(sfx_mixer* self, void* h)
 
 void* sfx_mixer_add(sfx_mixer* self, sfx_sound* snd, uint32_t time, void* h, uint32_t flags)
 {
+	// A null sound is a disabled/placeholder slot. Silently ignore it so
+	// callers that play by index don't need to special-case it.
+	if (!snd)
+		return NULL;
+
 	int ch_idx = find_free_channel(self);
 
 	if (ch_idx >= 0)

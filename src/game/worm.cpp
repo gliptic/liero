@@ -192,7 +192,7 @@ void Worm::processPhysics(Game& game)
 			if(common.H[HFallDamage])
 				health -= LC(FallDamageRight);
 			else
-				game.soundPlayer->play(14);
+				game.soundPlayer->play(common.soundHook[SoundBump]);
 			vel.x = -vel.x / 3;
 		}
 		else
@@ -206,7 +206,7 @@ void Worm::processPhysics(Game& game)
 			if(common.H[HFallDamage])
 				health -= LC(FallDamageDown);
 			else
-				game.soundPlayer->play(14);
+				game.soundPlayer->play(common.soundHook[SoundBump]);
 			vel.y = -vel.y / 3;
 		}
 		else
@@ -354,7 +354,7 @@ void Worm::process(Game& game)
 								ww.ammo = ww.type->ammo;
 							}
 
-							game.soundPlayer->play(24);
+							game.soundPlayer->play(common.soundHook[SoundReloaded]);
 
 							game.bonuses.free(br);
 
@@ -910,7 +910,7 @@ void Worm::doRespawning(Game& game)
 			correctShadow(common, game.level, Rect(ipos.x - 10, ipos.y - 10, ipos.x + 11, ipos.y + 11));
 
 		ready = false;
-		game.soundPlayer->play(21);
+		game.soundPlayer->play(common.soundHook[SoundAlive]);
 
 		visible = true;
 		fireCone = 0;
@@ -959,7 +959,7 @@ void Worm::processWeapons(Game& game)
 		--ww.loadingLeft;
 		if(ww.loadingLeft <= 0 && w.playReloadSound)
 		{
-			game.soundPlayer->play(24);
+			game.soundPlayer->play(common.soundHook[SoundReloaded]);
 		}
 	}
 
@@ -1117,7 +1117,7 @@ void Worm::processTasks(Game& game)
 			ninjarope.out = true;
 			ninjarope.attached = false;
 
-			game.soundPlayer->play(5);
+			game.soundPlayer->play(common.soundHook[SoundNinjaropeThrow]);
 
 			ninjarope.pos = pos;
 			ninjarope.vel = fixedvec(cossinTable[ftoi(aimingAngle)].x << LC(NRThrowVelX), cossinTable[ftoi(aimingAngle)].y << LC(NRThrowVelY));
@@ -1283,19 +1283,16 @@ void Worm::fire(Game& game)
 		}
 	}
 
-	if(w.launchSound >= 0)
+	if(w.loopSound)
 	{
-		if(w.loopSound)
+		if(!game.soundPlayer->isPlaying(&weapons[currentWeapon]))
 		{
-			if(!game.soundPlayer->isPlaying(&weapons[currentWeapon]))
-			{
-				game.soundPlayer->play(w.launchSound, &weapons[currentWeapon], -1);
-			}
+			game.soundPlayer->play(w.launchSound, &weapons[currentWeapon], -1);
 		}
-		else
-		{
-			game.soundPlayer->play(w.launchSound);
-		}
+	}
+	else
+	{
+		game.soundPlayer->play(w.launchSound);
 	}
 
 	int speed = w.speed;

@@ -4,16 +4,16 @@
 #include "menuItem.hpp"
 #include "../common.hpp"
 #include "../text.hpp"
-#include "../sfx.hpp"
+#include "../mixer/player.hpp"
 
 bool EnumBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir)
 {
 	if(brokenLeftRight)
 		return false; // Left/right doesn't work for this item
 	if(dir > 0)
-		sfx.play(common, 25);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 	else
-		sfx.play(common, 26);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 
 	change(menu, item, dir);
 
@@ -22,7 +22,7 @@ bool EnumBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir)
 
 int EnumBehavior::onEnter(Menu& menu, MenuItem& item)
 {
-	sfx.play(common, 27);
+	g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 
 	change(menu, item, 1);
 	return -1;

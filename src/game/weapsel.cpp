@@ -246,7 +246,7 @@ bool WeaponSelection::processFrame()
 				{
 					worm.release(Worm::Left);
 
-					game.soundPlayer->play(25);
+					game.soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 
 					do
 					{
@@ -269,7 +269,7 @@ bool WeaponSelection::processFrame()
 				{
 					worm.release(Worm::Right);
 
-					game.soundPlayer->play(26);
+					game.soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 
 					do
 					{
@@ -293,7 +293,7 @@ bool WeaponSelection::processFrame()
 			}
 			if(up)
 			{
-				game.soundPlayer->play(26);
+				game.soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 				menus[i].movement(-1);
 			}
 
@@ -305,7 +305,7 @@ bool WeaponSelection::processFrame()
 			}
 			if(down)
 			{
-				game.soundPlayer->play(25);
+				game.soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 				menus[i].movement(1);
 			}
 
@@ -347,7 +347,7 @@ bool WeaponSelection::processFrame()
 				}
 				else if(menus[i].selection() == 6) // TODO: Unhardcode
 				{
-					game.soundPlayer->play(27);
+					game.soundPlayer->play(common.soundHook[SoundMenuSelect]);
 					isReady[i] = true;
 				}
 			}

@@ -1,7 +1,7 @@
 #include "menu.hpp"
 
 #include "../gfx.hpp"
-#include "../sfx.hpp"
+#include "../mixer/player.hpp"
 #include "../reader.hpp"
 #include "../text.hpp"
 #include <cmath>

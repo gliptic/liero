@@ -4,6 +4,7 @@
 #include <sstream>
 #include <string>
 #include "common_model.hpp"
+#include "console.hpp"
 #include "filesystem.hpp"
 #include "gfx/blit.hpp"
 #include "io/coding.hpp"
@@ -322,7 +323,17 @@ void Common::load(FsNode node) {
   for (auto& s : sounds) {
     auto dir = node / "sounds";
 
-    auto r_ptr = (dir / (s.name + ".wav")).toReader(); io::Reader& r = *r_ptr;
+    auto wavNode = dir / (s.name + ".wav");
+    if (!wavNode.exists()) {
+      // Missing WAV on disk: keep the slot (preserving stable indices for
+      // siblings) but leave sound == nullptr so play paths treat it as a
+      // silent no-op. Matches the disabled-slot behavior of tc_tool's
+      // loadSfx (see issue #44).
+      Console::writeWarning(
+          "Sound file missing, slot will be silent: " + s.name + ".wav");
+      continue;
+    }
+    auto r_ptr = wavNode.toReader(); io::Reader& r = *r_ptr;
 
     if (io::read_uint32_le(r) == quad('R', 'I', 'F', 'F')) {
       std::size_t roundedSize = io::read_uint32_le(r) + 8;
@@ -440,7 +451,7 @@ void Common::load(FsNode node) {
         content.push_back(static_cast<char>(sReader.get()));
     } catch (std::runtime_error&) {}
     std::istringstream is(content);
-    loadSObjectConfig(w, is);
+    loadSObjectConfig(*this, w, is);
   }
 
   precompute();
@@ -520,6 +531,14 @@ std::string Common::guessName() const {
     --p;
 
   return cp.substr(0, p);
+}
+
+int Common::soundIndex(std::string_view name) const {
+  for (std::size_t i = 0; i < sounds.size(); ++i) {
+    if (sounds[i].name == name)
+      return static_cast<int>(i);
+  }
+  return -1;
 }
 
 void SfxSample::createSound() {

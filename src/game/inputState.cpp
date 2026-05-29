@@ -1,7 +1,7 @@
 #include "inputState.hpp"
 
 #include "gfx.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "text.hpp"
 #include "keys.hpp"
 #include "common.hpp"
@@ -83,7 +83,7 @@ bool InputStringState::update()
 	if (done_)
 	{
 		SDL_StopTextInput(gfx->sdlWindow);
-		sfx.play(*gfx->common, 27);
+		g_soundPlayer->play(gfx->common->soundHook[SoundMenuSelect]);
 		gfx->clearKeys();
 		callback_(accepted_, buffer_);
 		return false;

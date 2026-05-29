@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 #include "constants.hpp"
 #include "gfx/font.hpp"
 #include "gfx/palette.hpp"
@@ -88,8 +89,12 @@ struct SfxSample {
   }
 
   SfxSample(std::string name, int length)
-      : name(std::move(name)), originalData(length) {
-    sound = sfx_new_sound(length * 2);
+      : name(std::move(name)), sound(nullptr), originalData(length) {
+    // A zero-length sample is a "disabled" slot. Leave `sound` null so
+    // the slot survives in `Common::sounds` without occupying audio
+    // memory, and so play paths can treat it as a silent no-op.
+    if (length > 0)
+      sound = sfx_new_sound(length * 2);
   }
 
   ~SfxSample() {
@@ -122,6 +127,10 @@ struct Common {
   void precompute();
 
   std::string guessName() const;
+
+  // Returns the index of the named sound in `sounds`, or -1 if absent.
+  // -1 is the existing "no sound" sentinel used at play sites.
+  int soundIndex(std::string_view name) const;
 
   PalIdx* wormSprite(int f, int dir, int w) {
     return wormSprites.spritePtr(f + dir * 7 * 3 + w * 2 * 7 * 3);
@@ -169,4 +178,10 @@ struct Common {
   int32_t C[CONST_DEF_T::MaxC];
   std::string S[STRING_DEF_T::MaxS];
   bool H[HACK_DEF_T::MaxH];
+  // Indices into `sounds` for engine-played sounds. -1 if not configured.
+  int soundHook[SOUND_DEF_T::MaxSound] = {
+      #define INIT_SOUNDHOOK(n) -1,
+      LIERO_SOUNDDEFS(INIT_SOUNDHOOK)
+      #undef INIT_SOUNDHOOK
+  };
 };

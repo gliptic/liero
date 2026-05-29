@@ -1,9 +1,10 @@
 #include "replayController.hpp"
 
 #include "../game.hpp"
+#include "../gfx.hpp"
 #include "../spectatorviewport.hpp"
 #include "../viewport.hpp"
-#include "../sfx.hpp"
+#include "../mixer/player.hpp"
 
 ReplayController::ReplayController(
 	std::shared_ptr<Common> common, std::unique_ptr<io::Reader> source)
@@ -42,7 +43,7 @@ void ReplayController::focus()
 	{
 		try
 		{
-			game = replay->beginPlayback(common, std::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)));
+			game = replay->beginPlayback(common, gfx.soundPlayer);
 		}
 		catch(std::runtime_error& e)
 		{

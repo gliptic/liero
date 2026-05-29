@@ -2,7 +2,7 @@
 
 #include "state.hpp"
 #include "gfx.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "menu/fileSelector.hpp"
 
 #include <functional>

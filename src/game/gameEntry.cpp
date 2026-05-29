@@ -1,7 +1,7 @@
 #include <SDL3/SDL.h>
 
 #include "gfx.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "game.hpp"
 #include "viewport.hpp"
 #include "worm.hpp"
@@ -90,13 +90,15 @@ try
 	gfx.playRenderer.loadPalette(*common); // This gets the palette from common
 
 	gfx.setVideoMode();
-	sfx.init();
+	gfx.soundPlayer = std::make_shared<DefaultSoundPlayer>(*common);
+	g_soundPlayer = gfx.soundPlayer.get();
 
 	gfx.mainLoop();
 
 	gfx.settings->save(configNode / "Setups" / "liero.cfg", gfx.rand);
 
-	sfx.deinit();
+	g_soundPlayer = nullptr;
+	gfx.soundPlayer.reset();
 	SDL_Quit();
 
 	return 0;

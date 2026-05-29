@@ -19,7 +19,7 @@
 #include "gfx.hpp"
 #include "reader.hpp"
 #include "game.hpp"
-#include "sfx.hpp"
+#include "mixer/player.hpp"
 #include "text.hpp"
 #include "keys.hpp"
 #include "filesystem.hpp"
@@ -183,14 +183,14 @@ struct InputDeviceBehavior : ItemBehavior
 
 	bool onLeftRight(Menu& menu, MenuItem& item, int dir)
 	{
-		sfx.play(common, dir > 0 ? 25 : 26);
+		g_soundPlayer->play(common.soundHook[dir > 0 ? SoundMenuMoveUp : SoundMenuMoveDown]);
 		cycle(menu, dir);
 		return false;
 	}
 
 	int onEnter(Menu& menu, MenuItem& item)
 	{
-		sfx.play(common, 27);
+		g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 		cycle(menu, 1);
 		return -1;
 	}
@@ -236,7 +236,7 @@ struct ProfileSaveBehavior : ItemBehavior
 
 	int onEnter(Menu& menu, MenuItem& item)
 	{
-		sfx.play(common, 27);
+		g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 
 		if(!saveAs)
 			ws.saveProfile(ws.profileNode);
@@ -318,6 +318,7 @@ Gfx::Gfx()
 {
 	clearKeys();
 	primaryRenderer = &playRenderer;
+	soundPlayer = std::make_shared<NullSoundPlayer>();
 }
 
 void Gfx::init()
@@ -1130,11 +1131,11 @@ void playChangeSound(Common& common, int change)
 {
 	if(change > 0)
 	{
-		sfx.play(common, 25);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
 	}
 	else
 	{
-		sfx.play(common, 26);
+		g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
 	}
 }
 

@@ -3,7 +3,6 @@
 #include <chrono>
 #include "../keys.hpp"
 #include "../gfx.hpp"
-#include "../sfx.hpp"
 #include "../reader.hpp"
 #include "../filesystem.hpp"
 
@@ -26,7 +25,7 @@ std::shared_ptr<WormAI> createAi(int controller, Worm& worm, Settings& settings)
 }
 
 LocalController::LocalController(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings)
-: game(common, settings, std::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)))
+: game(common, settings, gfx.soundPlayer)
 , state(StateInitial)
 , fadeValue(0)
 , goingToMenu(false)

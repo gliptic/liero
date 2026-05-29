@@ -173,7 +173,7 @@ void commonSave(Common& common, std::string const& path)
 		create_directories(dir);
 
 		std::ostringstream ss;
-		saveSObjectConfig(w, ss);
+		saveSObjectConfig(common, w, ss);
 		io::FileWriter sWriter(joinPath(dir, w.idStr + ".cfg").c_str(), "wb");
 		auto str = ss.str();
 		for (char c : str)

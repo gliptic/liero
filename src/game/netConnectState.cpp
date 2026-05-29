@@ -7,6 +7,7 @@
 #include "gamePlayState.hpp"
 #include "inputState.hpp"
 #include "controller/controller.hpp"
+#include "mixer/player.hpp"
 #include "net/localaddr.hpp"
 
 #include <memory>
@@ -38,6 +39,9 @@ void NetConnectState::enter()
 	session->onTcReloaded = [](std::shared_ptr<Common> newCommon) {
 		::gfx.common = newCommon;
 		::gfx.playRenderer.loadPalette(*newCommon);
+		if (auto* dp =
+				dynamic_cast<DefaultSoundPlayer*>(::gfx.soundPlayer.get()))
+			dp->setCommon(*newCommon);
 	};
 
 	bool ok = false;
