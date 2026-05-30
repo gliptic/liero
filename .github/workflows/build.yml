@@ -174,7 +174,7 @@ jobs:
             Where-Object { $_.Name -match '^\d' } | Sort-Object Name -Descending |
             Select-Object -First 1 -ExpandProperty FullName
           $signtool = Join-Path $sdkBin "x64\signtool.exe"
-          $pfxBytes = [Convert]::FromBase64String($env:CERT_PFX_BASE64)
+          $pfxBytes = [Convert]::FromBase64String(($env:CERT_PFX_BASE64 -replace '\s',''))
           [IO.File]::WriteAllBytes('codesign.pfx', $pfxBytes)
           & $signtool sign /fd SHA256 /f codesign.pfx /p $env:CERT_PASSWORD `
             /tr http://timestamp.digicert.com /td SHA256 `
@@ -210,7 +210,7 @@ jobs:
             Where-Object { $_.Name -match '^\d' } | Sort-Object Name -Descending |
             Select-Object -First 1 -ExpandProperty FullName
           $signtool = Join-Path $sdkBin "x64\signtool.exe"
-          $pfxBytes = [Convert]::FromBase64String($env:CERT_PFX_BASE64)
+          $pfxBytes = [Convert]::FromBase64String(($env:CERT_PFX_BASE64 -replace '\s',''))
           [IO.File]::WriteAllBytes('codesign.pfx', $pfxBytes)
           & $signtool sign /fd SHA256 /f codesign.pfx /p $env:CERT_PASSWORD `
             /tr http://timestamp.digicert.com /td SHA256 `
