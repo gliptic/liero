@@ -15,6 +15,8 @@ on:  # yamllint disable-line rule:truthy
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 env:
   SCCACHE_GHA_ENABLED: true
@@ -23,6 +25,8 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    env:
+      CERT_AVAILABLE: ${{ secrets.WINDOWS_CERT_PFX_BASE64 != '' }}
 
     strategy:
       fail-fast: false
@@ -155,13 +159,73 @@ jobs:
           cd install/macos-arm64-ci
           tar cvf ../openliero-macos.tar.gz .
 
-      - name: Create build artifact (Windows)
-        if: runner.os == 'windows'
+      - name: Install (Windows)
+        if: runner.os == 'Windows'
+        run: cmake --install build/windows-x64-ci --config Release
+
+      - name: Sign EXE (Windows)
+        if: runner.os == 'Windows' && env.CERT_AVAILABLE == 'true'
+        env:
+          CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
         run: |
-          cmake --install build/windows-x64-ci --config Release
+          Write-Output "::add-mask::$env:CERT_PASSWORD"
+          $sdkBin = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+            Where-Object { $_.Name -match '^\d' } | Sort-Object Name -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+          $signtool = Join-Path $sdkBin "x64\signtool.exe"
+          $pfxBytes = [Convert]::FromBase64String($env:CERT_PFX_BASE64)
+          [IO.File]::WriteAllBytes('codesign.pfx', $pfxBytes)
+          & $signtool sign /fd SHA256 /f codesign.pfx /p $env:CERT_PASSWORD `
+            /tr http://timestamp.digicert.com /td SHA256 `
+            install/windows-x64-ci/openliero.exe
+          Remove-Item codesign.pfx -Force
+
+      - name: Stage and pack MSIX (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          $sdkBin = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+            Where-Object { $_.Name -match '^\d' } | Sort-Object Name -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+          $makeappx = Join-Path $sdkBin "x64\makeappx.exe"
+
+          New-Item -ItemType Directory -Path msix-staging/Assets -Force | Out-Null
+          Copy-Item -Path install/windows-x64-ci/* -Destination msix-staging/ -Recurse -Force
+          Copy-Item build/windows-x64-ci/AppxManifest.xml msix-staging/
+
+          magick "packaging/icons/openliero.ico[0]" -resize 44x44   msix-staging/Assets/Square44x44Logo.png
+          magick "packaging/icons/openliero.ico[0]" -resize 150x150  msix-staging/Assets/Square150x150Logo.png
+          magick "packaging/icons/openliero.ico[0]" -resize 50x50    msix-staging/Assets/StoreLogo.png
+
+          & $makeappx pack /d msix-staging /p install/openliero.msix /o
+
+      - name: Sign MSIX (Windows)
+        if: runner.os == 'Windows' && env.CERT_AVAILABLE == 'true'
+        env:
+          CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
+        run: |
+          Write-Output "::add-mask::$env:CERT_PASSWORD"
+          $sdkBin = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Directory |
+            Where-Object { $_.Name -match '^\d' } | Sort-Object Name -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+          $signtool = Join-Path $sdkBin "x64\signtool.exe"
+          $pfxBytes = [Convert]::FromBase64String($env:CERT_PFX_BASE64)
+          [IO.File]::WriteAllBytes('codesign.pfx', $pfxBytes)
+          & $signtool sign /fd SHA256 /f codesign.pfx /p $env:CERT_PASSWORD `
+            /tr http://timestamp.digicert.com /td SHA256 `
+            install/openliero.msix
+          Remove-Item codesign.pfx -Force
+
+      - name: Package ZIP and copy publisher cert (Windows)
+        if: runner.os == 'Windows'
+        run: |
           Compress-Archive `
-           -Path install/windows-x64-ci/* `
-           -DestinationPath install/openliero-windows-x64.zip
+            -Path install/windows-x64-ci/* `
+            -DestinationPath install/openliero-windows-x64.zip
+          if (Test-Path dist/windows/openliero-publisher.cer) {
+            Copy-Item dist/windows/openliero-publisher.cer install/openliero-publisher.cer
+          }
 
       - name: Create build artifact (Emscripten)
         if: matrix.name == 'emscripten'
@@ -194,6 +258,28 @@ jobs:
         with:
           path: artifacts
 
+      - name: Generate SHA256SUMS
+        run: |
+          find artifacts -type f | sort | xargs sha256sum | sed 's|artifacts/[^/]*/||' > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: openliero-sbom.cdx.json
+          upload-artifact: false
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            artifacts/linux-build/*
+            artifacts/windows-build/*
+            artifacts/macos-build/*
+            artifacts/emscripten-build/*
+
       - name: Generate release notes
         id: notes
         run: |
@@ -222,6 +308,18 @@ jobs:
             echo "" >> notes.md
           fi
 
+          echo "" >> notes.md
+          echo "### Verifying your download" >> notes.md
+          echo "" >> notes.md
+          echo "Check integrity with the included \`SHA256SUMS.txt\`:" >> notes.md
+          echo "\`\`\`" >> notes.md
+          echo "sha256sum -c SHA256SUMS.txt" >> notes.md
+          echo "\`\`\`" >> notes.md
+          echo "Verify build provenance (requires [GitHub CLI](https://cli.github.com/)):" >> notes.md
+          echo "\`\`\`" >> notes.md
+          echo "gh attestation verify <artifact-file> --repo ${{ github.repository }}" >> notes.md
+          echo "\`\`\`" >> notes.md
+
       - name: Create pre-release
         run: |
           TAG="build-${{ steps.notes.outputs.short_sha }}"
@@ -233,7 +331,9 @@ jobs:
             artifacts/linux-build/* \
             artifacts/windows-build/* \
             artifacts/macos-build/* \
-            artifacts/emscripten-build/*
+            artifacts/emscripten-build/* \
+            SHA256SUMS.txt \
+            openliero-sbom.cdx.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -255,6 +355,28 @@ jobs:
         with:
           path: artifacts
 
+      - name: Generate SHA256SUMS
+        run: |
+          find artifacts -type f | sort | xargs sha256sum | sed 's|artifacts/[^/]*/||' > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: cyclonedx-json
+          output-file: openliero-sbom.cdx.json
+          upload-artifact: false
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            artifacts/linux-build/*
+            artifacts/windows-build/*
+            artifacts/macos-build/*
+            artifacts/emscripten-build/*
+
       - name: Create release
         run: |
           gh release create "${{ github.ref_name }}" \
@@ -263,6 +385,8 @@ jobs:
             artifacts/linux-build/* \
             artifacts/windows-build/* \
             artifacts/macos-build/* \
-            artifacts/emscripten-build/*
+            artifacts/emscripten-build/* \
+            SHA256SUMS.txt \
+            openliero-sbom.cdx.json
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

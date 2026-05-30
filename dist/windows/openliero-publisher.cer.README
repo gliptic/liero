@@ -1,0 +1,9 @@
+Place the public certificate here as openliero-publisher.cer
+
+  cp /tmp/openliero-codesign.crt dist/windows/openliero-publisher.cer
+
+Thumbprint (SHA1): 3E:2C:20:90:E1:D6:A0:75:DD:8A:48:0B:1F:A8:58:E5:03:73:04:98
+
+This file is committed to the repo so users can verify the publisher before
+trusting the MSIX installer. Only the public certificate is stored here;
+the private key lives in the WINDOWS_CERT_PFX_BASE64 GitHub secret.

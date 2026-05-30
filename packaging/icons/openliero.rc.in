@@ -1,0 +1,30 @@
+IDI_ICON1 ICON DISCARDABLE "@PROJECT_SOURCE_DIR@/packaging/icons/openliero.ico"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION @VERSION_MAJOR@,@VERSION_MINOR@,@VERSION_PATCH@,@VERSION_BUILD@
+ PRODUCTVERSION @VERSION_MAJOR@,@VERSION_MINOR@,@VERSION_PATCH@,@VERSION_BUILD@
+ FILEFLAGSMASK 0x3fL
+ FILEFLAGS 0x0L
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "OpenLiero Contributors"
+            VALUE "FileDescription", "A brutal subterranean shooter game"
+            VALUE "FileVersion", "@VERSION_GIT_TAG@"
+            VALUE "InternalName", "openliero"
+            VALUE "LegalCopyright", "Copyright (C) OpenLiero Contributors"
+            VALUE "OriginalFilename", "openliero.exe"
+            VALUE "ProductName", "OpenLiero"
+            VALUE "ProductVersion", "@VERSION_GIT_TAG@"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END

@@ -78,6 +78,19 @@ configure_file(
   "${PROJECT_SOURCE_DIR}/src/game/metadata.cpp"
 )
 
+if(WIN32)
+  configure_file(
+    "${PROJECT_SOURCE_DIR}/packaging/icons/openliero.rc.in"
+    "${CMAKE_BINARY_DIR}/openliero.rc"
+    @ONLY
+  )
+  configure_file(
+    "${PROJECT_SOURCE_DIR}/dist/windows/AppxManifest.xml.in"
+    "${CMAKE_BINARY_DIR}/AppxManifest.xml"
+    @ONLY
+  )
+endif()
+
 set(SOURCES
   src/game/bobject.cpp
   src/game/bonus.cpp
@@ -197,7 +210,7 @@ if(APPLE)
 #
 #  add_executable(openliero MACOSX_BUNDLE src/game/main.cpp "${RESOURCE_FILES}")
 elseif(WIN32)
-  add_executable(openliero WIN32 src/game/main.cpp packaging/icons/openliero.rc)
+  add_executable(openliero WIN32 src/game/main.cpp "${CMAKE_BINARY_DIR}/openliero.rc")
 elseif(EMSCRIPTEN)
   add_executable(openliero src/game/main.cpp)
   target_link_options(openliero PRIVATE

@@ -55,3 +55,23 @@ else()
   set(VERSION_GIT_DATE "1970.01.01")
   set(VERSION_GIT_TIME "00:00:00")
 endif()
+
+# Parse VERSION_GIT_TAG into integer components for Windows VERSIONINFO.
+# Strips leading 'v', extracts MAJOR.MINOR.PATCH and commit-count (build).
+# "v1.2.3" → 1,2,3,0 | "v1.2.3-42-gabcdef" → 1,2,3,42 | "0.0.0" → 0,0,0,0
+string(REGEX REPLACE "^v" "" _ver_stripped "${VERSION_GIT_TAG}")
+if(_ver_stripped MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)(-([0-9]+))?")
+  set(VERSION_MAJOR "${CMAKE_MATCH_1}")
+  set(VERSION_MINOR "${CMAKE_MATCH_2}")
+  set(VERSION_PATCH "${CMAKE_MATCH_3}")
+  if(CMAKE_MATCH_5)
+    set(VERSION_BUILD "${CMAKE_MATCH_5}")
+  else()
+    set(VERSION_BUILD "0")
+  endif()
+else()
+  set(VERSION_MAJOR "0")
+  set(VERSION_MINOR "0")
+  set(VERSION_PATCH "0")
+  set(VERSION_BUILD "0")
+endif()
