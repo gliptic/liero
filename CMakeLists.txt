@@ -84,6 +84,11 @@ if(WIN32)
     "${CMAKE_BINARY_DIR}/openliero.rc"
     @ONLY
   )
+  configure_file(
+    "${PROJECT_SOURCE_DIR}/dist/windows/AppxManifest.xml.in"
+    "${CMAKE_BINARY_DIR}/AppxManifest.xml"
+    @ONLY
+  )
 endif()
 
 set(SOURCES
