@@ -353,3 +353,4 @@ TEST_CASE("Weapon select transitions cleanly under jitter",
        << " b rollbacks=" << b->rollbackCount());
   REQUIRE(anyRollback);
 }
+

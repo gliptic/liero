@@ -31,10 +31,7 @@ static int32_t readI32(const uint8_t* p) {
 static constexpr int NUM_CHANNELS = 3;
 static constexpr int CHANNEL_RELIABLE = 0;
 static constexpr int CHANNEL_UNRELIABLE = 1;
-// Rollback PacketInputBatch: unreliable + sequenced. Newer batches
-// supersede older; redundancy in the payload (K = MaxRollback + 1
-// frames per batch) covers single-packet loss without retransmit.
-static constexpr int CHANNEL_UNRELIABLE_SEQUENCED = 2;
+static constexpr int CHANNEL_INPUT_BATCH = 2;
 
 // Single active transport pointer. Only one ENet host exists per process.
 static std::atomic<NetTransport*> sActiveTransport{nullptr};
@@ -490,14 +487,12 @@ void NetTransport::sendInputBatch(uint8_t generation, uint32_t baseFrame,
   std::memcpy(buf + 8, inputs, count);
 
   size_t len = size_t{8} + count;
-  // ENet flag 0 = unreliable but sequenced — newer batches supersede
-  // older ones at the channel level, so a stale duplicate after a
-  // newer arrival is dropped before reaching the application. Within
-  // a batch we still de-dup at injectRemoteInput against
-  // confirmedSimFrame_.
-  ENetPacket* packet = enet_packet_create(buf, len, 0);
+  // UNSEQUENCED, not 0: sequenced-discard would drop an older batch
+  // delivered after a newer one. injectRemoteInput already dedups.
+  ENetPacket* packet =
+      enet_packet_create(buf, len, ENET_PACKET_FLAG_UNSEQUENCED);
   if (!packet) return;
-  if (enet_peer_send(peer_, CHANNEL_UNRELIABLE_SEQUENCED, packet) < 0)
+  if (enet_peer_send(peer_, CHANNEL_INPUT_BATCH, packet) < 0)
     enet_packet_destroy(packet);
 }
 

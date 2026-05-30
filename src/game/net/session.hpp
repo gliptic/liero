@@ -1,10 +1,13 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <string>
 #include <vector>
+
+#include "../rollback/buffer.hpp"
 
 #include "../controller/rollbackController.hpp"
 #include "../filesystem.hpp"
@@ -182,6 +185,20 @@ struct NetSession {
   struct PendingRemote { uint32_t frame; uint32_t checksum; };
   PendingRemote pendingRemoteChecksums_[CHECKSUM_BUFFER_SIZE] = {};
   size_t pendingRemoteCount_ = 0;
+
+  // Held until beginPlaying wires up rollbackPtr_; otherwise the
+  // host's first sends arrive during the asymmetric handshake window
+  // and get dropped, and the K-wide window slides past those frames
+  // before they can be re-sent.
+  struct PendingInputBatch {
+    uint8_t generation;
+    uint32_t baseFrame;
+    uint8_t count;
+    std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
+    uint32_t remoteLocalFrame;
+  };
+  static constexpr size_t MAX_PRE_PLAYING_BATCHES = 256;
+  std::vector<PendingInputBatch> prePlayingInputBatches_;
 
   static constexpr uint16_t DEFAULT_PORT = 19532;
 };

@@ -602,3 +602,47 @@ TEST_CASE("Host's inputDelay syncs to the client over MatchSettings",
   REQUIRE(client.rollbackController() != nullptr);
 }
 
+TEST_CASE("Input batches received pre-Playing reach controller post-Playing",
+          "[session][rollback][regression]") {
+  Env e;
+  e.settings->inputDelay = 1;
+
+  NetSession host(e.common, e.settings, e.tcRoot);
+  NetSession client(e.common, e.settings, e.tcRoot);
+
+  REQUIRE(host.hostGame(0));
+  uint16_t port = host.transport().listeningPort();
+  REQUIRE(client.joinGame("127.0.0.1", port));
+
+  REQUIRE(client.sessionState() != NetSession::Playing);
+  REQUIRE(client.rollbackController() == nullptr);
+
+  // Same entry point a real ENet packet would hit, while
+  // client.rollbackPtr_ is still null.
+  uint8_t earlyInputs[8] = {0};
+  client.transport().onRemoteInputBatch(
+      /*generation=*/0, /*baseFrame=*/0, /*count=*/8, earlyInputs,
+      /*remoteLocalFrame=*/7);
+
+  bool reached = pollUntil(host, client, [&]() {
+    return host.sessionState() == NetSession::Playing &&
+           client.sessionState() == NetSession::Playing;
+  });
+  REQUIRE(reached);
+  REQUIRE(client.rollbackController() != nullptr);
+
+  // No rollback.process() on either side during the handshake, so the
+  // only remote input the client's confirm chain can see is the
+  // pre-Playing injection above.
+  auto* rb = client.rollbackController();
+  rb->focus();
+  for (int i = 0; i < 16; ++i) {
+    rb->setLocalControlState(0);
+    rb->process();
+  }
+
+  INFO("client simFrame=" << rb->currentFrame()
+       << " confirmedFrame=" << rb->confirmedFrame());
+  REQUIRE(rb->confirmedFrame() >= 7);
+}
+

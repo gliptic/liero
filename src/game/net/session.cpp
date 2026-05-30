@@ -188,6 +188,7 @@ void NetSession::disconnect() {
   localReady_ = false;
   remoteReady_ = false;
   receivedMapData_.clear();
+  prePlayingInputBatches_.clear();
 
   // Restore client's original TC if it was changed during the session
   if (role_ == Client && tcMemFs_) {
@@ -273,13 +274,21 @@ void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
 void NetSession::onRemoteInputBatch(uint8_t generation, uint32_t baseFrame,
                                     uint8_t count, uint8_t const* inputs,
                                     uint32_t remoteLocalFrame) {
-  // The controller owns the generation filter; we just forward.
-  // Pre-Playing batches are dropped on purpose — the controller isn't
-  // wired yet, and the K-wide redundancy re-delivers the same frames
-  // on the next batch (~14 ms later).
-  if (rollbackPtr_)
+  if (rollbackPtr_) {
     rollbackPtr_->injectRemoteBatch(generation, baseFrame, count, inputs,
                                     remoteLocalFrame);
+    return;
+  }
+
+  if (prePlayingInputBatches_.size() >= MAX_PRE_PLAYING_BATCHES) return;
+  if (count > rollback::kMaxRollback + 1) return;
+  PendingInputBatch b{};
+  b.generation = generation;
+  b.baseFrame = baseFrame;
+  b.count = count;
+  for (uint8_t i = 0; i < count; ++i) b.inputs[i] = inputs[i];
+  b.remoteLocalFrame = remoteLocalFrame;
+  prePlayingInputBatches_.push_back(b);
 }
 
 void NetSession::onPlayerInfo(const NetTransport::PlayerInfo& info) {
@@ -529,6 +538,12 @@ void NetSession::beginPlaying(int localIdx, bool isRematch) {
   wireActiveController();
   prefillRemoteInput();
   rollbackPtr_ = rollback_.get();
+
+  for (auto const& b : prePlayingInputBatches_) {
+    rollbackPtr_->injectRemoteBatch(b.generation, b.baseFrame, b.count,
+                                    b.inputs.data(), b.remoteLocalFrame);
+  }
+  prePlayingInputBatches_.clear();
 
   if (isRematch) {
     localReady_ = false;
