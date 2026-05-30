@@ -49,7 +49,7 @@ std::string WormSettings::toToml() const
 	std::ostringstream ss;
 	{
 		cereal::TomlOutputArchive ar(ss);
-		ar(cereal::make_nvp("ws", const_cast<WormSettings&>(*this)));
+		serializeWormSettingsToml(ar, const_cast<WormSettings&>(*this));
 	}
 	return ss.str();
 }
@@ -58,7 +58,7 @@ void WormSettings::fromToml(std::string const& data)
 {
 	std::istringstream ss(data);
 	cereal::TomlInputArchive ar(ss);
-	ar(cereal::make_nvp("ws", *this));
+	serializeWormSettingsToml(ar, *this);
 }
 
 void WormSettings::saveProfile(FsNode node)

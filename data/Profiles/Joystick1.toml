@@ -1,11 +1,13 @@
-
 name = "chucky"
-controller = 0
 health = 100
-controls = [160, 33, 32, 34, 29, 42, 56, 0]
-weapons = [1, 1, 1, 1, 1]
-color = [26, 26, 63]
+controller = 0
+randomName = false
+color = 0
 inputDevice = 1
 gamepadName = ""
 gamepadSerial = ""
+rgb = [26, 26, 63]
+weapons = [1, 1, 1, 1, 1]
+controls = [160, 33, 32, 34, 29, 42, 56]
+controlsEx = [160, 33, 32, 34, 29, 42, 56, 0]
 gamepadControls = [11, 12, 13, 14, 110, 10, 0, 9]

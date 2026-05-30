@@ -1,11 +1,13 @@
-
 name = "AI Jane"
-controller = 2
 health = 100
-controls = [160, 168, 163, 165, 79, 80, 81, 0]
-weapons = [19, 31, 9, 29, 36]
-color = [20, 20, 40]
+controller = 2
+randomName = false
+color = 0
 inputDevice = 0
 gamepadName = ""
 gamepadSerial = ""
+rgb = [20, 20, 40]
+weapons = [19, 31, 9, 29, 36]
+controls = [160, 168, 163, 165, 79, 80, 81]
+controlsEx = [160, 168, 163, 165, 79, 80, 81, 0]
 gamepadControls = [11, 12, 13, 14, 110, 10, 0, 9]

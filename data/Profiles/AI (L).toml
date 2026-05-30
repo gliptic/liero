@@ -1,11 +1,13 @@
-
 name = "AI Joe"
-controller = 2
 health = 100
-controls = [17, 31, 30, 32, 20, 21, 22, 0]
-weapons = [19, 31, 40, 29, 36]
-color = [20, 20, 40]
+controller = 2
+randomName = false
+color = 0
 inputDevice = 0
 gamepadName = ""
 gamepadSerial = ""
+rgb = [20, 20, 40]
+weapons = [19, 31, 40, 29, 36]
+controls = [17, 31, 30, 32, 20, 21, 22]
+controlsEx = [17, 31, 30, 32, 20, 21, 22, 0]
 gamepadControls = [11, 12, 13, 14, 110, 10, 0, 9]

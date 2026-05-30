@@ -1,11 +1,13 @@
-
 name = "poukah"
-controller = 0
 health = 100
-controls = [76, 80, 79, 81, 163, 168, 165, 0]
-weapons = [19, 36, 28, 9, 31]
-color = [4, 8, 32]
+controller = 0
+randomName = false
+color = 0
 inputDevice = 0
 gamepadName = ""
 gamepadSerial = ""
+rgb = [4, 8, 32]
+weapons = [19, 36, 28, 9, 31]
+controls = [76, 80, 79, 81, 163, 168, 165]
+controlsEx = [76, 80, 79, 81, 163, 168, 165, 0]
 gamepadControls = [11, 12, 13, 14, 110, 10, 0, 9]

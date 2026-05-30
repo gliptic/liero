@@ -1,11 +1,13 @@
-
 name = "etc"
-controller = 0
 health = 100
-controls = [17, 31, 30, 32, 21, 22, 23, 0]
-weapons = [19, 36, 9, 40, 31]
-color = [40, 10, 55]
+controller = 0
+randomName = false
+color = 0
 inputDevice = 0
 gamepadName = ""
 gamepadSerial = ""
+rgb = [40, 10, 55]
+weapons = [19, 36, 9, 40, 31]
+controls = [17, 31, 30, 32, 21, 22, 23]
+controlsEx = [17, 31, 30, 32, 21, 22, 23, 0]
 gamepadControls = [11, 12, 13, 14, 110, 10, 0, 9]
