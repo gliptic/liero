@@ -37,8 +37,7 @@ RollbackController::RollbackController(
     std::shared_ptr<Common> common,
     std::shared_ptr<Settings> settings,
     int localPlayerIdx)
-    : game(common, settings,
-            std::shared_ptr<SoundPlayer>(new DefaultSoundPlayer(*common)))
+    : game(common, settings, gfx.soundPlayer)
     , localIdx(localPlayerIdx)
     , remoteIdx(localPlayerIdx ^ 1)
     , state(StateInitial)
