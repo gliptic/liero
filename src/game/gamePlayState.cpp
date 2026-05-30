@@ -28,6 +28,7 @@ bool GamePlayState::update()
 		auto state = gfx->netSession->sessionState();
 		if (state == NetSession::Disconnected || state == NetSession::Failed)
 		{
+			gfx->controller->markUnresumable();
 			gfx->netSession.reset();
 			gfx->stateStack.scheduleReplaceTop(
 				std::make_unique<InfoBoxState>("PEER DISCONNECTED", 320/2, 200/2, true));
@@ -38,6 +39,7 @@ bool GamePlayState::update()
 			uint32_t frame = gfx->netSession->desyncFrame();
 			char msg[64];
 			snprintf(msg, sizeof(msg), "DESYNC AT FRAME %u", frame);
+			gfx->controller->markUnresumable();
 			gfx->netSession.reset();
 			gfx->stateStack.scheduleReplaceTop(
 				std::make_unique<InfoBoxState>(msg, 320/2, 200/2, true));
@@ -57,8 +59,11 @@ bool GamePlayState::update()
 			return false;
 		}
 
-		// Game ended — show stats if available and game actually finished
-		Game* game = gfx->controller->currentGame();
+		// Game ended — show stats if available and game actually finished.
+		// statsGame() is the live game for single-player/replay and the
+		// shadow Game for rollback multiplayer (live's recorder is a
+		// no-op there — see RollbackController::setupShadowGame).
+		Game* game = gfx->controller->statsGame();
 		if (game && game->statsRecorder)
 		{
 			auto* stats = dynamic_cast<NormalStatsRecorder*>(game->statsRecorder.get());

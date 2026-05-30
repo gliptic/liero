@@ -19,3 +19,4 @@ server/openliero-relay
 # macOS
 ._*
 .DS_Store
+/Testing/

@@ -6,13 +6,13 @@
 #include <string>
 #include <vector>
 
-#include "../controller/networkController.hpp"
+#include "../controller/rollbackController.hpp"
 #include "../filesystem.hpp"
 #include "memoryFs.hpp"
 #include "transport.hpp"
 
-// Wires NetworkController and NetTransport together.
-// Manages the connection lifecycle: connect → handshake → play → disconnect.
+// Wires RollbackController and NetTransport together. Manages the
+// connection lifecycle: connect → handshake → play → disconnect.
 struct NetSession {
   enum Role { Host, Client };
   enum SessionState {
@@ -51,13 +51,11 @@ struct NetSession {
 
   SessionState sessionState() const { return sessionState_; }
 
-  // The controller. Valid after construction but game doesn't start
-  // until Playing state. Returns null if not yet created.
-  NetworkController* controller() { return controllerPtr_; }
+  RollbackController* rollbackController() { return rollbackPtr_; }
 
-  // Release ownership of the controller (for handing to Gfx).
-  // The session keeps a raw pointer for injecting remote inputs.
-  std::unique_ptr<NetworkController> releaseController();
+  // Release ownership of the controller (for handing to Gfx). The
+  // session keeps a raw pointer for injecting remote inputs.
+  std::unique_ptr<Controller> releaseController();
 
   // Send pause/resume to remote peer
   void sendPause();
@@ -101,30 +99,50 @@ struct NetSession {
   void onPause();
   void onResume();
   void onRemoteEndMatch();
+  void onRemotePeerLeft();
   void onRematchReady(bool ready);
   void onRematchLevel(bool randomLevel, std::string levelFile);
-  void onRemoteInput(uint32_t frame, uint8_t input);
+  void onRemoteInputBatch(uint8_t generation, uint32_t baseFrame,
+                          uint8_t count, uint8_t const* inputs,
+                          uint32_t remoteLocalFrame);
   void onTcInfo(uint32_t hash, std::string name);
   void onTcResponse(bool needData);
   void onTcData(const void* data, size_t len);
   void wireCallbacks();
   void tryStartGame();
   void startRematchClient();
+  // Shared body of tryStartGame / startRematch / startRematchClient:
+  // create controller, apply remote player info, seed RNG, prepare or
+  // load the level, wire callbacks, pre-fill remote input, and enter
+  // Playing. The host-rematch handshake send is not included here; the
+  // caller does that before invoking.
+  void beginPlaying(int localIdx, bool isRematch);
+  void applyRemotePlayerInfo(int remoteIdx);
+  void prefillRemoteInput();
   void generateAndSendMap();
   uint32_t computeSettingsHash() const;
+
+  // Build the rollback controller and wire its transport callbacks.
+  // Shared by all game-start paths.
+  void createController(int localIdx);
+  void wireActiveController();
+
+  // Send a PlayerInfo packet derived from wormSettings[NetworkPlayerIdx].
+  // Called on initial connect and again on rematch (where the prior
+  // round's WeaponSelection has mutated weapons[] in place via the
+  // shared shared_ptr).
+  void sendLocalPlayerInfo();
+
+  Game& activeGame();
 
   Role role_;
   SessionState sessionState_;
   NetTransport transport_;
-  std::unique_ptr<NetworkController> controller_;
+  std::unique_ptr<RollbackController> rollback_;
   std::shared_ptr<Common> common_;
   std::shared_ptr<Settings> settings_;
 
-  NetworkController* controllerPtr_;  // non-owning, survives releaseController()
-
-  // Buffer for inputs arriving before controller is ready
-  struct PendingInput { uint32_t frame; uint8_t input; };
-  std::vector<PendingInput> pendingInputs_;
+  RollbackController* rollbackPtr_;    // non-owning
 
   uint32_t gameSeed_;
   uint32_t localSettingsHash_;
@@ -153,7 +171,7 @@ struct NetSession {
   // Desync detection
   bool desyncDetected_;
   uint32_t desyncFrame_;
-  void onChecksum(uint32_t frame, uint32_t checksum);
+  void onChecksum(uint8_t generation, uint32_t frame, uint32_t checksum);
   void onLocalChecksum(uint32_t frame, uint32_t checksum);
 
   // Ring buffer of local checksums for frame-accurate comparison

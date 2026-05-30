@@ -13,6 +13,16 @@
 
 //#define DEBUG_REPLAYS 1
 
+// Replay stream framing. Bytes < 0x80 are per-frame worm-state deltas
+// (a single byte per worm, sequencing implicit in the frame loop).
+// Bytes with bit 7 set are tagged records:
+namespace {
+constexpr uint8_t kReplayTagEmptyFrame    = 0x80;  // frame with no input change
+constexpr uint8_t kReplayTagSettings      = 0x81;  // cereal'd Settings follows
+constexpr uint8_t kReplayTagWormSettings  = 0x82;  // worm index + cereal'd WormSettings
+constexpr uint8_t kReplayTagEnd           = 0x83;  // end of stream
+}
+
 // Helper: serialize an object to a binary blob via cereal and write
 // [uint32 length][blob] into the replay stream.
 template <typename T>
@@ -105,22 +115,102 @@ void ReplayWriter::beginRecord(Game& game)
 
 void ReplayWriter::endRecord()
 {
-	writer.put(0x83);
+	writer.put(kReplayTagEnd);
 }
 
-uint32_t fastGameChecksum(Game& game)
+namespace {
+inline void mix32(uint32_t& h, uint32_t v) {
+	h ^= v + 0x9e3779b9u + (h << 6) + (h >> 2);
+}
+inline void mixBytes(uint32_t& h, void const* p, std::size_t n) {
+	auto* b = static_cast<uint8_t const*>(p);
+	for (std::size_t i = 0; i < n; ++i) mix32(h, b[i]);
+}
+}  // namespace
+
+uint32_t wideRollbackChecksum(Game& game)
 {
-	uint32_t checksum = game.rand.last;
-	for(std::size_t i = 0; i < game.worms.size(); ++i)
-	{
-		Worm& worm = *game.worms[i];
-		checksum ^= worm.pos.x;
-		checksum += worm.vel.x;
-		checksum ^= worm.pos.y;
-		checksum += worm.vel.y;
+	// Folds in projectile pools, level damage, and per-worm sim state the
+	// fast checksum drops. Order matters for reproducibility — both peers
+	// walk the same fields in the same sequence.
+	uint32_t h = game.rand.last;
+	mix32(h, static_cast<uint32_t>(game.cycles));
+
+	for (auto const& w_sp : game.worms) {
+		Worm const& w = *w_sp;
+		mix32(h, static_cast<uint32_t>(w.pos.x));
+		mix32(h, static_cast<uint32_t>(w.pos.y));
+		mix32(h, static_cast<uint32_t>(w.vel.x));
+		mix32(h, static_cast<uint32_t>(w.vel.y));
+		mix32(h, static_cast<uint32_t>(w.aimingAngle));
+		mix32(h, static_cast<uint32_t>(w.aimingSpeed));
+		mix32(h, static_cast<uint32_t>(w.health));
+		mix32(h, static_cast<uint32_t>(w.lives));
+		mix32(h, static_cast<uint32_t>(w.kills));
+		mix32(h, static_cast<uint32_t>(w.timer));
+		mix32(h, static_cast<uint32_t>(w.killedTimer));
+		mix32(h, static_cast<uint32_t>(w.currentFrame));
+		mix32(h, static_cast<uint32_t>(w.currentWeapon));
+		mix32(h, static_cast<uint32_t>(w.direction));
+		mix32(h, static_cast<uint32_t>(w.flags));
+		mix32(h, w.visible ? 1u : 0u);
+		mix32(h, w.ready ? 1u : 0u);
+		mix32(h, w.ableToJump ? 1u : 0u);
+		mix32(h, w.ableToDig ? 1u : 0u);
+		mix32(h, static_cast<uint32_t>(w.controlStates.istate));
+		mix32(h, static_cast<uint32_t>(w.prevControlStates.istate));
+		for (int i = 0; i < NUM_WEAPONS; ++i) {
+			WormWeapon const& ww = w.weapons[i];
+			mix32(h, static_cast<uint32_t>(ww.ammo));
+			mix32(h, static_cast<uint32_t>(ww.delayLeft));
+			mix32(h, static_cast<uint32_t>(ww.loadingLeft));
+		}
 	}
 
-	return checksum;
+	mix32(h, static_cast<uint32_t>(game.wobjects.count));
+	for (std::size_t i = 0; i < game.wobjects.count; ++i) {
+		WObject const& o = game.wobjects.arr[i];
+		mix32(h, static_cast<uint32_t>(o.pos.x));
+		mix32(h, static_cast<uint32_t>(o.pos.y));
+		mix32(h, static_cast<uint32_t>(o.vel.x));
+		mix32(h, static_cast<uint32_t>(o.vel.y));
+		mix32(h, static_cast<uint32_t>(o.curFrame));
+		mix32(h, static_cast<uint32_t>(o.timeLeft));
+		mix32(h, static_cast<uint32_t>(o.ownerIdx));
+	}
+	mix32(h, static_cast<uint32_t>(game.sobjects.count));
+	for (std::size_t i = 0; i < game.sobjects.count; ++i) {
+		SObject const& o = game.sobjects.arr[i];
+		mix32(h, static_cast<uint32_t>(o.x));
+		mix32(h, static_cast<uint32_t>(o.y));
+		mix32(h, static_cast<uint32_t>(o.curFrame));
+		mix32(h, static_cast<uint32_t>(o.id));
+	}
+	mix32(h, static_cast<uint32_t>(game.nobjects.count));
+	for (std::size_t i = 0; i < game.nobjects.count; ++i) {
+		NObject const& o = game.nobjects.arr[i];
+		mix32(h, static_cast<uint32_t>(o.pos.x));
+		mix32(h, static_cast<uint32_t>(o.pos.y));
+		mix32(h, static_cast<uint32_t>(o.vel.x));
+		mix32(h, static_cast<uint32_t>(o.vel.y));
+		mix32(h, static_cast<uint32_t>(o.curFrame));
+	}
+	mix32(h, static_cast<uint32_t>(game.bonuses.count));
+	for (std::size_t i = 0; i < game.bonuses.count; ++i) {
+		Bonus const& b = game.bonuses.arr[i];
+		mix32(h, static_cast<uint32_t>(b.x));
+		mix32(h, static_cast<uint32_t>(b.y));
+		mix32(h, static_cast<uint32_t>(b.frame));
+		mix32(h, static_cast<uint32_t>(b.timer));
+	}
+
+	std::size_t const cells = static_cast<std::size_t>(game.level.width) *
+	                          static_cast<std::size_t>(game.level.height);
+	if (cells > 0) {
+		mixBytes(h, game.level.data.data(), cells);
+	}
+
+	return h;
 }
 
 bool ReplayReader::playbackFrame(Renderer& renderer)
@@ -133,14 +223,14 @@ bool ReplayReader::playbackFrame(Renderer& renderer)
 	{
 		uint8_t first = reader.get();
 
-		if(first == 0x80)
+		if(first == kReplayTagEmptyFrame)
 			break;
-		else if(first == 0x81)
+		else if(first == kReplayTagSettings)
 		{
 			cerealRead(reader, *game.settings);
 			settingsChanged = true;
 		}
-		else if(first == 0x82)
+		else if(first == kReplayTagWormSettings)
 		{
 			uint32_t wormId = io::read_uint32(reader);
 			Worm* w = game.wormByIdx(wormId);
@@ -150,12 +240,12 @@ bool ReplayReader::playbackFrame(Renderer& renderer)
 				settingsChanged = true;
 			}
 		}
-		else if(first == 0x83)
+		else if(first == kReplayTagEnd)
 		{
 			// End of replay
 			return false;
 		}
-		else if(first < 0x80)
+		else if(first < kReplayTagEmptyFrame)
 		{
 			uint8_t state = first;
 			bool hasState = true;
@@ -184,7 +274,7 @@ bool ReplayReader::playbackFrame(Renderer& renderer)
 	if((game.cycles % (70 * 15)) == 0)
 	{
 		uint32_t expected = io::read_uint32(reader);
-		uint32_t actual = fastGameChecksum(game);
+		uint32_t actual = wideRollbackChecksum(game);
 		if(actual != expected)
 			throw io::ArchiveCheckError("Replay has desynced");
 	}
@@ -199,7 +289,7 @@ void ReplayWriter::recordFrame()
 
 	if(settingsExpired)
 	{
-		writer.put(0x81);
+		writer.put(kReplayTagSettings);
 		cerealWrite(writer, *game.settings);
 		settingsExpired = false;
 	}
@@ -220,7 +310,7 @@ void ReplayWriter::recordFrame()
 
 			if(data.settingsExpired)
 			{
-				writer.put(0x82);
+				writer.put(kReplayTagWormSettings);
 				io::write_uint32(writer, worm->index);
 				cerealWrite(writer, *worm->settings);
 				data.settingsExpired = false;
@@ -234,19 +324,19 @@ void ReplayWriter::recordFrame()
 		{
 			uint8_t state = worm->controlStates.pack() ^ worm->prevControlStates.pack();
 
-			assert(state < 0x80);
+			assert(state < kReplayTagEmptyFrame);
 
 			writer.put(state);
 		}
 	}
 	else
 	{
-		writer.put(0x80); // Bit 7 means empty frame
+		writer.put(kReplayTagEmptyFrame);
 	}
 
 	if((game.cycles % (70 * 15)) == 0)
 	{
-		uint32_t checksum = fastGameChecksum(game);
+		uint32_t checksum = wideRollbackChecksum(game);
 		io::write_uint32(writer, checksum);
 	}
 }

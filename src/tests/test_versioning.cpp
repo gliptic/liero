@@ -331,7 +331,7 @@ TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config",
   CHECK(toml.find("[player2]") != std::string::npos);
   CHECK(toml.find("[network_player]") != std::string::npos);
   // Version field present for future-proofing
-  CHECK(toml.find("version = 2") != std::string::npos);
+  CHECK(toml.find("version = 3") != std::string::npos);
   // No ptr_wrapper noise
   CHECK(toml.find("ptr_wrapper") == std::string::npos);
   CHECK(toml.find("[s]") == std::string::npos);

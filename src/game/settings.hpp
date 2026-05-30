@@ -81,9 +81,13 @@ struct Settings : GameplayExtensions, AppSettings {
   bool screenSync;
   int32_t bonusTimeout;  // max seconds a bonus stays on the map; 0 = no limit
 
+  // Frames of artificial input delay. Host-authoritative; synced to
+  // the client via MatchSettingsData.
+  int32_t inputDelay;
+
   static int const NumWormSettings = 3;  // 0=left, 1=right, 2=network
   static int const NetworkPlayerIdx = 2;
-  static int const ConfigVersion = 2;  // bump when adding fields to the TOML config
+  static int const ConfigVersion = 3;  // bump when adding fields to the TOML config
   std::shared_ptr<WormSettings> wormSettings[NumWormSettings];
 
   uint64_t hash;

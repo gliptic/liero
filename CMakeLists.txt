@@ -124,7 +124,7 @@ set(GAME_SOURCES ${SOURCES}
   src/game/weapsel.cpp
   src/game/controller/commonController.cpp
   src/game/controller/localController.cpp
-  src/game/controller/networkController.cpp
+  src/game/controller/rollbackController.cpp
   src/game/controller/replayController.cpp
   src/game/net/transport.cpp
   src/game/net/session.cpp
@@ -305,13 +305,6 @@ if(OPENLIERO_BUILD_TESTS)
     DISCOVERY_MODE PRE_TEST
   )
 
-  add_executable(test_network_controller src/tests/test_network_controller.cpp)
-  target_link_libraries(test_network_controller PRIVATE game Catch2::Catch2WithMain)
-  catch_discover_tests(test_network_controller
-    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-    DISCOVERY_MODE PRE_TEST
-  )
-
   add_executable(test_transport src/tests/test_transport.cpp)
   target_link_libraries(test_transport PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_transport DISCOVERY_MODE PRE_TEST)
@@ -377,6 +370,121 @@ if(OPENLIERO_BUILD_TESTS)
     Catch2::Catch2WithMain)
   catch_discover_tests(test_cereal_types DISCOVERY_MODE PRE_TEST)
 
+  add_executable(test_snapshot_roundtrip src/tests/test_snapshot_roundtrip.cpp)
+  target_link_libraries(test_snapshot_roundtrip PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_snapshot_roundtrip
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_snapshot_fast src/tests/test_snapshot_fast.cpp)
+  target_link_libraries(test_snapshot_fast PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_snapshot_fast
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_buffer src/tests/test_rollback_buffer.cpp)
+  target_link_libraries(test_rollback_buffer PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_buffer DISCOVERY_MODE PRE_TEST)
+
+  add_executable(test_speculative_suppression src/tests/test_speculative_suppression.cpp)
+  target_link_libraries(test_speculative_suppression PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_speculative_suppression
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_prediction_no_rollback src/tests/test_prediction_no_rollback.cpp)
+  target_link_libraries(test_prediction_no_rollback PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_prediction_no_rollback
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_correctness src/tests/test_rollback_correctness.cpp)
+  target_link_libraries(test_rollback_correctness PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_correctness
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_packet_loss src/tests/test_rollback_packet_loss.cpp)
+  target_link_libraries(test_rollback_packet_loss PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_packet_loss
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_reorder src/tests/test_rollback_reorder.cpp)
+  target_link_libraries(test_rollback_reorder PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_reorder
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_frame_advantage src/tests/test_frame_advantage.cpp)
+  target_link_libraries(test_frame_advantage PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_frame_advantage
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_desync src/tests/test_rollback_desync.cpp)
+  target_link_libraries(test_rollback_desync PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_desync
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_generation_drop
+    src/tests/test_rollback_generation_drop.cpp)
+  target_link_libraries(test_rollback_generation_drop
+    PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_generation_drop
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_generation_future
+    src/tests/test_rollback_generation_future.cpp)
+  target_link_libraries(test_rollback_generation_future
+    PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_generation_future
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_skew_repro
+    src/tests/test_rollback_skew_repro.cpp)
+  target_link_libraries(test_rollback_skew_repro
+    PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_skew_repro
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_session_rollback src/tests/test_session_rollback.cpp)
+  target_link_libraries(test_session_rollback PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_session_rollback
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_weapsel src/tests/test_rollback_weapsel.cpp)
+  target_link_libraries(test_rollback_weapsel PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_weapsel
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_rollback_replay src/tests/test_rollback_replay.cpp)
+  target_link_libraries(test_rollback_replay PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_rollback_replay
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
   add_executable(test_versioning src/tests/test_versioning.cpp)
   target_link_libraries(test_versioning PRIVATE
     game
@@ -391,13 +499,6 @@ if(OPENLIERO_BUILD_TESTS)
     target_include_directories(test_sfx_loader PRIVATE src src/game)
     catch_discover_tests(test_sfx_loader DISCOVERY_MODE PRE_TEST)
   endif()
-endif()
-
-# desync fuzzer
-if(OPENLIERO_BUILD_FUZZER)
-  find_package(Threads REQUIRED)
-  add_executable(desync_fuzzer src/tools/desync_fuzzer.cpp)
-  target_link_libraries(desync_fuzzer PRIVATE game Threads::Threads)
 endif()
 
 # documentation

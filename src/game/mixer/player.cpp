@@ -109,6 +109,7 @@ bool DefaultSoundPlayer::isPlaying(void* id)
 void DefaultSoundPlayer::stop(void* id)
 {
 #if !DISABLE_SOUND
+	if (speculative) return;
 	if (!initialized)
 		return;
 	sfx_mixer_stop(mixer, id);

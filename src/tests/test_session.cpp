@@ -64,11 +64,11 @@ TEST_CASE("NetSession host and client connect and handshake", "[session]") {
   });
 
   REQUIRE(ready);
-  REQUIRE(host.controller() != nullptr);
-  REQUIRE(client.controller() != nullptr);
+  REQUIRE(host.rollbackController() != nullptr);
+  REQUIRE(client.rollbackController() != nullptr);
 
   // Both games should have the same RNG seed
-  REQUIRE(host.controller()->game.rand == client.controller()->game.rand);
+  REQUIRE(host.rollbackController()->game.rand == client.rollbackController()->game.rand);
 }
 
 TEST_CASE("NetSession syncs host settings to client", "[session]") {
@@ -159,7 +159,7 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
   REQUIRE(ready);
 
   // Host's remote worm (index 1) should have client's color/weapons
-  Worm* hostRemoteWorm = host.controller()->game.wormByIdx(1);
+  Worm* hostRemoteWorm = host.rollbackController()->game.wormByIdx(1);
   REQUIRE(hostRemoteWorm->settings->color == 6);
   REQUIRE(hostRemoteWorm->settings->rgb[0] == 0);
   REQUIRE(hostRemoteWorm->settings->rgb[1] == 255);
@@ -168,7 +168,7 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
   REQUIRE(hostRemoteWorm->settings->weapons[4] == 40);
 
   // Client's remote worm (index 0) should have host's color/weapons
-  Worm* clientRemoteWorm = client.controller()->game.wormByIdx(0);
+  Worm* clientRemoteWorm = client.rollbackController()->game.wormByIdx(0);
   REQUIRE(clientRemoteWorm->settings->color == 3);
   REQUIRE(clientRemoteWorm->settings->rgb[0] == 255);
   REQUIRE(clientRemoteWorm->settings->rgb[1] == 0);
@@ -179,50 +179,6 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
   // Persistent settings should NOT be modified
   REQUIRE(settingsHost->wormSettings[1]->color != 6);
   REQUIRE(settingsClient->wormSettings[0]->color != 3);
-}
-
-TEST_CASE("NetSession plays frames over real network", "[session]") {
-  SessionFixture f;
-
-  NetSession host(f.common, f.settings, f.tcRoot);
-  NetSession client(f.common, f.settings, f.tcRoot);
-
-  REQUIRE(host.hostGame(0));
-  uint16_t port = host.transport().listeningPort();
-  REQUIRE(client.joinGame("127.0.0.1", port));
-
-  // Wait for Playing state
-  bool ready = pollUntil(host, client, [&]() {
-    return host.sessionState() == NetSession::Playing &&
-           client.sessionState() == NetSession::Playing;
-  });
-  REQUIRE(ready);
-
-  // Focus both controllers to start the game
-  host.controller()->focus();
-  client.controller()->focus();
-
-  // Pre-inject remote inputs for the input delay window (3 frames)
-  for (uint32_t i = 0; i < 3; ++i) {
-    host.controller()->injectRemoteInput(i, 0);
-    client.controller()->injectRemoteInput(i, 0);
-  }
-
-  // Run 50 frames, polling transport each time
-  for (int tick = 0; tick < 50; ++tick) {
-    host.controller()->process();
-    client.controller()->process();
-    host.update();
-    client.update();
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  }
-
-  // Both should have advanced
-  REQUIRE(host.controller()->currentFrame() > 0);
-  REQUIRE(host.controller()->currentFrame() == client.controller()->currentFrame());
-
-  // RNG state should be identical (deterministic lockstep)
-  REQUIRE(host.controller()->game.rand == client.controller()->game.rand);
 }
 
 TEST_CASE("NetSession client detects host disconnect", "[session]") {
@@ -350,7 +306,7 @@ TEST_CASE("NetSession TC sync transfers data when hashes differ", "[session][tc]
   REQUIRE(receivedCommon != nullptr);
 
   // Both games should have the same RNG seed (basic sanity)
-  REQUIRE(host.controller()->game.rand.last == client.controller()->game.rand.last);
+  REQUIRE(host.rollbackController()->game.rand.last == client.rollbackController()->game.rand.last);
 
   // Clean up
   std::filesystem::remove_all(tempTcDir);

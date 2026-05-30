@@ -49,6 +49,7 @@ void StatsRecorder::aiProcessTime(Worm* worm, std::chrono::nanoseconds time)
 
 void NormalStatsRecorder::damagePotential(Worm* byWorm, WormWeapon* weapon, int hp)
 {
+	if (speculative) return;
 	if (!byWorm || !weapon)
 		return;
 
@@ -59,6 +60,7 @@ void NormalStatsRecorder::damagePotential(Worm* byWorm, WormWeapon* weapon, int 
 
 void NormalStatsRecorder::damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp, bool hasHit)
 {
+	if (speculative) return;
 	assert(toWorm);
 
 	auto& w = worms[toWorm->index];
@@ -89,6 +91,7 @@ void NormalStatsRecorder::damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* to
 
 void NormalStatsRecorder::shot(Worm* byWorm, WormWeapon* weapon)
 {
+	if (speculative) return;
 	if (!byWorm || !weapon)
 		return;
 
@@ -99,6 +102,7 @@ void NormalStatsRecorder::shot(Worm* byWorm, WormWeapon* weapon)
 
 void NormalStatsRecorder::hit(Worm* byWorm, WormWeapon* weapon, Worm* toWorm)
 {
+	if (speculative) return;
 	assert(toWorm);
 
 	if (!byWorm || !weapon)
@@ -114,12 +118,14 @@ void NormalStatsRecorder::hit(Worm* byWorm, WormWeapon* weapon, Worm* toWorm)
 
 void NormalStatsRecorder::afterSpawn(Worm* worm)
 {
+	if (speculative) return;
 	WormStats& w = worms[worm->index];
 	w.spawnTime = frame;
 }
 
 void NormalStatsRecorder::afterDeath(Worm* worm)
 {
+	if (speculative) return;
 	WormStats& w = worms[worm->index];
 	w.lifeSpans.push_back(std::make_pair(w.spawnTime, frame));
 	w.spawnTime = -1;
@@ -128,6 +134,7 @@ void NormalStatsRecorder::afterDeath(Worm* worm)
 
 void NormalStatsRecorder::preTick(Game& game)
 {
+	if (speculative) return;
 	frameStart = std::chrono::steady_clock::now();
 
 	for (auto& w : worms)
@@ -146,6 +153,7 @@ void NormalStatsRecorder::preTick(Game& game)
 
 void NormalStatsRecorder::tick(Game& game)
 {
+	if (speculative) return;
 	auto frameEnd = std::chrono::steady_clock::now();
 	processTimeTotal += std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart).count();
 
@@ -195,6 +203,7 @@ void NormalStatsRecorder::finish(Game& game)
 
 void NormalStatsRecorder::aiProcessTime(Worm* worm, std::chrono::nanoseconds time)
 {
+	if (speculative) return;
 	WormStats& w = worms[worm->index];
 	w.aiProcessTime += time;
 }

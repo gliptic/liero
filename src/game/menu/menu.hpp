@@ -139,6 +139,15 @@ struct Menu
 		return selection_;
 	}
 
+	// Used by the rollback weapon-select snapshot restore. Sets the
+	// selection_ field directly, bypassing visibility/scroll adjustments.
+	// Callers are expected to also restore topItem/bottomItem from the
+	// same snapshot.
+	void setSelection(int newSelection)
+	{
+		selection_ = newSelection;
+	}
+
 	MenuItem* selected()
 	{
 		if (!isSelectionValid())

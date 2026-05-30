@@ -1,6 +1,7 @@
 #include "transport.hpp"
 #include "iceAgent.hpp"
 
+#include <cstdlib>
 #include <cstring>
 #include <cstdio>
 #include <atomic>
@@ -14,9 +15,26 @@
 #include <arpa/inet.h>
 #endif
 
-static constexpr int NUM_CHANNELS = 2;
+static void writeU32(uint8_t* p, uint32_t v) { std::memcpy(p, &v, 4); }
+static void writeI32(uint8_t* p, int32_t v) { std::memcpy(p, &v, 4); }
+static uint32_t readU32(const uint8_t* p) {
+  uint32_t v;
+  std::memcpy(&v, p, 4);
+  return v;
+}
+static int32_t readI32(const uint8_t* p) {
+  int32_t v;
+  std::memcpy(&v, p, 4);
+  return v;
+}
+
+static constexpr int NUM_CHANNELS = 3;
 static constexpr int CHANNEL_RELIABLE = 0;
 static constexpr int CHANNEL_UNRELIABLE = 1;
+// Rollback PacketInputBatch: unreliable + sequenced. Newer batches
+// supersede older; redundancy in the payload (K = MaxRollback + 1
+// frames per batch) covers single-packet loss without retransmit.
+static constexpr int CHANNEL_UNRELIABLE_SEQUENCED = 2;
 
 // Single active transport pointer. Only one ENet host exists per process.
 static std::atomic<NetTransport*> sActiveTransport{nullptr};
@@ -231,6 +249,37 @@ bool NetTransport::poll() {
           break;
         }
 
+        // Behind OPENLIERO_CHECKSUM_LOG=1: count received packet types
+        // so we can tell whether checksum packets are reaching the wire
+        // at all (vs being lost in the ICE bridge or never sent).
+        if (len >= 1) {
+          static const bool logEnabled = []() {
+            char const* e = std::getenv("OPENLIERO_CHECKSUM_LOG");
+            return e && *e && *e != '0';
+          }();
+          if (logEnabled) {
+            static uint64_t cntInput = 0, cntBatch = 0, cntChecksum = 0,
+                            cntOther = 0;
+            switch (data[0]) {
+              case PacketInput: ++cntInput; break;
+              case PacketInputBatch: ++cntBatch; break;
+              case PacketChecksum: ++cntChecksum; break;
+              default: ++cntOther; break;
+            }
+            uint64_t total =
+                cntInput + cntBatch + cntChecksum + cntOther;
+            if (total > 0 && total % 140 == 0) {
+              std::fprintf(stderr,
+                           "[transport rx] input=%llu batch=%llu "
+                           "checksum=%llu other=%llu\n",
+                           (unsigned long long)cntInput,
+                           (unsigned long long)cntBatch,
+                           (unsigned long long)cntChecksum,
+                           (unsigned long long)cntOther);
+            }
+          }
+        }
+
         if (len >= 1) {
           switch (data[0]) {
             case PacketInput:
@@ -240,33 +289,98 @@ bool NetTransport::poll() {
                 onRemoteInput(frame, data[5]);
               }
               break;
+            case PacketInputBatch:
+              // [type:1][gen:1][baseFrame:u32 LE][count:u8][localDelta:u8]
+              // [input[count]:u8]. Validate that localDelta is in range
+              // (< count) and that the payload length matches count
+              // exactly — anything else is malformed or a version drift.
+              if (len >= 8 && onRemoteInputBatch) {
+                uint8_t gen = data[1];
+                uint32_t baseFrame;
+                std::memcpy(&baseFrame, data + 2, 4);
+                uint8_t count = data[6];
+                uint8_t localDelta = data[7];
+                if (count == 0 || len != size_t{8} + count) break;
+                if (localDelta >= count) break;
+                uint32_t remoteLocalFrame = baseFrame + localDelta;
+                onRemoteInputBatch(gen, baseFrame, count, data + 8,
+                                   remoteLocalFrame);
+              }
+              break;
             case PacketHandshake:
-              if (len == 9 && onHandshake) {
+              // [type:1][version:1][seed:4][hash:4] = 10 B.
+              if (len == 10 && onHandshake) {
+                if (data[1] != kProtocolVersion) {
+                  // Loud on stderr: a silent drop here surfaces as the
+                  // session sitting in Handshaking forever, which is
+                  // hard to attribute to a version mismatch. Surface
+                  // the actual cause so mixed-version test setups are
+                  // diagnosable immediately.
+                  std::fprintf(stderr,
+                               "[transport] handshake protocol version "
+                               "mismatch: peer=%u local=%u — peers must "
+                               "be on the same build\n",
+                               (unsigned)data[1], (unsigned)kProtocolVersion);
+                  break;
+                }
                 uint32_t seed, hash;
-                std::memcpy(&seed, data + 1, 4);
-                std::memcpy(&hash, data + 5, 4);
+                std::memcpy(&seed, data + 2, 4);
+                std::memcpy(&hash, data + 6, 4);
                 onHandshake(seed, hash);
               }
               break;
             case PacketChecksum:
-              if (len == 9 && onChecksum) {
+              // [type:1][gen:1][frame:u32 LE][checksum:u32 LE] = 10 B.
+              if (len == 10 && onChecksum) {
+                uint8_t gen = data[1];
                 uint32_t frame, checksum;
-                std::memcpy(&frame, data + 1, 4);
-                std::memcpy(&checksum, data + 5, 4);
-                onChecksum(frame, checksum);
+                std::memcpy(&frame, data + 2, 4);
+                std::memcpy(&checksum, data + 6, 4);
+                onChecksum(gen, frame, checksum);
               }
               break;
             case PacketPlayerInfo:
-              if (len == 1 + sizeof(PlayerInfo) && onPlayerInfo) {
-                PlayerInfo info;
-                std::memcpy(&info, data + 1, sizeof(PlayerInfo));
+              if (len == 1 + kPlayerInfoWireSize && onPlayerInfo) {
+                PlayerInfo info{};
+                const uint8_t* p = data + 1;
+                for (int i = 0; i < 5; ++i, p += 4)
+                  info.weapons[i] = readU32(p);
+                info.color = readI32(p);
+                p += 4;
+                for (int i = 0; i < 3; ++i, p += 4) info.rgb[i] = readI32(p);
+                std::memcpy(info.name, p, 24);
                 onPlayerInfo(info);
               }
               break;
             case PacketMatchSettings:
-              if (len == 1 + sizeof(MatchSettingsData) && onMatchSettings) {
-                MatchSettingsData msd;
-                std::memcpy(&msd, data + 1, sizeof(MatchSettingsData));
+              if (len == 1 + kMatchSettingsWireSize && onMatchSettings) {
+                MatchSettingsData msd{};
+                const uint8_t* p = data + 1;
+                msd.lives = readI32(p);
+                p += 4;
+                msd.loadingTime = readI32(p);
+                p += 4;
+                msd.gameMode = readU32(p);
+                p += 4;
+                msd.blood = readI32(p);
+                p += 4;
+                msd.maxBonuses = readI32(p);
+                p += 4;
+                msd.timeToLose = readI32(p);
+                p += 4;
+                msd.flagsToWin = readI32(p);
+                p += 4;
+                msd.loadChange = *p++;
+                for (int i = 0; i < 40; ++i, p += 4)
+                  msd.weapTable[i] = readU32(p);
+                msd.regenerateLevel = *p++;
+                msd.shadow = *p++;
+                msd.namesOnBonuses = *p++;
+                msd.bloodParticleMax = readI32(p);
+                p += 4;
+                msd.zoneTimeout = readI32(p);
+                p += 4;
+                msd.inputDelay = readI32(p);
                 onMatchSettings(msd);
               }
               break;
@@ -297,6 +411,9 @@ bool NetTransport::poll() {
               break;
             case PacketEndMatch:
               if (onEndMatch) onEndMatch();
+              break;
+            case PacketPeerLeft:
+              if (onPeerLeft) onPeerLeft();
               break;
             case PacketTcInfo:
               if (len >= 5 && onTcInfo) {
@@ -354,11 +471,43 @@ void NetTransport::sendInput(uint32_t frame, uint8_t input) {
   sendPacket(buf, sizeof(buf));
 }
 
-void NetTransport::sendChecksum(uint32_t frame, uint32_t checksum) {
-  uint8_t buf[9];
+void NetTransport::sendInputBatch(uint8_t generation, uint32_t baseFrame,
+                                  uint8_t count, uint8_t localDelta,
+                                  uint8_t const* inputs) {
+  if (!peer_ || count == 0 || localDelta >= count) return;
+  // Cap to a defensive maximum so a misuse can't blow the stack
+  // buffer. Rollback uses count = kMaxRollback + 1 (= 8); accept
+  // anything up to 64 for headroom.
+  static constexpr uint8_t kMaxCount = 64;
+  if (count > kMaxCount) return;
+
+  uint8_t buf[8 + kMaxCount];
+  buf[0] = PacketInputBatch;
+  buf[1] = generation;
+  std::memcpy(buf + 2, &baseFrame, 4);
+  buf[6] = count;
+  buf[7] = localDelta;
+  std::memcpy(buf + 8, inputs, count);
+
+  size_t len = size_t{8} + count;
+  // ENet flag 0 = unreliable but sequenced — newer batches supersede
+  // older ones at the channel level, so a stale duplicate after a
+  // newer arrival is dropped before reaching the application. Within
+  // a batch we still de-dup at injectRemoteInput against
+  // confirmedSimFrame_.
+  ENetPacket* packet = enet_packet_create(buf, len, 0);
+  if (!packet) return;
+  if (enet_peer_send(peer_, CHANNEL_UNRELIABLE_SEQUENCED, packet) < 0)
+    enet_packet_destroy(packet);
+}
+
+void NetTransport::sendChecksum(uint8_t generation, uint32_t frame,
+                                uint32_t checksum) {
+  uint8_t buf[10];
   buf[0] = PacketChecksum;
-  std::memcpy(buf + 1, &frame, 4);
-  std::memcpy(buf + 5, &checksum, 4);
+  buf[1] = generation;
+  std::memcpy(buf + 2, &frame, 4);
+  std::memcpy(buf + 6, &checksum, 4);
 
   if (!peer_) return;
   ENetPacket* packet =
@@ -367,24 +516,54 @@ void NetTransport::sendChecksum(uint32_t frame, uint32_t checksum) {
 }
 
 void NetTransport::sendHandshake(uint32_t seed, uint32_t settingsHash) {
-  uint8_t buf[9];
+  uint8_t buf[10];
   buf[0] = PacketHandshake;
-  std::memcpy(buf + 1, &seed, 4);
-  std::memcpy(buf + 5, &settingsHash, 4);
+  buf[1] = kProtocolVersion;
+  std::memcpy(buf + 2, &seed, 4);
+  std::memcpy(buf + 6, &settingsHash, 4);
   sendPacket(buf, sizeof(buf));
 }
 
 void NetTransport::sendPlayerInfo(const PlayerInfo& info) {
-  uint8_t buf[1 + sizeof(PlayerInfo)];
+  uint8_t buf[1 + kPlayerInfoWireSize];
   buf[0] = PacketPlayerInfo;
-  std::memcpy(buf + 1, &info, sizeof(PlayerInfo));
+  uint8_t* p = buf + 1;
+  for (int i = 0; i < 5; ++i, p += 4) writeU32(p, info.weapons[i]);
+  writeI32(p, info.color);
+  p += 4;
+  for (int i = 0; i < 3; ++i, p += 4) writeI32(p, info.rgb[i]);
+  std::memcpy(p, info.name, 24);
   sendPacket(buf, sizeof(buf));
 }
 
 void NetTransport::sendMatchSettings(const MatchSettingsData& data) {
-  uint8_t buf[1 + sizeof(MatchSettingsData)];
+  uint8_t buf[1 + kMatchSettingsWireSize];
   buf[0] = PacketMatchSettings;
-  std::memcpy(buf + 1, &data, sizeof(MatchSettingsData));
+  uint8_t* p = buf + 1;
+  writeI32(p, data.lives);
+  p += 4;
+  writeI32(p, data.loadingTime);
+  p += 4;
+  writeU32(p, data.gameMode);
+  p += 4;
+  writeI32(p, data.blood);
+  p += 4;
+  writeI32(p, data.maxBonuses);
+  p += 4;
+  writeI32(p, data.timeToLose);
+  p += 4;
+  writeI32(p, data.flagsToWin);
+  p += 4;
+  *p++ = data.loadChange;
+  for (int i = 0; i < 40; ++i, p += 4) writeU32(p, data.weapTable[i]);
+  *p++ = data.regenerateLevel;
+  *p++ = data.shadow;
+  *p++ = data.namesOnBonuses;
+  writeI32(p, data.bloodParticleMax);
+  p += 4;
+  writeI32(p, data.zoneTimeout);
+  p += 4;
+  writeI32(p, data.inputDelay);
   sendPacket(buf, sizeof(buf));
 }
 
@@ -429,6 +608,11 @@ void NetTransport::sendRematchLevel(bool randomLevel, const std::string& levelFi
 
 void NetTransport::sendEndMatch() {
   uint8_t buf[1] = {PacketEndMatch};
+  sendPacket(buf, sizeof(buf));
+}
+
+void NetTransport::sendPeerLeft() {
+  uint8_t buf[1] = {PacketPeerLeft};
   sendPacket(buf, sizeof(buf));
 }
 

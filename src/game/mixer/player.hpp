@@ -15,6 +15,7 @@ struct SoundPlayer
 
 	void play(int sound, void* id = 0, int loops = 0)
 	{
+		if (speculative) return;
 		if (sound >= 0)
 			playImpl(sound, id, loops);
 	}
@@ -23,6 +24,11 @@ struct SoundPlayer
 
 	virtual bool isPlaying(void* id) = 0;
 	virtual void stop(void* id) = 0;
+
+	// When true, play()/stop() are suppressed but isPlaying() passes
+	// through. Set during predicted/resim frames to avoid duplicate
+	// sound emission.
+	bool speculative = false;
 
 protected:
 	virtual void playImpl(int sound, void* id, int loops) = 0;
@@ -72,6 +78,7 @@ struct RecordSoundPlayer : SoundPlayer
 
 	void stop(void* id)
 	{
+		if (speculative) return;
 		sfx_mixer_stop(mixer, id);
 	}
 

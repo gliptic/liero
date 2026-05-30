@@ -9,6 +9,8 @@ struct Renderer;
 
 struct StatsRecorder
 {
+	virtual ~StatsRecorder() = default;
+
 	virtual void damagePotential(Worm* byWorm, WormWeapon* weapon, int hp);
 	virtual void damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp, bool hasHit);
 
@@ -22,6 +24,10 @@ struct StatsRecorder
 	virtual void finish(Game& game);
 
 	virtual void aiProcessTime(Worm* worm, std::chrono::nanoseconds time);
+
+	// When true, all recording is suppressed. Set during predicted /
+	// resim frames to avoid double-counting.
+	bool speculative = false;
 };
 
 struct WeaponStats

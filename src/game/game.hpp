@@ -81,7 +81,28 @@ struct Game
 	void doHealing(Worm& w, int amount);
 	void postClone(Game& original, bool complete = false);
 
+	// Full mid-game state snapshot (cereal-based). Round-trips every
+	// sim-affecting field; correctness oracle for the fast path.
+	void saveSnapshot(std::vector<uint8_t>& out) const;
+	void loadSnapshot(std::vector<uint8_t> const& in);
+
+	// Fast in-memory snapshot path used by the rollback ring buffer.
+	// Writes/reads directly into a pre-allocated GameSnapshot — no
+	// serialisation, no allocation in the steady state.
+	void saveSnapshotFast(struct GameSnapshot& out) const;
+	void loadSnapshotFast(struct GameSnapshot const& in);
+
 	void spawnZone();
+
+	// While speculative is true, sim-driven side effects
+	// (SoundPlayer::play/stop, StatsRecorder writes) are suppressed.
+	// Set during predicted frames and during rollback resim.
+	void setSpeculative(bool s)
+	{
+		speculative = s;
+		if (soundPlayer) soundPlayer->speculative = s;
+		if (statsRecorder) statsRecorder->speculative = s;
+	}
 
 	Material pixelMat(int x, int y)
 	{
@@ -128,10 +149,19 @@ struct Game
 	BObjectList bobjects;
 
 	bool quickSim;
+
+	// True during predicted/resim frames. Mirrored onto soundPlayer /
+	// statsRecorder via setSpeculative(). Read by Game-internal code
+	// that short-circuits a side effect at its source.
+	bool speculative = false;
 };
 
 bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x, int y);
 
-// Lightweight checksum of game state for desync detection.
-// Covers RNG state + worm positions/velocities.
-uint32_t fastGameChecksum(Game& game);
+// Checksum of game state for desync detection. Folds in RNG state,
+// worm pos/vel/health/lives/ammo/aim, projectile pools, level damage,
+// and control state so visible-but-silent divergences (e.g. mid-air
+// projectile drift with worm position still matching) trip the
+// receiver's checksum comparison instead of going undetected. Used
+// by both the rollback controller and the replay format.
+uint32_t wideRollbackChecksum(Game& game);
