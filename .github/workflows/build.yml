@@ -25,6 +25,8 @@ jobs:
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    env:
+      CERT_AVAILABLE: ${{ secrets.WINDOWS_CERT_PFX_BASE64 != '' }}
 
     strategy:
       fail-fast: false
@@ -162,7 +164,7 @@ jobs:
         run: cmake --install build/windows-x64-ci --config Release
 
       - name: Sign EXE (Windows)
-        if: runner.os == 'Windows' && secrets.WINDOWS_CERT_PFX_BASE64 != ''
+        if: runner.os == 'Windows' && env.CERT_AVAILABLE == 'true'
         env:
           CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
           CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
@@ -198,7 +200,7 @@ jobs:
           & $makeappx pack /d msix-staging /p install/openliero.msix /o
 
       - name: Sign MSIX (Windows)
-        if: runner.os == 'Windows' && secrets.WINDOWS_CERT_PFX_BASE64 != ''
+        if: runner.os == 'Windows' && env.CERT_AVAILABLE == 'true'
         env:
           CERT_PFX_BASE64: ${{ secrets.WINDOWS_CERT_PFX_BASE64 }}
           CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
