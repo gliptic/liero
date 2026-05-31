@@ -1,7 +1,39 @@
 ---
-# Enable ALL the things! Except not really
-# misc-non-private-member-variables-in-classes: the options don't do anything
-# modernize-use-nodiscard: too aggressive, attribute is situationally useful
+# Enable everything, then subtract checks that are noisy, stylistic,
+# duplicated across alias families, or fundamentally hostile to a 2D
+# game engine port (C arrays, pointer arithmetic, magic tuning numbers).
+#
+# Disabled categories — and why:
+# * readability-identifier-naming: the original Liero codebase is
+#   camelCase / mixedCase; the check has no rules configured here so it
+#   is silent, but listed explicitly for clarity.
+# * readability-identifier-length: math/graphics code uses x, y, dx, i.
+# * readability-magic-numbers / cppcoreguidelines-avoid-magic-numbers:
+#   game tuning constants are everywhere; extracting them gains no real
+#   safety.
+# * modernize-use-trailing-return-type: cosmetic; LLVM, Qt, KDE,
+#   Chromium all disable it.
+# * *-braces-around-statements, readability-math-missing-parentheses,
+#   readability-implicit-bool-conversion: style preferences.
+# * portability-avoid-pragma-once: we deliberately use #pragma once.
+# * misc-include-cleaner: high false-positive rate against SDL/cereal.
+# * bugprone-easily-swappable-parameters: famous false-positive generator.
+# * performance-enum-size: pedantic; enum layout changes can break
+#   serialization compatibility.
+# * cppcoreguidelines-pro-bounds-* / -pro-type-reinterpret-cast /
+#   -pro-type-vararg / -avoid-c-arrays / -macro-* / -owning-memory /
+#   -non-private-member-variables-in-classes /
+#   -avoid-const-or-ref-data-members / -avoid-non-const-global-variables:
+#   fight C-array, macro and free-function code that a Liero port can't
+#   avoid.
+# * hicpp-signed-bitwise / hicpp-no-array-decay / hicpp-vararg: trigger
+#   on every SDL enum bitmask op and C-interop boundary.
+# * hicpp-* and modernize-* aliases of checks already enabled via
+#   modernize-* or cppcoreguidelines-*: removed to stop double-counting.
+# * misc-non-private-member-variables-in-classes: the options don't do
+#   anything (kept from the original config).
+# * modernize-use-nodiscard: too aggressive, attribute is situationally
+#   useful (kept from the original config).
 Checks: "*,\
   -google-readability-todo,\
   -altera-*,\
@@ -11,7 +43,51 @@ Checks: "*,\
   -llvm-include-order,\
   -llvmlibc-*,\
   -modernize-use-nodiscard,\
-  -misc-non-private-member-variables-in-classes"
+  -misc-non-private-member-variables-in-classes,\
+  -readability-identifier-naming,\
+  -readability-identifier-length,\
+  -readability-magic-numbers,\
+  -readability-braces-around-statements,\
+  -readability-implicit-bool-conversion,\
+  -readability-math-missing-parentheses,\
+  -google-readability-braces-around-statements,\
+  -modernize-use-trailing-return-type,\
+  -modernize-avoid-c-arrays,\
+  -modernize-macro-to-enum,\
+  -portability-avoid-pragma-once,\
+  -misc-include-cleaner,\
+  -bugprone-easily-swappable-parameters,\
+  -performance-enum-size,\
+  -cppcoreguidelines-avoid-magic-numbers,\
+  -cppcoreguidelines-avoid-c-arrays,\
+  -cppcoreguidelines-avoid-const-or-ref-data-members,\
+  -cppcoreguidelines-avoid-non-const-global-variables,\
+  -cppcoreguidelines-macro-usage,\
+  -cppcoreguidelines-macro-to-enum,\
+  -cppcoreguidelines-non-private-member-variables-in-classes,\
+  -cppcoreguidelines-owning-memory,\
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,\
+  -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,\
+  -cppcoreguidelines-pro-bounds-constant-array-index,\
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,\
+  -cppcoreguidelines-pro-type-reinterpret-cast,\
+  -cppcoreguidelines-pro-type-vararg,\
+  -hicpp-avoid-c-arrays,\
+  -hicpp-braces-around-statements,\
+  -hicpp-explicit-conversions,\
+  -hicpp-member-init,\
+  -hicpp-named-parameter,\
+  -hicpp-no-array-decay,\
+  -hicpp-noexcept-move,\
+  -hicpp-signed-bitwise,\
+  -hicpp-special-member-functions,\
+  -hicpp-uppercase-literal-suffix,\
+  -hicpp-use-auto,\
+  -hicpp-use-emplace,\
+  -hicpp-use-equals-default,\
+  -hicpp-use-nullptr,\
+  -hicpp-use-override,\
+  -hicpp-vararg"
 WarningsAsErrors: ''
 CheckOptions:
   - key: 'bugprone-argument-comment.StrictMode'
@@ -45,111 +121,4 @@ CheckOptions:
     value: 'true'
   - key: 'readability-redundant-access-specifiers.CheckFirstDeclaration'
     value: 'true'
-# These seem to be the most common identifier styles
-  - key: 'readability-identifier-naming.AbstractClassCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ClassCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ClassConstantCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ClassMemberCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ClassMethodCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ConstantCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ConstantMemberCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ConstantParameterCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ConstantPointerParameterCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ConstexprFunctionCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ConstexprMethodCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ConstexprVariableCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.EnumCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.EnumConstantCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.FunctionCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.GlobalConstantCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.GlobalConstantPointerCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.GlobalFunctionCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.GlobalPointerCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.GlobalVariableCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.InlineNamespaceCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.LocalConstantCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.LocalConstantPointerCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.LocalPointerCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.LocalVariableCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.MacroDefinitionCase'
-    value: 'UPPER_CASE'
-  - key: 'readability-identifier-naming.MemberCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.MethodCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.NamespaceCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ParameterCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ParameterPackCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.PointerParameterCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.PrivateMemberCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.PrivateMemberPrefix'
-    value: 'm_'
-  - key: 'readability-identifier-naming.PrivateMethodCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ProtectedMemberCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ProtectedMemberPrefix'
-    value: 'm_'
-  - key: 'readability-identifier-naming.ProtectedMethodCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.PublicMemberCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.PublicMethodCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ScopedEnumConstantCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.StaticConstantCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.StaticVariableCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.StructCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.TemplateParameterCase'
-    value: 'CamelCase'
-  - key: 'readability-identifier-naming.TemplateTemplateParameterCase'
-    value: 'CamelCase'
-  - key: 'readability-identifier-naming.TypeAliasCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.TypedefCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.TypeTemplateParameterCase'
-    value: 'CamelCase'
-  - key: 'readability-identifier-naming.UnionCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.ValueTemplateParameterCase'
-    value: 'CamelCase'
-  - key: 'readability-identifier-naming.VariableCase'
-    value: 'lower_case'
-  - key: 'readability-identifier-naming.VirtualMethodCase'
-    value: 'lower_case'
 ...

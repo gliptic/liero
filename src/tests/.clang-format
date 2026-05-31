@@ -1,0 +1,29 @@
+---
+# Tests are written in Google/Chromium-style C++: 2-space indent, no
+# tabs, egyptian braces, space before parens in control statements.
+# Everything else inherits from the project root .clang-format.
+BasedOnStyle: InheritParentConfig
+UseTab: Never
+IndentWidth: 2
+TabWidth: 2
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+...

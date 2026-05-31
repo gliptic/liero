@@ -122,7 +122,8 @@ Polymorphism over how the simulation is driven, all under `Controller` (`control
 
 ## Conventions
 
-- C++ style is enforced by `.clang-format` (tabs, project-specific layout). `.clang-tidy` is opinionated — most checks are on, with explicit opt-outs listed at the top of the file.
+- C++ style: hard tabs at width 4 under `src/game`, `src/tc_tool`, `src/video_tool`. `src/tests/` is 2-space Google-style (override in `src/tests/.clang-format`).
+- `clang-tidy` and `clang-format` both run on PR diffs and have matching local CMake targets: `clang-tidy` / `clang-format` check only lines changed vs `master`; `clang-tidy-all` / `clang-format-all` scan the whole tree for triage. clang-tidy blocks merge; clang-format is advisory (`continue-on-error: true`). Both tools tolerate pre-existing drift since only changed lines are gated, so new code stays clean. `.clang-tidy` enables `*` minus a list of subtractions documented at the top of the file.
 - Don't edit generated files: `src/game/metadata.cpp`, anything in `build/`, `install/`, or `tools/vcpkg/vcpkg/`.
 - Determinism is load-bearing. Anything called from `Game::processFrame` (or via a controller's `process()`) must be fully deterministic across platforms — no `rand()`, no time, no floats with platform-dependent behavior, no hash-iteration order. The simulation uses the fixed-point math in `src/game/math.hpp`. If you change sim code, run `desync_fuzzer` and the `test_rollback_*` / `test_determinism` suites.
 - New tests need a matching `add_executable` + `catch_discover_tests` block in `CMakeLists.txt`; tests that read `data/` must set `WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"`.

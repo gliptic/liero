@@ -1,0 +1,32 @@
+---
+
+name: Clang-Format
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    # Advisory only: surface formatting suggestions on the PR without
+    # blocking merge. Flip to `false` once the codebase is clean.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends clang-format
+
+      - name: Run clang-format on PR diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: ./scripts/clang-format-diff.sh "$BASE_SHA"
