@@ -20,3 +20,6 @@ server/openliero-relay
 ._*
 .DS_Store
 /Testing/
+
+# Claude
+/.claude/worktrees/
