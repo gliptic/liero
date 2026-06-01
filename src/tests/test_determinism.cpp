@@ -112,8 +112,7 @@ TEST_CASE("Dual simulation produces identical state", "[determinism]") {
     uint32_t hashA = hashGameState(*f.gameA);
     uint32_t hashB = hashGameState(*f.gameB);
 
-    INFO("Desync at frame " << frame << ": hashA=0x" << std::hex << hashA
-                            << " hashB=0x" << hashB);
+    INFO("Desync at frame " << frame << ": hashA=0x" << std::hex << hashA << " hashB=0x" << hashB);
     REQUIRE(hashA == hashB);
   }
 }
@@ -143,8 +142,7 @@ TEST_CASE("Simulation is reproducible across runs", "[determinism]") {
   REQUIRE(hash1 == hash2);
 }
 
-TEST_CASE("Same inputs produce same state regardless of construction order",
-          "[determinism]") {
+TEST_CASE("Same inputs produce same state regardless of construction order", "[determinism]") {
   // Construct games in different order but with same seed — should be identical
   auto common = std::make_shared<Common>();
   FsNode tcRoot(FsNode("data") / "TC" / "openliero");
@@ -241,7 +239,7 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
   settings->blood = 100;
 
   // Use multiple seeds to cover different level layouts
-  uint32_t seeds[] = { 42, 1337, 99999, 0xDEAD, 0xBEEF };
+  uint32_t seeds[] = {42, 1337, 99999, 0xDEAD, 0xBEEF};
 
   for (uint32_t seed : seeds) {
     auto spA = std::make_shared<NullSoundPlayer>();
@@ -296,11 +294,9 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
       for (int idx = 0; idx < 2; ++idx) {
         uint32_t input = inputRng() & 0x7f;
         // Bias toward combat: 60% chance fire is held
-        if ((inputRng() % 10) < 6)
-          input |= (1 << 4);  // Fire bit
+        if ((inputRng() % 10) < 6) input |= (1 << 4);  // Fire bit
         // 40% chance of movement toward opponent
-        if ((inputRng() % 10) < 4)
-          input |= (1 << (idx == 0 ? 1 : 0));  // Left/Right toward other
+        if ((inputRng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));  // Left/Right toward other
 
         gameA.worms[idx]->controlStates.unpack(input);
         gameB.worms[idx]->controlStates.unpack(input);
@@ -312,8 +308,7 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
       // Track deaths for info output — killedTimer is set to 150 on death,
       // then decremented each frame, so 149 means "just died this frame"
       for (auto const& w : gameA.worms) {
-        if (!w->visible && w->killedTimer == Worm::KilledTimerInitial - 1)
-          ++deathCount;
+        if (!w->visible && w->killedTimer == Worm::KilledTimerInitial - 1) ++deathCount;
       }
 
       // Check state every frame
@@ -349,12 +344,26 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
 
         // Check object counts
         int nobjectsA = 0, nobjectsB = 0;
-        { auto r = gameA.nobjects.all(); NObject* n; while ((n = r.next())) ++nobjectsA; }
-        { auto r = gameB.nobjects.all(); NObject* n; while ((n = r.next())) ++nobjectsB; }
+        {
+          auto r = gameA.nobjects.all();
+          NObject* n;
+          while ((n = r.next())) ++nobjectsA;
+        }
+        {
+          auto r = gameB.nobjects.all();
+          NObject* n;
+          while ((n = r.next())) ++nobjectsB;
+        }
 
         int bobjectsA = 0, bobjectsB = 0;
-        { auto br = gameA.bobjects.begin(); for (; br != gameA.bobjects.end(); ++br) ++bobjectsA; }
-        { auto br = gameB.bobjects.begin(); for (; br != gameB.bobjects.end(); ++br) ++bobjectsB; }
+        {
+          auto br = gameA.bobjects.begin();
+          for (; br != gameA.bobjects.end(); ++br) ++bobjectsA;
+        }
+        {
+          auto br = gameB.bobjects.begin();
+          for (; br != gameB.bobjects.end(); ++br) ++bobjectsB;
+        }
 
         // Deep compare BObjects
         bool bobjectsMatch = true;
@@ -365,7 +374,7 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
           for (; brA != gameA.bobjects.end() && brB != gameB.bobjects.end(); ++brA, ++brB, ++idx) {
             if (brA->pos.x != brB->pos.x || brA->pos.y != brB->pos.y) {
               INFO("  BObject[" << idx << "] pos differs: A=(" << brA->pos.x << "," << brA->pos.y
-                   << ") B=(" << brB->pos.x << "," << brB->pos.y << ")");
+                                << ") B=(" << brB->pos.x << "," << brB->pos.y << ")");
               bobjectsMatch = false;
               break;
             }
@@ -375,15 +384,17 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         // Deep compare NObjects
         bool nobjectsMatch = true;
         {
-          auto rA = gameA.nobjects.all(); auto rB = gameB.nobjects.all();
-          NObject *nA, *nB; int idx = 0;
+          auto rA = gameA.nobjects.all();
+          auto rB = gameB.nobjects.all();
+          NObject *nA, *nB;
+          int idx = 0;
           while ((nA = rA.next()) && (nB = rB.next())) {
-            if (nA->pos.x != nB->pos.x || nA->pos.y != nB->pos.y ||
-                nA->vel.x != nB->vel.x || nA->vel.y != nB->vel.y) {
+            if (nA->pos.x != nB->pos.x || nA->pos.y != nB->pos.y || nA->vel.x != nB->vel.x ||
+                nA->vel.y != nB->vel.y) {
               INFO("  NObject[" << idx << "] differs: A pos=(" << nA->pos.x << "," << nA->pos.y
-                   << ") vel=(" << nA->vel.x << "," << nA->vel.y
-                   << ") B pos=(" << nB->pos.x << "," << nB->pos.y
-                   << ") vel=(" << nB->vel.x << "," << nB->vel.y << ")");
+                                << ") vel=(" << nA->vel.x << "," << nA->vel.y << ") B pos=("
+                                << nB->pos.x << "," << nB->pos.y << ") vel=(" << nB->vel.x << ","
+                                << nB->vel.y << ")");
               nobjectsMatch = false;
               break;
             }
@@ -395,19 +406,27 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         bool wobjectsMatch = true;
         int wobjectsA = 0, wobjectsB = 0;
         {
-          auto rA = gameA.wobjects.all(); auto rB = gameB.wobjects.all();
-          WObject *wA, *wB; int idx = 0;
-          while ((wA = rA.next())) { ++wobjectsA; (void)wA; }
-          while ((wB = rB.next())) { ++wobjectsB; (void)wB; }
-          rA = gameA.wobjects.all(); rB = gameB.wobjects.all();
+          auto rA = gameA.wobjects.all();
+          auto rB = gameB.wobjects.all();
+          WObject *wA, *wB;
+          int idx = 0;
+          while ((wA = rA.next())) {
+            ++wobjectsA;
+            (void)wA;
+          }
+          while ((wB = rB.next())) {
+            ++wobjectsB;
+            (void)wB;
+          }
+          rA = gameA.wobjects.all();
+          rB = gameB.wobjects.all();
           while ((wA = rA.next()) && (wB = rB.next())) {
-            if (wA->pos.x != wB->pos.x || wA->pos.y != wB->pos.y ||
-                wA->vel.x != wB->vel.x || wA->vel.y != wB->vel.y ||
-                wA->curFrame != wB->curFrame || wA->timeLeft != wB->timeLeft) {
+            if (wA->pos.x != wB->pos.x || wA->pos.y != wB->pos.y || wA->vel.x != wB->vel.x ||
+                wA->vel.y != wB->vel.y || wA->curFrame != wB->curFrame ||
+                wA->timeLeft != wB->timeLeft) {
               INFO("  WObject[" << idx << "] differs: A pos=(" << wA->pos.x << "," << wA->pos.y
-                   << ") tl=" << wA->timeLeft
-                   << " B pos=(" << wB->pos.x << "," << wB->pos.y
-                   << ") tl=" << wB->timeLeft);
+                                << ") tl=" << wA->timeLeft << " B pos=(" << wB->pos.x << ","
+                                << wB->pos.y << ") tl=" << wB->timeLeft);
               wobjectsMatch = false;
               break;
             }
@@ -419,15 +438,22 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         bool sobjectsMatch = true;
         int sobjectsA = 0, sobjectsB = 0;
         {
-          auto rA = gameA.sobjects.all(); auto rB = gameB.sobjects.all();
-          SObject *sA, *sB; int idx = 0;
-          while ((sA = rA.next())) { ++sobjectsA; }
-          while ((sB = rB.next())) { ++sobjectsB; }
-          rA = gameA.sobjects.all(); rB = gameB.sobjects.all();
+          auto rA = gameA.sobjects.all();
+          auto rB = gameB.sobjects.all();
+          SObject *sA, *sB;
+          int idx = 0;
+          while ((sA = rA.next())) {
+            ++sobjectsA;
+          }
+          while ((sB = rB.next())) {
+            ++sobjectsB;
+          }
+          rA = gameA.sobjects.all();
+          rB = gameB.sobjects.all();
           while ((sA = rA.next()) && (sB = rB.next())) {
             if (sA->id != sB->id || sA->curFrame != sB->curFrame) {
               INFO("  SObject[" << idx << "] differs: A id=" << sA->id << " frame=" << sA->curFrame
-                   << " B id=" << sB->id << " frame=" << sB->curFrame);
+                                << " B id=" << sB->id << " frame=" << sB->curFrame);
               sobjectsMatch = false;
               break;
             }
@@ -439,13 +465,21 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         bool bonusesMatch = true;
         int bonusesA = 0, bonusesB = 0;
         {
-          auto rA = gameA.bonuses.all(); auto rB = gameB.bonuses.all();
-          Bonus *bA, *bB; int idx = 0;
-          while ((bA = rA.next())) { ++bonusesA; }
-          while ((bB = rB.next())) { ++bonusesB; }
-          rA = gameA.bonuses.all(); rB = gameB.bonuses.all();
+          auto rA = gameA.bonuses.all();
+          auto rB = gameB.bonuses.all();
+          Bonus *bA, *bB;
+          int idx = 0;
+          while ((bA = rA.next())) {
+            ++bonusesA;
+          }
+          while ((bB = rB.next())) {
+            ++bonusesB;
+          }
+          rA = gameA.bonuses.all();
+          rB = gameB.bonuses.all();
           while ((bA = rA.next()) && (bB = rB.next())) {
-            if (bA->x != bB->x || bA->y != bB->y || bA->timer != bB->timer || bA->weapon != bB->weapon) {
+            if (bA->x != bB->x || bA->y != bB->y || bA->timer != bB->timer ||
+                bA->weapon != bB->weapon) {
               INFO("  Bonus[" << idx << "] differs");
               bonusesMatch = false;
               break;
@@ -457,44 +491,39 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         // Deep compare worm weapons
         bool weaponsMatch = true;
         for (size_t wi = 0; wi < gameA.worms.size(); ++wi) {
-          auto const& wA = gameA.worms[wi]; auto const& wB = gameB.worms[wi];
+          auto const& wA = gameA.worms[wi];
+          auto const& wB = gameB.worms[wi];
           for (int i = 0; i < NUM_WEAPONS; ++i) {
             if (wA->weapons[i].ammo != wB->weapons[i].ammo ||
                 wA->weapons[i].delayLeft != wB->weapons[i].delayLeft ||
                 wA->weapons[i].loadingLeft != wB->weapons[i].loadingLeft) {
-              INFO("  Worm[" << wi << "].weapons[" << i << "] differs: A ammo=" << wA->weapons[i].ammo
-                   << " delay=" << wA->weapons[i].delayLeft << " loading=" << wA->weapons[i].loadingLeft
-                   << " B ammo=" << wB->weapons[i].ammo
-                   << " delay=" << wB->weapons[i].delayLeft << " loading=" << wB->weapons[i].loadingLeft);
+              INFO("  Worm[" << wi << "].weapons[" << i << "] differs: A ammo="
+                             << wA->weapons[i].ammo << " delay=" << wA->weapons[i].delayLeft
+                             << " loading=" << wA->weapons[i].loadingLeft << " B ammo="
+                             << wB->weapons[i].ammo << " delay=" << wB->weapons[i].delayLeft
+                             << " loading=" << wB->weapons[i].loadingLeft);
               weaponsMatch = false;
             }
           }
         }
 
-        INFO("Desync at frame " << frame << " (seed=" << seed
-             << ", deaths=" << deathCount << ")"
-             << "\n  RNG match=" << rngMatch
-             << " Worms match=" << wormsMatch
-             << " Level match=" << levelMatch
-             << "\n  NObjects: A=" << nobjectsA << " B=" << nobjectsB
-             << " match=" << nobjectsMatch
-             << "\n  BObjects: A=" << bobjectsA << " B=" << bobjectsB
-             << " match=" << bobjectsMatch
-             << "\n  WObjects: A=" << wobjectsA << " B=" << wobjectsB
-             << " match=" << wobjectsMatch
-             << "\n  SObjects: A=" << sobjectsA << " B=" << sobjectsB
-             << " match=" << sobjectsMatch
-             << "\n  Bonuses: A=" << bonusesA << " B=" << bonusesB
-             << " match=" << bonusesMatch
-             << "\n  Weapons match=" << weaponsMatch
-             << "\n  hashA=0x" << std::hex << hashA
-             << " hashB=0x" << hashB);
+        INFO("Desync at frame " << frame << " (seed=" << seed << ", deaths=" << deathCount << ")"
+                                << "\n  RNG match=" << rngMatch << " Worms match=" << wormsMatch
+                                << " Level match=" << levelMatch << "\n  NObjects: A=" << nobjectsA
+                                << " B=" << nobjectsB << " match=" << nobjectsMatch
+                                << "\n  BObjects: A=" << bobjectsA << " B=" << bobjectsB
+                                << " match=" << bobjectsMatch << "\n  WObjects: A=" << wobjectsA
+                                << " B=" << wobjectsB << " match=" << wobjectsMatch
+                                << "\n  SObjects: A=" << sobjectsA << " B=" << sobjectsB
+                                << " match=" << sobjectsMatch << "\n  Bonuses: A=" << bonusesA
+                                << " B=" << bonusesB << " match=" << bonusesMatch
+                                << "\n  Weapons match=" << weaponsMatch << "\n  hashA=0x"
+                                << std::hex << hashA << " hashB=0x" << hashB);
         REQUIRE(hashA == hashB);
       }
 
       // Stop if game is over
-      if (gameA.isGameOver())
-        break;
+      if (gameA.isGameOver()) break;
     }
 
     INFO("Seed " << seed << " completed: " << deathCount << " deaths observed");

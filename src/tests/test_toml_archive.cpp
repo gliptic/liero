@@ -26,8 +26,7 @@ struct Primitives {
 
   template <class Archive>
   void serialize(Archive& ar) {
-    ar(CEREAL_NVP(i), CEREAL_NVP(u), CEREAL_NVP(b), CEREAL_NVP(s),
-       CEREAL_NVP(d));
+    ar(CEREAL_NVP(i), CEREAL_NVP(u), CEREAL_NVP(b), CEREAL_NVP(s), CEREAL_NVP(d));
   }
 
   bool operator==(Primitives const& o) const {
@@ -52,9 +51,7 @@ struct Outer {
   void serialize(Archive& ar) {
     ar(CEREAL_NVP(inner), CEREAL_NVP(flag));
   }
-  bool operator==(Outer const& o) const {
-    return inner == o.inner && flag == o.flag;
-  }
+  bool operator==(Outer const& o) const { return inner == o.inner && flag == o.flag; }
 };
 
 struct ArrayHolder {
@@ -64,9 +61,7 @@ struct ArrayHolder {
   void serialize(Archive& ar) {
     ar(CEREAL_NVP(ints), CEREAL_NVP(strs));
   }
-  bool operator==(ArrayHolder const& o) const {
-    return ints == o.ints && strs == o.strs;
-  }
+  bool operator==(ArrayHolder const& o) const { return ints == o.ints && strs == o.strs; }
 };
 
 struct ObjectArrayHolder {
@@ -75,9 +70,7 @@ struct ObjectArrayHolder {
   void serialize(Archive& ar) {
     ar(CEREAL_NVP(items));
   }
-  bool operator==(ObjectArrayHolder const& o) const {
-    return items == o.items;
-  }
+  bool operator==(ObjectArrayHolder const& o) const { return items == o.items; }
 };
 
 struct Versioned {
@@ -87,8 +80,7 @@ struct Versioned {
   template <class Archive>
   void serialize(Archive& ar, std::uint32_t const version) {
     ar(CEREAL_NVP(a));
-    if (version >= 2)
-      ar(CEREAL_NVP(b));
+    if (version >= 2) ar(CEREAL_NVP(b));
   }
 };
 
@@ -175,8 +167,7 @@ TEST_CASE("TomlArchive: missing key keeps default", "[toml_archive]") {
   CHECK(dst.d == 1.25);
 }
 
-TEST_CASE("TomlArchive: versioned type emits and reads version",
-          "[toml_archive]") {
+TEST_CASE("TomlArchive: versioned type emits and reads version", "[toml_archive]") {
   Versioned src{10, 20};
   std::stringstream ss;
   {

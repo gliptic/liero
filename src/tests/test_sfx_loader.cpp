@@ -26,8 +26,7 @@ void put_u32le(std::vector<uint8_t>& buf, uint32_t v) {
 void put_name8(std::vector<uint8_t>& buf, char const* name) {
   uint8_t pad[8] = {0};
   std::size_t n = std::strlen(name);
-  if (n > 8)
-    n = 8;
+  if (n > 8) n = 8;
   std::memcpy(pad, name, n);
   buf.insert(buf.end(), pad, pad + 8);
 }

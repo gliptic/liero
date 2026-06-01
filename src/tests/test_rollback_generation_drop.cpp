@@ -34,8 +34,7 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
 
 }  // namespace
 
-TEST_CASE("Rollback controller drops batches from an older generation",
-          "[rollback][generation]") {
+TEST_CASE("Rollback controller drops batches from an older generation", "[rollback][generation]") {
   auto [common, settings] = makeEnv();
   RollbackController a(common, settings, 0);
   a.setSkipWeaponSelection(true);
@@ -56,8 +55,8 @@ TEST_CASE("Rollback controller drops batches from an older generation",
   uint8_t inputs[8] = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8};
 
   SECTION("older generation is dropped") {
-    a.injectRemoteBatch(/*generation=*/0, /*baseFrame=*/0, /*count=*/8,
-                        inputs, /*remoteLocalFrame=*/3);
+    a.injectRemoteBatch(/*generation=*/0, /*baseFrame=*/0, /*count=*/8, inputs,
+                        /*remoteLocalFrame=*/3);
 
     REQUIRE(a.droppedOldGenerationBatches() == 1);
     // lastKnownRemoteFrame_ stays at its sentinel — a dropped packet
@@ -68,8 +67,8 @@ TEST_CASE("Rollback controller drops batches from an older generation",
   }
 
   SECTION("matching generation is accepted") {
-    a.injectRemoteBatch(/*generation=*/1, /*baseFrame=*/0, /*count=*/8,
-                        inputs, /*remoteLocalFrame=*/3);
+    a.injectRemoteBatch(/*generation=*/1, /*baseFrame=*/0, /*count=*/8, inputs,
+                        /*remoteLocalFrame=*/3);
 
     REQUIRE(a.droppedOldGenerationBatches() == 0);
     REQUIRE(a.lastKnownRemoteFrame() == 3);
@@ -79,8 +78,8 @@ TEST_CASE("Rollback controller drops batches from an older generation",
     // gen+1 batches are buffered until resetForGamePhase bumps
     // generation_. Until then no input is applied and the drop counter
     // doesn't bump.
-    a.injectRemoteBatch(/*generation=*/2, /*baseFrame=*/0, /*count=*/8,
-                        inputs, /*remoteLocalFrame=*/3);
+    a.injectRemoteBatch(/*generation=*/2, /*baseFrame=*/0, /*count=*/8, inputs,
+                        /*remoteLocalFrame=*/3);
 
     REQUIRE(a.droppedOldGenerationBatches() == 0);
     REQUIRE(a.pendingFutureBatchCount() == 1);
@@ -90,8 +89,8 @@ TEST_CASE("Rollback controller drops batches from an older generation",
   SECTION("far-future generation (gen+2 or more) is dropped") {
     // Beyond one phase ahead, the packet describes a simFrame numbering
     // we may never reach in this match. Drop conservatively.
-    a.injectRemoteBatch(/*generation=*/3, /*baseFrame=*/0, /*count=*/8,
-                        inputs, /*remoteLocalFrame=*/3);
+    a.injectRemoteBatch(/*generation=*/3, /*baseFrame=*/0, /*count=*/8, inputs,
+                        /*remoteLocalFrame=*/3);
 
     REQUIRE(a.droppedOldGenerationBatches() == 1);
     REQUIRE(a.pendingFutureBatchCount() == 0);

@@ -10,7 +10,7 @@
 // Candidate address for a peer (discovered via STUN or reported by signaling).
 // Used by the legacy hole-punch path.
 struct PeerCandidate {
-  uint8_t type;      // 4 = IPv4, 6 = IPv6
+  uint8_t type;  // 4 = IPv4, 6 = IPv6
   std::string ip;
   uint16_t port;
 };
@@ -18,15 +18,15 @@ struct PeerCandidate {
 // Client for the openliero signaling server.
 // Uses ENet raw UDP sockets — no WebSocket dependency.
 class SignalingClient {
-public:
+ public:
   enum State {
     Idle,
     Creating,
     Hosting,
     Joining,
     WaitingForPeer,
-    Punching,   // legacy
-    Relaying,   // legacy
+    Punching,  // legacy
+    Relaying,  // legacy
     IceExchanging,
     Failed,
     Done,
@@ -36,8 +36,7 @@ public:
   ~SignalingClient();
 
   bool createRoom(const std::string& serverAddr, uint16_t serverPort);
-  bool joinRoom(const std::string& serverAddr, uint16_t serverPort,
-                const std::string& roomCode);
+  bool joinRoom(const std::string& serverAddr, uint16_t serverPort, const std::string& roomCode);
 
   // Legacy hole-punch methods (kept for transition)
   void reportAddress(uint8_t addrType, const std::string& ip, uint16_t port);
@@ -80,7 +79,7 @@ public:
   std::function<void(const std::string& msg)> onError;
   std::function<void()> onRoomExpired;
 
-private:
+ private:
   bool connect(const std::string& serverAddr, uint16_t serverPort);
   void send(const void* data, size_t len);
   void handleMessage(const uint8_t* data, size_t len);

@@ -1,8 +1,8 @@
 #include "tcArchive.hpp"
 
+#include <miniz.h>
 #include <algorithm>
 #include <cstring>
-#include <miniz.h>
 
 #include "../filesystem.hpp"
 
@@ -22,7 +22,8 @@ void collectFiles(FsNode node, const std::string& prefix,
       collectFiles(child, relPath, out);
     } else {
       try {
-        auto r_ptr = child.toReader(); io::Reader& r = *r_ptr;
+        auto r_ptr = child.toReader();
+        io::Reader& r = *r_ptr;
         std::vector<uint8_t> data;
         uint8_t buf[4096];
         for (;;) {
@@ -94,13 +95,13 @@ std::vector<uint8_t> pack(FsNode root) {
   // Compress
   mz_ulong compBound = mz_compressBound(static_cast<mz_ulong>(raw.size()));
   std::vector<uint8_t> compressed(compBound + 5);  // 1 byte flag + 4 byte uncompressed size
-  compressed[0] = 1;  // compressed flag
+  compressed[0] = 1;                               // compressed flag
   uint32_t rawSize = static_cast<uint32_t>(raw.size());
   std::memcpy(compressed.data() + 1, &rawSize, 4);
 
   mz_ulong compSize = compBound;
-  int status = mz_compress(compressed.data() + 5, &compSize,
-                           raw.data(), static_cast<mz_ulong>(raw.size()));
+  int status =
+      mz_compress(compressed.data() + 5, &compSize, raw.data(), static_cast<mz_ulong>(raw.size()));
   if (status == MZ_OK) {
     compressed.resize(5 + compSize);
   } else {
@@ -129,8 +130,7 @@ std::vector<FileEntry> unpack(const uint8_t* data, size_t len) {
   if (isCompressed) {
     raw.resize(rawSize);
     mz_ulong destLen = rawSize;
-    int status = mz_uncompress(raw.data(), &destLen, data + 5,
-                               static_cast<mz_ulong>(len - 5));
+    int status = mz_uncompress(raw.data(), &destLen, data + 5, static_cast<mz_ulong>(len - 5));
     if (status != MZ_OK) return result;
   } else {
     if (len - 5 < rawSize) return result;

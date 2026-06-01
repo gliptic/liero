@@ -48,8 +48,7 @@ TEST_CASE("Settings round-trip via TOML") {
   original.tc = "customtc";
 
   // Weapon table
-  for (int i = 0; i < 40; ++i)
-    original.weapTable[i] = i % 3;
+  for (int i = 0; i < 40; ++i) original.weapTable[i] = i % 3;
 
   // Worm settings (player 0)
   original.wormSettings[0]->controller = 1;
@@ -94,8 +93,7 @@ TEST_CASE("Settings round-trip via TOML") {
   original.wormSettings[2]->gamepadControls[0] = 10;
 
   // Save to temp file
-  auto tmpPath =
-      std::filesystem::temp_directory_path() / "openliero_test_settings.cfg";
+  auto tmpPath = std::filesystem::temp_directory_path() / "openliero_test_settings.cfg";
   FsNode node(tmpPath.string());
 
   original.save(node, rand);
@@ -138,8 +136,7 @@ TEST_CASE("Settings round-trip via TOML") {
   CHECK(loaded.tc == original.tc);
 
   // Weapon table
-  for (int i = 0; i < 40; ++i)
-    CHECK(loaded.weapTable[i] == original.weapTable[i]);
+  for (int i = 0; i < 40; ++i) CHECK(loaded.weapTable[i] == original.weapTable[i]);
 
   // Player 0
   CHECK(loaded.wormSettings[0]->controller == original.wormSettings[0]->controller);
@@ -200,8 +197,7 @@ TEST_CASE("Settings TOML with comments") {
   original.maxBonuses = 12;
   original.blood = 50;
 
-  auto tmpPath =
-      std::filesystem::temp_directory_path() / "openliero_test_comments.cfg";
+  auto tmpPath = std::filesystem::temp_directory_path() / "openliero_test_comments.cfg";
 
   {
     std::ofstream f(tmpPath);
@@ -272,8 +268,7 @@ TEST_CASE("WormSettings profile round-trip") {
   original.gamepadSerial = "SERIAL123";
   original.gamepadControls[0] = 7;
 
-  auto tmpPath =
-      std::filesystem::temp_directory_path() / "openliero_test_profile.toml";
+  auto tmpPath = std::filesystem::temp_directory_path() / "openliero_test_profile.toml";
 
   // Save
   original.saveProfile(FsNode(tmpPath.string()));

@@ -21,8 +21,7 @@ struct NetTransport {
 
   // Wire sizes for hand-serialized structs (no compiler padding).
   static constexpr size_t kPlayerInfoWireSize = 5 * 4 + 4 + 3 * 4 + 24;
-  static constexpr size_t kMatchSettingsWireSize =
-      4 * 7 + 1 + 40 * 4 + 3 + 4 * 3;
+  static constexpr size_t kMatchSettingsWireSize = 4 * 7 + 1 + 40 * 4 + 3 + 4 * 3;
 
   // Packet types
   enum PacketType : uint8_t {
@@ -81,8 +80,8 @@ struct NetTransport {
   // Connection state
   enum State {
     Disconnected,
-    Listening,     // Host waiting for peer
-    Connecting,    // Client connecting to host
+    Listening,   // Host waiting for peer
+    Connecting,  // Client connecting to host
     Connected,
     Failed,
   };
@@ -127,8 +126,8 @@ struct NetTransport {
   // `generation` is the sender's phase generation; receivers drop
   // older generations. Unreliable-sequenced; receiver dedups against
   // confirmed frames.
-  void sendInputBatch(uint8_t generation, uint32_t baseFrame, uint8_t count,
-                      uint8_t localDelta, uint8_t const* inputs);
+  void sendInputBatch(uint8_t generation, uint32_t baseFrame, uint8_t count, uint8_t localDelta,
+                      uint8_t const* inputs);
   void sendChecksum(uint8_t generation, uint32_t frame, uint32_t checksum);
   void sendHandshake(uint32_t seed, uint32_t settingsHash);
   void sendPlayerInfo(const PlayerInfo& info);
@@ -156,12 +155,11 @@ struct NetTransport {
   // simFrame at send time (= baseFrame + localDelta) — used for
   // frame-advantage tracking. `inputs` is valid only for the duration
   // of the callback; copy if you need to keep it.
-  std::function<void(uint8_t generation, uint32_t baseFrame, uint8_t count,
-                     uint8_t const* inputs, uint32_t remoteLocalFrame)>
+  std::function<void(uint8_t generation, uint32_t baseFrame, uint8_t count, uint8_t const* inputs,
+                     uint32_t remoteLocalFrame)>
       onRemoteInputBatch;
   std::function<void(uint32_t seed, uint32_t settingsHash)> onHandshake;
-  std::function<void(uint8_t generation, uint32_t frame, uint32_t checksum)>
-      onChecksum;
+  std::function<void(uint8_t generation, uint32_t frame, uint32_t checksum)> onChecksum;
   std::function<void(const PlayerInfo& info)> onPlayerInfo;
   std::function<void(const MatchSettingsData& data)> onMatchSettings;
   std::function<void(const void* data, size_t len)> onMapData;

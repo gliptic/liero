@@ -12,11 +12,10 @@
 #include "rand.hpp"
 #include "worm.hpp"
 
-int Common::fireConeOffset
-    [FIRE_CONE_OFFSET_DIRECTION][FIRE_CONE_OFFSET_ANGLE_FRAME]
-    [FIRE_CONE_OFFSET_XY] = {
-        {{-3, 1}, {-4, 0}, {-4, -2}, {-4, -4}, {-3, -5}, {-2, -6}, {0, -6}},
-        {{3, 1}, {4, 0}, {4, -2}, {4, -4}, {3, -5}, {2, -6}, {0, -6}},
+int Common::fireConeOffset[FIRE_CONE_OFFSET_DIRECTION][FIRE_CONE_OFFSET_ANGLE_FRAME]
+                          [FIRE_CONE_OFFSET_XY] = {
+                              {{-3, 1}, {-4, 0}, {-4, -2}, {-4, -4}, {-3, -5}, {-2, -6}, {0, -6}},
+                              {{3, 1}, {4, 0}, {4, -2}, {4, -4}, {3, -5}, {2, -6}, {0, -6}},
 };
 
 int stoneTab[3][4] = {{98, 60, 61, 62}, {63, 75, 85, 86}, {89, 90, 97, 96}};
@@ -238,16 +237,10 @@ void Common::drawTextSmall(Bitmap& scr, char const* str, int x, int y) {
 }
 
 #define CHECK(c) \
-  if (!(c))      \
-  goto fail
+  if (!(c)) goto fail
 
-int readSpriteTga(
-    io::Reader& r,
-    int destImageWidth,
-    int destImageHeight,
-    int destCount,
-    uint8_t* data,
-    Palette* pal) {
+int readSpriteTga(io::Reader& r, int destImageWidth, int destImageHeight, int destCount,
+                  uint8_t* data, Palette* pal) {
   auto idLen = r.get();
   CHECK(r.get() == 1);
   CHECK(r.get() == 1);
@@ -296,26 +289,25 @@ fail:
 }
 
 int readSpriteTga(io::Reader& r, SpriteSet& ss, Palette* pal) {
-  return readSpriteTga(
-      r, ss.width, ss.count * ss.height, ss.count, &ss.data[0], pal);
+  return readSpriteTga(r, ss.width, ss.count * ss.height, ss.count, &ss.data[0], pal);
 }
 
 #undef CHECK
 
 inline uint32_t quad(char a, char b, char c, char d) {
-  return (uint32_t)a + ((uint32_t)b << 8) + ((uint32_t)c << 16) +
-         ((uint32_t)d << 24);
+  return (uint32_t)a + ((uint32_t)b << 8) + ((uint32_t)c << 16) + ((uint32_t)d << 24);
 }
 
 void Common::load(FsNode node) {
   {
-    auto textReader_ptr = (node / "tc.cfg").toReader(); io::Reader& textReader = *textReader_ptr;
+    auto textReader_ptr = (node / "tc.cfg").toReader();
+    io::Reader& textReader = *textReader_ptr;
     // Read entire content into a string for istringstream
     std::string content;
     try {
-      for (;;)
-        content.push_back(static_cast<char>(textReader.get()));
-    } catch (std::runtime_error&) {}
+      for (;;) content.push_back(static_cast<char>(textReader.get()));
+    } catch (std::runtime_error&) {
+    }
     std::istringstream is(content);
     loadTcConfig(*this, is);
   }
@@ -329,11 +321,11 @@ void Common::load(FsNode node) {
       // siblings) but leave sound == nullptr so play paths treat it as a
       // silent no-op. Matches the disabled-slot behavior of tc_tool's
       // loadSfx (see issue #44).
-      Console::writeWarning(
-          "Sound file missing, slot will be silent: " + s.name + ".wav");
+      Console::writeWarning("Sound file missing, slot will be silent: " + s.name + ".wav");
       continue;
     }
-    auto r_ptr = wavNode.toReader(); io::Reader& r = *r_ptr;
+    auto r_ptr = wavNode.toReader();
+    io::Reader& r = *r_ptr;
 
     if (io::read_uint32_le(r) == quad('R', 'I', 'F', 'F')) {
       std::size_t roundedSize = io::read_uint32_le(r) + 8;
@@ -341,18 +333,16 @@ void Common::load(FsNode node) {
       (void)roundedSize;  // Ignore
 
       if (io::read_uint32_le(r) == quad('W', 'A', 'V', 'E') &&
-          io::read_uint32_le(r) == quad('f', 'm', 't', ' ') &&
-          io::read_uint32_le(r) == 16 && io::read_uint16_le(r) == 1 &&
-          io::read_uint16_le(r) == 1 && io::read_uint32_le(r) == 22050 &&
-          io::read_uint32_le(r) == 22050 * 1 * 1 &&
+          io::read_uint32_le(r) == quad('f', 'm', 't', ' ') && io::read_uint32_le(r) == 16 &&
+          io::read_uint16_le(r) == 1 && io::read_uint16_le(r) == 1 &&
+          io::read_uint32_le(r) == 22050 && io::read_uint32_le(r) == 22050 * 1 * 1 &&
           io::read_uint16_le(r) == 1 * 1 && io::read_uint16_le(r) == 8 &&
           io::read_uint32_le(r) == quad('d', 'a', 't', 'a')) {
         std::size_t dataSize = io::read_uint32_le(r);
 
         s.originalData.resize(dataSize);
 
-        for (auto& z : s.originalData)
-          z = r.get() - 128;
+        for (auto& z : s.originalData) z = r.get() - 128;
 
         s.sound = sfx_new_sound(dataSize * 2);
 
@@ -369,29 +359,31 @@ void Common::load(FsNode node) {
     textSprites.allocate(4, 4, 26);
 
     {
-      auto r_ptr = (dir / "small.tga").toReader(); io::Reader& r = *r_ptr;
+      auto r_ptr = (dir / "small.tga").toReader();
+      io::Reader& r = *r_ptr;
 
       readSpriteTga(r, smallSprites, &exepal);
     }
 
     {
-      auto r_ptr = (dir / "large.tga").toReader(); io::Reader& r = *r_ptr;
+      auto r_ptr = (dir / "large.tga").toReader();
+      io::Reader& r = *r_ptr;
       readSpriteTga(r, largeSprites, 0);
     }
 
     {
-      auto r_ptr = (dir / "text.tga").toReader(); io::Reader& r = *r_ptr;
+      auto r_ptr = (dir / "text.tga").toReader();
+      io::Reader& r = *r_ptr;
       readSpriteTga(r, textSprites, 0);
     }
 
     {
-      auto r_ptr = (dir / "font.tga").toReader(); io::Reader& r = *r_ptr;
+      auto r_ptr = (dir / "font.tga").toReader();
+      io::Reader& r = *r_ptr;
 
       std::vector<uint8_t> data(font.chars.size() * 7 * 8, 10);
 
-      readSpriteTga(
-          r, 7, (int)font.chars.size() * 8, (int)font.chars.size(), &data[0],
-          0);
+      readSpriteTga(r, 7, (int)font.chars.size() * 8, (int)font.chars.size(), &data[0], 0);
 
       for (std::size_t i = 0; i < font.chars.size(); ++i) {
         Font::Char& ch = font.chars[i];
@@ -418,12 +410,13 @@ void Common::load(FsNode node) {
   for (auto& w : weapons) {
     auto dir = node / "weapons";
 
-    auto wReader_ptr = (dir / (w.idStr + ".cfg")).toReader(); io::Reader& wReader = *wReader_ptr;
+    auto wReader_ptr = (dir / (w.idStr + ".cfg")).toReader();
+    io::Reader& wReader = *wReader_ptr;
     std::string content;
     try {
-      for (;;)
-        content.push_back(static_cast<char>(wReader.get()));
-    } catch (std::runtime_error&) {}
+      for (;;) content.push_back(static_cast<char>(wReader.get()));
+    } catch (std::runtime_error&) {
+    }
     std::istringstream is(content);
     loadWeaponConfig(*this, w, is);
   }
@@ -431,12 +424,13 @@ void Common::load(FsNode node) {
   for (auto& w : nobjectTypes) {
     auto dir = node / "nobjects";
 
-    auto nReader_ptr = (dir / (w.idStr + ".cfg")).toReader(); io::Reader& nReader = *nReader_ptr;
+    auto nReader_ptr = (dir / (w.idStr + ".cfg")).toReader();
+    io::Reader& nReader = *nReader_ptr;
     std::string content;
     try {
-      for (;;)
-        content.push_back(static_cast<char>(nReader.get()));
-    } catch (std::runtime_error&) {}
+      for (;;) content.push_back(static_cast<char>(nReader.get()));
+    } catch (std::runtime_error&) {
+    }
     std::istringstream is(content);
     loadNObjectConfig(*this, w, is);
   }
@@ -444,12 +438,13 @@ void Common::load(FsNode node) {
   for (auto& w : sobjectTypes) {
     auto dir = node / "sobjects";
 
-    auto sReader_ptr = (dir / (w.idStr + ".cfg")).toReader(); io::Reader& sReader = *sReader_ptr;
+    auto sReader_ptr = (dir / (w.idStr + ".cfg")).toReader();
+    io::Reader& sReader = *sReader_ptr;
     std::string content;
     try {
-      for (;;)
-        content.push_back(static_cast<char>(sReader.get()));
-    } catch (std::runtime_error&) {}
+      for (;;) content.push_back(static_cast<char>(sReader.get()));
+    } catch (std::runtime_error&) {
+    }
     std::istringstream is(content);
     loadSObjectConfig(*this, w, is);
   }
@@ -464,9 +459,8 @@ void Common::precompute() {
     weapons[i].id = i;
   }
 
-  std::sort(weapOrder.begin(), weapOrder.end(), [&](int a, int b) {
-    return this->weapons[a].name < this->weapons[b].name;
-  });
+  std::sort(weapOrder.begin(), weapOrder.end(),
+            [&](int a, int b) { return this->weapons[a].name < this->weapons[b].name; });
 
   for (int i = 0; i < (int)nobjectTypes.size(); ++i) {
     nobjectTypes[i].id = i;
@@ -490,8 +484,7 @@ void Common::precompute() {
         else
           (wormSprite(i, 0, 0) + y * 16)[14 - x] = pix;
 
-        if (pix >= 30 && pix <= 34)
-          pix += 9;  // Change worm color
+        if (pix >= 30 && pix <= 34) pix += 9;  // Change worm color
 
         (wormSprite(i, 1, 1) + y * 16)[x] = pix;
 
@@ -524,26 +517,22 @@ Common::Common() {}
 std::string Common::guessName() const {
   std::string const& cp = S[SCopyright2];
   auto p = cp.find('(');
-  if (p == std::string::npos)
-    p = cp.size();
+  if (p == std::string::npos) p = cp.size();
 
-  while (p > 0 && cp[p - 1] == ' ')
-    --p;
+  while (p > 0 && cp[p - 1] == ' ') --p;
 
   return cp.substr(0, p);
 }
 
 int Common::soundIndex(std::string_view name) const {
   for (std::size_t i = 0; i < sounds.size(); ++i) {
-    if (sounds[i].name == name)
-      return static_cast<int>(i);
+    if (sounds[i].name == name) return static_cast<int>(i);
   }
   return -1;
 }
 
 void SfxSample::createSound() {
-  if (originalData.empty())
-    return;
+  if (originalData.empty()) return;
 
   std::vector<int16_t>& samples = sfx_sound_data(sound);
   samples.clear();

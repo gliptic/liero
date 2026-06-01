@@ -1,116 +1,76 @@
 #pragma once
 
-#include <cstddef>
-#include <cassert>
-#include <vector>
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <vector>
 
-template<typename T>
-struct FastObjectList
-{
-	struct iterator
-	{
-		iterator(T* cur_)
-		: cur(cur_)
-		{
-		}
+template <typename T>
+struct FastObjectList {
+  struct iterator {
+    iterator(T* cur_) : cur(cur_) {}
 
-		iterator& operator++()
-		{
-			++cur;
-			return *this;
-		}
+    iterator& operator++() {
+      ++cur;
+      return *this;
+    }
 
-		T& operator*()
-		{
-			return *cur;
-		}
+    T& operator*() { return *cur; }
 
-		T* operator->()
-		{
-			return cur;
-		}
+    T* operator->() { return cur; }
 
-		bool operator!=(iterator b)
-		{
-			return cur != b.cur;
-		}
+    bool operator!=(iterator b) { return cur != b.cur; }
 
-		T* cur;
-	};
+    T* cur;
+  };
 
-	FastObjectList(std::size_t limit = 1)
-	: limit(limit), arr(limit)
-	{
-		clear();
-	}
+  FastObjectList(std::size_t limit = 1) : limit(limit), arr(limit) { clear(); }
 
-	T* getFreeObject()
-	{
-		assert(count < limit);
-		T* ptr = &arr[count++];
-		return ptr;
-	}
+  T* getFreeObject() {
+    assert(count < limit);
+    T* ptr = &arr[count++];
+    return ptr;
+  }
 
-	T* newObjectReuse()
-	{
-		T* ret;
-		if(count == limit)
-			ret = &arr[limit - 1];
-		else
-			ret = getFreeObject();
+  T* newObjectReuse() {
+    T* ret;
+    if (count == limit)
+      ret = &arr[limit - 1];
+    else
+      ret = getFreeObject();
 
-		return ret;
-	}
+    return ret;
+  }
 
-	T* newObject()
-	{
-		if(count == limit)
-			return 0;
+  T* newObject() {
+    if (count == limit) return 0;
 
-		T* ret = getFreeObject();
-		return ret;
-	}
+    T* ret = getFreeObject();
+    return ret;
+  }
 
-	iterator begin()
-	{
-		return iterator(&arr[0]);
-	}
+  iterator begin() { return iterator(&arr[0]); }
 
-	iterator end()
-	{
-		return iterator(&arr[0] + count);
-	}
+  iterator end() { return iterator(&arr[0] + count); }
 
-	void free(T* ptr)
-	{
-		assert(ptr < &arr[0] + count && ptr >= &arr[0]);
-		*ptr = arr[--count];
-	}
+  void free(T* ptr) {
+    assert(ptr < &arr[0] + count && ptr >= &arr[0]);
+    *ptr = arr[--count];
+  }
 
-	void free(iterator i)
-	{
-		free(&*i);
-	}
+  void free(iterator i) { free(&*i); }
 
-	void clear()
-	{
-		count = 0;
-	}
+  void clear() { count = 0; }
 
-	void resize(std::size_t newLimit)
-	{
-		limit = newLimit;
-		count = std::min(count, newLimit);
-		arr.resize(newLimit);
-	}
+  void resize(std::size_t newLimit) {
+    limit = newLimit;
+    count = std::min(count, newLimit);
+    arr.resize(newLimit);
+  }
 
-	std::size_t size() const
-	{
-		return count;
-	}
+  std::size_t size() const { return count; }
 
-	std::size_t limit;
-	std::vector<T> arr;
-	std::size_t count;
+  std::size_t limit;
+  std::vector<T> arr;
+  std::size_t count;
 };

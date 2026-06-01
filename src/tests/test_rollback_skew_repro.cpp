@@ -14,9 +14,9 @@
 // transition at whatever simFrame WS reached on its side, and the
 // asymmetry would persist into the game phase.
 
-#include <catch2/catch_test_macros.hpp>
 #include <algorithm>
 #include <array>
+#include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -44,11 +44,9 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
   return {common, settings};
 }
 
-std::unique_ptr<RollbackController> makePeer(
-    std::shared_ptr<Common> common,
-    std::shared_ptr<Settings> settings,
-    int localIdx,
-    uint32_t worldSeed) {
+std::unique_ptr<RollbackController> makePeer(std::shared_ptr<Common> common,
+                                             std::shared_ptr<Settings> settings, int localIdx,
+                                             uint32_t worldSeed) {
   auto c = std::make_unique<RollbackController>(common, settings, localIdx);
   c->setInputDelay(1);
   c->game.rand.seed(worldSeed);
@@ -72,8 +70,7 @@ std::vector<uint8_t> navigateToDoneAndConfirm(int nDown) {
 
 }  // namespace
 
-TEST_CASE("WS simFrame skew is erased at the WS→game transition",
-          "[rollback][step14][skew]") {
+TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][step14][skew]") {
   constexpr uint32_t kWorldSeed = 0xF00DBABE;
   auto [common, settings] = makeEnv();
   auto a = makePeer(common, settings, 0, kWorldSeed);
@@ -91,26 +88,22 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition",
       {0x2222, /*minDelay=*/4, /*maxDelay=*/4, /*loss=*/0.0, /*dup=*/0.0});
   a->setFrameAdvantageEnabled(false);
 
-  a->setInputCallbacks(
-      [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        tAB.sendAToB(gen, bf, c, in, lf);
-      });
-  b->setInputCallbacks(
-      [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        tBA.sendAToB(gen, bf, c, in, lf);
-      });
+  a->setInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    tAB.sendAToB(gen, bf, c, in, lf);
+  });
+  b->setInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    tBA.sendAToB(gen, bf, c, in, lf);
+  });
 
   a->focus();
   b->focus();
   a->injectRemoteInput(0, 0);
   b->injectRemoteInput(0, 0);
 
-  auto deliverB = [&](uint8_t gen, uint32_t bf, uint8_t c,
-                      uint8_t const* in, uint32_t lf) {
+  auto deliverB = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     b->injectRemoteBatch(gen, bf, c, in, lf);
   };
-  auto deliverA = [&](uint8_t gen, uint32_t bf, uint8_t c,
-                      uint8_t const* in, uint32_t lf) {
+  auto deliverA = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     a->injectRemoteBatch(gen, bf, c, in, lf);
   };
   auto noop = [&](uint8_t, uint32_t, uint8_t, uint8_t const*, uint32_t) {};
@@ -143,15 +136,12 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition",
   };
 
   for (int i = 0;
-       i < static_cast<int>(script.size()) + kWsTail &&
-       !(aTransitioned && bTransitioned);
-       ++i) {
+       i < static_cast<int>(script.size()) + kWsTail && !(aTransitioned && bTransitioned); ++i) {
     uint8_t in = (i < static_cast<int>(script.size())) ? script[i] : 0;
     stepBoth(in, in);
     // Observe WS-phase skew while at least one peer is still pre-transition.
     if (!aTransitioned || !bTransitioned) {
-      int gap = static_cast<int>(a->currentFrame()) -
-                static_cast<int>(b->currentFrame());
+      int gap = static_cast<int>(a->currentFrame()) - static_cast<int>(b->currentFrame());
       if (gap < 0) gap = -gap;
       if (gap > maxObservedSkew) maxObservedSkew = gap;
     }
@@ -165,9 +155,8 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition",
     stepBoth(0, 0);
   }
 
-  INFO("maxObservedSkew=" << maxObservedSkew
-        << " aTransitionFrame=" << aTransitionFrame
-        << " bTransitionFrame=" << bTransitionFrame);
+  INFO("maxObservedSkew=" << maxObservedSkew << " aTransitionFrame=" << aTransitionFrame
+                          << " bTransitionFrame=" << bTransitionFrame);
   REQUIRE(aTransitioned);
   REQUIRE(bTransitioned);
 
@@ -216,8 +205,7 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition",
     auto* slotA = const_cast<rollback::RollbackBuffer&>(bufA).find(f);
     auto* slotB = const_cast<rollback::RollbackBuffer&>(bufB).find(f);
     if (!slotA || !slotB) continue;
-    INFO("frame " << f << " A=" << slotA->checksum
-                  << " B=" << slotB->checksum);
+    INFO("frame " << f << " A=" << slotA->checksum << " B=" << slotB->checksum);
     REQUIRE(slotA->checksum == slotB->checksum);
     ++compared;
   }

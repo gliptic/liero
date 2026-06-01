@@ -10,23 +10,21 @@ on:  # yamllint disable-line rule:truthy
 jobs:
   clang-format:
     runs-on: ubuntu-latest
-    # Advisory only: surface formatting suggestions on the PR without
-    # blocking merge. Flip to `false` once the codebase is clean.
-    continue-on-error: true
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          fetch-tags: true
 
-      - name: Install clang-format
+      - name: Install clang-format 22 from apt.llvm.org
         run: |
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
+            | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc >/dev/null
+          echo "deb http://apt.llvm.org/noble/ llvm-toolchain-noble-22 main" \
+            | sudo tee /etc/apt/sources.list.d/llvm.list >/dev/null
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends clang-format
+          sudo apt-get install -y --no-install-recommends clang-format-22
 
-      - name: Run clang-format on PR diff
+      - name: Check formatting tree-wide
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: ./scripts/clang-format-diff.sh "$BASE_SHA"
+          CLANG_FORMAT: clang-format-22
+        run: ./scripts/clang-format-all.sh

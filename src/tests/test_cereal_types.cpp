@@ -46,8 +46,7 @@ T roundtripToml(T const& src) {
 
 }  // namespace
 
-TEST_CASE("cereal_types: BasicVec<int,2> binary round-trip",
-          "[cereal_types]") {
+TEST_CASE("cereal_types: BasicVec<int,2> binary round-trip", "[cereal_types]") {
   IVec2 src{-12345, 6789};
   IVec2 dst = roundtripBinary(src);
   CHECK(dst.x == src.x);
@@ -61,16 +60,14 @@ TEST_CASE("cereal_types: BasicVec<int,2> toml round-trip", "[cereal_types]") {
   CHECK(dst.y == src.y);
 }
 
-TEST_CASE("cereal_types: BasicVec<float,2> binary round-trip",
-          "[cereal_types]") {
+TEST_CASE("cereal_types: BasicVec<float,2> binary round-trip", "[cereal_types]") {
   FVec2 src{1.5f, -2.25f};
   FVec2 dst = roundtripBinary(src);
   CHECK(dst.x == src.x);
   CHECK(dst.y == src.y);
 }
 
-TEST_CASE("cereal_types: BasicRect<int> binary round-trip",
-          "[cereal_types]") {
+TEST_CASE("cereal_types: BasicRect<int> binary round-trip", "[cereal_types]") {
   Rect src{1, 2, 100, 200};
   Rect dst = roundtripBinary(src);
   CHECK(dst.x1 == 1);
@@ -97,8 +94,7 @@ TEST_CASE("cereal_types: ControlState round-trip", "[cereal_types]") {
   CHECK(toml.istate == src.istate);
 }
 
-TEST_CASE("cereal_types: Ninjarope round-trip excludes anchor",
-          "[cereal_types]") {
+TEST_CASE("cereal_types: Ninjarope round-trip excludes anchor", "[cereal_types]") {
   Ninjarope src;
   src.out = true;
   src.attached = true;
@@ -143,8 +139,7 @@ TEST_CASE("cereal_types: Viewport round-trip", "[cereal_types]") {
   CHECK(bin.rect.y2 == 40);
 }
 
-TEST_CASE("cereal_types: Worm round-trip excludes context fields",
-          "[cereal_types]") {
+TEST_CASE("cereal_types: Worm round-trip excludes context fields", "[cereal_types]") {
   Worm src;
   src.pos = fixedvec{1 << 16, 2 << 16};
   src.vel = fixedvec{-3, 4};
@@ -218,8 +213,7 @@ TEST_CASE("cereal_types: WormSettings round-trip", "[cereal_types]") {
   CHECK(toml.weapons[4] == 7);
 }
 
-TEST_CASE("cereal_types: Settings round-trip with shared worm settings",
-          "[cereal_types]") {
+TEST_CASE("cereal_types: Settings round-trip with shared worm settings", "[cereal_types]") {
   Settings src;
   src.maxBonuses = 12;
   src.lives = 5;
@@ -270,8 +264,7 @@ TEST_CASE("cereal_types: Palette round-trip", "[cereal_types]") {
   }
 }
 
-TEST_CASE("cereal_types: Level round-trip preserves data and palette",
-          "[cereal_types]") {
+TEST_CASE("cereal_types: Level round-trip preserves data and palette", "[cereal_types]") {
   Common common;
   Level src(common);
   src.width = 4;
@@ -279,8 +272,7 @@ TEST_CASE("cereal_types: Level round-trip preserves data and palette",
   src.data.assign(src.width * src.height, 0);
   for (int i = 0; i < src.width * src.height; ++i)
     src.data[i] = static_cast<unsigned char>(i * 7 + 1);
-  for (int i = 0; i < 256; ++i)
-    src.origpal.entries[i].r = static_cast<uint8_t>(i);
+  for (int i = 0; i < 256; ++i) src.origpal.entries[i].r = static_cast<uint8_t>(i);
 
   Level dst(common);
   // Serialize directly without dst pre-construct equivalence to old API.
@@ -296,23 +288,20 @@ TEST_CASE("cereal_types: Level round-trip preserves data and palette",
   CHECK(dst.width == 4);
   CHECK(dst.height == 3);
   REQUIRE(dst.data.size() == src.data.size());
-  for (size_t i = 0; i < src.data.size(); ++i)
-    CHECK(dst.data[i] == src.data[i]);
+  for (size_t i = 0; i < src.data.size(); ++i) CHECK(dst.data[i] == src.data[i]);
   CHECK(static_cast<int>(dst.origpal.entries[0].r) == 0);
   CHECK(static_cast<int>(dst.origpal.entries[255].r) == 255);
 }
 
 TEST_CASE("cereal_types: Rand round-trip preserves stream", "[cereal_types]") {
   Rand src(0xC0FFEEu);
-  for (int i = 0; i < 10; ++i)
-    src();
+  for (int i = 0; i < 10; ++i) src();
   Rand bin = roundtripBinary(src);
   CHECK(bin == src);
   CHECK(bin() == src());
 }
 
-TEST_CASE("cereal_types: WormWeapon round-trip excludes type pointer",
-          "[cereal_types]") {
+TEST_CASE("cereal_types: WormWeapon round-trip excludes type pointer", "[cereal_types]") {
   WormWeapon src;
   src.ammo = 17;
   src.delayLeft = 23;

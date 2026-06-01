@@ -1,9 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
-#include <vector>
 #include <thread>
-#include <chrono>
+#include <vector>
 
 #ifdef _WIN32
 #include <winsock2.h>
@@ -14,10 +14,8 @@
 #include "net/stun.hpp"
 
 // Helper to build a STUN Binding Response with XOR-MAPPED-ADDRESS (IPv4)
-static std::vector<uint8_t> buildIPv4Response(
-    const stun::Header& req,
-    const char* ip, uint16_t port)
-{
+static std::vector<uint8_t> buildIPv4Response(const stun::Header& req, const char* ip,
+                                              uint16_t port) {
   // Parse IP into network-order bytes
   uint32_t ipNet;
   inet_pton(AF_INET, ip, &ipNet);
@@ -31,12 +29,15 @@ static std::vector<uint8_t> buildIPv4Response(
   std::vector<uint8_t> pkt;
   pkt.resize(sizeof(stun::Header));
 
-  // XOR-MAPPED-ADDRESS attribute: type(2) + len(2) + reserved(1) + family(1) + port(2) + addr(4) = 12 bytes
+  // XOR-MAPPED-ADDRESS attribute: type(2) + len(2) + reserved(1) + family(1) + port(2) + addr(4) =
+  // 12 bytes
   uint8_t attr[12] = {};
-  attr[0] = 0x00; attr[1] = 0x20; // type = XOR-MAPPED-ADDRESS
-  attr[2] = 0x00; attr[3] = 0x08; // length = 8
-  attr[4] = 0x00;                  // reserved
-  attr[5] = 0x01;                  // family = IPv4
+  attr[0] = 0x00;
+  attr[1] = 0x20;  // type = XOR-MAPPED-ADDRESS
+  attr[2] = 0x00;
+  attr[3] = 0x08;  // length = 8
+  attr[4] = 0x00;  // reserved
+  attr[5] = 0x01;  // family = IPv4
   attr[6] = (uint8_t)(xorPort >> 8);
   attr[7] = (uint8_t)(xorPort & 0xFF);
   std::memcpy(attr + 8, &xorAddr, 4);
@@ -46,7 +47,7 @@ static std::vector<uint8_t> buildIPv4Response(
   // Fill header
   auto* hdr = (stun::Header*)pkt.data();
   hdr->type = htons(stun::BINDING_RESPONSE);
-  hdr->length = htons(12); // attribute total length
+  hdr->length = htons(12);  // attribute total length
   hdr->magicCookie = htonl(stun::MAGIC_COOKIE);
   std::memcpy(hdr->transactionId, req.transactionId, 12);
 
@@ -54,10 +55,8 @@ static std::vector<uint8_t> buildIPv4Response(
 }
 
 // Helper to build a STUN Binding Response with XOR-MAPPED-ADDRESS (IPv6)
-static std::vector<uint8_t> buildIPv6Response(
-    const stun::Header& req,
-    const char* ip, uint16_t port)
-{
+static std::vector<uint8_t> buildIPv6Response(const stun::Header& req, const char* ip,
+                                              uint16_t port) {
   uint8_t ipBytes[16];
   inet_pton(AF_INET6, ip, ipBytes);
 
@@ -65,10 +64,8 @@ static std::vector<uint8_t> buildIPv6Response(
   uint32_t cookie = htonl(stun::MAGIC_COOKIE);
   uint8_t xorAddr[16];
   std::memcpy(xorAddr, ipBytes, 16);
-  for (int i = 0; i < 4; i++)
-    xorAddr[i] ^= ((uint8_t*)&cookie)[i];
-  for (int i = 0; i < 12; i++)
-    xorAddr[4 + i] ^= req.transactionId[i];
+  for (int i = 0; i < 4; i++) xorAddr[i] ^= ((uint8_t*)&cookie)[i];
+  for (int i = 0; i < 12; i++) xorAddr[4 + i] ^= req.transactionId[i];
 
   uint16_t xorPort = port ^ (uint16_t)(stun::MAGIC_COOKIE >> 16);
 
@@ -76,12 +73,15 @@ static std::vector<uint8_t> buildIPv6Response(
   std::vector<uint8_t> pkt;
   pkt.resize(sizeof(stun::Header));
 
-  // XOR-MAPPED-ADDRESS for IPv6: type(2) + len(2) + reserved(1) + family(1) + port(2) + addr(16) = 24 bytes
+  // XOR-MAPPED-ADDRESS for IPv6: type(2) + len(2) + reserved(1) + family(1) + port(2) + addr(16) =
+  // 24 bytes
   uint8_t attr[24] = {};
-  attr[0] = 0x00; attr[1] = 0x20; // type = XOR-MAPPED-ADDRESS
-  attr[2] = 0x00; attr[3] = 20;   // length = 20
-  attr[4] = 0x00;                  // reserved
-  attr[5] = 0x02;                  // family = IPv6
+  attr[0] = 0x00;
+  attr[1] = 0x20;  // type = XOR-MAPPED-ADDRESS
+  attr[2] = 0x00;
+  attr[3] = 20;    // length = 20
+  attr[4] = 0x00;  // reserved
+  attr[5] = 0x02;  // family = IPv6
   attr[6] = (uint8_t)(xorPort >> 8);
   attr[7] = (uint8_t)(xorPort & 0xFF);
   std::memcpy(attr + 8, xorAddr, 16);
@@ -99,10 +99,8 @@ static std::vector<uint8_t> buildIPv6Response(
 }
 
 // Helper to build a STUN Binding Response with MAPPED-ADDRESS (non-XOR, fallback)
-static std::vector<uint8_t> buildMappedAddressResponse(
-    const stun::Header& req,
-    const char* ip, uint16_t port)
-{
+static std::vector<uint8_t> buildMappedAddressResponse(const stun::Header& req, const char* ip,
+                                                       uint16_t port) {
   uint32_t ipNet;
   inet_pton(AF_INET, ip, &ipNet);
 
@@ -111,13 +109,15 @@ static std::vector<uint8_t> buildMappedAddressResponse(
 
   // MAPPED-ADDRESS: type(2) + len(2) + reserved(1) + family(1) + port(2) + addr(4) = 12 bytes
   uint8_t attr[12] = {};
-  attr[0] = 0x00; attr[1] = 0x01; // type = MAPPED-ADDRESS
-  attr[2] = 0x00; attr[3] = 0x08; // length = 8
-  attr[4] = 0x00;                  // reserved
-  attr[5] = 0x01;                  // family = IPv4
+  attr[0] = 0x00;
+  attr[1] = 0x01;  // type = MAPPED-ADDRESS
+  attr[2] = 0x00;
+  attr[3] = 0x08;  // length = 8
+  attr[4] = 0x00;  // reserved
+  attr[5] = 0x01;  // family = IPv4
   attr[6] = (uint8_t)(port >> 8);
   attr[7] = (uint8_t)(port & 0xFF);
-  std::memcpy(attr + 8, &ipNet, 4); // network byte order
+  std::memcpy(attr + 8, &ipNet, 4);  // network byte order
 
   pkt.insert(pkt.end(), attr, attr + 12);
 
@@ -136,8 +136,7 @@ static stun::Header makeRequest() {
   req.length = 0;
   req.magicCookie = htonl(stun::MAGIC_COOKIE);
   // Use a known transaction ID for reproducibility
-  for (int i = 0; i < 12; i++)
-    req.transactionId[i] = (uint8_t)(0x10 + i);
+  for (int i = 0; i < 12; i++) req.transactionId[i] = (uint8_t)(0x10 + i);
   return req;
 }
 
@@ -177,10 +176,14 @@ TEST_CASE("parseResponse prefers XOR-MAPPED-ADDRESS over MAPPED-ADDRESS", "[stun
 
   // MAPPED-ADDRESS with wrong IP (should be ignored if XOR-MAPPED follows)
   uint8_t mappedAttr[12] = {};
-  mappedAttr[0] = 0x00; mappedAttr[1] = 0x01; // MAPPED-ADDRESS
-  mappedAttr[2] = 0x00; mappedAttr[3] = 0x08;
-  mappedAttr[4] = 0x00; mappedAttr[5] = 0x01; // IPv4
-  mappedAttr[6] = 0x00; mappedAttr[7] = 0x50; // port 80
+  mappedAttr[0] = 0x00;
+  mappedAttr[1] = 0x01;  // MAPPED-ADDRESS
+  mappedAttr[2] = 0x00;
+  mappedAttr[3] = 0x08;
+  mappedAttr[4] = 0x00;
+  mappedAttr[5] = 0x01;  // IPv4
+  mappedAttr[6] = 0x00;
+  mappedAttr[7] = 0x50;  // port 80
   uint32_t wrongIP;
   inet_pton(AF_INET, "10.0.0.1", &wrongIP);
   std::memcpy(mappedAttr + 8, &wrongIP, 4);
@@ -194,9 +197,12 @@ TEST_CASE("parseResponse prefers XOR-MAPPED-ADDRESS over MAPPED-ADDRESS", "[stun
   uint16_t xorPort = 54321 ^ (uint16_t)(stun::MAGIC_COOKIE >> 16);
 
   uint8_t xorAttr[12] = {};
-  xorAttr[0] = 0x00; xorAttr[1] = 0x20; // XOR-MAPPED-ADDRESS
-  xorAttr[2] = 0x00; xorAttr[3] = 0x08;
-  xorAttr[4] = 0x00; xorAttr[5] = 0x01; // IPv4
+  xorAttr[0] = 0x00;
+  xorAttr[1] = 0x20;  // XOR-MAPPED-ADDRESS
+  xorAttr[2] = 0x00;
+  xorAttr[3] = 0x08;
+  xorAttr[4] = 0x00;
+  xorAttr[5] = 0x01;  // IPv4
   xorAttr[6] = (uint8_t)(xorPort >> 8);
   xorAttr[7] = (uint8_t)(xorPort & 0xFF);
   std::memcpy(xorAttr + 8, &xorAddr, 4);
@@ -204,7 +210,7 @@ TEST_CASE("parseResponse prefers XOR-MAPPED-ADDRESS over MAPPED-ADDRESS", "[stun
 
   auto* hdr = (stun::Header*)pkt.data();
   hdr->type = htons(stun::BINDING_RESPONSE);
-  hdr->length = htons(24); // 12 + 12
+  hdr->length = htons(24);  // 12 + 12
   hdr->magicCookie = htonl(stun::MAGIC_COOKIE);
   std::memcpy(hdr->transactionId, req.transactionId, 12);
 
@@ -235,7 +241,7 @@ TEST_CASE("parseResponse rejects non-binding-response", "[stun]") {
 
   // Change type to something else
   auto* hdr = (stun::Header*)pkt.data();
-  hdr->type = htons(0x0111); // Binding Error Response
+  hdr->type = htons(0x0111);  // Binding Error Response
 
   auto result = stun::parseResponse(pkt.data(), pkt.size(), req);
   REQUIRE(result.ip.empty());
@@ -274,9 +280,11 @@ TEST_CASE("parseResponse handles padded attributes", "[stun]") {
   pkt.resize(sizeof(stun::Header));
 
   // Unknown attribute: type=0x8000, length=5 (padded to 8 bytes)
-  uint8_t unknownAttr[4 + 8] = {}; // 4 header + 8 padded data
-  unknownAttr[0] = 0x80; unknownAttr[1] = 0x00; // unknown type
-  unknownAttr[2] = 0x00; unknownAttr[3] = 0x05; // length = 5
+  uint8_t unknownAttr[4 + 8] = {};  // 4 header + 8 padded data
+  unknownAttr[0] = 0x80;
+  unknownAttr[1] = 0x00;  // unknown type
+  unknownAttr[2] = 0x00;
+  unknownAttr[3] = 0x05;  // length = 5
   // 5 bytes data + 3 bytes padding = 8 bytes
   pkt.insert(pkt.end(), unknownAttr, unknownAttr + 12);
 
@@ -288,9 +296,12 @@ TEST_CASE("parseResponse handles padded attributes", "[stun]") {
   uint16_t xorPort = 8080 ^ (uint16_t)(stun::MAGIC_COOKIE >> 16);
 
   uint8_t xorAttr[12] = {};
-  xorAttr[0] = 0x00; xorAttr[1] = 0x20;
-  xorAttr[2] = 0x00; xorAttr[3] = 0x08;
-  xorAttr[4] = 0x00; xorAttr[5] = 0x01;
+  xorAttr[0] = 0x00;
+  xorAttr[1] = 0x20;
+  xorAttr[2] = 0x00;
+  xorAttr[3] = 0x08;
+  xorAttr[4] = 0x00;
+  xorAttr[5] = 0x01;
   xorAttr[6] = (uint8_t)(xorPort >> 8);
   xorAttr[7] = (uint8_t)(xorPort & 0xFF);
   std::memcpy(xorAttr + 8, &xorAddr, 4);
@@ -298,7 +309,7 @@ TEST_CASE("parseResponse handles padded attributes", "[stun]") {
 
   auto* hdr = (stun::Header*)pkt.data();
   hdr->type = htons(stun::BINDING_RESPONSE);
-  hdr->length = htons(24); // 12 (unknown padded) + 12 (xor-mapped)
+  hdr->length = htons(24);  // 12 (unknown padded) + 12 (xor-mapped)
   hdr->magicCookie = htonl(stun::MAGIC_COOKIE);
   std::memcpy(hdr->transactionId, req.transactionId, 12);
 

@@ -255,8 +255,7 @@ static Settings makeKnownV2() {
 // Tests
 // ---------------------------------------------------------------------------
 
-TEST_CASE("versioning: Settings v2 binary round-trip preserves bonusTimeout",
-          "[versioning]") {
+TEST_CASE("versioning: Settings v2 binary round-trip preserves bonusTimeout", "[versioning]") {
   Settings src = makeKnownV2();
   std::stringstream ss;
   {
@@ -275,8 +274,7 @@ TEST_CASE("versioning: Settings v2 binary round-trip preserves bonusTimeout",
   CHECK(dst.wormSettings[2]->name == "w2");
 }
 
-TEST_CASE("versioning: Settings v2 TOML round-trip preserves bonusTimeout",
-          "[versioning]") {
+TEST_CASE("versioning: Settings v2 TOML round-trip preserves bonusTimeout", "[versioning]") {
   Settings src = makeKnownV2();
   std::stringstream ss;
   {
@@ -316,8 +314,7 @@ TEST_CASE("versioning: Settings v1 TOML fixture reads as v2 with default bonusTi
   CHECK(dst.bonusTimeout == 0);
 }
 
-TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config",
-          "[versioning]") {
+TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config", "[versioning]") {
   Settings src = makeKnownV2();
   src.wormSettings[0]->name = "Player1";
   src.wormSettings[1]->name = "Player2";

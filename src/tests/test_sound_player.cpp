@@ -12,8 +12,7 @@
 #include "settings.hpp"
 
 static std::string getTcPath() {
-  if (auto* p = std::getenv("TC_PATH"))
-    return p;
+  if (auto* p = std::getenv("TC_PATH")) return p;
   return "data/TC/openliero";
 }
 
@@ -29,9 +28,7 @@ struct RecordingPlayer : SoundPlayer {
   void stop(void* /*id*/) override {}
 
  protected:
-  void playImpl(int sound, void* /*id*/, int /*loops*/) override {
-    played.push_back(sound);
-  }
+  void playImpl(int sound, void* /*id*/, int /*loops*/) override { played.push_back(sound); }
   Common* common() override { return m_common; }
 
  private:
@@ -52,8 +49,7 @@ TEST_CASE("SoundPlayer guards negative indices", "[sound_player]") {
   REQUIRE(p.played[1] == 0);
 }
 
-TEST_CASE("SoundPlayer SOUND_DEF_T overload resolves via Common::soundHook",
-          "[sound_player]") {
+TEST_CASE("SoundPlayer SOUND_DEF_T overload resolves via Common::soundHook", "[sound_player]") {
   auto common = std::make_shared<Common>();
   FsNode tcRoot(getTcPath());
   common->load(std::move(tcRoot));
@@ -66,16 +62,14 @@ TEST_CASE("SoundPlayer SOUND_DEF_T overload resolves via Common::soundHook",
   REQUIRE(p.played[0] == common->soundIndex("select"));
 }
 
-TEST_CASE(
-    "SoundPlayer SOUND_DEF_T overload is a no-op when common() returns null",
-    "[sound_player]") {
+TEST_CASE("SoundPlayer SOUND_DEF_T overload is a no-op when common() returns null",
+          "[sound_player]") {
   RecordingPlayer p;  // no Common attached
   p.play(SoundMenuSelect);
   REQUIRE(p.played.empty());
 }
 
-TEST_CASE("Game ctor installs g_soundPlayer and dtor restores it",
-          "[sound_player]") {
+TEST_CASE("Game ctor installs g_soundPlayer and dtor restores it", "[sound_player]") {
   auto common = std::make_shared<Common>();
   FsNode tcRoot(getTcPath());
   common->load(std::move(tcRoot));

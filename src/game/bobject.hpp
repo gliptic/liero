@@ -1,17 +1,16 @@
 #pragma once
 
-#include "math.hpp"
 #include "fastObjectList.hpp"
+#include "math.hpp"
 
 struct Game;
 
 /*
  * Blood Object
-*/
-struct BObject
-{
-	bool process(Game& game);
+ */
+struct BObject {
+  bool process(Game& game);
 
-	fixedvec pos, vel;
-	int color;
+  fixedvec pos, vel;
+  int color;
 };

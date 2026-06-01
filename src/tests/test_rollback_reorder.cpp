@@ -65,18 +65,15 @@ TEST_CASE("Rollback survives reorder + duplication", "[rollback][reorder]") {
   // later-sent ones; 30% duplication exercises the idempotent overwrite
   // path on remoteInputs slots and the stale-frame drop inside
   // injectRemoteInput. No loss here — that's covered by the loss test.
-  rollback_test::JitterTransport transport(
-      {0xACE1, /*minDelay*/ 1, /*maxDelay*/ 5,
-       /*lossProb*/ 0.0, /*dupProb*/ 0.30});
+  rollback_test::JitterTransport transport({0xACE1, /*minDelay*/ 1, /*maxDelay*/ 5,
+                                            /*lossProb*/ 0.0, /*dupProb*/ 0.30});
 
-  a->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        transport.sendAToB(gen_, bf, c, in, lf);
-      });
-  b->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        transport.sendBToA(gen_, bf, c, in, lf);
-      });
+  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.sendAToB(gen_, bf, c, in, lf);
+  });
+  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.sendBToA(gen_, bf, c, in, lf);
+  });
   a->focus();
   b->focus();
 

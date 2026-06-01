@@ -53,8 +53,7 @@ struct Slot {
 class RollbackBuffer {
  public:
   // One extra slot so we can hold frames [F - kMaxRollback, F] inclusive.
-  static constexpr std::size_t kCapacity =
-      static_cast<std::size_t>(kMaxRollback) + 1;
+  static constexpr std::size_t kCapacity = static_cast<std::size_t>(kMaxRollback) + 1;
 
   // Pre-size every slot's snapshot vectors. Call once after the level is
   // generated; no allocations happen on subsequent save/load.
@@ -132,8 +131,7 @@ class RollbackBuffer {
   std::size_t size() const {
     if (newest_ < 0) return 0;
     int span = newest_ + 1;
-    return span < static_cast<int>(kCapacity) ? static_cast<std::size_t>(span)
-                                              : kCapacity;
+    return span < static_cast<int>(kCapacity) ? static_cast<std::size_t>(span) : kCapacity;
   }
 
  private:

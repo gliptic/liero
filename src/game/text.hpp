@@ -1,41 +1,36 @@
 #pragma once
 
-#include <string>
-#include <cstring>
 #include <cstdio>
+#include <cstring>
+#include <string>
 
-inline std::string toString(int v)
-{
+inline std::string toString(int v) {
   const int BUF_MAX = 20;
-	char buf[BUF_MAX];
-	std::snprintf(buf, BUF_MAX * sizeof(char), "%d", v);
-	return buf;
+  char buf[BUF_MAX];
+  std::snprintf(buf, BUF_MAX * sizeof(char), "%d", v);
+  return buf;
 }
 
 char const* timeToString(int sec);
 char const* timeToStringEx(int ms, bool forceHours, bool forceMinutes);
 char const* timeToStringFrames(int frames);
 
-inline void rtrim(std::string& str)
-{
-	std::string::size_type e = str.find_last_not_of(" \t\r\n");
-	if(e == std::string::npos)
-		str.clear();
-	else
-		str.erase(e + 1);
+inline void rtrim(std::string& str) {
+  std::string::size_type e = str.find_last_not_of(" \t\r\n");
+  if (e == std::string::npos)
+    str.clear();
+  else
+    str.erase(e + 1);
 }
 
-inline void findReplace(std::string& str, std::string const& find, std::string const& replace)
-{
-	std::string::size_type p = str.find(find);
-	if(p != std::string::npos)
-		str.replace(p, find.size(), replace);
+inline void findReplace(std::string& str, std::string const& find, std::string const& replace) {
+  std::string::size_type p = str.find(find);
+  if (p != std::string::npos) str.replace(p, find.size(), replace);
 }
 
-inline bool endsWith(std::string const& str, char const* end)
-{
-	auto pos = str.find(end);
-	return pos != std::string::npos && pos + std::strlen(end) == str.size();
+inline bool endsWith(std::string const& str, char const* end) {
+  auto pos = str.find(end);
+  return pos != std::string::npos && pos + std::strlen(end) == str.size();
 }
 
 bool ciStartsWith(std::string const& a, std::string const& b);

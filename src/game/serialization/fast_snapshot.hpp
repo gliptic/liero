@@ -161,8 +161,8 @@ struct GameSnapshot {
   // Call once after the level is generated.
   void prepare(Game const& game) {
     bobjectsArr.resize(game.bobjects.limit);
-    std::size_t const cells = static_cast<std::size_t>(game.level.width) *
-                              static_cast<std::size_t>(game.level.height);
+    std::size_t const cells =
+        static_cast<std::size_t>(game.level.width) * static_cast<std::size_t>(game.level.height);
     levelData.resize(cells);
     levelMaterials.resize(cells);
   }

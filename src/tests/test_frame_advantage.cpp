@@ -62,14 +62,12 @@ AsymmetricRun runAsymmetric(int dAB, int dBA, int ticks) {
   rollback_test::JitterTransport tAB({0x1111, dAB, dAB, 0.0, 0.0});
   rollback_test::JitterTransport tBA({0x2222, dBA, dBA, 0.0, 0.0});
 
-  a->setInputCallbacks(
-      [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        tAB.sendAToB(gen, bf, c, in, lf);
-      });
-  b->setInputCallbacks(
-      [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        tBA.sendAToB(gen, bf, c, in, lf);  // B's outbound rides the B→A pipe
-      });
+  a->setInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    tAB.sendAToB(gen, bf, c, in, lf);
+  });
+  b->setInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    tBA.sendAToB(gen, bf, c, in, lf);  // B's outbound rides the B→A pipe
+  });
   a->focus();
   b->focus();
 
@@ -84,8 +82,7 @@ AsymmetricRun runAsymmetric(int dAB, int dBA, int ticks) {
   auto deliverA = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     a->injectRemoteBatch(bf, c, in, lf);
   };
-  auto deliverNoop =
-      [&](uint8_t, uint32_t, uint8_t, uint8_t const*, uint32_t) {};
+  auto deliverNoop = [&](uint8_t, uint32_t, uint8_t, uint8_t const*, uint32_t) {};
 
   int maxAbsGap = 0;
   for (int i = 0; i < ticks; ++i) {
@@ -100,15 +97,13 @@ AsymmetricRun runAsymmetric(int dAB, int dBA, int ticks) {
     // Window starts after both peers have had time to learn each other
     // (>= max(dAB, dBA)*4) so warm-up doesn't pollute the maximum.
     if (i > 4 * (dAB > dBA ? dAB : dBA)) {
-      int gap = static_cast<int>(a->currentFrame()) -
-                static_cast<int>(b->currentFrame());
+      int gap = static_cast<int>(a->currentFrame()) - static_cast<int>(b->currentFrame());
       int abs = gap < 0 ? -gap : gap;
       if (abs > maxAbsGap) maxAbsGap = abs;
     }
   }
 
-  return {maxAbsGap, a->frameAdvantageStallCount(),
-          b->frameAdvantageStallCount()};
+  return {maxAbsGap, a->frameAdvantageStallCount(), b->frameAdvantageStallCount()};
 }
 
 }  // namespace
@@ -117,8 +112,7 @@ TEST_CASE("Frame advantage caps the simFrame gap under asymmetric delay",
           "[rollback][frame-advantage]") {
   SECTION("D_AB=2, D_BA=6 — the plan's headline scenario") {
     auto r = runAsymmetric(2, 6, 1000);
-    INFO("max |gap| = " << r.maxAbsGap
-         << " stallsA=" << r.stallsA << " stallsB=" << r.stallsB);
+    INFO("max |gap| = " << r.maxAbsGap << " stallsA=" << r.stallsA << " stallsB=" << r.stallsB);
 
     // The slower peer must have done meaningful stall work, otherwise
     // the test is vacuously passing.
@@ -134,8 +128,7 @@ TEST_CASE("Frame advantage caps the simFrame gap under asymmetric delay",
 
   SECTION("symmetric delay still works") {
     auto r = runAsymmetric(3, 3, 500);
-    INFO("max |gap| = " << r.maxAbsGap
-         << " stallsA=" << r.stallsA << " stallsB=" << r.stallsB);
+    INFO("max |gap| = " << r.maxAbsGap << " stallsA=" << r.stallsA << " stallsB=" << r.stallsB);
     // With symmetric one-way delay the gap stays within
     // kFrameAdvantage by construction.
     REQUIRE(r.maxAbsGap <= 2 * RollbackController::kFrameAdvantage);

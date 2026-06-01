@@ -30,15 +30,23 @@
 extern int stoneTab[3][4];
 
 /* Textures sourced from [[constants.textures]] in tc.cfg */
-/* 
+/*
 Textures have the reference in nObject, wObject and sObject as dirtEffect.
-By changing Textures values in tc.cfg (nDrawBack, mFrame, sFrame and rFrame), you can control how all objects (wObjects, nObjects, sObjects) and worm (via dirtEffect 0 and 7) interact with all materials on the map (especially with dirt).
+By changing Textures values in tc.cfg (nDrawBack, mFrame, sFrame and rFrame), you can control how
+all objects (wObjects, nObjects, sObjects) and worm (via dirtEffect 0 and 7) interact with all
+materials on the map (especially with dirt).
 */
 struct Texture {
-  bool nDrawBack;  // 1C208; causes Liero not to draw the anti-alias edges on the background. Normally turned "false" for creating dirt and rock & turned "true" for cleaning dirt.
-  int mFrame;      // 1C1EA; controls which sprite is used to cut a hole (= determines the size and shape of the hole).
-  int sFrame;      // 1C1F4; the texture the map change will leave behind (= which sprite is used to fill the hole).
-  int rFrame;      // 1C1FE; the amount of sprites to use to fill the hole (starting from sFrame). Note: if you set 0 or 1, then only 1 sprite will be used to fill the hole (the one indicated in sFrame).
+  bool nDrawBack;  // 1C208; causes Liero not to draw the anti-alias edges on the background.
+                   // Normally turned "false" for creating dirt and rock & turned "true" for
+                   // cleaning dirt.
+  int mFrame;      // 1C1EA; controls which sprite is used to cut a hole (= determines the size and
+                   // shape of the hole).
+  int sFrame;      // 1C1F4; the texture the map change will leave behind (= which sprite is used to
+                   // fill the hole).
+  int rFrame;  // 1C1FE; the amount of sprites to use to fill the hole (starting from sFrame). Note:
+               // if you set 0 or 1, then only 1 sprite will be used to fill the hole (the one
+               // indicated in sFrame).
 };
 
 struct Texts {
@@ -57,7 +65,7 @@ struct Texts {
 };
 
 /* Colour animations sourced from [[constants.colorAnim]] in tc.cfg */
-struct ColourAnim { // sets arrays of colours which will be animated (colours will shine).
+struct ColourAnim {  // sets arrays of colours which will be animated (colours will shine).
   int from;
   int to;
 };
@@ -93,13 +101,11 @@ struct SfxSample {
     // A zero-length sample is a "disabled" slot. Leave `sound` null so
     // the slot survives in `Common::sounds` without occupying audio
     // memory, and so play paths can treat it as a silent no-op.
-    if (length > 0)
-      sound = sfx_new_sound(length * 2);
+    if (length > 0) sound = sfx_new_sound(length * 2);
   }
 
   ~SfxSample() {
-    if (sound)
-      sfx_free_sound(sound);
+    if (sound) sfx_free_sound(sound);
   }
 
   void createSound();
@@ -119,8 +125,8 @@ struct Common {
 
   ~Common() {}
 
-  static int fireConeOffset[FIRE_CONE_OFFSET_DIRECTION]
-                           [FIRE_CONE_OFFSET_ANGLE_FRAME][FIRE_CONE_OFFSET_XY];
+  static int fireConeOffset[FIRE_CONE_OFFSET_DIRECTION][FIRE_CONE_OFFSET_ANGLE_FRAME]
+                           [FIRE_CONE_OFFSET_XY];
 
   void load(FsNode node);
   void drawTextSmall(Bitmap& scr, char const* str, int x, int y);
@@ -140,9 +146,7 @@ struct Common {
     return wormSprites[f + dir * 7 * 3 + w * 2 * 7 * 3];
   }
 
-  PalIdx* fireConeSprite(int f, int dir) {
-    return fireConeSprites.spritePtr(f + dir * 7);
-  }
+  PalIdx* fireConeSprite(int f, int dir) { return fireConeSprites.spritePtr(f + dir * 7); }
 
   // Computed
   Texts texts;
@@ -168,9 +172,9 @@ struct Common {
   int bonusFrames[NUM_BONUS_SOBJECTS];
   // all sprite sets sourced from TC/$NAME/sprites
 
-  SpriteSet smallSprites; // 7x7, sprites 110-239
-  SpriteSet largeSprites; // 16x16, sprites 0-109
-  SpriteSet textSprites; // 4x4, sprites 240-265
+  SpriteSet smallSprites;  // 7x7, sprites 110-239
+  SpriteSet largeSprites;  // 16x16, sprites 0-109
+  SpriteSet textSprites;   // 4x4, sprites 240-265
   Palette exepal;
   Font font;
   vector<SfxSample> sounds;
@@ -180,8 +184,8 @@ struct Common {
   bool H[HACK_DEF_T::MaxH];
   // Indices into `sounds` for engine-played sounds. -1 if not configured.
   int soundHook[SOUND_DEF_T::MaxSound] = {
-      #define INIT_SOUNDHOOK(n) -1,
+#define INIT_SOUNDHOOK(n) -1,
       LIERO_SOUNDDEFS(INIT_SOUNDHOOK)
-      #undef INIT_SOUNDHOOK
+#undef INIT_SOUNDHOOK
   };
 };

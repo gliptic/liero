@@ -1,243 +1,205 @@
 #include "filesystem.hpp"
-#include "text.hpp"
-#include "io/stream.hpp"
 #include <SDL3/SDL.h>
-#include <stdexcept>
+#include <sys/stat.h>
 #include <cassert>
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
-#include <sys/stat.h>
+#include <stdexcept>
+#include "io/stream.hpp"
+#include "text.hpp"
 #if _WIN32
 #include <io.h>
 #else
 #include <unistd.h>
 #endif
 
-std::string changeLeaf(std::string const& path, std::string const& newLeaf)
-{
-	std::size_t lastSep = path.find_last_of("\\/");
+std::string changeLeaf(std::string const& path, std::string const& newLeaf) {
+  std::size_t lastSep = path.find_last_of("\\/");
 
-	if(lastSep == std::string::npos)
-		return newLeaf; // We assume there's only a leaf in the path
-	return path.substr(0, lastSep + 1) + newLeaf;
+  if (lastSep == std::string::npos) return newLeaf;  // We assume there's only a leaf in the path
+  return path.substr(0, lastSep + 1) + newLeaf;
 }
 
-std::string getRoot(std::string const& path)
-{
-	std::size_t lastSep = path.find_last_of("\\/");
+std::string getRoot(std::string const& path) {
+  std::size_t lastSep = path.find_last_of("\\/");
 
-	if(lastSep == std::string::npos)
-		return "";
-	return path.substr(0, lastSep);
+  if (lastSep == std::string::npos) return "";
+  return path.substr(0, lastSep);
 }
 
-std::string getLeaf(std::string const& path)
-{
-	std::size_t lastSep = path.find_last_of("\\/");
+std::string getLeaf(std::string const& path) {
+  std::size_t lastSep = path.find_last_of("\\/");
 
-	if (lastSep == std::string::npos)
-		return path;
-	return path.substr(lastSep + 1);
+  if (lastSep == std::string::npos) return path;
+  return path.substr(lastSep + 1);
 }
 
-std::string getBasename(std::string const& path)
-{
-	std::size_t lastSep = path.find_last_of(".");
+std::string getBasename(std::string const& path) {
+  std::size_t lastSep = path.find_last_of(".");
 
-	if(lastSep == std::string::npos)
-		return path;
-	return path.substr(0, lastSep);
+  if (lastSep == std::string::npos) return path;
+  return path.substr(0, lastSep);
 }
 
-std::string getExtension(std::string const& path)
-{
-	std::size_t lastSep = path.find_last_of(".");
+std::string getExtension(std::string const& path) {
+  std::size_t lastSep = path.find_last_of(".");
 
-	if(lastSep == std::string::npos)
-		return "";
-	return path.substr(lastSep + 1);
+  if (lastSep == std::string::npos) return "";
+  return path.substr(lastSep + 1);
 }
 
-std::string toUpperCase(std::string str)
-{
-	for(std::size_t i = 0; i < str.size(); ++i)
-	{
-		str[i] = std::toupper(static_cast<unsigned char>(str[i])); // TODO: Uppercase conversion that works for the DOS charset
-	}
-	return str;
+std::string toUpperCase(std::string str) {
+  for (std::size_t i = 0; i < str.size(); ++i) {
+    str[i] = std::toupper(static_cast<unsigned char>(
+        str[i]));  // TODO: Uppercase conversion that works for the DOS charset
+  }
+  return str;
 }
 
-std::string toLowerCase(std::string str)
-{
-	for(std::size_t i = 0; i < str.size(); ++i)
-	{
-		str[i] = std::tolower(static_cast<unsigned char>(str[i])); // TODO: Lowercase conversion that works for the DOS charset
-	}
-	return str;
+std::string toLowerCase(std::string str) {
+  for (std::size_t i = 0; i < str.size(); ++i) {
+    str[i] = std::tolower(static_cast<unsigned char>(
+        str[i]));  // TODO: Lowercase conversion that works for the DOS charset
+  }
+  return str;
 }
 
-FILE* tolerantFOpen(std::string const& name, char const* mode)
-{
-	FILE* f = std::fopen(name.c_str(), mode);
-	if(f)
-		return f;
+FILE* tolerantFOpen(std::string const& name, char const* mode) {
+  FILE* f = std::fopen(name.c_str(), mode);
+  if (f) return f;
 
-	f = std::fopen(toUpperCase(name).c_str(), mode);
-	if(f)
-		return f;
+  f = std::fopen(toUpperCase(name).c_str(), mode);
+  if (f) return f;
 
-	f = std::fopen(toLowerCase(name).c_str(), mode);
-	if(f)
-		return f;
+  f = std::fopen(toLowerCase(name).c_str(), mode);
+  if (f) return f;
 
-	// Try with first letter capital
-	std::string ch(toLowerCase(name));
-	ch[0] = std::toupper(static_cast<unsigned char>(ch[0]));
-	f = std::fopen(ch.c_str(), mode);
-	if(f)
-		return f;
+  // Try with first letter capital
+  std::string ch(toLowerCase(name));
+  ch[0] = std::toupper(static_cast<unsigned char>(ch[0]));
+  f = std::fopen(ch.c_str(), mode);
+  if (f) return f;
 
-	return 0;
+  return 0;
 }
 
-std::size_t fileLength(FILE* f)
-{
-	long old = ftell(f);
-	fseek(f, 0, SEEK_END);
-	long len = ftell(f);
-	fseek(f, old, SEEK_SET);
-	return len;
+std::size_t fileLength(FILE* f) {
+  long old = ftell(f);
+  fseek(f, 0, SEEK_END);
+  long len = ftell(f);
+  fseek(f, old, SEEK_SET);
+  return len;
 }
 
 #if _WIN32
-#  include "windows.h"
+#include "windows.h"
 
-#  if defined(__BORLANDC__) || defined(__MWERKS__)
-#     if defined(__BORLANDC__)
-        using std::time_t;
-#     endif
-#     include "utime.h"
-#   else
-#     include "sys/utime.h"
-#   endif
-# else
-#   include "dirent.h"
-#   include "unistd.h"
-#   include "fcntl.h"
-#   include "utime.h"
-#   include <errno.h>
-# endif
+#if defined(__BORLANDC__) || defined(__MWERKS__)
+#if defined(__BORLANDC__)
+using std::time_t;
+#endif
+#include "utime.h"
+#else
+#include "sys/utime.h"
+#endif
+#else
+#include <errno.h>
+#include "dirent.h"
+#include "fcntl.h"
+#include "unistd.h"
+#include "utime.h"
+#endif
 
-namespace
-{
+namespace {
 
-struct filename_result
-{
-	filename_result()
-	: name(0)
-	{
-	}
+struct filename_result {
+  filename_result() : name(0) {}
 
-	filename_result(char const* name)
-	: name(name)
-	{
+  filename_result(char const* name) : name(name) {}
 
-	}
+  operator void const*() { return name; }
 
-	operator void const*()
-	{
-		return name;
-	}
-
-	char const* name;
+  char const* name;
 };
 
 #if __unix__ || __APPLE__
 
-# define BOOST_HANDLE DIR *
-# define BOOST_INVALID_HANDLE_VALUE 0
-# define BOOST_SYSTEM_DIRECTORY_TYPE struct dirent *
+#define BOOST_HANDLE DIR*
+#define BOOST_INVALID_HANDLE_VALUE 0
+#define BOOST_SYSTEM_DIRECTORY_TYPE struct dirent*
 
-inline filename_result find_first_file( const char * dir,
-BOOST_HANDLE & handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
+inline filename_result find_first_file(const char* dir, BOOST_HANDLE& handle,
+                                       BOOST_SYSTEM_DIRECTORY_TYPE&)
 // Returns: 0 if error, otherwise name
 {
-	const char * dummy_first_name = ".";
-	return ( (handle = ::opendir( dir ))
-		== BOOST_INVALID_HANDLE_VALUE ) ? filename_result() : filename_result(dummy_first_name);
+  const char* dummy_first_name = ".";
+  return ((handle = ::opendir(dir)) == BOOST_INVALID_HANDLE_VALUE)
+             ? filename_result()
+             : filename_result(dummy_first_name);
 }
 
-inline void find_close( BOOST_HANDLE handle )
-{
-	assert( handle != BOOST_INVALID_HANDLE_VALUE );
-	::closedir( handle );
+inline void find_close(BOOST_HANDLE handle) {
+  assert(handle != BOOST_INVALID_HANDLE_VALUE);
+  ::closedir(handle);
 }
 
-inline filename_result find_next_file(
-BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & )
+inline filename_result find_next_file(BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE&)
 // Returns: if EOF 0, otherwise name
 // Throws: if system reports error
 {
+  //  TODO: use readdir_r() if available, so code is multi-thread safe.
+  //  Fly-in-ointment: not all platforms support readdir_r().
 
-	//  TODO: use readdir_r() if available, so code is multi-thread safe.
-	//  Fly-in-ointment: not all platforms support readdir_r().
-
-	struct dirent * dp;
-	errno = 0;
-	if ( (dp = ::readdir( handle )) == 0 )
-	{
-		if ( errno != 0 )
-		{
-			throw std::runtime_error("Error iterating directory");
-		}
-		else { return filename_result(); } // end reached
-	}
-	return filename_result(dp->d_name);
+  struct dirent* dp;
+  errno = 0;
+  if ((dp = ::readdir(handle)) == 0) {
+    if (errno != 0) {
+      throw std::runtime_error("Error iterating directory");
+    } else {
+      return filename_result();
+    }  // end reached
+  }
+  return filename_result(dp->d_name);
 }
 #elif _WIN32
 
-# define BOOST_HANDLE HANDLE
-# define BOOST_INVALID_HANDLE_VALUE INVALID_HANDLE_VALUE
-# define BOOST_SYSTEM_DIRECTORY_TYPE WIN32_FIND_DATAA
+#define BOOST_HANDLE HANDLE
+#define BOOST_INVALID_HANDLE_VALUE INVALID_HANDLE_VALUE
+#define BOOST_SYSTEM_DIRECTORY_TYPE WIN32_FIND_DATAA
 
-
-inline filename_result find_first_file( const char * dir,
-BOOST_HANDLE & handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
+inline filename_result find_first_file(const char* dir, BOOST_HANDLE& handle,
+                                       BOOST_SYSTEM_DIRECTORY_TYPE& data)
 // Returns: 0 if error, otherwise name
 {
-	//    std::cout << "find_first_file " << dir << std::endl;
-	std::string dirpath( std::string(dir) + "/*" );
-	bool fail = ( (handle = ::FindFirstFileA( dirpath.c_str(), &data )) == BOOST_INVALID_HANDLE_VALUE );
+  //    std::cout << "find_first_file " << dir << std::endl;
+  std::string dirpath(std::string(dir) + "/*");
+  bool fail = ((handle = ::FindFirstFileA(dirpath.c_str(), &data)) == BOOST_INVALID_HANDLE_VALUE);
 
-	if(fail)
-		return filename_result();
+  if (fail) return filename_result();
 
-	return filename_result(data.cFileName);
+  return filename_result(data.cFileName);
 }
 
-inline void find_close( BOOST_HANDLE handle )
-{
-	//    std::cout << "find_close" << std::endl;
-	assert( handle != BOOST_INVALID_HANDLE_VALUE );
-	::FindClose( handle );
+inline void find_close(BOOST_HANDLE handle) {
+  //    std::cout << "find_close" << std::endl;
+  assert(handle != BOOST_INVALID_HANDLE_VALUE);
+  ::FindClose(handle);
 }
 
-inline filename_result find_next_file(
-BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
+inline filename_result find_next_file(BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE& data)
 // Returns: 0 if EOF, otherwise name
 // Throws: if system reports error
 {
-	if ( ::FindNextFileA( handle, &data ) == 0 )
-	{
-		if ( ::GetLastError() != ERROR_NO_MORE_FILES )
-		{
-			throw std::runtime_error("Error iterating directory");
-		}
-		else { return filename_result(); } // end reached
-	}
+  if (::FindNextFileA(handle, &data) == 0) {
+    if (::GetLastError() != ERROR_NO_MORE_FILES) {
+      throw std::runtime_error("Error iterating directory");
+    } else {
+      return filename_result();
+    }  // end reached
+  }
 
-	return filename_result(data.cFileName);
+  return filename_result(data.cFileName);
 }
 
 #else
@@ -245,579 +207,447 @@ BOOST_HANDLE handle, BOOST_SYSTEM_DIRECTORY_TYPE & data )
 #error "Not supported"
 #endif
 
-}
+}  // namespace
 
 #if _WIN32
 
-inline char isDirSep(char c)
-{
-	return c == '\\' || c == '/';
-}
+inline char isDirSep(char c) { return c == '\\' || c == '/'; }
 
 static char const dirSep = '\\';
 
-bool create_directories(std::string const& dir)
-{
-	for (std::size_t i = 0; i < dir.size(); ++i)
-	{
-		if (isDirSep(dir[i]))
-		{
-			std::string path = dir.substr(0, i);
-			DWORD attr = GetFileAttributesA(path.c_str());
+bool create_directories(std::string const& dir) {
+  for (std::size_t i = 0; i < dir.size(); ++i) {
+    if (isDirSep(dir[i])) {
+      std::string path = dir.substr(0, i);
+      DWORD attr = GetFileAttributesA(path.c_str());
 
-			if (attr == INVALID_FILE_ATTRIBUTES)
-			{
-				CreateDirectoryA(path.c_str(), NULL);
-			}
-			else if (!(attr & FILE_ATTRIBUTE_DIRECTORY))
-			{
-				return false;
-			}
-		}
-	}
+      if (attr == INVALID_FILE_ATTRIBUTES) {
+        CreateDirectoryA(path.c_str(), NULL);
+      } else if (!(attr & FILE_ATTRIBUTE_DIRECTORY)) {
+        return false;
+      }
+    }
+  }
 
-	return true;
+  return true;
 }
 
 #else
 
 static char const dirSep = '/';
 
-inline char isDirSep(char c)
-{
-	return c == dirSep;
-}
+inline char isDirSep(char c) { return c == dirSep; }
 
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
-bool create_directories(std::string const& dir)
-{
-	for (std::size_t i = 1; i < dir.size(); ++i)
-	{
-		if (isDirSep(dir[i]))
-		{
-			std::string path = dir.substr(0, i);
-            struct stat s;
-            if (stat(path.c_str(), &s) < 0)
-            {
-                if (mkdir(path.c_str(), 0777) < 0)
-                {
-                    return false;
-                }
-            }
-		}
-	}
+bool create_directories(std::string const& dir) {
+  for (std::size_t i = 1; i < dir.size(); ++i) {
+    if (isDirSep(dir[i])) {
+      std::string path = dir.substr(0, i);
+      struct stat s;
+      if (stat(path.c_str(), &s) < 0) {
+        if (mkdir(path.c_str(), 0777) < 0) {
+          return false;
+        }
+      }
+    }
+  }
 
-	return true;
+  return true;
 }
 
 #endif
 
-std::string joinPath(std::string const& root, std::string const& leaf)
-{
-	if(!root.empty()
-	&& root[root.size() - 1] != '\\'
-	&& root[root.size() - 1] != '/')
-	{
-		return root + '/' + leaf;
-	}
-	else
-	{
-		return root + leaf;
-	}
+std::string joinPath(std::string const& root, std::string const& leaf) {
+  if (!root.empty() && root[root.size() - 1] != '\\' && root[root.size() - 1] != '/') {
+    return root + '/' + leaf;
+  } else {
+    return root + leaf;
+  }
 }
 
-inline bool dot_or_dot_dot( char const * name )
-{
-	return name[0]=='.'
-		&& (name[1]=='\0' || (name[1]=='.' && name[2]=='\0'));
+inline bool dot_or_dot_dot(char const* name) {
+  return name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'));
 }
 
-DirectoryListing::DirectoryListing(std::string const& dir)
-{
-	char const* dir_path = dir.empty() ? "." : dir.c_str();
+DirectoryListing::DirectoryListing(std::string const& dir) {
+  char const* dir_path = dir.empty() ? "." : dir.c_str();
 
-	BOOST_HANDLE handle;
-	BOOST_SYSTEM_DIRECTORY_TYPE scratch;
-	filename_result name;  // initialization quiets compiler warnings
+  BOOST_HANDLE handle;
+  BOOST_SYSTEM_DIRECTORY_TYPE scratch;
+  filename_result name;  // initialization quiets compiler warnings
 
-	if (!dir_path[0])
-		handle = BOOST_INVALID_HANDLE_VALUE;
-	else
-		name = find_first_file(dir_path, handle, scratch);  // sets handle
+  if (!dir_path[0])
+    handle = BOOST_INVALID_HANDLE_VALUE;
+  else
+    name = find_first_file(dir_path, handle, scratch);  // sets handle
 
-	if (handle != BOOST_INVALID_HANDLE_VALUE)
-	{
-		do
-		{
-			if (!dot_or_dot_dot(name.name))
-			{
-				struct stat st;
-				if (stat(joinPath(dir, name.name).c_str(), &st) == 0)
-				{
-					subs.push_back(NodeName(name.name, (st.st_mode & S_IFMT) == S_IFDIR));
+  if (handle != BOOST_INVALID_HANDLE_VALUE) {
+    do {
+      if (!dot_or_dot_dot(name.name)) {
+        struct stat st;
+        if (stat(joinPath(dir, name.name).c_str(), &st) == 0) {
+          subs.push_back(NodeName(name.name, (st.st_mode & S_IFMT) == S_IFDIR));
 
-					if (endsWith(subs.back().name, ".zip"))
-					{
-						auto& back = subs.back();
-						back.name.erase(subs.back().name.size() - 4);
-						back.isDir = true;
-					}
-				}
-			}
-		}
-		while ((name = find_next_file(handle, scratch)));
+          if (endsWith(subs.back().name, ".zip")) {
+            auto& back = subs.back();
+            back.name.erase(subs.back().name.size() - 4);
+            back.isDir = true;
+          }
+        }
+      }
+    } while ((name = find_next_file(handle, scratch)));
 
-		find_close(handle);
-	}
+    find_close(handle);
+  }
 
-	sort();
+  sort();
 }
 
-DirectoryListing::DirectoryListing(std::vector<NodeName>&& subsInit)
-: subs(std::move(subsInit))
-{
-	sort();
+DirectoryListing::DirectoryListing(std::vector<NodeName>&& subsInit) : subs(std::move(subsInit)) {
+  sort();
 }
 
-DirectoryListing::~DirectoryListing()
-{
-}
+DirectoryListing::~DirectoryListing() {}
 
-void DirectoryListing::sort()
-{
-	std::sort(subs.begin(), subs.end(), [](NodeName const& a, NodeName const& b) { return a.name < b.name; });
-	auto i = std::unique(subs.begin(), subs.end(), [](NodeName const& a, NodeName const& b) { return a.name == b.name; });
-	subs.erase(i, subs.end());
+void DirectoryListing::sort() {
+  std::sort(subs.begin(), subs.end(),
+            [](NodeName const& a, NodeName const& b) { return a.name < b.name; });
+  auto i = std::unique(subs.begin(), subs.end(),
+                       [](NodeName const& a, NodeName const& b) { return a.name == b.name; });
+  subs.erase(i, subs.end());
 }
 
 // ------------ FsNodeZipFile
 
-
 struct FsNodeZipFile;
 
-struct FsNodeZipArchive
-{
-	FsNodeZipArchive(std::string const& path);
+struct FsNodeZipArchive {
+  FsNodeZipArchive(std::string const& path);
 
-	mz_zip_archive archive;
+  mz_zip_archive archive;
 
-	FsNodeZipFile* root;
+  FsNodeZipFile* root;
 };
 
 std::shared_ptr<FsNodeImp> join(std::shared_ptr<FsNodeImp> a, std::shared_ptr<FsNodeImp> b);
 
-struct FsNodeJoin : FsNodeImp
-{
-	std::shared_ptr<FsNodeImp> a, b;
+struct FsNodeJoin : FsNodeImp {
+  std::shared_ptr<FsNodeImp> a, b;
 
-	FsNodeJoin(std::shared_ptr<FsNodeImp> aInit, std::shared_ptr<FsNodeImp> bInit)
-	: a(std::move(aInit)), b(std::move(bInit))
-	{
-	}
+  FsNodeJoin(std::shared_ptr<FsNodeImp> aInit, std::shared_ptr<FsNodeImp> bInit)
+      : a(std::move(aInit)), b(std::move(bInit)) {}
 
-	std::string const& fullPath()
-	{
-		return a->fullPath();
-	}
+  std::string const& fullPath() { return a->fullPath(); }
 
-	DirectoryListing iter()
-	{
-		return a->iter() | b->iter();
-	}
+  DirectoryListing iter() { return a->iter() | b->iter(); }
 
-	std::shared_ptr<FsNodeImp> go(std::string const& name)
-	{
-		return join(a->go(name), b->go(name));
-	}
+  std::shared_ptr<FsNodeImp> go(std::string const& name) { return join(a->go(name), b->go(name)); }
 
-	bool exists() const
-	{
-		return a->exists() || b->exists();
-	}
+  bool exists() const { return a->exists() || b->exists(); }
 
-	std::unique_ptr<io::Reader> tryToReader()
-	{
-		auto s = a->tryToReader();
-		if (s)
-			return s;
-		return b->tryToReader();
-	}
+  std::unique_ptr<io::Reader> tryToReader() {
+    auto s = a->tryToReader();
+    if (s) return s;
+    return b->tryToReader();
+  }
 
-	std::unique_ptr<io::Writer> tryToWriter()
-	{
-		auto s = a->tryToWriter();
-		if (s)
-			return s;
-		return b->tryToWriter();
-	}
+  std::unique_ptr<io::Writer> tryToWriter() {
+    auto s = a->tryToWriter();
+    if (s) return s;
+    return b->tryToWriter();
+  }
 };
 
-std::shared_ptr<FsNodeImp> join(std::shared_ptr<FsNodeImp> a, std::shared_ptr<FsNodeImp> b)
-{
-	if (!b)
-		return a;
-	if (!a)
-		return b;
-	return std::shared_ptr<FsNodeImp>(new FsNodeJoin(std::move(a), std::move(b)));
+std::shared_ptr<FsNodeImp> join(std::shared_ptr<FsNodeImp> a, std::shared_ptr<FsNodeImp> b) {
+  if (!b) return a;
+  if (!a) return b;
+  return std::shared_ptr<FsNodeImp>(new FsNodeJoin(std::move(a), std::move(b)));
 }
 
-struct FsNodeZipFile : FsNodeImp
-{
-	std::shared_ptr<FsNodeZipArchive> archive;
-	std::string path;
-	std::string relPath;
-	int fileIndex;
-	bool isDir;
+struct FsNodeZipFile : FsNodeImp {
+  std::shared_ptr<FsNodeZipArchive> archive;
+  std::string path;
+  std::string relPath;
+  int fileIndex;
+  bool isDir;
 
-	FsNodeZipFile(std::string const& path, bool isDir)
-	: archive(new FsNodeZipArchive(path))
-	, path(path)
-	, fileIndex(-1)
-	, isDir(isDir)
-	{
-		archive->root = this;
+  FsNodeZipFile(std::string const& path, bool isDir)
+      : archive(new FsNodeZipArchive(path)), path(path), fileIndex(-1), isDir(isDir) {
+    archive->root = this;
 
-		auto fileCount = mz_zip_reader_get_num_files(&archive->archive);
+    auto fileCount = mz_zip_reader_get_num_files(&archive->archive);
 
-		for (mz_uint fileIndex = 0; fileIndex < fileCount; ++fileIndex)
-		{
-			char buf[260];
-			mz_zip_reader_get_filename(&archive->archive, fileIndex, buf, 260);
+    for (mz_uint fileIndex = 0; fileIndex < fileCount; ++fileIndex) {
+      char buf[260];
+      mz_zip_reader_get_filename(&archive->archive, fileIndex, buf, 260);
 
-			bool isDir = mz_zip_reader_is_file_a_directory(&archive->archive, fileIndex);
+      bool isDir = mz_zip_reader_is_file_a_directory(&archive->archive, fileIndex);
 
-			std::string filepath(buf);
+      std::string filepath(buf);
 
-			FsNodeZipFile* cur = this;
+      FsNodeZipFile* cur = this;
 
-			std::size_t beg = 0, i = 0;
+      std::size_t beg = 0, i = 0;
 
-			for (; i < filepath.size(); ++i)
-			{
-				if (isDirSep(filepath[i]))
-				{
-					std::string const& part = filepath.substr(beg, i - beg);
+      for (; i < filepath.size(); ++i) {
+        if (isDirSep(filepath[i])) {
+          std::string const& part = filepath.substr(beg, i - beg);
 
-					auto& c = cur->children[part];
-					if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), -1, true));
-					cur = c.get();
+          auto& c = cur->children[part];
+          if (!c)
+            c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part),
+                                      joinPath(cur->relPath, part), -1, true));
+          cur = c.get();
 
-					beg = i + 1;
-				}
-			}
+          beg = i + 1;
+        }
+      }
 
-			if (beg != i)
-			{
-				std::string const& part = filepath.substr(beg, i - beg);
+      if (beg != i) {
+        std::string const& part = filepath.substr(beg, i - beg);
 
-				auto& c = cur->children[part];
-				if (!c) c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part), joinPath(cur->relPath, part), (int)fileIndex, isDir));
-				cur = c.get();
-			}
-		}
-	}
+        auto& c = cur->children[part];
+        if (!c)
+          c.reset(new FsNodeZipFile(archive, joinPath(cur->path, part),
+                                    joinPath(cur->relPath, part), (int)fileIndex, isDir));
+        cur = c.get();
+      }
+    }
+  }
 
-	FsNodeZipFile(std::shared_ptr<FsNodeZipArchive> archive, std::string const& fullPath, std::string const& relPath, int fileIndex, bool isDir)
-	: archive(std::move(archive))
-	, path(fullPath)
-	, relPath(relPath)
-	, fileIndex(fileIndex)
-	, isDir(isDir)
-	{
-	}
+  FsNodeZipFile(std::shared_ptr<FsNodeZipArchive> archive, std::string const& fullPath,
+                std::string const& relPath, int fileIndex, bool isDir)
+      : archive(std::move(archive)),
+        path(fullPath),
+        relPath(relPath),
+        fileIndex(fileIndex),
+        isDir(isDir) {}
 
-	std::map<std::string, std::shared_ptr<FsNodeZipFile>> children;
+  std::map<std::string, std::shared_ptr<FsNodeZipFile>> children;
 
-	std::string const& fullPath()
-	{
-		return path;
-	}
+  std::string const& fullPath() { return path; }
 
-	DirectoryListing iter()
-	{
-		std::vector<NodeName> subs;
+  DirectoryListing iter() {
+    std::vector<NodeName> subs;
 
-		for (auto& i : children)
-		{
-			subs.push_back(NodeName(i.first, i.second->isDir));
-		}
+    for (auto& i : children) {
+      subs.push_back(NodeName(i.first, i.second->isDir));
+    }
 
-		return DirectoryListing(std::move(subs));
-	}
+    return DirectoryListing(std::move(subs));
+  }
 
-	std::shared_ptr<FsNodeImp> go(std::string const& name)
-	{
-		auto i = children.find(name);
-		if (i != children.end())
-			return i->second;
-		return std::shared_ptr<FsNodeImp>();
-	}
+  std::shared_ptr<FsNodeImp> go(std::string const& name) {
+    auto i = children.find(name);
+    if (i != children.end()) return i->second;
+    return std::shared_ptr<FsNodeImp>();
+  }
 
-	bool exists() const
-	{
-		return true;
-	}
+  bool exists() const { return true; }
 
-	std::unique_ptr<io::Reader> tryToReader()
-	{
-		if (fileIndex < 0)
-			return nullptr;
+  std::unique_ptr<io::Reader> tryToReader() {
+    if (fileIndex < 0) return nullptr;
 
-		std::size_t size;
-		auto* ptr = mz_zip_reader_extract_to_heap(&archive->archive, (mz_uint)fileIndex, &size, 0);
+    std::size_t size;
+    auto* ptr = mz_zip_reader_extract_to_heap(&archive->archive, (mz_uint)fileIndex, &size, 0);
 
-		if (!ptr)
-			return nullptr;
+    if (!ptr) return nullptr;
 
-		// Copy the heap-extracted bytes into a vector so we own the lifetime
-		// (mz_zip_reader_extract_to_heap requires the caller to free()).
-		std::vector<uint8_t> data(reinterpret_cast<uint8_t const*>(ptr),
-		                          reinterpret_cast<uint8_t const*>(ptr) + size);
-		free(ptr);
+    // Copy the heap-extracted bytes into a vector so we own the lifetime
+    // (mz_zip_reader_extract_to_heap requires the caller to free()).
+    std::vector<uint8_t> data(reinterpret_cast<uint8_t const*>(ptr),
+                              reinterpret_cast<uint8_t const*>(ptr) + size);
+    free(ptr);
 
-		struct OwnedMemReader : io::Reader {
-			std::vector<uint8_t> data;
-			io::MemReader inner;
-			explicit OwnedMemReader(std::vector<uint8_t>&& d)
-				: data(std::move(d)), inner(data.data(), data.size()) {}
-			uint8_t get() override { return inner.get(); }
-			std::size_t try_get(uint8_t* dst, std::size_t n) override {
-				return inner.try_get(dst, n);
-			}
-		};
-		return std::make_unique<OwnedMemReader>(std::move(data));
-	}
+    struct OwnedMemReader : io::Reader {
+      std::vector<uint8_t> data;
+      io::MemReader inner;
+      explicit OwnedMemReader(std::vector<uint8_t>&& d)
+          : data(std::move(d)), inner(data.data(), data.size()) {}
+      uint8_t get() override { return inner.get(); }
+      std::size_t try_get(uint8_t* dst, std::size_t n) override { return inner.try_get(dst, n); }
+    };
+    return std::make_unique<OwnedMemReader>(std::move(data));
+  }
 
-	std::unique_ptr<io::Writer> tryToWriter()
-	{
-		return nullptr; // We don't want to write to .zip files
-	}
+  std::unique_ptr<io::Writer> tryToWriter() {
+    return nullptr;  // We don't want to write to .zip files
+  }
 };
 
-struct FsNodeFilesystem : FsNodeImp
-{
-	FsNodeFilesystem(std::string const& pathInit)
-	: path(pathInit)
-	{
-		if (path.empty())
-			path.assign(".");
-	}
+struct FsNodeFilesystem : FsNodeImp {
+  FsNodeFilesystem(std::string const& pathInit) : path(pathInit) {
+    if (path.empty()) path.assign(".");
+  }
 
-	std::string const& fullPath()
-	{
-		return path;
-	}
+  std::string const& fullPath() { return path; }
 
-	DirectoryListing iter()
-	{
-		return DirectoryListing(path);
-	}
+  DirectoryListing iter() { return DirectoryListing(path); }
 
-	std::shared_ptr<FsNodeImp> go(std::string const& name)
-	{
-		std::string fullPath(joinPath(path, name));
-		std::shared_ptr<FsNodeImp> imp;
+  std::shared_ptr<FsNodeImp> go(std::string const& name) {
+    std::string fullPath(joinPath(path, name));
+    std::shared_ptr<FsNodeImp> imp;
 
-		//struct stat st;
-		//if (stat(fullPath.c_str(), &st) == 0)
-		{
-			//if ((st.st_mode & S_IFMT) == S_IFDIR)
-			//	dir = true;
+    // struct stat st;
+    // if (stat(fullPath.c_str(), &st) == 0)
+    {
+      // if ((st.st_mode & S_IFMT) == S_IFDIR)
+      //	dir = true;
 
-			imp.reset(new FsNodeFilesystem(fullPath));
-		}
+      imp.reset(new FsNodeFilesystem(fullPath));
+    }
 
-		std::string zipPath(fullPath + ".zip");
+    std::string zipPath(fullPath + ".zip");
 
-		if (access(zipPath.c_str(), 0) != -1)
-		{
-			// We have a zip file, merge nodes
-			imp = join(std::move(imp), std::shared_ptr<FsNodeImp>(new FsNodeZipFile(zipPath, true)));
-		}
-		else if (access(fullPath.c_str(), 0) != -1 && endsWith(fullPath, ".zip"))
-		{
-			imp = join(std::move(imp), std::shared_ptr<FsNodeImp>(new FsNodeZipFile(fullPath, true)));
-		}
+    if (access(zipPath.c_str(), 0) != -1) {
+      // We have a zip file, merge nodes
+      imp = join(std::move(imp), std::shared_ptr<FsNodeImp>(new FsNodeZipFile(zipPath, true)));
+    } else if (access(fullPath.c_str(), 0) != -1 && endsWith(fullPath, ".zip")) {
+      imp = join(std::move(imp), std::shared_ptr<FsNodeImp>(new FsNodeZipFile(fullPath, true)));
+    }
 
-		return imp;
-	}
+    return imp;
+  }
 
-	bool exists() const
-	{
-		return access(path.c_str(), 0) != -1;
-	}
+  bool exists() const { return access(path.c_str(), 0) != -1; }
 
-	std::unique_ptr<io::Reader> tryToReader()
-	{
-		FILE* f = tolerantFOpen(path.c_str(), "rb");
-		if (!f)
-			return nullptr;
+  std::unique_ptr<io::Reader> tryToReader() {
+    FILE* f = tolerantFOpen(path.c_str(), "rb");
+    if (!f) return nullptr;
 
-		return std::make_unique<io::FileReader>(f, io::FileReader::OwnFile{});
-	}
+    return std::make_unique<io::FileReader>(f, io::FileReader::OwnFile{});
+  }
 
-	std::unique_ptr<io::Writer> tryToWriter()
-	{
-		FILE* f = fopen(path.c_str(), "wb");
-		if (!f)
-		{
-			// Try to create directories
-			create_directories(path);
-			f = fopen(path.c_str(), "wb");
-			if (!f)
-				return nullptr;
-		}
+  std::unique_ptr<io::Writer> tryToWriter() {
+    FILE* f = fopen(path.c_str(), "wb");
+    if (!f) {
+      // Try to create directories
+      create_directories(path);
+      f = fopen(path.c_str(), "wb");
+      if (!f) return nullptr;
+    }
 
-		return std::make_unique<io::FileWriter>(f, io::FileWriter::OwnFile{});
-	}
+    return std::make_unique<io::FileWriter>(f, io::FileWriter::OwnFile{});
+  }
 
-	std::string path;
+  std::string path;
 };
 
-FsNodeZipArchive::FsNodeZipArchive(std::string const& path)
-{
-	memset(&archive, 0, sizeof(archive));
-	mz_zip_reader_init_file(&archive, path.c_str(), 0);
+FsNodeZipArchive::FsNodeZipArchive(std::string const& path) {
+  memset(&archive, 0, sizeof(archive));
+  mz_zip_reader_init_file(&archive, path.c_str(), 0);
 }
 
 // TODO: Free archive
 
-FsNode::FsNode(std::string const& path)
-{
-	if (path.empty())
-	{
-		imp.reset(new FsNodeFilesystem(path));
-		return;
-	}
+FsNode::FsNode(std::string const& path) {
+  if (path.empty()) {
+    imp.reset(new FsNodeFilesystem(path));
+    return;
+  }
 
-	std::size_t beg = 0, i = 0;
+  std::size_t beg = 0, i = 0;
 
-	for (; i < path.size(); ++i)
-	{
-		if (isDirSep(path[i]))
-		{
-			std::string const& part = path.substr(beg, i - beg);
-			if (!imp)
-			{
+  for (; i < path.size(); ++i) {
+    if (isDirSep(path[i])) {
+      std::string const& part = path.substr(beg, i - beg);
+      if (!imp) {
 #if _WIN32
-				if (part.size() == 2 && part[1] == ':')
-					imp.reset(new FsNodeFilesystem(part));
-				else
-				{
-					imp.reset(new FsNodeFilesystem("."));
-					imp = imp->go(part);
-				}
+        if (part.size() == 2 && part[1] == ':')
+          imp.reset(new FsNodeFilesystem(part));
+        else {
+          imp.reset(new FsNodeFilesystem("."));
+          imp = imp->go(part);
+        }
 #else
-				if (part.empty())
-					imp.reset(new FsNodeFilesystem("/"));
-				else
-				{
-					imp.reset(new FsNodeFilesystem("."));
-					imp = imp->go(part);
-				}
+        if (part.empty())
+          imp.reset(new FsNodeFilesystem("/"));
+        else {
+          imp.reset(new FsNodeFilesystem("."));
+          imp = imp->go(part);
+        }
 #endif
-			}
-			else
-			{
-				imp = imp->go(part);
-			}
+      } else {
+        imp = imp->go(part);
+      }
 
-			beg = i + 1;
-		}
-	}
+      beg = i + 1;
+    }
+  }
 
-	if (beg != i)
-	{
-		std::string const& part = path.substr(beg, i - beg);
+  if (beg != i) {
+    std::string const& part = path.substr(beg, i - beg);
 
-		if (!imp)
-		{
+    if (!imp) {
 #if _WIN32
-			if (path.size() == 2 && path[1] == ':')
-				imp.reset(new FsNodeFilesystem(part));
-			else
-			{
-				imp.reset(new FsNodeFilesystem("."));
-				imp = imp->go(part);
-			}
+      if (path.size() == 2 && path[1] == ':')
+        imp.reset(new FsNodeFilesystem(part));
+      else {
+        imp.reset(new FsNodeFilesystem("."));
+        imp = imp->go(part);
+      }
 #else
-			if (path.empty())
-				imp.reset(new FsNodeFilesystem(part));
-			else
-			{
-				imp.reset(new FsNodeFilesystem("."));
-				imp = imp->go(part);
-			}
+      if (path.empty())
+        imp.reset(new FsNodeFilesystem(part));
+      else {
+        imp.reset(new FsNodeFilesystem("."));
+        imp = imp->go(part);
+      }
 #endif
-		}
-		else
-		{
-			imp = imp->go(part);
-		}
-	}
+    } else {
+      imp = imp->go(part);
+    }
+  }
 }
 
+namespace paths {
 
-namespace paths
-{
+FsNode userDataRoot() {
+  // Test-only override. Not documented for end users — production paths
+  // should go through --config-root or portable.txt instead.
+  if (const char* env = std::getenv("OPENLIERO_TEST_USER_DIR")) {
+    if (env[0] != '\0') {
+      create_directories(env);
+      return FsNode(std::string(env));
+    }
+  }
 
-FsNode userDataRoot()
-{
-	// Test-only override. Not documented for end users — production paths
-	// should go through --config-root or portable.txt instead.
-	if (const char* env = std::getenv("OPENLIERO_TEST_USER_DIR"))
-	{
-		if (env[0] != '\0')
-		{
-			create_directories(env);
-			return FsNode(std::string(env));
-		}
-	}
+  char* p = SDL_GetPrefPath("openliero", "openliero");
+  if (!p) return FsNode();
+  std::string path(p);
+  SDL_free(p);
 
-	char* p = SDL_GetPrefPath("openliero", "openliero");
-	if (!p)
-		return FsNode();
-	std::string path(p);
-	SDL_free(p);
+  create_directories(path);
 
-	create_directories(path);
-
-	return FsNode(path);
+  return FsNode(path);
 }
 
-FsNode systemDataRoot()
-{
-	// Runtime override: respected by Flatpak builds, packagers who can't
-	// recompile, and the test suite.
-	if (const char* env = std::getenv("OPENLIERO_DATADIR"))
-	{
-		if (env[0] != '\0')
-		{
-			FsNode candidate{std::string(env)};
-			if (candidate.exists())
-				return candidate;
-		}
-	}
+FsNode systemDataRoot() {
+  // Runtime override: respected by Flatpak builds, packagers who can't
+  // recompile, and the test suite.
+  if (const char* env = std::getenv("OPENLIERO_DATADIR")) {
+    if (env[0] != '\0') {
+      FsNode candidate{std::string(env)};
+      if (candidate.exists()) return candidate;
+    }
+  }
 
 #ifdef OPENLIERO_DATADIR
-	{
-		FsNode candidate{std::string(OPENLIERO_DATADIR)};
-		if (candidate.exists())
-			return candidate;
-	}
+  {
+    FsNode candidate{std::string(OPENLIERO_DATADIR)};
+    if (candidate.exists()) return candidate;
+  }
 #endif
 
-	// SDL3: SDL_GetBasePath returns a const char* owned by SDL; do NOT free.
-	if (const char* base = SDL_GetBasePath())
-	{
-		FsNode candidate{std::string(base)};
-		if (candidate.exists())
-			return candidate;
-	}
+  // SDL3: SDL_GetBasePath returns a const char* owned by SDL; do NOT free.
+  if (const char* base = SDL_GetBasePath()) {
+    FsNode candidate{std::string(base)};
+    if (candidate.exists()) return candidate;
+  }
 
-	return FsNode();
+  return FsNode();
 }
 
 // True if a real, usable portable.txt sits at `path`. We can't use the
@@ -825,140 +655,115 @@ FsNode systemDataRoot()
 // reports cloud-sync placeholders as present even after the user has
 // deleted the file in Explorer — leaving anyone with a sync-backed
 // extraction folder permanently stuck in portable mode.
-static bool portableMarkerPresent(std::string const& path)
-{
+static bool portableMarkerPresent(std::string const& path) {
 #if _WIN32
-	DWORD attr = GetFileAttributesA(path.c_str());
-	if (attr == INVALID_FILE_ATTRIBUTES)
-		return false;
-	if (attr & FILE_ATTRIBUTE_DIRECTORY)
-		return false;
-	constexpr DWORD kCloudPlaceholder = FILE_ATTRIBUTE_OFFLINE
-		| 0x00400000u   // FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS
-		| 0x00040000u;  // FILE_ATTRIBUTE_RECALL_ON_OPEN
-	return !(attr & kCloudPlaceholder);
+  DWORD attr = GetFileAttributesA(path.c_str());
+  if (attr == INVALID_FILE_ATTRIBUTES) return false;
+  if (attr & FILE_ATTRIBUTE_DIRECTORY) return false;
+  constexpr DWORD kCloudPlaceholder = FILE_ATTRIBUTE_OFFLINE |
+                                      0x00400000u     // FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS
+                                      | 0x00040000u;  // FILE_ATTRIBUTE_RECALL_ON_OPEN
+  return !(attr & kCloudPlaceholder);
 #else
-	struct stat st;
-	if (stat(path.c_str(), &st) != 0)
-		return false;
-	return S_ISREG(st.st_mode);
+  struct stat st;
+  if (stat(path.c_str(), &st) != 0) return false;
+  return S_ISREG(st.st_mode);
 #endif
 }
 
-bool shadowsSystem(FsNode const& userRoot,
-	std::string const& subdir, std::string const& leaf)
-{
-	// Auto-managed filenames the game writes itself. Picking these in a
-	// Save As dialog would clobber the game's own auto-write target or
-	// shadow the shipped default unreachably.
-	static char const* const kReserved[][2] = {
-		{"Setups", "liero.cfg"},
-	};
-	for (auto const& r : kReserved)
-	{
-		if (subdir == r[0] && ciCompare(leaf, r[1]))
-			return true;
-	}
+bool shadowsSystem(FsNode const& userRoot, std::string const& subdir, std::string const& leaf) {
+  // Auto-managed filenames the game writes itself. Picking these in a
+  // Save As dialog would clobber the game's own auto-write target or
+  // shadow the shipped default unreachably.
+  static char const* const kReserved[][2] = {
+      {"Setups", "liero.cfg"},
+  };
+  for (auto const& r : kReserved) {
+    if (subdir == r[0] && ciCompare(leaf, r[1])) return true;
+  }
 
-	FsNode sys = systemDataRoot();
-	if (!sys.imp)
-		return false;
+  FsNode sys = systemDataRoot();
+  if (!sys.imp) return false;
 
-	// Single-dir layouts (portable.txt / --config-root pointing at the
-	// install dir): user writes go to the same directory the system
-	// data is read from. There's no separate layer to shadow, and the
-	// user must be able to overwrite their own files.
-	if (userRoot.imp && userRoot.imp->fullPath() == sys.imp->fullPath())
-		return false;
+  // Single-dir layouts (portable.txt / --config-root pointing at the
+  // install dir): user writes go to the same directory the system
+  // data is read from. There's no separate layer to shadow, and the
+  // user must be able to overwrite their own files.
+  if (userRoot.imp && userRoot.imp->fullPath() == sys.imp->fullPath()) return false;
 
-	return (sys / subdir / leaf).exists();
+  return (sys / subdir / leaf).exists();
 }
 
 // Safe to call before SDL_Init: SDL3's SDL_GetPrefPath/SDL_GetBasePath
 // do not require subsystem initialization.
-ResolvedPaths resolve(int argc, char* argv[], std::string const& basePath)
-{
-	ResolvedPaths r;
-	r.port = 0;
+ResolvedPaths resolve(int argc, char* argv[], std::string const& basePath) {
+  ResolvedPaths r;
+  r.port = 0;
 
-	std::string configRoot;
+  std::string configRoot;
 
-	// Matches "--<name>" or "--<name>=value". Returns the value (after '=' or
-	// the next argv) and advances `i` past it. Refuses to consume the next
-	// argv as a value if it looks like another flag, so a typo like
-	// "--config-root --port 1234" doesn't silently set configRoot="--port".
-	auto matchOpt = [&](int& i, char const* name, std::string* out) -> bool
-	{
-		char const* arg = argv[i] + 2;
-		std::size_t nlen = std::strlen(name);
-		if (std::strncmp(arg, name, nlen) != 0)
-			return false;
-		if (arg[nlen] == '=')
-		{
-			*out = arg + nlen + 1;
-			return true;
-		}
-		if (arg[nlen] != '\0')
-			return false;
-		if (i + 1 >= argc || argv[i + 1][0] == '-')
-			return false;
-		++i;
-		*out = argv[i];
-		return true;
-	};
+  // Matches "--<name>" or "--<name>=value". Returns the value (after '=' or
+  // the next argv) and advances `i` past it. Refuses to consume the next
+  // argv as a value if it looks like another flag, so a typo like
+  // "--config-root --port 1234" doesn't silently set configRoot="--port".
+  auto matchOpt = [&](int& i, char const* name, std::string* out) -> bool {
+    char const* arg = argv[i] + 2;
+    std::size_t nlen = std::strlen(name);
+    if (std::strncmp(arg, name, nlen) != 0) return false;
+    if (arg[nlen] == '=') {
+      *out = arg + nlen + 1;
+      return true;
+    }
+    if (arg[nlen] != '\0') return false;
+    if (i + 1 >= argc || argv[i + 1][0] == '-') return false;
+    ++i;
+    *out = argv[i];
+    return true;
+  };
 
-	for (int i = 1; i < argc; ++i)
-	{
-		if (argv[i][0] == '-' && argv[i][1] == '-')
-		{
-			std::string value;
-			if (matchOpt(i, "config-root", &value))
-				configRoot = std::move(value);
-			else if (matchOpt(i, "port", &value))
-				r.port = static_cast<uint16_t>(std::atoi(value.c_str()));
-		}
-		else if (argv[i][0] != '-')
-		{
-			r.positionalArgs.emplace_back(argv[i]);
-		}
-	}
+  for (int i = 1; i < argc; ++i) {
+    if (argv[i][0] == '-' && argv[i][1] == '-') {
+      std::string value;
+      if (matchOpt(i, "config-root", &value))
+        configRoot = std::move(value);
+      else if (matchOpt(i, "port", &value))
+        r.port = static_cast<uint16_t>(std::atoi(value.c_str()));
+    } else if (argv[i][0] != '-') {
+      r.positionalArgs.emplace_back(argv[i]);
+    }
+  }
 
-	if (!configRoot.empty())
-	{
-		// Explicit single-directory override (Emscripten, CI, power users).
-		r.configNode     = FsNode(configRoot);
-		r.userConfigNode = FsNode(configRoot);
-		return r;
-	}
+  if (!configRoot.empty()) {
+    // Explicit single-directory override (Emscripten, CI, power users).
+    r.configNode = FsNode(configRoot);
+    r.userConfigNode = FsNode(configRoot);
+    return r;
+  }
 
-	// Determine basePath: caller-supplied (tests) or SDL_GetBasePath().
-	std::string base = basePath;
-	if (base.empty())
-	{
-		if (const char* p = SDL_GetBasePath())
-			base = p;
-	}
+  // Determine basePath: caller-supplied (tests) or SDL_GetBasePath().
+  std::string base = basePath;
+  if (base.empty()) {
+    if (const char* p = SDL_GetBasePath()) base = p;
+  }
 
-	// portable.txt next to the binary selects single-directory mode.
-	if (!base.empty()
-		&& portableMarkerPresent((FsNode(base) / "portable.txt").fullPath()))
-	{
-		r.configNode     = FsNode(base);
-		r.userConfigNode = FsNode(base);
-		return r;
-	}
+  // portable.txt next to the binary selects single-directory mode.
+  if (!base.empty() && portableMarkerPresent((FsNode(base) / "portable.txt").fullPath())) {
+    r.configNode = FsNode(base);
+    r.userConfigNode = FsNode(base);
+    return r;
+  }
 
-	// XDG split: user dir for writes; merged (user + system) for reads.
-	FsNode user   = userDataRoot();
-	FsNode system = systemDataRoot();
+  // XDG split: user dir for writes; merged (user + system) for reads.
+  FsNode user = userDataRoot();
+  FsNode system = systemDataRoot();
 
-	r.userConfigNode = user;
-	if (system.imp)
-		r.configNode = FsNode(join(user.imp, system.imp));
-	else
-		r.configNode = user;
+  r.userConfigNode = user;
+  if (system.imp)
+    r.configNode = FsNode(join(user.imp, system.imp));
+  else
+    r.configNode = user;
 
-	return r;
+  return r;
 }
 
-}
+}  // namespace paths

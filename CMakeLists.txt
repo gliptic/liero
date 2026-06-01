@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.25..3.30)
 # options at top so they're easy to find
 option(OPENLIERO_BUILD_TCTOOL "Build tctool" OFF)
 option(OPENLIERO_BUILD_VIDEOTOOL "Build videotool" OFF)
-option(OPENLIERO_BUILD_FUZZER "Build desync fuzzer" OFF)
 option(OPENLIERO_USE_VCPKG "Use vcpkg to manage dependencies" ON)
 option(OPENLIERO_ENABLE_CLANG_TIDY "Run clang-tidy during every C++ compile" OFF)
 

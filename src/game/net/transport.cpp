@@ -1,10 +1,10 @@
 #include "transport.hpp"
 #include "iceAgent.hpp"
 
+#include <atomic>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cstdio>
-#include <atomic>
 
 #define ENET_IMPLEMENTATION
 #include <enet.h>
@@ -48,14 +48,16 @@ static NetTransport* getTransportFromHost(_ENetHost*) {
   return sActiveTransport.load(std::memory_order_acquire);
 }
 
-NetTransport::NetTransport()
-    : enetHost_(nullptr), peer_(nullptr), state_(Disconnected) {
+NetTransport::NetTransport() : enetHost_(nullptr), peer_(nullptr), state_(Disconnected) {
   enet_initialize();
 }
 
 NetTransport::NetTransport(NetTransport&& other) noexcept
-    : enetHost_(other.enetHost_), peer_(other.peer_), state_(other.state_),
-      iceBridge_(std::move(other.iceBridge_)), iceAgent_(std::move(other.iceAgent_)) {
+    : enetHost_(other.enetHost_),
+      peer_(other.peer_),
+      state_(other.state_),
+      iceBridge_(std::move(other.iceBridge_)),
+      iceAgent_(std::move(other.iceAgent_)) {
   if (enetHost_) {
     registerTransport(enetHost_, this);
   }
@@ -100,9 +102,7 @@ void NetTransport::disconnect() {
   state_ = Disconnected;
 }
 
-uint16_t NetTransport::listeningPort() const {
-  return enetHost_ ? enetHost_->address.port : 0;
-}
+uint16_t NetTransport::listeningPort() const { return enetHost_ ? enetHost_->address.port : 0; }
 
 bool NetTransport::createHost(uint16_t port) {
   ENetAddress address = {};
@@ -133,7 +133,7 @@ int NetTransport::interceptCallback(_ENetHost* host, void* /*event*/) {
     return 1;
   }
 
-  return 0; // Not consumed — let ENet process it
+  return 0;  // Not consumed — let ENet process it
 }
 
 bool NetTransport::host(uint16_t port) {
@@ -255,24 +255,28 @@ bool NetTransport::poll() {
             return e && *e && *e != '0';
           }();
           if (logEnabled) {
-            static uint64_t cntInput = 0, cntBatch = 0, cntChecksum = 0,
-                            cntOther = 0;
+            static uint64_t cntInput = 0, cntBatch = 0, cntChecksum = 0, cntOther = 0;
             switch (data[0]) {
-              case PacketInput: ++cntInput; break;
-              case PacketInputBatch: ++cntBatch; break;
-              case PacketChecksum: ++cntChecksum; break;
-              default: ++cntOther; break;
+              case PacketInput:
+                ++cntInput;
+                break;
+              case PacketInputBatch:
+                ++cntBatch;
+                break;
+              case PacketChecksum:
+                ++cntChecksum;
+                break;
+              default:
+                ++cntOther;
+                break;
             }
-            uint64_t total =
-                cntInput + cntBatch + cntChecksum + cntOther;
+            uint64_t total = cntInput + cntBatch + cntChecksum + cntOther;
             if (total > 0 && total % 140 == 0) {
               std::fprintf(stderr,
                            "[transport rx] input=%llu batch=%llu "
                            "checksum=%llu other=%llu\n",
-                           (unsigned long long)cntInput,
-                           (unsigned long long)cntBatch,
-                           (unsigned long long)cntChecksum,
-                           (unsigned long long)cntOther);
+                           (unsigned long long)cntInput, (unsigned long long)cntBatch,
+                           (unsigned long long)cntChecksum, (unsigned long long)cntOther);
             }
           }
         }
@@ -300,8 +304,7 @@ bool NetTransport::poll() {
                 if (count == 0 || len != size_t{8} + count) break;
                 if (localDelta >= count) break;
                 uint32_t remoteLocalFrame = baseFrame + localDelta;
-                onRemoteInputBatch(gen, baseFrame, count, data + 8,
-                                   remoteLocalFrame);
+                onRemoteInputBatch(gen, baseFrame, count, data + 8, remoteLocalFrame);
               }
               break;
             case PacketHandshake:
@@ -340,8 +343,7 @@ bool NetTransport::poll() {
               if (len == 1 + kPlayerInfoWireSize && onPlayerInfo) {
                 PlayerInfo info{};
                 const uint8_t* p = data + 1;
-                for (int i = 0; i < 5; ++i, p += 4)
-                  info.weapons[i] = readU32(p);
+                for (int i = 0; i < 5; ++i, p += 4) info.weapons[i] = readU32(p);
                 info.color = readI32(p);
                 p += 4;
                 for (int i = 0; i < 3; ++i, p += 4) info.rgb[i] = readI32(p);
@@ -368,8 +370,7 @@ bool NetTransport::poll() {
                 msd.flagsToWin = readI32(p);
                 p += 4;
                 msd.loadChange = *p++;
-                for (int i = 0; i < 40; ++i, p += 4)
-                  msd.weapTable[i] = readU32(p);
+                for (int i = 0; i < 40; ++i, p += 4) msd.weapTable[i] = readU32(p);
                 msd.regenerateLevel = *p++;
                 msd.shadow = *p++;
                 msd.namesOnBonuses = *p++;
@@ -401,8 +402,7 @@ bool NetTransport::poll() {
               if (len >= 2 && onRematchLevel) {
                 bool random = data[1] != 0;
                 std::string file;
-                if (len > 2)
-                  file.assign(reinterpret_cast<const char*>(data + 2), len - 2);
+                if (len > 2) file.assign(reinterpret_cast<const char*>(data + 2), len - 2);
                 onRematchLevel(random, std::move(file));
               }
               break;
@@ -417,8 +417,7 @@ bool NetTransport::poll() {
                 uint32_t hash;
                 std::memcpy(&hash, data + 1, 4);
                 std::string name;
-                if (len > 5)
-                  name.assign(reinterpret_cast<const char*>(data + 5), len - 5);
+                if (len > 5) name.assign(reinterpret_cast<const char*>(data + 5), len - 5);
                 onTcInfo(hash, std::move(name));
               }
               break;
@@ -468,9 +467,8 @@ void NetTransport::sendInput(uint32_t frame, uint8_t input) {
   sendPacket(buf, sizeof(buf));
 }
 
-void NetTransport::sendInputBatch(uint8_t generation, uint32_t baseFrame,
-                                  uint8_t count, uint8_t localDelta,
-                                  uint8_t const* inputs) {
+void NetTransport::sendInputBatch(uint8_t generation, uint32_t baseFrame, uint8_t count,
+                                  uint8_t localDelta, uint8_t const* inputs) {
   if (!peer_ || count == 0 || localDelta >= count) return;
   // Cap to a defensive maximum so a misuse can't blow the stack
   // buffer. Rollback uses count = kMaxRollback + 1 (= 8); accept
@@ -489,15 +487,12 @@ void NetTransport::sendInputBatch(uint8_t generation, uint32_t baseFrame,
   size_t len = size_t{8} + count;
   // UNSEQUENCED, not 0: sequenced-discard would drop an older batch
   // delivered after a newer one. injectRemoteInput already dedups.
-  ENetPacket* packet =
-      enet_packet_create(buf, len, ENET_PACKET_FLAG_UNSEQUENCED);
+  ENetPacket* packet = enet_packet_create(buf, len, ENET_PACKET_FLAG_UNSEQUENCED);
   if (!packet) return;
-  if (enet_peer_send(peer_, CHANNEL_INPUT_BATCH, packet) < 0)
-    enet_packet_destroy(packet);
+  if (enet_peer_send(peer_, CHANNEL_INPUT_BATCH, packet) < 0) enet_packet_destroy(packet);
 }
 
-void NetTransport::sendChecksum(uint8_t generation, uint32_t frame,
-                                uint32_t checksum) {
+void NetTransport::sendChecksum(uint8_t generation, uint32_t frame, uint32_t checksum) {
   uint8_t buf[10];
   buf[0] = PacketChecksum;
   buf[1] = generation;
@@ -505,8 +500,7 @@ void NetTransport::sendChecksum(uint8_t generation, uint32_t frame,
   std::memcpy(buf + 6, &checksum, 4);
 
   if (!peer_) return;
-  ENetPacket* packet =
-      enet_packet_create(buf, sizeof(buf), ENET_PACKET_FLAG_UNSEQUENCED);
+  ENetPacket* packet = enet_packet_create(buf, sizeof(buf), ENET_PACKET_FLAG_UNSEQUENCED);
   if (packet) enet_peer_send(peer_, CHANNEL_UNRELIABLE, packet);
 }
 
@@ -568,11 +562,9 @@ void NetTransport::sendMapData(const void* data, size_t len) {
   std::memcpy(buf.data() + 1, data, len);
 
   if (!peer_) return;
-  ENetPacket* packet =
-      enet_packet_create(buf.data(), buf.size(), ENET_PACKET_FLAG_RELIABLE);
+  ENetPacket* packet = enet_packet_create(buf.data(), buf.size(), ENET_PACKET_FLAG_RELIABLE);
   if (!packet) return;
-  if (enet_peer_send(peer_, CHANNEL_RELIABLE, packet) < 0)
-    enet_packet_destroy(packet);
+  if (enet_peer_send(peer_, CHANNEL_RELIABLE, packet) < 0) enet_packet_destroy(packet);
 }
 
 void NetTransport::sendPause() {
@@ -596,8 +588,7 @@ void NetTransport::sendRematchLevel(bool randomLevel, const std::string& levelFi
   std::vector<uint8_t> buf(2 + levelFile.size());
   buf[0] = PacketRematchLevel;
   buf[1] = randomLevel ? 1 : 0;
-  if (!levelFile.empty())
-    std::memcpy(buf.data() + 2, levelFile.data(), levelFile.size());
+  if (!levelFile.empty()) std::memcpy(buf.data() + 2, levelFile.data(), levelFile.size());
   sendPacket(buf.data(), buf.size());
 }
 
@@ -632,18 +623,14 @@ void NetTransport::sendTcData(const void* data, size_t len) {
   std::memcpy(buf.data() + 1, data, len);
 
   if (!peer_) return;
-  ENetPacket* packet =
-      enet_packet_create(buf.data(), buf.size(), ENET_PACKET_FLAG_RELIABLE);
+  ENetPacket* packet = enet_packet_create(buf.data(), buf.size(), ENET_PACKET_FLAG_RELIABLE);
   if (!packet) return;
-  if (enet_peer_send(peer_, CHANNEL_RELIABLE, packet) < 0)
-    enet_packet_destroy(packet);
+  if (enet_peer_send(peer_, CHANNEL_RELIABLE, packet) < 0) enet_packet_destroy(packet);
 }
 
 void NetTransport::sendPacket(const void* data, size_t len) {
   if (!peer_) return;
-  ENetPacket* packet =
-      enet_packet_create(data, len, ENET_PACKET_FLAG_RELIABLE);
+  ENetPacket* packet = enet_packet_create(data, len, ENET_PACKET_FLAG_RELIABLE);
   if (!packet) return;
-  if (enet_peer_send(peer_, CHANNEL_RELIABLE, packet) < 0)
-    enet_packet_destroy(packet);
+  if (enet_peer_send(peer_, CHANNEL_RELIABLE, packet) < 0) enet_packet_destroy(packet);
 }

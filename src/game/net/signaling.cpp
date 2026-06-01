@@ -2,8 +2,8 @@
 #include "netutil.hpp"
 
 #include <enet.h>
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 
 #ifdef _WIN32
 #include <ws2tcpip.h>
@@ -14,38 +14,36 @@
 using netutil::nowMs;
 
 namespace proto {
-  constexpr uint8_t CreateRoom  = 0x01;
-  constexpr uint8_t JoinRoom    = 0x02;
-  constexpr uint8_t ReportAddr  = 0x03;
-  constexpr uint8_t PunchOK     = 0x04;
-  constexpr uint8_t PunchFail   = 0x05;
-  constexpr uint8_t Keepalive   = 0x06;
-  constexpr uint8_t IceCredentials = 0x07;
-  constexpr uint8_t IceCandidate   = 0x08;
-  constexpr uint8_t IceGatherDone  = 0x09;
+constexpr uint8_t CreateRoom = 0x01;
+constexpr uint8_t JoinRoom = 0x02;
+constexpr uint8_t ReportAddr = 0x03;
+constexpr uint8_t PunchOK = 0x04;
+constexpr uint8_t PunchFail = 0x05;
+constexpr uint8_t Keepalive = 0x06;
+constexpr uint8_t IceCredentials = 0x07;
+constexpr uint8_t IceCandidate = 0x08;
+constexpr uint8_t IceGatherDone = 0x09;
 
-  constexpr uint8_t RoomCreated = 0x81;
-  constexpr uint8_t PeerJoined  = 0x82;
-  constexpr uint8_t PeerAddr    = 0x83;
-  constexpr uint8_t StartPunch  = 0x84;
-  constexpr uint8_t UseRelay    = 0x85;
-  constexpr uint8_t RoomExpired = 0x86;
-  constexpr uint8_t PeerCredentials = 0x87;
-  constexpr uint8_t PeerCandidate   = 0x88;
-  constexpr uint8_t PeerGatherDone  = 0x89;
-  constexpr uint8_t Error       = 0x8F;
+constexpr uint8_t RoomCreated = 0x81;
+constexpr uint8_t PeerJoined = 0x82;
+constexpr uint8_t PeerAddr = 0x83;
+constexpr uint8_t StartPunch = 0x84;
+constexpr uint8_t UseRelay = 0x85;
+constexpr uint8_t RoomExpired = 0x86;
+constexpr uint8_t PeerCredentials = 0x87;
+constexpr uint8_t PeerCandidate = 0x88;
+constexpr uint8_t PeerGatherDone = 0x89;
+constexpr uint8_t Error = 0x8F;
 
-  constexpr int RoomCodeLen = 6;
-  constexpr uint8_t AddrIPv4 = 4;
-  constexpr uint8_t AddrIPv6 = 6;
-}
+constexpr int RoomCodeLen = 6;
+constexpr uint8_t AddrIPv4 = 4;
+constexpr uint8_t AddrIPv6 = 6;
+}  // namespace proto
 
 SignalingClient::SignalingClient()
     : sock_(ENET_SOCKET_NULL), state_(Idle), serverPort_(0), relayPort_(0) {}
 
-SignalingClient::~SignalingClient() {
-  disconnect();
-}
+SignalingClient::~SignalingClient() { disconnect(); }
 
 bool SignalingClient::connect(const std::string& serverAddr, uint16_t serverPort) {
   enet_initialize();
@@ -211,8 +209,7 @@ void SignalingClient::poll() {
       retryCount_++;
       uint8_t msg[1 + proto::RoomCodeLen] = {};
       msg[0] = (state_ == Creating) ? proto::CreateRoom : proto::JoinRoom;
-      if (state_ == Joining)
-        std::memcpy(msg + 1, roomCode_.data(), proto::RoomCodeLen);
+      if (state_ == Joining) std::memcpy(msg + 1, roomCode_.data(), proto::RoomCodeLen);
       send(msg, sizeof(msg));
       lastSendMs_ = nowMs();
     }
@@ -245,7 +242,8 @@ void SignalingClient::handleMessage(const uint8_t* data, size_t len) {
     case proto::RoomCreated: {
       if (len < 1 + proto::RoomCodeLen) break;
       roomCode_ = std::string((const char*)data + 1, proto::RoomCodeLen);
-      // Parse optional TURN credentials: [1: turn_user_len] + [N: turn_user] + [1: turn_pass_len] + [N: turn_pass]
+      // Parse optional TURN credentials: [1: turn_user_len] + [N: turn_user] + [1: turn_pass_len] +
+      // [N: turn_pass]
       size_t off = 1 + proto::RoomCodeLen;
       if (off + 1 <= len) {
         uint8_t userLen = data[off++];
@@ -287,8 +285,8 @@ void SignalingClient::handleMessage(const uint8_t* data, size_t len) {
     case proto::PeerAddr: {
       if (len < 1 + proto::RoomCodeLen + 1 + 2 + 4) break;
       uint8_t addrType = data[1 + proto::RoomCodeLen];
-      uint16_t port = (uint16_t)(data[1 + proto::RoomCodeLen + 1] << 8 |
-                                  data[1 + proto::RoomCodeLen + 2]);
+      uint16_t port =
+          (uint16_t)(data[1 + proto::RoomCodeLen + 1] << 8 | data[1 + proto::RoomCodeLen + 2]);
       int ipLen = (addrType == proto::AddrIPv4) ? 4 : 16;
       if ((int)len < 1 + proto::RoomCodeLen + 3 + ipLen) break;
 
@@ -310,10 +308,8 @@ void SignalingClient::handleMessage(const uint8_t* data, size_t len) {
     }
     case proto::UseRelay: {
       if (len < 1 + proto::RoomCodeLen + 2 + 8) break;
-      relayPort_ = (uint16_t)(data[1 + proto::RoomCodeLen] << 8 |
-                               data[1 + proto::RoomCodeLen + 1]);
-      relayToken_.assign(data + 1 + proto::RoomCodeLen + 2,
-                         data + 1 + proto::RoomCodeLen + 2 + 8);
+      relayPort_ = (uint16_t)(data[1 + proto::RoomCodeLen] << 8 | data[1 + proto::RoomCodeLen + 1]);
+      relayToken_.assign(data + 1 + proto::RoomCodeLen + 2, data + 1 + proto::RoomCodeLen + 2 + 8);
       state_ = Relaying;
       if (onUseRelay) onUseRelay(relayPort_);
       break;
@@ -326,8 +322,7 @@ void SignalingClient::handleMessage(const uint8_t* data, size_t len) {
     }
     case proto::Error: {
       std::string msg;
-      if (len > 2)
-        msg = std::string((const char*)data + 2, len - 2);
+      if (len > 2) msg = std::string((const char*)data + 2, len - 2);
       fprintf(stderr, "[signaling] ERROR from server: %s\n", msg.c_str());
       state_ = Failed;
       if (onError) onError(msg);

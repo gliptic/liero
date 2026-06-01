@@ -82,8 +82,7 @@ struct GameRunner {
 
 }  // namespace
 
-TEST_CASE("Fast snapshot round-trip preserves frame-by-frame state",
-          "[snapshot][rollback]") {
+TEST_CASE("Fast snapshot round-trip preserves frame-by-frame state", "[snapshot][rollback]") {
   constexpr uint32_t kSeed = 0xC0FFEE;
   constexpr int kPhase = 200;
 
@@ -143,8 +142,7 @@ TEST_CASE("Fast snapshot round-trip preserves frame-by-frame state",
   }
 }
 
-TEST_CASE("Fast snapshot matches cereal oracle across a fuzz run",
-          "[snapshot][rollback]") {
+TEST_CASE("Fast snapshot matches cereal oracle across a fuzz run", "[snapshot][rollback]") {
   // For a handful of frames during a long run, save with both paths on twin
   // Game instances, mutate, then restore each from its own snapshot. The
   // post-restore state hash must agree — cereal is the reference.
@@ -187,8 +185,7 @@ TEST_CASE("Fast snapshot matches cereal oracle across a fuzz run",
   }
 }
 
-TEST_CASE("Fast snapshot save/restore microbenchmark",
-          "[snapshot][rollback][!benchmark]") {
+TEST_CASE("Fast snapshot save/restore microbenchmark", "[snapshot][rollback][!benchmark]") {
   // Plan target: ≤500 µs save + ≤500 µs restore. Assert a generous bound
   // here (2 ms) so noisy CI machines don't flake; the real numbers print
   // to stdout for inspection.
@@ -209,13 +206,10 @@ TEST_CASE("Fast snapshot save/restore microbenchmark",
   for (int i = 0; i < kIters; ++i) r.game->loadSnapshotFast(snap);
   auto t2 = clock::now();
 
-  double saveUs =
-      std::chrono::duration<double, std::micro>(t1 - t0).count() / kIters;
-  double loadUs =
-      std::chrono::duration<double, std::micro>(t2 - t1).count() / kIters;
+  double saveUs = std::chrono::duration<double, std::micro>(t1 - t0).count() / kIters;
+  double loadUs = std::chrono::duration<double, std::micro>(t2 - t1).count() / kIters;
 
-  std::cout << "[fast snapshot] save=" << saveUs << " us, load=" << loadUs
-            << " us\n";
+  std::cout << "[fast snapshot] save=" << saveUs << " us, load=" << loadUs << " us\n";
 
   REQUIRE(saveUs < 2000.0);
   REQUIRE(loadUs < 2000.0);

@@ -7,13 +7,13 @@
 #include <memory>
 #include <vector>
 
-#include "commonController.hpp"
 #include "../game.hpp"
-#include "../worm.hpp"
-#include "../weapsel.hpp"
+#include "../io/stream.hpp"
 #include "../menu/menu.hpp"
 #include "../rollback/buffer.hpp"
-#include "../io/stream.hpp"
+#include "../weapsel.hpp"
+#include "../worm.hpp"
+#include "commonController.hpp"
 
 struct ReplayWriter;
 
@@ -22,9 +22,9 @@ struct ReplayWriter;
 // `localFrame` = sender's simFrame at send time (frame-advantage
 // tracking); `generation` = sender's phase generation (receivers drop
 // stale ones).
-using InputBatchSendCallback = std::function<
-    void(uint8_t generation, uint32_t baseFrame, uint8_t count,
-         uint8_t const* inputs, uint32_t localFrame)>;
+using InputBatchSendCallback =
+    std::function<void(uint8_t generation, uint32_t baseFrame, uint8_t count, uint8_t const* inputs,
+                       uint32_t localFrame)>;
 
 // Checksum emission for desync detection. `generation` = sender's
 // phase generation.
@@ -32,8 +32,7 @@ using ChecksumSendCallback =
     std::function<void(uint8_t generation, uint32_t frame, uint32_t checksum)>;
 
 struct RollbackController : CommonController {
-  RollbackController(std::shared_ptr<Common> common,
-                     std::shared_ptr<Settings> settings,
+  RollbackController(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings,
                      int localPlayerIdx);
   ~RollbackController();
 
@@ -62,8 +61,8 @@ struct RollbackController : CommonController {
                          uint8_t const* inputs, uint32_t remoteLocalFrame);
   // Same-generation overload for tests that aren't exercising the
   // wire-level generation filter.
-  void injectRemoteBatch(uint32_t baseFrame, uint8_t count,
-                         uint8_t const* inputs, uint32_t remoteLocalFrame) {
+  void injectRemoteBatch(uint32_t baseFrame, uint8_t count, uint8_t const* inputs,
+                         uint32_t remoteLocalFrame) {
     injectRemoteBatch(generation_, baseFrame, count, inputs, remoteLocalFrame);
   }
 
@@ -115,9 +114,8 @@ struct RollbackController : CommonController {
   // the send path encodes (localFrame - baseFrame) as a uint8_t equal to
   // (K-1) - inputDelay, which underflows once inputDelay exceeds K-1.
   void setInputDelay(uint32_t frames) {
-    inputDelay = frames > rollback::kMaxRollback
-                     ? static_cast<uint32_t>(rollback::kMaxRollback)
-                     : frames;
+    inputDelay =
+        frames > rollback::kMaxRollback ? static_cast<uint32_t>(rollback::kMaxRollback) : frames;
   }
 
   rollback::RollbackBuffer const& rollbackBuffer() const { return rollbackBuffer_; }
@@ -143,9 +141,7 @@ struct RollbackController : CommonController {
   uint8_t generation() const { return generation_; }
   void setGenerationForTest(uint8_t g) { generation_ = g; }
   void resetForGamePhaseForTest() { resetForGamePhase(); }
-  uint64_t droppedOldGenerationBatches() const {
-    return droppedOldGenerationBatches_;
-  }
+  uint64_t droppedOldGenerationBatches() const { return droppedOldGenerationBatches_; }
   uint8_t pendingFutureBatchCount() const { return pendingFutureCount_; }
 
   // Stall a tick when simFrame is at least this far ahead of the remote's
@@ -304,7 +300,6 @@ struct RollbackController : CommonController {
     std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
     uint32_t remoteLocalFrame;
   };
-  std::array<PendingFutureBatch, kMaxPendingFutureBatches>
-      pendingFutureBatches_{};
+  std::array<PendingFutureBatch, kMaxPendingFutureBatches> pendingFutureBatches_{};
   uint8_t pendingFutureCount_ = 0;
 };

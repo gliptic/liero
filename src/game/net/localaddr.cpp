@@ -1,16 +1,22 @@
 #include "localaddr.hpp"
 
 #ifdef _WIN32
+// clang-format off
+// <winsock2.h> must precede <iphlpapi.h>; iphlpapi.h transitively pulls in
+// <windows.h>, which would otherwise drag in the legacy <winsock.h> and
+// conflict with winsock2. Alphabetic sort would reorder these and break
+// the Windows build (see <iphlpapi.h> failing on undefined IFTYPE etc.).
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
+// clang-format on
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "ws2_32.lib")
 #else
-#include <ifaddrs.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <ifaddrs.h>
 #include <net/if.h>
+#include <netinet/in.h>
 #endif
 
 #include <cstring>
@@ -23,15 +29,15 @@ std::vector<LocalAddress> getLocalAddresses() {
   PIP_ADAPTER_ADDRESSES addrs = (PIP_ADAPTER_ADDRESSES)malloc(bufLen);
   if (!addrs) return result;
 
-  DWORD ret = GetAdaptersAddresses(AF_UNSPEC,
-      GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER,
+  DWORD ret = GetAdaptersAddresses(
+      AF_UNSPEC, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER,
       nullptr, addrs, &bufLen);
   if (ret == ERROR_BUFFER_OVERFLOW) {
     free(addrs);
     addrs = (PIP_ADAPTER_ADDRESSES)malloc(bufLen);
     if (!addrs) return result;
-    ret = GetAdaptersAddresses(AF_UNSPEC,
-        GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER,
+    ret = GetAdaptersAddresses(
+        AF_UNSPEC, GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER,
         nullptr, addrs, &bufLen);
   }
 

@@ -28,8 +28,7 @@ struct NetSession {
     Failed,          // Connection failed
   };
 
-  NetSession(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings,
-             FsNode tcRoot);
+  NetSession(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings, FsNode tcRoot);
   ~NetSession();
 
   // Start as host. Listens on the given port.
@@ -43,7 +42,8 @@ struct NetSession {
   // For host: transport is already listening, peer will connect.
   // For client: initiates ENet connect to peerAddr:peerPort through existing host.
   bool hostWithTransport(NetTransport&& transport);
-  bool connectWithTransport(NetTransport&& transport, const std::string& peerAddr, uint16_t peerPort);
+  bool connectWithTransport(NetTransport&& transport, const std::string& peerAddr,
+                            uint16_t peerPort);
 
   // Call once per frame from the game loop.
   // Polls network, manages state transitions.
@@ -105,9 +105,8 @@ struct NetSession {
   void onRemotePeerLeft();
   void onRematchReady(bool ready);
   void onRematchLevel(bool randomLevel, std::string levelFile);
-  void onRemoteInputBatch(uint8_t generation, uint32_t baseFrame,
-                          uint8_t count, uint8_t const* inputs,
-                          uint32_t remoteLocalFrame);
+  void onRemoteInputBatch(uint8_t generation, uint32_t baseFrame, uint8_t count,
+                          uint8_t const* inputs, uint32_t remoteLocalFrame);
   void onTcInfo(uint32_t hash, std::string name);
   void onTcResponse(bool needData);
   void onTcData(const void* data, size_t len);
@@ -145,7 +144,7 @@ struct NetSession {
   std::shared_ptr<Common> common_;
   std::shared_ptr<Settings> settings_;
 
-  RollbackController* rollbackPtr_;    // non-owning
+  RollbackController* rollbackPtr_;  // non-owning
 
   uint32_t gameSeed_;
   uint32_t localSettingsHash_;
@@ -164,11 +163,11 @@ struct NetSession {
   std::vector<uint8_t> receivedMapData_;
 
   // TC sync state
-  FsNode tcRoot_;           // Root directory of the local TC
-  uint32_t localTcHash_;    // Hash of local TC contents
-  bool tcResolved_;         // True when TC exchange is complete
-  std::shared_ptr<MemoryFs> tcMemFs_;  // Keeps received TC data alive in memory
-  std::string originalTcName_;         // Client's original TC name (restored on disconnect)
+  FsNode tcRoot_;                           // Root directory of the local TC
+  uint32_t localTcHash_;                    // Hash of local TC contents
+  bool tcResolved_;                         // True when TC exchange is complete
+  std::shared_ptr<MemoryFs> tcMemFs_;       // Keeps received TC data alive in memory
+  std::string originalTcName_;              // Client's original TC name (restored on disconnect)
   std::shared_ptr<Common> originalCommon_;  // Client's original Common (restored on disconnect)
 
   // Desync detection
@@ -179,10 +178,17 @@ struct NetSession {
 
   // Ring buffer of local checksums for frame-accurate comparison
   static constexpr size_t CHECKSUM_BUFFER_SIZE = 128;
-  struct FrameChecksum { uint32_t frame; uint32_t checksum; bool valid; };
+  struct FrameChecksum {
+    uint32_t frame;
+    uint32_t checksum;
+    bool valid;
+  };
   FrameChecksum checksumBuffer_[CHECKSUM_BUFFER_SIZE] = {};
   // Pending remote checksums waiting for local frame to catch up
-  struct PendingRemote { uint32_t frame; uint32_t checksum; };
+  struct PendingRemote {
+    uint32_t frame;
+    uint32_t checksum;
+  };
   PendingRemote pendingRemoteChecksums_[CHECKSUM_BUFFER_SIZE] = {};
   size_t pendingRemoteCount_ = 0;
 

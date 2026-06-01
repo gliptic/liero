@@ -72,8 +72,7 @@ ScriptedInputs generateInputs(uint32_t seed, int ticks) {
 
 }  // namespace
 
-TEST_CASE("Rollback desync detection — clean run produces no alarms",
-          "[rollback][desync]") {
+TEST_CASE("Rollback desync detection — clean run produces no alarms", "[rollback][desync]") {
   constexpr uint32_t kWorldSeed = 0xBEEF;
   constexpr uint32_t kInputSeed = 0xC0FFEE;
   constexpr uint32_t kTransportSeed = 0xA1B2;
@@ -95,23 +94,19 @@ TEST_CASE("Rollback desync detection — clean run produces no alarms",
 
   rollback_test::JitterTransport transport({kTransportSeed, 1, 4});
 
-  a->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        transport.sendAToB(gen_, bf, c, in, lf);
-      });
-  b->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        transport.sendBToA(gen_, bf, c, in, lf);
-      });
+  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.sendAToB(gen_, bf, c, in, lf);
+  });
+  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.sendBToA(gen_, bf, c, in, lf);
+  });
 
   // Capture every emitted checksum. The last value wins on duplicates
   // (e.g. a resim that overwrites a prior promote's value for the same
   // frame after a misprediction cascade).
   std::unordered_map<uint32_t, uint32_t> aChecks, bChecks;
-  a->setChecksumCallback(
-      [&](uint8_t /*gen*/, uint32_t f, uint32_t c) { aChecks[f] = c; });
-  b->setChecksumCallback(
-      [&](uint8_t /*gen*/, uint32_t f, uint32_t c) { bChecks[f] = c; });
+  a->setChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { aChecks[f] = c; });
+  b->setChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { bChecks[f] = c; });
 
   a->focus();
   b->focus();
@@ -196,18 +191,15 @@ TEST_CASE("Rollback desync detection — 1-bit injection fires within 200 frames
 
   rollback_test::JitterTransport transport({kTransportSeed, 1, 4});
 
-  a->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        transport.sendAToB(gen_, bf, c, in, lf);
-      });
-  b->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        transport.sendBToA(gen_, bf, c, in, lf);
-      });
+  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.sendAToB(gen_, bf, c, in, lf);
+  });
+  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.sendBToA(gen_, bf, c, in, lf);
+  });
 
   std::unordered_map<uint32_t, uint32_t> aChecks, bChecks;
-  a->setChecksumCallback(
-      [&](uint8_t /*gen*/, uint32_t f, uint32_t c) { aChecks[f] = c; });
+  a->setChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { aChecks[f] = c; });
   // Inject: corrupt B's reported checksum starting at kInjectFrame to
   // simulate a peer whose post-frame state has diverged by one bit.
   // We perturb at the emit boundary rather than poking sim state

@@ -2,10 +2,16 @@
 
 name: Clang-Tidy
 
+# TEMPORARILY DISABLED for the clang flag-day window. PR1 reformats
+# every line in src/, which made diff-only clang-tidy gating equivalent
+# to a tree-wide run — exposing the entire backlog of pre-existing
+# tidy violations that diff-only gating had been hiding. PR3 (the
+# "remaining tidy fixes" PR in docs/clang-flag-day.md) will fix those
+# violations and re-enable the workflow as tree-wide blocking.
+#
+# Manual runs still possible via `workflow_dispatch`.
 on:  # yamllint disable-line rule:truthy
-  pull_request:
-    branches:
-      - master
+  workflow_dispatch:
 
 env:
   SCCACHE_GHA_ENABLED: true

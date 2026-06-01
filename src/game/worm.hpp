@@ -1,8 +1,8 @@
 #pragma once
 
+#include <xxhash.h>
 #include <cstring>
 #include <functional>
-#include <xxhash.h>
 #include <memory>
 #include <numeric>
 #include <string>
@@ -42,18 +42,7 @@ struct WormWeapon {
 };
 
 struct WormSettingsExtensions {
-  enum Control {
-    Up,
-    Down,
-    Left,
-    Right,
-    Fire,
-    Change,
-    Jump,
-    Dig,
-    MaxControl = Dig,
-    MaxControlEx
-  };
+  enum Control { Up, Down, Left, Right, Fire, Change, Jump, Dig, MaxControl = Dig, MaxControlEx };
 
   // Input device: 0 = keyboard, 1 = gamepad 0, 2 = gamepad 1, etc.
   static int const InputKeyboard = 0;
@@ -78,8 +67,8 @@ struct WormSettingsExtensions {
 
   uint32_t gamepadControls[MaxControlEx];
   uint32_t inputDevice;
-  std::string gamepadName;   // Human-readable name (e.g., "Xbox Wireless Controller")
-  std::string gamepadSerial; // Hardware serial for disambiguating identical controllers
+  std::string gamepadName;    // Human-readable name (e.g., "Xbox Wireless Controller")
+  std::string gamepadSerial;  // Hardware serial for disambiguating identical controllers
 };
 
 struct WormSettings : WormSettingsExtensions {
@@ -123,12 +112,7 @@ struct Renderer;
 struct WormAI {
   virtual void process(Game& game, Worm& worm) = 0;
 
-  virtual void drawDebug(
-      Game& game,
-      Worm const& worm,
-      Renderer& renderer,
-      int offsX,
-      int offsY) {}
+  virtual void drawDebug(Game& game, Worm const& worm, Renderer& renderer, int offsX, int offsY) {}
 };
 
 struct DumbLieroAI : WormAI {
@@ -242,13 +226,9 @@ struct Worm {
 
   void press(Control control) { controlStates.set(control, true); }
 
-  void setControlState(Control control, bool state) {
-    controlStates.set(control, state);
-  }
+  void setControlState(Control control, bool state) { controlStates.set(control, state); }
 
-  void toggleControlState(Control control) {
-    controlStates.set(control, !controlStates[control]);
-  }
+  void toggleControlState(Control control) { controlStates.set(control, !controlStates[control]); }
 
   int minimapColor() const { return 129 + index * 4; }
 

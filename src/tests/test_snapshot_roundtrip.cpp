@@ -79,8 +79,7 @@ struct GameRunner {
 
 }  // namespace
 
-TEST_CASE("Snapshot round-trip preserves frame-by-frame state",
-          "[snapshot][rollback]") {
+TEST_CASE("Snapshot round-trip preserves frame-by-frame state", "[snapshot][rollback]") {
   constexpr uint32_t kSeed = 0xC0FFEE;
   constexpr int kPhase = 200;
 

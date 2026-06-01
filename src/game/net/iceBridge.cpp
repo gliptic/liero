@@ -57,8 +57,10 @@ BridgeSocket IceBridge::create(IceAgent& agent) {
 
   // Disable IPV6_V6ONLY so the sockets accept IPv4-mapped addresses (matching ENet)
   int off = 0;
-  setsockopt(enetSocket_, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char*>(&off), sizeof(off));
-  setsockopt(bridgeSocket_, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char*>(&off), sizeof(off));
+  setsockopt(enetSocket_, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char*>(&off),
+             sizeof(off));
+  setsockopt(bridgeSocket_, IPPROTO_IPV6, IPV6_V6ONLY, reinterpret_cast<const char*>(&off),
+             sizeof(off));
 
   // Bind both to IPv6 localhost (::1) with ephemeral ports
   sockaddr_in6 addrA{};
@@ -109,8 +111,8 @@ void IceBridge::poll() {
 
   uint8_t buf[2048];
   for (;;) {
-    auto n = ::recvfrom(bridgeSocket_, reinterpret_cast<char*>(buf), sizeof(buf), 0,
-                        nullptr, nullptr);
+    auto n =
+        ::recvfrom(bridgeSocket_, reinterpret_cast<char*>(buf), sizeof(buf), 0, nullptr, nullptr);
     if (n <= 0) {
       if (n < 0 && BRIDGE_WOULD_BLOCK) break;
       break;

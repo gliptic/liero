@@ -17,8 +17,7 @@
 
 // TC path can be overridden via TC_PATH env var (default: data/TC/openliero)
 static std::string getTcPath() {
-  if (auto* p = std::getenv("TC_PATH"))
-    return p;
+  if (auto* p = std::getenv("TC_PATH")) return p;
   return "data/TC/openliero";
 }
 
@@ -53,30 +52,25 @@ TEST_CASE("TC loads without errors", "[tc_load]") {
 
   // [sounds] hooks resolve via the loaded sound table.
   REQUIRE(common->soundHook[SoundMenuSelect] == common->soundIndex("select"));
-  REQUIRE(
-      common->soundHook[SoundMenuMoveUp] == common->soundIndex("moveup"));
-  REQUIRE(
-      common->soundHook[SoundMenuMoveDown] == common->soundIndex("movedown"));
+  REQUIRE(common->soundHook[SoundMenuMoveUp] == common->soundIndex("moveup"));
+  REQUIRE(common->soundHook[SoundMenuMoveDown] == common->soundIndex("movedown"));
   REQUIRE(common->soundHook[SoundBump] == common->soundIndex("bump"));
   REQUIRE(common->soundHook[SoundBegin] == common->soundIndex("begin"));
   REQUIRE(common->soundHook[SoundReloaded] == common->soundIndex("reloaded"));
-  for (int i = 0; i < SOUND_DEF_T::MaxSound; ++i)
-    REQUIRE(common->soundHook[i] >= 0);
+  for (int i = 0; i < SOUND_DEF_T::MaxSound; ++i) REQUIRE(common->soundHook[i] >= 0);
 
   // Step 5: sound fields in weapon / sobject configs are now name-typed.
   // Anchor a couple of known values so regressions in soundRefFromStr
   // (e.g. unknown-name returning 0 instead of -1) get caught.
   auto findWeapon = [&](std::string const& id) -> Weapon const& {
     for (auto& w : common->weapons)
-      if (w.idStr == id)
-        return w;
+      if (w.idStr == id) return w;
     FAIL("weapon not found: " + id);
     return common->weapons.front();
   };
   auto findSObject = [&](std::string const& id) -> SObjectType const& {
     for (auto& s : common->sobjectTypes)
-      if (s.idStr == id)
-        return s;
+      if (s.idStr == id) return s;
     FAIL("sobject not found: " + id);
     return common->sobjectTypes.front();
   };
@@ -111,8 +105,7 @@ TEST_CASE("weapon / sobject sound refs round-trip via save/load", "[tc_load]") {
   }
 }
 
-TEST_CASE(
-    "weapon cfg with unknown sound name resolves to -1, not 0", "[tc_load]") {
+TEST_CASE("weapon cfg with unknown sound name resolves to -1, not 0", "[tc_load]") {
   auto common = std::make_shared<Common>();
   FsNode tcRoot(getTcPath());
   common->load(std::move(tcRoot));
@@ -148,8 +141,7 @@ TEST_CASE("tc.cfg [sounds] round-trips through save/load", "[tc_load]") {
   // populated from [types].sounds, which loadTcConfig does first.
   loadTcConfig(dst, ss);
 
-  for (int i = 0; i < SOUND_DEF_T::MaxSound; ++i)
-    REQUIRE(dst.soundHook[i] == src->soundHook[i]);
+  for (int i = 0; i < SOUND_DEF_T::MaxSound; ++i) REQUIRE(dst.soundHook[i] == src->soundHook[i]);
 }
 
 TEST_CASE("[sounds] unknown name resolves to -1", "[tc_load]") {
@@ -180,15 +172,11 @@ TEST_CASE("[sounds] unknown name resolves to -1", "[tc_load]") {
 // WAV file is missing on disk must still load — the slot survives with
 // sound == nullptr, indices of later sounds are unchanged, and playing the
 // missing slot is a silent no-op (not a crash, not the wrong sound).
-TEST_CASE("TC with a missing sound WAV loads and keeps indices stable",
-          "[tc_load][issue44]") {
+TEST_CASE("TC with a missing sound WAV loads and keeps indices stable", "[tc_load][issue44]") {
   namespace fs = std::filesystem;
-  fs::path const tempTc =
-      fs::temp_directory_path() / "openliero_test_missing_sound_tc";
+  fs::path const tempTc = fs::temp_directory_path() / "openliero_test_missing_sound_tc";
   fs::remove_all(tempTc);
-  fs::copy(
-      getTcPath(), tempTc,
-      fs::copy_options::recursive | fs::copy_options::copy_symlinks);
+  fs::copy(getTcPath(), tempTc, fs::copy_options::recursive | fs::copy_options::copy_symlinks);
 
   // Pick a sound that is NOT the last entry so we can verify later
   // indices don't shift. "shotgun" is sounds[0] in the shipped TC, and
@@ -217,8 +205,7 @@ TEST_CASE("TC with a missing sound WAV loads and keeps indices stable",
   // named "exp2", not at whatever happens to live at the shifted index.
   SObjectType const* largeExp = nullptr;
   for (auto const& s : common->sobjectTypes)
-    if (s.idStr == "large_explosion")
-      largeExp = &s;
+    if (s.idStr == "large_explosion") largeExp = &s;
   REQUIRE(largeExp != nullptr);
   REQUIRE(largeExp->startSound == exp2Idx);
 
@@ -272,8 +259,7 @@ TEST_CASE("TC supports game initialization", "[tc_load]") {
 
   REQUIRE_NOTHROW(game.level.generateFromSettings(*common, *settings, game.rand));
 
-  for (auto const& w : game.worms)
-    REQUIRE_NOTHROW(w->initWeapons(game));
+  for (auto const& w : game.worms) REQUIRE_NOTHROW(w->initWeapons(game));
 
   game.paused = false;
   game.startGame();

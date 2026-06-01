@@ -14,14 +14,14 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/string.hpp>
 
+#include "gfx/color.hpp"
+#include "gfx/palette.hpp"
+#include "level.hpp"
 #include "math/rect.hpp"
 #include "rand.hpp"
 #include "settings.hpp"
 #include "viewport.hpp"
 #include "worm.hpp"
-#include "gfx/palette.hpp"
-#include "gfx/color.hpp"
-#include "level.hpp"
 
 #include <cereal/types/vector.hpp>
 #include <cstdint>
@@ -33,8 +33,8 @@ void serialize(Archive& ar, BasicVec<T, 2>& v) {
 
 template <class Archive, typename T>
 void serialize(Archive& ar, BasicRect<T>& r) {
-  ar(cereal::make_nvp("x1", r.x1), cereal::make_nvp("y1", r.y1),
-     cereal::make_nvp("x2", r.x2), cereal::make_nvp("y2", r.y2));
+  ar(cereal::make_nvp("x1", r.x1), cereal::make_nvp("y1", r.y1), cereal::make_nvp("x2", r.x2),
+     cereal::make_nvp("y2", r.y2));
 }
 
 // Serialize a C array as a cereal array (produces inline TOML arrays).
@@ -44,8 +44,7 @@ void serializeArray(Archive& ar, const char* name, T (&arr)[N]) {
   ar.startNode();
   cereal::size_type size = N;
   ar(cereal::make_size_tag(size));
-  for (std::size_t i = 0; i < N; ++i)
-    ar(arr[i]);
+  for (std::size_t i = 0; i < N; ++i) ar(arr[i]);
   ar.finishNode();
 }
 
@@ -63,12 +62,9 @@ void serialize(Archive& ar, Worm::ControlState& cs) {
 // Phase 3). Everything else is plain data.
 template <class Archive>
 void serialize(Archive& ar, Ninjarope& n) {
-  ar(cereal::make_nvp("out", n.out),
-     cereal::make_nvp("attached", n.attached),
-     cereal::make_nvp("pos", n.pos),
-     cereal::make_nvp("vel", n.vel),
-     cereal::make_nvp("length", n.length),
-     cereal::make_nvp("curLen", n.curLen));
+  ar(cereal::make_nvp("out", n.out), cereal::make_nvp("attached", n.attached),
+     cereal::make_nvp("pos", n.pos), cereal::make_nvp("vel", n.vel),
+     cereal::make_nvp("length", n.length), cereal::make_nvp("curLen", n.curLen));
 }
 
 // ---- Rand ----
@@ -77,24 +73,20 @@ void serialize(Archive& ar, Ninjarope& n) {
 template <class Archive>
 void save(Archive& ar, Rand const& r) {
   std::string state = r.serialize();
-  ar(cereal::make_nvp("state", state),
-     cereal::make_nvp("last", r.last));
+  ar(cereal::make_nvp("state", state), cereal::make_nvp("last", r.last));
 }
 
 template <class Archive>
 void load(Archive& ar, Rand& r) {
   std::string state;
-  ar(cereal::make_nvp("state", state),
-     cereal::make_nvp("last", r.last));
+  ar(cereal::make_nvp("state", state), cereal::make_nvp("last", r.last));
   r.deserialize(state);
 }
 
 // ---- Color ----
 template <class Archive>
 void serialize(Archive& ar, Color& c) {
-  ar(cereal::make_nvp("r", c.r),
-     cereal::make_nvp("g", c.g),
-     cereal::make_nvp("b", c.b));
+  ar(cereal::make_nvp("r", c.r), cereal::make_nvp("g", c.g), cereal::make_nvp("b", c.b));
 }
 
 // ---- Palette ----
@@ -102,8 +94,7 @@ void serialize(Archive& ar, Color& c) {
 // has a fixed 256-entry C array, so we drive it manually.
 template <class Archive>
 void serialize(Archive& ar, Palette& p) {
-  for (int i = 0; i < 256; ++i)
-    ar(cereal::make_nvp("c" + std::to_string(i), p.entries[i]));
+  for (int i = 0; i < 256; ++i) ar(cereal::make_nvp("c" + std::to_string(i), p.entries[i]));
 }
 
 // ---- Level ----
@@ -112,10 +103,8 @@ void serialize(Archive& ar, Palette& p) {
 // / `oldLevelFile` / `zeroMaterial` are also not part of the wire format.
 template <class Archive>
 void serialize(Archive& ar, Level& lvl) {
-  ar(cereal::make_nvp("width", lvl.width),
-     cereal::make_nvp("height", lvl.height),
-     cereal::make_nvp("data", lvl.data),
-     cereal::make_nvp("origpal", lvl.origpal));
+  ar(cereal::make_nvp("width", lvl.width), cereal::make_nvp("height", lvl.height),
+     cereal::make_nvp("data", lvl.data), cereal::make_nvp("origpal", lvl.origpal));
 }
 
 // ---- Settings ----
@@ -134,10 +123,8 @@ void serializeSettingsScalars(Archive& ar, Settings& s) {
   // GameplayExtensions
   ar(cereal::make_nvp("recordReplays", s.recordReplays),
      cereal::make_nvp("loadPowerlevelPalette", s.loadPowerlevelPalette),
-     cereal::make_nvp("aiFrames", s.aiFrames),
-     cereal::make_nvp("aiMutations", s.aiMutations),
-     cereal::make_nvp("aiTraces", s.aiTraces),
-     cereal::make_nvp("aiParallels", s.aiParallels),
+     cereal::make_nvp("aiFrames", s.aiFrames), cereal::make_nvp("aiMutations", s.aiMutations),
+     cereal::make_nvp("aiTraces", s.aiTraces), cereal::make_nvp("aiParallels", s.aiParallels),
      cereal::make_nvp("zoneTimeout", s.zoneTimeout),
      cereal::make_nvp("selectBotWeapons", s.selectBotWeapons),
      cereal::make_nvp("allowViewingSpawnPoint", s.allowViewingSpawnPoint),
@@ -148,20 +135,14 @@ void serializeSettingsScalars(Archive& ar, Settings& s) {
      cereal::make_nvp("spectatorWindow", s.spectatorWindow),
      cereal::make_nvp("bloodParticleMax", s.bloodParticleMax));
   // Settings proper
-  ar(cereal::make_nvp("maxBonuses", s.maxBonuses),
-     cereal::make_nvp("blood", s.blood),
-     cereal::make_nvp("timeToLose", s.timeToLose),
-     cereal::make_nvp("flagsToWin", s.flagsToWin),
-     cereal::make_nvp("gameMode", s.gameMode),
-     cereal::make_nvp("shadow", s.shadow),
+  ar(cereal::make_nvp("maxBonuses", s.maxBonuses), cereal::make_nvp("blood", s.blood),
+     cereal::make_nvp("timeToLose", s.timeToLose), cereal::make_nvp("flagsToWin", s.flagsToWin),
+     cereal::make_nvp("gameMode", s.gameMode), cereal::make_nvp("shadow", s.shadow),
      cereal::make_nvp("loadChange", s.loadChange),
      cereal::make_nvp("namesOnBonuses", s.namesOnBonuses),
-     cereal::make_nvp("regenerateLevel", s.regenerateLevel),
-     cereal::make_nvp("lives", s.lives),
-     cereal::make_nvp("loadingTime", s.loadingTime),
-     cereal::make_nvp("randomLevel", s.randomLevel),
-     cereal::make_nvp("levelFile", s.levelFile),
-     cereal::make_nvp("map", s.map),
+     cereal::make_nvp("regenerateLevel", s.regenerateLevel), cereal::make_nvp("lives", s.lives),
+     cereal::make_nvp("loadingTime", s.loadingTime), cereal::make_nvp("randomLevel", s.randomLevel),
+     cereal::make_nvp("levelFile", s.levelFile), cereal::make_nvp("map", s.map),
      cereal::make_nvp("screenSync", s.screenSync));
   ar(cereal::make_nvp("bonusTimeout", s.bonusTimeout));
   // v3 fields. Missing on older configs → defaults remain.
@@ -172,8 +153,7 @@ void serializeSettingsScalars(Archive& ar, Settings& s) {
 template <class Archive>
 void serializeSettingsFields(Archive& ar, Settings& s) {
   serializeSettingsScalars(ar, s);
-  for (int i = 0; i < 40; ++i)
-    ar(cereal::make_nvp("weap" + std::to_string(i), s.weapTable[i]));
+  for (int i = 0; i < 40; ++i) ar(cereal::make_nvp("weap" + std::to_string(i), s.weapTable[i]));
 }
 
 template <class Archive>
@@ -191,28 +171,20 @@ template <class Archive>
 void serializeGameplay(Archive& ar, Settings& s) {
   ar(cereal::make_nvp("recordReplays", s.recordReplays),
      cereal::make_nvp("loadPowerlevelPalette", s.loadPowerlevelPalette),
-     cereal::make_nvp("aiFrames", s.aiFrames),
-     cereal::make_nvp("aiMutations", s.aiMutations),
-     cereal::make_nvp("aiTraces", s.aiTraces),
-     cereal::make_nvp("aiParallels", s.aiParallels),
+     cereal::make_nvp("aiFrames", s.aiFrames), cereal::make_nvp("aiMutations", s.aiMutations),
+     cereal::make_nvp("aiTraces", s.aiTraces), cereal::make_nvp("aiParallels", s.aiParallels),
      cereal::make_nvp("zoneTimeout", s.zoneTimeout),
      cereal::make_nvp("selectBotWeapons", s.selectBotWeapons),
      cereal::make_nvp("allowViewingSpawnPoint", s.allowViewingSpawnPoint),
      cereal::make_nvp("tc", s.tc));
-  ar(cereal::make_nvp("maxBonuses", s.maxBonuses),
-     cereal::make_nvp("blood", s.blood),
-     cereal::make_nvp("timeToLose", s.timeToLose),
-     cereal::make_nvp("flagsToWin", s.flagsToWin),
-     cereal::make_nvp("gameMode", s.gameMode),
-     cereal::make_nvp("shadow", s.shadow),
+  ar(cereal::make_nvp("maxBonuses", s.maxBonuses), cereal::make_nvp("blood", s.blood),
+     cereal::make_nvp("timeToLose", s.timeToLose), cereal::make_nvp("flagsToWin", s.flagsToWin),
+     cereal::make_nvp("gameMode", s.gameMode), cereal::make_nvp("shadow", s.shadow),
      cereal::make_nvp("loadChange", s.loadChange),
      cereal::make_nvp("namesOnBonuses", s.namesOnBonuses),
-     cereal::make_nvp("regenerateLevel", s.regenerateLevel),
-     cereal::make_nvp("lives", s.lives),
-     cereal::make_nvp("loadingTime", s.loadingTime),
-     cereal::make_nvp("randomLevel", s.randomLevel),
-     cereal::make_nvp("levelFile", s.levelFile),
-     cereal::make_nvp("map", s.map),
+     cereal::make_nvp("regenerateLevel", s.regenerateLevel), cereal::make_nvp("lives", s.lives),
+     cereal::make_nvp("loadingTime", s.loadingTime), cereal::make_nvp("randomLevel", s.randomLevel),
+     cereal::make_nvp("levelFile", s.levelFile), cereal::make_nvp("map", s.map),
      cereal::make_nvp("screenSync", s.screenSync));
   serializeArray(ar, "weapTable", s.weapTable);
   ar(cereal::make_nvp("bonusTimeout", s.bonusTimeout));
@@ -225,15 +197,10 @@ void serializeGameplay(Archive& ar, Settings& s) {
 // is intentionally omitted here.
 template <class Archive>
 void serialize(Archive& ar, Viewport& v) {
-  ar(cereal::make_nvp("x", v.x),
-     cereal::make_nvp("y", v.y),
-     cereal::make_nvp("shake", v.shake),
-     cereal::make_nvp("maxX", v.maxX),
-     cereal::make_nvp("maxY", v.maxY),
-     cereal::make_nvp("centerX", v.centerX),
-     cereal::make_nvp("centerY", v.centerY),
-     cereal::make_nvp("wormIdx", v.wormIdx),
-     cereal::make_nvp("bannerY", v.bannerY),
+  ar(cereal::make_nvp("x", v.x), cereal::make_nvp("y", v.y), cereal::make_nvp("shake", v.shake),
+     cereal::make_nvp("maxX", v.maxX), cereal::make_nvp("maxY", v.maxY),
+     cereal::make_nvp("centerX", v.centerX), cereal::make_nvp("centerY", v.centerY),
+     cereal::make_nvp("wormIdx", v.wormIdx), cereal::make_nvp("bannerY", v.bannerY),
      cereal::make_nvp("rect", v.rect));
 }
 
@@ -242,14 +209,10 @@ void serialize(Archive& ar, Viewport& v) {
 // out — they're transient state.
 template <class Archive>
 void serialize(Archive& ar, WormSettings& ws) {
-  ar(cereal::make_nvp("health", ws.health),
-     cereal::make_nvp("controller", ws.controller),
-     cereal::make_nvp("name", ws.name),
-     cereal::make_nvp("randomName", ws.randomName),
-     cereal::make_nvp("color", ws.color),
-     cereal::make_nvp("rgb0", ws.rgb[0]),
-     cereal::make_nvp("rgb1", ws.rgb[1]),
-     cereal::make_nvp("rgb2", ws.rgb[2]),
+  ar(cereal::make_nvp("health", ws.health), cereal::make_nvp("controller", ws.controller),
+     cereal::make_nvp("name", ws.name), cereal::make_nvp("randomName", ws.randomName),
+     cereal::make_nvp("color", ws.color), cereal::make_nvp("rgb0", ws.rgb[0]),
+     cereal::make_nvp("rgb1", ws.rgb[1]), cereal::make_nvp("rgb2", ws.rgb[2]),
      cereal::make_nvp("inputDevice", ws.inputDevice),
      cereal::make_nvp("gamepadName", ws.gamepadName),
      cereal::make_nvp("gamepadSerial", ws.gamepadSerial));
@@ -260,19 +223,15 @@ void serialize(Archive& ar, WormSettings& ws) {
   for (int i = 0; i < WormSettingsExtensions::MaxControlEx; ++i)
     ar(cereal::make_nvp("controlEx" + std::to_string(i), ws.controlsEx[i]));
   for (int i = 0; i < WormSettingsExtensions::MaxControlEx; ++i)
-    ar(cereal::make_nvp("gpControl" + std::to_string(i),
-                        ws.gamepadControls[i]));
+    ar(cereal::make_nvp("gpControl" + std::to_string(i), ws.gamepadControls[i]));
 }
 
 // TOML-specific WormSettings serialization: uses arrays instead of indexed keys.
 template <class Archive>
 void serializeWormSettingsToml(Archive& ar, WormSettings& ws) {
-  ar(cereal::make_nvp("name", ws.name),
-     cereal::make_nvp("health", ws.health),
-     cereal::make_nvp("controller", ws.controller),
-     cereal::make_nvp("randomName", ws.randomName),
-     cereal::make_nvp("color", ws.color),
-     cereal::make_nvp("inputDevice", ws.inputDevice),
+  ar(cereal::make_nvp("name", ws.name), cereal::make_nvp("health", ws.health),
+     cereal::make_nvp("controller", ws.controller), cereal::make_nvp("randomName", ws.randomName),
+     cereal::make_nvp("color", ws.color), cereal::make_nvp("inputDevice", ws.inputDevice),
      cereal::make_nvp("gamepadName", ws.gamepadName),
      cereal::make_nvp("gamepadSerial", ws.gamepadSerial));
   serializeArray(ar, "rgb", ws.rgb);
@@ -288,8 +247,7 @@ void serializeWormSettingsToml(Archive& ar, WormSettings& ws) {
 // the existing replay archive). Plain numeric fields only.
 template <class Archive>
 void serialize(Archive& ar, WormWeapon& w) {
-  ar(cereal::make_nvp("ammo", w.ammo),
-     cereal::make_nvp("delayLeft", w.delayLeft),
+  ar(cereal::make_nvp("ammo", w.ammo), cereal::make_nvp("delayLeft", w.delayLeft),
      cereal::make_nvp("loadingLeft", w.loadingLeft));
 }
 
@@ -305,40 +263,26 @@ void serialize(Archive& ar, WormWeapon& w) {
 //   - ai (shared_ptr<WormAI>) — transient, rebuilt on load.
 template <class Archive>
 void serialize(Archive& ar, Worm& w) {
-  ar(cereal::make_nvp("pos", w.pos),
-     cereal::make_nvp("vel", w.vel),
-     cereal::make_nvp("logicRespawn", w.logicRespawn),
-     cereal::make_nvp("hotspotX", w.hotspotX),
-     cereal::make_nvp("hotspotY", w.hotspotY),
-     cereal::make_nvp("aimingAngle", w.aimingAngle),
-     cereal::make_nvp("aimingSpeed", w.aimingSpeed),
-     cereal::make_nvp("ableToJump", w.ableToJump),
+  ar(cereal::make_nvp("pos", w.pos), cereal::make_nvp("vel", w.vel),
+     cereal::make_nvp("logicRespawn", w.logicRespawn), cereal::make_nvp("hotspotX", w.hotspotX),
+     cereal::make_nvp("hotspotY", w.hotspotY), cereal::make_nvp("aimingAngle", w.aimingAngle),
+     cereal::make_nvp("aimingSpeed", w.aimingSpeed), cereal::make_nvp("ableToJump", w.ableToJump),
      cereal::make_nvp("ableToDig", w.ableToDig),
      cereal::make_nvp("keyChangePressed", w.keyChangePressed),
-     cereal::make_nvp("movable", w.movable),
-     cereal::make_nvp("animate", w.animate),
-     cereal::make_nvp("visible", w.visible),
-     cereal::make_nvp("ready", w.ready),
-     cereal::make_nvp("flag", w.flag),
-     cereal::make_nvp("makeSightGreen", w.makeSightGreen),
-     cereal::make_nvp("health", w.health),
-     cereal::make_nvp("lives", w.lives),
-     cereal::make_nvp("kills", w.kills),
-     cereal::make_nvp("timer", w.timer),
+     cereal::make_nvp("movable", w.movable), cereal::make_nvp("animate", w.animate),
+     cereal::make_nvp("visible", w.visible), cereal::make_nvp("ready", w.ready),
+     cereal::make_nvp("flag", w.flag), cereal::make_nvp("makeSightGreen", w.makeSightGreen),
+     cereal::make_nvp("health", w.health), cereal::make_nvp("lives", w.lives),
+     cereal::make_nvp("kills", w.kills), cereal::make_nvp("timer", w.timer),
      cereal::make_nvp("killedTimer", w.killedTimer),
-     cereal::make_nvp("currentFrame", w.currentFrame),
-     cereal::make_nvp("flags", w.flags),
-     cereal::make_nvp("ninjarope", w.ninjarope),
-     cereal::make_nvp("currentWeapon", w.currentWeapon),
+     cereal::make_nvp("currentFrame", w.currentFrame), cereal::make_nvp("flags", w.flags),
+     cereal::make_nvp("ninjarope", w.ninjarope), cereal::make_nvp("currentWeapon", w.currentWeapon),
      cereal::make_nvp("lastKilledByIdx", w.lastKilledByIdx),
      cereal::make_nvp("fireCone", w.fireCone),
-     cereal::make_nvp("leaveShellTimer", w.leaveShellTimer),
-     cereal::make_nvp("index", w.index),
-     cereal::make_nvp("direction", w.direction),
-     cereal::make_nvp("controlStates", w.controlStates),
+     cereal::make_nvp("leaveShellTimer", w.leaveShellTimer), cereal::make_nvp("index", w.index),
+     cereal::make_nvp("direction", w.direction), cereal::make_nvp("controlStates", w.controlStates),
      cereal::make_nvp("prevControlStates", w.prevControlStates));
-  for (int i = 0; i < 4; ++i)
-    ar(cereal::make_nvp("react" + std::to_string(i), w.reacts[i]));
+  for (int i = 0; i < 4; ++i) ar(cereal::make_nvp("react" + std::to_string(i), w.reacts[i]));
   for (int i = 0; i < NUM_WEAPONS; ++i)
     ar(cereal::make_nvp("weapon" + std::to_string(i), w.weapons[i]));
 }
@@ -360,8 +304,7 @@ void save(Archive& ar, Game const& game) {
   ar(cereal::make_nvp("settings", game.settings));
 
   // Scalars
-  ar(cereal::make_nvp("cycles", game.cycles),
-     cereal::make_nvp("gotChanged", game.gotChanged),
+  ar(cereal::make_nvp("cycles", game.cycles), cereal::make_nvp("gotChanged", game.gotChanged),
      cereal::make_nvp("lastKilledIdx", game.lastKilledIdx),
      cereal::make_nvp("screenFlash", game.screenFlash));
 
@@ -391,8 +334,8 @@ void save(Archive& ar, Game const& game) {
     // Context: weapon type indices (-1 if null)
     for (int i = 0; i < NUM_WEAPONS; ++i) {
       int32_t weapIdx = w.weapons[i].type
-          ? static_cast<int32_t>(w.weapons[i].type - &game.common->weapons[0])
-          : -1;
+                            ? static_cast<int32_t>(w.weapons[i].type - &game.common->weapons[0])
+                            : -1;
       ar(cereal::make_nvp("weapIdx" + std::to_string(i), weapIdx));
     }
 
@@ -417,8 +360,7 @@ void load(Archive& ar, Game& game) {
   ar(cereal::make_nvp("settings", game.settings));
 
   // Scalars
-  ar(cereal::make_nvp("cycles", game.cycles),
-     cereal::make_nvp("gotChanged", game.gotChanged),
+  ar(cereal::make_nvp("cycles", game.cycles), cereal::make_nvp("gotChanged", game.gotChanged),
      cereal::make_nvp("lastKilledIdx", game.lastKilledIdx),
      cereal::make_nvp("screenFlash", game.screenFlash));
 
@@ -445,9 +387,7 @@ void load(Archive& ar, Game& game) {
     for (int j = 0; j < NUM_WEAPONS; ++j) {
       int32_t weapIdx;
       ar(cereal::make_nvp("weapIdx" + std::to_string(j), weapIdx));
-      w.weapons[j].type = weapIdx >= 0
-          ? &game.common->weapons[weapIdx]
-          : nullptr;
+      w.weapons[j].type = weapIdx >= 0 ? &game.common->weapons[weapIdx] : nullptr;
     }
 
     // Per-worm settings
@@ -459,10 +399,9 @@ void load(Archive& ar, Game& game) {
   // Resolve anchor pointers now that all worms exist
   for (std::size_t i = 0; i < game.worms.size(); ++i) {
     int32_t idx = anchorIndices[i];
-    game.worms[i]->ninjarope.anchor =
-        (idx >= 0 && idx < static_cast<int32_t>(game.worms.size()))
-            ? game.worms[idx].get()
-            : nullptr;
+    game.worms[i]->ninjarope.anchor = (idx >= 0 && idx < static_cast<int32_t>(game.worms.size()))
+                                          ? game.worms[idx].get()
+                                          : nullptr;
   }
 
   // Viewports

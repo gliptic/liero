@@ -43,8 +43,7 @@ struct Env {
 
 template <typename Pred>
 bool pollUntil(NetSession& a, NetSession& b, Pred pred, int maxMs = 5000) {
-  auto deadline = std::chrono::steady_clock::now() +
-                  std::chrono::milliseconds(maxMs);
+  auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(maxMs);
   while (!pred() && std::chrono::steady_clock::now() < deadline) {
     a.update();
     b.update();
@@ -76,8 +75,7 @@ TEST_CASE("NetSession reaches Playing and runs ticks", "[session][rollback]") {
 
   // Both peers seeded the same RNG via handshake — identical game
   // state at frame 0.
-  REQUIRE(host.rollbackController()->game.rand ==
-          client.rollbackController()->game.rand);
+  REQUIRE(host.rollbackController()->game.rand == client.rollbackController()->game.rand);
 
   // Run a few sim ticks. Process pumps the controller (which sends
   // input batches via the wired NetTransport callback), and
@@ -202,8 +200,7 @@ TEST_CASE("Rollback weapon select transitions to game over a real session",
   // Both peers picked the same weapons.
   for (int i = 0; i < 2; ++i) {
     for (int j = 0; j < Settings::selectableWeapons; ++j) {
-      REQUIRE(hc->game.worms[i]->settings->weapons[j] ==
-              cc->game.worms[i]->settings->weapons[j]);
+      REQUIRE(hc->game.worms[i]->settings->weapons[j] == cc->game.worms[i]->settings->weapons[j]);
     }
   }
 
@@ -215,9 +212,7 @@ TEST_CASE("Rollback weapon select transitions to game over a real session",
 // long-haul game-phase run. Catches the asymmetric-WS-simFrame
 // regression that only surfaces after both peers transition through
 // real WS and keep producing checksums for several seconds.
-TEST_CASE(
-    "Rollback session runs ≥5s game-phase post-WS without desync",
-    "[session][rollback]") {
+TEST_CASE("Rollback session runs ≥5s game-phase post-WS without desync", "[session][rollback]") {
   Env e;
   e.settings->inputDelay = 1;
   e.settings->selectBotWeapons = 0;
@@ -320,8 +315,7 @@ TEST_CASE(
   REQUIRE(hc->currentFrame() > 0);
   REQUIRE(cc->currentFrame() > 0);
 
-  int32_t gap = static_cast<int32_t>(hc->currentFrame()) -
-                static_cast<int32_t>(cc->currentFrame());
+  int32_t gap = static_cast<int32_t>(hc->currentFrame()) - static_cast<int32_t>(cc->currentFrame());
   REQUIRE(std::abs(gap) <= RollbackController::kFrameAdvantage);
 
   // Headline: the desync detector did NOT fire across the run.
@@ -343,8 +337,7 @@ TEST_CASE(
   REQUIRE(slotH->checksum == slotC->checksum);
 }
 
-TEST_CASE("Per-worm stats hooks fire on the shadow on both peers",
-          "[session][rollback][stats]") {
+TEST_CASE("Per-worm stats hooks fire on the shadow on both peers", "[session][rollback][stats]") {
   // Tighter regression: even if `frame` ticks, the per-worm hooks
   // (shot, damageDealt, …) used to be gated by speculative too, so the
   // client's NormalStatsRecorder stayed empty. The shadow's recorder is
@@ -373,7 +366,8 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers",
 
   auto* hc = host.rollbackController();
   auto* cc = client.rollbackController();
-  REQUIRE(hc); REQUIRE(cc);
+  REQUIRE(hc);
+  REQUIRE(cc);
   hc->focus();
   cc->focus();
 
@@ -398,8 +392,7 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers",
   runTick(0, 0);
   runTick(BIT_FIRE, BIT_FIRE);
   runTick(0, 0);
-  for (int i = 0; i < 200 &&
-       !(hc->gameState() == StateGame && cc->gameState() == StateGame); ++i) {
+  for (int i = 0; i < 200 && !(hc->gameState() == StateGame && cc->gameState() == StateGame); ++i) {
     runTick(0, 0);
   }
   REQUIRE(hc->gameState() == StateGame);
@@ -418,10 +411,8 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers",
   // Idle drain.
   for (int i = 0; i < 30; ++i) runTick(0, 0);
 
-  auto* hostStats =
-      dynamic_cast<NormalStatsRecorder*>(hc->statsGame()->statsRecorder.get());
-  auto* clientStats =
-      dynamic_cast<NormalStatsRecorder*>(cc->statsGame()->statsRecorder.get());
+  auto* hostStats = dynamic_cast<NormalStatsRecorder*>(hc->statsGame()->statsRecorder.get());
+  auto* clientStats = dynamic_cast<NormalStatsRecorder*>(cc->statsGame()->statsRecorder.get());
   REQUIRE(hostStats);
   REQUIRE(clientStats);
 
@@ -429,8 +420,7 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers",
     int total = 0;
     for (int w = 0; w < 2; ++w)
       for (int wp = 0; wp < 40; ++wp)
-        total += s->worms[w].weapons[wp].potentialHits +
-                 s->worms[w].weapons[wp].actualHits;
+        total += s->worms[w].weapons[wp].potentialHits + s->worms[w].weapons[wp].actualHits;
     return total;
   };
 
@@ -439,8 +429,7 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers",
   REQUIRE(totalShots(clientStats) > 0);
 }
 
-TEST_CASE("Stats accumulate on both peers across a rollback game",
-          "[session][rollback][stats]") {
+TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][rollback][stats]") {
   // Regression: the live game runs frames speculatively under rollback,
   // so NormalStatsRecorder::tick was skipped every frame on the peer
   // whose forward path always fell into the predicted branch. The fix
@@ -500,8 +489,7 @@ TEST_CASE("Stats accumulate on both peers across a rollback game",
   wsScript.push_back(BIT_FIRE);
   wsScript.push_back(0);
   for (uint8_t b : wsScript) runTick(b);
-  for (int i = 0; i < 200 &&
-       !(hc->gameState() == StateGame && cc->gameState() == StateGame); ++i) {
+  for (int i = 0; i < 200 && !(hc->gameState() == StateGame && cc->gameState() == StateGame); ++i) {
     runTick(0);
   }
   REQUIRE(hc->gameState() == StateGame);
@@ -513,20 +501,16 @@ TEST_CASE("Stats accumulate on both peers across a rollback game",
   // The shadow Game (statsGame()) is where stats live now. The live
   // game's recorder is the base no-op class — the dynamic_cast below
   // would fail on it, which is the *intended* contract.
-  auto* hostStats =
-      dynamic_cast<NormalStatsRecorder*>(hc->statsGame()->statsRecorder.get());
-  auto* clientStats =
-      dynamic_cast<NormalStatsRecorder*>(cc->statsGame()->statsRecorder.get());
+  auto* hostStats = dynamic_cast<NormalStatsRecorder*>(hc->statsGame()->statsRecorder.get());
+  auto* clientStats = dynamic_cast<NormalStatsRecorder*>(cc->statsGame()->statsRecorder.get());
   REQUIRE(hostStats != nullptr);
   REQUIRE(clientStats != nullptr);
   REQUIRE(hc->statsGame() != hc->currentGame());  // shadow, not live
   REQUIRE(cc->statsGame() != cc->currentGame());
 
   // Live recorders are the no-op base class — dynamic_cast fails.
-  REQUIRE(dynamic_cast<NormalStatsRecorder*>(
-              hc->currentGame()->statsRecorder.get()) == nullptr);
-  REQUIRE(dynamic_cast<NormalStatsRecorder*>(
-              cc->currentGame()->statsRecorder.get()) == nullptr);
+  REQUIRE(dynamic_cast<NormalStatsRecorder*>(hc->currentGame()->statsRecorder.get()) == nullptr);
+  REQUIRE(dynamic_cast<NormalStatsRecorder*>(cc->currentGame()->statsRecorder.get()) == nullptr);
 
   // Both shadows should have ticked far past 0 — the shadow runs once
   // per confirmed frame and confirmation tracks within a few frames of
@@ -574,8 +558,7 @@ TEST_CASE("Stats accumulate on both peers across a rollback game",
   REQUIRE(gtGap <= 10);
 }
 
-TEST_CASE("Host's inputDelay syncs to the client over MatchSettings",
-          "[session][rollback]") {
+TEST_CASE("Host's inputDelay syncs to the client over MatchSettings", "[session][rollback]") {
   Env e;
   e.settings->inputDelay = 2;
 
@@ -641,8 +624,6 @@ TEST_CASE("Input batches received pre-Playing reach controller post-Playing",
     rb->process();
   }
 
-  INFO("client simFrame=" << rb->currentFrame()
-       << " confirmedFrame=" << rb->confirmedFrame());
+  INFO("client simFrame=" << rb->currentFrame() << " confirmedFrame=" << rb->confirmedFrame());
   REQUIRE(rb->confirmedFrame() >= 7);
 }
-

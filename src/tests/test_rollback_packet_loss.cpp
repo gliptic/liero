@@ -42,8 +42,7 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
 
 }  // namespace
 
-TEST_CASE("Rollback survives 10% packet loss via input redundancy",
-          "[rollback][loss]") {
+TEST_CASE("Rollback survives 10% packet loss via input redundancy", "[rollback][loss]") {
   constexpr uint32_t kWorldSeed = 0xBEEF;
   constexpr int kTicks = 1500;
   constexpr uint32_t kInputSeed = 0xC0FFEE;
@@ -60,18 +59,15 @@ TEST_CASE("Rollback survives 10% packet loss via input redundancy",
   a->game.rand.seed(kWorldSeed);
   b->game.rand.seed(kWorldSeed);
 
-  rollback_test::JitterTransport transport(
-      {0x10ADED, /*minDelay*/ 1, /*maxDelay*/ 3,
-       /*lossProb*/ 0.10, /*dupProb*/ 0.0});
+  rollback_test::JitterTransport transport({0x10ADED, /*minDelay*/ 1, /*maxDelay*/ 3,
+                                            /*lossProb*/ 0.10, /*dupProb*/ 0.0});
 
-  a->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        transport.sendAToB(gen_, bf, c, in, lf);
-      });
-  b->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        transport.sendBToA(gen_, bf, c, in, lf);
-      });
+  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.sendAToB(gen_, bf, c, in, lf);
+  });
+  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.sendBToA(gen_, bf, c, in, lf);
+  });
   a->focus();
   b->focus();
 
@@ -108,14 +104,11 @@ TEST_CASE("Rollback survives 10% packet loss via input redundancy",
     // Steady-state observation begins after the first ~50 ticks so the
     // warm-up doesn't pollute the running maxima.
     if (tick > 50) {
-      uint32_t lagA = a->currentFrame() -
-                     static_cast<uint32_t>(a->confirmedFrame() + 1);
-      uint32_t lagB = b->currentFrame() -
-                     static_cast<uint32_t>(b->confirmedFrame() + 1);
+      uint32_t lagA = a->currentFrame() - static_cast<uint32_t>(a->confirmedFrame() + 1);
+      uint32_t lagB = b->currentFrame() - static_cast<uint32_t>(b->confirmedFrame() + 1);
       if (lagA > maxLagA) maxLagA = lagA;
       if (lagB > maxLagB) maxLagB = lagB;
-      if (a->currentFrame() == prevA && b->currentFrame() == prevB)
-        ++stallTicks;
+      if (a->currentFrame() == prevA && b->currentFrame() == prevB) ++stallTicks;
     }
     prevA = a->currentFrame();
     prevB = b->currentFrame();

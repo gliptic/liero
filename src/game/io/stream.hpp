@@ -16,196 +16,181 @@
 namespace io {
 
 struct EndOfStream : std::runtime_error {
-	EndOfStream() : std::runtime_error("end of stream") {}
-	explicit EndOfStream(char const* what) : std::runtime_error(what) {}
+  EndOfStream() : std::runtime_error("end of stream") {}
+  explicit EndOfStream(char const* what) : std::runtime_error(what) {}
 };
 
 struct StreamError : std::runtime_error {
-	using std::runtime_error::runtime_error;
+  using std::runtime_error::runtime_error;
 };
 
 struct ArchiveCheckError : std::runtime_error {
-	using std::runtime_error::runtime_error;
+  using std::runtime_error::runtime_error;
 };
 
 struct Reader {
-	virtual ~Reader() = default;
+  virtual ~Reader() = default;
 
-	// Read one byte; throw EndOfStream on EOF.
-	virtual uint8_t get() = 0;
+  // Read one byte; throw EndOfStream on EOF.
+  virtual uint8_t get() = 0;
 
-	// Read up to `n` bytes; return number actually read.
-	virtual std::size_t try_get(uint8_t* dst, std::size_t n) = 0;
+  // Read up to `n` bytes; return number actually read.
+  virtual std::size_t try_get(uint8_t* dst, std::size_t n) = 0;
 
-	// Read exactly `n` bytes or throw EndOfStream.
-	void get(uint8_t* dst, std::size_t n) {
-		std::size_t got = try_get(dst, n);
-		if (got != n)
-			throw EndOfStream{};
-	}
+  // Read exactly `n` bytes or throw EndOfStream.
+  void get(uint8_t* dst, std::size_t n) {
+    std::size_t got = try_get(dst, n);
+    if (got != n) throw EndOfStream{};
+  }
 
-	// Discard up to `n` bytes; return number actually discarded.
-	virtual std::size_t try_skip(std::size_t n) {
-		uint8_t buf[1024];
-		std::size_t total = 0;
-		while (total < n) {
-			std::size_t take = std::min(sizeof(buf), n - total);
-			std::size_t got = try_get(buf, take);
-			total += got;
-			if (got < take)
-				break;
-		}
-		return total;
-	}
+  // Discard up to `n` bytes; return number actually discarded.
+  virtual std::size_t try_skip(std::size_t n) {
+    uint8_t buf[1024];
+    std::size_t total = 0;
+    while (total < n) {
+      std::size_t take = std::min(sizeof(buf), n - total);
+      std::size_t got = try_get(buf, take);
+      total += got;
+      if (got < take) break;
+    }
+    return total;
+  }
 };
 
 struct Writer {
-	virtual ~Writer() = default;
+  virtual ~Writer() = default;
 
-	virtual void put(uint8_t b) = 0;
-	virtual void put(uint8_t const* src, std::size_t n) = 0;
-	virtual void flush() {}
+  virtual void put(uint8_t b) = 0;
+  virtual void put(uint8_t const* src, std::size_t n) = 0;
+  virtual void flush() {}
 };
 
 // ---- File-backed ----
 
 struct FileReader : Reader {
-	// Borrows the FILE* — caller retains ownership and is responsible
-	// for closing it. Useful for stdin or pre-opened file descriptors.
-	explicit FileReader(std::FILE* f) : f_(f), owned_(false) {}
+  // Borrows the FILE* — caller retains ownership and is responsible
+  // for closing it. Useful for stdin or pre-opened file descriptors.
+  explicit FileReader(std::FILE* f) : f_(f), owned_(false) {}
 
-	// Tag for the take-ownership flavour of the FILE* constructor.
-	struct OwnFile {};
-	FileReader(std::FILE* f, OwnFile) : f_(f), owned_(true) {}
+  // Tag for the take-ownership flavour of the FILE* constructor.
+  struct OwnFile {};
+  FileReader(std::FILE* f, OwnFile) : f_(f), owned_(true) {}
 
-	FileReader(char const* path, char const* mode) {
-		f_ = std::fopen(path, mode);
-		if (!f_)
-			throw StreamError(std::string("Couldn't open ") + path);
-		owned_ = true;
-	}
-	~FileReader() override {
-		if (owned_ && f_)
-			std::fclose(f_);
-	}
-	FileReader(FileReader const&) = delete;
-	FileReader& operator=(FileReader const&) = delete;
+  FileReader(char const* path, char const* mode) {
+    f_ = std::fopen(path, mode);
+    if (!f_) throw StreamError(std::string("Couldn't open ") + path);
+    owned_ = true;
+  }
+  ~FileReader() override {
+    if (owned_ && f_) std::fclose(f_);
+  }
+  FileReader(FileReader const&) = delete;
+  FileReader& operator=(FileReader const&) = delete;
 
-	uint8_t get() override {
-		int c = std::fgetc(f_);
-		if (c == EOF)
-			throw EndOfStream{};
-		return static_cast<uint8_t>(c);
-	}
+  uint8_t get() override {
+    int c = std::fgetc(f_);
+    if (c == EOF) throw EndOfStream{};
+    return static_cast<uint8_t>(c);
+  }
 
-	std::size_t try_get(uint8_t* dst, std::size_t n) override {
-		return std::fread(dst, 1, n, f_);
-	}
+  std::size_t try_get(uint8_t* dst, std::size_t n) override { return std::fread(dst, 1, n, f_); }
 
-private:
-	std::FILE* f_;
-	bool owned_;
+ private:
+  std::FILE* f_;
+  bool owned_;
 };
 
 struct FileWriter : Writer {
-	explicit FileWriter(std::FILE* f) : f_(f), owned_(false) {}
+  explicit FileWriter(std::FILE* f) : f_(f), owned_(false) {}
 
-	struct OwnFile {};
-	FileWriter(std::FILE* f, OwnFile) : f_(f), owned_(true) {}
+  struct OwnFile {};
+  FileWriter(std::FILE* f, OwnFile) : f_(f), owned_(true) {}
 
-	FileWriter(char const* path, char const* mode) {
-		f_ = std::fopen(path, mode);
-		if (!f_)
-			throw StreamError(std::string("Couldn't open ") + path);
-		owned_ = true;
-	}
-	~FileWriter() override {
-		if (owned_ && f_) {
-			std::fflush(f_);
-			std::fclose(f_);
-		}
-	}
-	FileWriter(FileWriter const&) = delete;
-	FileWriter& operator=(FileWriter const&) = delete;
+  FileWriter(char const* path, char const* mode) {
+    f_ = std::fopen(path, mode);
+    if (!f_) throw StreamError(std::string("Couldn't open ") + path);
+    owned_ = true;
+  }
+  ~FileWriter() override {
+    if (owned_ && f_) {
+      std::fflush(f_);
+      std::fclose(f_);
+    }
+  }
+  FileWriter(FileWriter const&) = delete;
+  FileWriter& operator=(FileWriter const&) = delete;
 
-	void put(uint8_t b) override {
-		if (std::fputc(b, f_) == EOF)
-			throw StreamError("write failed");
-	}
-	void put(uint8_t const* src, std::size_t n) override {
-		if (std::fwrite(src, 1, n, f_) != n)
-			throw StreamError("write failed");
-	}
-	void flush() override { std::fflush(f_); }
+  void put(uint8_t b) override {
+    if (std::fputc(b, f_) == EOF) throw StreamError("write failed");
+  }
+  void put(uint8_t const* src, std::size_t n) override {
+    if (std::fwrite(src, 1, n, f_) != n) throw StreamError("write failed");
+  }
+  void flush() override { std::fflush(f_); }
 
-private:
-	std::FILE* f_;
-	bool owned_;
+ private:
+  std::FILE* f_;
+  bool owned_;
 };
 
 // ---- Memory-backed ----
 
 struct MemReader : Reader {
-	MemReader() = default;
-	MemReader(uint8_t const* data, std::size_t size) : data_(data), size_(size) {}
-	explicit MemReader(std::string const& s)
-		: data_(reinterpret_cast<uint8_t const*>(s.data())), size_(s.size()) {}
-	explicit MemReader(std::vector<uint8_t> const& v)
-		: data_(v.data()), size_(v.size()) {}
+  MemReader() = default;
+  MemReader(uint8_t const* data, std::size_t size) : data_(data), size_(size) {}
+  explicit MemReader(std::string const& s)
+      : data_(reinterpret_cast<uint8_t const*>(s.data())), size_(s.size()) {}
+  explicit MemReader(std::vector<uint8_t> const& v) : data_(v.data()), size_(v.size()) {}
 
-	// Point at a different buffer (e.g. once it has been filled by an
-	// owning container).
-	void reset(uint8_t const* data, std::size_t size) {
-		data_ = data;
-		size_ = size;
-		pos_ = 0;
-	}
+  // Point at a different buffer (e.g. once it has been filled by an
+  // owning container).
+  void reset(uint8_t const* data, std::size_t size) {
+    data_ = data;
+    size_ = size;
+    pos_ = 0;
+  }
 
-	std::size_t tellg() const { return pos_; }
-	void seekg(std::size_t pos) {
-		if (pos > size_)
-			throw EndOfStream("seekg past end");
-		pos_ = pos;
-	}
+  std::size_t tellg() const { return pos_; }
+  void seekg(std::size_t pos) {
+    if (pos > size_) throw EndOfStream("seekg past end");
+    pos_ = pos;
+  }
 
-	uint8_t get() override {
-		if (pos_ >= size_)
-			throw EndOfStream{};
-		return data_[pos_++];
-	}
+  uint8_t get() override {
+    if (pos_ >= size_) throw EndOfStream{};
+    return data_[pos_++];
+  }
 
-	std::size_t try_get(uint8_t* dst, std::size_t n) override {
-		std::size_t avail = size_ - pos_;
-		std::size_t take = std::min(n, avail);
-		std::memcpy(dst, data_ + pos_, take);
-		pos_ += take;
-		return take;
-	}
+  std::size_t try_get(uint8_t* dst, std::size_t n) override {
+    std::size_t avail = size_ - pos_;
+    std::size_t take = std::min(n, avail);
+    std::memcpy(dst, data_ + pos_, take);
+    pos_ += take;
+    return take;
+  }
 
-private:
-	uint8_t const* data_ = nullptr;
-	std::size_t size_ = 0;
-	std::size_t pos_ = 0;
+ private:
+  uint8_t const* data_ = nullptr;
+  std::size_t size_ = 0;
+  std::size_t pos_ = 0;
 };
 
 struct VectorWriter : Writer {
-	std::vector<uint8_t>& buf;
-	explicit VectorWriter(std::vector<uint8_t>& b) : buf(b) {}
+  std::vector<uint8_t>& buf;
+  explicit VectorWriter(std::vector<uint8_t>& b) : buf(b) {}
 
-	void put(uint8_t b) override { buf.push_back(b); }
-	void put(uint8_t const* src, std::size_t n) override {
-		buf.insert(buf.end(), src, src + n);
-	}
+  void put(uint8_t b) override { buf.push_back(b); }
+  void put(uint8_t const* src, std::size_t n) override { buf.insert(buf.end(), src, src + n); }
 };
 
 struct StringWriter : Writer {
-	std::string& buf;
-	explicit StringWriter(std::string& b) : buf(b) {}
+  std::string& buf;
+  explicit StringWriter(std::string& b) : buf(b) {}
 
-	void put(uint8_t b) override { buf.push_back(static_cast<char>(b)); }
-	void put(uint8_t const* src, std::size_t n) override {
-		buf.append(reinterpret_cast<char const*>(src), n);
-	}
+  void put(uint8_t b) override { buf.push_back(static_cast<char>(b)); }
+  void put(uint8_t const* src, std::size_t n) override {
+    buf.append(reinterpret_cast<char const*>(src), n);
+  }
 };
 
 }  // namespace io

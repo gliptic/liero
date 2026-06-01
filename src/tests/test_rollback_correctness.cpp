@@ -70,8 +70,7 @@ struct RefResult {
   uint32_t simFrame;
 };
 
-RefResult runReference(uint32_t worldSeed, ScriptedInputs const& script,
-                       int ticks) {
+RefResult runReference(uint32_t worldSeed, ScriptedInputs const& script, int ticks) {
   auto [common, settings] = makeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
@@ -84,24 +83,27 @@ RefResult runReference(uint32_t worldSeed, ScriptedInputs const& script,
   a->game.rand.seed(worldSeed);
   b->game.rand.seed(worldSeed);
 
-  struct Pkt { uint32_t baseFrame; uint8_t count;
-               std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
-               uint32_t localFrame; };
+  struct Pkt {
+    uint32_t baseFrame;
+    uint8_t count;
+    std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
+    uint32_t localFrame;
+  };
   std::vector<Pkt> aToB, bToA;
-  auto enqueue = [](std::vector<Pkt>& q, uint32_t bf, uint8_t c,
-                    uint8_t const* in, uint32_t lf) {
-    Pkt p{}; p.baseFrame = bf; p.count = c; p.localFrame = lf;
+  auto enqueue = [](std::vector<Pkt>& q, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    Pkt p{};
+    p.baseFrame = bf;
+    p.count = c;
+    p.localFrame = lf;
     for (uint8_t i = 0; i < c; ++i) p.inputs[i] = in[i];
     q.push_back(p);
   };
-  a->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        enqueue(aToB, bf, c, in, lf);
-      });
-  b->setInputCallbacks(
-      [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        enqueue(bToA, bf, c, in, lf);
-      });
+  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    enqueue(aToB, bf, c, in, lf);
+  });
+  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    enqueue(bToA, bf, c, in, lf);
+  });
   a->focus();
   b->focus();
 
@@ -132,8 +134,7 @@ RefResult runReference(uint32_t worldSeed, ScriptedInputs const& script,
 
 }  // namespace
 
-TEST_CASE("Rollback recovers from mispredictions under random delay",
-          "[rollback][correctness]") {
+TEST_CASE("Rollback recovers from mispredictions under random delay", "[rollback][correctness]") {
   constexpr uint32_t kWorldSeed = 0xBEEF;
   constexpr int kTicks = 800;
   constexpr uint32_t kInputSeed = 0xC0FFEE;
@@ -172,17 +173,12 @@ TEST_CASE("Rollback recovers from mispredictions under random delay",
       a->game.rand.seed(kWorldSeed);
       b->game.rand.seed(kWorldSeed);
 
-      rollback_test::JitterTransport transport(
-          {tc.transportSeed, tc.minDelay, tc.maxDelay});
+      rollback_test::JitterTransport transport({tc.transportSeed, tc.minDelay, tc.maxDelay});
 
-      a->setInputCallbacks(
-          [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-            transport.sendAToB(gen_, bf, c, in, lf);
-          });
-      b->setInputCallbacks(
-          [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-            transport.sendBToA(gen_, bf, c, in, lf);
-          });
+      a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in,
+                               uint32_t lf) { transport.sendAToB(gen_, bf, c, in, lf); });
+      b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in,
+                               uint32_t lf) { transport.sendBToA(gen_, bf, c, in, lf); });
       a->focus();
       b->focus();
 
@@ -194,12 +190,10 @@ TEST_CASE("Rollback recovers from mispredictions under random delay",
         b->injectRemoteInput(f, 0);
       }
 
-      auto deliverA = [&](uint8_t gen, uint32_t bf, uint8_t c,
-                          uint8_t const* in, uint32_t lf) {
+      auto deliverA = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
         a->injectRemoteBatch(gen, bf, c, in, lf);
       };
-      auto deliverB = [&](uint8_t gen, uint32_t bf, uint8_t c,
-                          uint8_t const* in, uint32_t lf) {
+      auto deliverB = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
         b->injectRemoteBatch(gen, bf, c, in, lf);
       };
 
@@ -212,10 +206,8 @@ TEST_CASE("Rollback recovers from mispredictions under random delay",
         b->setLocalControlState(script.b[i]);
         a->process();
         b->process();
-        if (a->lastTickResimFrames() > maxResimInATick)
-          maxResimInATick = a->lastTickResimFrames();
-        if (b->lastTickResimFrames() > maxResimInATick)
-          maxResimInATick = b->lastTickResimFrames();
+        if (a->lastTickResimFrames() > maxResimInATick) maxResimInATick = a->lastTickResimFrames();
+        if (b->lastTickResimFrames() > maxResimInATick) maxResimInATick = b->lastTickResimFrames();
         transport.tick(deliverA, deliverB);
       }
       REQUIRE(maxResimInATick > 0);
@@ -255,15 +247,17 @@ TEST_CASE("Rollback recovers from mispredictions under random delay",
       // ran `kTicks` ticks; this peer ran `kTicks` scripted + 12 idle.
       // Run the reference the same number of idle ticks so the
       // comparison frames line up.
-      auto refAdvanced =
-          runReference(kWorldSeed, [&] {
+      auto refAdvanced = runReference(
+          kWorldSeed,
+          [&] {
             ScriptedInputs ext = script;
             for (int i = 0; i < 12; ++i) {
               ext.a.push_back(0);
               ext.b.push_back(0);
             }
             return ext;
-          }(), kTicks + 12);
+          }(),
+          kTicks + 12);
       REQUIRE(a->currentFrame() == refAdvanced.simFrame);
       REQUIRE(cA == refAdvanced.checksum);
     }

@@ -1,14 +1,14 @@
 #pragma once
 
 #include <cstdint>
-#include "game.hpp"
-#include "level.hpp"
-#include "worm.hpp"
-#include "weapon.hpp"
-#include "nobject.hpp"
-#include "sobject.hpp"
 #include "bobject.hpp"
 #include "bonus.hpp"
+#include "game.hpp"
+#include "level.hpp"
+#include "nobject.hpp"
+#include "sobject.hpp"
+#include "weapon.hpp"
+#include "worm.hpp"
 
 // Comprehensive hash of all simulation-relevant state.
 // Used for determinism verification in tests and the desync fuzzer.
@@ -127,8 +127,7 @@ inline ComponentHashes hashGameComponents(Game& game) {
 
   {
     uint32_t h = 1;
-    for (int i = 0; i < game.level.width * game.level.height; ++i)
-      h = h * 33 ^ game.level.data[i];
+    for (int i = 0; i < game.level.width * game.level.height; ++i) h = h * 33 ^ game.level.data[i];
     c.level = h;
   }
 

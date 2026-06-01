@@ -14,18 +14,15 @@
 // Cross-reference resolution helpers
 template <typename T>
 inline std::string objRefToStr(int idx, std::vector<T> const& vec) {
-  if (idx < 0 || idx >= (int)vec.size())
-    return "";
+  if (idx < 0 || idx >= (int)vec.size()) return "";
   return vec[idx].idStr;
 }
 
 template <typename T>
 inline int objRefFromStr(std::string const& str, std::vector<T> const& vec) {
-  if (str.empty())
-    return -1;
+  if (str.empty()) return -1;
   for (std::size_t i = 0; i < vec.size(); ++i)
-    if (vec[i].idStr == str)
-      return (int)i;
+    if (vec[i].idStr == str) return (int)i;
   return 0;
 }
 
@@ -33,20 +30,17 @@ inline int objRefFromStr(std::string const& str, std::vector<T> const& vec) {
 // non-empty name must resolve to -1 (no sound), not 0 (would spuriously
 // play the first sound).
 inline std::string soundRefToStr(int idx, Common const& common) {
-  if (idx < 0 || idx >= (int)common.sounds.size())
-    return "";
+  if (idx < 0 || idx >= (int)common.sounds.size()) return "";
   return common.sounds[idx].name;
 }
 
 inline int soundRefFromStr(std::string const& str, Common const& common) {
-  if (str.empty())
-    return -1;
+  if (str.empty()) return -1;
   return common.soundIndex(str);
 }
 
 // Save/load NObjectType config (individual .cfg file)
-inline void saveNObjectConfig(
-    Common const& common, NObjectType const& n, std::ostream& os) {
+inline void saveNObjectConfig(Common const& common, NObjectType const& n, std::ostream& os) {
   cereal::TomlOutputArchive ar(os);
   ar(cereal::make_nvp("wormExplode", n.wormExplode));
   ar(cereal::make_nvp("explGround", n.explGround));
@@ -132,8 +126,7 @@ inline void loadNObjectConfig(Common& common, NObjectType& n, std::istream& is) 
 }
 
 // Save/load SObjectType config
-inline void saveSObjectConfig(
-    Common const& common, SObjectType const& s, std::ostream& os) {
+inline void saveSObjectConfig(Common const& common, SObjectType const& s, std::ostream& os) {
   cereal::TomlOutputArchive ar(os);
   ar(cereal::make_nvp("shadow", s.shadow));
   {
@@ -152,8 +145,7 @@ inline void saveSObjectConfig(
   ar(cereal::make_nvp("dirtEffect", s.dirtEffect));
 }
 
-inline void loadSObjectConfig(
-    Common const& common, SObjectType& s, std::istream& is) {
+inline void loadSObjectConfig(Common const& common, SObjectType& s, std::istream& is) {
   cereal::TomlInputArchive ar(is);
   ar(cereal::make_nvp("shadow", s.shadow));
   {
@@ -174,8 +166,7 @@ inline void loadSObjectConfig(
 }
 
 // Save/load Weapon config
-inline void saveWeaponConfig(
-    Common const& common, Weapon const& w, std::ostream& os) {
+inline void saveWeaponConfig(Common const& common, Weapon const& w, std::ostream& os) {
   cereal::TomlOutputArchive ar(os);
   ar(cereal::make_nvp("name", w.name));
   ar(cereal::make_nvp("affectByWorm", w.affectByWorm));
@@ -417,9 +408,9 @@ struct Constants {
   std::vector<ColourAnimEntry> colorAnim;
   std::vector<int32_t> materials;
   AiParamsS aiparams;
-  #define DECL_FIELD_C(n) int32_t n = 0;
+#define DECL_FIELD_C(n) int32_t n = 0;
   LIERO_CDEFS(DECL_FIELD_C)
-  #undef DECL_FIELD_C
+#undef DECL_FIELD_C
 
   template <typename Archive>
   void serialize(Archive& ar) {
@@ -428,45 +419,45 @@ struct Constants {
     ar(cereal::make_nvp("colorAnim", colorAnim));
     ar(cereal::make_nvp("materials", materials));
     ar(cereal::make_nvp("aiparams", aiparams));
-    #define SER_FIELD_C(n) ar(cereal::make_nvp(#n, n));
+#define SER_FIELD_C(n) ar(cereal::make_nvp(#n, n));
     LIERO_CDEFS(SER_FIELD_C)
-    #undef SER_FIELD_C
+#undef SER_FIELD_C
   }
 };
 
 struct TextsS {
-  #define DECL_FIELD_S(n) std::string n;
+#define DECL_FIELD_S(n) std::string n;
   LIERO_SDEFS(DECL_FIELD_S)
-  #undef DECL_FIELD_S
+#undef DECL_FIELD_S
   template <typename Archive>
   void serialize(Archive& ar) {
-    #define SER_FIELD_S(n) ar(cereal::make_nvp(#n, n));
+#define SER_FIELD_S(n) ar(cereal::make_nvp(#n, n));
     LIERO_SDEFS(SER_FIELD_S)
-    #undef SER_FIELD_S
+#undef SER_FIELD_S
   }
 };
 
 struct Hacks {
-  #define DECL_FIELD_H(n) bool n = false;
+#define DECL_FIELD_H(n) bool n = false;
   LIERO_HDEFS(DECL_FIELD_H)
-  #undef DECL_FIELD_H
+#undef DECL_FIELD_H
   template <typename Archive>
   void serialize(Archive& ar) {
-    #define SER_FIELD_H(n) ar(cereal::make_nvp(#n, n));
+#define SER_FIELD_H(n) ar(cereal::make_nvp(#n, n));
     LIERO_HDEFS(SER_FIELD_H)
-    #undef SER_FIELD_H
+#undef SER_FIELD_H
   }
 };
 
 struct Sounds {
-  #define DECL_FIELD_SO(n) std::string n;
+#define DECL_FIELD_SO(n) std::string n;
   LIERO_SOUNDDEFS(DECL_FIELD_SO)
-  #undef DECL_FIELD_SO
+#undef DECL_FIELD_SO
   template <typename Archive>
   void serialize(Archive& ar) {
-    #define SER_FIELD_SO(n) ar(cereal::make_nvp(#n, n));
+#define SER_FIELD_SO(n) ar(cereal::make_nvp(#n, n));
     LIERO_SOUNDDEFS(SER_FIELD_SO)
-    #undef SER_FIELD_SO
+#undef SER_FIELD_SO
   }
 };
 
@@ -475,14 +466,10 @@ struct Sounds {
 // Save/load tc.cfg (top-level Common config)
 inline void saveTcConfig(Common const& common, std::ostream& os) {
   tc_cfg::Types types;
-  for (auto& s : common.sounds)
-    types.sounds.push_back(s.name);
-  for (auto& w : common.weapons)
-    types.weapons.push_back(w.idStr);
-  for (auto& n : common.nobjectTypes)
-    types.nobjects.push_back(n.idStr);
-  for (auto& s : common.sobjectTypes)
-    types.sobjects.push_back(s.idStr);
+  for (auto& s : common.sounds) types.sounds.push_back(s.name);
+  for (auto& w : common.weapons) types.weapons.push_back(w.idStr);
+  for (auto& n : common.nobjectTypes) types.nobjects.push_back(n.idStr);
+  for (auto& s : common.sobjectTypes) types.sobjects.push_back(s.idStr);
 
   tc_cfg::Constants constants;
   for (int i = 0; i < NUM_BONUS_SOBJECTS; ++i) {
@@ -507,8 +494,7 @@ inline void saveTcConfig(Common const& common, std::ostream& os) {
     ce.to = common.colorAnim[i].to;
     constants.colorAnim.push_back(ce);
   }
-  for (int i = 0; i < MAX_MATERIALS; ++i)
-    constants.materials.push_back(common.materials[i].flags);
+  for (int i = 0; i < MAX_MATERIALS; ++i) constants.materials.push_back(common.materials[i].flags);
 
   auto fillAiKey = [&](tc_cfg::AiKey& k, int idx) {
     k.on = common.aiParams.k[1][idx];
@@ -522,28 +508,28 @@ inline void saveTcConfig(Common const& common, std::ostream& os) {
   fillAiKey(constants.aiparams.change, 5);
   fillAiKey(constants.aiparams.jump, 6);
 
-  #define COPY_FIELD_C(n) constants.n = common.C[C##n];
+#define COPY_FIELD_C(n) constants.n = common.C[C##n];
   LIERO_CDEFS(COPY_FIELD_C)
-  #undef COPY_FIELD_C
+#undef COPY_FIELD_C
 
   tc_cfg::TextsS texts;
-  #define COPY_FIELD_S(n) texts.n = common.S[S##n];
+#define COPY_FIELD_S(n) texts.n = common.S[S##n];
   LIERO_SDEFS(COPY_FIELD_S)
-  #undef COPY_FIELD_S
+#undef COPY_FIELD_S
 
   tc_cfg::Hacks hacks;
-  #define COPY_FIELD_H(n) hacks.n = common.H[H##n];
+#define COPY_FIELD_H(n) hacks.n = common.H[H##n];
   LIERO_HDEFS(COPY_FIELD_H)
-  #undef COPY_FIELD_H
+#undef COPY_FIELD_H
 
   tc_cfg::Sounds sounds;
-  #define COPY_FIELD_SO(n)                                            \
-    sounds.n = (common.soundHook[Sound##n] >= 0 &&                    \
-                common.soundHook[Sound##n] < (int)common.sounds.size()) \
-                   ? common.sounds[common.soundHook[Sound##n]].name   \
-                   : std::string();
+#define COPY_FIELD_SO(n)                                                                          \
+  sounds.n =                                                                                      \
+      (common.soundHook[Sound##n] >= 0 && common.soundHook[Sound##n] < (int)common.sounds.size()) \
+          ? common.sounds[common.soundHook[Sound##n]].name                                        \
+          : std::string();
   LIERO_SOUNDDEFS(COPY_FIELD_SO)
-  #undef COPY_FIELD_SO
+#undef COPY_FIELD_SO
 
   cereal::TomlOutputArchive ar(os);
   ar(cereal::make_nvp("types", types));
@@ -570,12 +556,10 @@ inline void loadTcConfig(Common& common, std::istream& is) {
   // Populate Common from deserialized structs
   common.sounds.clear();
   common.sounds.resize(types.sounds.size());
-  for (std::size_t i = 0; i < types.sounds.size(); ++i)
-    common.sounds[i].name = types.sounds[i];
+  for (std::size_t i = 0; i < types.sounds.size(); ++i) common.sounds[i].name = types.sounds[i];
 
   common.weapons.resize(types.weapons.size());
-  for (std::size_t i = 0; i < types.weapons.size(); ++i)
-    common.weapons[i].idStr = types.weapons[i];
+  for (std::size_t i = 0; i < types.weapons.size(); ++i) common.weapons[i].idStr = types.weapons[i];
 
   common.nobjectTypes.resize(types.nobjects.size());
   for (std::size_t i = 0; i < types.nobjects.size(); ++i)
@@ -586,33 +570,27 @@ inline void loadTcConfig(Common& common, std::istream& is) {
     common.sobjectTypes[i].idStr = types.sobjects[i];
 
   // Constants
-  for (std::size_t i = 0;
-       i < constants.bonuses.size() && i < NUM_BONUS_SOBJECTS; ++i) {
+  for (std::size_t i = 0; i < constants.bonuses.size() && i < NUM_BONUS_SOBJECTS; ++i) {
     common.bonusRandTimer[i][0] = constants.bonuses[i].timer;
     common.bonusRandTimer[i][1] = constants.bonuses[i].timerV;
     common.bonusFrames[i] = constants.bonuses[i].frame;
-    common.bonusSObjects[i] =
-        objRefFromStr(constants.bonuses[i].sobj, common.sobjectTypes);
+    common.bonusSObjects[i] = objRefFromStr(constants.bonuses[i].sobj, common.sobjectTypes);
   }
 
-  for (std::size_t i = 0;
-       i < constants.textures.size() && i < NUM_TEXTURES; ++i) {
+  for (std::size_t i = 0; i < constants.textures.size() && i < NUM_TEXTURES; ++i) {
     common.textures[i].mFrame = constants.textures[i].mframe;
     common.textures[i].rFrame = constants.textures[i].rframe;
     common.textures[i].sFrame = constants.textures[i].sframe;
     common.textures[i].nDrawBack = constants.textures[i].ndrawback;
   }
 
-  for (std::size_t i = 0;
-       i < constants.colorAnim.size() && i < NUM_COLOR_ANIM; ++i) {
+  for (std::size_t i = 0; i < constants.colorAnim.size() && i < NUM_COLOR_ANIM; ++i) {
     common.colorAnim[i].from = constants.colorAnim[i].from;
     common.colorAnim[i].to = constants.colorAnim[i].to;
   }
 
-  for (std::size_t i = 0;
-       i < constants.materials.size() && i < MAX_MATERIALS; ++i) {
-    common.materials[i].flags =
-        (uint8_t)(constants.materials[i] & 0xff);
+  for (std::size_t i = 0; i < constants.materials.size() && i < MAX_MATERIALS; ++i) {
+    common.materials[i].flags = (uint8_t)(constants.materials[i] & 0xff);
   }
 
   auto readAiKey = [&](tc_cfg::AiKey const& k, int idx) {
@@ -627,38 +605,36 @@ inline void loadTcConfig(Common& common, std::istream& is) {
   readAiKey(constants.aiparams.change, 5);
   readAiKey(constants.aiparams.jump, 6);
 
-  #define COPY_FIELD_C2(n) common.C[C##n] = constants.n;
+#define COPY_FIELD_C2(n) common.C[C##n] = constants.n;
   LIERO_CDEFS(COPY_FIELD_C2)
-  #undef COPY_FIELD_C2
+#undef COPY_FIELD_C2
 
-  #define COPY_FIELD_S2(n) common.S[S##n] = texts.n;
+#define COPY_FIELD_S2(n) common.S[S##n] = texts.n;
   LIERO_SDEFS(COPY_FIELD_S2)
-  #undef COPY_FIELD_S2
+#undef COPY_FIELD_S2
 
-  #define COPY_FIELD_H2(n) common.H[H##n] = hacks.n;
+#define COPY_FIELD_H2(n) common.H[H##n] = hacks.n;
   LIERO_HDEFS(COPY_FIELD_H2)
-  #undef COPY_FIELD_H2
+#undef COPY_FIELD_H2
 
   // Resolve [sounds] hook names against the now-loaded sound table.
   // Missing/empty entries fall back to the canonical Liero sound name
   // for that hook (so TCs whose tc.cfg predates the [sounds] section
   // still get menu/round/bump/reload sounds). Names that don't match
   // any loaded sound get a warning and resolve to -1.
-  auto resolveHook = [&](SOUND_DEF_T hook, std::string const& configured,
-                         char const* defaultName,
+  auto resolveHook = [&](SOUND_DEF_T hook, std::string const& configured, char const* defaultName,
                          char const* hookLabel) {
     if (!configured.empty()) {
       int idx = common.soundIndex(configured);
       if (idx < 0)
-        Console::writeWarning(
-            std::string("[sounds] ") + hookLabel +
-            " references unknown sound \"" + configured + "\"");
+        Console::writeWarning(std::string("[sounds] ") + hookLabel +
+                              " references unknown sound \"" + configured + "\"");
       common.soundHook[hook] = idx;
     } else {
       common.soundHook[hook] = common.soundIndex(defaultName);
     }
   };
-  #define COPY_FIELD_SO2(n) resolveHook(Sound##n, sounds.n, defaultSound##n, #n);
+#define COPY_FIELD_SO2(n) resolveHook(Sound##n, sounds.n, defaultSound##n, #n);
   // Canonical Liero sound names per hook. Kept in sync with tctool's
   // extracted sound table; serves as the fallback when [sounds] is
   // missing from tc.cfg.
@@ -671,5 +647,5 @@ inline void loadTcConfig(Common& common, std::istream& is) {
   constexpr char const* defaultSoundAlive = "alive";
   constexpr char const* defaultSoundNinjaropeThrow = "throw";
   LIERO_SOUNDDEFS(COPY_FIELD_SO2)
-  #undef COPY_FIELD_SO2
+#undef COPY_FIELD_SO2
 }

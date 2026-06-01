@@ -48,7 +48,7 @@ struct IceBridge {
   // Destroy both sockets.
   void destroy();
 
-private:
+ private:
   BridgeSocket enetSocket_ = BRIDGE_INVALID;
   BridgeSocket bridgeSocket_ = BRIDGE_INVALID;
   uint16_t bridgePort_ = 0;

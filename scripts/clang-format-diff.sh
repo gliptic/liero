@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 # Run clang-format on lines changed in HEAD relative to a base git ref.
-# Mirrors the .github/workflows/clang-format.yml job, so a clean run
-# here means a clean run in CI.
-#
-# The CI job is non-blocking (continue-on-error), so the patch printed
-# below is advisory: reviewers can read it, but it does not gate merge.
+# Local convenience for "what would clang-format change on my PR?".
+# CI runs the full tree via scripts/clang-format-all.sh — this script
+# is a strict subset useful for faster iteration on a single branch.
 #
 # Usage:
 #   scripts/clang-format-diff.sh [base-ref]
@@ -14,6 +12,7 @@
 set -euo pipefail
 
 base_ref="${1:-origin/master}"
+clang_format="${CLANG_FORMAT:-clang-format}"
 
 # git-clang-format ships with both Ubuntu's clang-format package and
 # Homebrew's llvm formula, and is the only diff helper still present
@@ -25,6 +24,7 @@ if ! command -v git-clang-format >/dev/null 2>&1; then
 fi
 
 patch=$(git clang-format \
+	--binary "$clang_format" \
 	--diff \
 	--extensions cpp,hpp,h,cc,cxx \
 	"$base_ref" -- 'src/')

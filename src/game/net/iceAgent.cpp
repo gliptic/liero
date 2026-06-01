@@ -152,12 +152,19 @@ void IceAgent::cbRecv(juice_agent_t*, const char* data, size_t size, void* user_
 
 IceAgent::State IceAgent::mapState(juice_state_t s) {
   switch (s) {
-    case JUICE_STATE_DISCONNECTED: return State::Disconnected;
-    case JUICE_STATE_GATHERING: return State::Gathering;
-    case JUICE_STATE_CONNECTING: return State::Connecting;
-    case JUICE_STATE_CONNECTED: return State::Connected;
-    case JUICE_STATE_COMPLETED: return State::Connected;
-    case JUICE_STATE_FAILED: return State::Failed;
-    default: return State::New;
+    case JUICE_STATE_DISCONNECTED:
+      return State::Disconnected;
+    case JUICE_STATE_GATHERING:
+      return State::Gathering;
+    case JUICE_STATE_CONNECTING:
+      return State::Connecting;
+    case JUICE_STATE_CONNECTED:
+      return State::Connected;
+    case JUICE_STATE_COMPLETED:
+      return State::Connected;
+    case JUICE_STATE_FAILED:
+      return State::Failed;
+    default:
+      return State::New;
   }
 }

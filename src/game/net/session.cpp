@@ -1,47 +1,43 @@
 #include "session.hpp"
 
+#include <miniz.h>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <miniz.h>
 
 #include "memoryFs.hpp"
 #include "tcArchive.hpp"
 
-NetSession::NetSession(std::shared_ptr<Common> common,
-                       std::shared_ptr<Settings> settings,
+NetSession::NetSession(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings,
                        FsNode tcRoot)
-    : role_(Host)
-    , sessionState_(Idle)
-    , common_(std::move(common))
-    , settings_(std::move(settings))
-    , rollbackPtr_(nullptr)
-    , gameSeed_(0)
-    , localSettingsHash_(0)
-    , handshakeReceived_(false)
-    , handshakeSent_(false)
-    , playerInfoReceived_(false)
-    , matchSettingsReceived_(false)
-    , mapDataReceived_(false)
-    , localReady_(false)
-    , remoteReady_(false)
-    , tcRoot_(std::move(tcRoot))
-    , localTcHash_(0)
-    , tcResolved_(false)
-    , originalTcName_(settings_->tc)
-    , originalCommon_(common_)
-    , desyncDetected_(false)
-    , desyncFrame_(0)
-{
+    : role_(Host),
+      sessionState_(Idle),
+      common_(std::move(common)),
+      settings_(std::move(settings)),
+      rollbackPtr_(nullptr),
+      gameSeed_(0),
+      localSettingsHash_(0),
+      handshakeReceived_(false),
+      handshakeSent_(false),
+      playerInfoReceived_(false),
+      matchSettingsReceived_(false),
+      mapDataReceived_(false),
+      localReady_(false),
+      remoteReady_(false),
+      tcRoot_(std::move(tcRoot)),
+      localTcHash_(0),
+      tcResolved_(false),
+      originalTcName_(settings_->tc),
+      originalCommon_(common_),
+      desyncDetected_(false),
+      desyncFrame_(0) {
   std::memset(&remotePlayerInfo_, 0, sizeof(remotePlayerInfo_));
   localSettingsHash_ = computeSettingsHash();
   localTcHash_ = TcArchive::computeHash(tcRoot_);
   wireCallbacks();
 }
 
-NetSession::~NetSession() {
-  disconnect();
-}
+NetSession::~NetSession() { disconnect(); }
 
 void NetSession::createController(int localIdx) {
   // Wire protocol caps inputDelay at kMaxRollback (see setInputDelay).
@@ -56,8 +52,7 @@ void NetSession::createController(int localIdx) {
 }
 
 void NetSession::wireActiveController() {
-  auto checksumCb = [this](uint8_t generation, uint32_t frame,
-                           uint32_t checksum) {
+  auto checksumCb = [this](uint8_t generation, uint32_t frame, uint32_t checksum) {
     transport_.sendChecksum(generation, frame, checksum);
     onLocalChecksum(frame, checksum);
   };
@@ -66,28 +61,23 @@ void NetSession::wireActiveController() {
   auto endMatchCb = [this]() { transport_.sendEndMatch(); };
   auto peerLeftCb = [this]() { transport_.sendPeerLeft(); };
 
-  rollback_->setInputCallbacks(
-      [this](uint8_t generation, uint32_t baseFrame, uint8_t count,
-             uint8_t const* inputs, uint32_t localFrame) {
-        // localDelta = simFrame - baseFrame at send time. Encoded as
-        // uint8_t; range guaranteed by the controller's K-wide window.
-        uint8_t localDelta = static_cast<uint8_t>(localFrame - baseFrame);
-        transport_.sendInputBatch(generation, baseFrame, count, localDelta,
-                                  inputs);
-      });
+  rollback_->setInputCallbacks([this](uint8_t generation, uint32_t baseFrame, uint8_t count,
+                                      uint8_t const* inputs, uint32_t localFrame) {
+    // localDelta = simFrame - baseFrame at send time. Encoded as
+    // uint8_t; range guaranteed by the controller's K-wide window.
+    uint8_t localDelta = static_cast<uint8_t>(localFrame - baseFrame);
+    transport_.sendInputBatch(generation, baseFrame, count, localDelta, inputs);
+  });
   rollback_->setChecksumCallback(checksumCb);
   rollback_->setPauseCallbacks(pauseCb, resumeCb);
   rollback_->setEndMatchCallback(endMatchCb);
   rollback_->setPeerLeftCallback(peerLeftCb);
 }
 
-Game& NetSession::activeGame() {
-  return rollback_->game;
-}
+Game& NetSession::activeGame() { return rollback_->game; }
 
 bool NetSession::hostGame(uint16_t port) {
-  if (sessionState_ != Idle)
-    return false;
+  if (sessionState_ != Idle) return false;
 
   role_ = Host;
   gameSeed_ = static_cast<uint32_t>(std::time(nullptr));
@@ -105,8 +95,7 @@ bool NetSession::hostGame(uint16_t port) {
 }
 
 bool NetSession::joinGame(const std::string& address, uint16_t port) {
-  if (sessionState_ != Idle)
-    return false;
+  if (sessionState_ != Idle) return false;
 
   role_ = Client;
   gameSeed_ = 0;  // Will be set by host's handshake
@@ -120,8 +109,7 @@ bool NetSession::joinGame(const std::string& address, uint16_t port) {
 }
 
 bool NetSession::hostWithTransport(NetTransport&& transport) {
-  if (sessionState_ != Idle)
-    return false;
+  if (sessionState_ != Idle) return false;
 
   role_ = Host;
   gameSeed_ = static_cast<uint32_t>(std::time(nullptr));
@@ -132,10 +120,9 @@ bool NetSession::hostWithTransport(NetTransport&& transport) {
   return true;
 }
 
-bool NetSession::connectWithTransport(NetTransport&& transport,
-                                      const std::string& peerAddr, uint16_t peerPort) {
-  if (sessionState_ != Idle)
-    return false;
+bool NetSession::connectWithTransport(NetTransport&& transport, const std::string& peerAddr,
+                                      uint16_t peerPort) {
+  if (sessionState_ != Idle) return false;
 
   role_ = Client;
   gameSeed_ = 0;
@@ -153,9 +140,7 @@ bool NetSession::connectWithTransport(NetTransport&& transport,
 }
 
 void NetSession::update() {
-  if (sessionState_ == Idle || sessionState_ == Failed ||
-      sessionState_ == Disconnected)
-    return;
+  if (sessionState_ == Idle || sessionState_ == Failed || sessionState_ == Disconnected) return;
 
   transport_.poll();
 
@@ -164,8 +149,7 @@ void NetSession::update() {
     return;
   }
 
-  if (transport_.state() == NetTransport::Disconnected &&
-      sessionState_ != Idle) {
+  if (transport_.state() == NetTransport::Disconnected && sessionState_ != Idle) {
     sessionState_ = Disconnected;
     return;
   }
@@ -193,8 +177,7 @@ void NetSession::disconnect() {
   // Restore client's original TC if it was changed during the session
   if (role_ == Client && tcMemFs_) {
     settings_->tc = originalTcName_;
-    if (onTcReloaded)
-      onTcReloaded(originalCommon_);
+    if (onTcReloaded) onTcReloaded(originalCommon_);
     common_ = originalCommon_;
     tcMemFs_.reset();
   }
@@ -228,8 +211,7 @@ void NetSession::onConnected() {
     msd.timeToLose = settings_->timeToLose;
     msd.flagsToWin = settings_->flagsToWin;
     msd.loadChange = settings_->loadChange ? 1 : 0;
-    for (int i = 0; i < 40; ++i)
-      msd.weapTable[i] = settings_->weapTable[i];
+    for (int i = 0; i < 40; ++i) msd.weapTable[i] = settings_->weapTable[i];
     msd.regenerateLevel = settings_->regenerateLevel ? 1 : 0;
     msd.shadow = settings_->shadow ? 1 : 0;
     msd.namesOnBonuses = settings_->namesOnBonuses ? 1 : 0;
@@ -242,14 +224,12 @@ void NetSession::onConnected() {
   }
 
   // Check if we can start (all data received)
-  if (handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ &&
-      mapDataReceived_ && tcResolved_)
+  if (handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ && mapDataReceived_ &&
+      tcResolved_)
     tryStartGame();
 }
 
-void NetSession::onDisconnected() {
-  sessionState_ = Disconnected;
-}
+void NetSession::onDisconnected() { sessionState_ = Disconnected; }
 
 void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
   // Client uses the host's seed
@@ -266,17 +246,15 @@ void NetSession::onHandshake(uint32_t seed, uint32_t settingsHash) {
 
   handshakeReceived_ = true;
 
-  if (handshakeSent_ && playerInfoReceived_ && matchSettingsReceived_ &&
-      mapDataReceived_ && tcResolved_)
+  if (handshakeSent_ && playerInfoReceived_ && matchSettingsReceived_ && mapDataReceived_ &&
+      tcResolved_)
     tryStartGame();
 }
 
-void NetSession::onRemoteInputBatch(uint8_t generation, uint32_t baseFrame,
-                                    uint8_t count, uint8_t const* inputs,
-                                    uint32_t remoteLocalFrame) {
+void NetSession::onRemoteInputBatch(uint8_t generation, uint32_t baseFrame, uint8_t count,
+                                    uint8_t const* inputs, uint32_t remoteLocalFrame) {
   if (rollbackPtr_) {
-    rollbackPtr_->injectRemoteBatch(generation, baseFrame, count, inputs,
-                                    remoteLocalFrame);
+    rollbackPtr_->injectRemoteBatch(generation, baseFrame, count, inputs, remoteLocalFrame);
     return;
   }
 
@@ -298,11 +276,10 @@ void NetSession::onPlayerInfo(const NetTransport::PlayerInfo& info) {
   // During Rematch, PlayerInfo is re-sent so startRematch{,Client}() can
   // pick up the peer's latest weapons. The rematch start is driven by
   // toggleReady / onHandshake, not by this packet.
-  if (sessionState_ == Rematch)
-    return;
+  if (sessionState_ == Rematch) return;
 
-  if (handshakeSent_ && handshakeReceived_ && matchSettingsReceived_ &&
-      mapDataReceived_ && tcResolved_)
+  if (handshakeSent_ && handshakeReceived_ && matchSettingsReceived_ && mapDataReceived_ &&
+      tcResolved_)
     tryStartGame();
 }
 
@@ -317,8 +294,7 @@ void NetSession::onMatchSettings(const NetTransport::MatchSettingsData& data) {
     settings_->timeToLose = data.timeToLose;
     settings_->flagsToWin = data.flagsToWin;
     settings_->loadChange = data.loadChange != 0;
-    for (int i = 0; i < 40; ++i)
-      settings_->weapTable[i] = data.weapTable[i];
+    for (int i = 0; i < 40; ++i) settings_->weapTable[i] = data.weapTable[i];
     settings_->regenerateLevel = data.regenerateLevel != 0;
     settings_->shadow = data.shadow != 0;
     settings_->namesOnBonuses = data.namesOnBonuses != 0;
@@ -330,19 +306,17 @@ void NetSession::onMatchSettings(const NetTransport::MatchSettingsData& data) {
 
   matchSettingsReceived_ = true;
 
-  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
-      mapDataReceived_ && tcResolved_)
+  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ && mapDataReceived_ &&
+      tcResolved_)
     tryStartGame();
 }
 
 void NetSession::onMapData(const void* data, size_t len) {
-  if (role_ != Client)
-    return;
+  if (role_ != Client) return;
 
   // Reject oversized map data to prevent memory exhaustion
   static constexpr size_t MAX_MAP_DATA = 10 * 1024 * 1024;  // 10 MB
-  if (len > MAX_MAP_DATA)
-    return;
+  if (len > MAX_MAP_DATA) return;
 
   receivedMapData_.assign(static_cast<const uint8_t*>(data),
                           static_cast<const uint8_t*>(data) + len);
@@ -354,8 +328,8 @@ void NetSession::onMapData(const void* data, size_t len) {
     return;
   }
 
-  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
-      matchSettingsReceived_ && tcResolved_)
+  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ &&
+      tcResolved_)
     tryStartGame();
 }
 
@@ -375,41 +349,28 @@ void NetSession::onRemotePeerLeft() {
   if (rollbackPtr_) rollbackPtr_->peerLeft();
 }
 
-void NetSession::sendPause() {
-  transport_.sendPause();
-}
+void NetSession::sendPause() { transport_.sendPause(); }
 
-void NetSession::sendResume() {
-  transport_.sendResume();
-}
+void NetSession::sendResume() { transport_.sendResume(); }
 
 void NetSession::wireCallbacks() {
   transport_.onConnected = [this]() { onConnected(); };
   transport_.onDisconnected = [this]() { onDisconnected(); };
-  transport_.onHandshake = [this](uint32_t seed, uint32_t hash) {
-    onHandshake(seed, hash);
+  transport_.onHandshake = [this](uint32_t seed, uint32_t hash) { onHandshake(seed, hash); };
+  transport_.onRemoteInputBatch = [this](uint8_t generation, uint32_t baseFrame, uint8_t count,
+                                         uint8_t const* inputs, uint32_t remoteLocalFrame) {
+    onRemoteInputBatch(generation, baseFrame, count, inputs, remoteLocalFrame);
   };
-  transport_.onRemoteInputBatch =
-      [this](uint8_t generation, uint32_t baseFrame, uint8_t count,
-             uint8_t const* inputs, uint32_t remoteLocalFrame) {
-        onRemoteInputBatch(generation, baseFrame, count, inputs,
-                           remoteLocalFrame);
-      };
-  transport_.onPlayerInfo = [this](const NetTransport::PlayerInfo& info) {
-    onPlayerInfo(info);
-  };
+  transport_.onPlayerInfo = [this](const NetTransport::PlayerInfo& info) { onPlayerInfo(info); };
   transport_.onMatchSettings = [this](const NetTransport::MatchSettingsData& data) {
     onMatchSettings(data);
   };
-  transport_.onMapData = [this](const void* data, size_t len) {
-    onMapData(data, len);
-  };
+  transport_.onMapData = [this](const void* data, size_t len) { onMapData(data, len); };
   transport_.onPause = [this]() { onPause(); };
   transport_.onResume = [this]() { onResume(); };
   transport_.onEndMatch = [this]() { onRemoteEndMatch(); };
   transport_.onPeerLeft = [this]() { onRemotePeerLeft(); };
-  transport_.onChecksum = [this](uint8_t generation, uint32_t frame,
-                                 uint32_t checksum) {
+  transport_.onChecksum = [this](uint8_t generation, uint32_t frame, uint32_t checksum) {
     onChecksum(generation, frame, checksum);
   };
   transport_.onRematchReady = [this](bool ready) { onRematchReady(ready); };
@@ -419,12 +380,8 @@ void NetSession::wireCallbacks() {
   transport_.onTcInfo = [this](uint32_t hash, std::string name) {
     onTcInfo(hash, std::move(name));
   };
-  transport_.onTcResponse = [this](bool needData) {
-    onTcResponse(needData);
-  };
-  transport_.onTcData = [this](const void* data, size_t len) {
-    onTcData(data, len);
-  };
+  transport_.onTcResponse = [this](bool needData) { onTcResponse(needData); };
+  transport_.onTcData = [this](const void* data, size_t len) { onTcData(data, len); };
 }
 
 void NetSession::onTcInfo(uint32_t hash, std::string name) {
@@ -436,8 +393,8 @@ void NetSession::onTcInfo(uint32_t hash, std::string name) {
     transport_.sendTcResponse(false);
     tcResolved_ = true;
 
-    if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
-        matchSettingsReceived_ && mapDataReceived_)
+    if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ &&
+        mapDataReceived_)
       tryStartGame();
   } else {
     // Different TC — request the data
@@ -484,13 +441,12 @@ void NetSession::onTcData(const void* data, size_t len) {
 
   common_ = newCommon;
 
-  if (onTcReloaded)
-    onTcReloaded(newCommon);
+  if (onTcReloaded) onTcReloaded(newCommon);
 
   tcResolved_ = true;
 
-  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ &&
-      matchSettingsReceived_ && mapDataReceived_)
+  if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ &&
+      mapDataReceived_)
     tryStartGame();
 }
 
@@ -498,14 +454,11 @@ void NetSession::applyRemotePlayerInfo(int remoteIdx) {
   Worm* remoteWorm = activeGame().wormByIdx(remoteIdx);
   // Create a distinct copy so we don't mutate the saved player profile
   auto remoteWs = std::make_shared<WormSettings>(*remoteWorm->settings);
-  for (int i = 0; i < 5; ++i)
-    remoteWs->weapons[i] = remotePlayerInfo_.weapons[i];
+  for (int i = 0; i < 5; ++i) remoteWs->weapons[i] = remotePlayerInfo_.weapons[i];
   remoteWs->color = remotePlayerInfo_.color;
-  for (int i = 0; i < 3; ++i)
-    remoteWs->rgb[i] = remotePlayerInfo_.rgb[i];
-  remoteWs->name.assign(
-      remotePlayerInfo_.name,
-      strnlen(remotePlayerInfo_.name, sizeof(remotePlayerInfo_.name)));
+  for (int i = 0; i < 3; ++i) remoteWs->rgb[i] = remotePlayerInfo_.rgb[i];
+  remoteWs->name.assign(remotePlayerInfo_.name,
+                        strnlen(remotePlayerInfo_.name, sizeof(remotePlayerInfo_.name)));
   remoteWorm->settings = remoteWs;
 }
 
@@ -517,8 +470,7 @@ void NetSession::prefillRemoteInput() {
   // frames the remote *will* fill in — injectRemoteInput drops frames
   // <= confirmedSimFrame_, so the rollback path couldn't correct later.
   uint32_t preFillCount = static_cast<uint32_t>(settings_->inputDelay);
-  for (uint32_t i = 0; i < preFillCount; ++i)
-    rollback_->injectRemoteInput(i, 0);
+  for (uint32_t i = 0; i < preFillCount; ++i) rollback_->injectRemoteInput(i, 0);
 }
 
 void NetSession::beginPlaying(int localIdx, bool isRematch) {
@@ -540,8 +492,8 @@ void NetSession::beginPlaying(int localIdx, bool isRematch) {
   rollbackPtr_ = rollback_.get();
 
   for (auto const& b : prePlayingInputBatches_) {
-    rollbackPtr_->injectRemoteBatch(b.generation, b.baseFrame, b.count,
-                                    b.inputs.data(), b.remoteLocalFrame);
+    rollbackPtr_->injectRemoteBatch(b.generation, b.baseFrame, b.count, b.inputs.data(),
+                                    b.remoteLocalFrame);
   }
   prePlayingInputBatches_.clear();
 
@@ -549,22 +501,19 @@ void NetSession::beginPlaying(int localIdx, bool isRematch) {
     localReady_ = false;
     remoteReady_ = false;
     // Client clears handshakeReceived_ so the next rematch's seed can land.
-    if (role_ == Client)
-      handshakeReceived_ = false;
+    if (role_ == Client) handshakeReceived_ = false;
   }
 
   sessionState_ = Playing;
 }
 
 void NetSession::tryStartGame() {
-  if (sessionState_ == Playing)
-    return;
+  if (sessionState_ == Playing) return;
   beginPlaying((role_ == Host) ? 0 : 1, /*isRematch=*/false);
 }
 
 void NetSession::enterRematch() {
-  if (sessionState_ != Playing)
-    return;
+  if (sessionState_ != Playing) return;
 
   sessionState_ = Rematch;
   localReady_ = false;
@@ -587,31 +536,26 @@ void NetSession::enterRematch() {
 void NetSession::sendLocalPlayerInfo() {
   auto& netWs = settings_->wormSettings[Settings::NetworkPlayerIdx];
   NetTransport::PlayerInfo info{};
-  for (int i = 0; i < 5; ++i)
-    info.weapons[i] = netWs->weapons[i];
+  for (int i = 0; i < 5; ++i) info.weapons[i] = netWs->weapons[i];
   info.color = netWs->color;
-  for (int i = 0; i < 3; ++i)
-    info.rgb[i] = netWs->rgb[i];
+  for (int i = 0; i < 3; ++i) info.rgb[i] = netWs->rgb[i];
   std::strncpy(info.name, netWs->name.c_str(), sizeof(info.name) - 1);
   info.name[sizeof(info.name) - 1] = '\0';
   transport_.sendPlayerInfo(info);
 }
 
 void NetSession::toggleReady() {
-  if (sessionState_ != Rematch)
-    return;
+  if (sessionState_ != Rematch) return;
 
   localReady_ = !localReady_;
   transport_.sendRematchReady(localReady_);
 
   // Only host initiates the rematch start
-  if (role_ == Host && localReady_ && remoteReady_)
-    startRematch();
+  if (role_ == Host && localReady_ && remoteReady_) startRematch();
 }
 
 void NetSession::setRematchLevel(bool randomLevel, const std::string& levelFile) {
-  if (sessionState_ != Rematch || role_ != Host)
-    return;
+  if (sessionState_ != Rematch || role_ != Host) return;
 
   settings_->randomLevel = randomLevel;
   settings_->levelFile = levelFile;
@@ -623,24 +567,20 @@ void NetSession::setRematchLevel(bool randomLevel, const std::string& levelFile)
     localReady_ = false;
     transport_.sendRematchReady(false);
   }
-  if (remoteReady_)
-    remoteReady_ = false;
+  if (remoteReady_) remoteReady_ = false;
 }
 
 void NetSession::onRematchReady(bool ready) {
-  if (sessionState_ != Rematch)
-    return;
+  if (sessionState_ != Rematch) return;
 
   remoteReady_ = ready;
 
   // Only host initiates the rematch start
-  if (role_ == Host && localReady_ && remoteReady_)
-    startRematch();
+  if (role_ == Host && localReady_ && remoteReady_) startRematch();
 }
 
 void NetSession::onRematchLevel(bool randomLevel, std::string levelFile) {
-  if (sessionState_ != Rematch || role_ != Client)
-    return;
+  if (sessionState_ != Rematch || role_ != Client) return;
 
   settings_->randomLevel = randomLevel;
   settings_->levelFile = std::move(levelFile);
@@ -652,8 +592,7 @@ void NetSession::onRematchLevel(bool randomLevel, std::string levelFile) {
 
 void NetSession::startRematch() {
   // Only the host calls this directly. The client starts via onHandshake+onMapData.
-  if (sessionState_ != Rematch || role_ != Host)
-    return;
+  if (sessionState_ != Rematch || role_ != Host) return;
 
   // Generate a new seed and send it before beginPlaying generates the map
   gameSeed_ = static_cast<uint32_t>(std::time(nullptr));
@@ -664,8 +603,7 @@ void NetSession::startRematch() {
 
 void NetSession::startRematchClient() {
   // Called on the client side when handshake (seed) + map data are both received
-  if (sessionState_ != Rematch || role_ != Client)
-    return;
+  if (sessionState_ != Rematch || role_ != Client) return;
 
   beginPlaying(/*localIdx=*/1, /*isRematch=*/true);
 }
@@ -708,8 +646,8 @@ void NetSession::generateAndSendMap() {
   mz_ulong compBound = mz_compressBound(static_cast<mz_ulong>(rawSize));
   std::vector<uint8_t> compressed(compBound);
   mz_ulong compSize = compBound;
-  int status = mz_compress(compressed.data(), &compSize, raw.data(),
-                           static_cast<mz_ulong>(rawSize));
+  int status =
+      mz_compress(compressed.data(), &compSize, raw.data(), static_cast<mz_ulong>(rawSize));
   if (status == MZ_OK) {
     compressed.resize(compSize);
   } else {
@@ -775,23 +713,18 @@ bool checksumLogEnabled() {
   return v != 0;
 }
 
-void maybeLog(char const* who, uint64_t& counter, uint32_t frame,
-              uint32_t checksum) {
+void maybeLog(char const* who, uint64_t& counter, uint32_t frame, uint32_t checksum) {
   if (!checksumLogEnabled()) return;
   ++counter;
   if (counter % 70 == 0) {  // ~1 second at 70 Hz
-    std::fprintf(stderr,
-                 "[checksum %s] count=%llu frame=%u value=%08x\n",
-                 who, static_cast<unsigned long long>(counter), frame,
-                 checksum);
+    std::fprintf(stderr, "[checksum %s] count=%llu frame=%u value=%08x\n", who,
+                 static_cast<unsigned long long>(counter), frame, checksum);
   }
 }
 }  // namespace
 
-void NetSession::onChecksum(uint8_t generation, uint32_t frame,
-                            uint32_t remoteChecksum) {
-  if (desyncDetected_ || sessionState_ != Playing || !rollbackPtr_)
-    return;
+void NetSession::onChecksum(uint8_t generation, uint32_t frame, uint32_t remoteChecksum) {
+  if (desyncDetected_ || sessionState_ != Playing || !rollbackPtr_) return;
 
   // Drop pre-transition checksums: they describe the peer's old
   // simFrame numbering and would compare against a WS-phase slot that
@@ -807,8 +740,8 @@ void NetSession::onChecksum(uint8_t generation, uint32_t frame,
     if (checksumBuffer_[slot].checksum != remoteChecksum) {
       desyncDetected_ = true;
       desyncFrame_ = frame;
-      fprintf(stderr, "DESYNC DETECTED at frame %u! local=%08x remote=%08x\n",
-              frame, checksumBuffer_[slot].checksum, remoteChecksum);
+      fprintf(stderr, "DESYNC DETECTED at frame %u! local=%08x remote=%08x\n", frame,
+              checksumBuffer_[slot].checksum, remoteChecksum);
     }
   } else {
     // We haven't processed this frame yet — store for later comparison
@@ -832,8 +765,8 @@ void NetSession::onLocalChecksum(uint32_t frame, uint32_t checksum) {
       if (pendingRemoteChecksums_[i].checksum != checksum) {
         desyncDetected_ = true;
         desyncFrame_ = frame;
-        fprintf(stderr, "DESYNC DETECTED at frame %u! local=%08x remote=%08x\n",
-                frame, checksum, pendingRemoteChecksums_[i].checksum);
+        fprintf(stderr, "DESYNC DETECTED at frame %u! local=%08x remote=%08x\n", frame, checksum,
+                pendingRemoteChecksums_[i].checksum);
       }
       // Remove by swapping with last
       pendingRemoteChecksums_[i] = pendingRemoteChecksums_[--pendingRemoteCount_];

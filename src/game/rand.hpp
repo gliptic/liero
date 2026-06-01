@@ -11,75 +11,74 @@
 // standard guarantees is portable across implementations — required for
 // network sync and replay reproducibility.
 struct Rand {
-	std::mt19937 engine{0x1337u};
-	uint32_t last = 0;
+  std::mt19937 engine{0x1337u};
+  uint32_t last = 0;
 
-	Rand() = default;
-	explicit Rand(uint32_t s) : engine(s) {}
+  Rand() = default;
+  explicit Rand(uint32_t s) : engine(s) {}
 
-	void seed(uint32_t s) { engine.seed(s); last = 0; }
+  void seed(uint32_t s) {
+    engine.seed(s);
+    last = 0;
+  }
 
-	uint32_t operator()() { return last = engine(); }
+  uint32_t operator()() { return last = engine(); }
 
-	// Number in [0, max). Uses Lemire's multiply-shift bound — portable across
-	// stdlibs (std::uniform_int_distribution is implementation-defined).
-	uint32_t operator()(uint32_t max) {
-		return static_cast<uint32_t>((static_cast<uint64_t>((*this)()) * max) >> 32);
-	}
+  // Number in [0, max). Uses Lemire's multiply-shift bound — portable across
+  // stdlibs (std::uniform_int_distribution is implementation-defined).
+  uint32_t operator()(uint32_t max) {
+    return static_cast<uint32_t>((static_cast<uint64_t>((*this)()) * max) >> 32);
+  }
 
-	// Number in [min, max).
-	uint32_t operator()(uint32_t min, uint32_t max) {
-		assert(min <= max);
-		return operator()(max - min) + min;
-	}
+  // Number in [min, max).
+  uint32_t operator()(uint32_t min, uint32_t max) {
+    assert(min <= max);
+    return operator()(max - min) + min;
+  }
 
-	// Number in [0.0, 1.0).
-	double get_double() {
-		return (*this)() / 4294967296.0;
-	}
+  // Number in [0.0, 1.0).
+  double get_double() { return (*this)() / 4294967296.0; }
 
-	double get_double(double max) {
-		return get_double() * max;
-	}
+  double get_double(double max) { return get_double() * max; }
 
-	std::string serialize() const {
-		std::ostringstream oss;
-		oss << engine;
-		return oss.str();
-	}
+  std::string serialize() const {
+    std::ostringstream oss;
+    oss << engine;
+    return oss.str();
+  }
 
-	void deserialize(std::string const& s) {
-		std::istringstream iss(s);
-		iss >> engine;
-	}
+  void deserialize(std::string const& s) {
+    std::istringstream iss(s);
+    iss >> engine;
+  }
 
-	bool operator==(Rand const& other) const {
-		return last == other.last && serialize() == other.serialize();
-	}
-	bool operator!=(Rand const& other) const { return !(*this == other); }
+  bool operator==(Rand const& other) const {
+    return last == other.last && serialize() == other.serialize();
+  }
+  bool operator!=(Rand const& other) const { return !(*this == other); }
 };
 
-template<typename Archive>
+template <typename Archive>
 void archive(Archive ar, Rand& r) {
-	if constexpr (Archive::in) {
-		uint32_t len = 0;
-		ar.ui32(len);
-		std::string s(len, '\0');
-		for (uint32_t i = 0; i < len; ++i) {
-			uint8_t b = 0;
-			ar.ui8(b);
-			s[i] = static_cast<char>(b);
-		}
-		r.deserialize(s);
-		ar.ui32(r.last);
-	} else {
-		std::string s = r.serialize();
-		uint32_t len = static_cast<uint32_t>(s.size());
-		ar.ui32(len);
-		for (uint32_t i = 0; i < len; ++i) {
-			uint8_t b = static_cast<uint8_t>(s[i]);
-			ar.ui8(b);
-		}
-		ar.ui32(r.last);
-	}
+  if constexpr (Archive::in) {
+    uint32_t len = 0;
+    ar.ui32(len);
+    std::string s(len, '\0');
+    for (uint32_t i = 0; i < len; ++i) {
+      uint8_t b = 0;
+      ar.ui8(b);
+      s[i] = static_cast<char>(b);
+    }
+    r.deserialize(s);
+    ar.ui32(r.last);
+  } else {
+    std::string s = r.serialize();
+    uint32_t len = static_cast<uint32_t>(s.size());
+    ar.ui32(len);
+    for (uint32_t i = 0; i < len; ++i) {
+      uint8_t b = static_cast<uint8_t>(s[i]);
+      ar.ui8(b);
+    }
+    ar.ui32(r.last);
+  }
 }

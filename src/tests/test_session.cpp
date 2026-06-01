@@ -84,8 +84,7 @@ TEST_CASE("NetSession syncs host settings to client", "[session]") {
   settingsB->flagsToWin = 3;
   settingsB->loadChange = true;
   // Modify some weapTable entries
-  for (int i = 0; i < 40; ++i)
-    settingsB->weapTable[i] = (i < 10) ? 2 : 0;
+  for (int i = 0; i < 40; ++i) settingsB->weapTable[i] = (i < 10) ? 2 : 0;
 
   NetSession host(f.common, f.settings, f.tcRoot);
   NetSession client(f.common, settingsB, f.tcRoot);
@@ -110,8 +109,7 @@ TEST_CASE("NetSession syncs host settings to client", "[session]") {
   REQUIRE(settingsB->timeToLose == f.settings->timeToLose);
   REQUIRE(settingsB->flagsToWin == f.settings->flagsToWin);
   REQUIRE(settingsB->loadChange == f.settings->loadChange);
-  for (int i = 0; i < 40; ++i)
-    REQUIRE(settingsB->weapTable[i] == f.settings->weapTable[i]);
+  for (int i = 0; i < 40; ++i) REQUIRE(settingsB->weapTable[i] == f.settings->weapTable[i]);
 }
 
 TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]") {
@@ -134,7 +132,8 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
 
   auto settingsClient = std::make_shared<Settings>(*f.settings);
   for (int i = 0; i < Settings::NumWormSettings; ++i)
-    settingsClient->wormSettings[i] = std::make_shared<WormSettings>(*settingsClient->wormSettings[i]);
+    settingsClient->wormSettings[i] =
+        std::make_shared<WormSettings>(*settingsClient->wormSettings[i]);
   settingsClient->wormSettings[Settings::NetworkPlayerIdx]->color = 6;
   settingsClient->wormSettings[Settings::NetworkPlayerIdx]->rgb[0] = 0;
   settingsClient->wormSettings[Settings::NetworkPlayerIdx]->rgb[1] = 255;
@@ -292,10 +291,13 @@ TEST_CASE("NetSession TC sync transfers data when hashes differ", "[session][tc]
   REQUIRE(client.joinGame("127.0.0.1", port));
 
   // Poll until both reach Playing state (TC transfer included)
-  bool ready = pollUntil(host, client, [&]() {
-    return host.sessionState() == NetSession::Playing &&
-           client.sessionState() == NetSession::Playing;
-  }, 10000);  // Allow more time for TC transfer
+  bool ready = pollUntil(
+      host, client,
+      [&]() {
+        return host.sessionState() == NetSession::Playing &&
+               client.sessionState() == NetSession::Playing;
+      },
+      10000);  // Allow more time for TC transfer
 
   INFO("Host state: " << (int)host.sessionState());
   INFO("Client state: " << (int)client.sessionState());
@@ -321,9 +323,7 @@ TEST_CASE("NetSession TC sync skips transfer when hashes match", "[session][tc]"
   NetSession host(f.common, f.settings, f.tcRoot);
   NetSession client(f.common, f.settings, f.tcRoot);
 
-  client.onTcReloaded = [&](std::shared_ptr<Common>) {
-    tcReloaded = true;
-  };
+  client.onTcReloaded = [&](std::shared_ptr<Common>) { tcReloaded = true; };
 
   REQUIRE(host.hostGame(0));
   uint16_t port = host.transport().listeningPort();

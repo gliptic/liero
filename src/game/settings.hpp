@@ -1,8 +1,8 @@
 #pragma once
 
+#include <xxhash.h>
 #include <cstdint>
 #include <cstring>
-#include <xxhash.h>
 #include <stdexcept>
 #include <string>
 #include "worm.hpp"
@@ -40,13 +40,7 @@ struct AppSettings {
 struct Rand;
 
 struct Settings : GameplayExtensions, AppSettings {
-  enum GameModes {
-    GMKillEmAll,
-    GMGameOfTag,
-    GMHoldazone,
-    GMScalesOfJustice,
-    MaxGameModes
-  };
+  enum GameModes { GMKillEmAll, GMGameOfTag, GMHoldazone, GMScalesOfJustice, MaxGameModes };
 
   static int const selectableWeapons = 5;
   static int const zoneCaptureTime = 70;

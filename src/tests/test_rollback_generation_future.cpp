@@ -35,8 +35,7 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
 
 }  // namespace
 
-TEST_CASE("Future-generation batches buffer and drain on reset",
-          "[rollback][generation]") {
+TEST_CASE("Future-generation batches buffer and drain on reset", "[rollback][generation]") {
   auto [common, settings] = makeEnv();
   RollbackController c(common, settings, 0);
   c.setSkipWeaponSelection(true);
@@ -88,8 +87,7 @@ TEST_CASE("Future-generation batches buffer and drain on reset",
 // redundancy, a single overflowed entry rarely loses unique frames —
 // the next batch usually contains the same window — but this test
 // pins the cap so a future enlarged buffer doesn't silently grow.
-TEST_CASE("Future-generation buffer is bounded",
-          "[rollback][generation]") {
+TEST_CASE("Future-generation buffer is bounded", "[rollback][generation]") {
   auto [common, settings] = makeEnv();
   RollbackController c(common, settings, 0);
   c.setSkipWeaponSelection(true);

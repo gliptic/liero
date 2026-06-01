@@ -1,0 +1,10 @@
+# Commits to skip when running `git blame`. Each entry is a
+# tree-wide mechanical change (formatter/linter pass) whose blame
+# would otherwise obscure the real author of every line touched.
+#
+# Configure locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub uses this file automatically in its blame UI.
+
+# Tree-wide clang-format pass — Google base, ColumnLimit 100.
+1fbf37ac19790db69ab2029f9071c63618f20ffc

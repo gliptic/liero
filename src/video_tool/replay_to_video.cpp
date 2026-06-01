@@ -1,161 +1,148 @@
 #include "replay_to_video.hpp"
 
 #include <string>
-#include "game/replay.hpp"
 #include "game/filesystem.hpp"
-#include "game/io/stream.hpp"
-#include "game/reader.hpp"
-#include "game/mixer/player.hpp"
 #include "game/game.hpp"
-#include "game/viewport.hpp"
-#include "game/spectatorviewport.hpp"
 #include "game/gfx/renderer.hpp"
+#include "game/io/stream.hpp"
+#include "game/mixer/player.hpp"
+#include "game/reader.hpp"
+#include "game/replay.hpp"
+#include "game/spectatorviewport.hpp"
 #include "game/text.hpp"
+#include "game/viewport.hpp"
 
 #include <memory>
 
-extern "C"
-{
+extern "C" {
 #include "video_recorder.h"
 }
 #include "game/mixer/mixer.hpp"
 
-void replayToVideo(
-	std::shared_ptr<Common> const& common,
-	bool spectator,
-	std::string const& fullPath,
-	std::string const& replayVideoName)
-{
-	ReplayReader replayReader(
-		std::make_unique<io::FileReader>(fullPath.c_str(), "rb"));
-	Renderer renderer;
+void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
+                   std::string const& fullPath, std::string const& replayVideoName) {
+  ReplayReader replayReader(std::make_unique<io::FileReader>(fullPath.c_str(), "rb"));
+  Renderer renderer;
 
-	if (spectator)
-	{
-		renderer.init(640, 400);
-		renderer.loadPalette(*common);
-	}
-	else
-	{
-		renderer.init(320, 200);
-		renderer.loadPalette(*common);
-	}
+  if (spectator) {
+    renderer.init(640, 400);
+    renderer.loadPalette(*common);
+  } else {
+    renderer.init(320, 200);
+    renderer.loadPalette(*common);
+  }
 
-	sfx_mixer* mixer = sfx_mixer_create();
+  sfx_mixer* mixer = sfx_mixer_create();
 
-	std::unique_ptr<Game> game(
-		replayReader.beginPlayback(common,
-			std::shared_ptr<SoundPlayer>(new RecordSoundPlayer(*common, mixer))));
+  std::unique_ptr<Game> game(replayReader.beginPlayback(
+      common, std::shared_ptr<SoundPlayer>(new RecordSoundPlayer(*common, mixer))));
 
-	// FIXME: the viewports are changed based on the replay for some
-	// reason, so we need to restore them here. Probably makes more sense
-	// to not save the viewports at all. But that probably breaks save
-	// format compatibility?
-	game->clearViewports();
+  // FIXME: the viewports are changed based on the replay for some
+  // reason, so we need to restore them here. Probably makes more sense
+  // to not save the viewports at all. But that probably breaks save
+  // format compatibility?
+  game->clearViewports();
 
-	// for backwards compatibility reasons, this is not stored within the
-	// replay. Yet.
-	game->worms[0]->statsX = 0;
-	game->worms[1]->statsX = 218;
+  // for backwards compatibility reasons, this is not stored within the
+  // replay. Yet.
+  game->worms[0]->statsX = 0;
+  game->worms[1]->statsX = 218;
 
-	// spectator viewport is always full size
-	// +68 on x to align the viewport in the middle
-	game->addSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
-	game->addViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
-	game->addViewport(new Viewport(Rect(160, 0, 158+160, 158), game->worms[1]->index, 504, 350));
-	game->startGame();
-	game->focus(renderer);
+  // spectator viewport is always full size
+  // +68 on x to align the viewport in the middle
+  game->addSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+  game->addViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
+  game->addViewport(new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index, 504, 350));
+  game->startGame();
+  game->focus(renderer);
 
-	int w = 1280, h = 720;
+  int w = 1280, h = 720;
 
-	AVRational framerate;
-	framerate.num = 1;
-	framerate.den = 60;
+  AVRational framerate;
+  framerate.num = 1;
+  framerate.den = 60;
 
-	AVRational nativeFramerate;
-	nativeFramerate.num = 1;
-	nativeFramerate.den = 70;
+  AVRational nativeFramerate;
+  nativeFramerate.num = 1;
+  nativeFramerate.den = 70;
 
-	video_recorder vidrec;
-	vidrec_init(&vidrec, replayVideoName.c_str(), w, h, framerate);
+  video_recorder vidrec;
+  vidrec_init(&vidrec, replayVideoName.c_str(), w, h, framerate);
 
-	std::vector<int16_t> soundBuffer = std::vector<int16_t>();
+  std::vector<int16_t> soundBuffer = std::vector<int16_t>();
 
-	std::size_t audioCodecFrames = 1024;
+  std::size_t audioCodecFrames = 1024;
 
-	AVRational sampleDebt;
-	sampleDebt.num = 0;
-	sampleDebt.den = 70;
+  AVRational sampleDebt;
+  sampleDebt.num = 0;
+  sampleDebt.den = 70;
 
-	AVRational frameDebt;
-	frameDebt.num = 0;
-	frameDebt.den = 1;
+  AVRational frameDebt;
+  frameDebt.num = 0;
+  frameDebt.den = 1;
 
-	int offsetX, offsetY;
-	int mag = fitScreen(640, 400, renderer.bmp.w, renderer.bmp.h, offsetX, offsetY);
+  int offsetX, offsetY;
+  int mag = fitScreen(640, 400, renderer.bmp.w, renderer.bmp.h, offsetX, offsetY);
 
-	int f = 0;
+  int f = 0;
 
-    while(replayReader.playbackFrame(renderer))
-	{
-		game->processFrame();
-		renderer.clear();
-		game->draw(renderer, StateGame, spectator, true);
-		++f;
-		renderer.fadeValue = 33;
+  while (replayReader.playbackFrame(renderer)) {
+    game->processFrame();
+    renderer.clear();
+    game->draw(renderer, StateGame, spectator, true);
+    ++f;
+    renderer.fadeValue = 33;
 
-		sampleDebt.num += 44100; // sampleDebt += 44100 / 70
-		int mixerFrames = sampleDebt.num / sampleDebt.den; // floor(sampleDebt)
-		sampleDebt.num -= mixerFrames * sampleDebt.den; // sampleDebt -= mixerFrames
+    sampleDebt.num += 44100;                            // sampleDebt += 44100 / 70
+    int mixerFrames = sampleDebt.num / sampleDebt.den;  // floor(sampleDebt)
+    sampleDebt.num -= mixerFrames * sampleDebt.den;     // sampleDebt -= mixerFrames
 
-		std::size_t mixerStart = soundBuffer.size();
-		soundBuffer.resize(mixerStart + mixerFrames);
+    std::size_t mixerStart = soundBuffer.size();
+    soundBuffer.resize(mixerStart + mixerFrames);
 
-		sfx_mixer_mix(mixer, &soundBuffer[mixerStart], mixerFrames);
+    sfx_mixer_mix(mixer, &soundBuffer[mixerStart], mixerFrames);
 
-		{
-			int16_t* audioSamples = &soundBuffer[0];
-			std::size_t samplesLeft = soundBuffer.size();
+    {
+      int16_t* audioSamples = &soundBuffer[0];
+      std::size_t samplesLeft = soundBuffer.size();
 
-			while (samplesLeft > audioCodecFrames)
-			{
-				vidrec_write_audio_frame(&vidrec, audioSamples, audioCodecFrames);
-				audioSamples += audioCodecFrames;
-				samplesLeft -= audioCodecFrames;
-			}
+      while (samplesLeft > audioCodecFrames) {
+        vidrec_write_audio_frame(&vidrec, audioSamples, audioCodecFrames);
+        audioSamples += audioCodecFrames;
+        samplesLeft -= audioCodecFrames;
+      }
 
-			frameDebt = av_add_q(frameDebt, nativeFramerate);
+      frameDebt = av_add_q(frameDebt, nativeFramerate);
 
-			if (av_cmp_q(frameDebt, framerate) > 0)
-			{
-				frameDebt = av_sub_q(frameDebt, framerate);
+      if (av_cmp_q(frameDebt, framerate) > 0) {
+        frameDebt = av_sub_q(frameDebt, framerate);
 
-				Color realPal[256];
-				renderer.pal.activate(realPal);
-				PalIdx* src = renderer.bmp.pixels;
-				std::size_t destPitch = vidrec.tmp_picture->linesize[0];
-				uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
-				std::size_t srcPitch = renderer.bmp.pitch;
+        Color realPal[256];
+        renderer.pal.activate(realPal);
+        PalIdx* src = renderer.bmp.pixels;
+        std::size_t destPitch = vidrec.tmp_picture->linesize[0];
+        uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
+        std::size_t srcPitch = renderer.bmp.pitch;
 
-				uint32_t pal32[256];
-				preparePaletteBgra(realPal, pal32);
+        uint32_t pal32[256];
+        preparePaletteBgra(realPal, pal32);
 
-				scaleDraw(src, renderer.renderResX, renderer.renderResY, srcPitch, dest, destPitch, mag, pal32);
+        scaleDraw(src, renderer.renderResX, renderer.renderResY, srcPitch, dest, destPitch, mag,
+                  pal32);
 
-				vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
-			}
+        vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
+      }
 
-			// Move remaining samples to the beginning of the buffer
-			std::size_t offset = audioSamples - &soundBuffer[0];
-			soundBuffer.erase(soundBuffer.begin(), soundBuffer.begin() + offset);
-		}
+      // Move remaining samples to the beginning of the buffer
+      std::size_t offset = audioSamples - &soundBuffer[0];
+      soundBuffer.erase(soundBuffer.begin(), soundBuffer.begin() + offset);
+    }
 
-		if ((f % (70 * 5)) == 0)
-		{
-			printf("\r%s", timeToStringFrames(f));
-			fflush(stdout);
-		}
-	}
+    if ((f % (70 * 5)) == 0) {
+      printf("\r%s", timeToStringFrames(f));
+      fflush(stdout);
+    }
+  }
 
-	vidrec_finalize(&vidrec);
+  vidrec_finalize(&vidrec);
 }

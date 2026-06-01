@@ -36,11 +36,9 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
   return {common, settings};
 }
 
-std::unique_ptr<RollbackController> makePeer(
-    std::shared_ptr<Common> common,
-    std::shared_ptr<Settings> settings,
-    int localIdx,
-    uint32_t worldSeed) {
+std::unique_ptr<RollbackController> makePeer(std::shared_ptr<Common> common,
+                                             std::shared_ptr<Settings> settings, int localIdx,
+                                             uint32_t worldSeed) {
   auto c = std::make_unique<RollbackController>(common, settings, localIdx);
   c->setInputDelay(1);
   c->game.rand.seed(worldSeed);
@@ -80,24 +78,27 @@ static void runRoundTrip(int recorderIdx) {
 
   // Direct synchronous batch delivery — same pattern test_rollback_weapsel
   // uses for its zero-jitter case.
-  struct Pkt { uint32_t baseFrame; uint8_t count;
-               std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
-               uint32_t localFrame; };
+  struct Pkt {
+    uint32_t baseFrame;
+    uint8_t count;
+    std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
+    uint32_t localFrame;
+  };
   std::vector<Pkt> aToB, bToA;
-  auto enqueue = [](std::vector<Pkt>& q, uint32_t bf, uint8_t c,
-                    uint8_t const* in, uint32_t lf) {
-    Pkt p{}; p.baseFrame = bf; p.count = c; p.localFrame = lf;
+  auto enqueue = [](std::vector<Pkt>& q, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    Pkt p{};
+    p.baseFrame = bf;
+    p.count = c;
+    p.localFrame = lf;
     for (uint8_t i = 0; i < c; ++i) p.inputs[i] = in[i];
     q.push_back(p);
   };
-  a->setInputCallbacks(
-      [&](uint8_t, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        enqueue(aToB, bf, c, in, lf);
-      });
-  b->setInputCallbacks(
-      [&](uint8_t, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-        enqueue(bToA, bf, c, in, lf);
-      });
+  a->setInputCallbacks([&](uint8_t, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    enqueue(aToB, bf, c, in, lf);
+  });
+  b->setInputCallbacks([&](uint8_t, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    enqueue(bToA, bf, c, in, lf);
+  });
 
   a->focus();
   b->focus();
@@ -194,12 +195,10 @@ static void runRoundTrip(int recorderIdx) {
   }
 }
 
-TEST_CASE("Multiplayer replay round-trip matches live shadow (host)",
-          "[rollback][replay]") {
+TEST_CASE("Multiplayer replay round-trip matches live shadow (host)", "[rollback][replay]") {
   runRoundTrip(0);
 }
 
-TEST_CASE("Multiplayer replay round-trip matches live shadow (client)",
-          "[rollback][replay]") {
+TEST_CASE("Multiplayer replay round-trip matches live shadow (client)", "[rollback][replay]") {
   runRoundTrip(1);
 }

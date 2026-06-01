@@ -2,215 +2,183 @@
 
 #include <SDL3/SDL.h>
 #include <cstddef>
-#include <string>
 #include <cstdio>
-#include <vector>
 #include <memory>
+#include <string>
+#include <vector>
 #include "../gfx/color.hpp"
 #include "../gfx/renderer.hpp"
 
 #include <cstdint>
 
-#include "menuItem.hpp"
 #include "itemBehavior.hpp"
+#include "menuItem.hpp"
 
-#include "integerBehavior.hpp"
 #include "booleanSwitchBehavior.hpp"
-#include "timeBehavior.hpp"
 #include "enumBehavior.hpp"
+#include "integerBehavior.hpp"
+#include "timeBehavior.hpp"
 
 struct Common;
 struct Gfx;
 
-struct Menu
-{
-	Menu(bool centered = false)
-	{
-		init(centered);
-	}
+struct Menu {
+  Menu(bool centered = false) { init(centered); }
 
-	Menu(int x, int y, bool centered = false)
-	{
-		init(centered);
-		place(x, y);
-	}
+  Menu(int x, int y, bool centered = false) {
+    init(centered);
+    place(x, y);
+  }
 
-	virtual ~Menu()
-	{
-	}
+  virtual ~Menu() {}
 
-	void init(bool centeredInit = false)
-	{
-		itemHeight = 8;
-		centered = centeredInit;
-		selection_ = 0;
-		valueOffsetX = 0;
-		x = 0;
-		y = 0;
-		height = 15;
-		topItem = 0;
-		bottomItem = 0;
-		//showScroll = false;
-		visibleItemCount = 0;
-		searchTime = 0;
-	}
+  void init(bool centeredInit = false) {
+    itemHeight = 8;
+    centered = centeredInit;
+    selection_ = 0;
+    valueOffsetX = 0;
+    x = 0;
+    y = 0;
+    height = 15;
+    topItem = 0;
+    bottomItem = 0;
+    // showScroll = false;
+    visibleItemCount = 0;
+    searchTime = 0;
+  }
 
-	void draw(Common& common, Renderer& renderer, bool disabled, int x = -1, bool showDisabledSelection = false);
-	void process();
+  void draw(Common& common, Renderer& renderer, bool disabled, int x = -1,
+            bool showDisabledSelection = false);
+  void process();
 
-	virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected, bool disabled)
-	{
-		// Nothing by default
-	}
+  virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
+                               bool disabled) {
+    // Nothing by default
+  }
 
-	virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item)
-	{
-		// Dummy item behavior by default
-		return new ItemBehavior;
-	}
+  virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item) {
+    // Dummy item behavior by default
+    return new ItemBehavior;
+  }
 
-	virtual void onUpdate()
-	{
-		// Nothing by default
-	}
+  virtual void onUpdate() {
+    // Nothing by default
+  }
 
-	bool onLeftRight(Common& common, int dir)
-	{
-		auto* s = selected();
-		if (!s) return false;
-		std::unique_ptr<ItemBehavior> b(getItemBehavior(common, *s));
-		return b->onLeftRight(*this, *s, dir);
-	}
+  bool onLeftRight(Common& common, int dir) {
+    auto* s = selected();
+    if (!s) return false;
+    std::unique_ptr<ItemBehavior> b(getItemBehavior(common, *s));
+    return b->onLeftRight(*this, *s, dir);
+  }
 
-	int onEnter(Common& common)
-	{
-		auto* s = selected();
-		if (!s) return false;
-		std::unique_ptr<ItemBehavior> b(getItemBehavior(common, *s));
-		return b->onEnter(*this, *s);
-	}
+  int onEnter(Common& common) {
+    auto* s = selected();
+    if (!s) return false;
+    std::unique_ptr<ItemBehavior> b(getItemBehavior(common, *s));
+    return b->onEnter(*this, *s);
+  }
 
-	void onKeys(SDL_Scancode* begin, SDL_Scancode* end, bool contains = false);
+  void onKeys(SDL_Scancode* begin, SDL_Scancode* end, bool contains = false);
 
-	void updateItems(Common& common)
-	{
-		for(std::size_t i = 0; i < items.size(); ++i)
-		{
-			std::unique_ptr<ItemBehavior> b(getItemBehavior(common, items[i]));
+  void updateItems(Common& common) {
+    for (std::size_t i = 0; i < items.size(); ++i) {
+      std::unique_ptr<ItemBehavior> b(getItemBehavior(common, items[i]));
 
-			b->onUpdate(*this, items[i]);
-		}
+      b->onUpdate(*this, items[i]);
+    }
 
-		onUpdate();
-	}
+    onUpdate();
+  }
 
-	void place(int newX, int newY)
-	{
-		x = newX;
-		y = newY;
-	}
+  void place(int newX, int newY) {
+    x = newX;
+    y = newY;
+  }
 
-	bool isSelectionValid()
-	{
-		return selection_ >= 0 && selection_ < (int)items.size();
-	}
+  bool isSelectionValid() { return selection_ >= 0 && selection_ < (int)items.size(); }
 
-	void moveToFirstVisible();
-	void movement(int direction);
-	void movementPage(int direction);
+  void moveToFirstVisible();
+  void movement(int direction);
+  void movementPage(int direction);
 
-	int addItem(MenuItem item);
-	int addItem(MenuItem item, int pos);
-	void clear();
+  int addItem(MenuItem item);
+  int addItem(MenuItem item, int pos);
+  void clear();
 
-	bool itemPosition(MenuItem& item, int& x, int& y);
+  bool itemPosition(MenuItem& item, int& x, int& y);
 
-	int visibleItemIndex(int item);
-	int itemFromVisibleIndex(int idx);
+  int visibleItemIndex(int item);
+  int itemFromVisibleIndex(int idx);
 
-	void setHeight(int newHeight)
-	{
-		height = newHeight;
-		setTop(topItem);
-	}
+  void setHeight(int newHeight) {
+    height = newHeight;
+    setTop(topItem);
+  }
 
-	int selection()
-	{
-		return selection_;
-	}
+  int selection() { return selection_; }
 
-	// Used by the rollback weapon-select snapshot restore. Sets the
-	// selection_ field directly, bypassing visibility/scroll adjustments.
-	// Callers are expected to also restore topItem/bottomItem from the
-	// same snapshot.
-	void setSelection(int newSelection)
-	{
-		selection_ = newSelection;
-	}
+  // Used by the rollback weapon-select snapshot restore. Sets the
+  // selection_ field directly, bypassing visibility/scroll adjustments.
+  // Callers are expected to also restore topItem/bottomItem from the
+  // same snapshot.
+  void setSelection(int newSelection) { selection_ = newSelection; }
 
-	MenuItem* selected()
-	{
-		if (!isSelectionValid())
-			return 0;
-		return &items[selection_];
-	}
+  MenuItem* selected() {
+    if (!isSelectionValid()) return 0;
+    return &items[selection_];
+  }
 
-	int selectedId()
-	{
-		MenuItem* s = selected();
-		return s ? s->id : -1;
-	}
+  int selectedId() {
+    MenuItem* s = selected();
+    return s ? s->id : -1;
+  }
 
-	int indexFromId(int id)
-	{
-		for (int i = 0; i < (int)items.size(); ++i)
-		{
-			if (items[i].id == id)
-				return i;
-		}
+  int indexFromId(int id) {
+    for (int i = 0; i < (int)items.size(); ++i) {
+      if (items[i].id == id) return i;
+    }
 
-		return -1;
-	}
+    return -1;
+  }
 
-	MenuItem* itemFromId(int id)
-	{
-		for (int i = 0; i < (int)items.size(); ++i)
-		{
-			if (items[i].id == id)
-				return &items[i];
-		}
+  MenuItem* itemFromId(int id) {
+    for (int i = 0; i < (int)items.size(); ++i) {
+      if (items[i].id == id) return &items[i];
+    }
 
-		return 0;
-	}
+    return 0;
+  }
 
-	void setVisibility(int id, bool state);
-	int firstVisibleFrom(int item);
-	int lastVisibleFrom(int item);
-	void moveTo(int newSelection);
-	void moveToId(int id);
-	bool isInView(int item);
-	void ensureInView(int item);
-	void setBottom(int newBottomVisIdx);
-	void setTop(int newTopVisIdx);
-	void scroll(int amount);
+  void setVisibility(int id, bool state);
+  int firstVisibleFrom(int item);
+  int lastVisibleFrom(int item);
+  void moveTo(int newSelection);
+  void moveToId(int id);
+  bool isInView(int item);
+  void ensureInView(int item);
+  void setBottom(int newBottomVisIdx);
+  void setTop(int newTopVisIdx);
+  void scroll(int amount);
 
-	std::string searchPrefix;
-	Uint64 searchTime;
+  std::string searchPrefix;
+  Uint64 searchTime;
 
-	std::vector<MenuItem> items;
-	int itemHeight;
-	int valueOffsetX;
+  std::vector<MenuItem> items;
+  int itemHeight;
+  int valueOffsetX;
 
-	int x, y;
-	int height;
+  int x, y;
+  int height;
 
-	int topItem; // Visible index
-	int bottomItem; // Visible index
-	//bool showScroll;
+  int topItem;     // Visible index
+  int bottomItem;  // Visible index
+  // bool showScroll;
 
-	int visibleItemCount;
+  int visibleItemCount;
 
-	bool centered;
-private:
-	int selection_; // Global index
+  bool centered;
+
+ private:
+  int selection_;  // Global index
 };

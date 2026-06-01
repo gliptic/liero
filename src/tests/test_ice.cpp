@@ -7,9 +7,9 @@
 #ifdef _WIN32
 #include <winsock2.h>
 #else
-#include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 #endif
 
 #include "net/iceAgent.hpp"
@@ -50,7 +50,7 @@ static bool pollOneUntil(IceAgent& a, Pred&& pred, int timeoutMs = 5000) {
 TEST_CASE("IceAgent starts and gathers candidates", "[ice]") {
   IceAgent agent;
   IceAgent::Config cfg;
-  cfg.stunServer = ""; // No STUN — only host candidates
+  cfg.stunServer = "";  // No STUN — only host candidates
 
   std::vector<std::string> candidates;
   bool gatheringDone = false;
@@ -83,7 +83,7 @@ TEST_CASE("IceAgent local credentials available after start", "[ice]") {
 TEST_CASE("Two local IceAgents connect directly", "[ice]") {
   IceAgent agentA, agentB;
   IceAgent::Config cfg;
-  cfg.stunServer = ""; // Host candidates only (localhost)
+  cfg.stunServer = "";  // Host candidates only (localhost)
 
   std::vector<std::string> candidatesA, candidatesB;
   bool gatherDoneA = false, gatherDoneB = false;
@@ -289,8 +289,7 @@ TEST_CASE("IceBridge proxies data bidirectionally", "[ice][bridge]") {
     if (n <= 0) {
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
       auto elapsed = std::chrono::steady_clock::now() - start;
-      if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000)
-        break;
+      if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) break;
     }
   }
   REQUIRE(n == sizeof(msg));

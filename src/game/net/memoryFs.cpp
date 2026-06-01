@@ -12,8 +12,7 @@ struct FsNodeMemDir : FsNodeImp {
   std::string path_;
   MemoryFs* fs_;
 
-  FsNodeMemDir(std::string path, MemoryFs* fs)
-      : path_(std::move(path)), fs_(fs) {}
+  FsNodeMemDir(std::string path, MemoryFs* fs) : path_(std::move(path)), fs_(fs) {}
 
   std::string const& fullPath() override { return path_; }
 
@@ -24,10 +23,8 @@ struct FsNodeMemDir : FsNodeImp {
     std::set<std::string> seen;
 
     for (auto& [key, _] : fs_->files) {
-      if (key.size() <= prefix.size())
-        continue;
-      if (!prefix.empty() && key.compare(0, prefix.size(), prefix) != 0)
-        continue;
+      if (key.size() <= prefix.size()) continue;
+      if (!prefix.empty() && key.compare(0, prefix.size(), prefix) != 0) continue;
 
       // Get the next path component after prefix
       auto rest = key.substr(prefix.size());
@@ -67,8 +64,7 @@ struct FsNodeMemDir : FsNodeImp {
 
   std::unique_ptr<io::Reader> tryToReader() override {
     auto it = fs_->files.find(path_);
-    if (it == fs_->files.end())
-      return nullptr;
+    if (it == fs_->files.end()) return nullptr;
 
     // The MemoryFs owns the underlying byte buffer (in fs_->files) so we
     // can hand out a MemReader that just points into it.
@@ -79,13 +75,11 @@ struct FsNodeMemDir : FsNodeImp {
 
   bool exists() const override {
     // Exists as a file?
-    if (fs_->files.count(path_))
-      return true;
+    if (fs_->files.count(path_)) return true;
     // Exists as a directory?
     std::string prefix = path_ + "/";
     for (auto& [key, _] : fs_->files) {
-      if (key.compare(0, prefix.size(), prefix) == 0)
-        return true;
+      if (key.compare(0, prefix.size(), prefix) == 0) return true;
     }
     return path_.empty();  // Root always exists
   }
@@ -93,6 +87,4 @@ struct FsNodeMemDir : FsNodeImp {
 
 }  // namespace
 
-FsNode MemoryFs::root() {
-  return FsNode(std::make_shared<FsNodeMemDir>("", this));
-}
+FsNode MemoryFs::root() { return FsNode(std::make_shared<FsNodeMemDir>("", this)); }

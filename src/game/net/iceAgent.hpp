@@ -57,7 +57,7 @@ struct IceAgent {
   // should set this to write received data to the bridge socket.
   std::function<void(const uint8_t* data, size_t len)> onRecv;
 
-private:
+ private:
   struct Event {
     enum Type { StateChanged, Candidate, GatheringDone };
     Type type;

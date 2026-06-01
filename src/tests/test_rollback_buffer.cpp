@@ -25,8 +25,7 @@ TEST_CASE("RollbackBuffer is empty on construction", "[rollback]") {
   REQUIRE(buf.find(42) == nullptr);
 }
 
-TEST_CASE("RollbackBuffer stores and retrieves consecutive frames",
-          "[rollback]") {
+TEST_CASE("RollbackBuffer stores and retrieves consecutive frames", "[rollback]") {
   RollbackBuffer buf;
 
   for (int f = 0; f < static_cast<int>(RollbackBuffer::kCapacity); ++f) {
@@ -38,8 +37,7 @@ TEST_CASE("RollbackBuffer stores and retrieves consecutive frames",
   }
 
   REQUIRE(buf.size() == RollbackBuffer::kCapacity);
-  REQUIRE(buf.newestFrame() ==
-          static_cast<int>(RollbackBuffer::kCapacity) - 1);
+  REQUIRE(buf.newestFrame() == static_cast<int>(RollbackBuffer::kCapacity) - 1);
   REQUIRE(buf.oldestFrame() == 0);
 
   for (int f = 0; f < static_cast<int>(RollbackBuffer::kCapacity); ++f) {
@@ -49,13 +47,11 @@ TEST_CASE("RollbackBuffer stores and retrieves consecutive frames",
     REQUIRE(s->localInput == static_cast<uint8_t>(0x10 + f));
     REQUIRE(s->remoteInput == static_cast<uint8_t>(0x80 + f));
     REQUIRE(s->remoteState == RemoteState::Confirmed);
-    REQUIRE(s->snapshot.checksum ==
-            static_cast<uint32_t>(0xC0DE0000u + f));
+    REQUIRE(s->snapshot.checksum == static_cast<uint32_t>(0xC0DE0000u + f));
   }
 }
 
-TEST_CASE("RollbackBuffer wraps around and evicts oldest frame",
-          "[rollback]") {
+TEST_CASE("RollbackBuffer wraps around and evicts oldest frame", "[rollback]") {
   RollbackBuffer buf;
 
   constexpr int kFrames = static_cast<int>(RollbackBuffer::kCapacity) * 3 + 2;
@@ -87,8 +83,7 @@ TEST_CASE("RollbackBuffer wraps around and evicts oldest frame",
   REQUIRE(buf.find(newest + 1) == nullptr);
 }
 
-TEST_CASE("RollbackBuffer write to existing frame preserves snapshot",
-          "[rollback]") {
+TEST_CASE("RollbackBuffer write to existing frame preserves snapshot", "[rollback]") {
   // The controller will update remote input on a slot without re-saving the
   // snapshot (e.g. when arriving remote input matches the predicted input
   // for a still-resident frame). Repeated writes to the same frame must
@@ -118,8 +113,7 @@ TEST_CASE("RollbackBuffer write to existing frame preserves snapshot",
   REQUIRE(found->remoteState == RemoteState::Confirmed);
 }
 
-TEST_CASE("RollbackBuffer write to a different frame evicts ring slot",
-          "[rollback]") {
+TEST_CASE("RollbackBuffer write to a different frame evicts ring slot", "[rollback]") {
   // Writing frame F+kCapacity must overwrite the slot that held F. Inputs
   // and remoteState reset to defaults so stale data from the evicted frame
   // cannot leak into the new one.
@@ -147,8 +141,7 @@ TEST_CASE("RollbackBuffer write to a different frame evicts ring slot",
   REQUIRE(buf.find(collision) == &original);
 }
 
-TEST_CASE("RollbackBuffer supports Predicted -> Confirmed transition",
-          "[rollback]") {
+TEST_CASE("RollbackBuffer supports Predicted -> Confirmed transition", "[rollback]") {
   RollbackBuffer buf;
   for (int f = 0; f < 4; ++f) {
     Slot& s = buf.write(f);
@@ -177,8 +170,7 @@ TEST_CASE("RollbackBuffer supports Predicted -> Confirmed transition",
   }
 }
 
-TEST_CASE("RollbackBuffer clear empties without losing capacity",
-          "[rollback]") {
+TEST_CASE("RollbackBuffer clear empties without losing capacity", "[rollback]") {
   RollbackBuffer buf;
   for (int f = 0; f < 5; ++f) buf.write(f).localInput = 0x77;
   REQUIRE(!buf.empty());
@@ -197,8 +189,7 @@ TEST_CASE("RollbackBuffer clear empties without losing capacity",
   REQUIRE(buf.find(100)->localInput == 0x99);
 }
 
-TEST_CASE("RollbackBuffer reports oldestFrame correctly while filling",
-          "[rollback]") {
+TEST_CASE("RollbackBuffer reports oldestFrame correctly while filling", "[rollback]") {
   // Before the buffer is full, oldestFrame() is 0; after the first eviction
   // it tracks the eviction horizon.
   RollbackBuffer buf;
@@ -210,6 +201,5 @@ TEST_CASE("RollbackBuffer reports oldestFrame correctly while filling",
   // One more frame triggers eviction.
   buf.write(static_cast<int>(RollbackBuffer::kCapacity));
   REQUIRE(buf.oldestFrame() == 1);
-  REQUIRE(buf.newestFrame() ==
-          static_cast<int>(RollbackBuffer::kCapacity));
+  REQUIRE(buf.newestFrame() == static_cast<int>(RollbackBuffer::kCapacity));
 }

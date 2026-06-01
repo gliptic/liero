@@ -38,16 +38,18 @@ struct CountingSoundPlayer : SoundPlayer {
     ++stops;
   }
 
-protected:
-  void playImpl(int /*sound*/, void* /*id*/, int /*loops*/) override {
-    ++plays;
-  }
+ protected:
+  void playImpl(int /*sound*/, void* /*id*/, int /*loops*/) override { ++plays; }
 };
 
 struct CountingStatsRecorder : StatsRecorder {
   int events = 0;
 
-#define EVT() do { if (speculative) return; ++events; } while (0)
+#define EVT()                \
+  do {                       \
+    if (speculative) return; \
+    ++events;                \
+  } while (0)
   void damagePotential(Worm*, WormWeapon*, int) override { EVT(); }
   void damageDealt(Worm*, WormWeapon*, Worm*, int, bool) override { EVT(); }
   void shot(Worm*, WormWeapon*) override { EVT(); }
@@ -175,8 +177,7 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
   REQUIRE(sub.sp->isPlayingCalls >= isPlayingDuringSpec);
 }
 
-TEST_CASE("setSpeculative propagates to soundPlayer and statsRecorder",
-          "[rollback]") {
+TEST_CASE("setSpeculative propagates to soundPlayer and statsRecorder", "[rollback]") {
   Runner r(0x1234);
   REQUIRE(r.game->speculative == false);
   REQUIRE(r.game->soundPlayer->speculative == false);

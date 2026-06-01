@@ -2,12 +2,11 @@
 
 #include "controller.hpp"
 
-struct CommonController : Controller
-{
-	CommonController();
-	bool process();
+struct CommonController : Controller {
+  CommonController();
+  bool process();
 
-	int frameSkip;
-	bool inverseFrameSkip;
-	int cycles;
+  int frameSkip;
+  bool inverseFrameSkip;
+  int cycles;
 };

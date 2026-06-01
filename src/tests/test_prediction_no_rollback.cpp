@@ -31,9 +31,7 @@ struct Loopback {
   std::unique_ptr<Ctrl> a;
   std::unique_ptr<Ctrl> b;
 
-  Loopback(std::shared_ptr<Common> commonIn,
-           std::shared_ptr<Settings> settingsIn,
-           uint32_t seed)
+  Loopback(std::shared_ptr<Common> commonIn, std::shared_ptr<Settings> settingsIn, uint32_t seed)
       : common(std::move(commonIn)), settings(std::move(settingsIn)) {
     a = std::make_unique<Ctrl>(common, settings, 0);
     b = std::make_unique<Ctrl>(common, settings, 1);
@@ -41,16 +39,10 @@ struct Loopback {
     b->setSkipWeaponSelection(true);
     a->game.rand.seed(seed);
     b->game.rand.seed(seed);
-    a->setInputCallbacks(
-        [this](uint8_t /*gen*/, uint32_t bf, uint8_t c,
-               uint8_t const* inputs, uint32_t lf) {
-          b->injectRemoteBatch(bf, c, inputs, lf);
-        });
-    b->setInputCallbacks(
-        [this](uint8_t /*gen*/, uint32_t bf, uint8_t c,
-               uint8_t const* inputs, uint32_t lf) {
-          a->injectRemoteBatch(bf, c, inputs, lf);
-        });
+    a->setInputCallbacks([this](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* inputs,
+                                uint32_t lf) { b->injectRemoteBatch(bf, c, inputs, lf); });
+    b->setInputCallbacks([this](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* inputs,
+                                uint32_t lf) { a->injectRemoteBatch(bf, c, inputs, lf); });
     a->focus();
     b->focus();
   }
@@ -102,10 +94,8 @@ TEST_CASE("Zero jitter: predictions never trigger", "[rollback][prediction]") {
   }
 
   // confirmedFrame should track simFrame-1 exactly under zero jitter.
-  REQUIRE(rb.a->confirmedFrame() ==
-          static_cast<int32_t>(rb.a->currentFrame()) - 1);
-  REQUIRE(rb.b->confirmedFrame() ==
-          static_cast<int32_t>(rb.b->currentFrame()) - 1);
+  REQUIRE(rb.a->confirmedFrame() == static_cast<int32_t>(rb.a->currentFrame()) - 1);
+  REQUIRE(rb.b->confirmedFrame() == static_cast<int32_t>(rb.b->currentFrame()) - 1);
 
   // Every resident slot is Confirmed.
   auto const& bufA = rb.a->rollbackBuffer();

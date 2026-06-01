@@ -3,24 +3,23 @@
 #include "../gfx.hpp"
 #include "../mixer/player.hpp"
 #include "../replay.hpp"
-#include "../viewport.hpp"
 #include "../spectatorviewport.hpp"
+#include "../viewport.hpp"
 
+#include <miniz.h>
 #include <array>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <miniz.h>
 
 // Shared two-player setup for the live and shadow games. Both must
 // produce identical processFrame paths, so the worm slots and main
 // viewports are configured here from a single source of truth. The
 // live ctor also adds a SpectatorViewport; the shadow does not need
 // one.
-static void configureGameSlots(
-    Game& g, std::array<std::shared_ptr<WormSettings>, 2> ws) {
+static void configureGameSlots(Game& g, std::array<std::shared_ptr<WormSettings>, 2> ws) {
   for (int idx = 0; idx < 2; ++idx) {
     auto worm = std::make_shared<Worm>();
     worm->settings = ws[idx];
@@ -33,24 +32,21 @@ static void configureGameSlots(
   g.addViewport(new Viewport(Rect(160, 0, 158 + 160, 158), 1, 504, 350));
 }
 
-RollbackController::RollbackController(
-    std::shared_ptr<Common> common,
-    std::shared_ptr<Settings> settings,
-    int localPlayerIdx)
-    : game(common, settings, gfx.soundPlayer)
-    , localIdx(localPlayerIdx)
-    , remoteIdx(localPlayerIdx ^ 1)
-    , state(StateInitial)
-    , fadeValue(0)
-    , goingToMenu(false)
-    , simFrame(0)
-    , inputDelay(3)
-    , lastSentFrame(0)
-    , lastSentFrameValid(false)
-    , rollbackBufferPrepared_(false)
-    , confirmedSimFrame_(-1)
-    , lastRemoteInput_(0)
-{
+RollbackController::RollbackController(std::shared_ptr<Common> common,
+                                       std::shared_ptr<Settings> settings, int localPlayerIdx)
+    : game(common, settings, gfx.soundPlayer),
+      localIdx(localPlayerIdx),
+      remoteIdx(localPlayerIdx ^ 1),
+      state(StateInitial),
+      fadeValue(0),
+      goingToMenu(false),
+      simFrame(0),
+      inputDelay(3),
+      lastSentFrame(0),
+      lastSentFrameValid(false),
+      rollbackBufferPrepared_(false),
+      confirmedSimFrame_(-1),
+      lastRemoteInput_(0) {
   localPrevInput = 0;
   remotePrevInput = 0;
   localHeldFrames.fill(0);
@@ -71,28 +67,24 @@ RollbackController::RollbackController(
 
   std::array<std::shared_ptr<WormSettings>, 2> ws;
   for (int idx = 0; idx < 2; ++idx) {
-    ws[idx] = (idx == localIdx)
-        ? settings->wormSettings[Settings::NetworkPlayerIdx]
-        : settings->wormSettings[idx];
+    ws[idx] = (idx == localIdx) ? settings->wormSettings[Settings::NetworkPlayerIdx]
+                                : settings->wormSettings[idx];
   }
   configureGameSlots(game, ws);
-  game.addSpectatorViewport(
-      new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+  game.addSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
 }
 
 RollbackController::~RollbackController() {}
 
 void RollbackController::loadLevelFromData(const std::vector<uint8_t>& data) {
-  if (data.size() < 5)
-    return;
+  if (data.size() < 5) return;
 
   bool isCompressed = (data[0] != 0);
   uint32_t rawSize;
   std::memcpy(&rawSize, data.data() + 1, 4);
 
   static constexpr uint32_t MAX_RAW_SIZE = 10 * 1024 * 1024;
-  if (rawSize > MAX_RAW_SIZE)
-    return;
+  if (rawSize > MAX_RAW_SIZE) return;
 
   std::vector<uint8_t> raw;
   if (isCompressed) {
@@ -100,39 +92,32 @@ void RollbackController::loadLevelFromData(const std::vector<uint8_t>& data) {
     mz_ulong destLen = rawSize;
     int status = mz_uncompress(raw.data(), &destLen, data.data() + 5,
                                static_cast<mz_ulong>(data.size() - 5));
-    if (status != MZ_OK)
-      return;
+    if (status != MZ_OK) return;
   } else {
     raw.assign(data.begin() + 5, data.end());
   }
 
-  if (raw.size() < 8)
-    return;
+  if (raw.size() < 8) return;
 
   uint16_t w, h;
   std::memcpy(&w, raw.data(), 2);
   std::memcpy(&h, raw.data() + 2, 2);
 
-  if (w == 0 || h == 0 || w > 4096 || h > 4096)
-    return;
+  if (w == 0 || h == 0 || w > 4096 || h > 4096) return;
 
   uint32_t randStateLen;
   std::memcpy(&randStateLen, raw.data() + 4, 4);
 
-  if (randStateLen > 64 * 1024)
-    return;
-  if (raw.size() < 8 + randStateLen + 4)
-    return;
+  if (randStateLen > 64 * 1024) return;
+  if (raw.size() < 8 + randStateLen + 4) return;
 
-  std::string randState(reinterpret_cast<const char*>(raw.data() + 8),
-                        randStateLen);
+  std::string randState(reinterpret_cast<const char*>(raw.data() + 8), randStateLen);
   uint32_t randLast;
   std::memcpy(&randLast, raw.data() + 8 + randStateLen, 4);
 
   size_t pixelsOffset = 8 + randStateLen + 4;
   size_t pixelDataSize = static_cast<size_t>(w) * h;
-  if (raw.size() < pixelsOffset + pixelDataSize + 768)
-    return;
+  if (raw.size() < pixelsOffset + pixelDataSize + 768) return;
 
   game.level.resize(w, h);
   Common& common = *game.common;
@@ -160,8 +145,7 @@ void RollbackController::setInputCallbacks(InputBatchSendCallback send) {
   sendInputBatch = std::move(send);
 }
 
-void RollbackController::sendInputWindow(uint32_t newestFrame,
-                                         uint32_t localFrame) {
+void RollbackController::sendInputWindow(uint32_t newestFrame, uint32_t localFrame) {
   if (!sendInputBatch) return;
   constexpr uint8_t K = static_cast<uint8_t>(rollback::kMaxRollback + 1);
   uint8_t count;
@@ -180,10 +164,8 @@ void RollbackController::sendInputWindow(uint32_t newestFrame,
   sendInputBatch(generation_, baseFrame, count, window.data(), localFrame);
 }
 
-void RollbackController::injectRemoteBatch(uint8_t generation,
-                                           uint32_t baseFrame, uint8_t count,
-                                           uint8_t const* inputs,
-                                           uint32_t remoteLocalFrame) {
+void RollbackController::injectRemoteBatch(uint8_t generation, uint32_t baseFrame, uint8_t count,
+                                           uint8_t const* inputs, uint32_t remoteLocalFrame) {
   // Same-generation packets feed the input ring; gen+1 packets are
   // buffered until our own phase transition fires (replayed in
   // resetForGamePhase). Older or further-future packets are unrecoverable.
@@ -198,8 +180,7 @@ void RollbackController::injectRemoteBatch(uint8_t generation,
     return;
   }
 
-  if (generation == static_cast<uint8_t>(generation_ + 1) &&
-      count <= kMaxPendingFutureBatches) {
+  if (generation == static_cast<uint8_t>(generation_ + 1) && count <= kMaxPendingFutureBatches) {
     if (pendingFutureCount_ < kMaxPendingFutureBatches) {
       auto& slot = pendingFutureBatches_[pendingFutureCount_++];
       slot.baseFrame = baseFrame;
@@ -229,10 +210,10 @@ void RollbackController::onKey(int key, bool keyState) {
   bool found = false;
 
   if (worm->settings->inputDevice == WormSettingsExtensions::InputKeyboard) {
-    uint32_t* controls = game.settings->extensions
-        ? worm->settings->controlsEx : worm->settings->controls;
-    std::size_t maxControl = game.settings->extensions
-        ? WormSettings::MaxControlEx : WormSettings::MaxControl;
+    uint32_t* controls =
+        game.settings->extensions ? worm->settings->controlsEx : worm->settings->controls;
+    std::size_t maxControl =
+        game.settings->extensions ? WormSettings::MaxControlEx : WormSettings::MaxControl;
     for (std::size_t c = 0; c < maxControl; ++c) {
       if (controls[c] == static_cast<uint32_t>(key)) {
         control = static_cast<Worm::Control>(c);
@@ -253,10 +234,8 @@ void RollbackController::onKey(int key, bool keyState) {
       localControlState.set(Worm::Left, true);
       localControlState.set(Worm::Right, true);
     } else {
-      if (!worm->cleanControlStates[Worm::Left])
-        localControlState.set(Worm::Left, false);
-      if (!worm->cleanControlStates[Worm::Right])
-        localControlState.set(Worm::Right, false);
+      if (!worm->cleanControlStates[Worm::Left]) localControlState.set(Worm::Left, false);
+      if (!worm->cleanControlStates[Worm::Right]) localControlState.set(Worm::Right, false);
     }
   }
 
@@ -279,8 +258,7 @@ void RollbackController::onKey(int key, bool keyState) {
 }
 
 void RollbackController::unfocus() {
-  if (state == StateWeaponSelection && ws)
-    ws->unfocus();
+  if (state == StateWeaponSelection && ws) ws->unfocus();
   localPaused_ = false;
   remotePaused_ = false;
 }
@@ -291,17 +269,13 @@ void RollbackController::focus() {
     fadeValue = 0;
     return;
   }
-  if (state == StateWeaponSelection)
-    ws->focus();
+  if (state == StateWeaponSelection) ws->focus();
   if (state == StateInitial) {
-    if (!levelPreloaded)
-      game.level.generateFromSettings(*game.common, *game.settings, game.rand);
+    if (!levelPreloaded) game.level.generateFromSettings(*game.common, *game.settings, game.rand);
 
     if (skipWeaponSelection) {
-      for (auto const& w : game.worms)
-        w->initWeapons(game);
-      for (auto const& w : game.worms)
-        w->lives = game.settings->lives;
+      for (auto const& w : game.worms) w->initWeapons(game);
+      for (auto const& w : game.worms) w->lives = game.settings->lives;
       game.startGame();
       game.resetWorms();
       state = StateGame;
@@ -332,28 +306,25 @@ void RollbackController::focus() {
 
 bool RollbackController::process() {
   if (isPaused()) {
-    if (fadeValue < 33)
-      fadeValue += 1;
+    if (fadeValue < 33) fadeValue += 1;
 
     if (localPaused_) {
-      if (gfx.testSDLKeyOnce(SDL_SCANCODE_UP)
-       || gfx.testControlOnce(WormSettingsExtensions::Up)
-       || gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP)) {
+      if (gfx.testSDLKeyOnce(SDL_SCANCODE_UP) || gfx.testControlOnce(WormSettingsExtensions::Up) ||
+          gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP)) {
         g_soundPlayer->play(game.common->soundHook[SoundMenuMoveDown]);
         pauseMenu_.movement(-1);
       }
 
-      if (gfx.testSDLKeyOnce(SDL_SCANCODE_DOWN)
-       || gfx.testControlOnce(WormSettingsExtensions::Down)
-       || gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN)) {
+      if (gfx.testSDLKeyOnce(SDL_SCANCODE_DOWN) ||
+          gfx.testControlOnce(WormSettingsExtensions::Down) ||
+          gfx.testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN)) {
         g_soundPlayer->play(game.common->soundHook[SoundMenuMoveUp]);
         pauseMenu_.movement(1);
       }
 
-      if (gfx.testSDLKeyOnce(SDL_SCANCODE_RETURN)
-       || gfx.testSDLKeyOnce(SDL_SCANCODE_KP_ENTER)
-       || gfx.testControlOnce(WormSettingsExtensions::Fire)
-       || gfx.testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH)) {
+      if (gfx.testSDLKeyOnce(SDL_SCANCODE_RETURN) || gfx.testSDLKeyOnce(SDL_SCANCODE_KP_ENTER) ||
+          gfx.testControlOnce(WormSettingsExtensions::Fire) ||
+          gfx.testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH)) {
         int sel = pauseMenu_.selectedId();
         if (sel == 0) {
           localPaused_ = false;
@@ -395,8 +366,7 @@ bool RollbackController::process() {
       return false;
     }
   } else {
-    if (fadeValue < 33)
-      fadeValue += 1;
+    if (fadeValue < 33) fadeValue += 1;
   }
 
   return true;
@@ -477,8 +447,7 @@ void RollbackController::loadWeaponSelectSnap(WeaponSelectSnap const& snap) {
     for (int j = 0; j < Settings::selectableWeapons; ++j) {
       wsCfg.weapons[j] = p.weapons[j];
       int weapOrderIdx = static_cast<int>(p.weapons[j]) - 1;
-      if (weapOrderIdx >= 0 &&
-          weapOrderIdx < static_cast<int>(common.weapOrder.size())) {
+      if (weapOrderIdx >= 0 && weapOrderIdx < static_cast<int>(common.weapOrder.size())) {
         int w_idx = common.weapOrder[weapOrderIdx];
         w.weapons[j].type = &common.weapons[w_idx];
         // menus[i].items index 0 is "Randomize", indices [1..N] are the
@@ -540,8 +509,7 @@ void RollbackController::resetForGamePhase() {
   pendingFutureCount_ = 0;
   for (uint8_t i = 0; i < pending; ++i) {
     auto const& s = pendingFutureBatches_[i];
-    injectRemoteBatch(generation_, s.baseFrame, s.count, s.inputs.data(),
-                      s.remoteLocalFrame);
+    injectRemoteBatch(generation_, s.baseFrame, s.count, s.inputs.data(), s.remoteLocalFrame);
   }
 }
 
@@ -595,19 +563,17 @@ void RollbackController::setupShadowGame() {
   // Mirror the live game's construction: same Common/Settings, silent
   // sound player, identical worm+viewport configuration so the
   // snapshot we load below produces an identical processFrame path.
-  shadowGame_ = std::make_unique<Game>(
-      game.common, game.settings, std::make_shared<NullSoundPlayer>());
+  shadowGame_ =
+      std::make_unique<Game>(game.common, game.settings, std::make_shared<NullSoundPlayer>());
 
-  configureGameSlots(
-      *shadowGame_,
-      {game.worms[0]->settings, game.worms[1]->settings});
+  configureGameSlots(*shadowGame_, {game.worms[0]->settings, game.worms[1]->settings});
 
   // loadSnapshotFast assumes level buffers are already sized; the
   // snapshot itself carries pixel data but not dimensions.
   shadowGame_->level.width = game.level.width;
   shadowGame_->level.height = game.level.height;
-  std::size_t cells = static_cast<std::size_t>(game.level.width)
-                    * static_cast<std::size_t>(game.level.height);
+  std::size_t cells =
+      static_cast<std::size_t>(game.level.width) * static_cast<std::size_t>(game.level.height);
   shadowGame_->level.data.resize(cells);
   shadowGame_->level.materials.resize(cells);
   // origpal is the level's palette. It isn't sim state, so the fast
@@ -656,8 +622,7 @@ void RollbackController::startReplayRecording() {
   // file-naming logic and just hand it to ReplayWriter.
   if (replayWriterOverride_) {
     try {
-      shadowReplay_ = std::make_unique<ReplayWriter>(
-          std::move(replayWriterOverride_));
+      shadowReplay_ = std::make_unique<ReplayWriter>(std::move(replayWriterOverride_));
       shadowReplay_->beginRecord(*shadowGame_);
     } catch (std::runtime_error& e) {
       std::fprintf(stderr, "[replay] failed to start recording: %s\n", e.what());
@@ -698,8 +663,7 @@ void RollbackController::startReplayRecording() {
     char suffix[8];
     std::snprintf(suffix, sizeof(suffix), " mp%d", localIdx);
 
-    auto node = configRoot / "Replays"
-                  / (std::string(timeBuf) + playerNames + suffix + ".lrp");
+    auto node = configRoot / "Replays" / (std::string(timeBuf) + playerNames + suffix + ".lrp");
 
     shadowReplay_ = std::make_unique<ReplayWriter>(node.toWriter());
     shadowReplay_->beginRecord(*shadowGame_);
@@ -728,18 +692,18 @@ void RollbackController::driveShadow() {
       return;
     }
 
-    uint8_t curLocal  = (localIdx == 0) ? slot->localInput : slot->remoteInput;
+    uint8_t curLocal = (localIdx == 0) ? slot->localInput : slot->remoteInput;
     uint8_t curRemote = (localIdx == 0) ? slot->remoteInput : slot->localInput;
 
-    uint8_t risingLocal  = curLocal  & ~shadowLocalPrevInput_;
+    uint8_t risingLocal = curLocal & ~shadowLocalPrevInput_;
     uint8_t risingRemote = curRemote & ~shadowRemotePrevInput_;
-    uint8_t releasedLocal  = shadowLocalPrevInput_  & ~curLocal;
+    uint8_t releasedLocal = shadowLocalPrevInput_ & ~curLocal;
     uint8_t releasedRemote = shadowRemotePrevInput_ & ~curRemote;
-    shadowGame_->worms[localIdx ]->controlStates.istate |= risingLocal;
+    shadowGame_->worms[localIdx]->controlStates.istate |= risingLocal;
     shadowGame_->worms[remoteIdx]->controlStates.istate |= risingRemote;
-    shadowGame_->worms[localIdx ]->controlStates.istate &= ~releasedLocal;
+    shadowGame_->worms[localIdx]->controlStates.istate &= ~releasedLocal;
     shadowGame_->worms[remoteIdx]->controlStates.istate &= ~releasedRemote;
-    shadowLocalPrevInput_  = curLocal;
+    shadowLocalPrevInput_ = curLocal;
     shadowRemotePrevInput_ = curRemote;
 
     // recordFrame() reads worm.controlStates ^ prevControlStates, so it
@@ -749,8 +713,7 @@ void RollbackController::driveShadow() {
       try {
         shadowReplay_->recordFrame();
       } catch (std::runtime_error& e) {
-        std::fprintf(stderr, "[replay] aborting recording at frame %d: %s\n",
-                     F, e.what());
+        std::fprintf(stderr, "[replay] aborting recording at frame %d: %s\n", F, e.what());
         shadowReplay_.reset();
       }
     }
@@ -764,11 +727,11 @@ void RollbackController::driveShadow() {
     uint32_t shadowChk = wideRollbackChecksum(*shadowGame_);
     if (shadowChk != slot->checksum && !shadowMismatchLogged_) {
       std::fprintf(stderr,
-          "[replay shadow] mismatch at frame %d: shadow=%08x live=%08x"
-          " curLocal=%02x curRemote=%02x slot.localInput=%02x slot.remoteInput=%02x"
-          " shadowRand=%08x\n",
-          F, shadowChk, slot->checksum, curLocal, curRemote,
-          slot->localInput, slot->remoteInput, shadowGame_->rand.last);
+                   "[replay shadow] mismatch at frame %d: shadow=%08x live=%08x"
+                   " curLocal=%02x curRemote=%02x slot.localInput=%02x slot.remoteInput=%02x"
+                   " shadowRand=%08x\n",
+                   F, shadowChk, slot->checksum, curLocal, curRemote, slot->localInput,
+                   slot->remoteInput, shadowGame_->rand.last);
       shadowMismatchLogged_ = true;
     }
   }
@@ -802,11 +765,9 @@ void RollbackController::advanceWeaponSelection() {
 
     auto* slot = rollbackBuffer_.find(F);
     bool match = true;
-    bool wasPredicted =
-        slot && slot->remoteState == rollback::RemoteState::Predicted;
+    bool wasPredicted = slot && slot->remoteState == rollback::RemoteState::Predicted;
     if (wasPredicted) {
-      uint8_t storedOther =
-          (localIdx == 0) ? slot->remoteInput : slot->localInput;
+      uint8_t storedOther = (localIdx == 0) ? slot->remoteInput : slot->localInput;
       match = (storedOther == real);
     }
 
@@ -826,8 +787,7 @@ void RollbackController::advanceWeaponSelection() {
   // place of processFrame / GameSnapshot.
   if (rollbackTo >= 0) {
     ++rollbackCount_;
-    lastTickResimFrames_ +=
-        static_cast<uint32_t>(static_cast<int32_t>(simFrame) - rollbackTo - 1);
+    lastTickResimFrames_ += static_cast<uint32_t>(static_cast<int32_t>(simFrame) - rollbackTo - 1);
     auto* lastGood = rollbackBuffer_.find(rollbackTo);
     if (lastGood && lastGood->wsSnap.valid) {
       loadWeaponSelectSnap(lastGood->wsSnap);
@@ -835,7 +795,7 @@ void RollbackController::advanceWeaponSelection() {
 
     uint8_t lastGoodWorm0 = lastGood ? lastGood->localInput : 0;
     uint8_t lastGoodWorm1 = lastGood ? lastGood->remoteInput : 0;
-    localPrevInput  = (localIdx == 0) ? lastGoodWorm0 : lastGoodWorm1;
+    localPrevInput = (localIdx == 0) ? lastGoodWorm0 : lastGoodWorm1;
     remotePrevInput = (localIdx == 0) ? lastGoodWorm1 : lastGoodWorm0;
 
     game.setSpeculative(true);
@@ -859,11 +819,10 @@ void RollbackController::advanceWeaponSelection() {
       bool wsDoneResim = weaponSelectStep(curLocal, curRemote);
 
       auto& outSlot = rollbackBuffer_.write(static_cast<int>(F));
-      outSlot.localInput  = (localIdx == 0) ? curLocal  : curRemote;
+      outSlot.localInput = (localIdx == 0) ? curLocal : curRemote;
       outSlot.remoteInput = (localIdx == 0) ? curRemote : curLocal;
-      outSlot.remoteState = framePredicted
-          ? rollback::RemoteState::Predicted
-          : rollback::RemoteState::Confirmed;
+      outSlot.remoteState =
+          framePredicted ? rollback::RemoteState::Predicted : rollback::RemoteState::Confirmed;
       saveWeaponSelectSnap(outSlot.wsSnap);
       outSlot.wsSnap.wsDone = wsDoneResim;
     }
@@ -873,8 +832,7 @@ void RollbackController::advanceWeaponSelection() {
     // both peers transition on the same simFrame regardless of whether
     // wsDone was first observed forward or via a resim correcting a
     // mispredicted Fire press.
-    if (rollback::Slot const* confSlot =
-            rollbackBuffer_.find(confirmedSimFrame_)) {
+    if (rollback::Slot const* confSlot = rollbackBuffer_.find(confirmedSimFrame_)) {
       if (confSlot->wsSnap.valid && confSlot->wsSnap.wsDone) {
         finishWeaponSelect();
         return;
@@ -887,8 +845,7 @@ void RollbackController::advanceWeaponSelection() {
     return;
   }
   if (lastKnownRemoteFrame_ >= 0 &&
-      static_cast<int32_t>(simFrame) - lastKnownRemoteFrame_
-          >= frameAdvantageThreshold_) {
+      static_cast<int32_t>(simFrame) - lastKnownRemoteFrame_ >= frameAdvantageThreshold_) {
     ++frameAdvantageStalls_;
     return;
   }
@@ -898,8 +855,7 @@ void RollbackController::advanceWeaponSelection() {
   uint8_t curLocal = localInputs[currentSlot];
   uint8_t curRemote;
   bool predicted;
-  bool chainContiguous =
-      confirmedSimFrame_ + 1 == static_cast<int32_t>(simFrame);
+  bool chainContiguous = confirmedSimFrame_ + 1 == static_cast<int32_t>(simFrame);
   if (remoteInputReady[currentSlot] && chainContiguous) {
     curRemote = remoteInputs[currentSlot];
     remoteInputReady[currentSlot] = false;
@@ -925,9 +881,8 @@ void RollbackController::advanceWeaponSelection() {
     rollback::Slot& slot = rollbackBuffer_.write(snapFrame);
     slot.localInput = (localIdx == 0) ? curLocal : curRemote;
     slot.remoteInput = (localIdx == 0) ? curRemote : curLocal;
-    slot.remoteState = predicted
-        ? rollback::RemoteState::Predicted
-        : rollback::RemoteState::Confirmed;
+    slot.remoteState =
+        predicted ? rollback::RemoteState::Predicted : rollback::RemoteState::Confirmed;
     saveWeaponSelectSnap(slot.wsSnap);
     slot.wsSnap.wsDone = wsDone;
   }
@@ -938,8 +893,7 @@ void RollbackController::advanceWeaponSelection() {
   // confirm, a promote-loop confirm, or a resim-confirm all fire the
   // transition on the same simFrame on both peers. Predicted wsDone
   // snapshots never fire it.
-  if (rollback::Slot const* confSlot =
-          rollbackBuffer_.find(confirmedSimFrame_)) {
+  if (rollback::Slot const* confSlot = rollbackBuffer_.find(confirmedSimFrame_)) {
     if (confSlot->wsSnap.valid && confSlot->wsSnap.wsDone) {
       finishWeaponSelect();
     }
@@ -977,13 +931,11 @@ void RollbackController::advanceSimulation() {
 
     auto* slot = rollbackBuffer_.find(F);
     bool match = true;
-    bool wasPredicted =
-        slot && slot->remoteState == rollback::RemoteState::Predicted;
+    bool wasPredicted = slot && slot->remoteState == rollback::RemoteState::Predicted;
     if (wasPredicted) {
       // slot stores inputs by worm index: localInput=worm0, remoteInput=worm1.
       // The misprediction question is about the *other* peer's input.
-      uint8_t storedOther =
-          (localIdx == 0) ? slot->remoteInput : slot->localInput;
+      uint8_t storedOther = (localIdx == 0) ? slot->remoteInput : slot->localInput;
       match = (storedOther == real);
     }
 
@@ -1010,8 +962,7 @@ void RollbackController::advanceSimulation() {
   // previously-emitted sounds/stats don't duplicate.
   if (rollbackTo >= 0) {
     ++rollbackCount_;
-    lastTickResimFrames_ +=
-        static_cast<uint32_t>(static_cast<int32_t>(simFrame) - rollbackTo - 1);
+    lastTickResimFrames_ += static_cast<uint32_t>(static_cast<int32_t>(simFrame) - rollbackTo - 1);
     auto* lastGood = rollbackBuffer_.find(rollbackTo);
     // Resident by construction: the stall guard caps simFrame - confirmedSimFrame_
     // at kMaxRollback, and the ring holds kMaxRollback+1 slots.
@@ -1019,7 +970,7 @@ void RollbackController::advanceSimulation() {
 
     uint8_t lastGoodWorm0 = lastGood->localInput;
     uint8_t lastGoodWorm1 = lastGood->remoteInput;
-    localPrevInput  = (localIdx == 0) ? lastGoodWorm0 : lastGoodWorm1;
+    localPrevInput = (localIdx == 0) ? lastGoodWorm0 : lastGoodWorm1;
     remotePrevInput = (localIdx == 0) ? lastGoodWorm1 : lastGoodWorm0;
 
     game.setSpeculative(true);
@@ -1043,25 +994,24 @@ void RollbackController::advanceSimulation() {
         framePredicted = true;
       }
 
-      uint8_t risingLocal  = curLocal  & ~localPrevInput;
+      uint8_t risingLocal = curLocal & ~localPrevInput;
       uint8_t risingRemote = curRemote & ~remotePrevInput;
-      uint8_t releasedLocal  = localPrevInput  & ~curLocal;
+      uint8_t releasedLocal = localPrevInput & ~curLocal;
       uint8_t releasedRemote = remotePrevInput & ~curRemote;
-      game.worms[localIdx ]->controlStates.istate |= risingLocal;
+      game.worms[localIdx]->controlStates.istate |= risingLocal;
       game.worms[remoteIdx]->controlStates.istate |= risingRemote;
-      game.worms[localIdx ]->controlStates.istate &= ~releasedLocal;
+      game.worms[localIdx]->controlStates.istate &= ~releasedLocal;
       game.worms[remoteIdx]->controlStates.istate &= ~releasedRemote;
-      localPrevInput  = curLocal;
+      localPrevInput = curLocal;
       remotePrevInput = curRemote;
 
       game.processFrame();
 
       auto& outSlot = rollbackBuffer_.write(static_cast<int>(F));
-      outSlot.localInput  = (localIdx == 0) ? curLocal  : curRemote;
+      outSlot.localInput = (localIdx == 0) ? curLocal : curRemote;
       outSlot.remoteInput = (localIdx == 0) ? curRemote : curLocal;
-      outSlot.remoteState = framePredicted
-          ? rollback::RemoteState::Predicted
-          : rollback::RemoteState::Confirmed;
+      outSlot.remoteState =
+          framePredicted ? rollback::RemoteState::Predicted : rollback::RemoteState::Confirmed;
       game.saveSnapshotFast(outSlot.snapshot);
       outSlot.checksum = wideRollbackChecksum(game);
 
@@ -1086,8 +1036,7 @@ void RollbackController::advanceSimulation() {
   // remote still hears from us this tick. -1 keeps this disarmed before
   // any packet has arrived.
   if (lastKnownRemoteFrame_ >= 0 &&
-      static_cast<int32_t>(simFrame) - lastKnownRemoteFrame_
-          >= frameAdvantageThreshold_) {
+      static_cast<int32_t>(simFrame) - lastKnownRemoteFrame_ >= frameAdvantageThreshold_) {
     ++frameAdvantageStalls_;
     return;
   }
@@ -1101,8 +1050,7 @@ void RollbackController::advanceSimulation() {
   // simFrame-1. Out-of-order arrival (real input for a future frame
   // while an earlier one is still missing) must stay in the ring so a
   // later promote can fold it into a contiguous chain.
-  bool chainContiguous =
-      confirmedSimFrame_ + 1 == static_cast<int32_t>(simFrame);
+  bool chainContiguous = confirmedSimFrame_ + 1 == static_cast<int32_t>(simFrame);
   if (remoteInputReady[currentSlot] && chainContiguous) {
     curRemote = remoteInputs[currentSlot];
     remoteInputReady[currentSlot] = false;
@@ -1142,9 +1090,8 @@ void RollbackController::advanceSimulation() {
     rollback::Slot& slot = rollbackBuffer_.write(snapFrame);
     slot.localInput = (localIdx == 0) ? curLocal : curRemote;
     slot.remoteInput = (localIdx == 0) ? curRemote : curLocal;
-    slot.remoteState = predicted
-        ? rollback::RemoteState::Predicted
-        : rollback::RemoteState::Confirmed;
+    slot.remoteState =
+        predicted ? rollback::RemoteState::Predicted : rollback::RemoteState::Confirmed;
     game.saveSnapshotFast(slot.snapshot);
     slot.checksum = wideRollbackChecksum(game);
 
@@ -1155,8 +1102,7 @@ void RollbackController::advanceSimulation() {
 
   if (game.isGameOver()) {
     state = StateGameEnded;
-    if (!goingToMenu)
-      enterGoingToMenu(180);
+    if (!goingToMenu) enterGoingToMenu(180);
   }
 
   driveShadow();
@@ -1209,17 +1155,13 @@ void RollbackController::draw(Renderer& renderer, bool useSpectatorViewports) {
   }
 }
 
-void RollbackController::swapLevel(Level& newLevel) {
-  currentLevel()->swap(newLevel);
-}
+void RollbackController::swapLevel(Level& newLevel) { currentLevel()->swap(newLevel); }
 
 Level* RollbackController::currentLevel() { return &game.level; }
 
 Game* RollbackController::currentGame() { return &game; }
 
-Game* RollbackController::statsGame() {
-  return shadowGame_ ? shadowGame_.get() : &game;
-}
+Game* RollbackController::statsGame() { return shadowGame_ ? shadowGame_.get() : &game; }
 
 bool RollbackController::running() {
   return state != StateGameEnded && state != StateInitial && resumable_;

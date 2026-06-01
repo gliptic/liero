@@ -1,49 +1,44 @@
 #include "font.hpp"
-#include "../reader.hpp"
-#include "../gfx.hpp"
 #include "../cp437.hpp"
-#include "macros.hpp"
+#include "../gfx.hpp"
+#include "../reader.hpp"
 #include "color.hpp"
+#include "macros.hpp"
 
-void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int size)
-{
-	if(c >= 2 && c < 252) // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since drawText subtracts 2?
-	{
-		uint8_t* mem = chars[c].data;
-		int width = 7;
-		int height = 8;
-		int pitch = 7;
+void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int size) {
+  if (c >= 2 && c < 252)  // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since
+                          // drawText subtracts 2?
+  {
+    uint8_t* mem = chars[c].data;
+    int width = 7;
+    int height = 8;
+    int pitch = 7;
 
-		CLIP_IMAGE(scr.clip_rect);
+    CLIP_IMAGE(scr.clip_rect);
 
-		PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y*scr.pitch + x;
+    PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;
 
-		for(int cy = 0; cy < height; ++cy)
-		{
-			for(int i = 0; i < size; i++)
-			{
-				PalIdx* rowdest = scrptr;
-				PalIdx* rowsrc = mem;
+    for (int cy = 0; cy < height; ++cy) {
+      for (int i = 0; i < size; i++) {
+        PalIdx* rowdest = scrptr;
+        PalIdx* rowsrc = mem;
 
-				for(int cx = 0; cx < width; ++cx)
-				{
-					PalIdx c = *rowsrc;
-					for(int k = 0; k < size; k++)
-					{
-						if(c)
-						{
-							*rowdest = color;
-						}
-						++rowdest;
-					}
-					++rowsrc;
-				}
+        for (int cx = 0; cx < width; ++cx) {
+          PalIdx c = *rowsrc;
+          for (int k = 0; k < size; k++) {
+            if (c) {
+              *rowdest = color;
+            }
+            ++rowdest;
+          }
+          ++rowsrc;
+        }
 
-				scrptr += scr.pitch;
-			}
-			mem += pitch;
-		}
-	}
+        scrptr += scr.pitch;
+      }
+      mem += pitch;
+    }
+  }
 }
 
 // Strings reaching the font are UTF-8 (that's what tc.cfg and settings.cfg
@@ -52,73 +47,63 @@ void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int s
 // drawChar already ignores any byte outside [2, 252), so this stays in sync.
 namespace {
 
-unsigned char codepointToFontByte(char32_t cp)
-{
-	int b = cp437::unicodeToByte(cp);
-	return b < 0 ? 1 : static_cast<unsigned char>(b);  // 1 = skip-no-draw
+unsigned char codepointToFontByte(char32_t cp) {
+  int b = cp437::unicodeToByte(cp);
+  return b < 0 ? 1 : static_cast<unsigned char>(b);  // 1 = skip-no-draw
 }
 
 }  // namespace
 
-void Font::drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color, int size)
-{
-	int orgX = x;
+void Font::drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color,
+                    int size) {
+  int orgX = x;
 
-	for(std::size_t i = 0; i < len; )
-	{
-		char32_t cp = cp437::utf8DecodeNext(str, len, i);
+  for (std::size_t i = 0; i < len;) {
+    char32_t cp = cp437::utf8DecodeNext(str, len, i);
 
-		if(cp == 0)
-		{
-			x = orgX;
-			y += 8 * size;
-			continue;
-		}
+    if (cp == 0) {
+      x = orgX;
+      y += 8 * size;
+      continue;
+    }
 
-		unsigned char c = codepointToFontByte(cp);
-		if(c >= 2 && c < 252)
-		{
-			c -= 2;
+    unsigned char c = codepointToFontByte(cp);
+    if (c >= 2 && c < 252) {
+      c -= 2;
 
-			drawChar(scr, c, x, y, color, size);
+      drawChar(scr, c, x, y, color, size);
 
-			x += chars[c].width * size;
-		}
-	}
+      x += chars[c].width * size;
+    }
+  }
 }
 
-void Font::drawFramedText(Bitmap& scr, std::string const& text, int x, int y, int color)
-{
-	drawRoundedBox(scr, x, y, 0, 7, getDims(text));
-	drawText(scr, text, x + 2, y + 1, color);
+void Font::drawFramedText(Bitmap& scr, std::string const& text, int x, int y, int color) {
+  drawRoundedBox(scr, x, y, 0, 7, getDims(text));
+  drawText(scr, text, x + 2, y + 1, color);
 }
 
-int Font::getDims(char const* str, std::size_t len, int* height)
-{
-	int width = 0;
-	int maxHeight = 8;
+int Font::getDims(char const* str, std::size_t len, int* height) {
+  int width = 0;
+  int maxHeight = 8;
 
-	int maxWidth = 0;
+  int maxWidth = 0;
 
-	for(std::size_t i = 0; i < len; )
-	{
-		char32_t cp = cp437::utf8DecodeNext(str, len, i);
+  for (std::size_t i = 0; i < len;) {
+    char32_t cp = cp437::utf8DecodeNext(str, len, i);
 
-		if(cp == 0)
-		{
-			maxWidth = std::max(maxWidth, width);
-			width = 0;
-			maxHeight += 8;
-			continue;
-		}
+    if (cp == 0) {
+      maxWidth = std::max(maxWidth, width);
+      width = 0;
+      maxHeight += 8;
+      continue;
+    }
 
-		unsigned char c = codepointToFontByte(cp);
-		if(c >= 2 && c < 252)
-			width += chars[c - 2].width;
-	}
+    unsigned char c = codepointToFontByte(cp);
+    if (c >= 2 && c < 252) width += chars[c - 2].width;
+  }
 
-	if(height)
-		*height = maxHeight;
+  if (height) *height = maxHeight;
 
-	return std::max(maxWidth, width);
+  return std::max(maxWidth, width);
 }
