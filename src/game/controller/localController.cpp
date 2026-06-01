@@ -291,7 +291,7 @@ void LocalController::changeState(GameState newState)
 					}
 				}
 
-				auto node = gfx.getConfigNode() / "Replays" / (buf + playerNames + ".lrp");
+				auto node = gfx.getUserConfigNode() / "Replays" / (buf + playerNames + ".lrp");
 
 				replay.reset(new ReplayWriter(node.toWriter()));
 

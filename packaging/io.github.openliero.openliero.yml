@@ -1,0 +1,97 @@
+app-id: io.github.openliero.openliero
+runtime: org.freedesktop.Platform
+runtime-version: '25.08'
+sdk: org.freedesktop.Sdk
+command: openliero
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=all
+
+modules:
+  - name: enet
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DENET_STATIC=ON
+      - -DENET_SHARED=OFF
+      - -DENET_TEST=OFF
+    sources:
+      - type: git
+        url: https://github.com/zpl-c/enet.git
+        tag: v2.6.5
+        commit: 8647b6eaea881c86471ae29f732620d299fc20d7
+
+  - name: libjuice
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DNO_TESTS=ON
+      - -DUSE_NETTLE=OFF
+    sources:
+      - type: git
+        url: https://github.com/paullouisageneau/libjuice.git
+        tag: v1.7.1
+        commit: b5405caebedfff976232374bea57982d2674d154
+      - type: patch
+        path: patches/libjuice-dependencies.diff
+
+  - name: miniz
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DBUILD_EXAMPLES=OFF
+      - -DBUILD_FUZZERS=OFF
+      - -DBUILD_TESTS=OFF
+      - -DINSTALL_PROJECT=ON
+    sources:
+      - type: git
+        url: https://github.com/richgel999/miniz.git
+        tag: '3.1.1'
+        commit: d10b03cc73475af673df40f06e5cefd1d5f940d9
+
+  - name: tomlplusplus
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DTOMLPLUSPLUS_BUILD_TESTS=OFF
+      - -DTOMLPLUSPLUS_BUILD_EXAMPLES=OFF
+    sources:
+      - type: git
+        url: https://github.com/marzer/tomlplusplus.git
+        tag: v3.4.0
+        commit: 30172438cee64926dc41fdd9c11fb3ba5b2ba9de
+
+  - name: xxhash
+    buildsystem: cmake-ninja
+    subdir: cmake_unofficial
+    sources:
+      - type: git
+        url: https://github.com/Cyan4973/xxHash.git
+        tag: v0.8.3
+        commit: e626a72bc2321cd320e953a0ccf1584cad60f363
+
+  - name: cereal
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DJUST_INSTALL_CEREAL=ON
+    sources:
+      - type: git
+        url: https://github.com/USCiLab/cereal.git
+        tag: v1.3.2
+        commit: ebef1e929807629befafbb2918ea1a08c7194554
+
+  - name: openliero
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DOPENLIERO_USE_VCPKG=OFF
+      - -DOPENLIERO_BUILD_TCTOOL=ON
+      - -DOPENLIERO_BUILD_TESTS=OFF
+      - -DOPENLIERO_BUILD_VIDEOTOOL=OFF
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DCMAKE_CXX_STANDARD=23
+      - -DCMAKE_CXX_STANDARD_REQUIRED=ON
+      - -DCMAKE_CXX_EXTENSIONS=OFF
+    sources:
+      - type: dir
+        path: ..

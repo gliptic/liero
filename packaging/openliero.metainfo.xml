@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.openliero.openliero</id>
+
+  <name>OpenLiero</name>
+  <summary>A brutal subterranean shooter game</summary>
+  <icon type="stock">io.github.openliero.openliero</icon>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>BSD-2-Clause</project_license>
+
+  <description>
+    <p>
+      OpenLiero is a continuation of the classic Liero subterranean shooter game,
+      featuring two worms, 40 weapons, and great playability. Choose from four
+      game modes: Kill'em All, Game of Tag, Capture the Flag, and Simple CtF.
+    </p>
+    <p>
+      OpenLiero aims to keep Liero running faithfully on modern machines while
+      supporting online multiplayer with rollback netcode.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">io.github.openliero.openliero.desktop</launchable>
+
+  <url type="homepage">https://github.com/openliero/openliero</url>
+  <url type="bugtracker">https://github.com/openliero/openliero/issues</url>
+
+  <developer id="io.github.openliero">
+    <name>OpenLiero Contributors</name>
+  </developer>
+
+  <categories>
+    <category>Game</category>
+    <category>ActionGame</category>
+  </categories>
+
+  <keywords>
+    <keyword>liero</keyword>
+    <keyword>worm</keyword>
+    <keyword>shooter</keyword>
+    <keyword>arcade</keyword>
+    <keyword>multiplayer</keyword>
+  </keywords>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-cartoon">moderate</content_attribute>
+  </content_rating>
+</component>

@@ -24,41 +24,21 @@ try
 	// TODO: Better PRNG seeding
 	gfx.rand.seed(uint32_t(std::time(0)));
 
-	bool tcSet = false;
-
-	std::string tcName;
 #if OPENLIERO_EMSCRIPTEN
-	std::string configPath = "/openliero";
+	// Emscripten preloads all data under /openliero; use single-dir mode.
+	const char* emscriptenArgv[] = { argv[0], "--config-root", "/openliero", nullptr };
+	auto r = paths::resolve(3, const_cast<char**>(emscriptenArgv));
 #else
-	std::string configPath; // Default to current dir
+	auto r = paths::resolve(argc, argv);
 #endif
 
-	for(int i = 1; i < argc; ++i)
-	{
-		if(argv[i][0] == '-')
-		{
-			switch(argv[i][1])
-			{
-			case '-':
-				if (std::strcmp(argv[i] + 2, "config-root") == 0 && i + 1 < argc)
-				{
-					++i;
-					configPath = argv[i];
-				}
-				else if (std::strcmp(argv[i] + 2, "port") == 0 && i + 1 < argc)
-				{
-					++i;
-					gfx.onlinePort = static_cast<uint16_t>(std::atoi(argv[i]));
-				}
-				break;
-			}
-		}
-		else
-		{
-			tcName = argv[i];
-			tcSet = true;
-		}
-	}
+	gfx.onlinePort = r.port != 0 ? r.port : gfx.onlinePort;
+	gfx.setConfigNodes(r.configNode, r.userConfigNode);
+
+	std::string tcName;
+	bool tcSet = !r.positionalArgs.empty();
+	if (tcSet)
+		tcName = r.positionalArgs[0];
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD);
 
@@ -69,14 +49,14 @@ try
 	gfx.loadMenus();
 
 	gfx.init();
-	gfx.setConfigPath(configPath);
 
 	FsNode configNode(gfx.getConfigNode());
+	FsNode userConfigNode(gfx.getUserConfigNode());
 
 	if (!gfx.loadSettings(configNode / "Setups" / "liero.cfg"))
 	{
 		gfx.settings.reset(new Settings);
-		gfx.saveSettings(configNode / "Setups" / "liero.cfg");
+		gfx.saveSettings(userConfigNode / "Setups" / "liero.cfg");
 	}
 
 	if (tcSet)
@@ -87,7 +67,7 @@ try
 	std::shared_ptr<Common> common(new Common());
 	common->load(std::move(lieroRoot));
 	gfx.common = common;
-	gfx.playRenderer.loadPalette(*common); // This gets the palette from common
+	gfx.playRenderer.loadPalette(*common);
 
 	gfx.setVideoMode();
 	gfx.soundPlayer = std::make_shared<DefaultSoundPlayer>(*common);
@@ -95,7 +75,7 @@ try
 
 	gfx.mainLoop();
 
-	gfx.settings->save(configNode / "Setups" / "liero.cfg", gfx.rand);
+	gfx.settings->save(userConfigNode / "Setups" / "liero.cfg", gfx.rand);
 
 	g_soundPlayer = nullptr;
 	gfx.soundPlayer.reset();

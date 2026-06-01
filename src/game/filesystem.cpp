@@ -1,9 +1,12 @@
 #include "filesystem.hpp"
 #include "text.hpp"
 #include "io/stream.hpp"
+#include <SDL3/SDL.h>
 #include <stdexcept>
 #include <cassert>
 #include <cctype>
+#include <cstdlib>
+#include <cstring>
 #include <sys/stat.h>
 #if _WIN32
 #include <io.h>
@@ -754,4 +757,208 @@ FsNode::FsNode(std::string const& path)
 			imp = imp->go(part);
 		}
 	}
+}
+
+
+namespace paths
+{
+
+FsNode userDataRoot()
+{
+	// Test-only override. Not documented for end users — production paths
+	// should go through --config-root or portable.txt instead.
+	if (const char* env = std::getenv("OPENLIERO_TEST_USER_DIR"))
+	{
+		if (env[0] != '\0')
+		{
+			create_directories(env);
+			return FsNode(std::string(env));
+		}
+	}
+
+	char* p = SDL_GetPrefPath("openliero", "openliero");
+	if (!p)
+		return FsNode();
+	std::string path(p);
+	SDL_free(p);
+
+	create_directories(path);
+
+	return FsNode(path);
+}
+
+FsNode systemDataRoot()
+{
+	// Runtime override: respected by Flatpak builds, packagers who can't
+	// recompile, and the test suite.
+	if (const char* env = std::getenv("OPENLIERO_DATADIR"))
+	{
+		if (env[0] != '\0')
+		{
+			FsNode candidate{std::string(env)};
+			if (candidate.exists())
+				return candidate;
+		}
+	}
+
+#ifdef OPENLIERO_DATADIR
+	{
+		FsNode candidate{std::string(OPENLIERO_DATADIR)};
+		if (candidate.exists())
+			return candidate;
+	}
+#endif
+
+	// SDL3: SDL_GetBasePath returns a const char* owned by SDL; do NOT free.
+	if (const char* base = SDL_GetBasePath())
+	{
+		FsNode candidate{std::string(base)};
+		if (candidate.exists())
+			return candidate;
+	}
+
+	return FsNode();
+}
+
+// True if a real, usable portable.txt sits at `path`. We can't use the
+// generic FsNode::exists() (which calls _access) because on Windows it
+// reports cloud-sync placeholders as present even after the user has
+// deleted the file in Explorer — leaving anyone with a sync-backed
+// extraction folder permanently stuck in portable mode.
+static bool portableMarkerPresent(std::string const& path)
+{
+#if _WIN32
+	DWORD attr = GetFileAttributesA(path.c_str());
+	if (attr == INVALID_FILE_ATTRIBUTES)
+		return false;
+	if (attr & FILE_ATTRIBUTE_DIRECTORY)
+		return false;
+	constexpr DWORD kCloudPlaceholder = FILE_ATTRIBUTE_OFFLINE
+		| 0x00400000u   // FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS
+		| 0x00040000u;  // FILE_ATTRIBUTE_RECALL_ON_OPEN
+	return !(attr & kCloudPlaceholder);
+#else
+	struct stat st;
+	if (stat(path.c_str(), &st) != 0)
+		return false;
+	return S_ISREG(st.st_mode);
+#endif
+}
+
+bool shadowsSystem(FsNode const& userRoot,
+	std::string const& subdir, std::string const& leaf)
+{
+	// Auto-managed filenames the game writes itself. Picking these in a
+	// Save As dialog would clobber the game's own auto-write target or
+	// shadow the shipped default unreachably.
+	static char const* const kReserved[][2] = {
+		{"Setups", "liero.cfg"},
+	};
+	for (auto const& r : kReserved)
+	{
+		if (subdir == r[0] && ciCompare(leaf, r[1]))
+			return true;
+	}
+
+	FsNode sys = systemDataRoot();
+	if (!sys.imp)
+		return false;
+
+	// Single-dir layouts (portable.txt / --config-root pointing at the
+	// install dir): user writes go to the same directory the system
+	// data is read from. There's no separate layer to shadow, and the
+	// user must be able to overwrite their own files.
+	if (userRoot.imp && userRoot.imp->fullPath() == sys.imp->fullPath())
+		return false;
+
+	return (sys / subdir / leaf).exists();
+}
+
+// Safe to call before SDL_Init: SDL3's SDL_GetPrefPath/SDL_GetBasePath
+// do not require subsystem initialization.
+ResolvedPaths resolve(int argc, char* argv[], std::string const& basePath)
+{
+	ResolvedPaths r;
+	r.port = 0;
+
+	std::string configRoot;
+
+	// Matches "--<name>" or "--<name>=value". Returns the value (after '=' or
+	// the next argv) and advances `i` past it. Refuses to consume the next
+	// argv as a value if it looks like another flag, so a typo like
+	// "--config-root --port 1234" doesn't silently set configRoot="--port".
+	auto matchOpt = [&](int& i, char const* name, std::string* out) -> bool
+	{
+		char const* arg = argv[i] + 2;
+		std::size_t nlen = std::strlen(name);
+		if (std::strncmp(arg, name, nlen) != 0)
+			return false;
+		if (arg[nlen] == '=')
+		{
+			*out = arg + nlen + 1;
+			return true;
+		}
+		if (arg[nlen] != '\0')
+			return false;
+		if (i + 1 >= argc || argv[i + 1][0] == '-')
+			return false;
+		++i;
+		*out = argv[i];
+		return true;
+	};
+
+	for (int i = 1; i < argc; ++i)
+	{
+		if (argv[i][0] == '-' && argv[i][1] == '-')
+		{
+			std::string value;
+			if (matchOpt(i, "config-root", &value))
+				configRoot = std::move(value);
+			else if (matchOpt(i, "port", &value))
+				r.port = static_cast<uint16_t>(std::atoi(value.c_str()));
+		}
+		else if (argv[i][0] != '-')
+		{
+			r.positionalArgs.emplace_back(argv[i]);
+		}
+	}
+
+	if (!configRoot.empty())
+	{
+		// Explicit single-directory override (Emscripten, CI, power users).
+		r.configNode     = FsNode(configRoot);
+		r.userConfigNode = FsNode(configRoot);
+		return r;
+	}
+
+	// Determine basePath: caller-supplied (tests) or SDL_GetBasePath().
+	std::string base = basePath;
+	if (base.empty())
+	{
+		if (const char* p = SDL_GetBasePath())
+			base = p;
+	}
+
+	// portable.txt next to the binary selects single-directory mode.
+	if (!base.empty()
+		&& portableMarkerPresent((FsNode(base) / "portable.txt").fullPath()))
+	{
+		r.configNode     = FsNode(base);
+		r.userConfigNode = FsNode(base);
+		return r;
+	}
+
+	// XDG split: user dir for writes; merged (user + system) for reads.
+	FsNode user   = userDataRoot();
+	FsNode system = systemDataRoot();
+
+	r.userConfigNode = user;
+	if (system.imp)
+		r.configNode = FsNode(join(user.imp, system.imp));
+	else
+		r.configNode = user;
+
+	return r;
+}
+
 }

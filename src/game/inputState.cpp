@@ -189,11 +189,13 @@ void WaitForKeyState::draw()
 
 // --- InfoBoxState ---
 
-InfoBoxState::InfoBoxState(std::string text, int x, int y, bool clearScreen)
+InfoBoxState::InfoBoxState(std::string text, int x, int y, bool clearScreen,
+	DismissCallback onDismiss)
 : text_(std::move(text))
 , x_(x)
 , y_(y)
 , clearScreen_(clearScreen)
+, onDismiss_(std::move(onDismiss))
 {
 }
 
@@ -217,6 +219,12 @@ bool InfoBoxState::update()
 		gfx->clearKeys();
 		if (clearScreen_)
 			fill(gfx->playRenderer.bmp, 0);
+		// onDismiss_ runs before this state is popped. It may call
+		// scheduleReplaceTop() on the StateStack to chain into another
+		// state; that takes precedence over the normal pop because the
+		// stack checks pendingReplace_ before keepRunning.
+		if (onDismiss_)
+			onDismiss_();
 		return false;
 	}
 	return true;

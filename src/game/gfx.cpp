@@ -239,7 +239,13 @@ struct ProfileSaveBehavior : ItemBehavior
 		g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
 
 		if(!saveAs)
-			ws.saveProfile(ws.profileNode);
+		{
+			// Save in-place always writes to the user dir, even when the
+			// profile was loaded from shipped data. saveProfile retargets
+			// profileNode so subsequent saves stay on the user copy.
+			std::string leaf = getLeaf(ws.profileNode.fullPath());
+			ws.saveProfile(gfx.getUserConfigNode() / "Profiles" / leaf);
+		}
 		// saveAs path is intercepted by MainMenuState
 
 		menu.updateItems(common);

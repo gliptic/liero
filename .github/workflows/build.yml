@@ -139,8 +139,17 @@ jobs:
         if: matrix.name == 'linux'
         run: |
           cmake --install build/linux-x64-ci --config Release
-          cd install/linux-x64-ci
-          tar cvf ../openliero-linux-x64.tar.gz .
+          # Stage a flat portable archive. The FHS layout (bin/ + share/) does
+          # not work with portable.txt because SDL_GetBasePath returns bin/ and
+          # the game would not find TC/ there.
+          mkdir -p staging-linux
+          cp install/linux-x64-ci/bin/openliero staging-linux/
+          cp install/linux-x64-ci/bin/tctool staging-linux/
+          [ -f install/linux-x64-ci/bin/videotool ] && cp install/linux-x64-ci/bin/videotool staging-linux/ || true
+          cp -r install/linux-x64-ci/share/openliero/. staging-linux/
+          cp -r install/linux-x64-ci/LICENSES staging-linux/
+          touch staging-linux/portable.txt
+          cd staging-linux && tar czf ../install/openliero-linux-x64-portable.tar.gz .
 
       - name: Create build artifact (macOS)
         if: runner.os == 'macos'
@@ -149,15 +158,21 @@ jobs:
           cmake --install build/macos-x64-ci --config Release
           lipo -create \
             -output install/openliero \
-            install/macos-arm64-ci/openliero \
-            install/macos-x64-ci/openliero
+            install/macos-arm64-ci/bin/openliero \
+            install/macos-x64-ci/bin/openliero
           lipo -create \
             -output install/tctool \
-            install/macos-arm64-ci/tctool \
-            install/macos-x64-ci/tctool
-          mv -f install/{openliero,tctool} install/macos-arm64-ci
-          cd install/macos-arm64-ci
-          tar cvf ../openliero-macos.tar.gz .
+            install/macos-arm64-ci/bin/tctool \
+            install/macos-x64-ci/bin/tctool
+          mv -f install/{openliero,tctool} install/macos-arm64-ci/bin
+          # Stage a flat portable archive (same reason as Linux).
+          mkdir -p staging-macos
+          cp install/macos-arm64-ci/bin/openliero staging-macos/
+          cp install/macos-arm64-ci/bin/tctool staging-macos/
+          cp -r install/macos-arm64-ci/share/openliero/. staging-macos/
+          cp -r install/macos-arm64-ci/LICENSES staging-macos/
+          touch staging-macos/portable.txt
+          cd staging-macos && tar czf ../install/openliero-macos-portable.tar.gz .
 
       - name: Install (Windows)
         if: runner.os == 'Windows'
@@ -220,9 +235,10 @@ jobs:
       - name: Package ZIP and copy publisher cert (Windows)
         if: runner.os == 'Windows'
         run: |
+          New-Item -ItemType File -Path install/windows-x64-ci/portable.txt | Out-Null
           Compress-Archive `
             -Path install/windows-x64-ci/* `
-            -DestinationPath install/openliero-windows-x64.zip
+            -DestinationPath install/openliero-windows-x64-portable.zip
           if (Test-Path dist/windows/openliero-publisher.cer) {
             Copy-Item dist/windows/openliero-publisher.cer install/openliero-publisher.cer
           }
@@ -240,9 +256,37 @@ jobs:
           name: ${{ matrix.name }}-build
           path: install/openliero*
 
+  flatpak:
+    name: Flatpak
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Build Flatpak bundle
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          bundle: openliero.flatpak
+          manifest-path: packaging/io.github.openliero.openliero.yml
+          cache-key: flatpak-builder-${{ hashFiles('packaging/io.github.openliero.openliero.yml', 'packaging/patches/*.diff') }}
+          upload-artifact: false
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: flatpak-build
+          path: openliero.flatpak
+
   pre-release:
     name: Pre-release
-    needs: build
+    needs: [build, flatpak]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
@@ -279,6 +323,7 @@ jobs:
             artifacts/windows-build/*
             artifacts/macos-build/*
             artifacts/emscripten-build/*
+            artifacts/flatpak-build/*
 
       - name: Generate release notes
         id: notes
@@ -295,10 +340,14 @@ jobs:
           echo "Built from commit [\`${SHORT_SHA}\`](https://github.com/${{ github.repository }}/commit/${SHA})." >> notes.md
           echo "" >> notes.md
           echo "### Included platforms" >> notes.md
-          echo "- Linux x86_64 (includes videotool)" >> notes.md
-          echo "- Windows x86_64" >> notes.md
-          echo "- macOS universal (arm64 + x86_64)" >> notes.md
-          echo "- Web (Emscripten/WebAssembly)" >> notes.md
+          echo "- \`openliero-linux-x64-portable.tar.gz\` — Linux x86_64 (includes videotool)" >> notes.md
+          echo "- \`openliero-windows-x64-portable.zip\` — Windows x86_64 portable" >> notes.md
+          echo "- \`openliero.msix\` — Windows MSIX installer (saves to %APPDATA%)" >> notes.md
+          echo "- \`openliero-macos-portable.tar.gz\` — macOS universal (arm64 + x86_64)" >> notes.md
+          echo "- \`openliero-web.tar.gz\` — Web (Emscripten/WebAssembly)" >> notes.md
+          echo "- \`openliero.flatpak\` — Linux Flatpak bundle (\`flatpak install --user openliero.flatpak\`)" >> notes.md
+          echo "" >> notes.md
+          echo "Portable archives include \`portable.txt\` — extract anywhere and run. See README for details." >> notes.md
 
           if [ -n "$LAST_TAG" ]; then
             echo "" >> notes.md
@@ -332,6 +381,7 @@ jobs:
             artifacts/windows-build/* \
             artifacts/macos-build/* \
             artifacts/emscripten-build/* \
+            artifacts/flatpak-build/* \
             SHA256SUMS.txt \
             openliero-sbom.cdx.json
         env:
@@ -339,7 +389,7 @@ jobs:
 
   release:
     name: Release
-    needs: build
+    needs: [build, flatpak]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
@@ -376,6 +426,7 @@ jobs:
             artifacts/windows-build/*
             artifacts/macos-build/*
             artifacts/emscripten-build/*
+            artifacts/flatpak-build/*
 
       - name: Create release
         run: |
@@ -386,6 +437,7 @@ jobs:
             artifacts/windows-build/* \
             artifacts/macos-build/* \
             artifacts/emscripten-build/* \
+            artifacts/flatpak-build/* \
             SHA256SUMS.txt \
             openliero-sbom.cdx.json
         env:

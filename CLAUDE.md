@@ -19,7 +19,7 @@ cmake --workflow --preset linux-x64-debug           # debug
 cmake --install build/linux-x64 --config Release
 
 # run
-cd install/linux-x64 && ./openliero
+./install/linux-x64/bin/openliero
 ```
 
 Optional build targets are gated by CMake options (off by default):

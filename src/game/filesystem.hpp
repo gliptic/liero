@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdio>
 #include <memory>
+#include <vector>
 #include <map>
 #include <miniz.h>
 
@@ -147,3 +148,48 @@ struct FsNode
 		return w;
 	}
 };
+
+namespace paths
+{
+	// Writable user data root. Always returns a non-empty node whose
+	// directory has been created on disk. Backed by SDL_GetPrefPath.
+	FsNode userDataRoot();
+
+	// Read-only stock data root. Resolution order:
+	//   1. OPENLIERO_DATADIR compile-time macro, if defined and existing.
+	//   2. SDL_GetBasePath() (binary-adjacent), if it has stock content.
+	// Returns an empty FsNode (!exists()) if neither resolves.
+	FsNode systemDataRoot();
+
+	// True if Save As of `leaf` into `subdir` of the user dir would
+	// shadow either a shipped file or one of the auto-managed names
+	// the game writes itself (e.g. `Setups/liero.cfg`). Used by the
+	// Save As dialogs to refuse reserved names. `userRoot` is the
+	// user's writable root; when it equals systemDataRoot() (portable
+	// mode, `--config-root` aimed at the install dir) there is no
+	// separate read-only layer to shadow and the user can freely
+	// overwrite their own files, so the on-disk check is skipped.
+	bool shadowsSystem(FsNode const& userRoot,
+		std::string const& subdir, std::string const& leaf);
+}
+
+struct ResolvedPaths
+{
+	FsNode configNode;      // merged (user + system) for reads
+	FsNode userConfigNode;  // user dir only, for writes
+	uint16_t port;          // from --port, 0 if not given
+	std::vector<std::string> positionalArgs; // non-flag argv entries
+};
+
+namespace paths
+{
+	// Parse argc/argv for --config-root, --port, and positional args,
+	// then build configNode and userConfigNode according to the algorithm:
+	//   --config-root <p>  -> both nodes point at p (portable/Emscripten mode)
+	//   portable.txt in basePath -> both nodes point at basePath
+	//   otherwise          -> configNode = join(user, system); userConfigNode = user
+	//
+	// basePath overrides SDL_GetBasePath() and is used by tests.
+	ResolvedPaths resolve(int argc, char* argv[],
+	                      std::string const& basePath = std::string());
+}

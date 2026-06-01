@@ -669,9 +669,9 @@ void RollbackController::startReplayRecording() {
   if (!Settings::extensions || !game.settings->recordReplays) return;
 
   // Tests construct RollbackControllers without first wiring up gfx,
-  // so gfx.getConfigNode() returns a default-constructed FsNode with
+  // so getUserConfigNode() returns a default-constructed FsNode with
   // a null impl pointer. Operator/ would dereference that and segv.
-  FsNode configRoot = gfx.getConfigNode();
+  FsNode configRoot = gfx.getUserConfigNode();
   if (!configRoot.imp) return;
 
   try {

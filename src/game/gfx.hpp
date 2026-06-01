@@ -289,14 +289,20 @@ struct Gfx
 		uint8_t* src, int w, int h, std::size_t srcPitch,
 		uint8_t* dest, std::size_t destPitch, int mag);
 
-	void setConfigPath(std::string const& path)
+	void setConfigNodes(FsNode const& config, FsNode const& userConfig)
 	{
-		configNode = FsNode(path);
+		configNode     = config;
+		userConfigNode = userConfig;
 	}
 
 	FsNode getConfigNode()
 	{
 		return configNode;
+	}
+
+	FsNode getUserConfigNode()
+	{
+		return userConfigNode;
 	}
 
 	// PRNG for things that don't affect the game
@@ -314,6 +320,7 @@ struct Gfx
 	Renderer* primaryRenderer;
 
 	FsNode configNode;
+	FsNode userConfigNode;
 
 	// Port for online play (default 19532, configurable via --port)
 	uint16_t onlinePort = 19532;

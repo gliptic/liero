@@ -19,6 +19,9 @@ struct InputStringState : AppState
 	void handleEvent(SDL_Event& ev) override;
 	bool update() override;
 	void draw() override;
+	// Overlay so the menu beneath repaints each frame; frozenScreen
+	// only captures the background, not the live menu items.
+	bool isOverlay() const override { return true; }
 
 private:
 	std::string buffer_;
@@ -56,7 +59,10 @@ private:
 // Info box. Shows a message and waits for any key press.
 struct InfoBoxState : AppState
 {
-	InfoBoxState(std::string text, int x, int y, bool clearScreen);
+	using DismissCallback = std::function<void()>;
+
+	InfoBoxState(std::string text, int x, int y, bool clearScreen,
+		DismissCallback onDismiss = nullptr);
 
 	void enter() override;
 	void handleEvent(SDL_Event& ev) override;
@@ -68,4 +74,5 @@ private:
 	int x_, y_;
 	bool clearScreen_;
 	bool done_ = false;
+	DismissCallback onDismiss_;
 };

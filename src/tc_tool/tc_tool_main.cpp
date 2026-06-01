@@ -3,46 +3,46 @@
 #include "game/filesystem.hpp"
 #include "game/reader.hpp"
 
+#include <cstring>
+#include <vector>
+#include <string>
+
 int main(int argc, char *argv[])
 {
-	std::string configPath; // Default to current dir
-	std::string exePath, tcName;
-
-	for(int i = 1; i < argc; ++i)
+	// Pre-strip --tc-name <value> before passing to paths::resolve so its
+	// value isn't mistaken for a positional argument.
+	std::string tcName;
+	std::vector<std::string> argStorage;
+	std::vector<char*> argPtrs;
+	argStorage.reserve(argc);
+	argStorage.emplace_back(argv[0]);
+	for (int i = 1; i < argc; ++i)
 	{
-		if(argv[i][0] == '-')
+		if (std::strcmp(argv[i], "--tc-name") == 0 && i + 1 < argc)
 		{
-			switch(argv[i][1])
-			{
-			case '-':
-				if (std::strcmp(argv[i] + 2, "config-root") == 0 && i + 1 < argc)
-				{
-					++i;
-					configPath = argv[i];
-				}
-				else if (std::strcmp(argv[i] + 2, "tc-name") == 0 && i + 1 < argc)
-				{
-					++i;
-					tcName = argv[i];
-				}
-				break;
-			}
+			tcName = argv[++i];
 		}
 		else
 		{
-			exePath = argv[i];
+			argStorage.emplace_back(argv[i]);
 		}
 	}
+	for (auto& s : argStorage) argPtrs.push_back(s.data());
+	argPtrs.push_back(nullptr);
 
-	if (exePath.empty())
+	auto r = paths::resolve(static_cast<int>(argStorage.size()), argPtrs.data());
+
+	// First positional is the path to the legacy Liero install directory.
+	if (r.positionalArgs.empty())
 	{
 		printf("tctool <path-to-tc>\n");
 		return 0;
 	}
+	std::string const& exePath = r.positionalArgs[0];
 
 	Common common;
 
-	FsNode path(argv[1]);
+	FsNode path(exePath);
 
 	bool found = false;
 
@@ -67,13 +67,13 @@ int main(int argc, char *argv[])
 				loadFromExe(common, exe, gfx, snd);
 
 				if (tcName.empty())
-					tcName = getLeaf(argv[1]);
+					tcName = getLeaf(exePath);
 
-				auto writePath = joinPath(joinPath(configPath, "TC"), tcName);
+				FsNode outNode = r.userConfigNode / "TC" / tcName;
 
-				printf("Writing to %s...\n", writePath.c_str());
+				printf("Writing to %s...\n", outNode.fullPath().c_str());
 
-				commonSave(common, writePath);
+				commonSave(common, outNode.fullPath());
 
 				found = true;
 				break;
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 
 	if (!found)
 	{
-		printf("Could not find a suitable LIERO.EXE in %s\n", argv[1]);
+		printf("Could not find a suitable LIERO.EXE in %s\n", exePath.c_str());
 	}
 
 	return 0;

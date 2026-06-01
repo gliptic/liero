@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=OpenLiero
+GenericName=Shooter Game
+Comment=A brutal subterranean shooter game
+Exec=openliero
+Icon=io.github.openliero.openliero
+Categories=Game;ActionGame;
+Keywords=liero;worm;shooter;arcade;
+StartupNotify=false

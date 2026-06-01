@@ -11,6 +11,7 @@ option(OPENLIERO_ENABLE_CLANG_TIDY "Run clang-tidy during every C++ compile" OFF
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
 
 include(GenerateVersion) # generate version metadata from git
+include(GNUInstallDirs)
 
 # configure vcpkg
 if(OPENLIERO_USE_VCPKG)
@@ -302,6 +303,11 @@ endif()
 
 target_link_libraries(openliero PRIVATE game)
 
+if(NOT EMSCRIPTEN)
+  target_compile_definitions(game PRIVATE
+    OPENLIERO_DATADIR="${CMAKE_INSTALL_FULL_DATADIR}/openliero")
+endif()
+
 if(OPENLIERO_BUILD_TCTOOL)
   set(TC_LIB_SOURCES ${SOURCES}
     src/tc_tool/common_exereader.cpp
@@ -319,6 +325,10 @@ if(OPENLIERO_BUILD_TCTOOL)
 
   add_executable(tctool src/tc_tool/tc_tool_main.cpp)
   target_link_libraries(tctool PRIVATE tc)
+  if(NOT EMSCRIPTEN)
+    target_compile_definitions(tc PRIVATE
+      OPENLIERO_DATADIR="${CMAKE_INSTALL_FULL_DATADIR}/openliero")
+  endif()
 endif()
 
 if(OPENLIERO_BUILD_VIDEOTOOL)
@@ -352,12 +362,22 @@ if(OPENLIERO_BUILD_VIDEOTOOL)
 endif()
 
 # binaries
-install(TARGETS openliero DESTINATION .)
+# Windows (zip + MSIX) and Emscripten expect a flat install; on Linux/macOS
+# we follow the FHS: binaries in bin/, stock data in share/openliero/.
+if(WIN32 OR EMSCRIPTEN)
+  set(OPENLIERO_INSTALL_BINDIR .)
+  set(OPENLIERO_INSTALL_DATADIR .)
+else()
+  set(OPENLIERO_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR})
+  set(OPENLIERO_INSTALL_DATADIR ${CMAKE_INSTALL_DATADIR}/openliero)
+endif()
+
+install(TARGETS openliero DESTINATION ${OPENLIERO_INSTALL_BINDIR})
 if(OPENLIERO_BUILD_TCTOOL)
-  install(TARGETS tctool DESTINATION .)
+  install(TARGETS tctool DESTINATION ${OPENLIERO_INSTALL_BINDIR})
 endif()
 if(OPENLIERO_BUILD_VIDEOTOOL)
-  install(TARGETS videotool DESTINATION .)
+  install(TARGETS videotool DESTINATION ${OPENLIERO_INSTALL_BINDIR})
 endif()
 
 if(EMSCRIPTEN)
@@ -370,10 +390,22 @@ if(EMSCRIPTEN)
   )
 else()
   # assets
-  install(DIRECTORY data/Profiles DESTINATION .)
-  install(DIRECTORY data/Resources DESTINATION .)
-  install(DIRECTORY data/Setups DESTINATION .)
-  install(DIRECTORY data/TC DESTINATION .)
+  install(DIRECTORY data/Profiles  DESTINATION ${OPENLIERO_INSTALL_DATADIR})
+  install(DIRECTORY data/Resources DESTINATION ${OPENLIERO_INSTALL_DATADIR})
+  install(DIRECTORY data/Setups    DESTINATION ${OPENLIERO_INSTALL_DATADIR})
+  install(DIRECTORY data/TC        DESTINATION ${OPENLIERO_INSTALL_DATADIR})
+
+  if(NOT WIN32)
+    install(FILES packaging/openliero.desktop
+      RENAME io.github.openliero.openliero.desktop
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/applications)
+    install(FILES packaging/openliero.metainfo.xml
+      RENAME io.github.openliero.openliero.metainfo.xml
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo)
+    install(FILES packaging/icons/openliero-512.png
+      RENAME io.github.openliero.openliero.png
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/512x512/apps)
+  endif()
 endif()
 
 # tests
@@ -416,6 +448,12 @@ if(OPENLIERO_BUILD_TESTS)
   add_executable(test_io src/tests/test_io.cpp)
   target_link_libraries(test_io PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_io DISCOVERY_MODE PRE_TEST)
+
+  add_executable(test_paths src/tests/test_paths.cpp)
+  target_link_libraries(test_paths PRIVATE game Catch2::Catch2WithMain)
+  target_compile_definitions(test_paths PRIVATE
+    OPENLIERO_TEST_DATA_DIR="${CMAKE_SOURCE_DIR}/data")
+  catch_discover_tests(test_paths DISCOVERY_MODE PRE_TEST)
 
   add_executable(test_settings src/tests/test_settings.cpp)
   target_link_libraries(test_settings PRIVATE game Catch2::Catch2WithMain)
@@ -587,7 +625,7 @@ if(OPENLIERO_BUILD_TESTS)
 endif()
 
 # documentation
-install(FILES README.md DESTINATION .)
+install(FILES README.md DESTINATION ${OPENLIERO_INSTALL_DATADIR})
 
 # licenses
 install(FILES LICENSE DESTINATION LICENSES)
