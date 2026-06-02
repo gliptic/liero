@@ -9,7 +9,7 @@
 // with left / center / right placement.
 
 struct TextCell {
-  enum Placement { Left, Center, Right };
+  enum Placement { kLeft, kCenter, kRight };
 
   TextCell() = default;
   explicit TextCell(Placement p) : placement(p) {}
@@ -26,8 +26,8 @@ struct TextCell {
   }
 
   // Convenience for the `cell().ref() << ...` pattern.
-  TextCell& ref() { return *this; }
+  TextCell& Ref() { return *this; }
 
   std::vector<uint8_t> buffer;
-  Placement placement = Left;
+  Placement placement = kLeft;
 };

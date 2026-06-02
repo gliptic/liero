@@ -27,7 +27,7 @@
 #define NUM_GAME_MODES 4
 #define NUM_ON_OFF 2
 
-extern int stoneTab[3][4];
+extern int stone_tab[3][4];
 
 /* Textures sourced from [[constants.textures]] in tc.cfg */
 /*
@@ -37,31 +37,31 @@ all objects (wObjects, nObjects, sObjects) and worm (via dirtEffect 0 and 7) int
 materials on the map (especially with dirt).
 */
 struct Texture {
-  bool nDrawBack;  // 1C208; causes Liero not to draw the anti-alias edges on the background.
-                   // Normally turned "false" for creating dirt and rock & turned "true" for
-                   // cleaning dirt.
-  int mFrame;      // 1C1EA; controls which sprite is used to cut a hole (= determines the size and
-                   // shape of the hole).
-  int sFrame;      // 1C1F4; the texture the map change will leave behind (= which sprite is used to
-                   // fill the hole).
-  int rFrame;  // 1C1FE; the amount of sprites to use to fill the hole (starting from sFrame). Note:
-               // if you set 0 or 1, then only 1 sprite will be used to fill the hole (the one
-               // indicated in sFrame).
+  bool n_draw_back;  // 1C208; causes Liero not to draw the anti-alias edges on the background.
+                     // Normally turned "false" for creating dirt and rock & turned "true" for
+                     // cleaning dirt.
+  int m_frame;  // 1C1EA; controls which sprite is used to cut a hole (= determines the size and
+                // shape of the hole).
+  int s_frame;  // 1C1F4; the texture the map change will leave behind (= which sprite is used to
+                // fill the hole).
+  int r_frame;  // 1C1FE; the amount of sprites to use to fill the hole (starting from sFrame).
+                // Note: if you set 0 or 1, then only 1 sprite will be used to fill the hole (the
+                // one indicated in sFrame).
 };
 
 struct Texts {
   Texts();
 
-  std::string gameModes[Settings::GameModes::MaxGameModes];
+  std::string game_modes[Settings::GameModes::kMaxGameModes];
   std::string onoff[NUM_ON_OFF];
   std::string controllers[3];
-  std::string inputDevices[3];
+  std::string input_devices[3];
 
-  static char const* keyNames[177];
+  static char const* key_names[177];
 
-  std::string weapStates[NUM_WEAPON_STATES];
+  std::string weap_states[NUM_WEAPON_STATES];
 
-  int copyrightBarFormat;
+  int copyright_bar_format;
 };
 
 /* Colour animations sourced from [[constants.colorAnim]] in tc.cfg */
@@ -84,7 +84,7 @@ struct SfxSample {
   SfxSample(SfxSample&& other)
       : name(std::move(other.name)),
         sound(other.sound),
-        originalData(std::move(other.originalData)) {
+        original_data(std::move(other.original_data)) {
     other.sound = 0;
   }
 
@@ -92,27 +92,27 @@ struct SfxSample {
     name = std::move(other.name);
     sound = other.sound;
     sound = 0;
-    originalData = std::move(other.originalData);
+    original_data = std::move(other.original_data);
     return *this;
   }
 
   SfxSample(std::string name, int length)
-      : name(std::move(name)), sound(nullptr), originalData(length) {
+      : name(std::move(name)), sound(nullptr), original_data(length) {
     // A zero-length sample is a "disabled" slot. Leave `sound` null so
     // the slot survives in `Common::sounds` without occupying audio
     // memory, and so play paths can treat it as a silent no-op.
-    if (length > 0) sound = sfx_new_sound(length * 2);
+    if (length > 0) sound = SfxNewSound(length * 2);
   }
 
   ~SfxSample() {
-    if (sound) sfx_free_sound(sound);
+    if (sound) SfxFreeSound(sound);
   }
 
-  void createSound();
+  void CreateSound();
 
   std::string name;
   sfx_sound* sound;
-  std::vector<uint8_t> originalData;
+  std::vector<uint8_t> original_data;
 };
 
 struct Bitmap;
@@ -125,65 +125,65 @@ struct Common {
 
   ~Common() {}
 
-  static int fireConeOffset[FIRE_CONE_OFFSET_DIRECTION][FIRE_CONE_OFFSET_ANGLE_FRAME]
-                           [FIRE_CONE_OFFSET_XY];
+  static int fire_cone_offset[FIRE_CONE_OFFSET_DIRECTION][FIRE_CONE_OFFSET_ANGLE_FRAME]
+                             [FIRE_CONE_OFFSET_XY];
 
   void load(FsNode node);
-  void drawTextSmall(Bitmap& scr, char const* str, int x, int y);
-  void precompute();
+  void DrawTextSmall(Bitmap& scr, char const* str, int x, int y);
+  void Precompute();
 
-  std::string guessName() const;
+  std::string GuessName() const;
 
   // Returns the index of the named sound in `sounds`, or -1 if absent.
   // -1 is the existing "no sound" sentinel used at play sites.
-  int soundIndex(std::string_view name) const;
+  int SoundIndex(std::string_view name) const;
 
-  PalIdx* wormSprite(int f, int dir, int w) {
-    return wormSprites.spritePtr(f + dir * 7 * 3 + w * 2 * 7 * 3);
+  PalIdx* WormSprite(int f, int dir, int w) {
+    return worm_sprites.SpritePtr(f + dir * 7 * 3 + w * 2 * 7 * 3);
   }
 
-  Sprite wormSpriteObj(int f, int dir, int w) {
-    return wormSprites[f + dir * 7 * 3 + w * 2 * 7 * 3];
+  Sprite WormSpriteObj(int f, int dir, int w) {
+    return worm_sprites[f + dir * 7 * 3 + w * 2 * 7 * 3];
   }
 
-  PalIdx* fireConeSprite(int f, int dir) { return fireConeSprites.spritePtr(f + dir * 7); }
+  PalIdx* FireConeSprite(int f, int dir) { return fire_cone_sprites.SpritePtr(f + dir * 7); }
 
   // Computed
   Texts texts;
-  vector<int> weapOrder;
-  SpriteSet wormSprites;
-  SpriteSet fireConeSprites;
+  vector<int> weap_order;
+  SpriteSet worm_sprites;
+  SpriteSet fire_cone_sprites;
 
   Material materials[MAX_MATERIALS];
   Texture textures[NUM_TEXTURES];
   vector<Weapon> weapons;
-  vector<SObjectType> sobjectTypes;
-  vector<NObjectType> nobjectTypes;
+  vector<SObjectType> sobject_types;
+  vector<NObjectType> nobject_types;
   /* Randomized timer values for Bonus SObjects. Sourced from
    * [[constants.bonuses]] in tc.cfg (timer/timerV) */
-  int bonusRandTimer[NUM_BONUS_SOBJECTS][NUM_BONUS_TIMER_VALUES];
+  int bonus_rand_timer[NUM_BONUS_SOBJECTS][NUM_BONUS_TIMER_VALUES];
   /* Bonus SObjects. Sourced from [[constants.bonuses]] in tc.cfg (sobj) */
-  int bonusSObjects[NUM_BONUS_SOBJECTS];
+  int bonus_s_objects[NUM_BONUS_SOBJECTS];
   /* AI parameters. Sourced from [[constants.aiparams.$KEY]] in tc.cfg */
-  AIParams aiParams;
+  AIParams ai_params;
   /* Colour Animations. Sourced from [[constants.colorAnim]] in tc.cfg (from/to) */
-  ColourAnim colorAnim[NUM_COLOR_ANIM];
+  ColourAnim color_anim[NUM_COLOR_ANIM];
   /* Bonus frames. Sourced from [[constants.bonuses]] in tc.cfg (frame) */
-  int bonusFrames[NUM_BONUS_SOBJECTS];
+  int bonus_frames[NUM_BONUS_SOBJECTS];
   // all sprite sets sourced from TC/$NAME/sprites
 
-  SpriteSet smallSprites;  // 7x7, sprites 110-239
-  SpriteSet largeSprites;  // 16x16, sprites 0-109
-  SpriteSet textSprites;   // 4x4, sprites 240-265
+  SpriteSet small_sprites;  // 7x7, sprites 110-239
+  SpriteSet large_sprites;  // 16x16, sprites 0-109
+  SpriteSet text_sprites;   // 4x4, sprites 240-265
   Palette exepal;
   Font font;
   vector<SfxSample> sounds;
 
-  int32_t C[CONST_DEF_T::MaxC];
-  std::string S[STRING_DEF_T::MaxS];
-  bool H[HACK_DEF_T::MaxH];
+  int32_t c[ConstDefT::kMaxC];
+  std::string s[StringDefT::kMaxS];
+  bool h[HackDefT::kMaxH];
   // Indices into `sounds` for engine-played sounds. -1 if not configured.
-  int soundHook[SOUND_DEF_T::MaxSound] = {
+  int sound_hook[SoundDefT::kMaxSound] = {
 #define INIT_SOUNDHOOK(n) -1,
       LIERO_SOUNDDEFS(INIT_SOUNDHOOK)
 #undef INIT_SOUNDHOOK

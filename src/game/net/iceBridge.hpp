@@ -6,11 +6,11 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 using BridgeSocket = SOCKET;
-static constexpr BridgeSocket BRIDGE_INVALID = INVALID_SOCKET;
+static constexpr BridgeSocket kBridgeInvalid = INVALID_SOCKET;
 #else
 #include <netinet/in.h>
 using BridgeSocket = int;
-static constexpr BridgeSocket BRIDGE_INVALID = -1;
+static constexpr BridgeSocket kBridgeInvalid = -1;
 #endif
 
 struct IceAgent;
@@ -32,25 +32,25 @@ struct IceBridge {
   IceBridge& operator=(const IceBridge&) = delete;
 
   // Create the bridge socket pair and wire up the IceAgent's onRecv callback.
-  // Returns the ENet-side socket fd, or BRIDGE_INVALID on error.
-  BridgeSocket create(IceAgent& agent);
+  // Returns the ENet-side socket fd, or kBridgeInvalid on error.
+  BridgeSocket Create(IceAgent& agent);
 
   // Poll: read outgoing ENet data from bridge socket → juice_send().
   // Call once per frame from the main loop.
-  void poll();
+  void Poll();
 
   // Get the ENet-side socket fd (for replacing host->socket after enet_host_create).
-  BridgeSocket enetSocket() const { return enetSocket_; }
+  BridgeSocket EnetSocket() const { return enetSocket_; }
 
   // Get the port that ENet should "connect" to (the bridge's listening port).
-  uint16_t bridgePort() const { return bridgePort_; }
+  uint16_t BridgePort() const { return bridgePort_; }
 
   // Destroy both sockets.
-  void destroy();
+  void Destroy();
 
  private:
-  BridgeSocket enetSocket_ = BRIDGE_INVALID;
-  BridgeSocket bridgeSocket_ = BRIDGE_INVALID;
+  BridgeSocket enetSocket_ = kBridgeInvalid;
+  BridgeSocket bridgeSocket_ = kBridgeInvalid;
   uint16_t bridgePort_ = 0;
   sockaddr_in6 enetAddr_{};
   sockaddr_in6 bridgeAddr_{};

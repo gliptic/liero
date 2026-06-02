@@ -12,13 +12,13 @@ struct BasicVec<T, 2> {
   T y = T(0);
 
   constexpr BasicVec() = default;
-  constexpr BasicVec(T x_, T y_) : x(x_), y(y_) {}
+  constexpr BasicVec(T x, T y) : x(x), y(y) {}
 
   template <typename U>
   constexpr explicit BasicVec(BasicVec<U, 2> const& other)
       : x(static_cast<T>(other.x)), y(static_cast<T>(other.y)) {}
 
-  constexpr void zero() {
+  constexpr void Zero() {
     x = T(0);
     y = T(0);
   }
@@ -65,34 +65,34 @@ struct BasicRect {
   T y2 = T(0);
 
   constexpr BasicRect() = default;
-  constexpr BasicRect(T x1_, T y1_, T x2_, T y2_) : x1(x1_), y1(y1_), x2(x2_), y2(y2_) {}
+  constexpr BasicRect(T x1, T y1, T x2, T y2) : x1(x1), y1(y1), x2(x2), y2(y2) {}
 
-  constexpr T width() const { return x2 - x1; }
-  constexpr T height() const { return y2 - y1; }
-  constexpr T center_x() const { return (x1 + x2) / T(2); }
-  constexpr T center_y() const { return (y1 + y2) / T(2); }
-  constexpr BasicVec<T, 2> center() const { return {center_x(), center_y()}; }
-  constexpr BasicVec<T, 2> ul() const { return {x1, y1}; }
+  constexpr T Width() const { return x2 - x1; }
+  constexpr T Height() const { return y2 - y1; }
+  constexpr T CenterX() const { return (x1 + x2) / T(2); }
+  constexpr T CenterY() const { return (y1 + y2) / T(2); }
+  constexpr BasicVec<T, 2> Center() const { return {CenterX(), CenterY()}; }
+  constexpr BasicVec<T, 2> Ul() const { return {x1, y1}; }
 
-  constexpr bool inside(T vx, T vy) const {
+  constexpr bool Inside(T vx, T vy) const {
     T dx = vx - x1, dy = vy - y1;
-    return dx >= T(0) && dx < width() && dy >= T(0) && dy < height();
+    return dx >= T(0) && dx < Width() && dy >= T(0) && dy < Height();
   }
 
-  constexpr bool encloses(BasicVec<T, 2> v) const { return inside(v.x, v.y); }
-  constexpr bool encloses(T vx, T vy) const { return inside(vx, vy); }
+  constexpr bool Encloses(BasicVec<T, 2> v) const { return Inside(v.x, v.y); }
+  constexpr bool Encloses(T vx, T vy) const { return Inside(vx, vy); }
 
-  constexpr bool valid() const { return x1 <= x2 && y1 <= y2; }
+  constexpr bool Valid() const { return x1 <= x2 && y1 <= y2; }
 
-  bool intersect(BasicRect const& b) {
+  bool Intersect(BasicRect const& b) {
     x1 = std::max(x1, b.x1);
     y1 = std::max(y1, b.y1);
     x2 = std::min(x2, b.x2);
     y2 = std::min(y2, b.y2);
-    return valid();
+    return Valid();
   }
 
-  void join(BasicRect const& b) {
+  void Join(BasicRect const& b) {
     x1 = std::min(x1, b.x1);
     y1 = std::min(y1, b.y1);
     x2 = std::max(x2, b.x2);
@@ -100,11 +100,11 @@ struct BasicRect {
   }
 
   friend BasicRect operator|(BasicRect a, BasicRect const& b) {
-    a.join(b);
+    a.Join(b);
     return a;
   }
   friend BasicRect operator&(BasicRect a, BasicRect const& b) {
-    a.intersect(b);
+    a.Intersect(b);
     return a;
   }
 };

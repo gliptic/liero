@@ -11,16 +11,16 @@
 struct InputStringState : AppState {
   using Callback = std::function<void(bool accepted, std::string const& result)>;
 
-  InputStringState(std::string initial, std::size_t maxLen, int x, int y, int (*filter)(int),
+  InputStringState(std::string initial, std::size_t max_len, int x, int y, int (*filter)(int),
                    std::string prefix, bool centered, Callback callback);
 
-  void enter() override;
-  void handleEvent(SDL_Event& ev) override;
-  bool update() override;
-  void draw() override;
+  void Enter() override;
+  void HandleEvent(SDL_Event& ev) override;
+  bool Update() override;
+  void Draw() override;
   // Overlay so the menu beneath repaints each frame; frozenScreen
   // only captures the background, not the live menu items.
-  bool isOverlay() const override { return true; }
+  bool IsOverlay() const override { return true; }
 
  private:
   std::string buffer_;
@@ -36,15 +36,15 @@ struct InputStringState : AppState {
 
 // Key binding state. Waits for a key/joystick press and returns via callback.
 struct WaitForKeyState : AppState {
-  using Callback = std::function<void(uint32_t key, bool isGamepad)>;
+  using Callback = std::function<void(uint32_t key, bool is_gamepad)>;
 
   // If extended is false, only non-extended (DOS) keys are accepted.
   WaitForKeyState(bool extended, Callback callback);
 
-  void enter() override;
-  void handleEvent(SDL_Event& ev) override;
-  bool update() override;
-  void draw() override;
+  void Enter() override;
+  void HandleEvent(SDL_Event& ev) override;
+  bool Update() override;
+  void Draw() override;
 
  private:
   bool extended_;
@@ -58,13 +58,13 @@ struct WaitForKeyState : AppState {
 struct InfoBoxState : AppState {
   using DismissCallback = std::function<void()>;
 
-  InfoBoxState(std::string text, int x, int y, bool clearScreen,
-               DismissCallback onDismiss = nullptr);
+  InfoBoxState(std::string text, int x, int y, bool clear_screen,
+               DismissCallback on_dismiss = nullptr);
 
-  void enter() override;
-  void handleEvent(SDL_Event& ev) override;
-  bool update() override;
-  void draw() override;
+  void Enter() override;
+  void HandleEvent(SDL_Event& ev) override;
+  bool Update() override;
+  void Draw() override;
 
  private:
   std::string text_;

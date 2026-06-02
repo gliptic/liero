@@ -27,8 +27,8 @@ namespace rollback {
 constexpr int kMaxRollback = 7;
 
 enum class RemoteState : uint8_t {
-  Predicted,
-  Confirmed,
+  kPredicted,
+  kConfirmed,
 };
 
 struct Slot {
@@ -39,10 +39,10 @@ struct Slot {
   // of the two is meaningful per frame (a slot is either pre-game-start
   // weapon-select state or in-game sim state). `wsSnap.valid` indicates
   // which.
-  WeaponSelectSnap wsSnap;
-  uint8_t localInput = 0;
-  uint8_t remoteInput = 0;
-  RemoteState remoteState = RemoteState::Predicted;
+  WeaponSelectSnap ws_snap;
+  uint8_t local_input = 0;
+  uint8_t remote_input = 0;
+  RemoteState remote_state = RemoteState::kPredicted;
   // Post-frame checksum cached when the snapshot was written. The
   // controller sends it to the desync detector only once the frame is
   // confirmed (forward with real input, on promote of a matching
@@ -57,19 +57,19 @@ class RollbackBuffer {
 
   // Pre-size every slot's snapshot vectors. Call once after the level is
   // generated; no allocations happen on subsequent save/load.
-  void prepare(Game const& game) {
-    for (auto& slot : slots_) slot.snapshot.prepare(game);
+  void Prepare(Game const& game) {
+    for (auto& slot : slots_) slot.snapshot.Prepare(game);
   }
 
   // Reset all slots to empty. Snapshot capacity (sized by prepare) is kept.
-  void clear() {
+  void Clear() {
     for (auto& slot : slots_) {
       slot.frame = -1;
-      slot.localInput = 0;
-      slot.remoteInput = 0;
-      slot.remoteState = RemoteState::Predicted;
+      slot.local_input = 0;
+      slot.remote_input = 0;
+      slot.remote_state = RemoteState::kPredicted;
       slot.checksum = 0;
-      slot.wsSnap.valid = false;
+      slot.ws_snap.valid = false;
     }
     newest_ = -1;
   }
@@ -83,66 +83,66 @@ class RollbackBuffer {
   // overwrite it via Game::saveSnapshotFast when appropriate. This keeps
   // pure input-only updates (e.g. arriving remote input for a future frame)
   // cheap.
-  Slot& write(int frame) {
+  Slot& Write(int frame) {
     // indexOf masks via unsigned, so a negative frame would land on a
     // valid slot and corrupt the ring (frame stored as -1, newest_ not
     // updated). Callers must pass a non-negative sim frame.
     assert(frame >= 0);
-    Slot& slot = slots_[indexOf(frame)];
+    Slot& slot = slots_[IndexOf(frame)];
     if (slot.frame != frame) {
       slot.frame = frame;
-      slot.localInput = 0;
-      slot.remoteInput = 0;
-      slot.remoteState = RemoteState::Predicted;
+      slot.local_input = 0;
+      slot.remote_input = 0;
+      slot.remote_state = RemoteState::kPredicted;
       slot.checksum = 0;
-      slot.wsSnap.valid = false;
+      slot.ws_snap.valid = false;
     }
     if (frame > newest_) newest_ = frame;
     return slot;
   }
 
-  Slot* find(int frame) {
-    if (!resident(frame)) return nullptr;
-    Slot& slot = slots_[indexOf(frame)];
+  Slot* Find(int frame) {
+    if (!Resident(frame)) return nullptr;
+    Slot& slot = slots_[IndexOf(frame)];
     return slot.frame == frame ? &slot : nullptr;
   }
 
-  Slot const* find(int frame) const {
-    if (!resident(frame)) return nullptr;
-    Slot const& slot = slots_[indexOf(frame)];
+  Slot const* Find(int frame) const {
+    if (!Resident(frame)) return nullptr;
+    Slot const& slot = slots_[IndexOf(frame)];
     return slot.frame == frame ? &slot : nullptr;
   }
 
   // Newest frame written so far, or -1 if empty.
-  int newestFrame() const { return newest_; }
+  int NewestFrame() const { return newest_; }
 
   // Oldest frame still resident, or -1 if empty. This is what the rollback
   // controller compares against when deciding whether a confirmed input is
   // too old to apply (which would mean the local peer already advanced past
   // the rollback horizon — a stall condition).
-  int oldestFrame() const {
+  int OldestFrame() const {
     if (newest_ < 0) return -1;
     int floor = newest_ - static_cast<int>(kCapacity) + 1;
     return floor < 0 ? 0 : floor;
   }
 
-  bool empty() const { return newest_ < 0; }
+  bool Empty() const { return newest_ < 0; }
 
-  std::size_t size() const {
+  std::size_t Size() const {
     if (newest_ < 0) return 0;
     int span = newest_ + 1;
     return span < static_cast<int>(kCapacity) ? static_cast<std::size_t>(span) : kCapacity;
   }
 
  private:
-  static std::size_t indexOf(int frame) {
+  static std::size_t IndexOf(int frame) {
     // frame is non-negative in practice (sim frames start at 0), but stay
     // defensive in case a caller passes -1.
     return static_cast<std::size_t>(static_cast<unsigned>(frame) % kCapacity);
   }
 
-  bool resident(int frame) const {
-    return frame >= 0 && frame >= oldestFrame() && frame <= newest_;
+  bool Resident(int frame) const {
+    return frame >= 0 && frame >= OldestFrame() && frame <= newest_;
   }
 
   std::array<Slot, kCapacity> slots_{};

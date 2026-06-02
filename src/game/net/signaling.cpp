@@ -11,41 +11,41 @@
 #include <arpa/inet.h>
 #endif
 
-using netutil::nowMs;
+using netutil::NowMs;
 
 namespace proto {
-constexpr uint8_t CreateRoom = 0x01;
-constexpr uint8_t JoinRoom = 0x02;
-constexpr uint8_t ReportAddr = 0x03;
-constexpr uint8_t PunchOK = 0x04;
-constexpr uint8_t PunchFail = 0x05;
-constexpr uint8_t Keepalive = 0x06;
-constexpr uint8_t IceCredentials = 0x07;
-constexpr uint8_t IceCandidate = 0x08;
-constexpr uint8_t IceGatherDone = 0x09;
+constexpr uint8_t kCreateRoom = 0x01;
+constexpr uint8_t kJoinRoom = 0x02;
+constexpr uint8_t kReportAddr = 0x03;
+constexpr uint8_t kPunchOk = 0x04;
+constexpr uint8_t kPunchFail = 0x05;
+constexpr uint8_t kKeepalive = 0x06;
+constexpr uint8_t kIceCredentials = 0x07;
+constexpr uint8_t kIceCandidate = 0x08;
+constexpr uint8_t kIceGatherDone = 0x09;
 
-constexpr uint8_t RoomCreated = 0x81;
-constexpr uint8_t PeerJoined = 0x82;
-constexpr uint8_t PeerAddr = 0x83;
-constexpr uint8_t StartPunch = 0x84;
-constexpr uint8_t UseRelay = 0x85;
-constexpr uint8_t RoomExpired = 0x86;
-constexpr uint8_t PeerCredentials = 0x87;
-constexpr uint8_t PeerCandidate = 0x88;
-constexpr uint8_t PeerGatherDone = 0x89;
-constexpr uint8_t Error = 0x8F;
+constexpr uint8_t kRoomCreated = 0x81;
+constexpr uint8_t kPeerJoined = 0x82;
+constexpr uint8_t kPeerAddr = 0x83;
+constexpr uint8_t kStartPunch = 0x84;
+constexpr uint8_t kUseRelay = 0x85;
+constexpr uint8_t kRoomExpired = 0x86;
+constexpr uint8_t kPeerCredentials = 0x87;
+constexpr uint8_t kPeerCandidate = 0x88;
+constexpr uint8_t kPeerGatherDone = 0x89;
+constexpr uint8_t kError = 0x8F;
 
-constexpr int RoomCodeLen = 6;
-constexpr uint8_t AddrIPv4 = 4;
-constexpr uint8_t AddrIPv6 = 6;
+constexpr int kRoomCodeLen = 6;
+constexpr uint8_t kAddrIPv4 = 4;
+constexpr uint8_t kAddrIPv6 = 6;
 }  // namespace proto
 
 SignalingClient::SignalingClient()
-    : sock_(ENET_SOCKET_NULL), state_(Idle), serverPort_(0), relayPort_(0) {}
+    : sock_(ENET_SOCKET_NULL), state_(kIdle), serverPort_(0), relayPort_(0) {}
 
-SignalingClient::~SignalingClient() { disconnect(); }
+SignalingClient::~SignalingClient() { Disconnect(); }
 
-bool SignalingClient::connect(const std::string& serverAddr, uint16_t serverPort) {
+bool SignalingClient::Connect(const std::string& server_addr, uint16_t server_port) {
   enet_initialize();
 
   ENetSocket sock = enet_socket_create(ENET_SOCKET_TYPE_DATAGRAM);
@@ -56,38 +56,38 @@ bool SignalingClient::connect(const std::string& serverAddr, uint16_t serverPort
 
   enet_socket_set_option(sock, ENET_SOCKOPT_IPV6_V6ONLY, 0);
 
-  ENetAddress anyAddr = {};
-  anyAddr.port = 0;
-  memset(&anyAddr.host, 0, sizeof(anyAddr.host));
-  enet_socket_bind(sock, &anyAddr);
+  ENetAddress any_addr = {};
+  any_addr.port = 0;
+  memset(&any_addr.host, 0, sizeof(any_addr.host));
+  enet_socket_bind(sock, &any_addr);
 
   ENetAddress resolved = {};
-  resolved.port = serverPort;
-  if (enet_address_set_host(&resolved, serverAddr.c_str()) != 0) {
-    fprintf(stderr, "[signaling] ERROR: failed to resolve '%s'\n", serverAddr.c_str());
+  resolved.port = server_port;
+  if (enet_address_set_host(&resolved, server_addr.c_str()) != 0) {
+    fprintf(stderr, "[signaling] ERROR: failed to resolve '%s'\n", server_addr.c_str());
     enet_socket_destroy(sock);
     return false;
   }
 
   sock_ = sock;
-  serverAddr_ = serverAddr;
-  serverPort_ = serverPort;
+  serverAddr_ = server_addr;
+  serverPort_ = server_port;
   resolvedAddr_ = resolved;
   return true;
 }
 
-void SignalingClient::disconnect() {
+void SignalingClient::Disconnect() {
   if (sock_ != ENET_SOCKET_NULL) {
     enet_socket_destroy(sock_);
     sock_ = ENET_SOCKET_NULL;
   }
-  state_ = Idle;
+  state_ = kIdle;
   roomCode_.clear();
   peerCandidates_.clear();
   relayPort_ = 0;
 }
 
-void SignalingClient::send(const void* data, size_t len) {
+void SignalingClient::Send(const void* data, size_t len) {
   if (sock_ == ENET_SOCKET_NULL) return;
   ENetBuffer buf;
   buf.data = const_cast<void*>(data);
@@ -95,267 +95,269 @@ void SignalingClient::send(const void* data, size_t len) {
   enet_socket_send(sock_, &resolvedAddr_, &buf, 1);
 }
 
-bool SignalingClient::createRoom(const std::string& serverAddr, uint16_t serverPort) {
-  if (!connect(serverAddr, serverPort)) return false;
-  uint8_t msg[1 + proto::RoomCodeLen] = {};
-  msg[0] = proto::CreateRoom;
-  send(msg, sizeof(msg));
-  state_ = Creating;
-  lastSendMs_ = nowMs();
+bool SignalingClient::CreateRoom(const std::string& server_addr, uint16_t server_port) {
+  if (!Connect(server_addr, server_port)) return false;
+  uint8_t msg[1 + proto::kRoomCodeLen] = {};
+  msg[0] = proto::kCreateRoom;
+  Send(msg, sizeof(msg));
+  state_ = kCreating;
+  lastSendMs_ = NowMs();
   retryCount_ = 0;
   return true;
 }
 
-bool SignalingClient::joinRoom(const std::string& serverAddr, uint16_t serverPort,
-                               const std::string& roomCode) {
-  if (!connect(serverAddr, serverPort)) return false;
-  if (roomCode.size() != proto::RoomCodeLen) return false;
+bool SignalingClient::JoinRoom(const std::string& server_addr, uint16_t server_port,
+                               const std::string& room_code) {
+  if (!Connect(server_addr, server_port)) return false;
+  if (room_code.size() != proto::kRoomCodeLen) return false;
 
-  uint8_t msg[1 + proto::RoomCodeLen];
-  msg[0] = proto::JoinRoom;
-  std::memcpy(msg + 1, roomCode.data(), proto::RoomCodeLen);
-  send(msg, sizeof(msg));
-  roomCode_ = roomCode;
-  state_ = Joining;
-  lastSendMs_ = nowMs();
+  uint8_t msg[1 + proto::kRoomCodeLen];
+  msg[0] = proto::kJoinRoom;
+  std::memcpy(msg + 1, room_code.data(), proto::kRoomCodeLen);
+  Send(msg, sizeof(msg));
+  roomCode_ = room_code;
+  state_ = kJoining;
+  lastSendMs_ = NowMs();
   retryCount_ = 0;
   return true;
 }
 
-void SignalingClient::reportAddress(uint8_t addrType, const std::string& ip, uint16_t port) {
-  int ipLen = (addrType == proto::AddrIPv4) ? 4 : 16;
-  std::vector<uint8_t> msg(1 + proto::RoomCodeLen + 1 + 2 + ipLen);
-  msg[0] = proto::ReportAddr;
-  std::memcpy(msg.data() + 1, roomCode_.data(), proto::RoomCodeLen);
-  msg[1 + proto::RoomCodeLen] = addrType;
-  msg[1 + proto::RoomCodeLen + 1] = (uint8_t)(port >> 8);
-  msg[1 + proto::RoomCodeLen + 2] = (uint8_t)(port & 0xFF);
+void SignalingClient::ReportAddress(uint8_t addr_type, const std::string& ip, uint16_t port) {
+  int ip_len = (addr_type == proto::kAddrIPv4) ? 4 : 16;
+  std::vector<uint8_t> msg(1 + proto::kRoomCodeLen + 1 + 2 + ip_len);
+  msg[0] = proto::kReportAddr;
+  std::memcpy(msg.data() + 1, roomCode_.data(), proto::kRoomCodeLen);
+  msg[1 + proto::kRoomCodeLen] = addr_type;
+  msg[1 + proto::kRoomCodeLen + 1] = (uint8_t)(port >> 8);
+  msg[1 + proto::kRoomCodeLen + 2] = (uint8_t)(port & 0xFF);
 
-  uint8_t ipBytes[16] = {};
-  if (addrType == proto::AddrIPv4)
-    inet_pton(AF_INET, ip.c_str(), ipBytes);
+  uint8_t ip_bytes[16] = {};
+  if (addr_type == proto::kAddrIPv4)
+    inet_pton(AF_INET, ip.c_str(), ip_bytes);
   else
-    inet_pton(AF_INET6, ip.c_str(), ipBytes);
-  std::memcpy(msg.data() + 1 + proto::RoomCodeLen + 3, ipBytes, ipLen);
-  send(msg.data(), msg.size());
+    inet_pton(AF_INET6, ip.c_str(), ip_bytes);
+  std::memcpy(msg.data() + 1 + proto::kRoomCodeLen + 3, ip_bytes, ip_len);
+  Send(msg.data(), msg.size());
 }
 
-void SignalingClient::reportPunchOK() {
-  uint8_t msg[1 + proto::RoomCodeLen];
-  msg[0] = proto::PunchOK;
-  std::memcpy(msg + 1, roomCode_.data(), proto::RoomCodeLen);
-  send(msg, sizeof(msg));
-  state_ = Done;
+void SignalingClient::ReportPunchOk() {
+  uint8_t msg[1 + proto::kRoomCodeLen];
+  msg[0] = proto::kPunchOk;
+  std::memcpy(msg + 1, roomCode_.data(), proto::kRoomCodeLen);
+  Send(msg, sizeof(msg));
+  state_ = kDone;
 }
 
-void SignalingClient::reportPunchFail() {
-  uint8_t msg[1 + proto::RoomCodeLen];
-  msg[0] = proto::PunchFail;
-  std::memcpy(msg + 1, roomCode_.data(), proto::RoomCodeLen);
-  send(msg, sizeof(msg));
+void SignalingClient::ReportPunchFail() {
+  uint8_t msg[1 + proto::kRoomCodeLen];
+  msg[0] = proto::kPunchFail;
+  std::memcpy(msg + 1, roomCode_.data(), proto::kRoomCodeLen);
+  Send(msg, sizeof(msg));
 }
 
-void SignalingClient::sendIceCredentials(const std::string& ufrag, const std::string& pwd) {
+void SignalingClient::SendIceCredentials(const std::string& ufrag, const std::string& pwd) {
   // Format: [0x07] + [6: room code] + [1: ufrag_len] + [N: ufrag] + [1: pwd_len] + [N: pwd]
-  std::vector<uint8_t> msg(1 + proto::RoomCodeLen + 1 + ufrag.size() + 1 + pwd.size());
+  std::vector<uint8_t> msg(1 + proto::kRoomCodeLen + 1 + ufrag.size() + 1 + pwd.size());
   size_t off = 0;
-  msg[off++] = proto::IceCredentials;
-  std::memcpy(msg.data() + off, roomCode_.data(), proto::RoomCodeLen);
-  off += proto::RoomCodeLen;
+  msg[off++] = proto::kIceCredentials;
+  std::memcpy(msg.data() + off, roomCode_.data(), proto::kRoomCodeLen);
+  off += proto::kRoomCodeLen;
   msg[off++] = (uint8_t)ufrag.size();
   std::memcpy(msg.data() + off, ufrag.data(), ufrag.size());
   off += ufrag.size();
   msg[off++] = (uint8_t)pwd.size();
   std::memcpy(msg.data() + off, pwd.data(), pwd.size());
-  send(msg.data(), msg.size());
+  Send(msg.data(), msg.size());
 }
 
-void SignalingClient::sendIceCandidate(const std::string& sdpCandidate) {
+void SignalingClient::SendIceCandidate(const std::string& sdp_candidate) {
   // Format: [0x08] + [6: room code] + [2: candidate_len BE] + [N: candidate]
-  std::vector<uint8_t> msg(1 + proto::RoomCodeLen + 2 + sdpCandidate.size());
+  std::vector<uint8_t> msg(1 + proto::kRoomCodeLen + 2 + sdp_candidate.size());
   size_t off = 0;
-  msg[off++] = proto::IceCandidate;
-  std::memcpy(msg.data() + off, roomCode_.data(), proto::RoomCodeLen);
-  off += proto::RoomCodeLen;
-  uint16_t candLen = (uint16_t)sdpCandidate.size();
-  msg[off++] = (uint8_t)(candLen >> 8);
-  msg[off++] = (uint8_t)(candLen & 0xFF);
-  std::memcpy(msg.data() + off, sdpCandidate.data(), sdpCandidate.size());
-  send(msg.data(), msg.size());
+  msg[off++] = proto::kIceCandidate;
+  std::memcpy(msg.data() + off, roomCode_.data(), proto::kRoomCodeLen);
+  off += proto::kRoomCodeLen;
+  uint16_t cand_len = (uint16_t)sdp_candidate.size();
+  msg[off++] = (uint8_t)(cand_len >> 8);
+  msg[off++] = (uint8_t)(cand_len & 0xFF);
+  std::memcpy(msg.data() + off, sdp_candidate.data(), sdp_candidate.size());
+  Send(msg.data(), msg.size());
 }
 
-void SignalingClient::sendIceGatherDone() {
+void SignalingClient::SendIceGatherDone() {
   // Format: [0x09] + [6: room code]
-  uint8_t msg[1 + proto::RoomCodeLen];
-  msg[0] = proto::IceGatherDone;
-  std::memcpy(msg + 1, roomCode_.data(), proto::RoomCodeLen);
-  send(msg, sizeof(msg));
+  uint8_t msg[1 + proto::kRoomCodeLen];
+  msg[0] = proto::kIceGatherDone;
+  std::memcpy(msg + 1, roomCode_.data(), proto::kRoomCodeLen);
+  Send(msg, sizeof(msg));
 }
 
-void SignalingClient::sendKeepalive() {
-  uint8_t msg[1 + proto::RoomCodeLen];
-  msg[0] = proto::Keepalive;
-  std::memcpy(msg + 1, roomCode_.data(), proto::RoomCodeLen);
-  send(msg, sizeof(msg));
+void SignalingClient::SendKeepalive() {
+  uint8_t msg[1 + proto::kRoomCodeLen];
+  msg[0] = proto::kKeepalive;
+  std::memcpy(msg + 1, roomCode_.data(), proto::kRoomCodeLen);
+  Send(msg, sizeof(msg));
 }
 
-void SignalingClient::poll() {
+void SignalingClient::Poll() {
   if (sock_ == ENET_SOCKET_NULL) return;
 
   // Retry unacknowledged messages
-  if ((state_ == Creating || state_ == Joining) && retryCount_ < kMaxRetries) {
-    uint64_t elapsed = nowMs() - lastSendMs_;
+  if ((state_ == kCreating || state_ == kJoining) && retryCount_ < kMaxRetries) {
+    uint64_t elapsed = NowMs() - lastSendMs_;
     if (elapsed >= (uint64_t)kRetryIntervalMs) {
       retryCount_++;
-      uint8_t msg[1 + proto::RoomCodeLen] = {};
-      msg[0] = (state_ == Creating) ? proto::CreateRoom : proto::JoinRoom;
-      if (state_ == Joining) std::memcpy(msg + 1, roomCode_.data(), proto::RoomCodeLen);
-      send(msg, sizeof(msg));
-      lastSendMs_ = nowMs();
+      uint8_t msg[1 + proto::kRoomCodeLen] = {};
+      msg[0] = (state_ == kCreating) ? proto::kCreateRoom : proto::kJoinRoom;
+      if (state_ == kJoining) std::memcpy(msg + 1, roomCode_.data(), proto::kRoomCodeLen);
+      Send(msg, sizeof(msg));
+      lastSendMs_ = NowMs();
     }
   }
 
   // Drain all available packets from the socket
-  uint8_t recvData[2048];
-  ENetBuffer recvBuf;
-  recvBuf.data = recvData;
-  recvBuf.dataLength = sizeof(recvData);
+  uint8_t recv_data[2048];
+  ENetBuffer recv_buf;
+  recv_buf.data = recv_data;
+  recv_buf.dataLength = sizeof(recv_data);
 
   for (;;) {
-    enet_uint32 waitCondition = ENET_SOCKET_WAIT_RECEIVE;
-    if (enet_socket_wait(sock_, &waitCondition, 0) != 0) break;
-    if (!(waitCondition & ENET_SOCKET_WAIT_RECEIVE)) break;
+    enet_uint32 wait_condition = ENET_SOCKET_WAIT_RECEIVE;
+    if (enet_socket_wait(sock_, &wait_condition, 0) != 0) break;
+    if (!(wait_condition & ENET_SOCKET_WAIT_RECEIVE)) break;
 
-    ENetAddress fromAddr = {};
-    int recvLen = enet_socket_receive(sock_, &fromAddr, &recvBuf, 1);
-    if (recvLen <= 0) break;
+    ENetAddress from_addr = {};
+    int recv_len = enet_socket_receive(sock_, &from_addr, &recv_buf, 1);
+    if (recv_len <= 0) break;
 
-    handleMessage(recvData, (size_t)recvLen);
+    HandleMessage(recv_data, (size_t)recv_len);
   }
 }
 
-void SignalingClient::handleMessage(const uint8_t* data, size_t len) {
+void SignalingClient::HandleMessage(const uint8_t* data, size_t len) {
   if (len < 1) return;
   uint8_t type = data[0];
 
   switch (type) {
-    case proto::RoomCreated: {
-      if (len < 1 + proto::RoomCodeLen) break;
-      roomCode_ = std::string((const char*)data + 1, proto::RoomCodeLen);
+    case proto::kRoomCreated: {
+      if (len < 1 + proto::kRoomCodeLen) break;
+      roomCode_ = std::string((const char*)data + 1, proto::kRoomCodeLen);
       // Parse optional TURN credentials: [1: turn_user_len] + [N: turn_user] + [1: turn_pass_len] +
       // [N: turn_pass]
-      size_t off = 1 + proto::RoomCodeLen;
+      size_t off = 1 + proto::kRoomCodeLen;
       if (off + 1 <= len) {
-        uint8_t userLen = data[off++];
-        if (off + userLen + 1 <= len) {
-          turnUser_ = std::string((const char*)data + off, userLen);
-          off += userLen;
-          uint8_t passLen = data[off++];
-          if (off + passLen <= len) {
-            turnPassword_ = std::string((const char*)data + off, passLen);
+        uint8_t user_len = data[off++];
+        if (off + user_len + 1 <= len) {
+          turnUser_ = std::string((const char*)data + off, user_len);
+          off += user_len;
+          uint8_t pass_len = data[off++];
+          if (off + pass_len <= len) {
+            turnPassword_ = std::string((const char*)data + off, pass_len);
           }
         }
       }
-      state_ = Hosting;
-      if (onRoomCreated) onRoomCreated(roomCode_);
+      state_ = kHosting;
+      if (on_room_created) on_room_created(roomCode_);
       break;
     }
-    case proto::PeerJoined: {
+    case proto::kPeerJoined: {
       // Parse optional TURN credentials
-      size_t off = 1 + proto::RoomCodeLen;
+      size_t off = 1 + proto::kRoomCodeLen;
       if (off + 1 <= len) {
-        uint8_t userLen = data[off++];
-        if (off + userLen + 1 <= len) {
-          turnUser_ = std::string((const char*)data + off, userLen);
-          off += userLen;
-          uint8_t passLen = data[off++];
-          if (off + passLen <= len) {
-            turnPassword_ = std::string((const char*)data + off, passLen);
+        uint8_t user_len = data[off++];
+        if (off + user_len + 1 <= len) {
+          turnUser_ = std::string((const char*)data + off, user_len);
+          off += user_len;
+          uint8_t pass_len = data[off++];
+          if (off + pass_len <= len) {
+            turnPassword_ = std::string((const char*)data + off, pass_len);
           }
         }
       }
-      if (state_ == Joining) {
-        state_ = WaitingForPeer;
-        if (onJoinAcked) onJoinAcked();
+      if (state_ == kJoining) {
+        state_ = kWaitingForPeer;
+        if (on_join_acked) on_join_acked();
       } else {
-        if (onPeerJoined) onPeerJoined();
+        if (on_peer_joined) on_peer_joined();
       }
       break;
     }
-    case proto::PeerAddr: {
-      if (len < 1 + proto::RoomCodeLen + 1 + 2 + 4) break;
-      uint8_t addrType = data[1 + proto::RoomCodeLen];
+    case proto::kPeerAddr: {
+      if (len < 1 + proto::kRoomCodeLen + 1 + 2 + 4) break;
+      uint8_t addr_type = data[1 + proto::kRoomCodeLen];
       uint16_t port =
-          (uint16_t)(data[1 + proto::RoomCodeLen + 1] << 8 | data[1 + proto::RoomCodeLen + 2]);
-      int ipLen = (addrType == proto::AddrIPv4) ? 4 : 16;
-      if ((int)len < 1 + proto::RoomCodeLen + 3 + ipLen) break;
+          (uint16_t)(data[1 + proto::kRoomCodeLen + 1] << 8 | data[1 + proto::kRoomCodeLen + 2]);
+      int ip_len = (addr_type == proto::kAddrIPv4) ? 4 : 16;
+      if ((int)len < 1 + proto::kRoomCodeLen + 3 + ip_len) break;
 
-      char ipStr[INET6_ADDRSTRLEN] = {};
-      if (addrType == proto::AddrIPv4)
-        inet_ntop(AF_INET, data + 1 + proto::RoomCodeLen + 3, ipStr, sizeof(ipStr));
+      char ip_str[INET6_ADDRSTRLEN] = {};
+      if (addr_type == proto::kAddrIPv4)
+        inet_ntop(AF_INET, data + 1 + proto::kRoomCodeLen + 3, ip_str, sizeof(ip_str));
       else
-        inet_ntop(AF_INET6, data + 1 + proto::RoomCodeLen + 3, ipStr, sizeof(ipStr));
+        inet_ntop(AF_INET6, data + 1 + proto::kRoomCodeLen + 3, ip_str, sizeof(ip_str));
 
-      PeerCandidate cand{addrType, ipStr, port};
+      PeerCandidate cand{addr_type, ip_str, port};
       peerCandidates_.push_back(cand);
-      if (onPeerAddr) onPeerAddr(cand);
+      if (on_peer_addr) on_peer_addr(cand);
       break;
     }
-    case proto::StartPunch: {
-      state_ = Punching;
-      if (onStartPunch) onStartPunch();
+    case proto::kStartPunch: {
+      state_ = kPunching;
+      if (on_start_punch) on_start_punch();
       break;
     }
-    case proto::UseRelay: {
-      if (len < 1 + proto::RoomCodeLen + 2 + 8) break;
-      relayPort_ = (uint16_t)(data[1 + proto::RoomCodeLen] << 8 | data[1 + proto::RoomCodeLen + 1]);
-      relayToken_.assign(data + 1 + proto::RoomCodeLen + 2, data + 1 + proto::RoomCodeLen + 2 + 8);
-      state_ = Relaying;
-      if (onUseRelay) onUseRelay(relayPort_);
+    case proto::kUseRelay: {
+      if (len < 1 + proto::kRoomCodeLen + 2 + 8) break;
+      relayPort_ =
+          (uint16_t)(data[1 + proto::kRoomCodeLen] << 8 | data[1 + proto::kRoomCodeLen + 1]);
+      relayToken_.assign(data + 1 + proto::kRoomCodeLen + 2,
+                         data + 1 + proto::kRoomCodeLen + 2 + 8);
+      state_ = kRelaying;
+      if (on_use_relay) on_use_relay(relayPort_);
       break;
     }
-    case proto::RoomExpired: {
+    case proto::kRoomExpired: {
       fprintf(stderr, "[signaling] room expired\n");
-      state_ = Failed;
-      if (onRoomExpired) onRoomExpired();
+      state_ = kFailed;
+      if (on_room_expired) on_room_expired();
       break;
     }
-    case proto::Error: {
+    case proto::kError: {
       std::string msg;
       if (len > 2) msg = std::string((const char*)data + 2, len - 2);
       fprintf(stderr, "[signaling] ERROR from server: %s\n", msg.c_str());
-      state_ = Failed;
-      if (onError) onError(msg);
+      state_ = kFailed;
+      if (on_error) on_error(msg);
       break;
     }
-    case proto::PeerCredentials: {
+    case proto::kPeerCredentials: {
       // Format: [0x87] + [6: room code] + [1: ufrag_len] + [N: ufrag] + [1: pwd_len] + [N: pwd]
-      size_t off = 1 + proto::RoomCodeLen;
+      size_t off = 1 + proto::kRoomCodeLen;
       if (off + 1 > len) break;
-      uint8_t ufragLen = data[off++];
-      if (off + ufragLen + 1 > len) break;
-      std::string ufrag((const char*)data + off, ufragLen);
-      off += ufragLen;
-      uint8_t pwdLen = data[off++];
-      if (off + pwdLen > len) break;
-      std::string pwd((const char*)data + off, pwdLen);
-      state_ = IceExchanging;
-      if (onPeerCredentials) onPeerCredentials(ufrag, pwd);
+      uint8_t ufrag_len = data[off++];
+      if (off + ufrag_len + 1 > len) break;
+      std::string ufrag((const char*)data + off, ufrag_len);
+      off += ufrag_len;
+      uint8_t pwd_len = data[off++];
+      if (off + pwd_len > len) break;
+      std::string pwd((const char*)data + off, pwd_len);
+      state_ = kIceExchanging;
+      if (on_peer_credentials) on_peer_credentials(ufrag, pwd);
       break;
     }
-    case proto::PeerCandidate: {
+    case proto::kPeerCandidate: {
       // Format: [0x88] + [6: room code] + [2: candidate_len BE] + [N: candidate]
-      size_t off = 1 + proto::RoomCodeLen;
+      size_t off = 1 + proto::kRoomCodeLen;
       if (off + 2 > len) break;
-      uint16_t candLen = (uint16_t)(data[off] << 8 | data[off + 1]);
+      uint16_t cand_len = (uint16_t)(data[off] << 8 | data[off + 1]);
       off += 2;
-      if (off + candLen > len) break;
-      std::string candidate((const char*)data + off, candLen);
-      if (onPeerCandidate) onPeerCandidate(candidate);
+      if (off + cand_len > len) break;
+      std::string candidate((const char*)data + off, cand_len);
+      if (on_peer_candidate) on_peer_candidate(candidate);
       break;
     }
-    case proto::PeerGatherDone: {
-      if (onPeerGatherDone) onPeerGatherDone();
+    case proto::kPeerGatherDone: {
+      if (on_peer_gather_done) on_peer_gather_done();
       break;
     }
     default:

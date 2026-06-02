@@ -26,17 +26,17 @@
 
 namespace {
 
-std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
-  precomputeTables();
+std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
+  PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tcRoot));
+  FsNode tc_root(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tc_root));
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
-  settings->loadingTime = 0;
-  settings->loadChange = true;
-  settings->randomLevel = true;
-  settings->gameMode = Settings::GMKillEmAll;
+  settings->loading_time = 0;
+  settings->load_change = true;
+  settings->random_level = true;
+  settings->game_mode = Settings::kGmKillEmAll;
   return {common, settings};
 }
 
@@ -47,98 +47,98 @@ TEST_CASE("Rollback survives 10% packet loss via input redundancy", "[rollback][
   constexpr int kTicks = 1500;
   constexpr uint32_t kInputSeed = 0xC0FFEE;
 
-  auto [common, settings] = makeEnv();
+  auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->setSkipWeaponSelection(true);
-  b->setSkipWeaponSelection(true);
+  a->SetSkipWeaponSelection(true);
+  b->SetSkipWeaponSelection(true);
   // Frame-advantage stall is orthogonal to packet loss; turn it off so
   // the peers freely run ahead and we measure redundancy in isolation.
-  a->setFrameAdvantageEnabled(false);
-  b->setFrameAdvantageEnabled(false);
-  a->game.rand.seed(kWorldSeed);
-  b->game.rand.seed(kWorldSeed);
+  a->SetFrameAdvantageEnabled(false);
+  b->SetFrameAdvantageEnabled(false);
+  a->game.rand.Seed(kWorldSeed);
+  b->game.rand.Seed(kWorldSeed);
 
   rollback_test::JitterTransport transport({0x10ADED, /*minDelay*/ 1, /*maxDelay*/ 3,
                                             /*lossProb*/ 0.10, /*dupProb*/ 0.0});
 
-  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendAToB(gen_, bf, c, in, lf);
+  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendAToB(gen, bf, c, in, lf);
   });
-  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendBToA(gen_, bf, c, in, lf);
+  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendBToA(gen, bf, c, in, lf);
   });
-  a->focus();
-  b->focus();
+  a->Focus();
+  b->Focus();
 
   for (uint32_t f = 0; f < 3; ++f) {
-    a->injectRemoteInput(f, 0);
-    b->injectRemoteInput(f, 0);
+    a->InjectRemoteInput(f, 0);
+    b->InjectRemoteInput(f, 0);
   }
 
-  auto deliverA = [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    a->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    a->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliverB = [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    b->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    b->InjectRemoteBatch(bf, c, in, lf);
   };
 
-  Rand inputRng(kInputSeed);
-  uint32_t maxLagA = 0;
-  uint32_t maxLagB = 0;
-  int stallTicks = 0;
-  uint32_t prevA = 0;
-  uint32_t prevB = 0;
+  Rand input_rng(kInputSeed);
+  uint32_t max_lag_a = 0;
+  uint32_t max_lag_b = 0;
+  int stall_ticks = 0;
+  uint32_t prev_a = 0;
+  uint32_t prev_b = 0;
 
   for (int tick = 0; tick < kTicks; ++tick) {
-    uint8_t inA = inputRng() & 0x7f;
-    uint8_t inB = inputRng() & 0x7f;
-    if ((inputRng() % 10) < 6) inA |= (1 << Worm::Fire);
-    if ((inputRng() % 10) < 6) inB |= (1 << Worm::Fire);
-    a->setLocalControlState(inA);
-    b->setLocalControlState(inB);
-    a->process();
-    b->process();
-    transport.tick(deliverA, deliverB);
+    uint8_t in_a = input_rng() & 0x7f;
+    uint8_t in_b = input_rng() & 0x7f;
+    if ((input_rng() % 10) < 6) in_a |= (1 << Worm::kFire);
+    if ((input_rng() % 10) < 6) in_b |= (1 << Worm::kFire);
+    a->SetLocalControlState(in_a);
+    b->SetLocalControlState(in_b);
+    a->Process();
+    b->Process();
+    transport.Tick(deliver_a, deliver_b);
 
     // Steady-state observation begins after the first ~50 ticks so the
     // warm-up doesn't pollute the running maxima.
     if (tick > 50) {
-      uint32_t lagA = a->currentFrame() - static_cast<uint32_t>(a->confirmedFrame() + 1);
-      uint32_t lagB = b->currentFrame() - static_cast<uint32_t>(b->confirmedFrame() + 1);
-      if (lagA > maxLagA) maxLagA = lagA;
-      if (lagB > maxLagB) maxLagB = lagB;
-      if (a->currentFrame() == prevA && b->currentFrame() == prevB) ++stallTicks;
+      uint32_t lag_a = a->CurrentFrame() - static_cast<uint32_t>(a->ConfirmedFrame() + 1);
+      uint32_t lag_b = b->CurrentFrame() - static_cast<uint32_t>(b->ConfirmedFrame() + 1);
+      if (lag_a > max_lag_a) max_lag_a = lag_a;
+      if (lag_b > max_lag_b) max_lag_b = lag_b;
+      if (a->CurrentFrame() == prev_a && b->CurrentFrame() == prev_b) ++stall_ticks;
     }
-    prevA = a->currentFrame();
-    prevB = b->currentFrame();
+    prev_a = a->CurrentFrame();
+    prev_b = b->CurrentFrame();
   }
 
   // Steady-state lag never reaches the stall threshold (kMaxRollback+1).
   // With K-wide redundancy a single dropped packet is covered by the
   // next packet, so the lag tops out at the natural network delay
   // plus a handful of redundant-covered drops.
-  REQUIRE(maxLagA <= static_cast<uint32_t>(rollback::kMaxRollback));
-  REQUIRE(maxLagB <= static_cast<uint32_t>(rollback::kMaxRollback));
+  REQUIRE(max_lag_a <= static_cast<uint32_t>(rollback::kMaxRollback));
+  REQUIRE(max_lag_b <= static_cast<uint32_t>(rollback::kMaxRollback));
 
   // The pair never enters a cascading stall — at least one peer
   // advances every tick under 10% loss.
-  REQUIRE(stallTicks == 0);
+  REQUIRE(stall_ticks == 0);
 
   // Loss should actually have fired; otherwise the test is vacuous.
-  REQUIRE(transport.packetsDropped > 0);
-  REQUIRE(a->rollbackCount() > 0);
-  REQUIRE(b->rollbackCount() > 0);
+  REQUIRE(transport.packets_dropped > 0);
+  REQUIRE(a->RollbackCount() > 0);
+  REQUIRE(b->RollbackCount() > 0);
 
   // Flush and drain, then assert checksums agree.
-  transport.flush(deliverA, deliverB);
-  a->setLocalControlState(0);
-  b->setLocalControlState(0);
+  transport.Flush(deliver_a, deliver_b);
+  a->SetLocalControlState(0);
+  b->SetLocalControlState(0);
   for (int i = 0; i < 16; ++i) {
-    a->process();
-    b->process();
-    transport.tick(deliverA, deliverB);
+    a->Process();
+    b->Process();
+    transport.Tick(deliver_a, deliver_b);
   }
-  REQUIRE(a->currentFrame() == b->currentFrame());
-  REQUIRE(wideRollbackChecksum(a->game) == wideRollbackChecksum(b->game));
+  REQUIRE(a->CurrentFrame() == b->CurrentFrame());
+  REQUIRE(WideRollbackChecksum(a->game) == WideRollbackChecksum(b->game));
 }

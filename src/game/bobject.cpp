@@ -4,40 +4,40 @@
 #include "game.hpp"
 #include "gfx/color.hpp"
 
-void Game::createBObject(fixedvec pos, fixedvec vel) {
+void Game::CreateBObject(fixedvec pos, fixedvec vel) {
   Common& common = *this->common;
 
-  BObject& obj = *bobjects.newObjectReuse();
+  BObject& obj = *bobjects.NewObjectReuse();
 
   obj.color = rand(LC(NumBloodColours)) + LC(FirstBloodColour);
   obj.pos = pos;
   obj.vel = vel;
 }
 
-bool BObject::process(Game& game) {
+bool BObject::Process(Game& game) {
   Common& common = *game.common;
 
   pos += vel;
 
-  auto ipos = ftoi(pos);
+  auto ipos = Ftoi(pos);
 
-  if (!game.level.inside(ipos)) {
+  if (!game.level.Inside(ipos)) {
     return false;
   } else {
-    PalIdx c = game.level.pixel(ipos);
-    Material m = game.level.mat(ipos);
+    PalIdx c = game.level.Pixel(ipos);
+    Material m = game.level.Mat(ipos);
 
-    if (m.background()) vel.y += LC(BObjGravity);
+    if (m.Background()) vel.y += LC(BObjGravity);
 
     if ((c >= 1 && c <= 2) || (c >= 77 && c <= 79))  // TODO: Read from EXE
     {
-      game.level.setPixel(ipos, 77 + game.rand(3), common);
+      game.level.SetPixel(ipos, 77 + game.rand(3), common);
       return false;
-    } else if (m.anyDirt()) {
-      game.level.setPixel(ipos, 82 + game.rand(3), common);
+    } else if (m.AnyDirt()) {
+      game.level.SetPixel(ipos, 82 + game.rand(3), common);
       return false;
-    } else if (m.rock()) {
-      game.level.setPixel(ipos, 85 + game.rand(3), common);
+    } else if (m.Rock()) {
+      game.level.SetPixel(ipos, 85 + game.rand(3), common);
       return false;
     }
   }

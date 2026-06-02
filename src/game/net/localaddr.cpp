@@ -21,7 +21,7 @@
 
 #include <cstring>
 
-std::vector<LocalAddress> getLocalAddresses() {
+std::vector<LocalAddress> GetLocalAddresses() {
   std::vector<LocalAddress> result;
 
 #ifdef _WIN32

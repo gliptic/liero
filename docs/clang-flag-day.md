@@ -99,11 +99,15 @@ CheckOptions:
   - { key: readability-identifier-naming.MacroDefinitionCase, value: UPPER_CASE }
   - { key: readability-identifier-naming.NamespaceCase,       value: lower_case }
   # Cereal ADL hooks must keep their lowercase names — they are looked
-  # up by name via ADL, so renaming silently breaks serialization.
+  # up by name, so renaming silently breaks serialization. The set
+  # below was extended during PR2: cereal also calls back into user
+  # archives via setNextName/startNode/finishNode/saveValue/loadValue/
+  # saveBinaryValue/loadBinaryValue/sizeTag, and the free-function
+  # hooks prologue/epilogue via ADL.
   - { key: readability-identifier-naming.MethodIgnoredRegexp,
-      value: '^(serialize|save|load|save_minimal|load_minimal)$' }
+      value: '^(serialize|save|load|save_minimal|load_minimal|setNextName|startNode|finishNode|saveValue|loadValue|saveBinaryValue|loadBinaryValue|sizeTag)$' }
   - { key: readability-identifier-naming.FunctionIgnoredRegexp,
-      value: '^(serialize|save|load|save_minimal|load_minimal)$' }
+      value: '^(serialize|save|load|save_minimal|load_minimal|prologue|epilogue)$' }
 ```
 
 ### What's safe
@@ -246,47 +250,191 @@ in templates.
   renamed consistently — virtual dispatch is name-based, so a
   half-rename silently breaks polymorphism.
 
+### Lessons from PR2 — apply to PR3
+
+These are things the plan didn't anticipate; PR3 will hit the same
+patterns at greater volume because it runs the full check set, not
+just naming.
+
+1. **Use `run-clang-tidy`, not raw `xargs`.** Parallel `xargs -P N -n1
+   clang-tidy --fix` races on shared header rewrites: multiple TUs
+   apply conflicting edits to the same header and the last writer
+   wins. `run-clang-tidy` exports per-file fix YAML and applies them
+   in one serialized pass via `clang-apply-replacements`. Standard
+   invocation:
+   ```bash
+   run-clang-tidy -p build/linux-x64-ci \
+       -header-filter='.*/src/.*' \
+       -fix -j "$(nproc)" -quiet \
+       '/src/.*\.(cpp|cc|cxx)$'
+   ```
+   Iterate until two consecutive runs produce no diff.
+
+2. **Per-preset blind spots.** `compile_commands.json` only contains
+   TUs that the configured preset compiles. linux-x64-ci with default
+   options misses, at minimum:
+   - `#if OPENLIERO_EMSCRIPTEN` blocks (gfx.cpp's main loop, gameEntry)
+   - `#if _WIN32` / `#ifdef _WIN32` blocks (filesystem.cpp's
+     Windows directory iteration, iceBridge.hpp's `kBridgeInvalid`)
+   - `src/video_tool/` (gated on `OPENLIERO_BUILD_VIDEOTOOL=ON`)
+   - `src/tc_tool/` (gated on `OPENLIERO_BUILD_TCTOOL=ON`)
+
+   Mitigation for PR3:
+   - Configure with both tool flags: `cmake --preset linux-x64-ci
+     -DOPENLIERO_BUILD_TESTS=ON -DOPENLIERO_BUILD_VIDEOTOOL=ON
+     -DOPENLIERO_BUILD_TCTOOL=ON`.
+   - Accept that Windows and Emscripten branches will only surface in
+     CI. Plan for a fix-loop after the initial PR push: each platform
+     CI failure is followed by a hand-fix commit. PR2 needed four
+     such commits (emscripten, then Windows three times).
+
+3. **Windows API macro collisions.** `windows.h` `#define`s many
+   identifiers (`FindFirstFile` → `FindFirstFileA`, `DrawText` →
+   `DrawTextA`, `MessageBox`, `CreateWindow`, `LoadImage`,
+   `CopyFile`/`MoveFile`/`DeleteFile`, `GetMessage`, `SendMessage`,
+   `Polygon`, `Rectangle`, etc.). If user code declares an identifier
+   that matches one of these macros, every callsite gets
+   preprocessor-rewritten on Windows. PR2 hit this with the
+   `FindFirstFile`/`FindClose`/`FindNextFile` local wrappers in
+   filesystem.cpp and with `Font::DrawText` (4 overloads, 76
+   callsites). PR3's `modernize-*` checks are unlikely to introduce
+   new collisions, but `readability-*` renames could; grep before
+   merging:
+   ```bash
+   grep -rn -E '\b(FindFirstFile|FindNextFile|DrawText|MessageBox|CreateWindow|LoadImage|CopyFile|MoveFile|DeleteFile|GetMessage|SendMessage|Polygon|Rectangle|Ellipse|GetObject|Yield|GetCurrentTime|GetTickCount)\b' src/
+   ```
+
+4. **`bugprone-reserved-identifier` strips leading underscores.** This
+   check is enabled (it's in the `*` set). It rewrites
+   `_USE_MATH_DEFINES` to `USE_MATH_DEFINES` — but `_USE_MATH_DEFINES`
+   is the exact spelling MSVC's `<cmath>` looks for to expose `M_PI`.
+   Similar hazards: `_ENetHost`/`_ENetPeer` forward declarations
+   (struct tag identity with enet.h's typedef), `_WIN32` (compiler
+   builtin, not affected). After PR3's tree-wide run, grep for
+   stripped underscores in macro `#define`s and struct forward decls;
+   add `// NOLINT(bugprone-reserved-identifier,
+   readability-identifier-naming)` for the load-bearing ones.
+
+5. **Method/type name collisions surface as `[-Wchanges-meaning]`.**
+   If a rename produces `Type Method()` where `Type` is also a class,
+   enum, or typedef in the same scope, the compiler reports
+   "declaration of `Type Foo::Method() const` changes meaning of
+   `Type`". PR2 hand-fixed roughly a dozen of these (SessionState,
+   IceAgent::State, Level::Rect, FileSelector::Menu,
+   RollbackController::GameState, NetTransport::State,
+   SoundPlayer::Common, …). PR3's modernize/bugprone passes shouldn't
+   create new collisions, but if any auto-rename does, the fix is
+   manual: pick a different method name and update callers.
+
+6. **X-macro NOLINT region is already in place.** `constants.hpp`
+   wraps the `LIERO_CDEFS` / `LIERO_SDEFS` / `LIERO_HDEFS` /
+   `LIERO_SOUNDDEFS` block in `NOLINTBEGIN(readability-identifier-naming)`
+   /`NOLINTEND` because tidy's check rewrites the token-paste
+   arguments and silently breaks every callsite. PR3 should leave
+   this region alone — but be aware that other tidy checks may still
+   fire inside it.
+
+7. **Range-for / cereal carve-outs.** `DirectoryListing::begin/end`
+   must stay lower_case for range-for to find them (already NOLINT'd).
+   The cereal carve-out regex in `.clang-tidy` covers all known cases
+   PR2 surfaced — see the config snippet above.
+
 ### PR 3 — Remaining tidy fixes
 
 **Scope:** everything else the existing `.clang-tidy` enables —
 modernize-*, bugprone-*, performance-*, readability-* (minus the
-naming check already in PR2).
+naming check already landed in PR2).
 
-1. Run clang-tidy with `--fix --fix-errors` and the full check list:
+1. Configure with all targets enabled so tidy sees `src/video_tool/`
+   and `src/tc_tool/`:
    ```bash
-   find src -type f \( -name '*.cpp' -o -name '*.cc' -o -name '*.cxx' \) \
-     ! -path 'src/game/metadata.cpp' \
-     | xargs -P "$(nproc)" -n1 clang-tidy -p build/linux-x64-ci \
-       --fix --fix-errors
+   CI=true cmake --preset linux-x64-ci \
+       -DOPENLIERO_BUILD_TESTS=ON \
+       -DOPENLIERO_BUILD_VIDEOTOOL=ON \
+       -DOPENLIERO_BUILD_TCTOOL=ON
+   cmake --build build/linux-x64-ci --config Release --target game
    ```
-2. Many checks have no auto-fix. For those, decide per-warning:
+   (The `CI=true` env is required by the `linux-x64-ci` preset's
+   condition guard.)
+
+2. Run `run-clang-tidy` with the full check list (no `-checks=` ⇒
+   uses `.clang-tidy`'s configured set):
+   ```bash
+   run-clang-tidy -p build/linux-x64-ci \
+       -header-filter='.*/src/.*' \
+       -fix -j "$(nproc)" -quiet \
+       '/src/.*\.(cpp|cc|cxx)$'
+   ```
+   Run iteratively — modernize fixes can unlock further fixes on the
+   next pass. Stop when two consecutive runs produce no diff.
+
+3. Many checks have no auto-fix. For those, decide per-warning:
    either fix by hand or apply `// NOLINT(check-name): rationale` at
    the call site. Avoid file-wide `NOLINTBEGIN/END` unless an entire
    file is genuinely incompatible.
-3. Re-enable clang-tidy CI (PR1 paused it to `workflow_dispatch`)
-   and flip it to tree-wide:
+
+4. Apply NOLINTs for the `bugprone-reserved-identifier` hazards
+   (lesson 4 above) — at least:
+   - `_USE_MATH_DEFINES` in `src/game/ai/predictive_ai.cpp` (already
+     done in PR2)
+   - `_ENetHost`/`_ENetPeer` forward declarations if tidy rewrites
+     them
+
+5. Format pass after the renames settle (modernize-loop-convert and
+   similar checks shift line lengths):
+   ```bash
+   scripts/clang-format-all.sh
+   ```
+   then reformat any files it flags.
+
+6. **Critical verification** — same protocol as PR2, but `modernize-*`
+   checks can change iteration patterns in subtle ways that may
+   affect determinism:
+   - All three local presets (linux-x64, linux-x64-debug,
+     linux-x64-ci) build clean
+   - `ctest --test-dir build/linux-x64-ci --build-config Release`
+     all-green
+   - `test_determinism`, `test_rollback_correctness`,
+     `test_rollback_desync` pass standalone
+   - Replay corpus from before the flag day still plays back (run
+     the `videotool` binary against a known-good `.lrp` file)
+
+7. Re-enable clang-tidy CI and flip it to tree-wide blocking:
    - Restore the `pull_request` trigger in
-     `.github/workflows/clang-tidy.yml`.
+     `.github/workflows/clang-tidy.yml` (it's currently
+     `workflow_dispatch` only).
    - Add `scripts/clang-tidy-all.sh` that runs tidy across all `src/`
      files via the existing `compile_commands.json`.
    - Update `.github/workflows/clang-tidy.yml` to call the new
      script instead of `clang-tidy-diff.sh`.
-4. Add PR3 merge commit SHA to `.git-blame-ignore-revs`.
-5. **Critical verification** (same protocol as PR2) — some `modernize-*`
-   checks change iteration patterns and can subtly affect determinism.
+   - Make sure CI configures with `-DOPENLIERO_BUILD_VIDEOTOOL=ON
+     -DOPENLIERO_BUILD_TCTOOL=ON` so the gate covers the same TUs
+     tidy was run against locally.
 
-**Expected diff:** smaller than PR1/PR2 but more semantic. This is the
-PR that needs the most careful human review per-change.
+8. Expect platform CI to fail on the first push for code paths
+   linux-x64-ci doesn't compile (emscripten + Windows). Fix-loop
+   them as PR2 did — each platform CI failure produces one
+   hand-fix commit. macOS-arm64 was clean in PR2 but should still
+   be watched in PR3.
+
+9. Add PR3 merge commit SHA to `.git-blame-ignore-revs`.
+
+**Expected diff:** smaller than PR1/PR2 but more semantic. This is
+the PR that needs the most careful human review per-change.
 
 ## Verification protocol
 
 Run after PR1 (sanity), and **always** after PR2 and PR3:
 
 ```bash
-# 1. Clean build, all relevant configurations
+# 1. Clean build, all relevant configurations.
+#    linux-x64-ci's condition guard requires CI=true in the env.
 cmake --workflow --preset linux-x64
 cmake --workflow --preset linux-x64-debug
-cmake --preset linux-x64-ci -DOPENLIERO_BUILD_TESTS=ON
+CI=true cmake --preset linux-x64-ci \
+    -DOPENLIERO_BUILD_TESTS=ON \
+    -DOPENLIERO_BUILD_VIDEOTOOL=ON \
+    -DOPENLIERO_BUILD_TCTOOL=ON
 cmake --build build/linux-x64-ci --config Release
 
 # 2. Full test suite
@@ -316,24 +464,29 @@ out of a real regression.
 
 | Risk | Likelihood | Mitigation |
 |------|-----------|------------|
-| Cereal `serialize`/`save`/`load` accidentally renamed | Medium | Carve-out regex in `.clang-tidy`; post-PR2 grep to confirm. |
+| Cereal `serialize`/`save`/`load` accidentally renamed | Medium | Carve-out regex in `.clang-tidy` (broadened during PR2 to also cover archive interface methods + prologue/epilogue); post-PR grep to confirm. |
 | Modernize loops change iteration order → determinism break | Medium | `test_determinism` + `test_rollback_*` in verification. Revert offending check or NOLINT the call site. |
-| Tidy `--fix` corrupts a TU via cross-TU rename race | Low | Run tidy passes iteratively, rebuild between passes, commit between passes so any corruption is bisectable. |
-| Macros with stringified identifiers break | Low | None visible in current grep, but check after PR2. |
+| Tidy `--fix` corrupts a TU via cross-TU rename race | **Was Low, now mitigated** | Use `run-clang-tidy` not raw xargs. PR3 inherits this. |
+| Macros with stringified identifiers break | Low | None surfaced in PR2; remain vigilant for `CEREAL_NVP(x)` sneaking in. |
+| Windows API macro collision (`DrawText` → `DrawTextA`) | **Materialized in PR2** | Grep for known Windows macro names before merging (see PR3 lesson 3). |
+| `bugprone-reserved-identifier` strips load-bearing leading underscores (`_USE_MATH_DEFINES`, `_ENetHost`) | **Materialized in PR2** | NOLINT the affected lines; PR3 should grep `#define` / `struct` forward decls for stripped underscores. |
+| Per-preset blind spots (emscripten + `_WIN32` + tool gates not in linux-x64-ci) | **Materialized 4× in PR2** | Configure with VIDEOTOOL/TCTOOL ON; expect a fix-loop on first CI run for emscripten + Windows. |
 | Long format-day window blocks contributors | High | Land all three PRs within ~3 days. Pre-merge sweep of open PRs. |
 | Reviewer fatigue on huge diffs | High | Three PRs not one. Reviewer's job is "did the tool do the right thing" + verification, not line-by-line. |
 
 ## Post-flag-day cleanup
 
-1. Update `CLAUDE.md`:
-   - Remove "hard tabs at width 4 under `src/game`, `src/tc_tool`,
-     `src/video_tool`. `src/tests/` is 2-space Google-style".
-   - Replace with "Google style, 100-col, naming enforced. One style
-     across all of `src/`."
-   - Remove the reference to `src/tests/.clang-format`.
+PR1 already updated `CLAUDE.md`'s style description and removed
+`src/tests/.clang-format`. PR2 did not need to touch `CLAUDE.md`
+further. After PR3 lands:
+
+1. Update `CLAUDE.md`'s note that "`clang-tidy` CI is temporarily
+   disabled during the clang flag-day window" — remove that line and
+   replace with the new tree-wide gating story.
 2. Confirm `clang-tidy` / `clang-format` CMake targets still work
    tree-wide.
-3. Drop the legacy "clang-format is advisory" comment in the workflow.
+3. Drop the legacy "clang-format is advisory" comment in the workflow
+   (if any remains).
 4. Tag `post-clang-flag-day` so the cutover is easy to reference
    later.
 
@@ -341,8 +494,10 @@ out of a real regression.
 
 - **Server (`server/`)** — Go code, governed by `gofmt`, out of scope
   for this plan.
-- **Emscripten preset** — assumed to follow whatever the Linux-x64
-  build does. If wasm-specific code paths break, address case-by-case.
+- **Emscripten preset** — wasm-specific code paths inside
+  `#if OPENLIERO_EMSCRIPTEN` are invisible to tidy on the linux-x64-ci
+  preset. PR2 fixed them post-hoc via the Emscripten CI failure; PR3
+  should plan for the same fix-loop.
 - **External contributor PRs** — anyone with an in-flight branch will
   have to rebase across all three commits. Communicate the flag day
   via README and any active discussion channels before starting.

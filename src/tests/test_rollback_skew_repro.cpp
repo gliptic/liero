@@ -29,41 +29,41 @@
 
 namespace {
 
-std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
-  precomputeTables();
+std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
+  PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tcRoot));
+  FsNode tc_root(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tc_root));
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
-  settings->loadingTime = 0;
-  settings->loadChange = true;
-  settings->randomLevel = true;
-  settings->gameMode = Settings::GMKillEmAll;
-  settings->selectBotWeapons = 0;
+  settings->loading_time = 0;
+  settings->load_change = true;
+  settings->random_level = true;
+  settings->game_mode = Settings::kGmKillEmAll;
+  settings->select_bot_weapons = 0;
   return {common, settings};
 }
 
-std::unique_ptr<RollbackController> makePeer(std::shared_ptr<Common> common,
-                                             std::shared_ptr<Settings> settings, int localIdx,
-                                             uint32_t worldSeed) {
-  auto c = std::make_unique<RollbackController>(common, settings, localIdx);
-  c->setInputDelay(1);
-  c->game.rand.seed(worldSeed);
+std::unique_ptr<RollbackController> MakePeer(std::shared_ptr<Common> common,
+                                             std::shared_ptr<Settings> settings, int local_idx,
+                                             uint32_t world_seed) {
+  auto c = std::make_unique<RollbackController>(common, settings, local_idx);
+  c->SetInputDelay(1);
+  c->game.rand.Seed(world_seed);
   return c;
 }
 
-constexpr uint8_t BIT_DOWN = uint8_t{1} << Worm::Down;
-constexpr uint8_t BIT_FIRE = uint8_t{1} << Worm::Fire;
+constexpr uint8_t kBitDown = uint8_t{1} << Worm::kDown;
+constexpr uint8_t kBitFire = uint8_t{1} << Worm::kFire;
 
-std::vector<uint8_t> navigateToDoneAndConfirm(int nDown) {
+std::vector<uint8_t> NavigateToDoneAndConfirm(int n_down) {
   std::vector<uint8_t> out;
-  for (int i = 0; i < nDown; ++i) {
-    out.push_back(BIT_DOWN);
+  for (int i = 0; i < n_down; ++i) {
+    out.push_back(kBitDown);
     out.push_back(0);
   }
   out.push_back(0);
-  out.push_back(BIT_FIRE);
+  out.push_back(kBitFire);
   out.push_back(0);
   return out;
 }
@@ -72,9 +72,9 @@ std::vector<uint8_t> navigateToDoneAndConfirm(int nDown) {
 
 TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][step14][skew]") {
   constexpr uint32_t kWorldSeed = 0xF00DBABE;
-  auto [common, settings] = makeEnv();
-  auto a = makePeer(common, settings, 0, kWorldSeed);
-  auto b = makePeer(common, settings, 1, kWorldSeed);
+  auto [common, settings] = MakeEnv();
+  auto a = MakePeer(common, settings, 0, kWorldSeed);
+  auto b = MakePeer(common, settings, 1, kWorldSeed);
 
   // Asymmetric delays — A→B fast (1 frame), B→A slow (4 frames). Plus
   // we disable A's frame-advantage stall so A runs ahead freely while B
@@ -82,96 +82,96 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][
   // slower. The combination reliably produces a multi-frame WS-phase
   // skew while keeping both peers progressing enough to eventually
   // confirm wsDone.
-  rollback_test::JitterTransport tAB(
+  rollback_test::JitterTransport t_ab(
       {0x1111, /*minDelay=*/1, /*maxDelay=*/1, /*loss=*/0.0, /*dup=*/0.0});
-  rollback_test::JitterTransport tBA(
+  rollback_test::JitterTransport t_ba(
       {0x2222, /*minDelay=*/4, /*maxDelay=*/4, /*loss=*/0.0, /*dup=*/0.0});
-  a->setFrameAdvantageEnabled(false);
+  a->SetFrameAdvantageEnabled(false);
 
-  a->setInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    tAB.sendAToB(gen, bf, c, in, lf);
+  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    t_ab.SendAToB(gen, bf, c, in, lf);
   });
-  b->setInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    tBA.sendAToB(gen, bf, c, in, lf);
+  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    t_ba.SendAToB(gen, bf, c, in, lf);
   });
 
-  a->focus();
-  b->focus();
-  a->injectRemoteInput(0, 0);
-  b->injectRemoteInput(0, 0);
+  a->Focus();
+  b->Focus();
+  a->InjectRemoteInput(0, 0);
+  b->InjectRemoteInput(0, 0);
 
-  auto deliverB = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    b->injectRemoteBatch(gen, bf, c, in, lf);
+  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    b->InjectRemoteBatch(gen, bf, c, in, lf);
   };
-  auto deliverA = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    a->injectRemoteBatch(gen, bf, c, in, lf);
+  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    a->InjectRemoteBatch(gen, bf, c, in, lf);
   };
   auto noop = [&](uint8_t, uint32_t, uint8_t, uint8_t const*, uint32_t) {};
 
-  auto script = navigateToDoneAndConfirm(6);
+  auto script = NavigateToDoneAndConfirm(6);
   constexpr int kWsTail = 80;  // extra ticks so the slower peer catches up
 
-  bool aTransitioned = false, bTransitioned = false;
-  uint32_t aTransitionFrame = 0, bTransitionFrame = 0;
-  int maxObservedSkew = 0;
+  bool a_transitioned = false, b_transitioned = false;
+  uint32_t a_transition_frame = 0, b_transition_frame = 0;
+  int max_observed_skew = 0;
 
-  auto stepBoth = [&](uint8_t inA, uint8_t inB) {
-    a->setLocalControlState(inA);
-    b->setLocalControlState(inB);
-    bool aPre = !aTransitioned;
-    bool bPre = !bTransitioned;
-    a->process();
-    b->process();
-    if (aPre && a->gameState() == StateGame) {
-      aTransitioned = true;
-      aTransitionFrame = a->currentFrame();
+  auto step_both = [&](uint8_t in_a, uint8_t in_b) {
+    a->SetLocalControlState(in_a);
+    b->SetLocalControlState(in_b);
+    bool a_pre = !a_transitioned;
+    bool b_pre = !b_transitioned;
+    a->Process();
+    b->Process();
+    if (a_pre && a->State() == kStateGame) {
+      a_transitioned = true;
+      a_transition_frame = a->CurrentFrame();
     }
-    if (bPre && b->gameState() == StateGame) {
-      bTransitioned = true;
-      bTransitionFrame = b->currentFrame();
+    if (b_pre && b->State() == kStateGame) {
+      b_transitioned = true;
+      b_transition_frame = b->CurrentFrame();
     }
     // tAB carries A→B; the "deliverA" leg of its tick is unused.
-    tAB.tick(noop, deliverB);
-    tBA.tick(noop, deliverA);
+    t_ab.Tick(noop, deliver_b);
+    t_ba.Tick(noop, deliver_a);
   };
 
   for (int i = 0;
-       i < static_cast<int>(script.size()) + kWsTail && !(aTransitioned && bTransitioned); ++i) {
+       i < static_cast<int>(script.size()) + kWsTail && !(a_transitioned && b_transitioned); ++i) {
     uint8_t in = (i < static_cast<int>(script.size())) ? script[i] : 0;
-    stepBoth(in, in);
+    step_both(in, in);
     // Observe WS-phase skew while at least one peer is still pre-transition.
-    if (!aTransitioned || !bTransitioned) {
-      int gap = static_cast<int>(a->currentFrame()) - static_cast<int>(b->currentFrame());
+    if (!a_transitioned || !b_transitioned) {
+      int gap = static_cast<int>(a->CurrentFrame()) - static_cast<int>(b->CurrentFrame());
       if (gap < 0) gap = -gap;
-      if (gap > maxObservedSkew) maxObservedSkew = gap;
+      if (gap > max_observed_skew) max_observed_skew = gap;
     }
   }
 
   // Flush any tail packets, then a few idle ticks to finish either peer
   // that hasn't transitioned yet.
-  tAB.flush(noop, deliverB);
-  tBA.flush(noop, deliverA);
-  for (int i = 0; i < 24 && !(aTransitioned && bTransitioned); ++i) {
-    stepBoth(0, 0);
+  t_ab.Flush(noop, deliver_b);
+  t_ba.Flush(noop, deliver_a);
+  for (int i = 0; i < 24 && !(a_transitioned && b_transitioned); ++i) {
+    step_both(0, 0);
   }
 
-  INFO("maxObservedSkew=" << maxObservedSkew << " aTransitionFrame=" << aTransitionFrame
-                          << " bTransitionFrame=" << bTransitionFrame);
-  REQUIRE(aTransitioned);
-  REQUIRE(bTransitioned);
+  INFO("maxObservedSkew=" << max_observed_skew << " aTransitionFrame=" << a_transition_frame
+                          << " bTransitionFrame=" << b_transition_frame);
+  REQUIRE(a_transitioned);
+  REQUIRE(b_transitioned);
 
   // Headline: regardless of WS skew, both peers entered game phase at
   // simFrame=0. Removing the post-WS reset would leave the peers at
   // whatever simFrame WS reached on each side.
-  REQUIRE(aTransitionFrame == 0);
-  REQUIRE(bTransitionFrame == 0);
+  REQUIRE(a_transition_frame == 0);
+  REQUIRE(b_transition_frame == 0);
 
   // Vacuity guard: if we never observed a WS-phase skew the test isn't
   // exercising the bug class. The asymmetric delay + disabled
   // frame-advantage on A routinely produces a multi-frame gap; a
   // single-frame gap is still meaningful evidence the timeline went
   // asymmetric.
-  REQUIRE(maxObservedSkew >= 1);
+  REQUIRE(max_observed_skew >= 1);
 
   // Drive ~32 game-phase frames in sync, then a flush + short drain.
   // Both peers stay idle so the sim produces identical state on each
@@ -179,12 +179,12 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][
   // because the B→A pipe still delays inputs by 4 frames.
   constexpr int kGameFrames = 32;
   for (int i = 0; i < kGameFrames; ++i) {
-    stepBoth(0, 0);
+    step_both(0, 0);
   }
-  tAB.flush(noop, deliverB);
-  tBA.flush(noop, deliverA);
+  t_ab.Flush(noop, deliver_b);
+  t_ba.Flush(noop, deliver_a);
   for (int i = 0; i < 16; ++i) {
-    stepBoth(0, 0);
+    step_both(0, 0);
   }
 
   // Cached wideRollbackChecksum match across the slots currently
@@ -196,17 +196,17 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][
   // checksumming this guards the first ~32 game-phase frames'
   // determinism (any earlier mismatch would propagate forward into
   // the still-resident frames).
-  rollback::RollbackBuffer const& bufA = a->rollbackBuffer();
-  rollback::RollbackBuffer const& bufB = b->rollbackBuffer();
+  rollback::RollbackBuffer const& buf_a = a->RollbackBuffer();
+  rollback::RollbackBuffer const& buf_b = b->RollbackBuffer();
   int compared = 0;
-  int loF = std::max(bufA.oldestFrame(), bufB.oldestFrame());
-  int hiF = std::min(bufA.newestFrame(), bufB.newestFrame());
-  for (int f = loF; f <= hiF; ++f) {
-    auto* slotA = const_cast<rollback::RollbackBuffer&>(bufA).find(f);
-    auto* slotB = const_cast<rollback::RollbackBuffer&>(bufB).find(f);
-    if (!slotA || !slotB) continue;
-    INFO("frame " << f << " A=" << slotA->checksum << " B=" << slotB->checksum);
-    REQUIRE(slotA->checksum == slotB->checksum);
+  int lo_f = std::max(buf_a.OldestFrame(), buf_b.OldestFrame());
+  int hi_f = std::min(buf_a.NewestFrame(), buf_b.NewestFrame());
+  for (int f = lo_f; f <= hi_f; ++f) {
+    auto* slot_a = const_cast<rollback::RollbackBuffer&>(buf_a).Find(f);
+    auto* slot_b = const_cast<rollback::RollbackBuffer&>(buf_b).Find(f);
+    if (!slot_a || !slot_b) continue;
+    INFO("frame " << f << " A=" << slot_a->checksum << " B=" << slot_b->checksum);
+    REQUIRE(slot_a->checksum == slot_b->checksum);
     ++compared;
   }
   // Vacuity guard.

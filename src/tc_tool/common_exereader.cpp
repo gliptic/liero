@@ -7,42 +7,42 @@
 #include "game/rand.hpp"
 #include "game/reader.hpp"
 
-int CSint32desc[][3] = {{CNRInitialLength, 0x32D7, 0x32DD},
-                        {CNRAttachLength, 0xA679, 0xA67F},
+int c_sint32desc[][3] = {{CNRInitialLength, 0x32D7, 0x32DD},
+                         {CNRAttachLength, 0xA679, 0xA67F},
 
-                        {0, -1, -1}};
+                         {0, -1, -1}};
 
-int CSint24desc[][3] = {{CMinBounceUp, 0x3B7D, 0x3B74},
-                        {CMinBounceDown, 0x3B00, 0x3AF7},
-                        {CMinBounceLeft, 0x3A83, 0x3A7A},
-                        {CMinBounceRight, 0x3A06, 0x39FD},
-                        {CWormGravity, 0x3BDE, 0x3BD7},
-                        {CWalkVelLeft, 0x3F97, 0x3F9D},
-                        {CMaxVelLeft, 0x3F8C, 0x3F83},
-                        {CWalkVelRight, 0x4018, 0x401E},
-                        {CMaxVelRight, 0x400D, 0x4004},
-                        {CJumpForce, 0x3327, 0x332D},
-                        {CMaxAimVelLeft, 0x30F2, 0x30E9},
-                        {CAimAccLeft, 0x30FD, 0x3103},
-                        {CMaxAimVelRight, 0x311A, 0x3111},
-                        {CAimAccRight, 0x3125, 0x312B},
-                        {CNinjaropeGravity, 0xA895, 0xA89B},
-                        {CNRMinLength, 0x3206, 0x31FD},
-                        {CNRMaxLength, 0x3229, 0x3220},
+int c_sint24desc[][3] = {{CMinBounceUp, 0x3B7D, 0x3B74},
+                         {CMinBounceDown, 0x3B00, 0x3AF7},
+                         {CMinBounceLeft, 0x3A83, 0x3A7A},
+                         {CMinBounceRight, 0x3A06, 0x39FD},
+                         {CWormGravity, 0x3BDE, 0x3BD7},
+                         {CWalkVelLeft, 0x3F97, 0x3F9D},
+                         {CMaxVelLeft, 0x3F8C, 0x3F83},
+                         {CWalkVelRight, 0x4018, 0x401E},
+                         {CMaxVelRight, 0x400D, 0x4004},
+                         {CJumpForce, 0x3327, 0x332D},
+                         {CMaxAimVelLeft, 0x30F2, 0x30E9},
+                         {CAimAccLeft, 0x30FD, 0x3103},
+                         {CMaxAimVelRight, 0x311A, 0x3111},
+                         {CAimAccRight, 0x3125, 0x312B},
+                         {CNinjaropeGravity, 0xA895, 0xA89B},
+                         {CNRMinLength, 0x3206, 0x31FD},
+                         {CNRMaxLength, 0x3229, 0x3220},
 
-                        {CBonusGravity, 0x72C3, 0x72C9},
-                        {CBObjGravity, 0x744A, 0x7450},
+                         {CBonusGravity, 0x72C3, 0x72C9},
+                         {CBObjGravity, 0x744A, 0x7450},
 
-                        // WormFloat hack
-                        {CWormFloatPower, 0x29DB, 0x29E1},
+                         // WormFloat hack
+                         {CWormFloatPower, 0x29DB, 0x29E1},
 
-                        {0, -1, -1}};
+                         {0, -1, -1}};
 
-int CUint16desc[][2] = {{CBloodLimit, 0xE686},
+int c_uint16desc[][2] = {{CBloodLimit, 0xE686},
 
-                        {0, -1}};
+                         {0, -1}};
 
-int CSint16desc[][2] = {
+int c_sint16desc[][2] = {
     {CWormFricMult, 0x39BD},
     {CWormFricDiv, 0x39C7},
     {CWormMinSpawnDistLast, 0x242E},
@@ -81,39 +81,39 @@ int CSint16desc[][2] = {
 
     {0, -1}};
 
-int CUint8desc[][2] = {{CAimMaxRight, 0x3030},
-                       {CAimMinRight, 0x304A},
-                       {CAimMaxLeft, 0x3066},
-                       {CAimMinLeft, 0x3080},
-                       {CNRColourBegin, 0x10FD2},
-                       {CNRColourEnd, 0x11069},
-                       {CBonusExplodeRisk, 0x2DB2},
-                       {CBonusHealthVar, 0x2D56},
-                       {CBonusMinHealth, 0x2D5D},
-                       {CLaserWeapon, 0x7255},
+int c_uint8desc[][2] = {{CAimMaxRight, 0x3030},
+                        {CAimMinRight, 0x304A},
+                        {CAimMaxLeft, 0x3066},
+                        {CAimMinLeft, 0x3080},
+                        {CNRColourBegin, 0x10FD2},
+                        {CNRColourEnd, 0x11069},
+                        {CBonusExplodeRisk, 0x2DB2},
+                        {CBonusHealthVar, 0x2D56},
+                        {CBonusMinHealth, 0x2D5D},
+                        {CLaserWeapon, 0x7255},
 
-                       {CFirstBloodColour, 0x2388},
-                       {CNumBloodColours, 0x2381},
+                        {CFirstBloodColour, 0x2388},
+                        {CNumBloodColours, 0x2381},
 
-                       {CRemExpObject, 0x8F8B},
+                        {CRemExpObject, 0x8F8B},
 
-                       {0, -1}};
+                        {0, -1}};
 
-int CSint8desc[][2] = {{CNRPullVel, 0x31D0},
-                       {CNRReleaseVel, 0x31F0},
+int c_sint8desc[][2] = {{CNRPullVel, 0x31D0},
+                        {CNRReleaseVel, 0x31F0},
 
-                       // FallDamage hack
-                       {CFallDamageRight, 0x3A0E},
-                       {CFallDamageLeft, 0x3A8B},
-                       {CFallDamageDown, 0x3B08},
-                       {CFallDamageUp, 0x3B85},
+                        // FallDamage hack
+                        {CFallDamageRight, 0x3A0E},
+                        {CFallDamageLeft, 0x3A8B},
+                        {CFallDamageDown, 0x3B08},
+                        {CFallDamageUp, 0x3B85},
 
-                       {CBloodStepUp, 0xE67B},
-                       {CBloodStepDown, 0xE68E},
+                        {CBloodStepUp, 0xE67B},
+                        {CBloodStepDown, 0xE68E},
 
-                       {0, -1}};
+                        {0, -1}};
 
-int Sstringdesc[][2] = {{SInitSound, 0x177F},
+int sstringdesc[][2] = {{SInitSound, 0x177F},
                         {SLoadingSounds, 0x18F2},
 
                         {SInit_BaseIO, 0x17DD},
@@ -169,109 +169,109 @@ struct HackDesc {
   int (*indicators)[2];
 };
 
-int hFallDamageInd[][2] = {{0x3A0A, 0x26},
-                           {0x3A87, 0x26},
-                           {0x3B04, 0x26},
-                           {0x3B81, 0x26},
+int h_fall_damage_ind[][2] = {{0x3A0A, 0x26},
+                              {0x3A87, 0x26},
+                              {0x3B04, 0x26},
+                              {0x3B81, 0x26},
 
-                           {-1, 0}};
+                              {-1, 0}};
 
-int hBonusReloadOnlyInd[][2] = {
+int h_bonus_reload_only_ind[][2] = {
     {0x2DB1, 0xEB},  // We check one byte only, because ProMode has a silly jump destination
 
     {-1, 0}};
 
-int hBonusSpawnRectInd[][2] = {
+int h_bonus_spawn_rect_ind[][2] = {
     {0x2318, 0x05},  // These are the first bytes of the add instructions that offset the spawn
     {0x2323, 0x05},
 
     {-1, 0}};
 
-int hBonusOnlyHealthInd[][2] = {{0x228B, 0xB0},
-                                {0x228C, 0x02},
+int h_bonus_only_health_ind[][2] = {{0x228B, 0xB0},
+                                    {0x228C, 0x02},
+
+                                    {-1, 0}};
+
+int h_bonus_only_weapon_ind[][2] = {{0x228B, 0xB0},
+                                    {0x228C, 0x01},
+
+                                    {-1, 0}};
+
+int h_bonus_disable_ind[][2] = {{0xBED3, 0xEB},
 
                                 {-1, 0}};
 
-int hBonusOnlyWeaponInd[][2] = {{0x228B, 0xB0},
-                                {0x228C, 0x01},
-
-                                {-1, 0}};
-
-int hBonusDisableInd[][2] = {{0xBED3, 0xEB},
+int h_worm_float_ind[][2] = {{0x29D7, 0x26},  // 0x26 is the first byte of the sub instruction
+                             {0x29DA, 0x34},  // 0x34 is the offset to part of velY of the worm
 
                              {-1, 0}};
 
-int hWormFloatInd[][2] = {{0x29D7, 0x26},  // 0x26 is the first byte of the sub instruction
-                          {0x29DA, 0x34},  // 0x34 is the offset to part of velY of the worm
-
-                          {-1, 0}};
-
-int hRemExpInd[][2] = {
+int h_rem_exp_ind[][2] = {
     // Start of the mov instruction that zeroes the timeout counter
     {0x8fc9, 0x26},
     {0x8fca, 0xc7},
     {-1, 0}};
 
-int hSignedRecoilInd[][2] = {{0x38AC, 0x98}, {0x38EC, 0x98}, {-1, 0}};
+int h_signed_recoil_ind[][2] = {{0x38AC, 0x98}, {0x38EC, 0x98}, {-1, 0}};
 
-int hAirJumpInd[][2] = {{0x3313, 0xEB}, {0x3314, 0x06}, {-1, 0}};
+int h_air_jump_ind[][2] = {{0x3313, 0xEB}, {0x3314, 0x06}, {-1, 0}};
 
-int hMultiJumpInd[][2] = {{0x331B, 0xEB}, {0x331C, 0x06}, {-1, 0}};
+int h_multi_jump_ind[][2] = {{0x331B, 0xEB}, {0x331C, 0x06}, {-1, 0}};
 
-HackDesc Hhackdesc[] = {{HFallDamage, hFallDamageInd},
-                        {HBonusReloadOnly, hBonusReloadOnlyInd},
-                        {HBonusSpawnRect, hBonusSpawnRectInd},
-                        {HWormFloat, hWormFloatInd},
-                        {HBonusOnlyHealth, hBonusOnlyHealthInd},
-                        {HBonusOnlyWeapon, hBonusOnlyWeaponInd},
-                        {HBonusDisable, hBonusDisableInd},
-                        {HRemExp, hRemExpInd},
-                        {HSignedRecoil, hSignedRecoilInd},
-                        {HAirJump, hAirJumpInd},
-                        {HMultiJump, hMultiJumpInd},
+HackDesc hhackdesc[] = {{HFallDamage, h_fall_damage_ind},
+                        {HBonusReloadOnly, h_bonus_reload_only_ind},
+                        {HBonusSpawnRect, h_bonus_spawn_rect_ind},
+                        {HWormFloat, h_worm_float_ind},
+                        {HBonusOnlyHealth, h_bonus_only_health_ind},
+                        {HBonusOnlyWeapon, h_bonus_only_weapon_ind},
+                        {HBonusDisable, h_bonus_disable_ind},
+                        {HRemExp, h_rem_exp_ind},
+                        {HSignedRecoil, h_signed_recoil_ind},
+                        {HAirJump, h_air_jump_ind},
+                        {HMultiJump, h_multi_jump_ind},
                         {0, 0}};
 
-char const* sobjectNames[14] = {"Large explosion",
-                                "Medium explosion",
-                                "Small explosion",
-                                "Hellraider smoke",
-                                "Zimm flash",
-                                "Nuke smoke",
-                                "Flashing pixel",
-                                "Teleport flash",
-                                "Small explosion, silent",
-                                "Very small explosion, silent",
-                                "Medium explosion, smaller",
-                                "Large explosion, smaller",
-                                "Medium explosion, bigger",
-                                "Unknown"};
+char const* sobject_names[14] = {"Large explosion",
+                                 "Medium explosion",
+                                 "Small explosion",
+                                 "Hellraider smoke",
+                                 "Zimm flash",
+                                 "Nuke smoke",
+                                 "Flashing pixel",
+                                 "Teleport flash",
+                                 "Small explosion, silent",
+                                 "Very small explosion, silent",
+                                 "Medium explosion, smaller",
+                                 "Large explosion, smaller",
+                                 "Medium explosion, bigger",
+                                 "Unknown"};
 
-char const* nobjectNames[24] = {"Worm 1 parts",
-                                "Worm 2 parts",
-                                "Particle, disappearing",
-                                "Particle, small damage",
-                                "Particle, medium damage",
-                                "Particle, larger damage",
-                                "Blood",
-                                "Shells",
-                                "Clusterbomb bombs",
-                                "Large nukes",
-                                "Hellraider bullets",
-                                "Small nukes",
-                                "Napalm fireballs",
-                                "Dirt",
-                                "Chiquitabomb bombs",
-                                "Grasshopper 1",
-                                "Grasshopper 2",
-                                "Grasshopper 3",
-                                "Grasshopper 4",
-                                "Grasshopper 5",
-                                "Flag 1",
-                                "Flag 2",
-                                "Grasshopper 6",
-                                "Grasshopper 7"};
+char const* nobject_names[24] = {"Worm 1 parts",
+                                 "Worm 2 parts",
+                                 "Particle, disappearing",
+                                 "Particle, small damage",
+                                 "Particle, medium damage",
+                                 "Particle, larger damage",
+                                 "Blood",
+                                 "Shells",
+                                 "Clusterbomb bombs",
+                                 "Large nukes",
+                                 "Hellraider bullets",
+                                 "Small nukes",
+                                 "Napalm fireballs",
+                                 "Dirt",
+                                 "Chiquitabomb bombs",
+                                 "Grasshopper 1",
+                                 "Grasshopper 2",
+                                 "Grasshopper 3",
+                                 "Grasshopper 4",
+                                 "Grasshopper 5",
+                                 "Flag 1",
+                                 "Flag 2",
+                                 "Grasshopper 6",
+                                 "Grasshopper 7"};
 
-std::string toId(std::string const& name) {
+std::string ToId(std::string const& name) {
   std::string ret;
   for (char c : name) {
     if ((uint8_t)c >= 128 || !std::isalnum((uint8_t)c))
@@ -282,107 +282,107 @@ std::string toId(std::string const& name) {
   return ret;
 }
 
-inline std::string readPascalString(ReaderFile& f) {
-  unsigned char length = f.get();
+inline std::string ReadPascalString(ReaderFile& f) {
+  unsigned char length = f.Get();
 
   char txt[256];
-  f.get(reinterpret_cast<uint8_t*>(txt), length);
+  f.Get(reinterpret_cast<uint8_t*>(txt), length);
   return std::string(txt, length);
 }
 
-inline std::string readPascalString(ReaderFile& f, unsigned char fieldLen) {
+inline std::string ReadPascalString(ReaderFile& f, unsigned char field_len) {
   char txt[256];
-  f.get(reinterpret_cast<uint8_t*>(txt), fieldLen);
+  f.Get(reinterpret_cast<uint8_t*>(txt), field_len);
 
   unsigned char length = static_cast<unsigned char>(txt[0]);
   return std::string(txt + 1, length);
 }
 
-inline std::string readPascalStringAt(ReaderFile& f, size_t location) {
-  f.seekg(location);
-  return readPascalString(f);
+inline std::string ReadPascalStringAt(ReaderFile& f, size_t location) {
+  f.Seekg(location);
+  return ReadPascalString(f);
 }
 
-void loadConstants(Common& common, ReaderFile& exe) {
-  for (int i = 0; CSint32desc[i][1] >= 0; ++i) {
-    exe.seekg(CSint32desc[i][1]);
-    int32_t a = (int32_t)io::read_uint16_le(exe);
-    exe.seekg(CSint32desc[i][2]);
-    int32_t b = (int16_t)io::read_uint16_le(exe);
-    common.C[CSint32desc[i][0]] = a + (b << 16);
+void LoadConstants(Common& common, ReaderFile& exe) {
+  for (int i = 0; c_sint32desc[i][1] >= 0; ++i) {
+    exe.Seekg(c_sint32desc[i][1]);
+    int32_t a = (int32_t)io::ReadUint16Le(exe);
+    exe.Seekg(c_sint32desc[i][2]);
+    int32_t b = (int16_t)io::ReadUint16Le(exe);
+    common.c[c_sint32desc[i][0]] = a + (b << 16);
   }
 
-  for (int i = 0; CSint24desc[i][1] >= 0; ++i) {
-    exe.seekg(CSint24desc[i][1]);
-    int32_t a = (int32_t)io::read_uint16_le(exe);
-    exe.seekg(CSint24desc[i][2]);
-    int32_t b = (int8_t)exe.get();
-    common.C[CSint24desc[i][0]] = a + (b << 16);
+  for (int i = 0; c_sint24desc[i][1] >= 0; ++i) {
+    exe.Seekg(c_sint24desc[i][1]);
+    int32_t a = (int32_t)io::ReadUint16Le(exe);
+    exe.Seekg(c_sint24desc[i][2]);
+    int32_t b = (int8_t)exe.Get();
+    common.c[c_sint24desc[i][0]] = a + (b << 16);
   }
 
-  for (int i = 0; CSint16desc[i][1] >= 0; ++i) {
-    exe.seekg(CSint16desc[i][1]);
-    common.C[CSint16desc[i][0]] = (int16_t)io::read_uint16_le(exe);
+  for (int i = 0; c_sint16desc[i][1] >= 0; ++i) {
+    exe.Seekg(c_sint16desc[i][1]);
+    common.c[c_sint16desc[i][0]] = (int16_t)io::ReadUint16Le(exe);
   }
 
-  for (int i = 0; CUint16desc[i][1] >= 0; ++i) {
-    exe.seekg(CUint16desc[i][1]);
-    common.C[CUint16desc[i][0]] = io::read_uint16_le(exe);
+  for (int i = 0; c_uint16desc[i][1] >= 0; ++i) {
+    exe.Seekg(c_uint16desc[i][1]);
+    common.c[c_uint16desc[i][0]] = io::ReadUint16Le(exe);
   }
 
-  for (int i = 0; CSint8desc[i][1] >= 0; ++i) {
-    exe.seekg(CSint8desc[i][1]);
-    common.C[CSint8desc[i][0]] = (int8_t)exe.get();
+  for (int i = 0; c_sint8desc[i][1] >= 0; ++i) {
+    exe.Seekg(c_sint8desc[i][1]);
+    common.c[c_sint8desc[i][0]] = (int8_t)exe.Get();
   }
 
-  for (int i = 0; CUint8desc[i][1] >= 0; ++i) {
-    exe.seekg(CUint8desc[i][1]);
-    common.C[CUint8desc[i][0]] = exe.get();
+  for (int i = 0; c_uint8desc[i][1] >= 0; ++i) {
+    exe.Seekg(c_uint8desc[i][1]);
+    common.c[c_uint8desc[i][0]] = exe.Get();
   }
 
-  for (int i = 0; Sstringdesc[i][1] >= 0; ++i) {
+  for (int i = 0; sstringdesc[i][1] >= 0; ++i) {
     // Strings in the EXE are CP437 (DOS Liero); tc.cfg stores UTF-8.
-    common.S[Sstringdesc[i][0]] =
-        cp437::cp437BytesToUtf8(readPascalStringAt(exe, Sstringdesc[i][1]));
+    common.s[sstringdesc[i][0]] =
+        cp437::Cp437BytesToUtf8(ReadPascalStringAt(exe, sstringdesc[i][1]));
   }
 
-  for (int i = 0; Hhackdesc[i].indicators; ++i) {
-    int (*ind)[2] = Hhackdesc[i].indicators;
+  for (int i = 0; hhackdesc[i].indicators; ++i) {
+    int (*ind)[2] = hhackdesc[i].indicators;
     bool active = true;
     for (; (*ind)[0] >= 0; ++ind) {
-      exe.seekg((*ind)[0]);
-      int b = exe.get();
+      exe.Seekg((*ind)[0]);
+      int b = exe.Get();
       if (b != (*ind)[1]) {
         active = false;
         break;
       }
     }
 
-    common.H[Hhackdesc[i].which] = active;
+    common.h[hhackdesc[i].which] = active;
   }
 }
 
-void loadPalette(Common& common, ReaderFile& exe) {
-  exe.seekg(132774);
+void LoadPalette(Common& common, ReaderFile& exe) {
+  exe.Seekg(132774);
 
   for (int i = 0; i < 256; ++i) {
     unsigned char rgb[3];
-    exe.get(reinterpret_cast<uint8_t*>(rgb), 3);
+    exe.Get(reinterpret_cast<uint8_t*>(rgb), 3);
 
     common.exepal.entries[i].r = rgb[0] & 63;
     common.exepal.entries[i].g = rgb[1] & 63;
     common.exepal.entries[i].b = rgb[2] & 63;
   }
 
-  exe.seekg(0x1AF0C);
+  exe.Seekg(0x1AF0C);
   for (int i = 0; i < 4; ++i) {
-    common.colorAnim[i].from = exe.get();
-    common.colorAnim[i].to = exe.get();
+    common.color_anim[i].from = exe.Get();
+    common.color_anim[i].to = exe.Get();
   }
 }
 
-void loadMaterials(Common& common, ReaderFile& exe) {
-  exe.seekg(0x01C2E0);
+void LoadMaterials(Common& common, ReaderFile& exe) {
+  exe.Seekg(0x01C2E0);
 
   for (int i = 0; i < 256; ++i) {
     common.materials[i].flags = 0;
@@ -391,7 +391,7 @@ void loadMaterials(Common& common, ReaderFile& exe) {
   unsigned char bits[32];
 
   for (int i = 0; i < 5; ++i) {
-    exe.get(reinterpret_cast<uint8_t*>(bits), 32);
+    exe.Get(reinterpret_cast<uint8_t*>(bits), 32);
 
     for (int j = 0; j < 256; ++j) {
       int bit = ((bits[j >> 3] >> (j & 7)) & 1);
@@ -399,9 +399,9 @@ void loadMaterials(Common& common, ReaderFile& exe) {
     }
   }
 
-  exe.seekg(0x01AEA8);
+  exe.Seekg(0x01AEA8);
 
-  exe.get(reinterpret_cast<uint8_t*>(bits), 32);
+  exe.Get(reinterpret_cast<uint8_t*>(bits), 32);
 
   for (int j = 0; j < 256; ++j) {
     int bit = ((bits[j >> 3] >> (j & 7)) & 1);
@@ -410,208 +410,208 @@ void loadMaterials(Common& common, ReaderFile& exe) {
 }
 
 struct Read32 {
-  static inline int32_t run(ReaderFile& f) { return (int32_t)io::read_uint32_le(f); }
+  static inline int32_t Run(ReaderFile& f) { return (int32_t)io::ReadUint32Le(f); }
 };
 
 struct Read16 {
-  static inline int32_t run(ReaderFile& f) { return (int32_t)(int16_t)io::read_uint16_le(f); }
+  static inline int32_t Run(ReaderFile& f) { return (int32_t)(int16_t)io::ReadUint16Le(f); }
 };
 
 struct Read8 {
-  static inline int32_t run(ReaderFile& f) { return f.get(); }
+  static inline int32_t Run(ReaderFile& f) { return f.Get(); }
 };
 
 struct ReadBool {
-  static inline bool run(ReaderFile& f) { return f.get() != 0; }
+  static inline bool Run(ReaderFile& f) { return f.Get() != 0; }
 };
 
 template <typename T>
 struct Dec {
-  static inline int32_t run(ReaderFile& f) { return T::run(f) - 1; }
+  static inline int32_t Run(ReaderFile& f) { return T::Run(f) - 1; }
 };
 
 template <typename Reader, typename T, int N, typename U>
-inline void readMembers(ReaderFile& f, T (&arr)[N], U(T::* mem)) {
+inline void ReadMembers(ReaderFile& f, T (&arr)[N], U(T::* mem)) {
   for (int i = 0; i < N; ++i) {
-    (arr[i].*mem) = Reader::run(f);
+    (arr[i].*mem) = Reader::Run(f);
   }
 }
 
 template <typename Reader, typename T, typename U>
-inline void readMembers(ReaderFile& f, std::vector<T>& arr, U(T::* mem)) {
+inline void ReadMembers(ReaderFile& f, std::vector<T>& arr, U(T::* mem)) {
   for (int i = 0; i < arr.size(); ++i) {
-    (arr[i].*mem) = Reader::run(f);
+    (arr[i].*mem) = Reader::Run(f);
   }
 }
 
-void loadWeapons(Common& common, ReaderFile& exe) {
-  exe.seekg(112806);
+void LoadWeapons(Common& common, ReaderFile& exe) {
+  exe.Seekg(112806);
 
-  readMembers<Read8>(exe, common.weapons, &Weapon::detectDistance);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::affectByWorm);
-  readMembers<Read8>(exe, common.weapons, &Weapon::blowAway);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::detect_distance);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::affect_by_worm);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::blow_away);
 
-  exe.seekg(112966);
-  readMembers<Read16>(exe, common.weapons, &Weapon::gravity);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::shadow);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::laserSight);
-  readMembers<Dec<Read8> >(exe, common.weapons, &Weapon::launchSound);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::loopSound);
-  readMembers<Dec<Read8> >(exe, common.weapons, &Weapon::exploSound);
-  readMembers<Read16>(exe, common.weapons, &Weapon::speed);
-  readMembers<Read16>(exe, common.weapons, &Weapon::addSpeed);
-  readMembers<Read16>(exe, common.weapons, &Weapon::distribution);
-  readMembers<Read8>(exe, common.weapons, &Weapon::parts);
-  readMembers<Read8>(exe, common.weapons, &Weapon::recoil);
-  readMembers<Read16>(exe, common.weapons, &Weapon::multSpeed);
-  readMembers<Read16>(exe, common.weapons, &Weapon::delay);
-  readMembers<Read16>(exe, common.weapons, &Weapon::loadingTime);
-  readMembers<Read8>(exe, common.weapons, &Weapon::ammo);
-  readMembers<Dec<Read8> >(exe, common.weapons, &Weapon::createOnExp);
-  readMembers<Dec<Read8> >(exe, common.weapons, &Weapon::dirtEffect);
-  readMembers<Read8>(exe, common.weapons, &Weapon::leaveShells);
-  readMembers<Read8>(exe, common.weapons, &Weapon::leaveShellDelay);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::playReloadSound);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::wormExplode);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::explGround);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::wormCollide);
-  readMembers<Read8>(exe, common.weapons, &Weapon::fireCone);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::collideWithObjects);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::affectByExplosions);
-  readMembers<Read8>(exe, common.weapons, &Weapon::bounce);
-  readMembers<Read16>(exe, common.weapons, &Weapon::timeToExplo);
-  readMembers<Read16>(exe, common.weapons, &Weapon::timeToExploV);
-  readMembers<Read8>(exe, common.weapons, &Weapon::hitDamage);
-  readMembers<Read8>(exe, common.weapons, &Weapon::bloodOnHit);
-  readMembers<Read16>(exe, common.weapons, &Weapon::startFrame);
-  readMembers<Read8>(exe, common.weapons, &Weapon::numFrames);
-  readMembers<ReadBool>(exe, common.weapons, &Weapon::loopAnim);
-  readMembers<Read8>(exe, common.weapons, &Weapon::shotType);
-  readMembers<Read8>(exe, common.weapons, &Weapon::colorBullets);
-  readMembers<Read8>(exe, common.weapons, &Weapon::splinterAmount);
-  readMembers<Read8>(exe, common.weapons, &Weapon::splinterColour);
-  readMembers<Dec<Read8> >(exe, common.weapons, &Weapon::splinterType);
-  readMembers<Read8>(exe, common.weapons, &Weapon::splinterScatter);
-  readMembers<Dec<Read8> >(exe, common.weapons, &Weapon::objTrailType);
-  readMembers<Read8>(exe, common.weapons, &Weapon::objTrailDelay);
-  readMembers<Read8>(exe, common.weapons, &Weapon::partTrailType);
-  readMembers<Dec<Read8> >(exe, common.weapons, &Weapon::partTrailObj);
-  readMembers<Read8>(exe, common.weapons, &Weapon::partTrailDelay);
+  exe.Seekg(112966);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::gravity);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::shadow);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::laser_sight);
+  ReadMembers<Dec<Read8> >(exe, common.weapons, &Weapon::launch_sound);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::loop_sound);
+  ReadMembers<Dec<Read8> >(exe, common.weapons, &Weapon::explo_sound);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::speed);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::add_speed);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::distribution);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::parts);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::recoil);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::mult_speed);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::delay);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::loading_time);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::ammo);
+  ReadMembers<Dec<Read8> >(exe, common.weapons, &Weapon::create_on_exp);
+  ReadMembers<Dec<Read8> >(exe, common.weapons, &Weapon::dirt_effect);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::leave_shells);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::leave_shell_delay);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::play_reload_sound);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::worm_explode);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::expl_ground);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::worm_collide);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::fire_cone);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::collide_with_objects);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::affect_by_explosions);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::bounce);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::time_to_explo);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::time_to_explo_v);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::hit_damage);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::blood_on_hit);
+  ReadMembers<Read16>(exe, common.weapons, &Weapon::start_frame);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::num_frames);
+  ReadMembers<ReadBool>(exe, common.weapons, &Weapon::loop_anim);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::shot_type);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::color_bullets);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::splinter_amount);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::splinter_colour);
+  ReadMembers<Dec<Read8> >(exe, common.weapons, &Weapon::splinter_type);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::splinter_scatter);
+  ReadMembers<Dec<Read8> >(exe, common.weapons, &Weapon::obj_trail_type);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::obj_trail_delay);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::part_trail_type);
+  ReadMembers<Dec<Read8> >(exe, common.weapons, &Weapon::part_trail_obj);
+  ReadMembers<Read8>(exe, common.weapons, &Weapon::part_trail_delay);
 
-  exe.seekg(0x1B676);
+  exe.Seekg(0x1B676);
   for (int i = 0; i < 40; ++i) {
     // Read CP437 bytes from the EXE; derive idStr from those (toId() lowercases
     // ASCII and replaces everything else with '_', so single-byte input keeps
     // the id length predictable), then transcode the displayable name to UTF-8.
-    std::string raw = readPascalString(exe, 14);
-    common.weapons[i].idStr = toId(raw);
-    common.weapons[i].name = cp437::cp437BytesToUtf8(raw);
+    std::string raw = ReadPascalString(exe, 14);
+    common.weapons[i].id_str = ToId(raw);
+    common.weapons[i].name = cp437::Cp437BytesToUtf8(raw);
     common.weapons[i].id = i;
-    common.weapons[i].chainExplosion = i == 34;
+    common.weapons[i].chain_explosion = i == 34;
   }
 
   // Special objects
-  exe.seekg(115218);
-  readMembers<Dec<Read8> >(exe, common.sobjectTypes, &SObjectType::startSound);
-  readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::numSounds);
-  readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::animDelay);
-  readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::startFrame);
-  readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::numFrames);
-  readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::detectRange);
-  readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::damage);
-  readMembers<Read32>(exe, common.sobjectTypes,
-                      &SObjectType::blowAway);  // blowAway has 13 slots, not 14. The last value
-                                                // will overlap with shadow.
+  exe.Seekg(115218);
+  ReadMembers<Dec<Read8> >(exe, common.sobject_types, &SObjectType::start_sound);
+  ReadMembers<Read8>(exe, common.sobject_types, &SObjectType::num_sounds);
+  ReadMembers<Read8>(exe, common.sobject_types, &SObjectType::anim_delay);
+  ReadMembers<Read8>(exe, common.sobject_types, &SObjectType::start_frame);
+  ReadMembers<Read8>(exe, common.sobject_types, &SObjectType::num_frames);
+  ReadMembers<Read8>(exe, common.sobject_types, &SObjectType::detect_range);
+  ReadMembers<Read8>(exe, common.sobject_types, &SObjectType::damage);
+  ReadMembers<Read32>(exe, common.sobject_types,
+                      &SObjectType::blow_away);  // blowAway has 13 slots, not 14. The last value
+                                                 // will overlap with shadow.
 
-  exe.seekg(115368);
-  readMembers<ReadBool>(exe, common.sobjectTypes, &SObjectType::shadow);
-  readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::shake);
-  readMembers<Read8>(exe, common.sobjectTypes, &SObjectType::flash);
-  readMembers<Dec<Read8> >(exe, common.sobjectTypes, &SObjectType::dirtEffect);
+  exe.Seekg(115368);
+  ReadMembers<ReadBool>(exe, common.sobject_types, &SObjectType::shadow);
+  ReadMembers<Read8>(exe, common.sobject_types, &SObjectType::shake);
+  ReadMembers<Read8>(exe, common.sobject_types, &SObjectType::flash);
+  ReadMembers<Dec<Read8> >(exe, common.sobject_types, &SObjectType::dirt_effect);
 
   for (int i = 0; i < 14; ++i)  // TODO: Unhardcode
   {
-    common.sobjectTypes[i].id = i;
+    common.sobject_types[i].id = i;
   }
 
-  exe.seekg(111430);
+  exe.Seekg(111430);
 
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::detectDistance);
-  readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::gravity);
-  readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::speed);
-  readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::speedV);
-  readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::distribution);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::blowAway);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::bounce);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::hitDamage);
-  readMembers<ReadBool>(exe, common.nobjectTypes, &NObjectType::wormExplode);
-  readMembers<ReadBool>(exe, common.nobjectTypes, &NObjectType::explGround);
-  readMembers<ReadBool>(exe, common.nobjectTypes, &NObjectType::wormDestroy);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::bloodOnHit);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::startFrame);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::numFrames);
-  readMembers<ReadBool>(exe, common.nobjectTypes, &NObjectType::drawOnMap);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::colorBullets);
-  readMembers<Dec<Read8> >(exe, common.nobjectTypes, &NObjectType::createOnExp);
-  readMembers<ReadBool>(exe, common.nobjectTypes, &NObjectType::affectByExplosions);
-  readMembers<Dec<Read8> >(exe, common.nobjectTypes, &NObjectType::dirtEffect);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::splinterAmount);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::splinterColour);
-  readMembers<Dec<Read8> >(exe, common.nobjectTypes, &NObjectType::splinterType);
-  readMembers<ReadBool>(exe, common.nobjectTypes, &NObjectType::bloodTrail);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::bloodTrailDelay);
-  readMembers<Dec<Read8> >(exe, common.nobjectTypes, &NObjectType::leaveObj);
-  readMembers<Read8>(exe, common.nobjectTypes, &NObjectType::leaveObjDelay);
-  readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::timeToExplo);
-  readMembers<Read16>(exe, common.nobjectTypes, &NObjectType::timeToExploV);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::detect_distance);
+  ReadMembers<Read16>(exe, common.nobject_types, &NObjectType::gravity);
+  ReadMembers<Read16>(exe, common.nobject_types, &NObjectType::speed);
+  ReadMembers<Read16>(exe, common.nobject_types, &NObjectType::speed_v);
+  ReadMembers<Read16>(exe, common.nobject_types, &NObjectType::distribution);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::blow_away);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::bounce);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::hit_damage);
+  ReadMembers<ReadBool>(exe, common.nobject_types, &NObjectType::worm_explode);
+  ReadMembers<ReadBool>(exe, common.nobject_types, &NObjectType::expl_ground);
+  ReadMembers<ReadBool>(exe, common.nobject_types, &NObjectType::worm_destroy);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::blood_on_hit);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::start_frame);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::num_frames);
+  ReadMembers<ReadBool>(exe, common.nobject_types, &NObjectType::draw_on_map);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::color_bullets);
+  ReadMembers<Dec<Read8> >(exe, common.nobject_types, &NObjectType::create_on_exp);
+  ReadMembers<ReadBool>(exe, common.nobject_types, &NObjectType::affect_by_explosions);
+  ReadMembers<Dec<Read8> >(exe, common.nobject_types, &NObjectType::dirt_effect);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::splinter_amount);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::splinter_colour);
+  ReadMembers<Dec<Read8> >(exe, common.nobject_types, &NObjectType::splinter_type);
+  ReadMembers<ReadBool>(exe, common.nobject_types, &NObjectType::blood_trail);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::blood_trail_delay);
+  ReadMembers<Dec<Read8> >(exe, common.nobject_types, &NObjectType::leave_obj);
+  ReadMembers<Read8>(exe, common.nobject_types, &NObjectType::leave_obj_delay);
+  ReadMembers<Read16>(exe, common.nobject_types, &NObjectType::time_to_explo);
+  ReadMembers<Read16>(exe, common.nobject_types, &NObjectType::time_to_explo_v);
 
   for (int i = 0; i < 24; ++i)  // TODO: Unhardcode
   {
-    common.nobjectTypes[i].id = i;
+    common.nobject_types[i].id = i;
   }
 }
 
-void loadTextures(Common& common, ReaderFile& exe) {
-  exe.seekg(0x1C208);
-  readMembers<ReadBool>(exe, common.textures, &Texture::nDrawBack);
-  exe.seekg(0x1C1EA);
-  readMembers<Read8>(exe, common.textures, &Texture::mFrame);
-  exe.seekg(0x1C1F4);
-  readMembers<Read8>(exe, common.textures, &Texture::sFrame);
-  exe.seekg(0x1C1FE);
-  readMembers<Read8>(exe, common.textures, &Texture::rFrame);
+void LoadTextures(Common& common, ReaderFile& exe) {
+  exe.Seekg(0x1C208);
+  ReadMembers<ReadBool>(exe, common.textures, &Texture::n_draw_back);
+  exe.Seekg(0x1C1EA);
+  ReadMembers<Read8>(exe, common.textures, &Texture::m_frame);
+  exe.Seekg(0x1C1F4);
+  ReadMembers<Read8>(exe, common.textures, &Texture::s_frame);
+  exe.Seekg(0x1C1FE);
+  ReadMembers<Read8>(exe, common.textures, &Texture::r_frame);
 }
 
-void loadOthers(Common& common, ReaderFile& exe) {
-  exe.seekg(0x1C1E2);
+void LoadOthers(Common& common, ReaderFile& exe) {
+  exe.Seekg(0x1C1E2);
 
   for (int i = 0; i < 2; ++i)
-    for (int j = 0; j < 2; ++j) common.bonusRandTimer[j][i] = io::read_uint16_le(exe);
+    for (int j = 0; j < 2; ++j) common.bonus_rand_timer[j][i] = io::ReadUint16Le(exe);
 
-  exe.seekg(0x1AEEE + 2);
+  exe.Seekg(0x1AEEE + 2);
 
   for (int i = 0; i < 2; ++i)
-    for (int j = 0; j < 7; ++j) common.aiParams.k[i][j] = io::read_uint16_le(exe);
+    for (int j = 0; j < 7; ++j) common.ai_params.k[i][j] = io::ReadUint16Le(exe);
 
-  exe.seekg(0x1C1E0);
+  exe.Seekg(0x1C1E0);
 
-  for (int i = 0; i < 2; ++i) common.bonusSObjects[i] = exe.get() - 1;
+  for (int i = 0; i < 2; ++i) common.bonus_s_objects[i] = exe.Get() - 1;
 }
 
-void loadSprites(SpriteSet& ss, ReaderFile& f, int width, int height, int count) {
+void LoadSprites(SpriteSet& ss, ReaderFile& f, int width, int height, int count) {
   assert(width == height);  // We only support rectangular sprites right now
 
   ss.width = width;
   ss.height = height;
-  ss.spriteSize = width * height;
+  ss.sprite_size = width * height;
   ss.count = count;
 
-  int amount = ss.spriteSize * count;
+  int amount = ss.sprite_size * count;
   ss.data.resize(amount);
 
   std::vector<uint8_t> temp(amount);
 
-  f.get(&temp[0], amount);
+  f.Get(&temp[0], amount);
 
   PalIdx* dest = &ss.data[0];
   uint8_t* src = &temp[0];
@@ -625,102 +625,102 @@ void loadSprites(SpriteSet& ss, ReaderFile& f, int width, int height, int count)
       src += height;
     }
 
-    dest += ss.spriteSize;
+    dest += ss.sprite_size;
   }
 }
 
-void cropSprites(SpriteSet& sprites, int first, int count, int minX, int minY, int width,
+void CropSprites(SpriteSet& sprites, int first, int count, int min_x, int min_y, int width,
                  int height) {
   // Crop sprites by clearing pixels outside the desired area.
 
-  int maxX = minX + width - 1;
-  int maxY = minY + height - 1;
+  int max_x = min_x + width - 1;
+  int max_y = min_y + height - 1;
 
   for (int i = first; i < first + count; i++) {
     Sprite sprite = sprites[i];
 
     for (int y = 0; y < sprite.height; y++) {
       for (int x = 0; x < sprite.width; x++) {
-        if (x < minX || x > maxX || y < minY || y > maxY) sprite.mem[y * sprite.width + x] = 0;
+        if (x < min_x || x > max_x || y < min_y || y > max_y) sprite.mem[y * sprite.width + x] = 0;
       }
     }
   }
 }
 
-void loadGfx(Common& common, ReaderFile& exe, ReaderFile& gfx) {
-  exe.seekg(0x1C1DE);
-  common.bonusFrames[0] = exe.get();
-  common.bonusFrames[1] = exe.get();
+void LoadGfx(Common& common, ReaderFile& exe, ReaderFile& gfx) {
+  exe.Seekg(0x1C1DE);
+  common.bonus_frames[0] = exe.Get();
+  common.bonus_frames[1] = exe.Get();
 
-  gfx.seekg(10);  // Skip some header
+  gfx.Seekg(10);  // Skip some header
 
-  loadSprites(common.largeSprites, gfx, 16, 16, 110);
-  gfx.skip(4);  // Extra stuff
+  LoadSprites(common.large_sprites, gfx, 16, 16, 110);
+  gfx.Skip(4);  // Extra stuff
 
-  loadSprites(common.smallSprites, gfx, 7, 7, 130);
-  gfx.skip(4);  // Extra stuff
+  LoadSprites(common.small_sprites, gfx, 7, 7, 130);
+  gfx.Skip(4);  // Extra stuff
 
-  loadSprites(common.textSprites, gfx, 4, 4, 26);
+  LoadSprites(common.text_sprites, gfx, 4, 4, 26);
 
   // The original would only render 10x9 pixels of the worm sprites.
   // Cropping the worm sprites here to match the original behavior.
-  cropSprites(common.largeSprites, 16, 21, 2, 0, 10, 9);
+  CropSprites(common.large_sprites, 16, 21, 2, 0, 10, 9);
 
   Rand rand;
 
   for (int y = 0; y < 16; ++y)
     for (int x = 0; x < 16; ++x) {
       int idx = y * 16 + x;
-      common.largeSprites.spritePtr(73)[idx] = rand(4) + 160;
-      common.largeSprites.spritePtr(74)[idx] = rand(4) + 160;
+      common.large_sprites.SpritePtr(73)[idx] = rand(4) + 160;
+      common.large_sprites.SpritePtr(74)[idx] = rand(4) + 160;
 
-      common.largeSprites.spritePtr(87)[idx] = rand(4) + 12;
-      common.largeSprites.spritePtr(88)[idx] = rand(4) + 12;
+      common.large_sprites.SpritePtr(87)[idx] = rand(4) + 12;
+      common.large_sprites.SpritePtr(88)[idx] = rand(4) + 12;
 
-      common.largeSprites.spritePtr(82)[idx] = rand(4) + 94;
-      common.largeSprites.spritePtr(83)[idx] = rand(4) + 94;
+      common.large_sprites.SpritePtr(82)[idx] = rand(4) + 94;
+      common.large_sprites.SpritePtr(83)[idx] = rand(4) + 94;
     }
 }
 
-void loadSfx(std::vector<SfxSample>& sounds, ReaderFile& snd) {
-  int count = io::read_uint16_le(snd);
+void LoadSfx(std::vector<SfxSample>& sounds, ReaderFile& snd) {
+  int count = io::ReadUint16Le(snd);
 
   sounds.clear();
 
   for (int i = 0; i < count; ++i) {
     uint8_t name[9];
     name[8] = 0;
-    snd.get(name, 8);
+    snd.Get(name, 8);
 
-    int offset = io::read_uint32_le(snd);
-    int length = io::read_uint32_le(snd);
+    int offset = io::ReadUint32Le(snd);
+    int length = io::ReadUint32Le(snd);
 
-    auto oldPos = snd.tellg();
+    auto old_pos = snd.Tellg();
 
-    SfxSample sample(toId(reinterpret_cast<char const*>(name)), length);
+    SfxSample sample(ToId(reinterpret_cast<char const*>(name)), length);
 
     if (length > 0) {
-      snd.seekg(offset);
-      snd.get(&sample.originalData[0], length);
+      snd.Seekg(offset);
+      snd.Get(&sample.original_data[0], length);
 
-      sample.createSound();
+      sample.CreateSound();
     }
 
-    snd.seekg(oldPos);
+    snd.Seekg(old_pos);
 
     sounds.push_back(std::move(sample));
   }
 }
 
-void loadFont(Font& font, ReaderFile& exe) {
+void LoadFont(Font& font, ReaderFile& exe) {
   font.chars.resize(250);
 
-  std::size_t const FontSize = 250 * 8 * 8 + 1;
-  std::vector<unsigned char> temp(FontSize);
+  std::size_t const kFontSize = 250 * 8 * 8 + 1;
+  std::vector<unsigned char> temp(kFontSize);
 
-  exe.seekg(0x1C825);
+  exe.Seekg(0x1C825);
 
-  exe.get(reinterpret_cast<uint8_t*>(&temp[0]), FontSize);
+  exe.Get(reinterpret_cast<uint8_t*>(&temp[0]), kFontSize);
 
   for (int i = 0; i < 250; ++i) {
     unsigned char* ptr = &temp[i * 64 + 1];
@@ -735,41 +735,41 @@ void loadFont(Font& font, ReaderFile& exe) {
   }
 }
 
-void loadFromExe(Common& common, ReaderFile& exe, ReaderFile& gfx, ReaderFile& snd) {
+void LoadFromExe(Common& common, ReaderFile& exe, ReaderFile& gfx, ReaderFile& snd) {
   common.weapons.resize(40);
-  common.nobjectTypes.resize(24);
-  common.sobjectTypes.resize(14);
+  common.nobject_types.resize(24);
+  common.sobject_types.resize(14);
 
   for (int i = 0; i < 14; ++i) {
-    common.sobjectTypes[i].idStr = toId(sobjectNames[i]);
+    common.sobject_types[i].id_str = ToId(sobject_names[i]);
   }
 
   for (int i = 0; i < 24; ++i) {
-    common.nobjectTypes[i].idStr = toId(nobjectNames[i]);
+    common.nobject_types[i].id_str = ToId(nobject_names[i]);
   }
 
-  loadConstants(common, exe);
-  loadFont(common.font, exe);
-  loadPalette(common, exe);
-  loadMaterials(common, exe);
-  loadWeapons(common, exe);
-  loadTextures(common, exe);
-  loadOthers(common, exe);
+  LoadConstants(common, exe);
+  LoadFont(common.font, exe);
+  LoadPalette(common, exe);
+  LoadMaterials(common, exe);
+  LoadWeapons(common, exe);
+  LoadTextures(common, exe);
+  LoadOthers(common, exe);
 
-  loadGfx(common, exe, gfx);
-  loadSfx(common.sounds, snd);
+  LoadGfx(common, exe, gfx);
+  LoadSfx(common.sounds, snd);
 
   // Resolve the engine's named sound hooks against the loaded sound
   // table so saveTcConfig emits a populated [sounds] section. Without
   // this, a freshly extracted TC has every hook at -1 and the engine's
   // menu / round-begin / bump / reload sounds are silent (issue #44).
   static struct {
-    SOUND_DEF_T hook;
+    SoundDefT hook;
     char const* name;
-  } const hookNames[] = {
+  } const kHookNames[] = {
       {SoundMenuMoveUp, "moveup"}, {SoundMenuMoveDown, "movedown"}, {SoundMenuSelect, "select"},
       {SoundBump, "bump"},         {SoundBegin, "begin"},           {SoundReloaded, "reloaded"},
       {SoundAlive, "alive"},       {SoundNinjaropeThrow, "throw"},
   };
-  for (auto const& m : hookNames) common.soundHook[m.hook] = common.soundIndex(m.name);
+  for (auto const& m : kHookNames) common.sound_hook[m.hook] = common.SoundIndex(m.name);
 }

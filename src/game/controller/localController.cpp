@@ -13,206 +13,206 @@
 
 #include <cctype>
 
-std::shared_ptr<WormAI> createAi(int controller, Worm& worm, Settings& settings) {
+std::shared_ptr<WormAI> CreateAi(int controller, Worm& worm, Settings& settings) {
   if (controller == 1)
     return std::shared_ptr<WormAI>(new DumbLieroAI());
   else if (controller == 2)
-    return std::shared_ptr<WormAI>(new FollowAI(Weights(), settings.aiParallels, worm.index == 0));
+    return std::shared_ptr<WormAI>(new FollowAI(Weights(), settings.ai_parallels, worm.index == 0));
 
   return std::shared_ptr<WormAI>();
 }
 
 LocalController::LocalController(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings)
-    : game(common, settings, gfx.soundPlayer),
-      state(StateInitial),
-      fadeValue(0),
-      goingToMenu(false) {
+    : game(common, settings, gfx.sound_player),
+      state(kStateInitial),
+      fade_value(0),
+      going_to_menu(false) {
   auto worm1 = std::make_shared<Worm>();
-  worm1->settings = settings->wormSettings[0];
+  worm1->settings = settings->worm_settings[0];
   worm1->health = worm1->settings->health;
   worm1->index = 0;
-  worm1->statsX = 0;
-  worm1->ai = createAi(worm1->settings->controller, *worm1, *settings);
+  worm1->stats_x = 0;
+  worm1->ai = CreateAi(worm1->settings->controller, *worm1, *settings);
 
   auto worm2 = std::make_shared<Worm>();
-  worm2->settings = settings->wormSettings[1];
+  worm2->settings = settings->worm_settings[1];
   worm2->health = worm2->settings->health;
   worm2->index = 1;
-  worm2->statsX = 218;
-  worm2->ai = createAi(worm2->settings->controller, *worm2, *settings);
+  worm2->stats_x = 218;
+  worm2->ai = CreateAi(worm2->settings->controller, *worm2, *settings);
 
-  game.addViewport(new Viewport(Rect(0, 0, 158, 158), worm1->index, 504, 350));
-  game.addViewport(new Viewport(Rect(160, 0, 158 + 160, 158), worm2->index, 504, 350));
+  game.AddViewport(new Viewport(Rect(0, 0, 158, 158), worm1->index, 504, 350));
+  game.AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), worm2->index, 504, 350));
 
-  game.addWorm(worm1);
-  game.addWorm(worm2);
+  game.AddWorm(worm1);
+  game.AddWorm(worm2);
 
   // +68 on x to align the viewport in the middle
-  game.addSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+  game.AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
 }
 
-LocalController::~LocalController() { endRecord(); }
+LocalController::~LocalController() { EndRecord(); }
 
-void LocalController::onKey(int key, bool keyState) {
+void LocalController::OnKey(int key, bool key_state) {
   Worm::Control control;
-  Worm* worm = game.findControlForKey(key, control);
+  Worm* worm = game.FindControlForKey(key, control);
   if (worm) {
-    worm->cleanControlStates.set(control, keyState);
+    worm->clean_control_states.Set(control, key_state);
 
-    if (control < Worm::MaxControl) {
+    if (control < Worm::kMaxControl) {
       // Only real controls
-      worm->setControlState(control, keyState);
+      worm->SetControlState(control, key_state);
     }
 
-    if (worm->cleanControlStates[WormSettings::Dig]) {
-      worm->press(Worm::Left);
-      worm->press(Worm::Right);
+    if (worm->clean_control_states[WormSettings::kDig]) {
+      worm->Press(Worm::kLeft);
+      worm->Press(Worm::kRight);
     } else {
-      if (!worm->cleanControlStates[Worm::Left]) worm->release(Worm::Left);
-      if (!worm->cleanControlStates[Worm::Right]) worm->release(Worm::Right);
+      if (!worm->clean_control_states[Worm::kLeft]) worm->Release(Worm::kLeft);
+      if (!worm->clean_control_states[Worm::kRight]) worm->Release(Worm::kRight);
     }
   }
 
-  if (key == DkEscape && !goingToMenu) {
-    fadeValue = 31;
-    goingToMenu = true;
+  if (key == kDkEscape && !going_to_menu) {
+    fade_value = 31;
+    going_to_menu = true;
   }
 }
 
 // Called when the controller loses focus. When not focused, it will not receive key events among
 // other things.
-void LocalController::unfocus() {
-  if (replay.get()) replay->unfocus();
-  if (state == StateWeaponSelection) ws->unfocus();
+void LocalController::Unfocus() {
+  if (replay.get()) replay->Unfocus();
+  if (state == kStateWeaponSelection) ws->Unfocus();
 }
 
 // Called when the controller gets focus.
-void LocalController::focus() {
-  if (state == StateGameEnded) {
-    goingToMenu = true;
-    fadeValue = 0;
+void LocalController::Focus() {
+  if (state == kStateGameEnded) {
+    going_to_menu = true;
+    fade_value = 0;
     return;
   }
-  if (state == StateWeaponSelection) ws->focus();
-  if (replay.get()) replay->focus();
-  if (state == StateInitial) changeState(StateWeaponSelection);
-  game.focus(gfx.playRenderer);
+  if (state == kStateWeaponSelection) ws->Focus();
+  if (replay.get()) replay->Focus();
+  if (state == kStateInitial) ChangeState(kStateWeaponSelection);
+  game.Focus(gfx.play_renderer);
   // FIXME rewrite the focus function to avoid nonsense like this?
-  game.focus(gfx.singleScreenRenderer);
-  goingToMenu = false;
-  fadeValue = 0;
+  game.Focus(gfx.single_screen_renderer);
+  going_to_menu = false;
+  fade_value = 0;
 }
 
-bool LocalController::process() {
-  if (state == StateWeaponSelection) {
+bool LocalController::Process() {
+  if (state == kStateWeaponSelection) {
     // Apply key repeat for held keys during weapon selection.
     // Without SDL repeat events, we need to re-set control bits that
     // were consumed by WeaponSelection (via release/pressedOnce).
     for (std::size_t wi = 0; wi < game.worms.size(); ++wi) {
       Worm& worm = *game.worms[wi];
       for (int bit = 0; bit < 7; ++bit) {
-        bool held = worm.cleanControlStates[bit];
+        bool held = worm.clean_control_states[bit];
         if (held) {
-          if (!worm.controlStates[bit]) {
+          if (!worm.control_states[bit]) {
             // Key is physically held but bit was consumed — apply repeat logic
-            ++wormHeldFrames[wi][bit];
-            if (wormHeldFrames[wi][bit] >= KEY_REPEAT_INITIAL &&
-                (wormHeldFrames[wi][bit] - KEY_REPEAT_INITIAL) % KEY_REPEAT_INTERVAL == 0) {
-              worm.press(static_cast<Worm::Control>(bit));
+            ++worm_held_frames[wi][bit];
+            if (worm_held_frames[wi][bit] >= kKeyRepeatInitial &&
+                (worm_held_frames[wi][bit] - kKeyRepeatInitial) % kKeyRepeatInterval == 0) {
+              worm.Press(static_cast<Worm::Control>(bit));
             }
           } else {
             // Bit is set (initial press frame or just re-set) — reset counter
-            wormHeldFrames[wi][bit] = 0;
+            worm_held_frames[wi][bit] = 0;
           }
         } else {
-          wormHeldFrames[wi][bit] = 0;
+          worm_held_frames[wi][bit] = 0;
         }
       }
     }
 
-    if (ws->processFrame()) changeState(StateGame);
-  } else if (state == StateGame || state == StateGameEnded) {
-    int realFrameSkip = inverseFrameSkip ? !(cycles % frameSkip) : frameSkip;
-    for (int i = 0; i < realFrameSkip && (state == StateGame || state == StateGameEnded); ++i) {
+    if (ws->ProcessFrame()) ChangeState(kStateGame);
+  } else if (state == kStateGame || state == kStateGameEnded) {
+    int real_frame_skip = inverse_frame_skip ? !(cycles % frame_skip) : frame_skip;
+    for (int i = 0; i < real_frame_skip && (state == kStateGame || state == kStateGameEnded); ++i) {
       int phase = game.cycles % 2;
       for (std::size_t i = 0; i < game.worms.size(); ++i) {
         Worm& worm = *game.worms[(i + phase) % game.worms.size()];
         if (worm.ai.get()) {
           auto start_time = std::chrono::steady_clock::now();
-          worm.ai->process(game, worm);
+          worm.ai->Process(game, worm);
           auto time = std::chrono::steady_clock::now() - start_time;
-          game.statsRecorder->aiProcessTime(&worm, time);
+          game.stats_recorder->AiProcessTime(&worm, time);
         }
       }
       if (replay.get()) {
         try {
-          replay->recordFrame();
+          replay->RecordFrame();
         } catch (std::runtime_error& e) {
-          Console::writeWarning(std::string("Error recording replay frame: ") + e.what());
-          Console::writeWarning("Replay recording aborted");
+          console::WriteWarning(std::string("Error recording replay frame: ") + e.what());
+          console::WriteWarning("Replay recording aborted");
           replay.reset();
         }
       }
-      game.processFrame();
+      game.ProcessFrame();
 
-      if (game.isGameOver()) {
-        changeState(StateGameEnded);
+      if (game.IsGameOver()) {
+        ChangeState(kStateGameEnded);
       }
     }
   }
 
   // CommonController::process();
 
-  if (goingToMenu) {
-    if (fadeValue > 0)
-      fadeValue -= 1;
+  if (going_to_menu) {
+    if (fade_value > 0)
+      fade_value -= 1;
     else {
-      if (state == StateGameEnded) {
-        endRecord();
-        game.statsRecorder->finish(game);
+      if (state == kStateGameEnded) {
+        EndRecord();
+        game.stats_recorder->Finish(game);
       }
       return false;
     }
   } else {
-    if (fadeValue < 33) {
-      fadeValue += 1;
+    if (fade_value < 33) {
+      fade_value += 1;
     }
   }
 
   return true;
 }
 
-void LocalController::draw(Renderer& renderer, bool useSpectatorViewports) {
-  if (state == StateWeaponSelection) {
-    ws->draw(renderer, state, useSpectatorViewports);
-  } else if (state == StateGame || state == StateGameEnded || state == StateInitial) {
-    game.draw(renderer, state, useSpectatorViewports);
+void LocalController::Draw(Renderer& renderer, bool use_spectator_viewports) {
+  if (state == kStateWeaponSelection) {
+    ws->Draw(renderer, state, use_spectator_viewports);
+  } else if (state == kStateGame || state == kStateGameEnded || state == kStateInitial) {
+    game.Draw(renderer, state, use_spectator_viewports);
   }
-  renderer.fadeValue = fadeValue;
+  renderer.fade_value = fade_value;
 }
 
-void LocalController::changeState(GameState newState) {
-  if (state == newState) return;
+void LocalController::ChangeState(GameState new_state) {
+  if (state == new_state) return;
 
   // NOTE: We prepare new state before destroying the old.
   // e.g. weapon selection is destroyed first after we successfully
   // started recording.
 
   // NOTE: Must do this here before starting recording!
-  if (state == StateWeaponSelection) {
-    ws->finalize();
+  if (state == kStateWeaponSelection) {
+    ws->Finalize();
   }
 
-  if (newState == StateWeaponSelection) {
+  if (new_state == kStateWeaponSelection) {
     ws.reset(new WeaponSelection(game));
-  } else if (newState == StateGame) {
+  } else if (new_state == kStateGame) {
     // NOTE: This must be done before the replay recording starts below
     for (std::size_t i = 0; i < game.worms.size(); ++i) {
       Worm& worm = *game.worms[i];
       worm.lives = game.settings->lives;
     }
 
-    if (game.settings->extensions && game.settings->recordReplays) {
+    if (game.settings->kExtensions && game.settings->record_replays) {
       try {
         std::time_t ticks = std::time(0);
         std::tm* now = std::localtime(&ticks);
@@ -220,58 +220,58 @@ void LocalController::changeState(GameState newState) {
         char buf[512];
         std::strftime(buf, sizeof(buf), "%Y-%m-%d %H.%M.%S", now);
 
-        std::string playerNames = " ";
+        std::string player_names = " ";
         for (std::size_t i = 0; i < 2; ++i) {
           Worm& worm = *game.worms[i];
           std::string const& name = worm.settings->name;
           int chars = 0;
 
-          if (i > 0) playerNames.push_back('-');
+          if (i > 0) player_names.push_back('-');
           for (std::size_t c = 0; c < name.size() && chars < 4; ++c, ++chars) {
             unsigned char ch = (unsigned char)name[c];
-            if (std::isalnum(ch)) playerNames.push_back(ch);
+            if (std::isalnum(ch)) player_names.push_back(ch);
           }
         }
 
-        auto node = gfx.getUserConfigNode() / "Replays" / (buf + playerNames + ".lrp");
+        auto node = gfx.GetUserConfigNode() / "Replays" / (buf + player_names + ".lrp");
 
-        replay.reset(new ReplayWriter(node.toWriter()));
+        replay.reset(new ReplayWriter(node.ToWriter()));
 
-        replay->beginRecord(game);
+        replay->BeginRecord(game);
       } catch (std::runtime_error& e) {
-        gfx.pendingErrorMessage = std::string("Error starting replay recording: ") + e.what();
-        goingToMenu = true;
-        fadeValue = 0;
+        gfx.pending_error_message = std::string("Error starting replay recording: ") + e.what();
+        going_to_menu = true;
+        fade_value = 0;
         return;
       }
     }
 
-    game.startGame();
-  } else if (newState == StateGameEnded) {
-    if (!goingToMenu) {
-      fadeValue = 180;
-      goingToMenu = true;
+    game.StartGame();
+  } else if (new_state == kStateGameEnded) {
+    if (!going_to_menu) {
+      fade_value = 180;
+      going_to_menu = true;
     }
   }
 
-  if (state == StateWeaponSelection) {
-    fadeValue = 33;
+  if (state == kStateWeaponSelection) {
+    fade_value = 33;
     ws.reset();
   }
 
-  state = newState;
+  state = new_state;
 }
 
-void LocalController::endRecord() {
+void LocalController::EndRecord() {
   if (replay.get()) {
     replay.reset();
   }
 }
 
-void LocalController::swapLevel(Level& newLevel) { currentLevel()->swap(newLevel); }
+void LocalController::SwapLevel(Level& new_level) { CurrentLevel()->Swap(new_level); }
 
-Level* LocalController::currentLevel() { return &game.level; }
+Level* LocalController::CurrentLevel() { return &game.level; }
 
-Game* LocalController::currentGame() { return &game; }
+Game* LocalController::CurrentGame() { return &game; }
 
-bool LocalController::running() { return state != StateGameEnded && state != StateInitial; }
+bool LocalController::Running() { return state != kStateGameEnded && state != kStateInitial; }

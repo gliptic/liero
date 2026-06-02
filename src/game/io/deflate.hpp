@@ -35,19 +35,19 @@ struct InflateReader : Reader {
   InflateReader(InflateReader const&) = delete;
   InflateReader& operator=(InflateReader const&) = delete;
 
-  uint8_t get() override {
+  uint8_t Get() override {
     if (out_pos_ >= out_len_) {
-      refill();
+      Refill();
       if (out_len_ == 0) throw EndOfStream{};
     }
     return outbuf_[out_pos_++];
   }
 
-  std::size_t try_get(uint8_t* dst, std::size_t n) override {
+  std::size_t TryGet(uint8_t* dst, std::size_t n) override {
     std::size_t total = 0;
     while (total < n) {
       if (out_pos_ >= out_len_) {
-        refill();
+        Refill();
         if (out_len_ == 0) break;
       }
       std::size_t take = std::min(n - total, out_len_ - out_pos_);
@@ -59,7 +59,7 @@ struct InflateReader : Reader {
   }
 
  private:
-  void refill() {
+  void Refill() {
     out_pos_ = 0;
     out_len_ = 0;
     if (eos_) return;
@@ -69,7 +69,7 @@ struct InflateReader : Reader {
 
     while (stream_.avail_out > 0) {
       if (stream_.avail_in == 0 && !input_done_) {
-        std::size_t got = source_->try_get(inbuf_.data(), inbuf_.size());
+        std::size_t got = source_->TryGet(inbuf_.data(), inbuf_.size());
         if (got == 0) {
           input_done_ = true;
         } else {
@@ -127,7 +127,7 @@ struct DeflateWriter : Writer {
 
   ~DeflateWriter() override {
     try {
-      finish();
+      Finish();
     } catch (...) {
       // Best-effort during stack unwind.
     }
@@ -137,38 +137,38 @@ struct DeflateWriter : Writer {
   DeflateWriter(DeflateWriter const&) = delete;
   DeflateWriter& operator=(DeflateWriter const&) = delete;
 
-  void put(uint8_t b) override { put(&b, 1); }
+  void Put(uint8_t b) override { Put(&b, 1); }
 
-  void put(uint8_t const* src, std::size_t n) override {
+  void Put(uint8_t const* src, std::size_t n) override {
     if (finished_) throw StreamError("write after finish");
 
     stream_.next_in = const_cast<unsigned char*>(src);
     stream_.avail_in = static_cast<unsigned int>(n);
 
     while (stream_.avail_in > 0) {
-      if (stream_.avail_out == 0) drain_out();
+      if (stream_.avail_out == 0) DrainOut();
       int rc = mz_deflate(&stream_, MZ_NO_FLUSH);
       if (rc != MZ_OK) throw StreamError("mz_deflate failed");
     }
   }
 
-  void flush() override {
+  void Flush() override {
     // Pre-emptive drain — full flush happens on destruction via finish().
-    drain_out();
-    sink_->flush();
+    DrainOut();
+    sink_->Flush();
   }
 
  private:
-  void drain_out() {
+  void DrainOut() {
     std::size_t produced = outbuf_.size() - stream_.avail_out;
     if (produced > 0) {
-      sink_->put(outbuf_.data(), produced);
+      sink_->Put(outbuf_.data(), produced);
     }
     stream_.next_out = outbuf_.data();
     stream_.avail_out = static_cast<unsigned int>(outbuf_.size());
   }
 
-  void finish() {
+  void Finish() {
     if (finished_) return;
     finished_ = true;
 
@@ -177,11 +177,11 @@ struct DeflateWriter : Writer {
 
     for (;;) {
       int rc = mz_deflate(&stream_, MZ_FINISH);
-      drain_out();
+      DrainOut();
       if (rc == MZ_STREAM_END) break;
       if (rc != MZ_OK) throw StreamError("mz_deflate(MZ_FINISH) failed");
     }
-    sink_->flush();
+    sink_->Flush();
   }
 
   std::unique_ptr<Writer> sink_;

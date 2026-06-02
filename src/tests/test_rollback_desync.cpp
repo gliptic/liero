@@ -35,17 +35,17 @@
 
 namespace {
 
-std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
-  precomputeTables();
+std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
+  PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tcRoot));
+  FsNode tc_root(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tc_root));
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
-  settings->loadingTime = 0;
-  settings->loadChange = true;
-  settings->randomLevel = true;
-  settings->gameMode = Settings::GMKillEmAll;
+  settings->loading_time = 0;
+  settings->load_change = true;
+  settings->random_level = true;
+  settings->game_mode = Settings::kGmKillEmAll;
   return {common, settings};
 }
 
@@ -54,18 +54,18 @@ struct ScriptedInputs {
   std::vector<uint8_t> b;
 };
 
-ScriptedInputs generateInputs(uint32_t seed, int ticks) {
+ScriptedInputs GenerateInputs(uint32_t seed, int ticks) {
   Rand rng(seed);
   ScriptedInputs out;
   out.a.reserve(ticks);
   out.b.reserve(ticks);
   for (int i = 0; i < ticks; ++i) {
-    uint8_t inA = rng() & 0x7f;
-    uint8_t inB = rng() & 0x7f;
-    if ((rng() % 10) < 6) inA |= (1 << Worm::Fire);
-    if ((rng() % 10) < 6) inB |= (1 << Worm::Fire);
-    out.a.push_back(inA);
-    out.b.push_back(inB);
+    uint8_t in_a = rng() & 0x7f;
+    uint8_t in_b = rng() & 0x7f;
+    if ((rng() % 10) < 6) in_a |= (1 << Worm::kFire);
+    if ((rng() % 10) < 6) in_b |= (1 << Worm::kFire);
+    out.a.push_back(in_a);
+    out.b.push_back(in_b);
   }
   return out;
 }
@@ -78,83 +78,83 @@ TEST_CASE("Rollback desync detection — clean run produces no alarms", "[rollba
   constexpr uint32_t kTransportSeed = 0xA1B2;
   constexpr int kTicks = 1500;
 
-  ScriptedInputs script = generateInputs(kInputSeed, kTicks);
+  ScriptedInputs script = GenerateInputs(kInputSeed, kTicks);
 
-  auto [common, settings] = makeEnv();
+  auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->setSkipWeaponSelection(true);
-  b->setSkipWeaponSelection(true);
+  a->SetSkipWeaponSelection(true);
+  b->SetSkipWeaponSelection(true);
   // Disable the frame-advantage stall so prediction + rollback are
   // exercised at the same rate as in test_rollback_correctness.
-  a->setFrameAdvantageEnabled(false);
-  b->setFrameAdvantageEnabled(false);
-  a->game.rand.seed(kWorldSeed);
-  b->game.rand.seed(kWorldSeed);
+  a->SetFrameAdvantageEnabled(false);
+  b->SetFrameAdvantageEnabled(false);
+  a->game.rand.Seed(kWorldSeed);
+  b->game.rand.Seed(kWorldSeed);
 
   rollback_test::JitterTransport transport({kTransportSeed, 1, 4});
 
-  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendAToB(gen_, bf, c, in, lf);
+  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendAToB(gen, bf, c, in, lf);
   });
-  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendBToA(gen_, bf, c, in, lf);
+  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendBToA(gen, bf, c, in, lf);
   });
 
   // Capture every emitted checksum. The last value wins on duplicates
   // (e.g. a resim that overwrites a prior promote's value for the same
   // frame after a misprediction cascade).
-  std::unordered_map<uint32_t, uint32_t> aChecks, bChecks;
-  a->setChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { aChecks[f] = c; });
-  b->setChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { bChecks[f] = c; });
+  std::unordered_map<uint32_t, uint32_t> a_checks, b_checks;
+  a->SetChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { a_checks[f] = c; });
+  b->SetChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { b_checks[f] = c; });
 
-  a->focus();
-  b->focus();
+  a->Focus();
+  b->Focus();
 
   for (uint32_t f = 0; f < 3; ++f) {
-    a->injectRemoteInput(f, 0);
-    b->injectRemoteInput(f, 0);
+    a->InjectRemoteInput(f, 0);
+    b->InjectRemoteInput(f, 0);
   }
 
-  auto deliverA = [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    a->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    a->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliverB = [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    b->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    b->InjectRemoteBatch(bf, c, in, lf);
   };
 
   for (int i = 0; i < kTicks; ++i) {
-    a->setLocalControlState(script.a[i]);
-    b->setLocalControlState(script.b[i]);
-    a->process();
-    b->process();
-    transport.tick(deliverA, deliverB);
+    a->SetLocalControlState(script.a[i]);
+    b->SetLocalControlState(script.b[i]);
+    a->Process();
+    b->Process();
+    transport.Tick(deliver_a, deliver_b);
   }
-  transport.flush(deliverA, deliverB);
+  transport.Flush(deliver_a, deliver_b);
 
   // Drain the promote loop on both sides.
-  a->setLocalControlState(0);
-  b->setLocalControlState(0);
+  a->SetLocalControlState(0);
+  b->SetLocalControlState(0);
   for (int i = 0; i < 12; ++i) {
-    a->process();
-    b->process();
-    transport.tick(deliverA, deliverB);
+    a->Process();
+    b->Process();
+    transport.Tick(deliver_a, deliver_b);
   }
 
-  REQUIRE(a->currentFrame() == b->currentFrame());
-  REQUIRE(a->rollbackCount() > 0);
-  REQUIRE(b->rollbackCount() > 0);
+  REQUIRE(a->CurrentFrame() == b->CurrentFrame());
+  REQUIRE(a->RollbackCount() > 0);
+  REQUIRE(b->RollbackCount() > 0);
 
   // Both peers must emit checksums for a substantial fraction of frames
   // (otherwise the test is vacuous — no detection signal is being sent).
-  REQUIRE(aChecks.size() > static_cast<std::size_t>(kTicks / 2));
-  REQUIRE(bChecks.size() > static_cast<std::size_t>(kTicks / 2));
+  REQUIRE(a_checks.size() > static_cast<std::size_t>(kTicks / 2));
+  REQUIRE(b_checks.size() > static_cast<std::size_t>(kTicks / 2));
 
   std::size_t compared = 0;
   std::size_t alarms = 0;
-  for (auto const& [frame, ca] : aChecks) {
-    auto it = bChecks.find(frame);
-    if (it == bChecks.end()) continue;
+  for (auto const& [frame, ca] : a_checks) {
+    auto it = b_checks.find(frame);
+    if (it == b_checks.end()) continue;
     ++compared;
     if (ca != it->second) {
       ++alarms;
@@ -177,77 +177,77 @@ TEST_CASE("Rollback desync detection — 1-bit injection fires within 200 frames
   // the desync detection has to survive prediction/resim noise.
   constexpr uint32_t kInjectFrame = 200;
 
-  ScriptedInputs script = generateInputs(kInputSeed, kTicks);
+  ScriptedInputs script = GenerateInputs(kInputSeed, kTicks);
 
-  auto [common, settings] = makeEnv();
+  auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->setSkipWeaponSelection(true);
-  b->setSkipWeaponSelection(true);
-  a->setFrameAdvantageEnabled(false);
-  b->setFrameAdvantageEnabled(false);
-  a->game.rand.seed(kWorldSeed);
-  b->game.rand.seed(kWorldSeed);
+  a->SetSkipWeaponSelection(true);
+  b->SetSkipWeaponSelection(true);
+  a->SetFrameAdvantageEnabled(false);
+  b->SetFrameAdvantageEnabled(false);
+  a->game.rand.Seed(kWorldSeed);
+  b->game.rand.Seed(kWorldSeed);
 
   rollback_test::JitterTransport transport({kTransportSeed, 1, 4});
 
-  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendAToB(gen_, bf, c, in, lf);
+  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendAToB(gen, bf, c, in, lf);
   });
-  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendBToA(gen_, bf, c, in, lf);
+  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendBToA(gen, bf, c, in, lf);
   });
 
-  std::unordered_map<uint32_t, uint32_t> aChecks, bChecks;
-  a->setChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { aChecks[f] = c; });
+  std::unordered_map<uint32_t, uint32_t> a_checks, b_checks;
+  a->SetChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { a_checks[f] = c; });
   // Inject: corrupt B's reported checksum starting at kInjectFrame to
   // simulate a peer whose post-frame state has diverged by one bit.
   // We perturb at the emit boundary rather than poking sim state
   // mid-frame — the latter would feed back into B's snapshot, get
   // restored on rollback, and turn into a structural divergence rather
   // than the "1-bit drift" the plan calls for.
-  b->setChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) {
+  b->SetChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) {
     if (f >= kInjectFrame) c ^= 1u;
-    bChecks[f] = c;
+    b_checks[f] = c;
   });
 
-  a->focus();
-  b->focus();
+  a->Focus();
+  b->Focus();
 
   for (uint32_t f = 0; f < 3; ++f) {
-    a->injectRemoteInput(f, 0);
-    b->injectRemoteInput(f, 0);
+    a->InjectRemoteInput(f, 0);
+    b->InjectRemoteInput(f, 0);
   }
 
-  auto deliverA = [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    a->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    a->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliverB = [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    b->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    b->InjectRemoteBatch(bf, c, in, lf);
   };
 
-  uint32_t firstAlarmFrame = UINT32_MAX;
+  uint32_t first_alarm_frame = UINT32_MAX;
   for (int i = 0; i < kTicks; ++i) {
-    a->setLocalControlState(script.a[i]);
-    b->setLocalControlState(script.b[i]);
-    a->process();
-    b->process();
-    transport.tick(deliverA, deliverB);
+    a->SetLocalControlState(script.a[i]);
+    b->SetLocalControlState(script.b[i]);
+    a->Process();
+    b->Process();
+    transport.Tick(deliver_a, deliver_b);
 
     // Sweep newly-matched (frame, checksum) pairs and look for the
     // first mismatch ≥ kInjectFrame.
-    for (auto const& [frame, ca] : aChecks) {
+    for (auto const& [frame, ca] : a_checks) {
       if (frame < kInjectFrame) continue;
-      auto it = bChecks.find(frame);
-      if (it == bChecks.end()) continue;
-      if (ca != it->second && frame < firstAlarmFrame) {
-        firstAlarmFrame = frame;
+      auto it = b_checks.find(frame);
+      if (it == b_checks.end()) continue;
+      if (ca != it->second && frame < first_alarm_frame) {
+        first_alarm_frame = frame;
       }
     }
-    if (firstAlarmFrame != UINT32_MAX) break;
+    if (first_alarm_frame != UINT32_MAX) break;
   }
 
-  REQUIRE(firstAlarmFrame != UINT32_MAX);
-  REQUIRE(firstAlarmFrame >= kInjectFrame);
-  REQUIRE(firstAlarmFrame < kInjectFrame + 200);
+  REQUIRE(first_alarm_frame != UINT32_MAX);
+  REQUIRE(first_alarm_frame >= kInjectFrame);
+  REQUIRE(first_alarm_frame < kInjectFrame + 200);
 }

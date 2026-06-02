@@ -9,24 +9,24 @@
 #include "../common.hpp"
 #include "../level.hpp"
 
-struct path_node {
-  enum { none, open, closed };
+struct PathNode {
+  enum { kNone, kOpen, kClosed };
 
-  path_node() : parent(0), state(none), g(0) {}
+  PathNode() : parent(0), state(kNone), g(0) {}
 
-  void reset() {
-    state = none;
+  void Reset() {
+    state = kNone;
     parent = 0;
   }
 
-  path_node* parent;
+  PathNode* parent;
   int state;
   int g;
 };
 
 template <typename NodeT, typename DerivedT>
-struct dijkstra_state {
-  typedef path_node path_node_t;
+struct DijkstraState {
+  typedef PathNode path_node_t;
 
   // Lazy-deletion min-heap. When a node's cost is lowered, we push a new
   // entry; the stale entry remains in the heap and is skipped at pop time
@@ -40,28 +40,28 @@ struct dijkstra_state {
   };
   std::priority_queue<Entry, std::vector<Entry>, EntryGreater> open_list;
 
-  bool open_empty() const { return open_list.empty(); }
+  bool OpenEmpty() const { return open_list.empty(); }
 
-  void add_open(path_node_t* node) {
+  void AddOpen(path_node_t* node) {
     open_list.push({node->g, node});
-    node->state = path_node_t::open;
+    node->state = path_node_t::kOpen;
   }
 
-  void reset() {
+  void Reset() {
     while (!open_list.empty()) open_list.pop();
   }
 
-  void set_origin(NodeT origin_init) {
+  void SetOrigin(NodeT origin_init) {
     DerivedT& derived = static_cast<DerivedT&>(*this);
 
-    path_node_t* origin_pn = derived.get_node(origin_init);
+    path_node_t* origin_pn = derived.GetNode(origin_init);
     origin_pn->g = 0;
     origin_pn->parent = 0;
-    add_open(origin_pn);
+    AddOpen(origin_pn);
   }
 
   template <typename StopPred, typename SuccessorIter>
-  bool run(StopPred stop, SuccessorIter succ_iter) {
+  bool Run(StopPred stop, SuccessorIter succ_iter) {
     DerivedT& derived = static_cast<DerivedT&>(*this);
 
     while (!open_list.empty() && !stop()) {
@@ -69,25 +69,25 @@ struct dijkstra_state {
       open_list.pop();
 
       // Skip stale entries from prior decreased_key operations.
-      if (e.node->state == path_node_t::closed) continue;
+      if (e.node->state == path_node_t::kClosed) continue;
       if (e.g != e.node->g) continue;
 
       path_node_t* min_pn = e.node;
-      NodeT min = derived.get_node_id(min_pn);
+      NodeT min = derived.GetNodeId(min_pn);
 
-      min_pn->state = path_node_t::closed;
+      min_pn->state = path_node_t::kClosed;
 
-      succ_iter.begin(min);
+      succ_iter.Begin(min);
 
-      while (succ_iter.advance()) {
-        NodeT node = succ_iter.node();
-        path_node_t* pn = derived.get_node(node);
-        if (pn->state != path_node_t::closed) {
-          int g = min_pn->g + succ_iter.cost();
-          if (pn->state != path_node_t::open) {
+      while (succ_iter.Advance()) {
+        NodeT node = succ_iter.Node();
+        path_node_t* pn = derived.GetNode(node);
+        if (pn->state != path_node_t::kClosed) {
+          int g = min_pn->g + succ_iter.Cost();
+          if (pn->state != path_node_t::kOpen) {
             pn->g = g;
             pn->parent = min_pn;
-            add_open(pn);
+            AddOpen(pn);
           } else if (g < pn->g) {
             pn->g = g;
             pn->parent = min_pn;
@@ -102,105 +102,105 @@ struct dijkstra_state {
   }
 };
 
-struct level_cell : path_node {
+struct LevelCell : PathNode {
   int cost;  // 1 = air, 2 = dirt, -1 = rock
 };
 
-extern int const level_cell_offsets[8];
-extern int const level_cell_costs[8];
+extern int const kLevelCellOffsets[8];
+extern int const kLevelCellCosts[8];
 
-struct level_cell_succ {
-  void begin(level_cell* c) {
+struct LevelCellSucc {
+  void Begin(LevelCell* c) {
     i = -1;
     this->c = c;
   }
 
-  bool advance() {
+  bool Advance() {
     do {
       ++i;
       if (i >= 8) return false;
-    } while (cost() < 0);
+    } while (Cost() < 0);
 
     return true;
   }
 
-  level_cell* node() { return &c[level_cell_offsets[i]]; }
+  LevelCell* Node() { return &c[kLevelCellOffsets[i]]; }
 
-  int cost() {
-    level_cell* n = c + level_cell_offsets[i];
-    return level_cell_costs[i] * n->cost;
+  int Cost() {
+    LevelCell* n = c + kLevelCellOffsets[i];
+    return kLevelCellCosts[i] * n->cost;
   }
 
-  level_cell* c;
-  level_cell* target;
+  LevelCell* c;
+  LevelCell* target;
   int i;
 };
 
-struct dijkstra_level : dijkstra_state<level_cell*, dijkstra_level> {
-  static int const full_width = 504;
-  static int const full_height = 350;
+struct DijkstraLevel : DijkstraState<LevelCell*, DijkstraLevel> {
+  static int const kFullWidth = 504;
+  static int const kFullHeight = 350;
 
-  static int const factor = 4;
+  static int const kFactor = 4;
 
-  static int const width = full_width / factor;
-  static int const pitch = width + 2;
-  static int const height = full_height / factor;
+  static int const kWidth = kFullWidth / kFactor;
+  static int const kPitch = kWidth + 2;
+  static int const kHeight = kFullHeight / kFactor;
 
-  level_cell cells[(width + 2) * (height + 2)];
+  LevelCell cells[(kWidth + 2) * (kHeight + 2)];
 
-  path_node_t* get_node(level_cell* c) { return c; }
+  path_node_t* GetNode(LevelCell* c) { return c; }
 
-  level_cell* get_node_id(path_node_t* c) { return static_cast<level_cell*>(c); }
+  LevelCell* GetNodeId(path_node_t* c) { return static_cast<LevelCell*>(c); }
 
-  level_cell* cell(int x, int y) { return &cells[(y + 1) * pitch + x + 1]; }
+  LevelCell* Cell(int x, int y) { return &cells[(y + 1) * kPitch + x + 1]; }
 
-  IVec2 coords(level_cell* c) {
+  IVec2 Coords(LevelCell* c) {
     int offset = (int)(c - cells);
-    int y = offset / pitch;
-    int x = offset % pitch;
+    int y = offset / kPitch;
+    int x = offset % kPitch;
     return IVec2(x - 1, y - 1);
   }
 
-  IVec2 coords_level(level_cell* c) { return coords(c) * factor + IVec2(factor / 2, factor / 2); }
+  IVec2 CoordsLevel(LevelCell* c) { return Coords(c) * kFactor + IVec2(kFactor / 2, kFactor / 2); }
 
-  level_cell* cell_from_px(int x, int y) {
-    x = std::min(std::max(x, 0), full_width - 1);
-    y = std::min(std::max(y, 0), full_height - 1);
-    x /= factor;
-    y /= factor;
-    return cell(x, y);
+  LevelCell* CellFromPx(int x, int y) {
+    x = std::min(std::max(x, 0), kFullWidth - 1);
+    y = std::min(std::max(y, 0), kFullHeight - 1);
+    x /= kFactor;
+    y /= kFactor;
+    return Cell(x, y);
   }
 
-  void build(Level& level, Common& common) {
-    this->reset();
+  void Build(Level& level, Common& common) {
+    this->Reset();
 
     Material* mat = common.materials;
 
-    for (int x = 0; x < width + 2; ++x) {
+    for (int x = 0; x < kWidth + 2; ++x) {
       cells[x].cost = -1;
-      cells[(height + 1) * pitch + x].cost = -1;
+      cells[(kHeight + 1) * kPitch + x].cost = -1;
     }
 
-    for (int y = 0; y < height + 2; ++y) {
-      cells[y * pitch].cost = -1;
-      cells[y * pitch + (width + 1)].cost = -1;
+    for (int y = 0; y < kHeight + 2; ++y) {
+      cells[y * kPitch].cost = -1;
+      cells[y * kPitch + (kWidth + 1)].cost = -1;
     }
 
-    for (int ly = 0; ly < height; ++ly) {
-      for (int lx = 0; lx < width; ++lx) {
+    for (int ly = 0; ly < kHeight; ++ly) {
+      for (int lx = 0; lx < kWidth; ++lx) {
         int cost = 1;
 
-        for (int cy = ly * factor; cy < (ly + 1) * factor; ++cy)
-          for (int cx = lx * factor; cx < (lx + 1) * factor; ++cx) {
-            if (!level.inside(cx, cy)) {
+        for (int cy = ly * kFactor; cy < (ly + 1) * kFactor; ++cy)
+          for (int cx = lx * kFactor; cx < (lx + 1) * kFactor; ++cx) {
+            if (!level.Inside(cx, cy)) {
               cost = -1;
               goto done;
             }
 
-            Material m = mat[level.pixel(cx, cy)];
+            Material m = mat[level.Pixel(cx, cy)];
 
-            if (!m.background()) {
-              if (m.anyDirt()) {
+            if (!m.Background()) {
+              if (m.AnyDirt()) {
                 cost = 2;
               } else {
                 cost = -1;
@@ -210,12 +210,12 @@ struct dijkstra_level : dijkstra_state<level_cell*, dijkstra_level> {
           }
       done:
 
-        level_cell* c = cell(lx, ly);
+        LevelCell* c = Cell(lx, ly);
 
         c->cost = cost;
       }
     }
 
-    for (auto& c : cells) c.reset();
+    for (auto& c : cells) c.Reset();
   }
 };

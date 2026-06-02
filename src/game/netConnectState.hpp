@@ -16,13 +16,13 @@
 struct NetConnectState : AppState {
   NetConnectState(NetSession::Role role, std::string address, uint16_t port);
   // Direct connection with existing transport (after ICE)
-  NetConnectState(NetSession::Role role, NetTransport&& transport, std::string peerAddr = "",
-                  uint16_t peerPort = 0);
+  NetConnectState(NetSession::Role role, NetTransport&& transport, std::string peer_addr = "",
+                  uint16_t peer_port = 0);
 
-  void enter() override;
-  void handleEvent(SDL_Event& ev) override;
-  bool update() override;
-  void draw() override;
+  void Enter() override;
+  void HandleEvent(SDL_Event& ev) override;
+  bool Update() override;
+  void Draw() override;
 
  private:
   NetSession::Role role_;

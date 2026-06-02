@@ -26,18 +26,18 @@
 // ---- Holdazone ----
 template <class Archive>
 void serialize(Archive& ar, Holdazone& h) {
-  ar(cereal::make_nvp("rect", h.rect), cereal::make_nvp("holderIdx", h.holderIdx),
-     cereal::make_nvp("contenderIdx", h.contenderIdx),
-     cereal::make_nvp("contenderFrames", h.contenderFrames),
-     cereal::make_nvp("timeoutLeft", h.timeoutLeft), cereal::make_nvp("zoneWidth", h.zoneWidth),
-     cereal::make_nvp("zoneHeight", h.zoneHeight));
+  ar(cereal::make_nvp("rect", h.rect), cereal::make_nvp("holderIdx", h.holder_idx),
+     cereal::make_nvp("contenderIdx", h.contender_idx),
+     cereal::make_nvp("contenderFrames", h.contender_frames),
+     cereal::make_nvp("timeoutLeft", h.timeout_left), cereal::make_nvp("zoneWidth", h.zone_width),
+     cereal::make_nvp("zoneHeight", h.zone_height));
 }
 
 // ---- Bonus (pure POD-ish) ----
 template <class Archive>
 void serialize(Archive& ar, Bonus& b) {
   ar(cereal::make_nvp("used", b.used), cereal::make_nvp("x", b.x), cereal::make_nvp("y", b.y),
-     cereal::make_nvp("velY", b.velY), cereal::make_nvp("frame", b.frame),
+     cereal::make_nvp("velY", b.vel_y), cereal::make_nvp("frame", b.frame),
      cereal::make_nvp("timer", b.timer), cereal::make_nvp("weapon", b.weapon));
 }
 
@@ -45,8 +45,8 @@ void serialize(Archive& ar, Bonus& b) {
 template <class Archive>
 void serialize(Archive& ar, SObject& s) {
   ar(cereal::make_nvp("used", s.used), cereal::make_nvp("x", s.x), cereal::make_nvp("y", s.y),
-     cereal::make_nvp("id", s.id), cereal::make_nvp("curFrame", s.curFrame),
-     cereal::make_nvp("animDelay", s.animDelay));
+     cereal::make_nvp("id", s.id), cereal::make_nvp("curFrame", s.cur_frame),
+     cereal::make_nvp("animDelay", s.anim_delay));
 }
 
 // ---- BObject (pure POD) ----
@@ -61,28 +61,28 @@ void serialize(Archive& ar, BObject& b) {
 // numeric fields. The Game-level pool save/load below writes the indices.
 
 template <class Archive>
-void serializeNObjectScalars(Archive& ar, NObject& n) {
+void SerializeNObjectScalars(Archive& ar, NObject& n) {
   ar(cereal::make_nvp("used", n.used), cereal::make_nvp("pos", n.pos),
-     cereal::make_nvp("vel", n.vel), cereal::make_nvp("timeLeft", n.timeLeft),
-     cereal::make_nvp("ownerIdx", n.ownerIdx), cereal::make_nvp("curFrame", n.curFrame),
-     cereal::make_nvp("hasHit", n.hasHit));
+     cereal::make_nvp("vel", n.vel), cereal::make_nvp("timeLeft", n.time_left),
+     cereal::make_nvp("ownerIdx", n.owner_idx), cereal::make_nvp("curFrame", n.cur_frame),
+     cereal::make_nvp("hasHit", n.has_hit));
 }
 
 template <class Archive>
-void serializeWObjectScalars(Archive& ar, WObject& w) {
+void SerializeWObjectScalars(Archive& ar, WObject& w) {
   ar(cereal::make_nvp("used", w.used), cereal::make_nvp("pos", w.pos),
-     cereal::make_nvp("vel", w.vel), cereal::make_nvp("ownerIdx", w.ownerIdx),
-     cereal::make_nvp("curFrame", w.curFrame), cereal::make_nvp("timeLeft", w.timeLeft),
-     cereal::make_nvp("hasHit", w.hasHit));
+     cereal::make_nvp("vel", w.vel), cereal::make_nvp("ownerIdx", w.owner_idx),
+     cereal::make_nvp("curFrame", w.cur_frame), cereal::make_nvp("timeLeft", w.time_left),
+     cereal::make_nvp("hasHit", w.has_hit));
 }
 
 // ---- (wormIdx, slot) encoding for WormWeapon* firedBy ----
 struct FiredByRef {
-  int8_t wormIdx;
+  int8_t worm_idx;
   int8_t slot;
 };
 
-inline FiredByRef encodeFiredBy(Game const& game, WormWeapon const* fb) {
+inline FiredByRef EncodeFiredBy(Game const& game, WormWeapon const* fb) {
   if (!fb) return {-1, -1};
   for (std::size_t wi = 0; wi < game.worms.size(); ++wi) {
     WormWeapon const* base = game.worms[wi]->weapons;
@@ -92,15 +92,15 @@ inline FiredByRef encodeFiredBy(Game const& game, WormWeapon const* fb) {
   return {-1, -1};
 }
 
-inline WormWeapon* decodeFiredBy(Game& game, FiredByRef ref) {
-  if (ref.wormIdx < 0 || ref.slot < 0) return nullptr;
-  if (static_cast<std::size_t>(ref.wormIdx) >= game.worms.size()) return nullptr;
-  return &game.worms[ref.wormIdx]->weapons[ref.slot];
+inline WormWeapon* DecodeFiredBy(Game& game, FiredByRef ref) {
+  if (ref.worm_idx < 0 || ref.slot < 0) return nullptr;
+  if (static_cast<std::size_t>(ref.worm_idx) >= game.worms.size()) return nullptr;
+  return &game.worms[ref.worm_idx]->weapons[ref.slot];
 }
 
 template <class Archive>
 void serialize(Archive& ar, FiredByRef& r) {
-  ar(cereal::make_nvp("w", r.wormIdx), cereal::make_nvp("s", r.slot));
+  ar(cereal::make_nvp("w", r.worm_idx), cereal::make_nvp("s", r.slot));
 }
 
 // ---- ExactObjectList<T, Limit> ----
@@ -118,7 +118,7 @@ void save(Archive& ar, ExactObjectList<T, Limit> const& list) {
 
 template <class Archive, typename T, int Limit>
 void load(Archive& ar, ExactObjectList<T, Limit>& list) {
-  list.clear();
+  list.Clear();
   for (int i = 0; i < Limit; ++i) {
     bool used;
     ar(cereal::make_nvp("u", used));
@@ -126,7 +126,7 @@ void load(Archive& ar, ExactObjectList<T, Limit>& list) {
       // Bypass getFreeObject — it picks the lowest free slot, not slot i.
       ar(cereal::make_nvp("e", list.arr[i]));
       list.arr[i].used = true;
-      list.freeList[static_cast<uint32_t>(i) >> 5] &=
+      list.free_list[static_cast<uint32_t>(i) >> 5] &=
           ~(uint32_t(1) << (static_cast<uint32_t>(i) & 31));
       ++list.count;
     }
@@ -145,9 +145,9 @@ template <class Archive, typename T>
 void load(Archive& ar, FastObjectList<T>& list) {
   uint32_t count;
   ar(cereal::make_nvp("count", count));
-  list.clear();
+  list.Clear();
   for (uint32_t i = 0; i < count; ++i) {
-    T* slot = list.newObject();
+    T* slot = list.NewObject();
     if (!slot) {
       // List capacity smaller than snapshotted count — bug, but read into
       // a scratch element to keep the stream consumed.
@@ -165,7 +165,7 @@ void load(Archive& ar, FastObjectList<T>& list) {
 // state that replays don't need: object pools, holdazone, and the type/
 // firedBy index sidecars for the typed pools.
 template <class Archive>
-void saveGameSnapshot(Archive& ar, Game const& game) {
+void SaveGameSnapshot(Archive& ar, Game const& game) {
   save(ar, game);  // existing Game save (settings, worms, viewports, level, ...)
 
   ar(cereal::make_nvp("holdazone", const_cast<Holdazone&>(game.holdazone)));
@@ -181,11 +181,11 @@ void saveGameSnapshot(Archive& ar, Game const& game) {
       NObject const& n = list.arr[i];
       ar(cereal::make_nvp("u", n.used));
       if (n.used) {
-        serializeNObjectScalars(ar, const_cast<NObject&>(n));
-        int32_t typeIdx =
-            n.type ? static_cast<int32_t>(n.type - &game.common->nobjectTypes[0]) : -1;
-        FiredByRef fb = encodeFiredBy(game, n.firedBy);
-        ar(cereal::make_nvp("typeIdx", typeIdx), cereal::make_nvp("firedBy", fb));
+        SerializeNObjectScalars(ar, const_cast<NObject&>(n));
+        int32_t type_idx =
+            n.type ? static_cast<int32_t>(n.type - &game.common->nobject_types[0]) : -1;
+        FiredByRef fb = EncodeFiredBy(game, n.fired_by);
+        ar(cereal::make_nvp("typeIdx", type_idx), cereal::make_nvp("firedBy", fb));
       }
     }
   }
@@ -197,10 +197,10 @@ void saveGameSnapshot(Archive& ar, Game const& game) {
       WObject const& w = list.arr[i];
       ar(cereal::make_nvp("u", w.used));
       if (w.used) {
-        serializeWObjectScalars(ar, const_cast<WObject&>(w));
-        int32_t typeIdx = w.type ? static_cast<int32_t>(w.type - &game.common->weapons[0]) : -1;
-        FiredByRef fb = encodeFiredBy(game, w.firedBy);
-        ar(cereal::make_nvp("typeIdx", typeIdx), cereal::make_nvp("firedBy", fb));
+        SerializeWObjectScalars(ar, const_cast<WObject&>(w));
+        int32_t type_idx = w.type ? static_cast<int32_t>(w.type - &game.common->weapons[0]) : -1;
+        FiredByRef fb = EncodeFiredBy(game, w.fired_by);
+        ar(cereal::make_nvp("typeIdx", type_idx), cereal::make_nvp("firedBy", fb));
       }
     }
   }
@@ -210,7 +210,7 @@ void saveGameSnapshot(Archive& ar, Game const& game) {
 }
 
 template <class Archive>
-void loadGameSnapshot(Archive& ar, Game& game) {
+void LoadGameSnapshot(Archive& ar, Game& game) {
   load(ar, game);  // existing Game load — recreates worms, viewports, level
 
   ar(cereal::make_nvp("holdazone", game.holdazone));
@@ -221,22 +221,22 @@ void loadGameSnapshot(Archive& ar, Game& game) {
   // NObjects
   {
     auto& list = game.nobjects;
-    list.clear();
+    list.Clear();
     for (int i = 0; i < 600; ++i) {
       bool used;
       ar(cereal::make_nvp("u", used));
       if (used) {
         NObject& n = list.arr[i];
-        serializeNObjectScalars(ar, n);
+        SerializeNObjectScalars(ar, n);
         n.used = true;
-        list.freeList[static_cast<uint32_t>(i) >> 5] &=
+        list.free_list[static_cast<uint32_t>(i) >> 5] &=
             ~(uint32_t(1) << (static_cast<uint32_t>(i) & 31));
         ++list.count;
-        int32_t typeIdx;
+        int32_t type_idx;
         FiredByRef fb;
-        ar(cereal::make_nvp("typeIdx", typeIdx), cereal::make_nvp("firedBy", fb));
-        n.type = (typeIdx >= 0) ? &game.common->nobjectTypes[typeIdx] : nullptr;
-        n.firedBy = decodeFiredBy(game, fb);
+        ar(cereal::make_nvp("typeIdx", type_idx), cereal::make_nvp("firedBy", fb));
+        n.type = (type_idx >= 0) ? &game.common->nobject_types[type_idx] : nullptr;
+        n.fired_by = DecodeFiredBy(game, fb);
       }
     }
   }
@@ -244,22 +244,22 @@ void loadGameSnapshot(Archive& ar, Game& game) {
   // WObjects
   {
     auto& list = game.wobjects;
-    list.clear();
+    list.Clear();
     for (int i = 0; i < 600; ++i) {
       bool used;
       ar(cereal::make_nvp("u", used));
       if (used) {
         WObject& w = list.arr[i];
-        serializeWObjectScalars(ar, w);
+        SerializeWObjectScalars(ar, w);
         w.used = true;
-        list.freeList[static_cast<uint32_t>(i) >> 5] &=
+        list.free_list[static_cast<uint32_t>(i) >> 5] &=
             ~(uint32_t(1) << (static_cast<uint32_t>(i) & 31));
         ++list.count;
-        int32_t typeIdx;
+        int32_t type_idx;
         FiredByRef fb;
-        ar(cereal::make_nvp("typeIdx", typeIdx), cereal::make_nvp("firedBy", fb));
-        w.type = (typeIdx >= 0) ? &game.common->weapons[typeIdx] : nullptr;
-        w.firedBy = decodeFiredBy(game, fb);
+        ar(cereal::make_nvp("typeIdx", type_idx), cereal::make_nvp("firedBy", fb));
+        w.type = (type_idx >= 0) ? &game.common->weapons[type_idx] : nullptr;
+        w.fired_by = DecodeFiredBy(game, fb);
       }
     }
   }

@@ -2,6 +2,15 @@
 
 #include <string>
 
+// The token names inside LIERO_*DEFS(_) are concatenated with single-
+// letter prefixes via DEFENUMC/S/H/SO to construct enum constants
+// like CBonusFlickerTime, SOk, HRemExp, SoundMenuSelect. Callers reach
+// them through the LC(name) / LS(name) macros below, which themselves
+// token-paste the prefix. Renaming any token here silently breaks
+// every callsite. NOLINT keeps clang-tidy's identifier-naming check
+// away from this expansion machinery.
+// NOLINTBEGIN(readability-identifier-naming)
+
 // Variables sourced from [constants] in tc.cfg
 #define LIERO_CDEFS(_)      \
   _(NRInitialLength)        \
@@ -150,28 +159,28 @@
 #define DEFENUMH(x) H##x,
 #define DEFENUMSO(x) Sound##x,
 
-enum CONST_DEF_T {
+enum ConstDefT {
   LIERO_CDEFS(DEFENUMC)
   /* Maximum quantity of constants in CONST_DEF_T. */
-  MaxC
+  kMaxC
 };
 
-enum STRING_DEF_T {
+enum StringDefT {
   LIERO_SDEFS(DEFENUMS)
   /* Maximum quantity of strings in STRING_DEF_T. */
-  MaxS
+  kMaxS
 };
 
-enum HACK_DEF_T {
+enum HackDefT {
   LIERO_HDEFS(DEFENUMH)
   /* Maximum quantity of hacks in HACK_DEF_T. */
-  MaxH
+  kMaxH
 };
 
-enum SOUND_DEF_T {
+enum SoundDefT {
   LIERO_SOUNDDEFS(DEFENUMSO)
   /* Maximum quantity of sound hooks in SOUND_DEF_T. */
-  MaxSound
+  kMaxSound
 };
 
 #undef DEFENUMS
@@ -179,7 +188,8 @@ enum SOUND_DEF_T {
 #undef DEFENUMH
 #undef DEFENUMSO
 
-#define LC(name) (common.C[C##name])
-#define LS(name) (common.S[S##name])
+#define LC(name) (common.c[C##name])
+#define LS(name) (common.s[S##name])
+// NOLINTEND(readability-identifier-naming)
 
 // TODO: Move these to Common

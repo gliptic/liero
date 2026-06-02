@@ -9,7 +9,7 @@ struct Game;
  * Blood Object
  */
 struct BObject {
-  bool process(Game& game);
+  bool Process(Game& game);
 
   fixedvec pos, vel;
   int color;

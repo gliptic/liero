@@ -7,10 +7,10 @@
 struct WeaponMenuState : AppState {
   WeaponMenuState();
 
-  void enter() override;
-  void handleEvent(SDL_Event& ev) override;
-  bool update() override;
-  void draw() override;
+  void Enter() override;
+  void HandleEvent(SDL_Event& ev) override;
+  bool Update() override;
+  void Draw() override;
 
  private:
   std::unique_ptr<Menu> weaponMenu_;

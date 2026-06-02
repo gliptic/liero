@@ -32,24 +32,24 @@ struct Reader {
   virtual ~Reader() = default;
 
   // Read one byte; throw EndOfStream on EOF.
-  virtual uint8_t get() = 0;
+  virtual uint8_t Get() = 0;
 
   // Read up to `n` bytes; return number actually read.
-  virtual std::size_t try_get(uint8_t* dst, std::size_t n) = 0;
+  virtual std::size_t TryGet(uint8_t* dst, std::size_t n) = 0;
 
   // Read exactly `n` bytes or throw EndOfStream.
-  void get(uint8_t* dst, std::size_t n) {
-    std::size_t got = try_get(dst, n);
+  void Get(uint8_t* dst, std::size_t n) {
+    std::size_t got = TryGet(dst, n);
     if (got != n) throw EndOfStream{};
   }
 
   // Discard up to `n` bytes; return number actually discarded.
-  virtual std::size_t try_skip(std::size_t n) {
+  virtual std::size_t TrySkip(std::size_t n) {
     uint8_t buf[1024];
     std::size_t total = 0;
     while (total < n) {
       std::size_t take = std::min(sizeof(buf), n - total);
-      std::size_t got = try_get(buf, take);
+      std::size_t got = TryGet(buf, take);
       total += got;
       if (got < take) break;
     }
@@ -60,9 +60,9 @@ struct Reader {
 struct Writer {
   virtual ~Writer() = default;
 
-  virtual void put(uint8_t b) = 0;
-  virtual void put(uint8_t const* src, std::size_t n) = 0;
-  virtual void flush() {}
+  virtual void Put(uint8_t b) = 0;
+  virtual void Put(uint8_t const* src, std::size_t n) = 0;
+  virtual void Flush() {}
 };
 
 // ---- File-backed ----
@@ -87,13 +87,13 @@ struct FileReader : Reader {
   FileReader(FileReader const&) = delete;
   FileReader& operator=(FileReader const&) = delete;
 
-  uint8_t get() override {
+  uint8_t Get() override {
     int c = std::fgetc(f_);
     if (c == EOF) throw EndOfStream{};
     return static_cast<uint8_t>(c);
   }
 
-  std::size_t try_get(uint8_t* dst, std::size_t n) override { return std::fread(dst, 1, n, f_); }
+  std::size_t TryGet(uint8_t* dst, std::size_t n) override { return std::fread(dst, 1, n, f_); }
 
  private:
   std::FILE* f_;
@@ -120,13 +120,13 @@ struct FileWriter : Writer {
   FileWriter(FileWriter const&) = delete;
   FileWriter& operator=(FileWriter const&) = delete;
 
-  void put(uint8_t b) override {
+  void Put(uint8_t b) override {
     if (std::fputc(b, f_) == EOF) throw StreamError("write failed");
   }
-  void put(uint8_t const* src, std::size_t n) override {
+  void Put(uint8_t const* src, std::size_t n) override {
     if (std::fwrite(src, 1, n, f_) != n) throw StreamError("write failed");
   }
-  void flush() override { std::fflush(f_); }
+  void Flush() override { std::fflush(f_); }
 
  private:
   std::FILE* f_;
@@ -144,24 +144,24 @@ struct MemReader : Reader {
 
   // Point at a different buffer (e.g. once it has been filled by an
   // owning container).
-  void reset(uint8_t const* data, std::size_t size) {
+  void Reset(uint8_t const* data, std::size_t size) {
     data_ = data;
     size_ = size;
     pos_ = 0;
   }
 
-  std::size_t tellg() const { return pos_; }
-  void seekg(std::size_t pos) {
+  std::size_t Tellg() const { return pos_; }
+  void Seekg(std::size_t pos) {
     if (pos > size_) throw EndOfStream("seekg past end");
     pos_ = pos;
   }
 
-  uint8_t get() override {
+  uint8_t Get() override {
     if (pos_ >= size_) throw EndOfStream{};
     return data_[pos_++];
   }
 
-  std::size_t try_get(uint8_t* dst, std::size_t n) override {
+  std::size_t TryGet(uint8_t* dst, std::size_t n) override {
     std::size_t avail = size_ - pos_;
     std::size_t take = std::min(n, avail);
     std::memcpy(dst, data_ + pos_, take);
@@ -179,16 +179,16 @@ struct VectorWriter : Writer {
   std::vector<uint8_t>& buf;
   explicit VectorWriter(std::vector<uint8_t>& b) : buf(b) {}
 
-  void put(uint8_t b) override { buf.push_back(b); }
-  void put(uint8_t const* src, std::size_t n) override { buf.insert(buf.end(), src, src + n); }
+  void Put(uint8_t b) override { buf.push_back(b); }
+  void Put(uint8_t const* src, std::size_t n) override { buf.insert(buf.end(), src, src + n); }
 };
 
 struct StringWriter : Writer {
   std::string& buf;
   explicit StringWriter(std::string& b) : buf(b) {}
 
-  void put(uint8_t b) override { buf.push_back(static_cast<char>(b)); }
-  void put(uint8_t const* src, std::size_t n) override {
+  void Put(uint8_t b) override { buf.push_back(static_cast<char>(b)); }
+  void Put(uint8_t const* src, std::size_t n) override {
     buf.append(reinterpret_cast<char const*>(src), n);
   }
 };

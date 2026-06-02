@@ -10,11 +10,11 @@
 
 // --- InputStringState ---
 
-InputStringState::InputStringState(std::string initial, std::size_t maxLen, int x, int y,
+InputStringState::InputStringState(std::string initial, std::size_t max_len, int x, int y,
                                    int (*filter)(int), std::string prefix, bool centered,
                                    Callback callback)
     : buffer_(std::move(initial)),
-      maxLen_(maxLen),
+      maxLen_(max_len),
       x_(x),
       y_(y),
       filter_(filter),
@@ -22,10 +22,10 @@ InputStringState::InputStringState(std::string initial, std::size_t maxLen, int 
       centered_(centered),
       callback_(std::move(callback)) {}
 
-void InputStringState::enter() { SDL_StartTextInput(gfx->sdlWindow); }
+void InputStringState::Enter() { SDL_StartTextInput(gfx->sdl_window); }
 
-void InputStringState::handleEvent(SDL_Event& ev) {
-  gfx->processEvent(ev);
+void InputStringState::HandleEvent(SDL_Event& ev) {
+  gfx->ProcessEvent(ev);
 
   switch (ev.type) {
     case SDL_EVENT_KEY_DOWN:
@@ -51,7 +51,7 @@ void InputStringState::handleEvent(SDL_Event& ev) {
       break;
 
     case SDL_EVENT_TEXT_INPUT: {
-      int k = utf8ToDOS(ev.text.text);
+      int k = Utf8ToDos(ev.text.text);
       if (k && buffer_.size() < maxLen_ && (!filter_ || (k = filter_(k)))) {
         buffer_ += char(k);
       }
@@ -67,30 +67,30 @@ void InputStringState::handleEvent(SDL_Event& ev) {
   }
 }
 
-bool InputStringState::update() {
+bool InputStringState::Update() {
   if (done_) {
-    SDL_StopTextInput(gfx->sdlWindow);
-    g_soundPlayer->play(gfx->common->soundHook[SoundMenuSelect]);
-    gfx->clearKeys();
+    SDL_StopTextInput(gfx->sdl_window);
+    g_sound_player->Play(gfx->common->sound_hook[SoundMenuSelect]);
+    gfx->ClearKeys();
     callback_(accepted_, buffer_);
     return false;
   }
   return true;
 }
 
-void InputStringState::draw() {
+void InputStringState::Draw() {
   std::string str = prefix_ + buffer_ + '_';
 
   Font& font = gfx->common->font;
-  int width = font.getDims(str);
+  int width = font.GetDims(str);
   int adjust = centered_ ? width / 2 : 0;
-  int clrX = x_ - 10 - adjust;
+  int clr_x = x_ - 10 - adjust;
 
-  blitImageNoKeyColour(gfx->playRenderer.bmp, &gfx->frozenScreen.getPixel(clrX, y_), clrX, y_,
-                       clrX + 10 + width, 8, gfx->frozenScreen.pitch);
+  BlitImageNoKeyColour(gfx->play_renderer.bmp, &gfx->frozen_screen.GetPixel(clr_x, y_), clr_x, y_,
+                       clr_x + 10 + width, 8, gfx->frozen_screen.pitch);
 
-  drawRoundedBox(gfx->playRenderer.bmp, x_ - 2 - adjust, y_, 0, 7, width);
-  font.drawText(gfx->playRenderer.bmp, str, x_ - adjust, y_ + 1, 50);
+  DrawRoundedBox(gfx->play_renderer.bmp, x_ - 2 - adjust, y_, 0, 7, width);
+  font.DrawString(gfx->play_renderer.bmp, str, x_ - adjust, y_ + 1, 50);
 }
 
 // --- WaitForKeyState ---
@@ -98,15 +98,15 @@ void InputStringState::draw() {
 WaitForKeyState::WaitForKeyState(bool extended, Callback callback)
     : extended_(extended), callback_(std::move(callback)) {}
 
-void WaitForKeyState::enter() {}
+void WaitForKeyState::Enter() {}
 
-void WaitForKeyState::handleEvent(SDL_Event& ev) {
-  gfx->processEvent(ev);
+void WaitForKeyState::HandleEvent(SDL_Event& ev) {
+  gfx->ProcessEvent(ev);
 
   switch (ev.type) {
     case SDL_EVENT_KEY_DOWN: {
       uint32_t k = SDLToDOSKey(ev.key.scancode);
-      if (extended_ || !isExtendedKey(k)) {
+      if (extended_ || !IsExtendedKey(k)) {
         result_ = k;
         done_ = true;
       }
@@ -114,12 +114,12 @@ void WaitForKeyState::handleEvent(SDL_Event& ev) {
     }
 
     case SDL_EVENT_GAMEPAD_AXIS_MOTION:
-      if (ev.gaxis.value > JoyAxisThreshold) {
-        result_ = WormSettingsExtensions::gamepadAxisPositive(ev.gaxis.axis);
+      if (ev.gaxis.value > kJoyAxisThreshold) {
+        result_ = WormSettingsExtensions::GamepadAxisPositive(ev.gaxis.axis);
         isGamepadResult_ = true;
         done_ = true;
-      } else if (ev.gaxis.value < -JoyAxisThreshold) {
-        result_ = WormSettingsExtensions::gamepadAxisNegative(ev.gaxis.axis);
+      } else if (ev.gaxis.value < -kJoyAxisThreshold) {
+        result_ = WormSettingsExtensions::GamepadAxisNegative(ev.gaxis.axis);
         isGamepadResult_ = true;
         done_ = true;
       }
@@ -136,49 +136,49 @@ void WaitForKeyState::handleEvent(SDL_Event& ev) {
   }
 }
 
-bool WaitForKeyState::update() {
+bool WaitForKeyState::Update() {
   if (done_) {
-    gfx->clearKeys();
+    gfx->ClearKeys();
     callback_(result_, isGamepadResult_);
     return false;
   }
   return true;
 }
 
-void WaitForKeyState::draw() {
+void WaitForKeyState::Draw() {
   std::string text = "PRESS A KEY";
   int height;
-  int width = gfx->common->font.getDims(text, &height);
+  int width = gfx->common->font.GetDims(text, &height);
 
   int cx = 160 - width / 2 - 2;
   int cy = 100 - height / 2 - 2;
 
-  drawRoundedBox(gfx->playRenderer.bmp, cx, cy, 0, height + 1, width + 1);
-  gfx->common->font.drawText(gfx->playRenderer.bmp, text, cx + 2, cy + 2, 50);
+  DrawRoundedBox(gfx->play_renderer.bmp, cx, cy, 0, height + 1, width + 1);
+  gfx->common->font.DrawString(gfx->play_renderer.bmp, text, cx + 2, cy + 2, 50);
 }
 
 // --- InfoBoxState ---
 
-InfoBoxState::InfoBoxState(std::string text, int x, int y, bool clearScreen,
-                           DismissCallback onDismiss)
+InfoBoxState::InfoBoxState(std::string text, int x, int y, bool clear_screen,
+                           DismissCallback on_dismiss)
     : text_(std::move(text)),
       x_(x),
       y_(y),
-      clearScreen_(clearScreen),
-      onDismiss_(std::move(onDismiss)) {}
+      clearScreen_(clear_screen),
+      onDismiss_(std::move(on_dismiss)) {}
 
-void InfoBoxState::enter() {}
+void InfoBoxState::Enter() {}
 
-void InfoBoxState::handleEvent(SDL_Event& ev) {
-  gfx->processEvent(ev);
+void InfoBoxState::HandleEvent(SDL_Event& ev) {
+  gfx->ProcessEvent(ev);
 
   if (ev.type == SDL_EVENT_KEY_DOWN || ev.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) done_ = true;
 }
 
-bool InfoBoxState::update() {
+bool InfoBoxState::Update() {
   if (done_) {
-    gfx->clearKeys();
-    if (clearScreen_) fill(gfx->playRenderer.bmp, 0);
+    gfx->ClearKeys();
+    if (clearScreen_) Fill(gfx->play_renderer.bmp, 0);
     // onDismiss_ runs before this state is popped. It may call
     // scheduleReplaceTop() on the StateStack to chain into another
     // state; that takes precedence over the normal pop because the
@@ -189,18 +189,18 @@ bool InfoBoxState::update() {
   return true;
 }
 
-void InfoBoxState::draw() {
+void InfoBoxState::Draw() {
   if (clearScreen_) {
-    gfx->playRenderer.pal = gfx->common->exepal;
-    fill(gfx->playRenderer.bmp, 0);
+    gfx->play_renderer.pal = gfx->common->exepal;
+    Fill(gfx->play_renderer.bmp, 0);
   }
 
   int height;
-  int width = gfx->common->font.getDims(text_, &height);
+  int width = gfx->common->font.GetDims(text_, &height);
 
   int cx = x_ - width / 2 - 2;
   int cy = y_ - height / 2 - 2;
 
-  drawRoundedBox(gfx->playRenderer.bmp, cx, cy, 0, height + 1, width + 1);
-  gfx->common->font.drawText(gfx->playRenderer.bmp, text_, cx + 2, cy + 2, 6);
+  DrawRoundedBox(gfx->play_renderer.bmp, cx, cy, 0, height + 1, width + 1);
+  gfx->common->font.DrawString(gfx->play_renderer.bmp, text_, cx + 2, cy + 2, 6);
 }

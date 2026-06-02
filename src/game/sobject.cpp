@@ -11,213 +11,213 @@
 #include "viewport.hpp"
 #include "worm.hpp"
 
-void SObjectType::create(Game& game, int x, int y, int ownerIdx, WormWeapon* firedBy,
+void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fired_by,
                          WObject* from) {
   Common& common = *game.common;
-  SObject& obj = *game.sobjects.newObjectReuse();
+  SObject& obj = *game.sobjects.NewObjectReuse();
 
-  assert(numSounds < 10);
+  assert(num_sounds < 10);
 
-  if (startSound >= 0) game.soundPlayer->play(game.rand(numSounds) + startSound);
+  if (start_sound >= 0) game.sound_player->Play(game.rand(num_sounds) + start_sound);
 
   for (std::size_t i = 0; i < game.viewports.size(); ++i) {
     Viewport& v = *game.viewports[i];
 
-    if (x > v.x && x < v.x + v.rect.width() && y > v.y && y < v.y + v.rect.height()) {
-      if (itof(shake) > v.shake) v.shake = itof(shake);
+    if (x > v.x && x < v.x + v.rect.Width() && y > v.y && y < v.y + v.rect.Height()) {
+      if (Itof(shake) > v.shake) v.shake = Itof(shake);
     }
   }
 
   obj.id = id;
   obj.x = x - 8;
   obj.y = y - 8;
-  obj.curFrame = 0;
-  obj.animDelay = animDelay;
+  obj.cur_frame = 0;
+  obj.anim_delay = anim_delay;
 
-  if (flash > game.screenFlash) {
-    game.screenFlash = flash;
+  if (flash > game.screen_flash) {
+    game.screen_flash = flash;
   }
 
-  Worm* owner = game.wormByIdx(ownerIdx);
+  Worm* owner = game.WormByIdx(owner_idx);
 
-  game.statsRecorder->damagePotential(owner, firedBy, damage);
+  game.stats_recorder->DamagePotential(owner, fired_by, damage);
 
   if (damage > 0) {
     for (std::size_t i = 0; i < game.worms.size(); ++i) {
       Worm& w = *game.worms[i];
 
-      int wix = ftoi(w.pos.x);
-      int wiy = ftoi(w.pos.y);
+      int wix = Ftoi(w.pos.x);
+      int wiy = Ftoi(w.pos.y);
 
-      if (wix < x + detectRange && wix > x - detectRange && wiy < y + detectRange &&
-          wiy > y - detectRange) {
+      if (wix < x + detect_range && wix > x - detect_range && wiy < y + detect_range &&
+          wiy > y - detect_range) {
         int delta = wix - x;
-        int power = detectRange - std::abs(delta);
-        int powerSum = power;
+        int power = detect_range - std::abs(delta);
+        int power_sum = power;
 
-        if (std::abs(w.vel.x) < itof(2))  // TODO: Read from EXE
+        if (std::abs(w.vel.x) < Itof(2))  // TODO: Read from EXE
         {
           if (delta > 0)
-            w.vel.x += blowAway * power;
+            w.vel.x += blow_away * power;
           else
-            w.vel.x -= blowAway * power;
+            w.vel.x -= blow_away * power;
         }
 
         delta = wiy - y;
-        power = detectRange - std::abs(delta);
-        powerSum = (powerSum + power) / 2;
+        power = detect_range - std::abs(delta);
+        power_sum = (power_sum + power) / 2;
 
-        if (std::abs(w.vel.y) < itof(2))  // TODO: Read from EXE
+        if (std::abs(w.vel.y) < Itof(2))  // TODO: Read from EXE
         {
           if (delta > 0)
-            w.vel.y += blowAway * power;
+            w.vel.y += blow_away * power;
           else
-            w.vel.y -= blowAway * power;
+            w.vel.y -= blow_away * power;
         }
 
-        int z = damage * powerSum;
-        if (detectRange) z /= detectRange;
+        int z = damage * power_sum;
+        if (detect_range) z /= detect_range;
 
-        if (from && !from->hasHit) {
-          game.statsRecorder->hit(owner, firedBy, &w);
-          from->hasHit = true;
+        if (from && !from->has_hit) {
+          game.stats_recorder->Hit(owner, fired_by, &w);
+          from->has_hit = true;
         }
 
         if (w.health > 0) {
-          game.doDamage(w, z, ownerIdx);
-          game.statsRecorder->damageDealt(owner, firedBy, &w, z, false);
+          game.DoDamage(w, z, owner_idx);
+          game.stats_recorder->DamageDealt(owner, fired_by, &w, z, false);
 
-          int bloodAmount = game.settings->blood * powerSum / 100;
+          int blood_amount = game.settings->blood * power_sum / 100;
 
-          if (bloodAmount > 0) {
-            for (int i = 0; i < bloodAmount; ++i) {
+          if (blood_amount > 0) {
+            for (int i = 0; i < blood_amount; ++i) {
               int angle = game.rand(128);
-              common.nobjectTypes[6].create2(game, angle, w.vel / 3, w.pos, 0, w.index, firedBy);
+              common.nobject_types[6].Create2(game, angle, w.vel / 3, w.pos, 0, w.index, fired_by);
             }
           }
 
           if (game.rand(3) == 0) {
             int snd = 18 + game.rand(3);  // NOTE: MUST be outside the unpredictable branch below
-            if (!game.soundPlayer->isPlaying(&w)) {
-              game.soundPlayer->play(snd, &w);
+            if (!game.sound_player->IsPlaying(&w)) {
+              game.sound_player->Play(snd, &w);
             }
           }
         }
       }
     }  // for( ... worms ...
 
-    int objBlowAway = blowAway / 3;  // TODO: Read from EXE
+    int obj_blow_away = blow_away / 3;  // TODO: Read from EXE
 
-    auto wr = game.wobjects.all();
-    for (WObject* i; (i = wr.next());) {
+    auto wr = game.wobjects.All();
+    for (WObject* i; (i = wr.Next());) {
       Weapon const& weapon = *i->type;
 
-      if (weapon.affectByExplosions) {
-        auto ipos = ftoi(i->pos);
-        if (ipos.x < x + detectRange && ipos.x > x - detectRange && ipos.y < y + detectRange &&
-            ipos.y > y - detectRange) {
+      if (weapon.affect_by_explosions) {
+        auto ipos = Ftoi(i->pos);
+        if (ipos.x < x + detect_range && ipos.x > x - detect_range && ipos.y < y + detect_range &&
+            ipos.y > y - detect_range) {
           int delta = ipos.x - x;
-          int power = detectRange - std::abs(delta);
+          int power = detect_range - std::abs(delta);
 
           if (power > 0) {
             if (delta > 0)
-              i->vel.x += objBlowAway * power;
+              i->vel.x += obj_blow_away * power;
             else if (delta < 0)
-              i->vel.x -= objBlowAway * power;
+              i->vel.x -= obj_blow_away * power;
           }
 
           delta = ipos.y - y;
-          power = detectRange - std::abs(delta);
+          power = detect_range - std::abs(delta);
 
           if (power > 0) {
             if (delta > 0)
-              i->vel.y += objBlowAway * power;
+              i->vel.y += obj_blow_away * power;
             else if (delta < 0)
-              i->vel.y -= objBlowAway * power;
+              i->vel.y -= obj_blow_away * power;
           }
 
-          if (weapon.chainExplosion) i->blowUpObject(game, ownerIdx);
+          if (weapon.chain_explosion) i->BlowUpObject(game, owner_idx);
         }
       }  // if( ... affectByExplosions ...
     }  // for( ... wobjects ...
 
-    auto nr = game.nobjects.all();
-    for (NObject* i; (i = nr.next());) {
+    auto nr = game.nobjects.All();
+    for (NObject* i; (i = nr.Next());) {
       NObjectType const& t = *i->type;
 
-      if (t.affectByExplosions) {
-        auto ipos = ftoi(i->pos);
-        if (ipos.x < x + detectRange && ipos.x > x - detectRange && ipos.y < y + detectRange &&
-            ipos.y > y - detectRange) {
+      if (t.affect_by_explosions) {
+        auto ipos = Ftoi(i->pos);
+        if (ipos.x < x + detect_range && ipos.x > x - detect_range && ipos.y < y + detect_range &&
+            ipos.y > y - detect_range) {
           int delta = ipos.x - x;
-          int power = detectRange - std::abs(delta);
+          int power = detect_range - std::abs(delta);
 
           if (power > 0) {
             if (delta > 0)
-              i->vel.x += objBlowAway * power;
+              i->vel.x += obj_blow_away * power;
             else if (delta < 0)
-              i->vel.x -= objBlowAway * power;
+              i->vel.x -= obj_blow_away * power;
           }
 
           delta = ipos.y - y;
-          power = detectRange - std::abs(delta);
+          power = detect_range - std::abs(delta);
 
           if (power > 0) {
             if (delta > 0)
-              i->vel.y += objBlowAway * power;
+              i->vel.y += obj_blow_away * power;
             else if (delta < 0)
-              i->vel.y -= objBlowAway * power;
+              i->vel.y -= obj_blow_away * power;
           }
         }
       }
     }
 
     {
-      int width = detectRange / 2;
+      int width = detect_range / 2;
 
       Rect rect(x - width, y - width, x + width + 1, y + width + 1);
 
-      rect.intersect(game.level.rect());
+      rect.Intersect(game.level.Bounds());
 
       for (int y = rect.y1; y < rect.y2; ++y)
         for (int x = rect.x1; x < rect.x2; ++x) {
-          if (game.level.mat(x, y).anyDirt() && game.rand(8) == 0) {
-            PalIdx pix = game.level.pixel(x, y);
+          if (game.level.Mat(x, y).AnyDirt() && game.rand(8) == 0) {
+            PalIdx pix = game.level.Pixel(x, y);
             int angle = game.rand(128);
-            common.nobjectTypes[2].create2(game, angle, fixedvec(), itof(IVec2(x, y)), pix,
-                                           ownerIdx, firedBy);
+            common.nobject_types[2].Create2(game, angle, fixedvec(), Itof(IVec2(x, y)), pix,
+                                            owner_idx, fired_by);
           }
         }
     }
 
   }  // if(damage ...
 
-  if (dirtEffect >= 0) {
-    drawDirtEffect(common, game.rand, game.level, dirtEffect, x - 7, y - 7);
+  if (dirt_effect >= 0) {
+    DrawDirtEffect(common, game.rand, game.level, dirt_effect, x - 7, y - 7);
 
     if (game.settings->shadow)
-      correctShadow(common, game.level, Rect(x - 10, y - 10, x + 11, y + 11));
+      CorrectShadow(common, game.level, Rect(x - 10, y - 10, x + 11, y + 11));
   }
 
-  auto br = game.bonuses.all();
-  for (Bonus* i; (i = br.next());) {
-    int ix = ftoi(i->x), iy = ftoi(i->y);
+  auto br = game.bonuses.All();
+  for (Bonus* i; (i = br.Next());) {
+    int ix = Ftoi(i->x), iy = Ftoi(i->y);
 
-    if (ix > x - detectRange && ix < x + detectRange && iy > y - detectRange &&
-        iy < y + detectRange) {
-      game.bonuses.free(br);
-      common.sobjectTypes[0].create(game, ix, iy, ownerIdx, firedBy);
+    if (ix > x - detect_range && ix < x + detect_range && iy > y - detect_range &&
+        iy < y + detect_range) {
+      game.bonuses.Free(br);
+      common.sobject_types[0].Create(game, ix, iy, owner_idx, fired_by);
     }
   }  // for( ... bonuses ...
 }
 
-void SObject::process(Game& game) {
+void SObject::Process(Game& game) {
   Common& common = *game.common;
-  SObjectType& t = common.sobjectTypes[id];
+  SObjectType& t = common.sobject_types[id];
 
-  if (--animDelay <= 0) {
-    animDelay = t.animDelay;
-    ++curFrame;
-    if (curFrame > t.numFrames) game.sobjects.free(this);
+  if (--anim_delay <= 0) {
+    anim_delay = t.anim_delay;
+    ++cur_frame;
+    if (cur_frame > t.num_frames) game.sobjects.Free(this);
   }
 }

@@ -9,12 +9,12 @@
 struct Renderer;
 
 struct Viewport {
-  Viewport(Rect rect, int wormIdx, int levwidth, int levheight)
-      : wormIdx(wormIdx), bannerY(-8), rect(rect) {
-    maxX = levwidth - rect.width();
-    maxY = levheight - rect.height();
-    centerX = rect.width() >> 1;
-    centerY = rect.height() >> 1;
+  Viewport(Rect rect, int worm_idx, int levwidth, int levheight)
+      : worm_idx(worm_idx), banner_y(-8), rect(rect) {
+    max_x = levwidth - rect.Width();
+    max_y = levheight - rect.Height();
+    center_x = rect.Width() >> 1;
+    center_y = rect.Height() >> 1;
     x = 0;
     y = 0;
     shake = 0;
@@ -24,32 +24,32 @@ struct Viewport {
 
   int x, y;
   int shake;
-  int maxX, maxY;
-  int centerX, centerY;
-  int wormIdx;
-  int bannerY;
+  int max_x, max_y;
+  int center_x, center_y;
+  int worm_idx;
+  int banner_y;
   Rect rect;
   Rand rand;
 
-  void setCenter(int x, int y) {
-    this->x = x - centerX;
-    this->y = y - centerY;
+  void SetCenter(int x, int y) {
+    this->x = x - center_x;
+    this->y = y - center_y;
   }
 
-  void scrollTo(int destX, int destY, int iter) {
+  void ScrollTo(int dest_x, int dest_y, int iter) {
     for (int c = 0; c < iter; c++) {
-      if (x < destX - centerX)
+      if (x < dest_x - center_x)
         ++x;
-      else if (x > destX - centerX)
+      else if (x > dest_x - center_x)
         --x;
 
-      if (y < destY - centerY)
+      if (y < dest_y - center_y)
         ++y;
-      else if (y > destY - centerY)
+      else if (y > dest_y - center_y)
         --y;
     }
   }
 
-  virtual void draw(Game& game, Renderer& renderer, GameState state, bool isReplay);
-  virtual void process(Game& game);
+  virtual void Draw(Game& game, Renderer& renderer, GameState state, bool is_replay);
+  virtual void Process(Game& game);
 };

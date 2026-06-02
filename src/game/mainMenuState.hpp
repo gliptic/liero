@@ -6,21 +6,21 @@
 struct MainMenuState : AppState {
   MainMenuState();
 
-  void enter() override;
-  void handleEvent(SDL_Event& ev) override;
-  bool update() override;
-  void draw() override;
+  void Enter() override;
+  void HandleEvent(SDL_Event& ev) override;
+  bool Update() override;
+  void Draw() override;
 
   // The menu item that was selected, or -1 if still active.
-  int selection() const { return selected_; }
+  int Selection() const { return selected_; }
 
   // True when fading out
-  bool isFadingOut() const { return phase_ == Phase::FadingOut; }
+  bool IsFadingOut() const { return phase_ == Phase::kFadingOut; }
 
  private:
-  enum class Phase { Active, FadingOut };
+  enum class Phase { kActive, kFadingOut };
 
-  Phase phase_ = Phase::Active;
+  Phase phase_ = Phase::kActive;
   int selected_ = -1;
   int startItemId_ = 0;
 };

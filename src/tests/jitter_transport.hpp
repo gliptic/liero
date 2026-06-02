@@ -18,116 +18,116 @@ namespace rollback_test {
 struct JitterTransport {
   struct Params {
     uint32_t seed = 0xC0FFEE;
-    int minDelayFrames = 0;
-    int maxDelayFrames = 0;
-    double lossProbability = 0.0;
-    double duplicateProbability = 0.0;
+    int min_delay_frames = 0;
+    int max_delay_frames = 0;
+    double loss_probability = 0.0;
+    double duplicate_probability = 0.0;
   };
 
   static constexpr std::size_t kMaxBatch = rollback::kMaxRollback + 1;
 
   struct InFlight {
-    int deliverAtFrame;
+    int deliver_at_frame;
     uint8_t generation;
-    uint32_t baseFrame;
+    uint32_t base_frame;
     uint8_t count;
     std::array<uint8_t, kMaxBatch> inputs;
-    uint32_t localFrame;
+    uint32_t local_frame;
   };
 
   // The on-wire generation byte travels through the transport so the
   // receive side can exercise the controller's stale-generation drop.
   // Tests that don't care about phase transitions just pass 0.
-  using Deliver = std::function<void(uint8_t generation, uint32_t baseFrame, uint8_t count,
-                                     uint8_t const* inputs, uint32_t localFrame)>;
+  using Deliver = std::function<void(uint8_t generation, uint32_t base_frame, uint8_t count,
+                                     uint8_t const* inputs, uint32_t local_frame)>;
 
   Params params;
   std::mt19937 rng;
-  std::vector<InFlight> aToB;
-  std::vector<InFlight> bToA;
-  int currentFrame = 0;
+  std::vector<InFlight> a_to_b;
+  std::vector<InFlight> b_to_a;
+  int current_frame = 0;
 
-  uint64_t packetsSent = 0;
-  uint64_t packetsDropped = 0;
-  uint64_t packetsDuplicated = 0;
+  uint64_t packets_sent = 0;
+  uint64_t packets_dropped = 0;
+  uint64_t packets_duplicated = 0;
 
   explicit JitterTransport(Params p) : params(p), rng(p.seed) {}
 
-  int randomDelay() {
-    int lo = params.minDelayFrames;
-    int hi = params.maxDelayFrames;
+  int RandomDelay() {
+    int lo = params.min_delay_frames;
+    int hi = params.max_delay_frames;
     if (hi <= lo) return lo;
     std::uniform_int_distribution<int> d(lo, hi);
     return d(rng);
   }
 
-  bool roll(double p) {
+  bool Roll(double p) {
     if (p <= 0.0) return false;
     std::uniform_real_distribution<double> d(0.0, 1.0);
     return d(rng) < p;
   }
 
-  void sendAToB(uint8_t generation, uint32_t baseFrame, uint8_t count, uint8_t const* inputs,
-                uint32_t localFrame) {
-    enqueue(aToB, generation, baseFrame, count, inputs, localFrame);
+  void SendAToB(uint8_t generation, uint32_t base_frame, uint8_t count, uint8_t const* inputs,
+                uint32_t local_frame) {
+    Enqueue(a_to_b, generation, base_frame, count, inputs, local_frame);
   }
-  void sendBToA(uint8_t generation, uint32_t baseFrame, uint8_t count, uint8_t const* inputs,
-                uint32_t localFrame) {
-    enqueue(bToA, generation, baseFrame, count, inputs, localFrame);
+  void SendBToA(uint8_t generation, uint32_t base_frame, uint8_t count, uint8_t const* inputs,
+                uint32_t local_frame) {
+    Enqueue(b_to_a, generation, base_frame, count, inputs, local_frame);
   }
 
   // Drain anything whose deliverAtFrame has elapsed, then advance the
   // clock. Within a queue, packets scan in send order — an earlier-sent
   // packet may carry a later deliverAtFrame than a packet queued after
   // it, exactly modelling jittery out-of-order delivery.
-  void tick(Deliver const& deliverA, Deliver const& deliverB) {
-    drainDue(aToB, deliverB);
-    drainDue(bToA, deliverA);
-    ++currentFrame;
+  void Tick(Deliver const& deliver_a, Deliver const& deliver_b) {
+    DrainDue(a_to_b, deliver_b);
+    DrainDue(b_to_a, deliver_a);
+    ++current_frame;
   }
 
   // Force-deliver every in-flight packet. Used at the end of a test to
   // converge both peers regardless of how late tail packets were.
-  void flush(Deliver const& deliverA, Deliver const& deliverB) {
-    for (auto const& p : aToB)
-      deliverB(p.generation, p.baseFrame, p.count, p.inputs.data(), p.localFrame);
-    for (auto const& p : bToA)
-      deliverA(p.generation, p.baseFrame, p.count, p.inputs.data(), p.localFrame);
-    aToB.clear();
-    bToA.clear();
+  void Flush(Deliver const& deliver_a, Deliver const& deliver_b) {
+    for (auto const& p : a_to_b)
+      deliver_b(p.generation, p.base_frame, p.count, p.inputs.data(), p.local_frame);
+    for (auto const& p : b_to_a)
+      deliver_a(p.generation, p.base_frame, p.count, p.inputs.data(), p.local_frame);
+    a_to_b.clear();
+    b_to_a.clear();
   }
 
-  bool empty() const { return aToB.empty() && bToA.empty(); }
+  bool Empty() const { return a_to_b.empty() && b_to_a.empty(); }
 
  private:
-  void enqueue(std::vector<InFlight>& q, uint8_t generation, uint32_t baseFrame, uint8_t count,
-               uint8_t const* inputs, uint32_t localFrame) {
-    ++packetsSent;
-    if (roll(params.lossProbability)) {
-      ++packetsDropped;
+  void Enqueue(std::vector<InFlight>& q, uint8_t generation, uint32_t base_frame, uint8_t count,
+               uint8_t const* inputs, uint32_t local_frame) {
+    ++packets_sent;
+    if (Roll(params.loss_probability)) {
+      ++packets_dropped;
       return;
     }
     InFlight p{};
-    p.deliverAtFrame = currentFrame + randomDelay();
+    p.deliver_at_frame = current_frame + RandomDelay();
     p.generation = generation;
-    p.baseFrame = baseFrame;
+    p.base_frame = base_frame;
     p.count = count;
     for (uint8_t i = 0; i < count; ++i) p.inputs[i] = inputs[i];
-    p.localFrame = localFrame;
+    p.local_frame = local_frame;
     q.push_back(p);
-    if (roll(params.duplicateProbability)) {
-      ++packetsDuplicated;
+    if (Roll(params.duplicate_probability)) {
+      ++packets_duplicated;
       InFlight d = p;
-      d.deliverAtFrame = currentFrame + randomDelay();
+      d.deliver_at_frame = current_frame + RandomDelay();
       q.push_back(d);
     }
   }
 
-  void drainDue(std::vector<InFlight>& q, Deliver const& deliver) {
+  void DrainDue(std::vector<InFlight>& q, Deliver const& deliver) {
     auto it = q.begin();
     while (it != q.end()) {
-      if (it->deliverAtFrame <= currentFrame) {
-        deliver(it->generation, it->baseFrame, it->count, it->inputs.data(), it->localFrame);
+      if (it->deliver_at_frame <= current_frame) {
+        deliver(it->generation, it->base_frame, it->count, it->inputs.data(), it->local_frame);
         it = q.erase(it);
       } else {
         ++it;

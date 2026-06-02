@@ -27,19 +27,19 @@ namespace {
 struct CountingSoundPlayer : SoundPlayer {
   int plays = 0;
   int stops = 0;
-  int isPlayingCalls = 0;
+  int is_playing_calls = 0;
 
-  bool isPlaying(void* /*id*/) override {
-    ++isPlayingCalls;
+  bool IsPlaying(void* /*id*/) override {
+    ++is_playing_calls;
     return false;
   }
-  void stop(void* /*id*/) override {
+  void Stop(void* /*id*/) override {
     if (speculative) return;
     ++stops;
   }
 
  protected:
-  void playImpl(int /*sound*/, void* /*id*/, int /*loops*/) override { ++plays; }
+  void PlayImpl(int /*sound*/, void* /*id*/, int /*loops*/) override { ++plays; }
 };
 
 struct CountingStatsRecorder : StatsRecorder {
@@ -50,16 +50,16 @@ struct CountingStatsRecorder : StatsRecorder {
     if (speculative) return; \
     ++events;                \
   } while (0)
-  void damagePotential(Worm*, WormWeapon*, int) override { EVT(); }
-  void damageDealt(Worm*, WormWeapon*, Worm*, int, bool) override { EVT(); }
-  void shot(Worm*, WormWeapon*) override { EVT(); }
-  void hit(Worm*, WormWeapon*, Worm*) override { EVT(); }
-  void afterSpawn(Worm*) override { EVT(); }
-  void afterDeath(Worm*) override { EVT(); }
-  void preTick(Game&) override { EVT(); }
-  void tick(Game&) override { EVT(); }
-  void finish(Game&) override { EVT(); }
-  void aiProcessTime(Worm*, std::chrono::nanoseconds) override { EVT(); }
+  void DamagePotential(Worm*, WormWeapon*, int) override { EVT(); }
+  void DamageDealt(Worm*, WormWeapon*, Worm*, int, bool) override { EVT(); }
+  void Shot(Worm*, WormWeapon*) override { EVT(); }
+  void Hit(Worm*, WormWeapon*, Worm*) override { EVT(); }
+  void AfterSpawn(Worm*) override { EVT(); }
+  void AfterDeath(Worm*) override { EVT(); }
+  void PreTick(Game&) override { EVT(); }
+  void Tick(Game&) override { EVT(); }
+  void Finish(Game&) override { EVT(); }
+  void AiProcessTime(Worm*, std::chrono::nanoseconds) override { EVT(); }
 #undef EVT
 };
 
@@ -70,54 +70,54 @@ struct Runner {
   std::unique_ptr<Game> game;
 
   Runner(uint32_t seed) {
-    precomputeTables();
+    PrecomputeTables();
     common = std::make_shared<Common>();
-    FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-    common->load(std::move(tcRoot));
+    FsNode tc_root(FsNode("data") / "TC" / "openliero");
+    common->load(std::move(tc_root));
 
     settings = std::make_shared<Settings>();
     settings->lives = 50;
-    settings->loadingTime = 0;
-    settings->randomLevel = true;
-    settings->gameMode = Settings::GMKillEmAll;
+    settings->loading_time = 0;
+    settings->random_level = true;
+    settings->game_mode = Settings::kGmKillEmAll;
     settings->blood = 100;
 
     sp = std::make_shared<CountingSoundPlayer>();
     game = std::make_unique<Game>(common, settings, sp);
-    game->statsRecorder.reset(new CountingStatsRecorder);
-    game->rand.seed(seed);
+    game->stats_recorder.reset(new CountingStatsRecorder);
+    game->rand.Seed(seed);
 
     for (int idx = 0; idx < 2; ++idx) {
       auto w = std::make_shared<Worm>();
-      w->settings = settings->wormSettings[idx];
+      w->settings = settings->worm_settings[idx];
       w->health = 25;
       w->index = idx;
-      w->statsX = idx == 0 ? 0 : 218;
-      game->addWorm(w);
+      w->stats_x = idx == 0 ? 0 : 218;
+      game->AddWorm(w);
     }
-    game->addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    game->addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    game->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    game->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
-    game->level.generateFromSettings(*common, *settings, game->rand);
-    for (auto const& w : game->worms) w->initWeapons(*game);
+    game->level.GenerateFromSettings(*common, *settings, game->rand);
+    for (auto const& w : game->worms) w->InitWeapons(*game);
 
     game->paused = false;
-    game->startGame();
-    game->resetWorms();
+    game->StartGame();
+    game->ResetWorms();
   }
 
-  void step(Rand& inputRng) {
+  void Step(Rand& input_rng) {
     for (int idx = 0; idx < 2; ++idx) {
-      uint32_t input = inputRng() & 0x7f;
-      if ((inputRng() % 10) < 6) input |= (1 << 4);
-      if ((inputRng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));
-      game->worms[idx]->controlStates.unpack(input);
+      uint32_t input = input_rng() & 0x7f;
+      if ((input_rng() % 10) < 6) input |= (1 << 4);
+      if ((input_rng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));
+      game->worms[idx]->control_states.Unpack(input);
     }
-    game->processFrame();
+    game->ProcessFrame();
   }
 
-  CountingStatsRecorder& stats() {
-    return static_cast<CountingStatsRecorder&>(*game->statsRecorder);
+  CountingStatsRecorder& Stats() {
+    return static_cast<CountingStatsRecorder&>(*game->stats_recorder);
   }
 };
 
@@ -129,67 +129,67 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
 
   // Control: 2 * kPhase frames with no speculation.
   Runner ctl(kSeed);
-  Rand ctlInputs(kSeed ^ 0xDEAD);
-  for (int f = 0; f < 2 * kPhase; ++f) ctl.step(ctlInputs);
-  int controlPlays = ctl.sp->plays;
-  int controlStops = ctl.sp->stops;
-  int controlEvents = ctl.stats().events;
+  Rand ctl_inputs(kSeed ^ 0xDEAD);
+  for (int f = 0; f < 2 * kPhase; ++f) ctl.Step(ctl_inputs);
+  int control_plays = ctl.sp->plays;
+  int control_stops = ctl.sp->stops;
+  int control_events = ctl.Stats().events;
 
   // Subject: run kPhase normally, save snapshot, run kPhase speculatively,
   // restore, run kPhase more normally. Final counts must match the control.
   Runner sub(kSeed);
-  Rand subInputs(kSeed ^ 0xDEAD);
+  Rand sub_inputs(kSeed ^ 0xDEAD);
 
   GameSnapshot snap;
-  snap.prepare(*sub.game);
+  snap.Prepare(*sub.game);
 
-  for (int f = 0; f < kPhase; ++f) sub.step(subInputs);
-  int playsAtSnap = sub.sp->plays;
-  int stopsAtSnap = sub.sp->stops;
-  int eventsAtSnap = sub.stats().events;
+  for (int f = 0; f < kPhase; ++f) sub.Step(sub_inputs);
+  int plays_at_snap = sub.sp->plays;
+  int stops_at_snap = sub.sp->stops;
+  int events_at_snap = sub.Stats().events;
 
-  sub.game->saveSnapshotFast(snap);
-  sub.game->setSpeculative(true);
+  sub.game->SaveSnapshotFast(snap);
+  sub.game->SetSpeculative(true);
 
   // Speculative run uses the *same* inputs the post-restore segment will
   // use, so the underlying sim work is comparable. Counters must not move.
-  Rand specInputs = subInputs;
-  for (int f = 0; f < kPhase; ++f) sub.step(specInputs);
+  Rand spec_inputs = sub_inputs;
+  for (int f = 0; f < kPhase; ++f) sub.Step(spec_inputs);
 
-  REQUIRE(sub.sp->plays == playsAtSnap);
-  REQUIRE(sub.sp->stops == stopsAtSnap);
-  REQUIRE(sub.stats().events == eventsAtSnap);
+  REQUIRE(sub.sp->plays == plays_at_snap);
+  REQUIRE(sub.sp->stops == stops_at_snap);
+  REQUIRE(sub.Stats().events == events_at_snap);
 
   // isPlaying should have been called at least once and always passes
   // through — its count is allowed to grow during speculation.
-  int isPlayingDuringSpec = sub.sp->isPlayingCalls;
+  int is_playing_during_spec = sub.sp->is_playing_calls;
 
-  sub.game->loadSnapshotFast(snap);
-  sub.game->setSpeculative(false);
+  sub.game->LoadSnapshotFast(snap);
+  sub.game->SetSpeculative(false);
 
-  for (int f = 0; f < kPhase; ++f) sub.step(subInputs);
+  for (int f = 0; f < kPhase; ++f) sub.Step(sub_inputs);
 
-  REQUIRE(sub.sp->plays == controlPlays);
-  REQUIRE(sub.sp->stops == controlStops);
-  REQUIRE(sub.stats().events == controlEvents);
+  REQUIRE(sub.sp->plays == control_plays);
+  REQUIRE(sub.sp->stops == control_stops);
+  REQUIRE(sub.Stats().events == control_events);
 
   // Sanity: isPlaying did pass through during speculation (not gated).
-  REQUIRE(sub.sp->isPlayingCalls >= isPlayingDuringSpec);
+  REQUIRE(sub.sp->is_playing_calls >= is_playing_during_spec);
 }
 
 TEST_CASE("setSpeculative propagates to soundPlayer and statsRecorder", "[rollback]") {
   Runner r(0x1234);
   REQUIRE(r.game->speculative == false);
-  REQUIRE(r.game->soundPlayer->speculative == false);
-  REQUIRE(r.game->statsRecorder->speculative == false);
+  REQUIRE(r.game->sound_player->speculative == false);
+  REQUIRE(r.game->stats_recorder->speculative == false);
 
-  r.game->setSpeculative(true);
+  r.game->SetSpeculative(true);
   REQUIRE(r.game->speculative == true);
-  REQUIRE(r.game->soundPlayer->speculative == true);
-  REQUIRE(r.game->statsRecorder->speculative == true);
+  REQUIRE(r.game->sound_player->speculative == true);
+  REQUIRE(r.game->stats_recorder->speculative == true);
 
-  r.game->setSpeculative(false);
+  r.game->SetSpeculative(false);
   REQUIRE(r.game->speculative == false);
-  REQUIRE(r.game->soundPlayer->speculative == false);
-  REQUIRE(r.game->statsRecorder->speculative == false);
+  REQUIRE(r.game->sound_player->speculative == false);
+  REQUIRE(r.game->stats_recorder->speculative == false);
 }

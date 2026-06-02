@@ -2,9 +2,9 @@
 #include <cmath>
 #include <cstdint>
 
-fixedvec cossinTable[128];
+fixedvec cossin_table[128];
 
-uint32_t sqr(uint32_t op) {
+uint32_t Sqr(uint32_t op) {
   uint32_t res = 0;
   uint32_t one = 1uL << 30;  // The second-to-top bit is set: use 1u << 14 for uint16_t type; use
                              // 1uL<<30 for uint32_t type
@@ -23,12 +23,12 @@ uint32_t sqr(uint32_t op) {
   return res;
 }
 
-int vectorLength(int x, int y) { return int(sqr(x * x + y * y)); }
+int VectorLength(int x, int y) { return int(Sqr(x * x + y * y)); }
 
 struct FP {
   FP(int64_t s, int bits) : s(s), bits(bits) {}
 
-  void reduce(int tobits) {
+  void Reduce(int tobits) {
     int64_t lim = (1ll << tobits);
 
     while (s < (-lim - 1) || s > lim) {
@@ -37,7 +37,7 @@ struct FP {
     }
   }
 
-  int64_t reducedfrac(int tobits) {
+  int64_t Reducedfrac(int tobits) {
     int64_t rs = s;
     int rbits = bits;
     while (rbits > 60) {
@@ -52,7 +52,7 @@ struct FP {
   int bits;
 };
 
-void precomputeTables() {
+void PrecomputeTables() {
   int scalebits = 28;
   int32_t scale = 13176795;  // (2pi / 128) << scalebits
 
@@ -64,15 +64,15 @@ void precomputeTables() {
     // Simple Taylor series. Performance is not important.
     FP num(xf, scalebits);
     for (int t = 1; t < 26;) {
-      rf += c * num.reducedfrac(60);
+      rf += c * num.Reducedfrac(60);
 
       num.s /= ++t;
-      num.reduce(31);
+      num.Reduce(31);
       num.s = num.s * xf;
       num.bits += scalebits;
 
       num.s /= ++t;
-      num.reduce(31);
+      num.Reduce(31);
       num.s = num.s * xf;
       num.bits += scalebits;
 
@@ -85,7 +85,7 @@ void precomputeTables() {
 
     int32_t r = (int32_t)(rf >> shift);
 
-    cossinTable[i].x = r;
-    cossinTable[(i + 32) & 0x7f].y = r;
+    cossin_table[i].x = r;
+    cossin_table[(i + 32) & 0x7f].y = r;
   }
 }

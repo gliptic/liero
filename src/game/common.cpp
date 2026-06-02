@@ -12,15 +12,15 @@
 #include "rand.hpp"
 #include "worm.hpp"
 
-int Common::fireConeOffset[FIRE_CONE_OFFSET_DIRECTION][FIRE_CONE_OFFSET_ANGLE_FRAME]
-                          [FIRE_CONE_OFFSET_XY] = {
-                              {{-3, 1}, {-4, 0}, {-4, -2}, {-4, -4}, {-3, -5}, {-2, -6}, {0, -6}},
-                              {{3, 1}, {4, 0}, {4, -2}, {4, -4}, {3, -5}, {2, -6}, {0, -6}},
+int Common::fire_cone_offset[FIRE_CONE_OFFSET_DIRECTION][FIRE_CONE_OFFSET_ANGLE_FRAME]
+                            [FIRE_CONE_OFFSET_XY] = {
+                                {{-3, 1}, {-4, 0}, {-4, -2}, {-4, -4}, {-3, -5}, {-2, -6}, {0, -6}},
+                                {{3, 1}, {4, 0}, {4, -2}, {4, -4}, {3, -5}, {2, -6}, {0, -6}},
 };
 
-int stoneTab[3][4] = {{98, 60, 61, 62}, {63, 75, 85, 86}, {89, 90, 97, 96}};
+int stone_tab[3][4] = {{98, 60, 61, 62}, {63, 75, 85, 86}, {89, 90, 97, 96}};
 
-char const* Texts::keyNames[177] = {
+char const* Texts::key_names[177] = {
     "",
     "Esc",
     "1",
@@ -201,10 +201,10 @@ char const* Texts::keyNames[177] = {
 };
 
 Texts::Texts() {
-  gameModes[Settings::GameModes::GMKillEmAll] = "Kill'em All";
-  gameModes[Settings::GameModes::GMGameOfTag] = "Game of Tag";
-  gameModes[Settings::GameModes::GMHoldazone] = "Holdazone";
-  gameModes[Settings::GameModes::GMScalesOfJustice] = "Scales of Justice";
+  game_modes[Settings::GameModes::kGmKillEmAll] = "Kill'em All";
+  game_modes[Settings::GameModes::kGmGameOfTag] = "Game of Tag";
+  game_modes[Settings::GameModes::kGmHoldazone] = "Holdazone";
+  game_modes[Settings::GameModes::kGmScalesOfJustice] = "Scales of Justice";
 
   onoff[0] = "OFF";
   onoff[1] = "ON";
@@ -213,23 +213,23 @@ Texts::Texts() {
   controllers[1] = "CPU";
   controllers[2] = "AI";
 
-  inputDevices[0] = "Keyboard";
-  inputDevices[1] = "Joystick 1";
-  inputDevices[2] = "Joystick 2";
+  input_devices[0] = "Keyboard";
+  input_devices[1] = "Joystick 1";
+  input_devices[2] = "Joystick 2";
 
-  weapStates[0] = "Menu";
-  weapStates[1] = "Bonus";
-  weapStates[2] = "Banned";
+  weap_states[0] = "Menu";
+  weap_states[1] = "Bonus";
+  weap_states[2] = "Banned";
 
-  copyrightBarFormat = 64;
+  copyright_bar_format = 64;
 }
 
-void Common::drawTextSmall(Bitmap& scr, char const* str, int x, int y) {
+void Common::DrawTextSmall(Bitmap& scr, char const* str, int x, int y) {
   for (; *str; ++str) {
     unsigned char c = *str - 'A';
 
     if (c < 26) {
-      blitImage(scr, textSprites[c], x, y);
+      BlitImage(scr, text_sprites[c], x, y);
     }
 
     x += 4;
@@ -239,47 +239,47 @@ void Common::drawTextSmall(Bitmap& scr, char const* str, int x, int y) {
 #define CHECK(c) \
   if (!(c)) goto fail
 
-int readSpriteTga(io::Reader& r, int destImageWidth, int destImageHeight, int destCount,
+int ReadSpriteTga(io::Reader& r, int dest_image_width, int dest_image_height, int dest_count,
                   uint8_t* data, Palette* pal) {
-  auto idLen = r.get();
-  CHECK(r.get() == 1);
-  CHECK(r.get() == 1);
+  auto id_len = r.Get();
+  CHECK(r.Get() == 1);
+  CHECK(r.Get() == 1);
 
   // Palette spec
-  CHECK(io::read_uint16_le(r) == 0);
-  CHECK(io::read_uint16_le(r) == 256);
-  CHECK(r.get() == 24);
+  CHECK(io::ReadUint16Le(r) == 0);
+  CHECK(io::ReadUint16Le(r) == 256);
+  CHECK(r.Get() == 24);
 
-  int imageWidth, imageHeight;
+  int image_width, image_height;
 
-  CHECK(io::read_uint16_le(r) == 0);
-  CHECK(io::read_uint16_le(r) == 0);
+  CHECK(io::ReadUint16Le(r) == 0);
+  CHECK(io::ReadUint16Le(r) == 0);
 
-  imageWidth = io::read_uint16_le(r);
-  imageHeight = io::read_uint16_le(r);
-  CHECK(r.get() == 8);
-  CHECK(r.get() == 0);
+  image_width = io::ReadUint16Le(r);
+  image_height = io::ReadUint16Le(r);
+  CHECK(r.Get() == 8);
+  CHECK(r.Get() == 0);
 
-  r.try_skip(idLen);  // Skip ID
+  r.TrySkip(id_len);  // Skip ID
 
   // TODO: Support more sprites?
-  CHECK(imageWidth == destImageWidth);
-  CHECK(imageHeight == destImageHeight);
+  CHECK(image_width == dest_image_width);
+  CHECK(image_height == dest_image_height);
 
   if (pal) {
     for (auto& entry : pal->entries) {
-      entry.b = r.get() >> 2;
-      entry.g = r.get() >> 2;
-      entry.r = r.get() >> 2;
+      entry.b = r.Get() >> 2;
+      entry.g = r.Get() >> 2;
+      entry.r = r.Get() >> 2;
     }
   } else {
-    r.try_skip(256 * 3);  // Ignore palette
+    r.TrySkip(256 * 3);  // Ignore palette
   }
 
   // Bottom to top
-  for (std::size_t y = (std::size_t)imageHeight; y-- > 0;) {
-    auto* src = &data[y * imageWidth];
-    r.get((uint8_t*)src, imageWidth);
+  for (std::size_t y = (std::size_t)image_height; y-- > 0;) {
+    auto* src = &data[y * image_width];
+    r.Get((uint8_t*)src, image_width);
   }
 
   return 1;
@@ -288,65 +288,64 @@ fail:
   return 0;
 }
 
-int readSpriteTga(io::Reader& r, SpriteSet& ss, Palette* pal) {
-  return readSpriteTga(r, ss.width, ss.count * ss.height, ss.count, &ss.data[0], pal);
+int ReadSpriteTga(io::Reader& r, SpriteSet& ss, Palette* pal) {
+  return ReadSpriteTga(r, ss.width, ss.count * ss.height, ss.count, &ss.data[0], pal);
 }
 
 #undef CHECK
 
-inline uint32_t quad(char a, char b, char c, char d) {
+inline uint32_t Quad(char a, char b, char c, char d) {
   return (uint32_t)a + ((uint32_t)b << 8) + ((uint32_t)c << 16) + ((uint32_t)d << 24);
 }
 
 void Common::load(FsNode node) {
   {
-    auto textReader_ptr = (node / "tc.cfg").toReader();
-    io::Reader& textReader = *textReader_ptr;
+    auto text_reader_ptr = (node / "tc.cfg").ToReader();
+    io::Reader& text_reader = *text_reader_ptr;
     // Read entire content into a string for istringstream
     std::string content;
     try {
-      for (;;) content.push_back(static_cast<char>(textReader.get()));
+      for (;;) content.push_back(static_cast<char>(text_reader.Get()));
     } catch (std::runtime_error&) {
     }
     std::istringstream is(content);
-    loadTcConfig(*this, is);
+    LoadTcConfig(*this, is);
   }
 
   for (auto& s : sounds) {
     auto dir = node / "sounds";
 
-    auto wavNode = dir / (s.name + ".wav");
-    if (!wavNode.exists()) {
+    auto wav_node = dir / (s.name + ".wav");
+    if (!wav_node.Exists()) {
       // Missing WAV on disk: keep the slot (preserving stable indices for
       // siblings) but leave sound == nullptr so play paths treat it as a
       // silent no-op. Matches the disabled-slot behavior of tc_tool's
       // loadSfx (see issue #44).
-      Console::writeWarning("Sound file missing, slot will be silent: " + s.name + ".wav");
+      console::WriteWarning("Sound file missing, slot will be silent: " + s.name + ".wav");
       continue;
     }
-    auto r_ptr = wavNode.toReader();
+    auto r_ptr = wav_node.ToReader();
     io::Reader& r = *r_ptr;
 
-    if (io::read_uint32_le(r) == quad('R', 'I', 'F', 'F')) {
-      std::size_t roundedSize = io::read_uint32_le(r) + 8;
+    if (io::ReadUint32Le(r) == Quad('R', 'I', 'F', 'F')) {
+      std::size_t rounded_size = io::ReadUint32Le(r) + 8;
 
-      (void)roundedSize;  // Ignore
+      (void)rounded_size;  // Ignore
 
-      if (io::read_uint32_le(r) == quad('W', 'A', 'V', 'E') &&
-          io::read_uint32_le(r) == quad('f', 'm', 't', ' ') && io::read_uint32_le(r) == 16 &&
-          io::read_uint16_le(r) == 1 && io::read_uint16_le(r) == 1 &&
-          io::read_uint32_le(r) == 22050 && io::read_uint32_le(r) == 22050 * 1 * 1 &&
-          io::read_uint16_le(r) == 1 * 1 && io::read_uint16_le(r) == 8 &&
-          io::read_uint32_le(r) == quad('d', 'a', 't', 'a')) {
-        std::size_t dataSize = io::read_uint32_le(r);
+      if (io::ReadUint32Le(r) == Quad('W', 'A', 'V', 'E') &&
+          io::ReadUint32Le(r) == Quad('f', 'm', 't', ' ') && io::ReadUint32Le(r) == 16 &&
+          io::ReadUint16Le(r) == 1 && io::ReadUint16Le(r) == 1 && io::ReadUint32Le(r) == 22050 &&
+          io::ReadUint32Le(r) == 22050 * 1 * 1 && io::ReadUint16Le(r) == 1 * 1 &&
+          io::ReadUint16Le(r) == 8 && io::ReadUint32Le(r) == Quad('d', 'a', 't', 'a')) {
+        std::size_t data_size = io::ReadUint32Le(r);
 
-        s.originalData.resize(dataSize);
+        s.original_data.resize(data_size);
 
-        for (auto& z : s.originalData) z = r.get() - 128;
+        for (auto& z : s.original_data) z = r.Get() - 128;
 
-        s.sound = sfx_new_sound(dataSize * 2);
+        s.sound = SfxNewSound(data_size * 2);
 
-        s.createSound();
+        s.CreateSound();
       }
     }
   }
@@ -354,36 +353,36 @@ void Common::load(FsNode node) {
   {
     auto dir = node / "sprites";
 
-    largeSprites.allocate(16, 16, 110);
-    smallSprites.allocate(7, 7, 130);
-    textSprites.allocate(4, 4, 26);
+    large_sprites.Allocate(16, 16, 110);
+    small_sprites.Allocate(7, 7, 130);
+    text_sprites.Allocate(4, 4, 26);
 
     {
-      auto r_ptr = (dir / "small.tga").toReader();
+      auto r_ptr = (dir / "small.tga").ToReader();
       io::Reader& r = *r_ptr;
 
-      readSpriteTga(r, smallSprites, &exepal);
+      ReadSpriteTga(r, small_sprites, &exepal);
     }
 
     {
-      auto r_ptr = (dir / "large.tga").toReader();
+      auto r_ptr = (dir / "large.tga").ToReader();
       io::Reader& r = *r_ptr;
-      readSpriteTga(r, largeSprites, 0);
+      ReadSpriteTga(r, large_sprites, 0);
     }
 
     {
-      auto r_ptr = (dir / "text.tga").toReader();
+      auto r_ptr = (dir / "text.tga").ToReader();
       io::Reader& r = *r_ptr;
-      readSpriteTga(r, textSprites, 0);
+      ReadSpriteTga(r, text_sprites, 0);
     }
 
     {
-      auto r_ptr = (dir / "font.tga").toReader();
+      auto r_ptr = (dir / "font.tga").ToReader();
       io::Reader& r = *r_ptr;
 
       std::vector<uint8_t> data(font.chars.size() * 7 * 8, 10);
 
-      readSpriteTga(r, 7, (int)font.chars.size() * 8, (int)font.chars.size(), &data[0], 0);
+      ReadSpriteTga(r, 7, (int)font.chars.size() * 8, (int)font.chars.size(), &data[0], 0);
 
       for (std::size_t i = 0; i < font.chars.size(); ++i) {
         Font::Char& ch = font.chars[i];
@@ -410,112 +409,112 @@ void Common::load(FsNode node) {
   for (auto& w : weapons) {
     auto dir = node / "weapons";
 
-    auto wReader_ptr = (dir / (w.idStr + ".cfg")).toReader();
-    io::Reader& wReader = *wReader_ptr;
+    auto w_reader_ptr = (dir / (w.id_str + ".cfg")).ToReader();
+    io::Reader& w_reader = *w_reader_ptr;
     std::string content;
     try {
-      for (;;) content.push_back(static_cast<char>(wReader.get()));
+      for (;;) content.push_back(static_cast<char>(w_reader.Get()));
     } catch (std::runtime_error&) {
     }
     std::istringstream is(content);
-    loadWeaponConfig(*this, w, is);
+    LoadWeaponConfig(*this, w, is);
   }
 
-  for (auto& w : nobjectTypes) {
+  for (auto& w : nobject_types) {
     auto dir = node / "nobjects";
 
-    auto nReader_ptr = (dir / (w.idStr + ".cfg")).toReader();
-    io::Reader& nReader = *nReader_ptr;
+    auto n_reader_ptr = (dir / (w.id_str + ".cfg")).ToReader();
+    io::Reader& n_reader = *n_reader_ptr;
     std::string content;
     try {
-      for (;;) content.push_back(static_cast<char>(nReader.get()));
+      for (;;) content.push_back(static_cast<char>(n_reader.Get()));
     } catch (std::runtime_error&) {
     }
     std::istringstream is(content);
-    loadNObjectConfig(*this, w, is);
+    LoadNObjectConfig(*this, w, is);
   }
 
-  for (auto& w : sobjectTypes) {
+  for (auto& w : sobject_types) {
     auto dir = node / "sobjects";
 
-    auto sReader_ptr = (dir / (w.idStr + ".cfg")).toReader();
-    io::Reader& sReader = *sReader_ptr;
+    auto s_reader_ptr = (dir / (w.id_str + ".cfg")).ToReader();
+    io::Reader& s_reader = *s_reader_ptr;
     std::string content;
     try {
-      for (;;) content.push_back(static_cast<char>(sReader.get()));
+      for (;;) content.push_back(static_cast<char>(s_reader.Get()));
     } catch (std::runtime_error&) {
     }
     std::istringstream is(content);
-    loadSObjectConfig(*this, w, is);
+    LoadSObjectConfig(*this, w, is);
   }
 
-  precompute();
+  Precompute();
 }
 
-void Common::precompute() {
-  weapOrder.resize(weapons.size());
+void Common::Precompute() {
+  weap_order.resize(weapons.size());
   for (int i = 0; i < (int)weapons.size(); ++i) {
-    weapOrder[i] = i;
+    weap_order[i] = i;
     weapons[i].id = i;
   }
 
-  std::sort(weapOrder.begin(), weapOrder.end(),
+  std::sort(weap_order.begin(), weap_order.end(),
             [&](int a, int b) { return this->weapons[a].name < this->weapons[b].name; });
 
-  for (int i = 0; i < (int)nobjectTypes.size(); ++i) {
-    nobjectTypes[i].id = i;
+  for (int i = 0; i < (int)nobject_types.size(); ++i) {
+    nobject_types[i].id = i;
   }
 
-  for (int i = 0; i < (int)sobjectTypes.size(); ++i) {
-    sobjectTypes[i].id = i;
+  for (int i = 0; i < (int)sobject_types.size(); ++i) {
+    sobject_types[i].id = i;
   }
 
   // Precompute sprites
-  wormSprites.allocate(16, 16, 2 * 2 * 21);
+  worm_sprites.Allocate(16, 16, 2 * 2 * 21);
 
   for (int i = 0; i < 21; ++i) {
     for (int y = 0; y < 16; ++y)
       for (int x = 0; x < 16; ++x) {
-        PalIdx pix = (largeSprites.spritePtr(16 + i) + y * 16)[x];
+        PalIdx pix = (large_sprites.SpritePtr(16 + i) + y * 16)[x];
 
-        (wormSprite(i, 1, 0) + y * 16)[x] = pix;
+        (WormSprite(i, 1, 0) + y * 16)[x] = pix;
         if (x == 15)
-          (wormSprite(i, 0, 0) + y * 16)[15] = 0;
+          (WormSprite(i, 0, 0) + y * 16)[15] = 0;
         else
-          (wormSprite(i, 0, 0) + y * 16)[14 - x] = pix;
+          (WormSprite(i, 0, 0) + y * 16)[14 - x] = pix;
 
         if (pix >= 30 && pix <= 34) pix += 9;  // Change worm color
 
-        (wormSprite(i, 1, 1) + y * 16)[x] = pix;
+        (WormSprite(i, 1, 1) + y * 16)[x] = pix;
 
         if (x == 15)
-          (wormSprite(i, 0, 1) + y * 16)[15] = 0;  // A bit haxy, but works
+          (WormSprite(i, 0, 1) + y * 16)[15] = 0;  // A bit haxy, but works
         else
-          (wormSprite(i, 0, 1) + y * 16)[14 - x] = pix;
+          (WormSprite(i, 0, 1) + y * 16)[14 - x] = pix;
       }
   }
 
-  fireConeSprites.allocate(16, 16, 2 * 7);
+  fire_cone_sprites.Allocate(16, 16, 2 * 7);
 
   for (int i = 0; i < 7; ++i) {
     for (int y = 0; y < 16; ++y)
       for (int x = 0; x < 16; ++x) {
-        PalIdx pix = (largeSprites.spritePtr(9 + i) + y * 16)[x];
+        PalIdx pix = (large_sprites.SpritePtr(9 + i) + y * 16)[x];
 
-        (fireConeSprite(i, 1) + y * 16)[x] = pix;
+        (FireConeSprite(i, 1) + y * 16)[x] = pix;
 
         if (x == 15)
-          (fireConeSprite(i, 0) + y * 16)[15] = 0;
+          (FireConeSprite(i, 0) + y * 16)[15] = 0;
         else
-          (fireConeSprite(i, 0) + y * 16)[14 - x] = pix;
+          (FireConeSprite(i, 0) + y * 16)[14 - x] = pix;
       }
   }
 }
 
 Common::Common() {}
 
-std::string Common::guessName() const {
-  std::string const& cp = S[SCopyright2];
+std::string Common::GuessName() const {
+  std::string const& cp = s[SCopyright2];
   auto p = cp.find('(');
   if (p == std::string::npos) p = cp.size();
 
@@ -524,24 +523,24 @@ std::string Common::guessName() const {
   return cp.substr(0, p);
 }
 
-int Common::soundIndex(std::string_view name) const {
+int Common::SoundIndex(std::string_view name) const {
   for (std::size_t i = 0; i < sounds.size(); ++i) {
     if (sounds[i].name == name) return static_cast<int>(i);
   }
   return -1;
 }
 
-void SfxSample::createSound() {
-  if (originalData.empty()) return;
+void SfxSample::CreateSound() {
+  if (original_data.empty()) return;
 
-  std::vector<int16_t>& samples = sfx_sound_data(sound);
+  std::vector<int16_t>& samples = SfxSoundData(sound);
   samples.clear();
 
-  int prev = static_cast<int8_t>(originalData[0]) * 30;
+  int prev = static_cast<int8_t>(original_data[0]) * 30;
   samples.push_back(prev);
 
-  for (std::size_t j = 1; j < originalData.size(); ++j) {
-    int cur = static_cast<int8_t>(originalData[j]) * 30;
+  for (std::size_t j = 1; j < original_data.size(); ++j) {
+    int cur = static_cast<int8_t>(original_data[j]) * 30;
     samples.push_back((prev + cur) / 2);
     samples.push_back(cur);
     prev = cur;

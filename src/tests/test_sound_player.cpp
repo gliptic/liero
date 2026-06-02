@@ -11,7 +11,7 @@
 #include "mixer/player.hpp"
 #include "settings.hpp"
 
-static std::string getTcPath() {
+static std::string GetTcPath() {
   if (auto* p = std::getenv("TC_PATH")) return p;
   return "data/TC/openliero";
 }
@@ -19,30 +19,30 @@ static std::string getTcPath() {
 namespace {
 
 struct RecordingPlayer : SoundPlayer {
-  RecordingPlayer() : m_common(nullptr) {}
-  explicit RecordingPlayer(Common& c) : m_common(&c) {}
+  RecordingPlayer() : m_common_(nullptr) {}
+  explicit RecordingPlayer(Common& c) : m_common_(&c) {}
 
   std::vector<int> played;
 
-  bool isPlaying(void* /*id*/) override { return false; }
-  void stop(void* /*id*/) override {}
+  bool IsPlaying(void* /*id*/) override { return false; }
+  void Stop(void* /*id*/) override {}
 
  protected:
-  void playImpl(int sound, void* /*id*/, int /*loops*/) override { played.push_back(sound); }
-  Common* common() override { return m_common; }
+  void PlayImpl(int sound, void* /*id*/, int /*loops*/) override { played.push_back(sound); }
+  Common* GetCommonPtr() override { return m_common_; }
 
  private:
-  Common* m_common;
+  Common* m_common_;
 };
 
 }  // namespace
 
 TEST_CASE("SoundPlayer guards negative indices", "[sound_player]") {
   RecordingPlayer p;
-  p.play(-1);
-  p.play(3);
-  p.play(-5);
-  p.play(0);
+  p.Play(-1);
+  p.Play(3);
+  p.Play(-5);
+  p.Play(0);
 
   REQUIRE(p.played.size() == 2);
   REQUIRE(p.played[0] == 3);
@@ -51,41 +51,41 @@ TEST_CASE("SoundPlayer guards negative indices", "[sound_player]") {
 
 TEST_CASE("SoundPlayer SOUND_DEF_T overload resolves via Common::soundHook", "[sound_player]") {
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(getTcPath());
-  common->load(std::move(tcRoot));
+  FsNode tc_root(GetTcPath());
+  common->load(std::move(tc_root));
 
   RecordingPlayer p(*common);
-  p.play(SoundMenuSelect);
+  p.Play(SoundMenuSelect);
 
   REQUIRE(p.played.size() == 1);
-  REQUIRE(p.played[0] == common->soundHook[SoundMenuSelect]);
-  REQUIRE(p.played[0] == common->soundIndex("select"));
+  REQUIRE(p.played[0] == common->sound_hook[SoundMenuSelect]);
+  REQUIRE(p.played[0] == common->SoundIndex("select"));
 }
 
 TEST_CASE("SoundPlayer SOUND_DEF_T overload is a no-op when common() returns null",
           "[sound_player]") {
   RecordingPlayer p;  // no Common attached
-  p.play(SoundMenuSelect);
+  p.Play(SoundMenuSelect);
   REQUIRE(p.played.empty());
 }
 
 TEST_CASE("Game ctor installs g_soundPlayer and dtor restores it", "[sound_player]") {
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(getTcPath());
-  common->load(std::move(tcRoot));
+  FsNode tc_root(GetTcPath());
+  common->load(std::move(tc_root));
   auto settings = std::make_shared<Settings>();
 
-  SoundPlayer* originalGlobal = g_soundPlayer;
+  SoundPlayer* original_global = g_sound_player;
   auto sentinel = std::make_shared<NullSoundPlayer>();
-  g_soundPlayer = sentinel.get();
+  g_sound_player = sentinel.get();
 
   {
     auto sp = std::make_shared<RecordingPlayer>(*common);
     Game game(common, settings, sp);
-    REQUIRE(g_soundPlayer == sp.get());
+    REQUIRE(g_sound_player == sp.get());
   }
 
-  REQUIRE(g_soundPlayer == sentinel.get());
+  REQUIRE(g_sound_player == sentinel.get());
 
-  g_soundPlayer = originalGlobal;
+  g_sound_player = original_global;
 }

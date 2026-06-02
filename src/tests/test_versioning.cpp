@@ -234,19 +234,19 @@ zoneTimeout = 30
 // Helpers
 // ---------------------------------------------------------------------------
 
-static Settings makeKnownV2() {
+static Settings MakeKnownV2() {
   Settings s;
-  s.maxBonuses = 7;
+  s.max_bonuses = 7;
   s.lives = 3;
   s.shadow = true;
   s.tc = "openliero";
-  s.weapTable[0] = 2;
-  s.weapTable[39] = 1;
-  s.bonusTimeout = 42;
-  for (int i = 0; i < Settings::NumWormSettings; ++i) {
-    s.wormSettings[i] = std::make_shared<WormSettings>();
-    s.wormSettings[i]->health = 100 + i;
-    s.wormSettings[i]->name = "w" + std::to_string(i);
+  s.weap_table[0] = 2;
+  s.weap_table[39] = 1;
+  s.bonus_timeout = 42;
+  for (int i = 0; i < Settings::kNumWormSettings; ++i) {
+    s.worm_settings[i] = std::make_shared<WormSettings>();
+    s.worm_settings[i]->health = 100 + i;
+    s.worm_settings[i]->name = "w" + std::to_string(i);
   }
   return s;
 }
@@ -256,7 +256,7 @@ static Settings makeKnownV2() {
 // ---------------------------------------------------------------------------
 
 TEST_CASE("versioning: Settings v2 binary round-trip preserves bonusTimeout", "[versioning]") {
-  Settings src = makeKnownV2();
+  Settings src = MakeKnownV2();
   std::stringstream ss;
   {
     cereal::PortableBinaryOutputArchive ar(ss);
@@ -267,15 +267,15 @@ TEST_CASE("versioning: Settings v2 binary round-trip preserves bonusTimeout", "[
     cereal::PortableBinaryInputArchive ar(ss);
     ar(cereal::make_nvp("s", dst));
   }
-  CHECK(dst.maxBonuses == 7);
+  CHECK(dst.max_bonuses == 7);
   CHECK(dst.lives == 3);
-  CHECK(dst.bonusTimeout == 42);
-  CHECK(dst.wormSettings[0]->health == 100);
-  CHECK(dst.wormSettings[2]->name == "w2");
+  CHECK(dst.bonus_timeout == 42);
+  CHECK(dst.worm_settings[0]->health == 100);
+  CHECK(dst.worm_settings[2]->name == "w2");
 }
 
 TEST_CASE("versioning: Settings v2 TOML round-trip preserves bonusTimeout", "[versioning]") {
-  Settings src = makeKnownV2();
+  Settings src = MakeKnownV2();
   std::stringstream ss;
   {
     cereal::TomlOutputArchive ar(ss);
@@ -289,10 +289,10 @@ TEST_CASE("versioning: Settings v2 TOML round-trip preserves bonusTimeout", "[ve
     cereal::TomlInputArchive ar(ss);
     ar(cereal::make_nvp("s", dst));
   }
-  CHECK(dst.maxBonuses == 7);
+  CHECK(dst.max_bonuses == 7);
   CHECK(dst.lives == 3);
-  CHECK(dst.bonusTimeout == 42);
-  CHECK(dst.wormSettings[2]->health == 102);
+  CHECK(dst.bonus_timeout == 42);
+  CHECK(dst.worm_settings[2]->health == 102);
 }
 
 TEST_CASE("versioning: Settings v1 TOML fixture reads as v2 with default bonusTimeout",
@@ -304,23 +304,23 @@ TEST_CASE("versioning: Settings v1 TOML fixture reads as v2 with default bonusTi
     ar(cereal::make_nvp("s", dst));
   }
   // Fields present in v1.
-  CHECK(dst.maxBonuses == 7);
+  CHECK(dst.max_bonuses == 7);
   CHECK(dst.lives == 3);
   CHECK(dst.shadow == true);
   CHECK(dst.tc == "openliero");
-  CHECK(dst.wormSettings[0]->health == 100);
-  CHECK(dst.wormSettings[1]->name == "w1");
+  CHECK(dst.worm_settings[0]->health == 100);
+  CHECK(dst.worm_settings[1]->name == "w1");
   // bonusTimeout absent in v1 TOML — must be the struct default (0).
-  CHECK(dst.bonusTimeout == 0);
+  CHECK(dst.bonus_timeout == 0);
 }
 
 TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config", "[versioning]") {
-  Settings src = makeKnownV2();
-  src.wormSettings[0]->name = "Player1";
-  src.wormSettings[1]->name = "Player2";
-  src.wormSettings[2]->name = "NetPlayer";
+  Settings src = MakeKnownV2();
+  src.worm_settings[0]->name = "Player1";
+  src.worm_settings[1]->name = "Player2";
+  src.worm_settings[2]->name = "NetPlayer";
 
-  std::string toml = src.toToml();
+  std::string toml = src.ToToml();
 
   // Human-readable: uses [settings], [player1], [player2], [network_player]
   CHECK(toml.find("[settings]") != std::string::npos);
@@ -339,13 +339,13 @@ TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config",
 
   // Round-trip
   Settings dst;
-  dst.fromToml(toml);
-  CHECK(dst.maxBonuses == 7);
+  dst.FromToml(toml);
+  CHECK(dst.max_bonuses == 7);
   CHECK(dst.lives == 3);
-  CHECK(dst.bonusTimeout == 42);
-  CHECK(dst.wormSettings[0]->name == "Player1");
-  CHECK(dst.wormSettings[1]->name == "Player2");
-  CHECK(dst.wormSettings[2]->name == "NetPlayer");
-  CHECK(dst.wormSettings[0]->health == 100);
-  CHECK(dst.wormSettings[2]->health == 102);
+  CHECK(dst.bonus_timeout == 42);
+  CHECK(dst.worm_settings[0]->name == "Player1");
+  CHECK(dst.worm_settings[1]->name == "Player2");
+  CHECK(dst.worm_settings[2]->name == "NetPlayer");
+  CHECK(dst.worm_settings[0]->health == 100);
+  CHECK(dst.worm_settings[2]->health == 102);
 }

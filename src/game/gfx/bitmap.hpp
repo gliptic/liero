@@ -15,15 +15,15 @@ struct Bitmap {
   Bitmap(const Bitmap&) = delete;
   Bitmap& operator=(const Bitmap&) = delete;
 
-  void alloc(int w, int h) { alloc(w, h, w); }
+  void Alloc(int w, int h) { Alloc(w, h, w); }
 
-  void alloc(int newW, int newH, unsigned int newPitch) {
-    if (!pixels || w != newW || h != newH || pitch != newPitch) {
+  void Alloc(int new_w, int new_h, unsigned int new_pitch) {
+    if (!pixels || w != new_w || h != new_h || pitch != new_pitch) {
       delete[] pixels;
-      pixels = new unsigned char[newPitch * newH];
-      w = newW;
-      h = newH;
-      pitch = newPitch;
+      pixels = new unsigned char[new_pitch * new_h];
+      w = new_w;
+      h = new_h;
+      pitch = new_pitch;
     }
 
     clip_rect.x1 = 0;
@@ -32,16 +32,16 @@ struct Bitmap {
     clip_rect.y2 = h;
   }
 
-  unsigned char& getPixel(int x, int y) {
+  unsigned char& GetPixel(int x, int y) {
     return (static_cast<unsigned char*>(pixels) + y * pitch)[x];
   }
 
-  void setPixel(int x, int y, PalIdx v) {
-    if (clip_rect.inside(x, y)) (static_cast<unsigned char*>(pixels) + y * pitch)[x] = v;
+  void SetPixel(int x, int y, PalIdx v) {
+    if (clip_rect.Inside(x, y)) (static_cast<unsigned char*>(pixels) + y * pitch)[x] = v;
   }
 
-  void copy(Bitmap const& other) {
-    alloc(other.w, other.h, other.pitch);
+  void Copy(Bitmap const& other) {
+    Alloc(other.w, other.h, other.pitch);
     std::memcpy(pixels, other.pixels, other.pitch * other.h);
   }
 

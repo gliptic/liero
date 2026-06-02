@@ -12,10 +12,10 @@ struct ExactObjectListBase {
 
 template <typename T, int Limit>
 struct ExactObjectList {
-  struct range {
-    range(T* cur, T* end) : cur(cur), end(end) {}
+  struct Range {
+    Range(T* cur, T* end) : cur(cur), end(end) {}
 
-    T* next() {
+    T* Next() {
       while (!cur->used) ++cur;
 
       T* ret = cur;
@@ -28,19 +28,19 @@ struct ExactObjectList {
     T* end;
   };
 
-  ExactObjectList() { clear(); }
+  ExactObjectList() { Clear(); }
 
-  T* getFreeObject() {
+  T* GetFreeObject() {
     assert(count < Limit);
     ++count;
 
     T* ptr = 0;
-    for (uint32_t i = 0; i < FreeListSize; ++i) {
-      if (freeList[i] != 0) {
-        int bit = std::countr_zero(freeList[i]);
+    for (uint32_t i = 0; i < kFreeListSize; ++i) {
+      if (free_list[i] != 0) {
+        int bit = std::countr_zero(free_list[i]);
         uint32_t index = (i << 5) + bit;
         ptr = arr + index;
-        freeList[i] &= ~(uint32_t(1) << bit);
+        free_list[i] &= ~(uint32_t(1) << bit);
         break;
       }
     }
@@ -51,32 +51,32 @@ struct ExactObjectList {
     return ptr;
   }
 
-  T* newObjectReuse() {
+  T* NewObjectReuse() {
     T* ret;
     if (count >= Limit)
       ret = &arr[Limit - 1];
     else
-      ret = getFreeObject();
+      ret = GetFreeObject();
 
     assert(ret->used && ret >= arr && ret < arr + Limit);
     return ret;
   }
 
-  T* newObject() {
+  T* NewObject() {
     if (count >= Limit) return 0;
 
-    T* ret = getFreeObject();
+    T* ret = GetFreeObject();
     assert(ret->used && ret >= arr && ret < arr + Limit);
     return ret;
   }
 
-  range all() { return range(&arr[0], &arr[Limit]); }
+  Range All() { return Range(&arr[0], &arr[Limit]); }
 
-  void free(T* ptr) {
+  void Free(T* ptr) {
     assert(ptr->used);
     if (ptr->used) {
       uint32_t index = uint32_t(ptr - arr);
-      freeList[index >> 5] |= (uint32_t(1) << (index & 31));
+      free_list[index >> 5] |= (uint32_t(1) << (index & 31));
 
       ptr->used = false;
 
@@ -85,10 +85,10 @@ struct ExactObjectList {
     }
   }
 
-  void free(range& r) { free(r.cur - 1); }
+  void Free(Range& r) { Free(r.cur - 1); }
 
-  void clear() {
-    std::memset(freeList, 0xff, FreeListSize * sizeof(uint32_t));
+  void Clear() {
+    std::memset(free_list, 0xff, kFreeListSize * sizeof(uint32_t));
     count = 0;
 
     for (std::size_t i = 0; i < Limit; ++i) arr[i].used = false;
@@ -96,16 +96,16 @@ struct ExactObjectList {
     arr[Limit].used = true;
 
     // Mark padding as used
-    for (uint32_t index = Limit; index < FreeListSize * 32; ++index)
-      freeList[index >> 5] &= ~(uint32_t(1) << (index & 31));
+    for (uint32_t index = Limit; index < kFreeListSize * 32; ++index)
+      free_list[index >> 5] &= ~(uint32_t(1) << (index & 31));
   }
 
-  std::size_t size() const { return count; }
+  std::size_t Size() const { return count; }
 
   T arr[Limit + 1];  // Sentinel
 
-  static uint32_t const FreeListSize = (Limit + 31) / 32;
-  uint32_t freeList[FreeListSize];
+  static uint32_t const kFreeListSize = (Limit + 31) / 32;
+  uint32_t free_list[kFreeListSize];
 
   std::size_t count;
 };

@@ -52,14 +52,14 @@ int main(int argc, char* argv[]) try {
     tcName = "openliero";
   }
 
-  precomputeTables();
+  PrecomputeTables();
 
   // Use the same path-resolution logic as the main binary.
-  // paths::resolve ignores single-dash flags, so -d/-s/-r pass through harmlessly.
+  // paths::Resolve ignores single-dash flags, so -d/-s/-r pass through harmlessly.
   // Output videos land next to the replay file; no writes go to any config path.
-  auto r = paths::resolve(argc, argv);
+  auto r = paths::Resolve(argc, argv);
   std::shared_ptr<Common> common(new Common());
-  common->load(r.configNode / "TC" / tcName);
+  common->load(r.config_node / "TC" / tcName);
 
   std::string suffix = "_n";
   if (spectator) {
@@ -67,12 +67,12 @@ int main(int argc, char* argv[]) try {
   }
 
   if (dir) {
-    auto const& root = getRoot(replayPath);
+    auto const& root = GetRoot(replayPath);
     DirectoryListing di(root);
 
     for (auto const& path : di) {
-      if (getExtension(path.name) == "lrp") {
-        auto const& fullPath = joinPath(root, path.name);
+      if (GetExtension(path.name) == "lrp") {
+        auto const& fullPath = JoinPath(root, path.name);
         if (match(fullPath, replayPath)) {
           printf("Converting %s\n", fullPath.c_str());
           replayToVideo(common, spectator, fullPath, fullPath + suffix + ".mp4");
@@ -85,8 +85,6 @@ int main(int argc, char* argv[]) try {
 
   return 0;
 } catch (std::exception& ex) {
-  Console::writeLine(std::string("EXCEPTION: ") + ex.what());
-  // Console::writeLine("Press any key to quit");
-  // Console::waitForAnyKey();
+  console::WriteLine(std::string("EXCEPTION: ") + ex.what());
   return 1;
 }

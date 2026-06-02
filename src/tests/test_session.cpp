@@ -15,30 +15,30 @@
 struct SessionFixture {
   std::shared_ptr<Common> common;
   std::shared_ptr<Settings> settings;
-  FsNode tcRoot;
+  FsNode tc_root;
 
   SessionFixture() {
-    precomputeTables();
+    PrecomputeTables();
 
     common = std::make_shared<Common>();
-    tcRoot = FsNode("data") / "TC" / "openliero";
-    common->load(tcRoot);
+    tc_root = FsNode("data") / "TC" / "openliero";
+    common->load(tc_root);
 
     settings = std::make_shared<Settings>();
     settings->lives = 10;
-    settings->loadingTime = 0;
-    settings->randomLevel = true;
-    settings->gameMode = Settings::GMKillEmAll;
+    settings->loading_time = 0;
+    settings->random_level = true;
+    settings->game_mode = Settings::kGmKillEmAll;
   }
 };
 
 // Poll both sessions until a condition is met or timeout
 template <typename Pred>
-static bool pollUntil(NetSession& a, NetSession& b, Pred pred, int maxMs = 3000) {
-  auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(maxMs);
+static bool PollUntil(NetSession& a, NetSession& b, Pred pred, int max_ms = 3000) {
+  auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(max_ms);
   while (!pred() && std::chrono::steady_clock::now() < deadline) {
-    a.update();
-    b.update();
+    a.Update();
+    b.Update();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
   return pred();
@@ -47,165 +47,162 @@ static bool pollUntil(NetSession& a, NetSession& b, Pred pred, int maxMs = 3000)
 TEST_CASE("NetSession host and client connect and handshake", "[session]") {
   SessionFixture f;
 
-  NetSession host(f.common, f.settings, f.tcRoot);
-  NetSession client(f.common, f.settings, f.tcRoot);
+  NetSession host(f.common, f.settings, f.tc_root);
+  NetSession client(f.common, f.settings, f.tc_root);
 
-  REQUIRE(host.hostGame(0));
-  uint16_t port = host.transport().listeningPort();
-  REQUIRE(host.sessionState() == NetSession::WaitingForPeer);
+  REQUIRE(host.HostGame(0));
+  uint16_t port = host.Transport().ListeningPort();
+  REQUIRE(host.State() == NetSession::kWaitingForPeer);
 
-  REQUIRE(client.joinGame("127.0.0.1", port));
-  REQUIRE(client.sessionState() == NetSession::WaitingForPeer);
+  REQUIRE(client.JoinGame("127.0.0.1", port));
+  REQUIRE(client.State() == NetSession::kWaitingForPeer);
 
   // Poll until both reach Playing state
-  bool ready = pollUntil(host, client, [&]() {
-    return host.sessionState() == NetSession::Playing &&
-           client.sessionState() == NetSession::Playing;
+  bool ready = PollUntil(host, client, [&]() {
+    return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
 
   REQUIRE(ready);
-  REQUIRE(host.rollbackController() != nullptr);
-  REQUIRE(client.rollbackController() != nullptr);
+  REQUIRE(host.Rollback() != nullptr);
+  REQUIRE(client.Rollback() != nullptr);
 
   // Both games should have the same RNG seed
-  REQUIRE(host.rollbackController()->game.rand == client.rollbackController()->game.rand);
+  REQUIRE(host.Rollback()->game.rand == client.Rollback()->game.rand);
 }
 
 TEST_CASE("NetSession syncs host settings to client", "[session]") {
   SessionFixture f;
 
-  auto settingsB = std::make_shared<Settings>(*f.settings);
-  settingsB->lives = 99;
-  settingsB->blood = 200;
-  settingsB->loadingTime = 50;
-  settingsB->gameMode = Settings::GMGameOfTag;
-  settingsB->maxBonuses = 7;
-  settingsB->timeToLose = 999;
-  settingsB->flagsToWin = 3;
-  settingsB->loadChange = true;
+  auto settings_b = std::make_shared<Settings>(*f.settings);
+  settings_b->lives = 99;
+  settings_b->blood = 200;
+  settings_b->loading_time = 50;
+  settings_b->game_mode = Settings::kGmGameOfTag;
+  settings_b->max_bonuses = 7;
+  settings_b->time_to_lose = 999;
+  settings_b->flags_to_win = 3;
+  settings_b->load_change = true;
   // Modify some weapTable entries
-  for (int i = 0; i < 40; ++i) settingsB->weapTable[i] = (i < 10) ? 2 : 0;
+  for (int i = 0; i < 40; ++i) settings_b->weap_table[i] = (i < 10) ? 2 : 0;
 
-  NetSession host(f.common, f.settings, f.tcRoot);
-  NetSession client(f.common, settingsB, f.tcRoot);
+  NetSession host(f.common, f.settings, f.tc_root);
+  NetSession client(f.common, settings_b, f.tc_root);
 
-  REQUIRE(host.hostGame(0));
-  uint16_t port = host.transport().listeningPort();
-  REQUIRE(client.joinGame("127.0.0.1", port));
+  REQUIRE(host.HostGame(0));
+  uint16_t port = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", port));
 
   // Poll until both reach Playing — host settings are authoritative
-  bool ready = pollUntil(host, client, [&]() {
-    return host.sessionState() == NetSession::Playing &&
-           client.sessionState() == NetSession::Playing;
+  bool ready = PollUntil(host, client, [&]() {
+    return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
 
   REQUIRE(ready);
   // Client should have received and applied host's settings
-  REQUIRE(settingsB->lives == f.settings->lives);
-  REQUIRE(settingsB->blood == f.settings->blood);
-  REQUIRE(settingsB->loadingTime == f.settings->loadingTime);
-  REQUIRE(settingsB->gameMode == f.settings->gameMode);
-  REQUIRE(settingsB->maxBonuses == f.settings->maxBonuses);
-  REQUIRE(settingsB->timeToLose == f.settings->timeToLose);
-  REQUIRE(settingsB->flagsToWin == f.settings->flagsToWin);
-  REQUIRE(settingsB->loadChange == f.settings->loadChange);
-  for (int i = 0; i < 40; ++i) REQUIRE(settingsB->weapTable[i] == f.settings->weapTable[i]);
+  REQUIRE(settings_b->lives == f.settings->lives);
+  REQUIRE(settings_b->blood == f.settings->blood);
+  REQUIRE(settings_b->loading_time == f.settings->loading_time);
+  REQUIRE(settings_b->game_mode == f.settings->game_mode);
+  REQUIRE(settings_b->max_bonuses == f.settings->max_bonuses);
+  REQUIRE(settings_b->time_to_lose == f.settings->time_to_lose);
+  REQUIRE(settings_b->flags_to_win == f.settings->flags_to_win);
+  REQUIRE(settings_b->load_change == f.settings->load_change);
+  for (int i = 0; i < 40; ++i) REQUIRE(settings_b->weap_table[i] == f.settings->weap_table[i]);
 }
 
 TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]") {
   SessionFixture f;
 
   // Give each player distinct colors and weapons in the network player slot
-  auto settingsHost = std::make_shared<Settings>(*f.settings);
+  auto settings_host = std::make_shared<Settings>(*f.settings);
   // Create distinct WormSettings objects so shared_ptr sharing doesn't cause issues
-  for (int i = 0; i < Settings::NumWormSettings; ++i)
-    settingsHost->wormSettings[i] = std::make_shared<WormSettings>(*settingsHost->wormSettings[i]);
-  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->color = 3;
-  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->rgb[0] = 255;
-  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->rgb[1] = 0;
-  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->rgb[2] = 0;
-  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[0] = 10;
-  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[1] = 20;
-  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[2] = 30;
-  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[3] = 5;
-  settingsHost->wormSettings[Settings::NetworkPlayerIdx]->weapons[4] = 15;
+  for (int i = 0; i < Settings::kNumWormSettings; ++i)
+    settings_host->worm_settings[i] =
+        std::make_shared<WormSettings>(*settings_host->worm_settings[i]);
+  settings_host->worm_settings[Settings::kNetworkPlayerIdx]->color = 3;
+  settings_host->worm_settings[Settings::kNetworkPlayerIdx]->rgb[0] = 255;
+  settings_host->worm_settings[Settings::kNetworkPlayerIdx]->rgb[1] = 0;
+  settings_host->worm_settings[Settings::kNetworkPlayerIdx]->rgb[2] = 0;
+  settings_host->worm_settings[Settings::kNetworkPlayerIdx]->weapons[0] = 10;
+  settings_host->worm_settings[Settings::kNetworkPlayerIdx]->weapons[1] = 20;
+  settings_host->worm_settings[Settings::kNetworkPlayerIdx]->weapons[2] = 30;
+  settings_host->worm_settings[Settings::kNetworkPlayerIdx]->weapons[3] = 5;
+  settings_host->worm_settings[Settings::kNetworkPlayerIdx]->weapons[4] = 15;
 
-  auto settingsClient = std::make_shared<Settings>(*f.settings);
-  for (int i = 0; i < Settings::NumWormSettings; ++i)
-    settingsClient->wormSettings[i] =
-        std::make_shared<WormSettings>(*settingsClient->wormSettings[i]);
-  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->color = 6;
-  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->rgb[0] = 0;
-  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->rgb[1] = 255;
-  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->rgb[2] = 128;
-  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[0] = 35;
-  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[1] = 8;
-  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[2] = 22;
-  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[3] = 14;
-  settingsClient->wormSettings[Settings::NetworkPlayerIdx]->weapons[4] = 40;
+  auto settings_client = std::make_shared<Settings>(*f.settings);
+  for (int i = 0; i < Settings::kNumWormSettings; ++i)
+    settings_client->worm_settings[i] =
+        std::make_shared<WormSettings>(*settings_client->worm_settings[i]);
+  settings_client->worm_settings[Settings::kNetworkPlayerIdx]->color = 6;
+  settings_client->worm_settings[Settings::kNetworkPlayerIdx]->rgb[0] = 0;
+  settings_client->worm_settings[Settings::kNetworkPlayerIdx]->rgb[1] = 255;
+  settings_client->worm_settings[Settings::kNetworkPlayerIdx]->rgb[2] = 128;
+  settings_client->worm_settings[Settings::kNetworkPlayerIdx]->weapons[0] = 35;
+  settings_client->worm_settings[Settings::kNetworkPlayerIdx]->weapons[1] = 8;
+  settings_client->worm_settings[Settings::kNetworkPlayerIdx]->weapons[2] = 22;
+  settings_client->worm_settings[Settings::kNetworkPlayerIdx]->weapons[3] = 14;
+  settings_client->worm_settings[Settings::kNetworkPlayerIdx]->weapons[4] = 40;
 
-  NetSession host(f.common, settingsHost, f.tcRoot);
-  NetSession client(f.common, settingsClient, f.tcRoot);
+  NetSession host(f.common, settings_host, f.tc_root);
+  NetSession client(f.common, settings_client, f.tc_root);
 
-  REQUIRE(host.hostGame(0));
-  uint16_t port = host.transport().listeningPort();
-  REQUIRE(client.joinGame("127.0.0.1", port));
+  REQUIRE(host.HostGame(0));
+  uint16_t port = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", port));
 
-  bool ready = pollUntil(host, client, [&]() {
-    return host.sessionState() == NetSession::Playing &&
-           client.sessionState() == NetSession::Playing;
+  bool ready = PollUntil(host, client, [&]() {
+    return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
   REQUIRE(ready);
 
   // Host's remote worm (index 1) should have client's color/weapons
-  Worm* hostRemoteWorm = host.rollbackController()->game.wormByIdx(1);
-  REQUIRE(hostRemoteWorm->settings->color == 6);
-  REQUIRE(hostRemoteWorm->settings->rgb[0] == 0);
-  REQUIRE(hostRemoteWorm->settings->rgb[1] == 255);
-  REQUIRE(hostRemoteWorm->settings->rgb[2] == 128);
-  REQUIRE(hostRemoteWorm->settings->weapons[0] == 35);
-  REQUIRE(hostRemoteWorm->settings->weapons[4] == 40);
+  Worm* host_remote_worm = host.Rollback()->game.WormByIdx(1);
+  REQUIRE(host_remote_worm->settings->color == 6);
+  REQUIRE(host_remote_worm->settings->rgb[0] == 0);
+  REQUIRE(host_remote_worm->settings->rgb[1] == 255);
+  REQUIRE(host_remote_worm->settings->rgb[2] == 128);
+  REQUIRE(host_remote_worm->settings->weapons[0] == 35);
+  REQUIRE(host_remote_worm->settings->weapons[4] == 40);
 
   // Client's remote worm (index 0) should have host's color/weapons
-  Worm* clientRemoteWorm = client.rollbackController()->game.wormByIdx(0);
-  REQUIRE(clientRemoteWorm->settings->color == 3);
-  REQUIRE(clientRemoteWorm->settings->rgb[0] == 255);
-  REQUIRE(clientRemoteWorm->settings->rgb[1] == 0);
-  REQUIRE(clientRemoteWorm->settings->rgb[2] == 0);
-  REQUIRE(clientRemoteWorm->settings->weapons[0] == 10);
-  REQUIRE(clientRemoteWorm->settings->weapons[4] == 15);
+  Worm* client_remote_worm = client.Rollback()->game.WormByIdx(0);
+  REQUIRE(client_remote_worm->settings->color == 3);
+  REQUIRE(client_remote_worm->settings->rgb[0] == 255);
+  REQUIRE(client_remote_worm->settings->rgb[1] == 0);
+  REQUIRE(client_remote_worm->settings->rgb[2] == 0);
+  REQUIRE(client_remote_worm->settings->weapons[0] == 10);
+  REQUIRE(client_remote_worm->settings->weapons[4] == 15);
 
   // Persistent settings should NOT be modified
-  REQUIRE(settingsHost->wormSettings[1]->color != 6);
-  REQUIRE(settingsClient->wormSettings[0]->color != 3);
+  REQUIRE(settings_host->worm_settings[1]->color != 6);
+  REQUIRE(settings_client->worm_settings[0]->color != 3);
 }
 
 TEST_CASE("NetSession client detects host disconnect", "[session]") {
   SessionFixture f;
 
-  NetSession host(f.common, f.settings, f.tcRoot);
-  NetSession client(f.common, f.settings, f.tcRoot);
+  NetSession host(f.common, f.settings, f.tc_root);
+  NetSession client(f.common, f.settings, f.tc_root);
 
-  REQUIRE(host.hostGame(0));
-  uint16_t port = host.transport().listeningPort();
-  REQUIRE(client.joinGame("127.0.0.1", port));
+  REQUIRE(host.HostGame(0));
+  uint16_t port = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", port));
 
-  bool ready = pollUntil(host, client, [&]() {
-    return host.sessionState() == NetSession::Playing &&
-           client.sessionState() == NetSession::Playing;
+  bool ready = PollUntil(host, client, [&]() {
+    return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
   REQUIRE(ready);
 
   // Host disconnects
-  host.disconnect();
-  REQUIRE(host.sessionState() == NetSession::Idle);
+  host.Disconnect();
+  REQUIRE(host.State() == NetSession::kIdle);
 
   // Client should detect the disconnect
   bool disconnected = false;
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(5);
   while (!disconnected && std::chrono::steady_clock::now() < deadline) {
-    client.update();
-    disconnected = (client.sessionState() == NetSession::Disconnected);
+    client.Update();
+    disconnected = (client.State() == NetSession::kDisconnected);
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
   REQUIRE(disconnected);
@@ -214,20 +211,20 @@ TEST_CASE("NetSession client detects host disconnect", "[session]") {
 TEST_CASE("NetSession connect to non-existent host fails", "[session]") {
   SessionFixture f;
 
-  NetSession client(f.common, f.settings, f.tcRoot);
+  NetSession client(f.common, f.settings, f.tc_root);
   // Connect to a port where nobody is listening
-  REQUIRE(client.joinGame("127.0.0.1", 19599));
+  REQUIRE(client.JoinGame("127.0.0.1", 19599));
 
   // Poll — should eventually fail or stay in WaitingForPeer
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
-  while (client.sessionState() == NetSession::WaitingForPeer &&
+  while (client.State() == NetSession::kWaitingForPeer &&
          std::chrono::steady_clock::now() < deadline) {
-    client.update();
+    client.Update();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
   // Should not be in Playing state
-  REQUIRE(client.sessionState() != NetSession::Playing);
+  REQUIRE(client.State() != NetSession::kPlaying);
 }
 
 TEST_CASE("NetSession TC sync transfers data when hashes differ", "[session][tc]") {
@@ -235,21 +232,21 @@ TEST_CASE("NetSession TC sync transfers data when hashes differ", "[session][tc]
 
   // Create a modified TC in a temp directory so the client has a different hash.
   // Copy the real TC and append a byte to tc.cfg to change the hash.
-  std::string tempTcDir = "/tmp/openliero_test_tc_modified";
+  std::string temp_tc_dir = "/tmp/openliero_test_tc_modified";
 
   // Pack the real TC, unpack to temp dir, then modify a file
-  auto archive = TcArchive::pack(f.tcRoot);
-  auto files = TcArchive::unpack(archive.data(), archive.size());
+  auto archive = tc_archive::Pack(f.tc_root);
+  auto files = tc_archive::Unpack(archive.data(), archive.size());
   REQUIRE(!files.empty());
 
   // Write files to temp dir
-  std::filesystem::remove_all(tempTcDir);
-  std::filesystem::create_directories(tempTcDir);
+  std::filesystem::remove_all(temp_tc_dir);
+  std::filesystem::create_directories(temp_tc_dir);
 
   for (auto& file : files) {
-    std::filesystem::path fullPath = std::filesystem::path(tempTcDir) / file.name;
-    std::filesystem::create_directories(fullPath.parent_path());
-    std::ofstream ofs(fullPath, std::ios::binary);
+    std::filesystem::path full_path = std::filesystem::path(temp_tc_dir) / file.name;
+    std::filesystem::create_directories(full_path.parent_path());
+    std::ofstream ofs(full_path, std::ios::binary);
     REQUIRE(ofs.is_open());
     ofs.write(reinterpret_cast<const char*>(file.data.data()),
               static_cast<std::streamsize>(file.data.size()));
@@ -257,84 +254,82 @@ TEST_CASE("NetSession TC sync transfers data when hashes differ", "[session][tc]
 
   // Modify a sound file to change the hash without breaking TOML parsing
   {
-    std::filesystem::path wavPath = std::filesystem::path(tempTcDir) / "sounds/shotgun.wav";
-    std::ofstream ofs(wavPath, std::ios::binary | std::ios::app);
+    std::filesystem::path wav_path = std::filesystem::path(temp_tc_dir) / "sounds/shotgun.wav";
+    std::ofstream ofs(wav_path, std::ios::binary | std::ios::app);
     REQUIRE(ofs.is_open());
     ofs.put('\0');
   }
 
-  FsNode clientTcRoot(tempTcDir);
-  uint32_t clientHash = TcArchive::computeHash(clientTcRoot);
-  uint32_t hostHash = TcArchive::computeHash(f.tcRoot);
-  REQUIRE(clientHash != hostHash);  // Ensure hashes actually differ
+  FsNode client_tc_root(temp_tc_dir);
+  uint32_t client_hash = tc_archive::ComputeHash(client_tc_root);
+  uint32_t host_hash = tc_archive::ComputeHash(f.tc_root);
+  REQUIRE(client_hash != host_hash);  // Ensure hashes actually differ
 
   // Client uses the modified TC
-  auto clientCommon = std::make_shared<Common>();
-  clientCommon->load(clientTcRoot);
+  auto client_common = std::make_shared<Common>();
+  client_common->load(client_tc_root);
 
-  auto clientSettings = std::make_shared<Settings>(*f.settings);
+  auto client_settings = std::make_shared<Settings>(*f.settings);
 
   // Track if onTcReloaded fires
-  bool tcReloaded = false;
-  std::shared_ptr<Common> receivedCommon;
+  bool tc_reloaded = false;
+  std::shared_ptr<Common> received_common;
 
-  NetSession host(f.common, f.settings, f.tcRoot);
-  NetSession client(clientCommon, clientSettings, clientTcRoot);
+  NetSession host(f.common, f.settings, f.tc_root);
+  NetSession client(client_common, client_settings, client_tc_root);
 
-  client.onTcReloaded = [&](std::shared_ptr<Common> newCommon) {
-    tcReloaded = true;
-    receivedCommon = newCommon;
+  client.on_tc_reloaded = [&](std::shared_ptr<Common> new_common) {
+    tc_reloaded = true;
+    received_common = new_common;
   };
 
-  REQUIRE(host.hostGame(0));
-  uint16_t port = host.transport().listeningPort();
-  REQUIRE(client.joinGame("127.0.0.1", port));
+  REQUIRE(host.HostGame(0));
+  uint16_t port = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", port));
 
   // Poll until both reach Playing state (TC transfer included)
-  bool ready = pollUntil(
+  bool ready = PollUntil(
       host, client,
       [&]() {
-        return host.sessionState() == NetSession::Playing &&
-               client.sessionState() == NetSession::Playing;
+        return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
       },
       10000);  // Allow more time for TC transfer
 
-  INFO("Host state: " << (int)host.sessionState());
-  INFO("Client state: " << (int)client.sessionState());
+  INFO("Host state: " << (int)host.State());
+  INFO("Client state: " << (int)client.State());
   REQUIRE(ready);
 
   // TC should have been reloaded on the client
-  REQUIRE(tcReloaded);
-  REQUIRE(receivedCommon != nullptr);
+  REQUIRE(tc_reloaded);
+  REQUIRE(received_common != nullptr);
 
   // Both games should have the same RNG seed (basic sanity)
-  REQUIRE(host.rollbackController()->game.rand.last == client.rollbackController()->game.rand.last);
+  REQUIRE(host.Rollback()->game.rand.last == client.Rollback()->game.rand.last);
 
   // Clean up
-  std::filesystem::remove_all(tempTcDir);
+  std::filesystem::remove_all(temp_tc_dir);
 }
 
 TEST_CASE("NetSession TC sync skips transfer when hashes match", "[session][tc]") {
   SessionFixture f;
 
   // Both sides use the same TC — no transfer should happen
-  bool tcReloaded = false;
+  bool tc_reloaded = false;
 
-  NetSession host(f.common, f.settings, f.tcRoot);
-  NetSession client(f.common, f.settings, f.tcRoot);
+  NetSession host(f.common, f.settings, f.tc_root);
+  NetSession client(f.common, f.settings, f.tc_root);
 
-  client.onTcReloaded = [&](std::shared_ptr<Common>) { tcReloaded = true; };
+  client.on_tc_reloaded = [&](std::shared_ptr<Common>) { tc_reloaded = true; };
 
-  REQUIRE(host.hostGame(0));
-  uint16_t port = host.transport().listeningPort();
-  REQUIRE(client.joinGame("127.0.0.1", port));
+  REQUIRE(host.HostGame(0));
+  uint16_t port = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", port));
 
-  bool ready = pollUntil(host, client, [&]() {
-    return host.sessionState() == NetSession::Playing &&
-           client.sessionState() == NetSession::Playing;
+  bool ready = PollUntil(host, client, [&]() {
+    return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
 
   REQUIRE(ready);
   // TC should NOT have been reloaded (same hash → skip)
-  REQUIRE_FALSE(tcReloaded);
+  REQUIRE_FALSE(tc_reloaded);
 }

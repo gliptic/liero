@@ -23,118 +23,118 @@ struct Common;
 struct Gfx;
 
 struct Menu {
-  Menu(bool centered = false) { init(centered); }
+  Menu(bool centered = false) { Init(centered); }
 
   Menu(int x, int y, bool centered = false) {
-    init(centered);
-    place(x, y);
+    Init(centered);
+    Place(x, y);
   }
 
   virtual ~Menu() {}
 
-  void init(bool centeredInit = false) {
-    itemHeight = 8;
-    centered = centeredInit;
+  void Init(bool centered_init = false) {
+    item_height = 8;
+    centered = centered_init;
     selection_ = 0;
-    valueOffsetX = 0;
+    value_offset_x = 0;
     x = 0;
     y = 0;
     height = 15;
-    topItem = 0;
-    bottomItem = 0;
+    top_item = 0;
+    bottom_item = 0;
     // showScroll = false;
-    visibleItemCount = 0;
-    searchTime = 0;
+    visible_item_count = 0;
+    search_time = 0;
   }
 
-  void draw(Common& common, Renderer& renderer, bool disabled, int x = -1,
-            bool showDisabledSelection = false);
-  void process();
+  void Draw(Common& common, Renderer& renderer, bool disabled, int x = -1,
+            bool show_disabled_selection = false);
+  void Process();
 
-  virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
+  virtual void DrawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
                                bool disabled) {
     // Nothing by default
   }
 
-  virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item) {
+  virtual ItemBehavior* GetItemBehavior(Common& common, MenuItem& item) {
     // Dummy item behavior by default
     return new ItemBehavior;
   }
 
-  virtual void onUpdate() {
+  virtual void OnUpdate() {
     // Nothing by default
   }
 
-  bool onLeftRight(Common& common, int dir) {
-    auto* s = selected();
+  bool OnLeftRight(Common& common, int dir) {
+    auto* s = Selected();
     if (!s) return false;
-    std::unique_ptr<ItemBehavior> b(getItemBehavior(common, *s));
-    return b->onLeftRight(*this, *s, dir);
+    std::unique_ptr<ItemBehavior> b(GetItemBehavior(common, *s));
+    return b->OnLeftRight(*this, *s, dir);
   }
 
-  int onEnter(Common& common) {
-    auto* s = selected();
+  int OnEnter(Common& common) {
+    auto* s = Selected();
     if (!s) return false;
-    std::unique_ptr<ItemBehavior> b(getItemBehavior(common, *s));
-    return b->onEnter(*this, *s);
+    std::unique_ptr<ItemBehavior> b(GetItemBehavior(common, *s));
+    return b->OnEnter(*this, *s);
   }
 
-  void onKeys(SDL_Scancode* begin, SDL_Scancode* end, bool contains = false);
+  void OnKeys(SDL_Scancode* begin, SDL_Scancode* end, bool contains = false);
 
-  void updateItems(Common& common) {
+  void UpdateItems(Common& common) {
     for (std::size_t i = 0; i < items.size(); ++i) {
-      std::unique_ptr<ItemBehavior> b(getItemBehavior(common, items[i]));
+      std::unique_ptr<ItemBehavior> b(GetItemBehavior(common, items[i]));
 
-      b->onUpdate(*this, items[i]);
+      b->OnUpdate(*this, items[i]);
     }
 
-    onUpdate();
+    OnUpdate();
   }
 
-  void place(int newX, int newY) {
-    x = newX;
-    y = newY;
+  void Place(int new_x, int new_y) {
+    x = new_x;
+    y = new_y;
   }
 
-  bool isSelectionValid() { return selection_ >= 0 && selection_ < (int)items.size(); }
+  bool IsSelectionValid() { return selection_ >= 0 && selection_ < (int)items.size(); }
 
-  void moveToFirstVisible();
-  void movement(int direction);
-  void movementPage(int direction);
+  void MoveToFirstVisible();
+  void Movement(int direction);
+  void MovementPage(int direction);
 
-  int addItem(MenuItem item);
-  int addItem(MenuItem item, int pos);
-  void clear();
+  int AddItem(MenuItem item);
+  int AddItem(MenuItem item, int pos);
+  void Clear();
 
-  bool itemPosition(MenuItem& item, int& x, int& y);
+  bool ItemPosition(MenuItem& item, int& x, int& y);
 
-  int visibleItemIndex(int item);
-  int itemFromVisibleIndex(int idx);
+  int VisibleItemIndex(int item);
+  int ItemFromVisibleIndex(int idx);
 
-  void setHeight(int newHeight) {
-    height = newHeight;
-    setTop(topItem);
+  void SetHeight(int new_height) {
+    height = new_height;
+    SetTop(top_item);
   }
 
-  int selection() { return selection_; }
+  int Selection() { return selection_; }
 
   // Used by the rollback weapon-select snapshot restore. Sets the
   // selection_ field directly, bypassing visibility/scroll adjustments.
   // Callers are expected to also restore topItem/bottomItem from the
   // same snapshot.
-  void setSelection(int newSelection) { selection_ = newSelection; }
+  void SetSelection(int new_selection) { selection_ = new_selection; }
 
-  MenuItem* selected() {
-    if (!isSelectionValid()) return 0;
+  MenuItem* Selected() {
+    if (!IsSelectionValid()) return 0;
     return &items[selection_];
   }
 
-  int selectedId() {
-    MenuItem* s = selected();
+  int SelectedId() {
+    MenuItem* s = Selected();
     return s ? s->id : -1;
   }
 
-  int indexFromId(int id) {
+  int IndexFromId(int id) {
     for (int i = 0; i < (int)items.size(); ++i) {
       if (items[i].id == id) return i;
     }
@@ -142,7 +142,7 @@ struct Menu {
     return -1;
   }
 
-  MenuItem* itemFromId(int id) {
+  MenuItem* ItemFromId(int id) {
     for (int i = 0; i < (int)items.size(); ++i) {
       if (items[i].id == id) return &items[i];
     }
@@ -150,32 +150,32 @@ struct Menu {
     return 0;
   }
 
-  void setVisibility(int id, bool state);
-  int firstVisibleFrom(int item);
-  int lastVisibleFrom(int item);
-  void moveTo(int newSelection);
-  void moveToId(int id);
-  bool isInView(int item);
-  void ensureInView(int item);
-  void setBottom(int newBottomVisIdx);
-  void setTop(int newTopVisIdx);
-  void scroll(int amount);
+  void SetVisibility(int id, bool state);
+  int FirstVisibleFrom(int item);
+  int LastVisibleFrom(int item);
+  void MoveTo(int new_selection);
+  void MoveToId(int id);
+  bool IsInView(int item);
+  void EnsureInView(int item);
+  void SetBottom(int new_bottom_vis_idx);
+  void SetTop(int new_top_vis_idx);
+  void Scroll(int amount);
 
-  std::string searchPrefix;
-  Uint64 searchTime;
+  std::string search_prefix;
+  Uint64 search_time;
 
   std::vector<MenuItem> items;
-  int itemHeight;
-  int valueOffsetX;
+  int item_height;
+  int value_offset_x;
 
   int x, y;
   int height;
 
-  int topItem;     // Visible index
-  int bottomItem;  // Visible index
+  int top_item;     // Visible index
+  int bottom_item;  // Visible index
   // bool showScroll;
 
-  int visibleItemCount;
+  int visible_item_count;
 
   bool centered;
 

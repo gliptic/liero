@@ -7,24 +7,24 @@ struct ItemBehavior;
 
 struct MainMenu : Menu {
   enum {
-    MaResumeGame,
-    MaNewGame,
-    MaSettings,
-    MaPlayer1Settings,
-    MaPlayer2Settings,
-    MaAdvanced,
-    MaQuit,
-    MaReplays,
-    MaReplay,
-    MaTc,
-    MaHostGame,
-    MaJoinGame,
-    MaNetPlayerSettings,
-    MaHostOnline,
-    MaJoinOnline,
+    kMaResumeGame,
+    kMaNewGame,
+    kMaSettings,
+    kMaPlayer1Settings,
+    kMaPlayer2Settings,
+    kMaAdvanced,
+    kMaQuit,
+    kMaReplays,
+    kMaReplay,
+    kMaTc,
+    kMaHostGame,
+    kMaJoinGame,
+    kMaNetPlayerSettings,
+    kMaHostOnline,
+    kMaJoinOnline,
   };
 
   MainMenu(int x, int y) : Menu(x, y) {}
 
-  virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item);
+  virtual ItemBehavior* GetItemBehavior(Common& common, MenuItem& item);
 };

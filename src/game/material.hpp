@@ -4,25 +4,25 @@
 
 struct Material {
   enum {
-    Dirt = 1 << 0,
-    Dirt2 = 1 << 1,
-    Rock = 1 << 2,
-    Background = 1 << 3,
-    SeeShadow = 1 << 4,
-    WormM = 1 << 5
+    kDirt = 1 << 0,
+    kDirt2 = 1 << 1,
+    kRock = 1 << 2,
+    kBackground = 1 << 3,
+    kSeeShadow = 1 << 4,
+    kWormM = 1 << 5
   };
 
-  bool dirt() { return (flags & Dirt) != 0; }
-  bool dirt2() { return (flags & Dirt2) != 0; }
-  bool rock() { return (flags & Rock) != 0; }
-  bool background() { return (flags & Background) != 0; }
-  bool seeShadow() { return (flags & SeeShadow) != 0; }
+  bool Dirt() { return (flags & kDirt) != 0; }
+  bool Dirt2() { return (flags & kDirt2) != 0; }
+  bool Rock() { return (flags & kRock) != 0; }
+  bool Background() { return (flags & kBackground) != 0; }
+  bool SeeShadow() { return (flags & kSeeShadow) != 0; }
 
   // Constructed
-  bool dirtRock() { return (flags & (Dirt | Dirt2 | Rock)) != 0; }
-  bool anyDirt() { return (flags & (Dirt | Dirt2)) != 0; }
-  bool dirtBack() { return (flags & (Dirt | Dirt2 | Background)) != 0; }
-  bool worm() { return (flags & WormM) != 0; }
+  bool DirtRock() { return (flags & (kDirt | kDirt2 | kRock)) != 0; }
+  bool AnyDirt() { return (flags & (kDirt | kDirt2)) != 0; }
+  bool DirtBack() { return (flags & (kDirt | kDirt2 | kBackground)) != 0; }
+  bool Worm() { return (flags & kWormM) != 0; }
 
   uint8_t flags;
 };

@@ -6,7 +6,7 @@
 using std::vector;
 
 template <typename D, typename T>
-vector<D> convert(vector<T> const& src) {
+vector<D> Convert(vector<T> const& src) {
   vector<D> v;
 
   for (auto& e : src) v.push_back(e);
@@ -15,7 +15,7 @@ vector<D> convert(vector<T> const& src) {
 }
 
 template <typename T, typename C>
-vector<T> pluck(vector<C> const& src, T(C::* a)) {
+vector<T> Pluck(vector<C> const& src, T(C::* a)) {
   vector<T> v;
 
   for (auto& e : src) v.push_back(e.*a);
@@ -24,7 +24,7 @@ vector<T> pluck(vector<C> const& src, T(C::* a)) {
 }
 
 template <typename T>
-vector<T> stretch(vector<T> const& src, size_t len) {
+vector<T> Stretch(vector<T> const& src, size_t len) {
   size_t n = src.size();
   vector<T> v(len);
 
@@ -52,13 +52,13 @@ vector<T> stretch(vector<T> const& src, size_t len) {
 }
 
 template <typename T>
-void cumulative(vector<T>& src) {
+void Cumulative(vector<T>& src) {
   T prev = T();
   for (auto& v : src) prev = (v += prev);
 }
 
 template <typename T>
-void normalize(vector<T>& src, size_t limit, bool balance = true) {
+void Normalize(vector<T>& src, size_t limit, bool balance = true) {
   if (src.empty()) return;
 
   T max = *std::max_element(src.begin(), src.end());
@@ -82,7 +82,7 @@ void normalize(vector<T>& src, size_t limit, bool balance = true) {
 }
 
 template <typename T, typename Op>
-vector<T> zip(vector<T>& src, vector<T> const& other, Op op) {
+vector<T> Zip(vector<T>& src, vector<T> const& other, Op op) {
   auto max = std::min(src.size(), other.size());
   vector<T> n(max);
   for (std::size_t i = 0; i < max; ++i) {

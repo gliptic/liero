@@ -5,30 +5,30 @@
 // extern int SDLToLieroKeys[SDL_SCANCODE_LAST];
 // extern int lieroToSDLKeys[177];
 
-void initKeys();
+void InitKeys();
 
 uint32_t SDLToDOSKey(SDL_Scancode scancode, SDL_Keymod mod);
 uint32_t SDLToDOSKey(SDL_Scancode scancode);
 
-int const DkEscape = 1;
+int const kDkEscape = 1;
 
-int const MaxJoyButtons = 32;
+int const kMaxJoyButtons = 32;
 
-uint32_t const MaxDOSKey = 177;
-uint32_t const JoyKeysStart = 512;
+uint32_t const kMaxDosKey = 177;
+uint32_t const kJoyKeysStart = 512;
 // Gamepad control keys start after joystick keys: encode as (player index, control)
-uint32_t const GamepadControlKeysStart = 1024;
+uint32_t const kGamepadControlKeysStart = 1024;
 
-inline uint32_t joyButtonToExKey(int joyNum, int joyButton) {
-  return JoyKeysStart + MaxJoyButtons * joyNum + joyButton;
+inline uint32_t JoyButtonToExKey(int joy_num, int joy_button) {
+  return kJoyKeysStart + kMaxJoyButtons * joy_num + joy_button;
 }
 
-inline uint32_t gamepadControlToExKey(int playerIdx, int control) {
-  return GamepadControlKeysStart + playerIdx * 8 + control;
+inline uint32_t GamepadControlToExKey(int player_idx, int control) {
+  return kGamepadControlKeysStart + player_idx * 8 + control;
 }
 
-inline bool isGamepadControlKey(uint32_t k) { return k >= GamepadControlKeysStart; }
+inline bool IsGamepadControlKey(uint32_t k) { return k >= kGamepadControlKeysStart; }
 
-inline bool isExtendedKey(uint32_t k) { return k >= MaxDOSKey; }
+inline bool IsExtendedKey(uint32_t k) { return k >= kMaxDosKey; }
 
-const int JoyAxisThreshold = 10000;
+const int kJoyAxisThreshold = 10000;

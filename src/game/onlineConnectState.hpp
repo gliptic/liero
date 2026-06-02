@@ -20,24 +20,24 @@
 // 4. libjuice performs ICE connectivity checks (all candidate pairs)
 // 5. On success → create IceBridge, hand socket to NetConnectState
 struct OnlineConnectState : AppState {
-  OnlineConnectState(NetSession::Role role, std::string roomCode = "");
+  OnlineConnectState(NetSession::Role role, std::string room_code = "");
 
-  void enter() override;
-  void handleEvent(SDL_Event& ev) override;
-  bool update() override;
-  void draw() override;
+  void Enter() override;
+  void HandleEvent(SDL_Event& ev) override;
+  bool Update() override;
+  void Draw() override;
 
  private:
-  void startSignaling();
-  void sendBufferedCandidates();
-  void transitionToGame();
+  void StartSignaling();
+  void SendBufferedCandidates();
+  void TransitionToGame();
 
   NetSession::Role role_;
   std::string roomCode_;
 
-  std::string signalingServer_ = "liero-server.orbmit.org";
+  std::string signaling_server_ = "liero-server.orbmit.org";
   uint16_t signalingPort_ = 19533;
-  std::string turnServer_ = "liero-server.orbmit.org";
+  std::string turn_server_ = "liero-server.orbmit.org";
   uint16_t turnPort_ = 3478;
 
   std::unique_ptr<IceAgent> iceAgent_;

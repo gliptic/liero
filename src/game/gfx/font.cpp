@@ -5,7 +5,7 @@
 #include "color.hpp"
 #include "macros.hpp"
 
-void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int size) {
+void Font::DrawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int size) {
   if (c >= 2 && c < 252)  // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since
                           // drawText subtracts 2?
   {
@@ -47,63 +47,63 @@ void Font::drawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int s
 // drawChar already ignores any byte outside [2, 252), so this stays in sync.
 namespace {
 
-unsigned char codepointToFontByte(char32_t cp) {
-  int b = cp437::unicodeToByte(cp);
+unsigned char CodepointToFontByte(char32_t cp) {
+  int b = cp437::UnicodeToByte(cp);
   return b < 0 ? 1 : static_cast<unsigned char>(b);  // 1 = skip-no-draw
 }
 
 }  // namespace
 
-void Font::drawText(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color,
-                    int size) {
-  int orgX = x;
+void Font::DrawString(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color,
+                      int size) {
+  int org_x = x;
 
   for (std::size_t i = 0; i < len;) {
-    char32_t cp = cp437::utf8DecodeNext(str, len, i);
+    char32_t cp = cp437::Utf8DecodeNext(str, len, i);
 
     if (cp == 0) {
-      x = orgX;
+      x = org_x;
       y += 8 * size;
       continue;
     }
 
-    unsigned char c = codepointToFontByte(cp);
+    unsigned char c = CodepointToFontByte(cp);
     if (c >= 2 && c < 252) {
       c -= 2;
 
-      drawChar(scr, c, x, y, color, size);
+      DrawChar(scr, c, x, y, color, size);
 
       x += chars[c].width * size;
     }
   }
 }
 
-void Font::drawFramedText(Bitmap& scr, std::string const& text, int x, int y, int color) {
-  drawRoundedBox(scr, x, y, 0, 7, getDims(text));
-  drawText(scr, text, x + 2, y + 1, color);
+void Font::DrawFramedText(Bitmap& scr, std::string const& text, int x, int y, int color) {
+  DrawRoundedBox(scr, x, y, 0, 7, GetDims(text));
+  DrawString(scr, text, x + 2, y + 1, color);
 }
 
-int Font::getDims(char const* str, std::size_t len, int* height) {
+int Font::GetDims(char const* str, std::size_t len, int* height) {
   int width = 0;
-  int maxHeight = 8;
+  int max_height = 8;
 
-  int maxWidth = 0;
+  int max_width = 0;
 
   for (std::size_t i = 0; i < len;) {
-    char32_t cp = cp437::utf8DecodeNext(str, len, i);
+    char32_t cp = cp437::Utf8DecodeNext(str, len, i);
 
     if (cp == 0) {
-      maxWidth = std::max(maxWidth, width);
+      max_width = std::max(max_width, width);
       width = 0;
-      maxHeight += 8;
+      max_height += 8;
       continue;
     }
 
-    unsigned char c = codepointToFontByte(cp);
+    unsigned char c = CodepointToFontByte(cp);
     if (c >= 2 && c < 252) width += chars[c - 2].width;
   }
 
-  if (height) *height = maxHeight;
+  if (height) *height = max_height;
 
-  return std::max(maxWidth, width);
+  return std::max(max_width, width);
 }

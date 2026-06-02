@@ -4,4 +4,4 @@
 
 struct Common;
 
-void commonSave(Common& common, std::string const& path);
+void CommonSave(Common& common, std::string const& path);

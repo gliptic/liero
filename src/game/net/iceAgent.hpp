@@ -12,15 +12,15 @@
 // event queue. libjuice callbacks fire from an internal thread; IceAgent
 // buffers events and delivers them on the main thread via poll().
 struct IceAgent {
-  enum class State { New, Gathering, Connecting, Connected, Failed, Disconnected };
+  enum class State { kNew, kGathering, kConnecting, kConnected, kFailed, kDisconnected };
 
   struct Config {
-    std::string stunServer = "stun.l.google.com";
-    uint16_t stunPort = 19302;
-    std::string turnServer;
-    uint16_t turnPort = 3478;
-    std::string turnUser;
-    std::string turnPassword;
+    std::string stun_server = "stun.l.google.com";
+    uint16_t stun_port = 19302;
+    std::string turn_server;
+    uint16_t turn_port = 3478;
+    std::string turn_user;
+    std::string turn_password;
   };
 
   IceAgent() = default;
@@ -29,51 +29,51 @@ struct IceAgent {
   IceAgent(const IceAgent&) = delete;
   IceAgent& operator=(const IceAgent&) = delete;
 
-  void start(const Config& config);
-  void stop();
+  void Start(const Config& config);
+  void Stop();
 
-  std::string localUfrag() const;
-  std::string localPwd() const;
+  std::string LocalUfrag() const;
+  std::string LocalPwd() const;
 
-  void setRemoteCredentials(const std::string& ufrag, const std::string& pwd);
-  void addRemoteCandidate(const std::string& candidate);
-  void setRemoteGatheringDone();
+  void SetRemoteCredentials(const std::string& ufrag, const std::string& pwd);
+  void AddRemoteCandidate(const std::string& candidate);
+  void SetRemoteGatheringDone();
 
-  State state() const;
+  State CurrentState() const;
 
   // Drain the internal event queue. Call once per frame from the main thread.
   // Fires onStateChange, onLocalCandidate, onGatheringDone callbacks.
-  void poll();
+  void Poll();
 
   // Send application data through the ICE connection.
-  void send(const uint8_t* data, size_t len);
+  void Send(const uint8_t* data, size_t len);
 
   // Callbacks — fired from poll() on the main thread.
-  std::function<void(State)> onStateChange;
-  std::function<void(const std::string& candidate)> onLocalCandidate;
-  std::function<void()> onGatheringDone;
+  std::function<void(State)> on_state_change;
+  std::function<void(const std::string& candidate)> on_local_candidate;
+  std::function<void()> on_gathering_done;
 
   // Called from libjuice's thread when data arrives. Users of IceAgent
   // should set this to write received data to the bridge socket.
-  std::function<void(const uint8_t* data, size_t len)> onRecv;
+  std::function<void(const uint8_t* data, size_t len)> on_recv;
 
  private:
   struct Event {
-    enum Type { StateChanged, Candidate, GatheringDone };
+    enum Type { kStateChanged, kCandidate, kGatheringDone };
     Type type;
-    State newState{};
+    enum State new_state {};
     std::string candidate;
   };
 
-  static void cbStateChanged(juice_agent_t* agent, juice_state_t state, void* user_ptr);
-  static void cbCandidate(juice_agent_t* agent, const char* sdp, void* user_ptr);
-  static void cbGatheringDone(juice_agent_t* agent, void* user_ptr);
-  static void cbRecv(juice_agent_t* agent, const char* data, size_t size, void* user_ptr);
+  static void CbStateChanged(juice_agent_t* agent, juice_state_t state, void* user_ptr);
+  static void CbCandidate(juice_agent_t* agent, const char* sdp, void* user_ptr);
+  static void CbGatheringDone(juice_agent_t* agent, void* user_ptr);
+  static void CbRecv(juice_agent_t* agent, const char* data, size_t size, void* user_ptr);
 
-  static State mapState(juice_state_t s);
+  static enum State MapState(juice_state_t s);
 
   juice_agent_t* agent_ = nullptr;
-  State state_ = State::New;
+  enum State state_ = State::kNew;
   mutable std::mutex mutex_;
   std::vector<Event> pendingEvents_;
 };

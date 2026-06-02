@@ -8,169 +8,169 @@
 
 ReplayController::ReplayController(std::shared_ptr<Common> common,
                                    std::unique_ptr<io::Reader> source)
-    : state(StateInitial),
-      fadeValue(0),
-      goingToMenu(false),
+    : state(kStateInitial),
+      fade_value(0),
+      going_to_menu(false),
       replay(new ReplayReader(std::move(source))),
       common(common) {}
 
-void ReplayController::onKey(int key, bool keyState) {
-  if (key == DkEscape && !goingToMenu) {
-    fadeValue = 31;
-    goingToMenu = true;
+void ReplayController::OnKey(int key, bool key_state) {
+  if (key == kDkEscape && !going_to_menu) {
+    fade_value = 31;
+    going_to_menu = true;
   }
 }
 
 // Called when the controller loses focus. When not focused, it will not receive key events among
 // other things.
-void ReplayController::unfocus() {}
+void ReplayController::Unfocus() {}
 
 // Called when the controller gets focus.
-void ReplayController::focus() {
-  if (state == StateGameEnded) {
-    goingToMenu = true;
-    fadeValue = 0;
+void ReplayController::Focus() {
+  if (state == kStateGameEnded) {
+    going_to_menu = true;
+    fade_value = 0;
     return;
   }
-  if (state == StateInitial) {
+  if (state == kStateInitial) {
     try {
-      game = replay->beginPlayback(common, gfx.soundPlayer);
+      game = replay->BeginPlayback(common, gfx.sound_player);
     } catch (std::runtime_error& e) {
-      gfx.pendingErrorMessage = std::string("Error starting replay playback: ") + e.what();
-      goingToMenu = true;
-      fadeValue = 0;
+      gfx.pending_error_message = std::string("Error starting replay playback: ") + e.what();
+      going_to_menu = true;
+      fade_value = 0;
       return;
     }
     replay->game = game.get();
     // Changing state first when game is available
-    changeState(StateGame);
+    ChangeState(kStateGame);
   }
-  game->focus(gfx.playRenderer);
-  game->focus(gfx.singleScreenRenderer);
-  goingToMenu = false;
-  fadeValue = 0;
+  game->Focus(gfx.play_renderer);
+  game->Focus(gfx.single_screen_renderer);
+  going_to_menu = false;
+  fade_value = 0;
 }
 
-bool ReplayController::process() {
-  if (state == StateGame || state == StateGameEnded) {
-    if (gfx.testSDLKeyOnce(SDL_SCANCODE_R)) {
-      *game = *initialGame;
-      game->postClone(*initialGame, true);
-      replay->reader.seekg(initialReaderPos);
+bool ReplayController::Process() {
+  if (state == kStateGame || state == kStateGameEnded) {
+    if (gfx.TestSdlKeyOnce(SDL_SCANCODE_R)) {
+      *game = *initial_game;
+      game->PostClone(*initial_game, true);
+      replay->reader.Seekg(initial_reader_pos);
     }
 
-    int realFrameSkip = inverseFrameSkip ? !(cycles % frameSkip) : frameSkip;
-    for (int i = 0; i < realFrameSkip && (state == StateGame || state == StateGameEnded); ++i) {
+    int real_frame_skip = inverse_frame_skip ? !(cycles % frame_skip) : frame_skip;
+    for (int i = 0; i < real_frame_skip && (state == kStateGame || state == kStateGameEnded); ++i) {
       if (replay.get()) {
         try {
-          if (!replay->playbackFrame(*gfx.primaryRenderer)) {
+          if (!replay->PlaybackFrame(*gfx.primary_renderer)) {
             // End of replay
             replay.reset();
           }
         } catch (io::StreamError& e) {
-          gfx.pendingErrorMessage = std::string("Stream error in replay: ") + e.what();
-          changeState(StateGameEnded);
+          gfx.pending_error_message = std::string("Stream error in replay: ") + e.what();
+          ChangeState(kStateGameEnded);
           replay.reset();
         } catch (io::ArchiveCheckError& e) {
-          gfx.pendingErrorMessage = std::string("Archive error in replay: ") + e.what();
-          changeState(StateGameEnded);
+          gfx.pending_error_message = std::string("Archive error in replay: ") + e.what();
+          ChangeState(kStateGameEnded);
           replay.reset();
         } catch (io::EndOfStream& e) {
-          gfx.pendingErrorMessage = std::string("EOF in replay: ") + e.what();
-          changeState(StateGameEnded);
+          gfx.pending_error_message = std::string("EOF in replay: ") + e.what();
+          ChangeState(kStateGameEnded);
           replay.reset();
         }
       }
-      game->processFrame();
+      game->ProcessFrame();
 
-      if (goingToMenu) {
-        if (fadeValue > 0)
-          fadeValue -= 1;
+      if (going_to_menu) {
+        if (fade_value > 0)
+          fade_value -= 1;
         else
           break;
-      } else if (fadeValue < 33) {
-        fadeValue += 1;
+      } else if (fade_value < 33) {
+        fade_value += 1;
       }
     }
 
-    if (game->isGameOver()) {
-      changeState(StateGameEnded);
+    if (game->IsGameOver()) {
+      ChangeState(kStateGameEnded);
     }
   }
 
-  CommonController::process();
+  CommonController::Process();
 
-  if (goingToMenu && fadeValue <= 0) {
-    if (state == StateGameEnded) {
-      game->statsRecorder->finish(*game);
+  if (going_to_menu && fade_value <= 0) {
+    if (state == kStateGameEnded) {
+      game->stats_recorder->Finish(*game);
     }
     return false;
   }
 
-  if (!replay.get() && state == StateGame) {
-    game->statsRecorder->finish(*game);
+  if (!replay.get() && state == kStateGame) {
+    game->stats_recorder->Finish(*game);
     return false;
   }
 
   return true;
 }
 
-void ReplayController::draw(Renderer& renderer, bool useSpectatorViewports) {
-  if (state == StateGame || state == StateGameEnded) {
-    game->draw(renderer, state, useSpectatorViewports, true);
+void ReplayController::Draw(Renderer& renderer, bool use_spectator_viewports) {
+  if (state == kStateGame || state == kStateGameEnded) {
+    game->Draw(renderer, state, use_spectator_viewports, true);
   }
-  renderer.fadeValue = fadeValue;
+  renderer.fade_value = fade_value;
 }
 
-void ReplayController::changeState(GameState newState) {
-  if (state == newState) return;
+void ReplayController::ChangeState(GameState new_state) {
+  if (state == new_state) return;
 
-  if (newState == StateGame) {
+  if (new_state == kStateGame) {
     // FIXME: the viewports are changed based on the replay for some
     // reason, so we need to restore them here. Probably makes more sense
     // to not save the viewports at all. But that probably breaks save
     // format compatibility?
-    game->clearViewports();
+    game->ClearViewports();
 
     // for backwards compatibility reasons, this is not stored within the
     // replay. Yet.
-    game->worms[0]->statsX = 0;
-    game->worms[1]->statsX = 218;
+    game->worms[0]->stats_x = 0;
+    game->worms[1]->stats_x = 218;
 
     // spectator viewport is always full size
     // +68 on x to align the viewport in the middle
-    game->addSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
-    if (gfx.settings->singleScreenReplay) {
+    game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+    if (gfx.settings->single_screen_replay) {
       // on single screen replay, use the spectator viewport for the
       // main screen as well
       // we can't use the same object, as the vector's clean function will delete them
-      game->addViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+      game->AddViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
     } else {
-      game->addViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
-      game->addViewport(
+      game->AddViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
+      game->AddViewport(
           new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index, 504, 350));
     }
-    game->startGame();
-    initialGame.reset(new Game(*game));
-    initialGame->postClone(*game, true);
-    initialReaderPos = replay->reader.tellg();
-  } else if (newState == StateGameEnded) {
-    if (!goingToMenu) {
-      fadeValue = 180;
-      goingToMenu = true;
+    game->StartGame();
+    initial_game.reset(new Game(*game));
+    initial_game->PostClone(*game, true);
+    initial_reader_pos = replay->reader.Tellg();
+  } else if (new_state == kStateGameEnded) {
+    if (!going_to_menu) {
+      fade_value = 180;
+      going_to_menu = true;
     }
   }
 
-  state = newState;
+  state = new_state;
 }
 
-void ReplayController::swapLevel(Level& newLevel) { currentLevel()->swap(newLevel); }
+void ReplayController::SwapLevel(Level& new_level) { CurrentLevel()->Swap(new_level); }
 
-Level* ReplayController::currentLevel() {
+Level* ReplayController::CurrentLevel() {
   if (game.get() && replay.get()) return &game->level;
   return nullptr;
 }
 
-Game* ReplayController::currentGame() { return game.get(); }
+Game* ReplayController::CurrentGame() { return game.get(); }
 
-bool ReplayController::running() { return state != StateGameEnded && state != StateInitial; }
+bool ReplayController::Running() { return state != kStateGameEnded && state != kStateInitial; }

@@ -5,7 +5,7 @@
 // Mirrors the structure of cereal's bundled json.hpp: a single
 // `serialize()` per type works for both PortableBinaryArchive and these
 // TOML archives. Names come from CEREAL_NVP / make_nvp. Variable-sized
-// containers (std::vector, etc.) use SizeTag, which triggers an array
+// containers (std::vector, etc.) use sizeTag, which triggers an array
 // in TOML; everything else lands in a table.
 //
 // Limitations vs. JSON:
@@ -54,29 +54,29 @@ class TomlOutputArchive : public cereal::OutputArchive<TomlOutputArchive>,
     f.container = nullptr;
     f.is_array = false;
     f.materialized = false;
-    f.name_in_parent = takeName(frames_.back());
+    f.name_in_parent = TakeName(frames_.back());
     frames_.push_back(std::move(f));
   }
 
   void finishNode() {
-    if (!frames_.back().materialized) materializeAll();
+    if (!frames_.back().materialized) MaterializeAll();
     frames_.pop_back();
   }
 
-  // SizeTag prologue calls this to mark the just-started node as an array.
-  void makeArray() { frames_.back().is_array = true; }
+  // sizeTag prologue calls this to mark the just-started node as an array.
+  void MakeArray() { frames_.back().is_array = true; }
 
-  void saveValue(bool v) { putValue(v); }
-  void saveValue(std::int32_t v) { putValue(static_cast<std::int64_t>(v)); }
-  void saveValue(std::uint32_t v) { putValue(static_cast<std::int64_t>(v)); }
-  void saveValue(std::int64_t v) { putValue(v); }
+  void saveValue(bool v) { PutValue(v); }
+  void saveValue(std::int32_t v) { PutValue(static_cast<std::int64_t>(v)); }
+  void saveValue(std::uint32_t v) { PutValue(static_cast<std::int64_t>(v)); }
+  void saveValue(std::int64_t v) { PutValue(v); }
   void saveValue(std::uint64_t v) {
     // toml++ stores ints as int64_t; values above INT64_MAX would corrupt.
-    putValue(static_cast<std::int64_t>(v));
+    PutValue(static_cast<std::int64_t>(v));
   }
-  void saveValue(double v) { putValue(v); }
-  void saveValue(float v) { putValue(static_cast<double>(v)); }
-  void saveValue(std::string const& s) { putValue(s); }
+  void saveValue(double v) { PutValue(v); }
+  void saveValue(float v) { PutValue(static_cast<double>(v)); }
+  void saveValue(std::string const& s) { PutValue(s); }
 
  private:
   struct Frame {
@@ -92,7 +92,7 @@ class TomlOutputArchive : public cereal::OutputArchive<TomlOutputArchive>,
   std::vector<Frame> frames_;
   char const* next_name_ = nullptr;
 
-  std::string takeName(Frame& parent) {
+  std::string TakeName(Frame& parent) {
     if (next_name_) {
       std::string n = next_name_;
       next_name_ = nullptr;
@@ -101,14 +101,14 @@ class TomlOutputArchive : public cereal::OutputArchive<TomlOutputArchive>,
     return "value" + std::to_string(parent.name_counter++);
   }
 
-  void materializeAll() {
+  void MaterializeAll() {
     // Root (frame 0) is always materialized; walk down from there.
     for (std::size_t i = 1; i < frames_.size(); ++i) {
-      if (!frames_[i].materialized) materializeAt(i);
+      if (!frames_[i].materialized) MaterializeAt(i);
     }
   }
 
-  void materializeAt(std::size_t i) {
+  void MaterializeAt(std::size_t i) {
     Frame& f = frames_[i];
     Frame& parent = frames_[i - 1];
     if (parent.container->is_table()) {
@@ -130,11 +130,11 @@ class TomlOutputArchive : public cereal::OutputArchive<TomlOutputArchive>,
   }
 
   template <typename T>
-  void putValue(T const& v) {
-    materializeAll();
+  void PutValue(T const& v) {
+    MaterializeAll();
     Frame& f = frames_.back();
     if (f.container->is_table()) {
-      f.container->as_table()->insert_or_assign(takeName(f), v);
+      f.container->as_table()->insert_or_assign(TakeName(f), v);
     } else {
       f.container->as_array()->push_back(v);
     }
@@ -174,7 +174,7 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
     f.index = 0;
 
     Frame& parent = frames_.back();
-    toml::node* child = lookup(parent);
+    toml::node* child = Lookup(parent);
     f.node = child;  // may be null if missing
     frames_.push_back(std::move(f));
   }
@@ -193,11 +193,11 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
     next_name_ = nullptr;
   }
 
-  // SizeTag prologue marks the upcoming/current node as array context;
+  // sizeTag prologue marks the upcoming/current node as array context;
   // loadSize reports the size of that array.
-  void makeArray() { frames_.back().is_array = true; }
+  void MakeArray() { frames_.back().is_array = true; }
 
-  void loadSize(cereal::size_type& size) {
+  void LoadSize(cereal::size_type& size) {
     Frame& f = frames_.back();
     if (f.node && f.node->is_array())
       size = f.node->as_array()->size();
@@ -206,37 +206,37 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
   }
 
   void loadValue(bool& v) {
-    if (auto* n = lookup(frames_.back()); n && n->is_boolean()) v = n->as_boolean()->get();
-    advance();
+    if (auto* n = Lookup(frames_.back()); n && n->is_boolean()) v = n->as_boolean()->get();
+    Advance();
   }
 
   void loadValue(std::int32_t& v) {
-    if (auto* n = lookup(frames_.back()); n && n->is_integer())
+    if (auto* n = Lookup(frames_.back()); n && n->is_integer())
       v = static_cast<std::int32_t>(n->as_integer()->get());
-    advance();
+    Advance();
   }
   void loadValue(std::uint32_t& v) {
-    if (auto* n = lookup(frames_.back()); n && n->is_integer())
+    if (auto* n = Lookup(frames_.back()); n && n->is_integer())
       v = static_cast<std::uint32_t>(n->as_integer()->get());
-    advance();
+    Advance();
   }
   void loadValue(std::int64_t& v) {
-    if (auto* n = lookup(frames_.back()); n && n->is_integer()) v = n->as_integer()->get();
-    advance();
+    if (auto* n = Lookup(frames_.back()); n && n->is_integer()) v = n->as_integer()->get();
+    Advance();
   }
   void loadValue(std::uint64_t& v) {
-    if (auto* n = lookup(frames_.back()); n && n->is_integer())
+    if (auto* n = Lookup(frames_.back()); n && n->is_integer())
       v = static_cast<std::uint64_t>(n->as_integer()->get());
-    advance();
+    Advance();
   }
   void loadValue(double& v) {
-    if (auto* n = lookup(frames_.back())) {
+    if (auto* n = Lookup(frames_.back())) {
       if (n->is_floating_point())
         v = n->as_floating_point()->get();
       else if (n->is_integer())
         v = static_cast<double>(n->as_integer()->get());
     }
-    advance();
+    Advance();
   }
   void loadValue(float& v) {
     double d = v;
@@ -244,8 +244,8 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
     v = static_cast<float>(d);
   }
   void loadValue(std::string& v) {
-    if (auto* n = lookup(frames_.back()); n && n->is_string()) v = n->as_string()->get();
-    advance();
+    if (auto* n = Lookup(frames_.back()); n && n->is_string()) v = n->as_string()->get();
+    Advance();
   }
 
  private:
@@ -259,7 +259,7 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
   std::vector<Frame> frames_;
   char const* next_name_ = nullptr;
 
-  toml::node* lookup(Frame& f) {
+  toml::node* Lookup(Frame& f) {
     if (!f.node) {
       next_name_ = nullptr;
       return nullptr;
@@ -285,7 +285,7 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
     return nullptr;
   }
 
-  void advance() {
+  void Advance() {
     Frame& f = frames_.back();
     if (f.node && f.node->is_array()) f.index += 1;
   }
@@ -316,14 +316,14 @@ inline void CEREAL_LOAD_FUNCTION_NAME(TomlInputArchive& ar, NameValuePair<T>& t)
   ar(t.value);
 }
 
-// ---- SizeTag ----
+// ---- sizeTag ----
 template <class T>
 inline void prologue(TomlOutputArchive& ar, SizeTag<T> const&) {
-  ar.makeArray();
+  ar.MakeArray();
 }
 template <class T>
 inline void prologue(TomlInputArchive& ar, SizeTag<T> const&) {
-  ar.makeArray();
+  ar.MakeArray();
 }
 template <class T>
 inline void epilogue(TomlOutputArchive&, SizeTag<T> const&) {}
@@ -336,7 +336,7 @@ inline void CEREAL_SAVE_FUNCTION_NAME(TomlOutputArchive&, SizeTag<T> const&) {
 }
 template <class T>
 inline void CEREAL_LOAD_FUNCTION_NAME(TomlInputArchive& ar, SizeTag<T>& st) {
-  ar.loadSize(st.size);
+  ar.LoadSize(st.size);
 }
 
 // ---- Generic object types (non-arithmetic, non-string) ----

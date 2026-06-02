@@ -22,17 +22,17 @@
 
 namespace {
 
-std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
-  precomputeTables();
+std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
+  PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tcRoot));
+  FsNode tc_root(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tc_root));
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
-  settings->loadingTime = 0;
-  settings->loadChange = true;
-  settings->randomLevel = true;
-  settings->gameMode = Settings::GMKillEmAll;
+  settings->loading_time = 0;
+  settings->load_change = true;
+  settings->random_level = true;
+  settings->game_mode = Settings::kGmKillEmAll;
   return {common, settings};
 }
 
@@ -42,68 +42,68 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
 // guard against a vacuously-passing test (zero stalls would mean the
 // delays were symmetric enough that the threshold never fired).
 struct AsymmetricRun {
-  int maxAbsGap;
-  uint64_t stallsA;
-  uint64_t stallsB;
+  int max_abs_gap;
+  uint64_t stalls_a;
+  uint64_t stalls_b;
 };
 
-AsymmetricRun runAsymmetric(int dAB, int dBA, int ticks) {
-  auto [common, settings] = makeEnv();
+AsymmetricRun RunAsymmetric(int d_ab, int d_ba, int ticks) {
+  auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->setSkipWeaponSelection(true);
-  b->setSkipWeaponSelection(true);
-  a->game.rand.seed(0xBEEF);
-  b->game.rand.seed(0xBEEF);
+  a->SetSkipWeaponSelection(true);
+  b->SetSkipWeaponSelection(true);
+  a->game.rand.Seed(0xBEEF);
+  b->game.rand.Seed(0xBEEF);
 
   // Asymmetric one-way delays modelled by two separate "transports":
   // one for A→B (fixed delay dAB), one for B→A (fixed delay dBA).
   // Loss/dup/jitter are off so the test isolates the time-sync feedback.
-  rollback_test::JitterTransport tAB({0x1111, dAB, dAB, 0.0, 0.0});
-  rollback_test::JitterTransport tBA({0x2222, dBA, dBA, 0.0, 0.0});
+  rollback_test::JitterTransport t_ab({0x1111, d_ab, d_ab, 0.0, 0.0});
+  rollback_test::JitterTransport t_ba({0x2222, d_ba, d_ba, 0.0, 0.0});
 
-  a->setInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    tAB.sendAToB(gen, bf, c, in, lf);
+  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    t_ab.SendAToB(gen, bf, c, in, lf);
   });
-  b->setInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    tBA.sendAToB(gen, bf, c, in, lf);  // B's outbound rides the B→A pipe
+  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    t_ba.SendAToB(gen, bf, c, in, lf);  // B's outbound rides the B→A pipe
   });
-  a->focus();
-  b->focus();
+  a->Focus();
+  b->Focus();
 
   for (uint32_t f = 0; f < 3; ++f) {
-    a->injectRemoteInput(f, 0);
-    b->injectRemoteInput(f, 0);
+    a->InjectRemoteInput(f, 0);
+    b->InjectRemoteInput(f, 0);
   }
 
-  auto deliverB = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    b->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_b = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    b->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliverA = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    a->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_a = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    a->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliverNoop = [&](uint8_t, uint32_t, uint8_t, uint8_t const*, uint32_t) {};
+  auto deliver_noop = [&](uint8_t, uint32_t, uint8_t, uint8_t const*, uint32_t) {};
 
-  int maxAbsGap = 0;
+  int max_abs_gap = 0;
   for (int i = 0; i < ticks; ++i) {
-    a->setLocalControlState(0);
-    b->setLocalControlState(0);
-    a->process();
-    b->process();
+    a->SetLocalControlState(0);
+    b->SetLocalControlState(0);
+    a->Process();
+    b->Process();
     // tAB pipes A→B inputs only; the "B leg" of its tick stays a no-op.
-    tAB.tick(deliverNoop, deliverB);
-    tBA.tick(deliverNoop, deliverA);
+    t_ab.Tick(deliver_noop, deliver_b);
+    t_ba.Tick(deliver_noop, deliver_a);
 
     // Window starts after both peers have had time to learn each other
     // (>= max(dAB, dBA)*4) so warm-up doesn't pollute the maximum.
-    if (i > 4 * (dAB > dBA ? dAB : dBA)) {
-      int gap = static_cast<int>(a->currentFrame()) - static_cast<int>(b->currentFrame());
+    if (i > 4 * (d_ab > d_ba ? d_ab : d_ba)) {
+      int gap = static_cast<int>(a->CurrentFrame()) - static_cast<int>(b->CurrentFrame());
       int abs = gap < 0 ? -gap : gap;
-      if (abs > maxAbsGap) maxAbsGap = abs;
+      if (abs > max_abs_gap) max_abs_gap = abs;
     }
   }
 
-  return {maxAbsGap, a->frameAdvantageStallCount(), b->frameAdvantageStallCount()};
+  return {max_abs_gap, a->FrameAdvantageStallCount(), b->FrameAdvantageStallCount()};
 }
 
 }  // namespace
@@ -111,26 +111,26 @@ AsymmetricRun runAsymmetric(int dAB, int dBA, int ticks) {
 TEST_CASE("Frame advantage caps the simFrame gap under asymmetric delay",
           "[rollback][frame-advantage]") {
   SECTION("D_AB=2, D_BA=6 — the plan's headline scenario") {
-    auto r = runAsymmetric(2, 6, 1000);
-    INFO("max |gap| = " << r.maxAbsGap << " stallsA=" << r.stallsA << " stallsB=" << r.stallsB);
+    auto r = RunAsymmetric(2, 6, 1000);
+    INFO("max |gap| = " << r.max_abs_gap << " stallsA=" << r.stalls_a << " stallsB=" << r.stalls_b);
 
     // The slower peer must have done meaningful stall work, otherwise
     // the test is vacuously passing.
-    REQUIRE((r.stallsA > 0 || r.stallsB > 0));
+    REQUIRE((r.stalls_a > 0 || r.stalls_b > 0));
 
     // The gap is bounded by a small constant (independent of run
     // length). The algorithm's steady state oscillates within
     // kFrameAdvantage of equilibrium plus a small overshoot during
     // the catch-up cycle, so the empirical bound sits comfortably
     // under 2*kFrameAdvantage.
-    REQUIRE(r.maxAbsGap <= 2 * RollbackController::kFrameAdvantage);
+    REQUIRE(r.max_abs_gap <= 2 * RollbackController::kFrameAdvantage);
   }
 
   SECTION("symmetric delay still works") {
-    auto r = runAsymmetric(3, 3, 500);
-    INFO("max |gap| = " << r.maxAbsGap << " stallsA=" << r.stallsA << " stallsB=" << r.stallsB);
+    auto r = RunAsymmetric(3, 3, 500);
+    INFO("max |gap| = " << r.max_abs_gap << " stallsA=" << r.stalls_a << " stallsB=" << r.stalls_b);
     // With symmetric one-way delay the gap stays within
     // kFrameAdvantage by construction.
-    REQUIRE(r.maxAbsGap <= 2 * RollbackController::kFrameAdvantage);
+    REQUIRE(r.max_abs_gap <= 2 * RollbackController::kFrameAdvantage);
   }
 }

@@ -2,8 +2,8 @@
 
 #include <string>
 
-namespace Console {
-void write(std::string const& str);
-void writeLine(std::string const& str);
-void writeWarning(std::string const& str);
-}  // namespace Console
+namespace console {
+void Write(std::string const& str);
+void WriteLine(std::string const& str);
+void WriteWarning(std::string const& str);
+}  // namespace console

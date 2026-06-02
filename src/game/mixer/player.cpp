@@ -3,22 +3,21 @@
 #include "../common.hpp"
 #include "../console.hpp"
 
-SoundPlayer* g_soundPlayer = nullptr;
+SoundPlayer* g_sound_player = nullptr;
 
-void SoundPlayer::play(SOUND_DEF_T hook, void* id, int loops) {
-  Common* c = common();
-  if (c) play(c->soundHook[hook], id, loops);
+void SoundPlayer::Play(SoundDefT hook, void* id, int loops) {
+  Common* c = GetCommonPtr();
+  if (c) Play(c->sound_hook[hook], id, loops);
 }
 
 #if !DISABLE_SOUND
-static void SDLCALL DefaultSoundPlayer_stream_callback(void* userdata, SDL_AudioStream* stream,
-                                                       int additional_amount,
-                                                       int /*total_amount*/) {
+static void SDLCALL DefaultSoundPlayerStreamCallback(void* userdata, SDL_AudioStream* stream,
+                                                     int additional_amount, int /*total_amount*/) {
   if (additional_amount > 0) {
     uint8_t* data = (uint8_t*)SDL_stack_alloc(uint8_t, additional_amount);
     if (data) {
       uint32_t frame_count = additional_amount / 2;
-      sfx_mixer_mix((sfx_mixer*)userdata, data, frame_count);
+      SfxMixerMix((sfx_mixer*)userdata, data, frame_count);
       SDL_PutAudioStreamData(stream, data, additional_amount);
       SDL_stack_free(data);
     }
@@ -27,14 +26,14 @@ static void SDLCALL DefaultSoundPlayer_stream_callback(void* userdata, SDL_Audio
 #endif
 
 DefaultSoundPlayer::DefaultSoundPlayer(Common& c)
-    : m_common(&c),
-      mixer(nullptr)
+    : m_common_(&c),
+      mixer_(nullptr)
 #if !DISABLE_SOUND
       ,
-      stream(nullptr)
+      stream_(nullptr)
 #endif
       ,
-      initialized(false) {
+      initialized_(false) {
 #if !DISABLE_SOUND
   // Request a small audio buffer for low latency (~5.8ms at 44100Hz).
   // Must be set before opening the audio device.
@@ -42,17 +41,17 @@ DefaultSoundPlayer::DefaultSoundPlayer(Common& c)
 
   SDL_InitSubSystem(SDL_INIT_AUDIO);
 
-  mixer = sfx_mixer_create();
+  mixer_ = SfxMixerCreate();
 
-  const SDL_AudioSpec spec = {SDL_AUDIO_S16, 1, 44100};
-  stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec,
-                                     DefaultSoundPlayer_stream_callback, mixer);
+  const SDL_AudioSpec kSpec = {SDL_AUDIO_S16, 1, 44100};
+  stream_ = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &kSpec,
+                                      DefaultSoundPlayerStreamCallback, mixer_);
 
-  if (stream) {
-    initialized = true;
-    SDL_ResumeAudioStreamDevice(stream);
+  if (stream_) {
+    initialized_ = true;
+    SDL_ResumeAudioStreamDevice(stream_);
   } else {
-    Console::writeWarning(std::string("SDL_OpenAudioDeviceStream returned error: ") +
+    console::WriteWarning(std::string("SDL_OpenAudioDeviceStream returned error: ") +
                           SDL_GetError());
   }
 #endif
@@ -60,44 +59,44 @@ DefaultSoundPlayer::DefaultSoundPlayer(Common& c)
 
 DefaultSoundPlayer::~DefaultSoundPlayer() {
 #if !DISABLE_SOUND
-  if (!initialized) return;
-  initialized = false;
+  if (!initialized_) return;
+  initialized_ = false;
 
-  if (stream) {
-    SDL_DestroyAudioStream(stream);
-    stream = nullptr;
+  if (stream_) {
+    SDL_DestroyAudioStream(stream_);
+    stream_ = nullptr;
   }
   SDL_QuitSubSystem(SDL_INIT_AUDIO);
 #endif
 }
 
-void DefaultSoundPlayer::playImpl(int sound, void* id, int loops) {
+void DefaultSoundPlayer::PlayImpl(int sound, void* id, int loops) {
 #if !DISABLE_SOUND
-  if (!initialized) return;
+  if (!initialized_) return;
 
-  sfx_mixer_add(mixer, m_common->sounds[sound].sound, sfx_mixer_now(mixer), id,
-                loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
+  SfxMixerAdd(mixer_, m_common_->sounds[sound].sound, SfxMixerNow(mixer_), id,
+              loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
 #endif
 }
 
-bool DefaultSoundPlayer::isPlaying(void* id) {
+bool DefaultSoundPlayer::IsPlaying(void* id) {
 #if !DISABLE_SOUND
-  if (!initialized) return false;
-  return sfx_is_playing(mixer, id) != 0;
+  if (!initialized_) return false;
+  return SfxIsPlaying(mixer_, id) != 0;
 #else
   return false;
 #endif
 }
 
-void DefaultSoundPlayer::stop(void* id) {
+void DefaultSoundPlayer::Stop(void* id) {
 #if !DISABLE_SOUND
   if (speculative) return;
-  if (!initialized) return;
-  sfx_mixer_stop(mixer, id);
+  if (!initialized_) return;
+  SfxMixerStop(mixer_, id);
 #endif
 }
 
-void RecordSoundPlayer::playImpl(int sound, void* id, int loops) {
-  sfx_mixer_add(mixer, m_common.sounds[sound].sound, sfx_mixer_now(mixer), id,
-                loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
+void RecordSoundPlayer::PlayImpl(int sound, void* id, int loops) {
+  SfxMixerAdd(mixer, m_common_.sounds[sound].sound, SfxMixerNow(mixer), id,
+              loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
 }

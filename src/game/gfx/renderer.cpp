@@ -2,17 +2,17 @@
 #include "../common.hpp"
 #include "blit.hpp"
 
-void Renderer::init(int x, int y) { this->setRenderResolution(x, y); }
+void Renderer::Init(int x, int y) { this->SetRenderResolution(x, y); }
 
-void Renderer::setRenderResolution(int x, int y) {
-  renderResX = x;
-  renderResY = y;
-  bmp.alloc(renderResX, renderResY);
+void Renderer::SetRenderResolution(int x, int y) {
+  render_res_x = x;
+  render_res_y = y;
+  bmp.Alloc(render_res_x, render_res_y);
 }
 
-void Renderer::loadPalette(Common const& common) {
+void Renderer::LoadPalette(Common const& common) {
   origpal = common.exepal;
   pal = origpal;
 }
 
-void Renderer::clear() { fill(bmp, 0); }
+void Renderer::Clear() { Fill(bmp, 0); }

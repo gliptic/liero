@@ -18,56 +18,57 @@
 #include <cereal/archives/portable_binary.hpp>
 #include <sstream>
 
-Game::Game(std::shared_ptr<Common> common, std::shared_ptr<Settings> settingsInit,
-           std::shared_ptr<SoundPlayer> soundPlayer)
+Game::Game(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings_init,
+           std::shared_ptr<SoundPlayer> sound_player)
     : common(common),
-      soundPlayer(soundPlayer),
-      prevSoundPlayer(g_soundPlayer),
-      soundPlayerInstalled(true),
-      settings(settingsInit),
-      statsRecorder(new NormalStatsRecorder),
+      sound_player(sound_player),
+      prev_sound_player(g_sound_player),
+      sound_player_installed(true),
+      settings(settings_init),
+      stats_recorder(new NormalStatsRecorder),
       level(*common),
-      screenFlash(0),
-      gotChanged(false),
-      lastKilledIdx(-1),
+      screen_flash(0),
+      got_changed(false),
+      last_killed_idx(-1),
       paused(true),
-      quickSim(false) {
-  g_soundPlayer = soundPlayer.get();
+      quick_sim(false) {
+  g_sound_player = sound_player.get();
 
-  rand.seed(uint32_t(std::time(0)));
+  rand.Seed(uint32_t(std::time(0)));
 
   cycles = 0;
 }
 
 Game::~Game() {
-  clearViewports();
-  clearWorms();
-  if (soundPlayerInstalled && g_soundPlayer == soundPlayer.get()) g_soundPlayer = prevSoundPlayer;
+  ClearViewports();
+  ClearWorms();
+  if (sound_player_installed && g_sound_player == sound_player.get())
+    g_sound_player = prev_sound_player;
 }
 
-void Game::onKey(uint32_t key, bool state) {
+void Game::OnKey(uint32_t key, bool state) {
   for (std::size_t i = 0; i < worms.size(); ++i) {
     Worm& w = *worms[i];
 
     // Only check keyboard controls for players using keyboard input
-    if (w.settings->inputDevice != WormSettingsExtensions::InputKeyboard) continue;
+    if (w.settings->input_device != WormSettingsExtensions::kInputKeyboard) continue;
 
-    for (std::size_t control = 0; control < WormSettings::MaxControl; ++control) {
+    for (std::size_t control = 0; control < WormSettings::kMaxControl; ++control) {
       if (w.settings->controls[control] == key) {
-        w.setControlState(static_cast<Worm::Control>(control), state);
+        w.SetControlState(static_cast<Worm::Control>(control), state);
       }
     }
   }
 }
 
-Worm* Game::findControlForKey(uint32_t key, Worm::Control& control) {
+Worm* Game::FindControlForKey(uint32_t key, Worm::Control& control) {
   // Gamepad control keys encode the player index and control directly
-  if (isGamepadControlKey(key)) {
-    int playerIdx = (key - GamepadControlKeysStart) / 8;
-    int c = (key - GamepadControlKeysStart) % 8;
-    if (playerIdx >= 0 && playerIdx < (int)worms.size()) {
+  if (IsGamepadControlKey(key)) {
+    int player_idx = (key - kGamepadControlKeysStart) / 8;
+    int c = (key - kGamepadControlKeysStart) % 8;
+    if (player_idx >= 0 && player_idx < (int)worms.size()) {
       control = static_cast<Worm::Control>(c);
-      return worms[playerIdx].get();
+      return worms[player_idx].get();
     }
     return 0;
   }
@@ -76,12 +77,12 @@ Worm* Game::findControlForKey(uint32_t key, Worm::Control& control) {
     Worm& w = *worms[i];
 
     // Only check keyboard bindings for players using keyboard
-    if (w.settings->inputDevice != WormSettingsExtensions::InputKeyboard) continue;
+    if (w.settings->input_device != WormSettingsExtensions::kInputKeyboard) continue;
 
-    uint32_t* controls = settings->extensions ? w.settings->controlsEx : w.settings->controls;
-    std::size_t maxControl =
-        settings->extensions ? WormSettings::MaxControlEx : WormSettings::MaxControl;
-    for (std::size_t c = 0; c < maxControl; ++c) {
+    uint32_t* controls = settings->kExtensions ? w.settings->controls_ex : w.settings->controls;
+    std::size_t max_control =
+        settings->kExtensions ? WormSettings::kMaxControlEx : WormSettings::kMaxControl;
+    for (std::size_t c = 0; c < max_control; ++c) {
       if (controls[c] == key) {
         control = static_cast<Worm::Control>(c);
         return &w;
@@ -92,71 +93,71 @@ Worm* Game::findControlForKey(uint32_t key, Worm::Control& control) {
   return 0;
 }
 
-void Game::releaseControls() {
+void Game::ReleaseControls() {
   for (std::size_t i = 0; i < worms.size(); ++i) {
     Worm& w = *worms[i];
 
-    for (std::size_t control = 0; control < WormSettings::MaxControl; ++control) {
-      w.release(static_cast<Worm::Control>(control));
+    for (std::size_t control = 0; control < WormSettings::kMaxControl; ++control) {
+      w.Release(static_cast<Worm::Control>(control));
     }
   }
 }
 
-void Game::clearViewports() {
+void Game::ClearViewports() {
   viewports.clear();
-  spectatorViewports.clear();
+  spectator_viewports.clear();
 }
 
-void Game::addViewport(Viewport* vp) {
+void Game::AddViewport(Viewport* vp) {
   // vp->worm->viewport = vp;
   viewports.push_back(vp);
 }
 
-void Game::addSpectatorViewport(SpectatorViewport* vp) { spectatorViewports.push_back(vp); }
+void Game::AddSpectatorViewport(SpectatorViewport* vp) { spectator_viewports.push_back(vp); }
 
-void Game::processViewports() {
+void Game::ProcessViewports() {
   for (std::size_t i = 0; i < viewports.size(); ++i) {
-    viewports[i]->process(*this);
+    viewports[i]->Process(*this);
   }
-  for (std::size_t i = 0; i < spectatorViewports.size(); ++i) {
-    spectatorViewports[i]->process(*this);
+  for (std::size_t i = 0; i < spectator_viewports.size(); ++i) {
+    spectator_viewports[i]->Process(*this);
   }
 }
 
-void Game::drawViewports(Renderer& renderer, GameState state, bool isReplay) {
+void Game::DrawViewports(Renderer& renderer, GameState state, bool is_replay) {
   for (std::size_t i = 0; i < viewports.size(); ++i) {
-    viewports[i]->draw(*this, renderer, state, isReplay);
+    viewports[i]->Draw(*this, renderer, state, is_replay);
   }
 }
 
-void Game::drawSpectatorViewports(Renderer& renderer, GameState state, bool isReplay) {
-  for (std::size_t i = 0; i < spectatorViewports.size(); ++i) {
-    spectatorViewports[i]->draw(*this, renderer, state, isReplay);
+void Game::DrawSpectatorViewports(Renderer& renderer, GameState state, bool is_replay) {
+  for (std::size_t i = 0; i < spectator_viewports.size(); ++i) {
+    spectator_viewports[i]->Draw(*this, renderer, state, is_replay);
   }
 }
 
-void Game::clearWorms() { worms.clear(); }
+void Game::ClearWorms() { worms.clear(); }
 
-void Game::resetWorms() {
+void Game::ResetWorms() {
   for (std::size_t i = 0; i < worms.size(); ++i) {
     Worm& w = *worms[i];
     w.health = w.settings->health;
     w.lives = settings->lives;  // Not in the original!
     w.kills = 0;
     w.visible = false;
-    w.killedTimer = Worm::KilledTimerInitial;
+    w.killed_timer = Worm::kKilledTimerInitial;
 
-    w.currentWeapon = 0;
+    w.current_weapon = 0;
   }
 }
 
-void Game::addWorm(std::shared_ptr<Worm> worm) { worms.push_back(std::move(worm)); }
+void Game::AddWorm(std::shared_ptr<Worm> worm) { worms.push_back(std::move(worm)); }
 
-void Game::draw(Renderer& renderer, GameState state, bool useSpectatorViewports, bool isReplay) {
-  if (useSpectatorViewports) {
-    drawSpectatorViewports(renderer, state, isReplay);
+void Game::Draw(Renderer& renderer, GameState state, bool use_spectator_viewports, bool is_replay) {
+  if (use_spectator_viewports) {
+    DrawSpectatorViewports(renderer, state, is_replay);
   } else {
-    drawViewports(renderer, state, isReplay);
+    DrawViewports(renderer, state, is_replay);
   }
 
   // common->font.drawText(toString(cycles / 70), 10, 10, 7);
@@ -164,92 +165,92 @@ void Game::draw(Renderer& renderer, GameState state, bool useSpectatorViewports,
   renderer.pal = renderer.origpal;
 
   for (int w = 0; w < 4; ++w)
-    renderer.pal.rotateFrom(renderer.origpal, common->colorAnim[w].from, common->colorAnim[w].to,
+    renderer.pal.RotateFrom(renderer.origpal, common->color_anim[w].from, common->color_anim[w].to,
                             cycles >> 3);
 
-  renderer.pal.fade(renderer.fadeValue);
+  renderer.pal.Fade(renderer.fade_value);
 
-  if (screenFlash > 0) {
-    renderer.pal.lightUp(screenFlash);
+  if (screen_flash > 0) {
+    renderer.pal.LightUp(screen_flash);
   }
 }
 
-bool checkBonusSpawnPosition(Game& game, int x, int y) {
+bool CheckBonusSpawnPosition(Game& game, int x, int y) {
   Rect rect(x - 2, y - 2, x + 3, y + 3);
 
-  rect.intersect(game.level.rect());
+  rect.Intersect(game.level.Bounds());
 
   for (int cx = rect.x1; cx < rect.x2; ++cx)
     for (int cy = rect.y1; cy < rect.y2; ++cy) {
-      if (game.level.mat(cx, cy).dirtRock()) return false;
+      if (game.level.Mat(cx, cy).DirtRock()) return false;
     }
 
   return true;
 }
 
-void Game::createBonus() {
+void Game::CreateBonus() {
   Common& common = *this->common;
 
-  if (int(bonuses.size()) >= settings->maxBonuses) return;
+  if (int(bonuses.Size()) >= settings->max_bonuses) return;
 
   for (std::size_t i = 0; i < 50000; ++i) {
     int ix = rand(LC(BonusSpawnRectW));
     int iy = rand(LC(BonusSpawnRectH));
 
-    if (common.H[HBonusSpawnRect]) {
+    if (common.h[HBonusSpawnRect]) {
       ix += LC(BonusSpawnRectX);
       iy += LC(BonusSpawnRectY);
     }
 
-    if (checkBonusSpawnPosition(*this, ix, iy)) {
+    if (CheckBonusSpawnPosition(*this, ix, iy)) {
       int frame;
 
-      if (common.H[HBonusOnlyHealth])
+      if (common.h[HBonusOnlyHealth])
         frame = 1;
-      else if (common.H[HBonusOnlyWeapon])
+      else if (common.h[HBonusOnlyWeapon])
         frame = 0;
       else
         frame = rand(2);
 
-      Bonus* bonus = bonuses.newObject();
+      Bonus* bonus = bonuses.NewObject();
       if (!bonus) return;
 
-      bonus->x = itof(ix);
-      bonus->y = itof(iy);
-      bonus->velY = 0;
+      bonus->x = Itof(ix);
+      bonus->y = Itof(iy);
+      bonus->vel_y = 0;
       bonus->frame = frame;
-      bonus->timer = rand(common.bonusRandTimer[frame][1]) + common.bonusRandTimer[frame][0];
+      bonus->timer = rand(common.bonus_rand_timer[frame][1]) + common.bonus_rand_timer[frame][0];
       bonus->weapon = 0;
 
       if (frame == 0) {
         do {
           bonus->weapon = rand((uint32_t)common.weapons.size());
-        } while (settings->weapTable[bonus->weapon] == 2);
+        } while (settings->weap_table[bonus->weapon] == 2);
       }
 
-      common.sobjectTypes[7].create(*this, ix, iy, 0, 0);
+      common.sobject_types[7].Create(*this, ix, iy, 0, 0);
       return;
     }
   }  // 234F
 }
 
-void Game::processFrame() {
-  statsRecorder->preTick(*this);
+void Game::ProcessFrame() {
+  stats_recorder->PreTick(*this);
 
-  if (screenFlash > 0) --screenFlash;
+  if (screen_flash > 0) --screen_flash;
 
   for (std::size_t i = 0; i < viewports.size(); ++i) {
     if (viewports[i]->shake > 0) viewports[i]->shake -= 4000;  // TODO: Read 4000 from exe?
   }
 
-  for (std::size_t i = 0; i < spectatorViewports.size(); ++i) {
-    if (spectatorViewports[i]->shake > 0)
-      spectatorViewports[i]->shake -= 4000;  // TODO: Read 4000 from exe?
+  for (std::size_t i = 0; i < spectator_viewports.size(); ++i) {
+    if (spectator_viewports[i]->shake > 0)
+      spectator_viewports[i]->shake -= 4000;  // TODO: Read 4000 from exe?
   }
 
-  auto br = bonuses.all();
-  for (Bonus* i; (i = br.next());) {
-    i->process(*this);
+  auto br = bonuses.All();
+  for (Bonus* i; (i = br.Next());) {
+    i->Process(*this);
   }
 
   if ((cycles & 1) == 0) {
@@ -258,134 +259,134 @@ void Game::processFrame() {
 
       bool down = false;
 
-      if (wormByIdx(v.wormIdx)->killedTimer > 16) down = true;
+      if (WormByIdx(v.worm_idx)->killed_timer > 16) down = true;
 
       if (down) {
-        if (v.bannerY < 2) ++v.bannerY;
+        if (v.banner_y < 2) ++v.banner_y;
       } else {
-        if (v.bannerY > -8) --v.bannerY;
+        if (v.banner_y > -8) --v.banner_y;
       }
     }
     // FIXME duplicated code
-    for (std::size_t i = 0; i < spectatorViewports.size(); ++i) {
-      SpectatorViewport& v = *spectatorViewports[i];
+    for (std::size_t i = 0; i < spectator_viewports.size(); ++i) {
+      SpectatorViewport& v = *spectator_viewports[i];
 
       bool down = false;
 
-      if (wormByIdx(0)->killedTimer > 16 || wormByIdx(1)->killedTimer > 16) down = true;
+      if (WormByIdx(0)->killed_timer > 16 || WormByIdx(1)->killed_timer > 16) down = true;
 
       if (down) {
-        if (v.bannerY < 2) ++v.bannerY;
+        if (v.banner_y < 2) ++v.banner_y;
       } else {
-        if (v.bannerY > -8) --v.bannerY;
+        if (v.banner_y > -8) --v.banner_y;
       }
     }
   }
 
-  auto sr = sobjects.all();
-  for (SObject* i; (i = sr.next());) {
-    i->process(*this);
+  auto sr = sobjects.All();
+  for (SObject* i; (i = sr.Next());) {
+    i->Process(*this);
   }
 
-  auto wr = wobjects.all();
-  for (WObject* i; (i = wr.next());) {
-    i->process(*this);
+  auto wr = wobjects.All();
+  for (WObject* i; (i = wr.Next());) {
+    i->Process(*this);
   }
 
-  auto nr = nobjects.all();
-  for (NObject* i; (i = nr.next());) {
-    i->process(*this);
+  auto nr = nobjects.All();
+  for (NObject* i; (i = nr.Next());) {
+    i->Process(*this);
   }
 
-  for (BObjectList::iterator i = bobjects.begin(); i != bobjects.end();) {
-    if (i->process(*this))
+  for (BObjectList::Iterator i = bobjects.Begin(); i != bobjects.End();) {
+    if (i->Process(*this))
       ++i;
     else
-      bobjects.free(i);
+      bobjects.Free(i);
   }
 
   // NOTE: This was originally the beginning of the processing, but has been rotated down to
   // separate out the drawing
   ++cycles;
 
-  if (!common->H[HBonusDisable] && settings->maxBonuses > 0 &&
-      rand(common->C[CBonusDropChance]) == 0) {
-    createBonus();
+  if (!common->h[HBonusDisable] && settings->max_bonuses > 0 &&
+      rand(common->c[CBonusDropChance]) == 0) {
+    CreateBonus();
   }
 
   for (std::size_t i = 0; i < worms.size(); ++i) {
-    worms[i]->process(*this);
+    worms[i]->Process(*this);
   }
 
   for (std::size_t i = 0; i < worms.size(); ++i) {
-    worms[i]->ninjarope.process(*worms[i], *this);
+    worms[i]->ninjarope.Process(*worms[i], *this);
   }
 
-  switch (settings->gameMode) {
-    case Settings::GMGameOfTag: {
-      bool someInvisible = false;
+  switch (settings->game_mode) {
+    case Settings::kGmGameOfTag: {
+      bool some_invisible = false;
       for (std::size_t i = 0; i < worms.size(); ++i) {
         if (!worms[i]->visible) {
-          someInvisible = true;
+          some_invisible = true;
           break;
         }
       }
 
-      Worm* lastKilledBy = wormByIdx(lastKilledIdx);
+      Worm* last_killed_by = WormByIdx(last_killed_idx);
 
-      if (!someInvisible && lastKilledBy && (cycles % 70) == 0 &&
-          lastKilledBy->timer < settings->timeToLose) {
-        ++lastKilledBy->timer;
+      if (!some_invisible && last_killed_by && (cycles % 70) == 0 &&
+          last_killed_by->timer < settings->time_to_lose) {
+        ++last_killed_by->timer;
       }
     } break;
 
-    case Settings::GMHoldazone: {
-      int contenderIdx = -1;
+    case Settings::kGmHoldazone: {
+      int contender_idx = -1;
       int contenders = 0;
 
       for (auto const& w : worms) {
-        int x = ftoi(w->pos.x), y = ftoi(w->pos.y);
+        int x = Ftoi(w->pos.x), y = Ftoi(w->pos.y);
 
-        if (w->visible && holdazone.rect.inside(x, y)) {
-          contenderIdx = w->index;
+        if (w->visible && holdazone.rect.Inside(x, y)) {
+          contender_idx = w->index;
           ++contenders;
         }
       }
 
-      if (contenders == 0) contenderIdx = holdazone.holderIdx;
+      if (contenders == 0) contender_idx = holdazone.holder_idx;
 
       if (contenders <= 1) {
-        if (contenderIdx < 0 ||
-            (holdazone.contenderIdx != contenderIdx && holdazone.contenderFrames != 0)) {
-          if (holdazone.contenderFrames == 0 || --holdazone.contenderFrames == 0) {
-            holdazone.contenderIdx = contenderIdx;
-            holdazone.holderIdx = -1;
+        if (contender_idx < 0 ||
+            (holdazone.contender_idx != contender_idx && holdazone.contender_frames != 0)) {
+          if (holdazone.contender_frames == 0 || --holdazone.contender_frames == 0) {
+            holdazone.contender_idx = contender_idx;
+            holdazone.holder_idx = -1;
           }
         } else {
-          holdazone.contenderIdx = contenderIdx;
+          holdazone.contender_idx = contender_idx;
 
-          if (holdazone.contenderFrames < settings->zoneCaptureTime &&
-              ++holdazone.contenderFrames >= settings->zoneCaptureTime &&
-              holdazone.holderIdx != holdazone.contenderIdx) {
+          if (holdazone.contender_frames < settings->kZoneCaptureTime &&
+              ++holdazone.contender_frames >= settings->kZoneCaptureTime &&
+              holdazone.holder_idx != holdazone.contender_idx) {
             // New holder
 
-            int newTimeout = holdazone.timeoutLeft;
-            if (holdazone.contenderIdx >= 0)
-              newTimeout += settings->zoneTimeout * 70 / 4;
+            int new_timeout = holdazone.timeout_left;
+            if (holdazone.contender_idx >= 0)
+              new_timeout += settings->zone_timeout * 70 / 4;
             else
-              newTimeout += settings->zoneTimeout * 70 / 8;
+              new_timeout += settings->zone_timeout * 70 / 8;
 
-            holdazone.timeoutLeft = std::min(newTimeout, settings->zoneTimeout * 70);
+            holdazone.timeout_left = std::min(new_timeout, settings->zone_timeout * 70);
 
-            holdazone.holderIdx = holdazone.contenderIdx;
+            holdazone.holder_idx = holdazone.contender_idx;
           }
         }
       }
 
       bool dec = false;
 
-      if (holdazone.holderIdx >= 0) {
-        auto* holder = wormByIdx(holdazone.holderIdx);
+      if (holdazone.holder_idx >= 0) {
+        auto* holder = WormByIdx(holdazone.holder_idx);
 
         if ((cycles % 70) == 0) ++holder->timer;
 
@@ -395,95 +396,95 @@ void Game::processFrame() {
       }
 
       if (dec) {
-        if (--holdazone.timeoutLeft <= 0) {
-          spawnZone();
+        if (--holdazone.timeout_left <= 0) {
+          SpawnZone();
         }
       }
     } break;
   }
 
-  processViewports();
+  ProcessViewports();
 
   // Store old control states so we can see what changes (mainly for replays)
   for (std::size_t i = 0; i < worms.size(); ++i) {
-    worms[i]->prevControlStates = worms[i]->controlStates;
+    worms[i]->prev_control_states = worms[i]->control_states;
   }
 
-  statsRecorder->tick(*this);
+  stats_recorder->Tick(*this);
 }
 
-void Game::focus(Renderer& renderer) { updateSettings(renderer); }
+void Game::Focus(Renderer& renderer) { UpdateSettings(renderer); }
 
-void Game::updateSettings(Renderer& renderer) {
+void Game::UpdateSettings(Renderer& renderer) {
   renderer.origpal = level.origpal;  // Activate the Level palette
 
   for (std::size_t i = 0; i < worms.size(); ++i) {
     Worm& worm = *worms[i];
     if (worm.index >= 0 && worm.index < 2)
-      renderer.origpal.setWormColour(worm.index, *worm.settings);
+      renderer.origpal.SetWormColour(worm.index, *worm.settings);
   }
 }
 
-void Game::spawnZone() {
+void Game::SpawnZone() {
   IVec2 pos;
 
-  while (holdazone.zoneWidth >= 5) {
-    if (level.selectSpawn(rand, holdazone.zoneWidth, holdazone.zoneHeight - 8, pos)) {
+  while (holdazone.zone_width >= 5) {
+    if (level.SelectSpawn(rand, holdazone.zone_width, holdazone.zone_height - 8, pos)) {
       holdazone.rect.x1 = pos.x;
       holdazone.rect.y1 = pos.y;
-      holdazone.rect.x2 = pos.x + holdazone.zoneWidth;
-      holdazone.rect.y2 = pos.y + holdazone.zoneHeight;
-      holdazone.timeoutLeft = settings->zoneTimeout * 70;
-      holdazone.contenderIdx = -1;
-      holdazone.contenderFrames = 0;
-      holdazone.holderIdx = -1;
+      holdazone.rect.x2 = pos.x + holdazone.zone_width;
+      holdazone.rect.y2 = pos.y + holdazone.zone_height;
+      holdazone.timeout_left = settings->zone_timeout * 70;
+      holdazone.contender_idx = -1;
+      holdazone.contender_frames = 0;
+      holdazone.holder_idx = -1;
       break;
     }
 
-    holdazone.zoneWidth /= 2;
-    holdazone.zoneHeight /= 2;
+    holdazone.zone_width /= 2;
+    holdazone.zone_height /= 2;
   }
 }
 
-void Game::startGame() {
-  soundPlayer->play(common->soundHook[SoundBegin]);
-  bobjects.resize(settings->bloodParticleMax);
+void Game::StartGame() {
+  sound_player->Play(common->sound_hook[SoundBegin]);
+  bobjects.Resize(settings->blood_particle_max);
 
-  if (settings->gameMode == Settings::GMHoldazone) {
-    spawnZone();
+  if (settings->game_mode == Settings::kGmHoldazone) {
+    SpawnZone();
   }
 }
 
-bool Game::isGameOver() {
-  if (settings->gameMode == Settings::GMKillEmAll ||
-      settings->gameMode == Settings::GMScalesOfJustice) {
+bool Game::IsGameOver() {
+  if (settings->game_mode == Settings::kGmKillEmAll ||
+      settings->game_mode == Settings::kGmScalesOfJustice) {
     for (std::size_t i = 0; i < worms.size(); ++i) {
       if (worms[i]->lives <= 0) return true;
     }
-  } else if (settings->gameMode == Settings::GMGameOfTag) {
+  } else if (settings->game_mode == Settings::kGmGameOfTag) {
     for (std::size_t i = 0; i < worms.size(); ++i) {
-      if (worms[i]->timer >= settings->timeToLose) return true;
+      if (worms[i]->timer >= settings->time_to_lose) return true;
     }
-  } else if (settings->gameMode == Settings::GMHoldazone) {
+  } else if (settings->game_mode == Settings::kGmHoldazone) {
     for (auto const& w : worms)
-      if (w->timer >= settings->timeToLose) return true;
+      if (w->timer >= settings->time_to_lose) return true;
   }
 
   return false;
 }
 
-void Game::doDamageDirect(Worm& w, int amount, int byIdx) {
+void Game::DoDamageDirect(Worm& w, int amount, int by_idx) {
   if (amount > 0) {
     w.health -= amount;
     if (w.health <= 0) {
-      w.lastKilledByIdx = byIdx;
+      w.last_killed_by_idx = by_idx;
     }
   }
 }
 
-void Game::doHealingDirect(Worm& w, int amount) {
+void Game::DoHealingDirect(Worm& w, int amount) {
   w.health += amount;
-  if (settings->gameMode == Settings::GMScalesOfJustice) {
+  if (settings->game_mode == Settings::kGmScalesOfJustice) {
     while (w.health > w.settings->health) {
       w.lives += 1;
       w.health -= w.settings->health;
@@ -495,41 +496,41 @@ void Game::doHealingDirect(Worm& w, int amount) {
   }
 }
 
-void Game::doDamage(Worm& w, int amount, int byIdx) {
-  doDamageDirect(w, amount, byIdx);
+void Game::DoDamage(Worm& w, int amount, int by_idx) {
+  DoDamageDirect(w, amount, by_idx);
 
   if (amount > 0) {
-    if (settings->gameMode == Settings::GMScalesOfJustice) {
-      if (byIdx < 0 || byIdx == w.index) {
+    if (settings->game_mode == Settings::kGmScalesOfJustice) {
+      if (by_idx < 0 || by_idx == w.index) {
         int parts = (int)worms.size() - 1;
         int left = amount;
 
         for (auto const& other : worms) {
           if (other.get() != &w) {
             int k = left / parts;
-            doHealingDirect(*other, k);
+            DoHealingDirect(*other, k);
             parts -= 1;
             left -= k;
           }
         }
       } else {
-        doHealingDirect(*worms[byIdx], amount);
+        DoHealingDirect(*worms[by_idx], amount);
       }
     }
   }
 }
 
-void Game::doHealing(Worm& w, int amount) {
-  doHealingDirect(w, amount);
+void Game::DoHealing(Worm& w, int amount) {
+  DoHealingDirect(w, amount);
 
-  if (settings->gameMode == Settings::GMScalesOfJustice) {
+  if (settings->game_mode == Settings::kGmScalesOfJustice) {
     int parts = (int)worms.size() - 1;
     int left = amount;
 
     for (auto const& other : worms) {
       if (other.get() != &w) {
         int k = left / parts;
-        doDamageDirect(*other, k, w.index);
+        DoDamageDirect(*other, k, w.index);
         parts -= 1;
         left -= k;
       }
@@ -539,33 +540,33 @@ void Game::doHealing(Worm& w, int amount) {
   }
 }
 
-bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x, int y) {
+bool CheckRespawnPosition(Game& game, int x2, int y2, int old_x, int old_y, int x, int y) {
   Common& common = *game.common;
 
-  int deltaX = oldX;
-  int deltaY = oldY - y;
-  int enemyDX = x2 - x;
-  int enemyDY = y2 - y;
+  int delta_x = old_x;
+  int delta_y = old_y - y;
+  int enemy_dx = x2 - x;
+  int enemy_dy = y2 - y;
 
-  if ((std::abs(deltaX) <= LC(WormMinSpawnDistLast) &&
-       std::abs(deltaY) <= LC(WormMinSpawnDistLast)) ||
-      (std::abs(enemyDX) <= LC(WormMinSpawnDistEnemy) &&
-       std::abs(enemyDY) <= LC(WormMinSpawnDistEnemy)))
+  if ((std::abs(delta_x) <= LC(WormMinSpawnDistLast) &&
+       std::abs(delta_y) <= LC(WormMinSpawnDistLast)) ||
+      (std::abs(enemy_dx) <= LC(WormMinSpawnDistEnemy) &&
+       std::abs(enemy_dy) <= LC(WormMinSpawnDistEnemy)))
     return false;
 
-  int maxX = x + 3;
-  int maxY = y + 4;
-  int minX = x - 3;
-  int minY = y - 4;
+  int max_x = x + 3;
+  int max_y = y + 4;
+  int min_x = x - 3;
+  int min_y = y - 4;
 
-  if (maxX >= game.level.width) maxX = game.level.width - 1;
-  if (maxY >= game.level.height) maxY = game.level.height - 1;
-  if (minX < 0) minX = 0;
-  if (minY < 0) minY = 0;
+  if (max_x >= game.level.width) max_x = game.level.width - 1;
+  if (max_y >= game.level.height) max_y = game.level.height - 1;
+  if (min_x < 0) min_x = 0;
+  if (min_y < 0) min_y = 0;
 
-  for (int i = minX; i != maxX; ++i)
-    for (int j = minY; j != maxY; ++j) {
-      if (game.level.mat(i, j).rock())  // TODO: The special rock respawn bug is here, consider an
+  for (int i = min_x; i != max_x; ++i)
+    for (int j = min_y; j != max_y; ++j) {
+      if (game.level.Mat(i, j).Rock())  // TODO: The special rock respawn bug is here, consider an
                                         // option to turn it off
         return false;
     }
@@ -573,15 +574,16 @@ bool checkRespawnPosition(Game& game, int x2, int y2, int oldX, int oldY, int x,
   return true;
 }
 
-void Game::postClone(Game& original, bool complete) {
-  soundPlayerInstalled = false;
-  prevSoundPlayer = nullptr;
+void Game::PostClone(Game& original, bool complete) {
+  sound_player_installed = false;
+  prev_sound_player = nullptr;
   if (!complete) {
-    statsRecorder.reset(new StatsRecorder);
-    soundPlayer.reset(new NullSoundPlayer);
+    stats_recorder.reset(new StatsRecorder);
+    sound_player.reset(new NullSoundPlayer);
     viewports.clear();
   } else {
-    statsRecorder.reset(new NormalStatsRecorder(static_cast<NormalStatsRecorder&>(*statsRecorder)));
+    stats_recorder.reset(
+        new NormalStatsRecorder(static_cast<NormalStatsRecorder&>(*stats_recorder)));
 
     for (auto& vp : viewports) {
       vp = new Viewport(*vp);
@@ -593,33 +595,33 @@ void Game::postClone(Game& original, bool complete) {
   }
 }
 
-void Game::saveSnapshot(std::vector<uint8_t>& out) const {
+void Game::SaveSnapshot(std::vector<uint8_t>& out) const {
   std::ostringstream ss(std::ios::binary);
   {
     cereal::PortableBinaryOutputArchive ar(ss);
-    saveGameSnapshot(ar, *this);
+    SaveGameSnapshot(ar, *this);
   }
   std::string const& buf = ss.str();
   out.assign(buf.begin(), buf.end());
 }
 
-void Game::loadSnapshot(std::vector<uint8_t> const& in) {
+void Game::LoadSnapshot(std::vector<uint8_t> const& in) {
   std::string buf(in.begin(), in.end());
   std::istringstream ss(std::move(buf), std::ios::binary);
   cereal::PortableBinaryInputArchive ar(ss);
-  loadGameSnapshot(ar, *this);
+  LoadGameSnapshot(ar, *this);
 }
 
-void Game::saveSnapshotFast(GameSnapshot& snap) const {
+void Game::SaveSnapshotFast(GameSnapshot& snap) const {
   snap.rand = rand;
   snap.cycles = cycles;
-  snap.screenFlash = screenFlash;
-  snap.lastKilledIdx = lastKilledIdx;
-  snap.gotChanged = gotChanged;
+  snap.screen_flash = screen_flash;
+  snap.last_killed_idx = last_killed_idx;
+  snap.got_changed = got_changed;
   snap.holdazone = holdazone;
 
   for (std::size_t i = 0; i < worms.size() && i < snap.worms.size(); ++i)
-    saveWormSimState(snap.worms[i], *worms[i]);
+    SaveWormSimState(snap.worms[i], *worms[i]);
 
   // ExactObjectList<T,N> contents are trivially copyable POD blocks; the
   // compiler-generated copy assignment is a straight memcpy of the fixed
@@ -629,45 +631,46 @@ void Game::saveSnapshotFast(GameSnapshot& snap) const {
   snap.sobjects = sobjects;
   snap.nobjects = nobjects;
 
-  snap.bobjectsCount = bobjects.count;
-  if (snap.bobjectsArr.size() < bobjects.limit) snap.bobjectsArr.resize(bobjects.limit);
+  snap.bobjects_count = bobjects.count;
+  if (snap.bobjects_arr.size() < bobjects.limit) snap.bobjects_arr.resize(bobjects.limit);
   if (bobjects.count > 0)
-    std::memcpy(snap.bobjectsArr.data(), bobjects.arr.data(), bobjects.count * sizeof(BObject));
+    std::memcpy(snap.bobjects_arr.data(), bobjects.arr.data(), bobjects.count * sizeof(BObject));
 
-  std::size_t const cells =
+  std::size_t const kCells =
       static_cast<std::size_t>(level.width) * static_cast<std::size_t>(level.height);
-  if (snap.levelData.size() != cells) snap.levelData.resize(cells);
-  if (snap.levelMaterials.size() != cells) snap.levelMaterials.resize(cells);
-  if (cells > 0) {
-    std::memcpy(snap.levelData.data(), level.data.data(), cells);
-    std::memcpy(snap.levelMaterials.data(), level.materials.data(), cells * sizeof(Material));
+  if (snap.level_data.size() != kCells) snap.level_data.resize(kCells);
+  if (snap.level_materials.size() != kCells) snap.level_materials.resize(kCells);
+  if (kCells > 0) {
+    std::memcpy(snap.level_data.data(), level.data.data(), kCells);
+    std::memcpy(snap.level_materials.data(), level.materials.data(), kCells * sizeof(Material));
   }
 }
 
-void Game::loadSnapshotFast(GameSnapshot const& snap) {
+void Game::LoadSnapshotFast(GameSnapshot const& snap) {
   rand = snap.rand;
   cycles = snap.cycles;
-  screenFlash = snap.screenFlash;
-  lastKilledIdx = snap.lastKilledIdx;
-  gotChanged = snap.gotChanged;
+  screen_flash = snap.screen_flash;
+  last_killed_idx = snap.last_killed_idx;
+  got_changed = snap.got_changed;
   holdazone = snap.holdazone;
 
   for (std::size_t i = 0; i < worms.size() && i < snap.worms.size(); ++i)
-    restoreWormSimState(*worms[i], snap.worms[i]);
+    RestoreWormSimState(*worms[i], snap.worms[i]);
 
   bonuses = snap.bonuses;
   wobjects = snap.wobjects;
   sobjects = snap.sobjects;
   nobjects = snap.nobjects;
 
-  bobjects.count = snap.bobjectsCount;
-  if (snap.bobjectsCount > 0)
-    std::memcpy(bobjects.arr.data(), snap.bobjectsArr.data(), snap.bobjectsCount * sizeof(BObject));
+  bobjects.count = snap.bobjects_count;
+  if (snap.bobjects_count > 0)
+    std::memcpy(bobjects.arr.data(), snap.bobjects_arr.data(),
+                snap.bobjects_count * sizeof(BObject));
 
-  std::size_t const cells =
+  std::size_t const kCells =
       static_cast<std::size_t>(level.width) * static_cast<std::size_t>(level.height);
-  if (cells > 0) {
-    std::memcpy(level.data.data(), snap.levelData.data(), cells);
-    std::memcpy(level.materials.data(), snap.levelMaterials.data(), cells * sizeof(Material));
+  if (kCells > 0) {
+    std::memcpy(level.data.data(), snap.level_data.data(), kCells);
+    std::memcpy(level.materials.data(), snap.level_materials.data(), kCells * sizeof(Material));
   }
 }

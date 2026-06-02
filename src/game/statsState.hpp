@@ -9,13 +9,13 @@ struct Game;
 
 // Post-game statistics display.
 struct StatsState : AppState {
-  StatsState(NormalStatsRecorder& recorder, Game& game, bool isMultiplayer = false);
+  StatsState(NormalStatsRecorder& recorder, Game& game, bool is_multiplayer = false);
 
-  void enter() override;
-  void handleEvent(SDL_Event& ev) override;
-  bool update() override;
-  void draw() override;
-  bool wantsMenuFlip() const override { return false; }
+  void Enter() override;
+  void HandleEvent(SDL_Event& ev) override;
+  bool Update() override;
+  void Draw() override;
+  bool WantsMenuFlip() const override { return false; }
 
  private:
   NormalStatsRecorder& recorder_;

@@ -12,5 +12,5 @@ struct MemoryFs {
   std::map<std::string, std::vector<uint8_t>> files;
 
   // Create an FsNode representing the root of this memory filesystem.
-  FsNode root();
+  FsNode Root();
 };

@@ -25,36 +25,36 @@ void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
   Renderer renderer;
 
   if (spectator) {
-    renderer.init(640, 400);
-    renderer.loadPalette(*common);
+    renderer.Init(640, 400);
+    renderer.LoadPalette(*common);
   } else {
-    renderer.init(320, 200);
-    renderer.loadPalette(*common);
+    renderer.Init(320, 200);
+    renderer.LoadPalette(*common);
   }
 
-  sfx_mixer* mixer = sfx_mixer_create();
+  sfx_mixer* mixer = SfxMixerCreate();
 
-  std::unique_ptr<Game> game(replayReader.beginPlayback(
+  std::unique_ptr<Game> game(replayReader.BeginPlayback(
       common, std::shared_ptr<SoundPlayer>(new RecordSoundPlayer(*common, mixer))));
 
   // FIXME: the viewports are changed based on the replay for some
   // reason, so we need to restore them here. Probably makes more sense
   // to not save the viewports at all. But that probably breaks save
   // format compatibility?
-  game->clearViewports();
+  game->ClearViewports();
 
   // for backwards compatibility reasons, this is not stored within the
   // replay. Yet.
-  game->worms[0]->statsX = 0;
-  game->worms[1]->statsX = 218;
+  game->worms[0]->stats_x = 0;
+  game->worms[1]->stats_x = 218;
 
   // spectator viewport is always full size
   // +68 on x to align the viewport in the middle
-  game->addSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
-  game->addViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
-  game->addViewport(new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index, 504, 350));
-  game->startGame();
-  game->focus(renderer);
+  game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+  game->AddViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
+  game->AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index, 504, 350));
+  game->StartGame();
+  game->Focus(renderer);
 
   int w = 1280, h = 720;
 
@@ -82,16 +82,16 @@ void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
   frameDebt.den = 1;
 
   int offsetX, offsetY;
-  int mag = fitScreen(640, 400, renderer.bmp.w, renderer.bmp.h, offsetX, offsetY);
+  int mag = FitScreen(640, 400, renderer.bmp.w, renderer.bmp.h, offsetX, offsetY);
 
   int f = 0;
 
-  while (replayReader.playbackFrame(renderer)) {
-    game->processFrame();
-    renderer.clear();
-    game->draw(renderer, StateGame, spectator, true);
+  while (replayReader.PlaybackFrame(renderer)) {
+    game->ProcessFrame();
+    renderer.Clear();
+    game->Draw(renderer, kStateGame, spectator, true);
     ++f;
-    renderer.fadeValue = 33;
+    renderer.fade_value = 33;
 
     sampleDebt.num += 44100;                            // sampleDebt += 44100 / 70
     int mixerFrames = sampleDebt.num / sampleDebt.den;  // floor(sampleDebt)
@@ -100,7 +100,7 @@ void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
     std::size_t mixerStart = soundBuffer.size();
     soundBuffer.resize(mixerStart + mixerFrames);
 
-    sfx_mixer_mix(mixer, &soundBuffer[mixerStart], mixerFrames);
+    SfxMixerMix(mixer, &soundBuffer[mixerStart], mixerFrames);
 
     {
       int16_t* audioSamples = &soundBuffer[0];
@@ -118,16 +118,16 @@ void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
         frameDebt = av_sub_q(frameDebt, framerate);
 
         Color realPal[256];
-        renderer.pal.activate(realPal);
+        renderer.pal.Activate(realPal);
         PalIdx* src = renderer.bmp.pixels;
         std::size_t destPitch = vidrec.tmp_picture->linesize[0];
         uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
         std::size_t srcPitch = renderer.bmp.pitch;
 
         uint32_t pal32[256];
-        preparePaletteBgra(realPal, pal32);
+        PreparePaletteBgra(realPal, pal32);
 
-        scaleDraw(src, renderer.renderResX, renderer.renderResY, srcPitch, dest, destPitch, mag,
+        ScaleDraw(src, renderer.render_res_x, renderer.render_res_y, srcPitch, dest, destPitch, mag,
                   pal32);
 
         vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
@@ -139,7 +139,7 @@ void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
     }
 
     if ((f % (70 * 5)) == 0) {
-      printf("\r%s", timeToStringFrames(f));
+      printf("\r%s", TimeToStringFrames(f));
       fflush(stdout);
     }
   }

@@ -7,10 +7,10 @@
 
 template <typename T>
 struct FastObjectList {
-  struct iterator {
-    iterator(T* cur_) : cur(cur_) {}
+  struct Iterator {
+    Iterator(T* cur) : cur(cur) {}
 
-    iterator& operator++() {
+    Iterator& operator++() {
       ++cur;
       return *this;
     }
@@ -19,56 +19,56 @@ struct FastObjectList {
 
     T* operator->() { return cur; }
 
-    bool operator!=(iterator b) { return cur != b.cur; }
+    bool operator!=(Iterator b) { return cur != b.cur; }
 
     T* cur;
   };
 
-  FastObjectList(std::size_t limit = 1) : limit(limit), arr(limit) { clear(); }
+  FastObjectList(std::size_t limit = 1) : limit(limit), arr(limit) { Clear(); }
 
-  T* getFreeObject() {
+  T* GetFreeObject() {
     assert(count < limit);
     T* ptr = &arr[count++];
     return ptr;
   }
 
-  T* newObjectReuse() {
+  T* NewObjectReuse() {
     T* ret;
     if (count == limit)
       ret = &arr[limit - 1];
     else
-      ret = getFreeObject();
+      ret = GetFreeObject();
 
     return ret;
   }
 
-  T* newObject() {
+  T* NewObject() {
     if (count == limit) return 0;
 
-    T* ret = getFreeObject();
+    T* ret = GetFreeObject();
     return ret;
   }
 
-  iterator begin() { return iterator(&arr[0]); }
+  Iterator Begin() { return Iterator(&arr[0]); }
 
-  iterator end() { return iterator(&arr[0] + count); }
+  Iterator End() { return Iterator(&arr[0] + count); }
 
-  void free(T* ptr) {
+  void Free(T* ptr) {
     assert(ptr < &arr[0] + count && ptr >= &arr[0]);
     *ptr = arr[--count];
   }
 
-  void free(iterator i) { free(&*i); }
+  void Free(Iterator i) { Free(&*i); }
 
-  void clear() { count = 0; }
+  void Clear() { count = 0; }
 
-  void resize(std::size_t newLimit) {
-    limit = newLimit;
-    count = std::min(count, newLimit);
-    arr.resize(newLimit);
+  void Resize(std::size_t new_limit) {
+    limit = new_limit;
+    count = std::min(count, new_limit);
+    arr.resize(new_limit);
   }
 
-  std::size_t size() const { return count; }
+  std::size_t Size() const { return count; }
 
   std::size_t limit;
   std::vector<T> arr;

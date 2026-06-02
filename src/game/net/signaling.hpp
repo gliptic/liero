@@ -20,72 +20,72 @@ struct PeerCandidate {
 class SignalingClient {
  public:
   enum State {
-    Idle,
-    Creating,
-    Hosting,
-    Joining,
-    WaitingForPeer,
-    Punching,  // legacy
-    Relaying,  // legacy
-    IceExchanging,
-    Failed,
-    Done,
+    kIdle,
+    kCreating,
+    kHosting,
+    kJoining,
+    kWaitingForPeer,
+    kPunching,  // legacy
+    kRelaying,  // legacy
+    kIceExchanging,
+    kFailed,
+    kDone,
   };
 
   SignalingClient();
   ~SignalingClient();
 
-  bool createRoom(const std::string& serverAddr, uint16_t serverPort);
-  bool joinRoom(const std::string& serverAddr, uint16_t serverPort, const std::string& roomCode);
+  bool CreateRoom(const std::string& server_addr, uint16_t server_port);
+  bool JoinRoom(const std::string& server_addr, uint16_t server_port, const std::string& room_code);
 
   // Legacy hole-punch methods (kept for transition)
-  void reportAddress(uint8_t addrType, const std::string& ip, uint16_t port);
-  void reportPunchOK();
-  void reportPunchFail();
+  void ReportAddress(uint8_t addr_type, const std::string& ip, uint16_t port);
+  void ReportPunchOk();
+  void ReportPunchFail();
 
   // ICE signaling methods
-  void sendIceCredentials(const std::string& ufrag, const std::string& pwd);
-  void sendIceCandidate(const std::string& sdpCandidate);
-  void sendIceGatherDone();
+  void SendIceCredentials(const std::string& ufrag, const std::string& pwd);
+  void SendIceCandidate(const std::string& sdp_candidate);
+  void SendIceGatherDone();
 
-  void sendKeepalive();
-  void poll();
-  void disconnect();
+  void SendKeepalive();
+  void Poll();
+  void Disconnect();
 
-  State state() const { return state_; }
-  const std::string& roomCode() const { return roomCode_; }
-  const std::vector<PeerCandidate>& peerCandidates() const { return peerCandidates_; }
-  uint16_t relayPort() const { return relayPort_; }
-  const std::vector<uint8_t>& relayToken() const { return relayToken_; }
+  State State() const { return state_; }
+  const std::string& RoomCode() const { return roomCode_; }
+  const std::vector<PeerCandidate>& PeerCandidates() const { return peerCandidates_; }
+  uint16_t RelayPort() const { return relayPort_; }
+  const std::vector<uint8_t>& RelayToken() const { return relayToken_; }
 
   // TURN credentials received from the server
-  const std::string& turnUser() const { return turnUser_; }
-  const std::string& turnPassword() const { return turnPassword_; }
+  const std::string& TurnUser() const { return turnUser_; }
+  const std::string& TurnPassword() const { return turnPassword_; }
 
   // Legacy callbacks
-  std::function<void(const std::string& code)> onRoomCreated;
-  std::function<void()> onPeerJoined;
-  std::function<void()> onJoinAcked;
-  std::function<void(const PeerCandidate&)> onPeerAddr;
-  std::function<void()> onStartPunch;
-  std::function<void(uint16_t relayPort)> onUseRelay;
+  std::function<void(const std::string& code)> on_room_created;
+  std::function<void()> on_peer_joined;
+  std::function<void()> on_join_acked;
+  std::function<void(const PeerCandidate&)> on_peer_addr;
+  std::function<void()> on_start_punch;
+  std::function<void(uint16_t relay_port)> on_use_relay;
 
   // ICE callbacks
-  std::function<void(const std::string& ufrag, const std::string& pwd)> onPeerCredentials;
-  std::function<void(const std::string& sdpCandidate)> onPeerCandidate;
-  std::function<void()> onPeerGatherDone;
+  std::function<void(const std::string& ufrag, const std::string& pwd)> on_peer_credentials;
+  std::function<void(const std::string& sdp_candidate)> on_peer_candidate;
+  std::function<void()> on_peer_gather_done;
 
   // Common callbacks
-  std::function<void(const std::string& msg)> onError;
-  std::function<void()> onRoomExpired;
+  std::function<void(const std::string& msg)> on_error;
+  std::function<void()> on_room_expired;
 
  private:
-  bool connect(const std::string& serverAddr, uint16_t serverPort);
-  void send(const void* data, size_t len);
-  void handleMessage(const uint8_t* data, size_t len);
+  bool Connect(const std::string& server_addr, uint16_t server_port);
+  void Send(const void* data, size_t len);
+  void HandleMessage(const uint8_t* data, size_t len);
 
   ENetSocket sock_;
-  State state_;
+  enum State state_;
   std::string roomCode_;
   std::string serverAddr_;
   uint16_t serverPort_;

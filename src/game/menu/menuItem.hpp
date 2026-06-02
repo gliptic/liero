@@ -7,29 +7,29 @@
 struct Common;
 
 struct MenuItem {
-  MenuItem(PalIdx color, PalIdx disColour, std::string string, int id = -1)
+  MenuItem(PalIdx color, PalIdx dis_colour, std::string string, int id = -1)
       : color(color),
-        disColour(disColour),
+        dis_colour(dis_colour),
         string(string),
-        hasValue(false),
+        has_value(false),
         visible(true),
         selectable(true),
         id(id) {}
 
-  static MenuItem space() {
+  static MenuItem Space() {
     MenuItem m(0, 0, "");
     m.selectable = false;
     return m;
   }
 
-  void draw(Common& common, Renderer& renderer, int x, int y, bool selected, bool disabled,
-            bool centered, int valueOffsetX);
+  void Draw(Common& common, Renderer& renderer, int x, int y, bool selected, bool disabled,
+            bool centered, int value_offset_x);
 
   PalIdx color;
-  PalIdx disColour;
+  PalIdx dis_colour;
   std::string string;
 
-  bool hasValue;
+  bool has_value;
   std::string value;
 
   bool visible, selectable;

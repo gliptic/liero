@@ -10,19 +10,19 @@ struct Renderer;
 struct StatsRecorder {
   virtual ~StatsRecorder() = default;
 
-  virtual void damagePotential(Worm* byWorm, WormWeapon* weapon, int hp);
-  virtual void damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp, bool hasHit);
+  virtual void DamagePotential(Worm* by_worm, WormWeapon* weapon, int hp);
+  virtual void DamageDealt(Worm* by_worm, WormWeapon* weapon, Worm* to_worm, int hp, bool has_hit);
 
-  virtual void shot(Worm* byWorm, WormWeapon* weapon);
-  virtual void hit(Worm* byWorm, WormWeapon* weapon, Worm* toWorm);
+  virtual void Shot(Worm* by_worm, WormWeapon* weapon);
+  virtual void Hit(Worm* by_worm, WormWeapon* weapon, Worm* to_worm);
 
-  virtual void afterSpawn(Worm* worm);
-  virtual void afterDeath(Worm* worm);
-  virtual void preTick(Game& game);
-  virtual void tick(Game& game);
-  virtual void finish(Game& game);
+  virtual void AfterSpawn(Worm* worm);
+  virtual void AfterDeath(Worm* worm);
+  virtual void PreTick(Game& game);
+  virtual void Tick(Game& game);
+  virtual void Finish(Game& game);
 
-  virtual void aiProcessTime(Worm* worm, std::chrono::nanoseconds time);
+  virtual void AiProcessTime(Worm* worm, std::chrono::nanoseconds time);
 
   // When true, all recording is suppressed. Set during predicted /
   // resim frames to avoid double-counting.
@@ -30,83 +30,83 @@ struct StatsRecorder {
 };
 
 struct WeaponStats {
-  WeaponStats() : potentialHp(0), actualHp(0), potentialHits(0), actualHits(0), totalHp(0) {}
+  WeaponStats() : potential_hp(0), actual_hp(0), potential_hits(0), actual_hits(0), total_hp(0) {}
 
-  void combine(WeaponStats const& other) {
-    potentialHits += other.potentialHits;
-    potentialHp += other.potentialHp;
-    actualHits += other.actualHits;
-    actualHp += other.actualHp;
-    totalHp += other.totalHp;
+  void Combine(WeaponStats const& other) {
+    potential_hits += other.potential_hits;
+    potential_hp += other.potential_hp;
+    actual_hits += other.actual_hits;
+    actual_hp += other.actual_hp;
+    total_hp += other.total_hp;
   }
 
-  int potentialHp, actualHp;
-  int potentialHits, actualHits;
-  int totalHp;
+  int potential_hp, actual_hp;
+  int potential_hits, actual_hits;
+  int total_hp;
   int index;
 };
 
 struct WormFrameStats {
-  WormFrameStats() : damage(0), totalHp(0) {}
+  WormFrameStats() : damage(0), total_hp(0) {}
 
   int damage;
-  int totalHp;
+  int total_hp;
 };
 
 struct WormStats {
   WormStats()
       : damage(0),
-        damageDealt(0),
-        selfDamage(0),
-        damageHm(504 / 2, 350 / 2, 504, 350),
+        damage_dealt(0),
+        self_damage(0),
+        damage_hm(504 / 2, 350 / 2, 504, 350),
         presence(504 / 2, 350 / 2, 504, 350),
-        weaponChangeGood(0),
-        weaponChangeBad(0),
-        spawnTime(-1),
+        weapon_change_good(0),
+        weapon_change_bad(0),
+        spawn_time(-1),
         lives(0),
         timer(0),
         kills(0),
-        aiProcessTime(0) {
+        ai_process_time(0) {
     for (int i = 0; i < 40; ++i) weapons[i].index = i;
   }
 
-  std::vector<std::pair<int, int> > lifeSpans;
+  std::vector<std::pair<int, int> > life_spans;
 
-  void lifeStats(int& min, int& max) {
+  void LifeStats(int& min, int& max) {
     min = 0;
     max = 0;
-    if (lifeSpans.empty()) return;
+    if (life_spans.empty()) return;
 
-    min = lifeSpans[0].second - lifeSpans[0].first;
+    min = life_spans[0].second - life_spans[0].first;
     max = min;
 
-    for (size_t i = 1; i < lifeSpans.size(); ++i) {
-      int len = lifeSpans[i].second - lifeSpans[i].first;
+    for (size_t i = 1; i < life_spans.size(); ++i) {
+      int len = life_spans[i].second - life_spans[i].first;
       max = std::max(len, max);
       min = std::min(len, min);
     }
   }
 
   WeaponStats weapons[40];
-  int damage, damageDealt, selfDamage;
-  Heatmap damageHm, presence;
-  int weaponChangeGood, weaponChangeBad;
+  int damage, damage_dealt, self_damage;
+  Heatmap damage_hm, presence;
+  int weapon_change_good, weapon_change_bad;
 
-  std::vector<WormFrameStats> wormFrameStats;
+  std::vector<WormFrameStats> worm_frame_stats;
 
-  int spawnTime;
+  int spawn_time;
   int index;
 
   int lives, timer, kills;
-  std::chrono::nanoseconds aiProcessTime;
+  std::chrono::nanoseconds ai_process_time;
 };
 
 struct NormalStatsRecorder : StatsRecorder {
   NormalStatsRecorder()
       : frame(0),
-        frameStart(std::chrono::steady_clock::now()),
-        processTimeTotal(0),
-        gameTime(0),
+        frame_start(std::chrono::steady_clock::now()),
+        process_time_total(0),
+        game_time(0),
         presence(504 / 2, 350 / 2, 504, 350) {
     for (int i = 0; i < 2; ++i) {
       worms[i].index = i;
@@ -115,23 +115,23 @@ struct NormalStatsRecorder : StatsRecorder {
 
   int frame;
   WormStats worms[2];
-  std::chrono::time_point<std::chrono::steady_clock> frameStart;
-  int64_t processTimeTotal;
-  int gameTime;
+  std::chrono::time_point<std::chrono::steady_clock> frame_start;
+  int64_t process_time_total;
+  int game_time;
 
   Heatmap presence;
 
-  void damagePotential(Worm* byWorm, WormWeapon* weapon, int hp);
-  void damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp, bool hasHit);
+  void DamagePotential(Worm* by_worm, WormWeapon* weapon, int hp);
+  void DamageDealt(Worm* by_worm, WormWeapon* weapon, Worm* to_worm, int hp, bool has_hit);
 
-  void shot(Worm* byWorm, WormWeapon* weapon);
-  void hit(Worm* byWorm, WormWeapon* weapon, Worm* toWorm);
+  void Shot(Worm* by_worm, WormWeapon* weapon);
+  void Hit(Worm* by_worm, WormWeapon* weapon, Worm* to_worm);
 
-  void afterSpawn(Worm* worm);
-  void afterDeath(Worm* worm);
-  void preTick(Game& game);
-  void tick(Game& game);
+  void AfterSpawn(Worm* worm);
+  void AfterDeath(Worm* worm);
+  void PreTick(Game& game);
+  void Tick(Game& game);
 
-  void finish(Game& game);
-  void aiProcessTime(Worm* worm, std::chrono::nanoseconds time);
+  void Finish(Game& game);
+  void AiProcessTime(Worm* worm, std::chrono::nanoseconds time);
 };

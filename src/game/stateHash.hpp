@@ -12,7 +12,7 @@
 
 // Comprehensive hash of all simulation-relevant state.
 // Used for determinism verification in tests and the desync fuzzer.
-inline uint32_t hashGameState(Game& game) {
+inline uint32_t HashGameState(Game& game) {
   uint32_t h = 1;
 
   h = h * 31 + game.rand.last;
@@ -27,18 +27,18 @@ inline uint32_t hashGameState(Game& game) {
     h = h * 31 + static_cast<uint32_t>(w->pos.y);
     h = h * 31 + static_cast<uint32_t>(w->vel.x);
     h = h * 31 + static_cast<uint32_t>(w->vel.y);
-    h = h * 31 + static_cast<uint32_t>(w->aimingAngle);
+    h = h * 31 + static_cast<uint32_t>(w->aiming_angle);
     h = h * 31 + static_cast<uint32_t>(w->health);
     h = h * 31 + static_cast<uint32_t>(w->lives);
     h = h * 31 + static_cast<uint32_t>(w->kills);
     h = h * 31 + static_cast<uint32_t>(w->timer);
     h = h * 31 + static_cast<uint32_t>(w->visible);
-    h = h * 31 + w->controlStates.pack();
+    h = h * 31 + w->control_states.Pack();
 
     for (int i = 0; i < NUM_WEAPONS; ++i) {
       h = h * 31 + static_cast<uint32_t>(w->weapons[i].ammo);
-      h = h * 31 + static_cast<uint32_t>(w->weapons[i].delayLeft);
-      h = h * 31 + static_cast<uint32_t>(w->weapons[i].loadingLeft);
+      h = h * 31 + static_cast<uint32_t>(w->weapons[i].delay_left);
+      h = h * 31 + static_cast<uint32_t>(w->weapons[i].loading_left);
       if (w->weapons[i].type) h = h * 31 + static_cast<uint32_t>(w->weapons[i].type->id);
     }
 
@@ -48,17 +48,17 @@ inline uint32_t hashGameState(Game& game) {
   }
 
   {
-    auto br = game.bobjects.begin();
-    for (; br != game.bobjects.end(); ++br) {
+    auto br = game.bobjects.Begin();
+    for (; br != game.bobjects.End(); ++br) {
       h = h * 31 + static_cast<uint32_t>(br->pos.x);
       h = h * 31 + static_cast<uint32_t>(br->pos.y);
     }
   }
 
   {
-    auto r = game.bonuses.all();
+    auto r = game.bonuses.All();
     Bonus* b;
-    while ((b = r.next())) {
+    while ((b = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(b->x);
       h = h * 31 + static_cast<uint32_t>(b->y);
       h = h * 31 + static_cast<uint32_t>(b->timer);
@@ -68,37 +68,37 @@ inline uint32_t hashGameState(Game& game) {
   }
 
   {
-    auto r = game.sobjects.all();
+    auto r = game.sobjects.All();
     SObject* s;
-    while ((s = r.next())) {
+    while ((s = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(s->id);
-      h = h * 31 + static_cast<uint32_t>(s->curFrame);
+      h = h * 31 + static_cast<uint32_t>(s->cur_frame);
     }
   }
 
   {
-    auto r = game.nobjects.all();
+    auto r = game.nobjects.All();
     NObject* n;
-    while ((n = r.next())) {
+    while ((n = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(n->pos.x);
       h = h * 31 + static_cast<uint32_t>(n->pos.y);
       h = h * 31 + static_cast<uint32_t>(n->vel.x);
       h = h * 31 + static_cast<uint32_t>(n->vel.y);
-      h = h * 31 + static_cast<uint32_t>(n->curFrame);
+      h = h * 31 + static_cast<uint32_t>(n->cur_frame);
       if (n->type) h = h * 31 + static_cast<uint32_t>(n->type->id);
     }
   }
 
   {
-    auto r = game.wobjects.all();
+    auto r = game.wobjects.All();
     WObject* wo;
-    while ((wo = r.next())) {
+    while ((wo = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(wo->pos.x);
       h = h * 31 + static_cast<uint32_t>(wo->pos.y);
       h = h * 31 + static_cast<uint32_t>(wo->vel.x);
       h = h * 31 + static_cast<uint32_t>(wo->vel.y);
-      h = h * 31 + static_cast<uint32_t>(wo->curFrame);
-      h = h * 31 + static_cast<uint32_t>(wo->timeLeft);
+      h = h * 31 + static_cast<uint32_t>(wo->cur_frame);
+      h = h * 31 + static_cast<uint32_t>(wo->time_left);
       if (wo->type) h = h * 31 + static_cast<uint32_t>(wo->type->id);
     }
   }
@@ -107,12 +107,12 @@ inline uint32_t hashGameState(Game& game) {
 }
 
 // Per-component hashes for diagnostic output on desync.
-static constexpr size_t NumPlayers = 2;
+static constexpr size_t kNumPlayers = 2;
 
 struct ComponentHashes {
   uint32_t rng;
   uint32_t level;
-  uint32_t worms[NumPlayers];
+  uint32_t worms[kNumPlayers];
   uint32_t bobjects;
   uint32_t bonuses;
   uint32_t sobjects;
@@ -120,7 +120,7 @@ struct ComponentHashes {
   uint32_t wobjects;
 };
 
-inline ComponentHashes hashGameComponents(Game& game) {
+inline ComponentHashes HashGameComponents(Game& game) {
   ComponentHashes c{};
 
   c.rng = game.rand.last;
@@ -131,7 +131,7 @@ inline ComponentHashes hashGameComponents(Game& game) {
     c.level = h;
   }
 
-  for (size_t wi = 0; wi < game.worms.size() && wi < NumPlayers; ++wi) {
+  for (size_t wi = 0; wi < game.worms.size() && wi < kNumPlayers; ++wi) {
     auto const& w = game.worms[wi];
     uint32_t h = 1;
     h = h * 31 + static_cast<uint32_t>(w->pos.x);
@@ -147,8 +147,8 @@ inline ComponentHashes hashGameComponents(Game& game) {
 
   {
     uint32_t h = 1;
-    auto br = game.bobjects.begin();
-    for (; br != game.bobjects.end(); ++br) {
+    auto br = game.bobjects.Begin();
+    for (; br != game.bobjects.End(); ++br) {
       h = h * 31 + static_cast<uint32_t>(br->pos.x);
       h = h * 31 + static_cast<uint32_t>(br->pos.y);
     }
@@ -157,9 +157,9 @@ inline ComponentHashes hashGameComponents(Game& game) {
 
   {
     uint32_t h = 1;
-    auto r = game.bonuses.all();
+    auto r = game.bonuses.All();
     Bonus* b;
-    while ((b = r.next())) {
+    while ((b = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(b->x);
       h = h * 31 + static_cast<uint32_t>(b->y);
       h = h * 31 + static_cast<uint32_t>(b->timer);
@@ -170,20 +170,20 @@ inline ComponentHashes hashGameComponents(Game& game) {
 
   {
     uint32_t h = 1;
-    auto r = game.sobjects.all();
+    auto r = game.sobjects.All();
     SObject* s;
-    while ((s = r.next())) {
+    while ((s = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(s->id);
-      h = h * 31 + static_cast<uint32_t>(s->curFrame);
+      h = h * 31 + static_cast<uint32_t>(s->cur_frame);
     }
     c.sobjects = h;
   }
 
   {
     uint32_t h = 1;
-    auto r = game.nobjects.all();
+    auto r = game.nobjects.All();
     NObject* n;
-    while ((n = r.next())) {
+    while ((n = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(n->pos.x);
       h = h * 31 + static_cast<uint32_t>(n->pos.y);
     }
@@ -192,9 +192,9 @@ inline ComponentHashes hashGameComponents(Game& game) {
 
   {
     uint32_t h = 1;
-    auto r = game.wobjects.all();
+    auto r = game.wobjects.All();
     WObject* wo;
-    while ((wo = r.next())) {
+    while ((wo = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(wo->pos.x);
       h = h * 31 + static_cast<uint32_t>(wo->pos.y);
     }

@@ -26,17 +26,17 @@
 
 namespace {
 
-std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
-  precomputeTables();
+std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
+  PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tcRoot));
+  FsNode tc_root(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tc_root));
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
-  settings->loadingTime = 0;
-  settings->loadChange = true;
-  settings->randomLevel = true;
-  settings->gameMode = Settings::GMKillEmAll;
+  settings->loading_time = 0;
+  settings->load_change = true;
+  settings->random_level = true;
+  settings->game_mode = Settings::kGmKillEmAll;
   return {common, settings};
 }
 
@@ -47,18 +47,18 @@ TEST_CASE("Rollback survives reorder + duplication", "[rollback][reorder]") {
   constexpr int kTicks = 1000;
   constexpr uint32_t kInputSeed = 0xC0FFEE;
 
-  auto [common, settings] = makeEnv();
+  auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->setSkipWeaponSelection(true);
-  b->setSkipWeaponSelection(true);
+  a->SetSkipWeaponSelection(true);
+  b->SetSkipWeaponSelection(true);
   // Frame-advantage stall clamps the peers to lockstep and
   // suppresses the prediction window we need to exercise the reorder
   // path — disable it so we measure the dedup mechanism directly.
-  a->setFrameAdvantageEnabled(false);
-  b->setFrameAdvantageEnabled(false);
-  a->game.rand.seed(kWorldSeed);
-  b->game.rand.seed(kWorldSeed);
+  a->SetFrameAdvantageEnabled(false);
+  b->SetFrameAdvantageEnabled(false);
+  a->game.rand.Seed(kWorldSeed);
+  b->game.rand.Seed(kWorldSeed);
 
   // Wide delay band + duplication. With min=1, max=5 the variance is
   // large enough that earlier-sent packets routinely arrive after
@@ -68,52 +68,52 @@ TEST_CASE("Rollback survives reorder + duplication", "[rollback][reorder]") {
   rollback_test::JitterTransport transport({0xACE1, /*minDelay*/ 1, /*maxDelay*/ 5,
                                             /*lossProb*/ 0.0, /*dupProb*/ 0.30});
 
-  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendAToB(gen_, bf, c, in, lf);
+  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendAToB(gen, bf, c, in, lf);
   });
-  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendBToA(gen_, bf, c, in, lf);
+  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendBToA(gen, bf, c, in, lf);
   });
-  a->focus();
-  b->focus();
+  a->Focus();
+  b->Focus();
 
   for (uint32_t f = 0; f < 3; ++f) {
-    a->injectRemoteInput(f, 0);
-    b->injectRemoteInput(f, 0);
+    a->InjectRemoteInput(f, 0);
+    b->InjectRemoteInput(f, 0);
   }
 
-  auto deliverA = [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    a->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    a->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliverB = [&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    b->injectRemoteBatch(bf, c, in, lf);
+  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    b->InjectRemoteBatch(bf, c, in, lf);
   };
 
-  Rand inputRng(kInputSeed);
+  Rand input_rng(kInputSeed);
   for (int tick = 0; tick < kTicks; ++tick) {
-    uint8_t inA = inputRng() & 0x7f;
-    uint8_t inB = inputRng() & 0x7f;
-    if ((inputRng() % 10) < 6) inA |= (1 << Worm::Fire);
-    if ((inputRng() % 10) < 6) inB |= (1 << Worm::Fire);
-    a->setLocalControlState(inA);
-    b->setLocalControlState(inB);
-    a->process();
-    b->process();
-    transport.tick(deliverA, deliverB);
+    uint8_t in_a = input_rng() & 0x7f;
+    uint8_t in_b = input_rng() & 0x7f;
+    if ((input_rng() % 10) < 6) in_a |= (1 << Worm::kFire);
+    if ((input_rng() % 10) < 6) in_b |= (1 << Worm::kFire);
+    a->SetLocalControlState(in_a);
+    b->SetLocalControlState(in_b);
+    a->Process();
+    b->Process();
+    transport.Tick(deliver_a, deliver_b);
   }
 
-  transport.flush(deliverA, deliverB);
-  a->setLocalControlState(0);
-  b->setLocalControlState(0);
+  transport.Flush(deliver_a, deliver_b);
+  a->SetLocalControlState(0);
+  b->SetLocalControlState(0);
   for (int i = 0; i < 16; ++i) {
-    a->process();
-    b->process();
-    transport.tick(deliverA, deliverB);
+    a->Process();
+    b->Process();
+    transport.Tick(deliver_a, deliver_b);
   }
 
-  REQUIRE(transport.packetsDuplicated > 0);
-  REQUIRE(a->rollbackCount() > 0);
-  REQUIRE(b->rollbackCount() > 0);
-  REQUIRE(a->currentFrame() == b->currentFrame());
-  REQUIRE(wideRollbackChecksum(a->game) == wideRollbackChecksum(b->game));
+  REQUIRE(transport.packets_duplicated > 0);
+  REQUIRE(a->RollbackCount() > 0);
+  REQUIRE(b->RollbackCount() > 0);
+  REQUIRE(a->CurrentFrame() == b->CurrentFrame());
+  REQUIRE(WideRollbackChecksum(a->game) == WideRollbackChecksum(b->game));
 }

@@ -8,18 +8,18 @@
 
 #include <cstring>
 
-void Level::generateDirtPattern(Common& common, Rand& rand) {
-  resize(504, 350);
+void Level::GenerateDirtPattern(Common& common, Rand& rand) {
+  Resize(504, 350);
 
-  setPixel(0, 0, rand(7) + 12, common);
+  SetPixel(0, 0, rand(7) + 12, common);
 
-  for (int y = 1; y < height; ++y) setPixel(0, y, ((rand(7) + 12) + pixel(0, y - 1)) >> 1, common);
+  for (int y = 1; y < height; ++y) SetPixel(0, y, ((rand(7) + 12) + Pixel(0, y - 1)) >> 1, common);
 
-  for (int x = 1; x < width; ++x) setPixel(x, 0, ((rand(7) + 12) + pixel(x - 1, 0)) >> 1, common);
+  for (int x = 1; x < width; ++x) SetPixel(x, 0, ((rand(7) + 12) + Pixel(x - 1, 0)) >> 1, common);
 
   for (int y = 1; y < height; ++y)
     for (int x = 1; x < width; ++x) {
-      setPixel(x, y, (pixel(x - 1, y) + pixel(x, y - 1) + rand(8) + 12) / 3, common);
+      SetPixel(x, y, (Pixel(x - 1, y) + Pixel(x, y - 1) + rand(8) + 12) / 3, common);
     }
 
   // TODO: Optimize the following
@@ -32,7 +32,7 @@ void Level::generateDirtPattern(Common& common, Rand& rand) {
 
     int temp = rand(4) + 69;
 
-    PalIdx* image = common.largeSprites.spritePtr(temp);
+    PalIdx* image = common.large_sprites.SpritePtr(temp);
 
     for (int cy = 0; cy < 16; ++cy) {
       int my = cy + y;
@@ -46,13 +46,13 @@ void Level::generateDirtPattern(Common& common, Rand& rand) {
 
         if (mx < 0) continue;
 
-        PalIdx srcPix = image[(cy << 4) + cx];
-        if (srcPix > 0) {
-          PalIdx pix = pixel(mx, my);
+        PalIdx src_pix = image[(cy << 4) + cx];
+        if (src_pix > 0) {
+          PalIdx pix = Pixel(mx, my);
           if (pix > 176 && pix < 180)
-            setPixel(mx, my, (srcPix + pix) / 2, common);
+            SetPixel(mx, my, (src_pix + pix) / 2, common);
           else
-            setPixel(mx, my, srcPix, common);
+            SetPixel(mx, my, src_pix, common);
         }
       }
     }
@@ -66,27 +66,27 @@ void Level::generateDirtPattern(Common& common, Rand& rand) {
 
     int which = rand(4) + 56;
 
-    blitStone(common, *this, false, common.largeSprites.spritePtr(which), x, y);
+    BlitStone(common, *this, false, common.large_sprites.SpritePtr(which), x, y);
   }
 }
 
-bool isNoRock(Common& common, Level& level, int size, int x, int y) {
+bool IsNoRock(Common& common, Level& level, int size, int x, int y) {
   Rect rect(x, y, x + size + 1, y + size + 1);
 
-  rect.intersect(Rect(0, 0, level.width, level.height));
+  rect.Intersect(Rect(0, 0, level.width, level.height));
 
   for (int y = rect.y1; y < rect.y2; ++y)
     for (int x = rect.x1; x < rect.x2; ++x) {
-      if (level.mat(x, y).rock()) return false;
+      if (level.Mat(x, y).Rock()) return false;
     }
 
   return true;
 }
 
-void Level::generateRandom(Common& common, Settings const& settings, Rand& rand) {
-  origpal.resetPalette(common.exepal, settings);
+void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand) {
+  origpal.ResetPalette(common.exepal, settings);
 
-  generateDirtPattern(common, rand);
+  GenerateDirtPattern(common, rand);
 
   int count = rand(50) + 5;
 
@@ -105,7 +105,7 @@ void Level::generateRandom(Common& common, Settings const& settings, Rand& rand)
       for (int k = 0; k < count3; ++k) {
         cx += dx;
         cy += dy;
-        drawDirtEffect(common, rand, *this, 1, cx,
+        DrawDirtEffect(common, rand, *this, 1, cx,
                        cy);  // TODO: Check if it really should be dirt effect 1
       }
 
@@ -127,14 +127,16 @@ void Level::generateRandom(Common& common, Settings const& settings, Rand& rand)
         cy = height - 1 - rand(20);
       else
         cy = rand(height) - 16;
-    } while (!isNoRock(common, *this, 32, cx, cy));
+    } while (!IsNoRock(common, *this, 32, cx, cy));
 
     int rock = rand(3);
 
-    blitStone(common, *this, false, common.largeSprites.spritePtr(stoneTab[rock][0]), cx, cy);
-    blitStone(common, *this, false, common.largeSprites.spritePtr(stoneTab[rock][1]), cx + 16, cy);
-    blitStone(common, *this, false, common.largeSprites.spritePtr(stoneTab[rock][2]), cx, cy + 16);
-    blitStone(common, *this, false, common.largeSprites.spritePtr(stoneTab[rock][3]), cx + 16,
+    BlitStone(common, *this, false, common.large_sprites.SpritePtr(stone_tab[rock][0]), cx, cy);
+    BlitStone(common, *this, false, common.large_sprites.SpritePtr(stone_tab[rock][1]), cx + 16,
+              cy);
+    BlitStone(common, *this, false, common.large_sprites.SpritePtr(stone_tab[rock][2]), cx,
+              cy + 16);
+    BlitStone(common, *this, false, common.large_sprites.SpritePtr(stone_tab[rock][3]), cx + 16,
               cy + 16);
   }
 
@@ -149,33 +151,33 @@ void Level::generateRandom(Common& common, Settings const& settings, Rand& rand)
         cy = height - 1 - rand(13);
       else
         cy = rand(height) - 8;
-    } while (!isNoRock(common, *this, 15, cx, cy));
+    } while (!IsNoRock(common, *this, 15, cx, cy));
 
-    blitStone(common, *this, false, common.largeSprites.spritePtr(rand(6) + 3), cx, cy);
+    BlitStone(common, *this, false, common.large_sprites.SpritePtr(rand(6) + 3), cx, cy);
   }
 }
 
-void Level::makeShadow(Common& common) {
+void Level::MakeShadow(Common& common) {
   for (int x = 0; x < width - 3; ++x)
     for (int y = 3; y < height; ++y) {
-      if (mat(x, y).seeShadow() && mat(x + 3, y - 3).dirtRock()) {
-        setPixel(x, y, pixel(x, y) + 4, common);
+      if (Mat(x, y).SeeShadow() && Mat(x + 3, y - 3).DirtRock()) {
+        SetPixel(x, y, Pixel(x, y) + 4, common);
       }
 
-      if (pixel(x, y) >= 12 && pixel(x, y) <= 18 && mat(x + 3, y - 3).rock()) {
-        setPixel(x, y, pixel(x, y) - 2, common);
-        if (pixel(x, y) < 12) setPixel(x, y, 12, common);
+      if (Pixel(x, y) >= 12 && Pixel(x, y) <= 18 && Mat(x + 3, y - 3).Rock()) {
+        SetPixel(x, y, Pixel(x, y) - 2, common);
+        if (Pixel(x, y) < 12) SetPixel(x, y, 12, common);
       }
     }
 
   for (int x = 0; x < width; ++x) {
-    if (mat(x, height - 1).background()) {
-      setPixel(x, height - 1, 13, common);
+    if (Mat(x, height - 1).Background()) {
+      SetPixel(x, height - 1, 13, common);
     }
   }
 }
 
-void Level::resize(int width_new, int height_new) {
+void Level::Resize(int width_new, int height_new) {
   width = width_new;
   height = height_new;
   data.resize(width * height);
@@ -183,67 +185,67 @@ void Level::resize(int width_new, int height_new) {
 }
 
 bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
-  resize(504, 350);
+  Resize(504, 350);
 
   // std::size_t len = f.len;
-  bool resetPalette = true;
+  bool reset_palette = true;
 
-  r.get(reinterpret_cast<uint8_t*>(&data[0]), width * height);
+  r.Get(reinterpret_cast<uint8_t*>(&data[0]), width * height);
 
   if (/*len >= 504*350 + 10 + 256*3
    &&*/
-      (settings.extensions && settings.loadPowerlevelPalette)) {
+      (settings.kExtensions && settings.load_powerlevel_palette)) {
     uint8_t buf[10] = {};
-    if (r.try_get(buf, 10)) {
+    if (r.TryGet(buf, 10)) {
       if (!std::memcmp("POWERLEVEL", buf, 10)) {
         Palette pal;
-        pal.read(r);
-        origpal.resetPalette(pal, settings);
+        pal.Read(r);
+        origpal.ResetPalette(pal, settings);
 
-        resetPalette = false;
+        reset_palette = false;
       }
     }
   }
 
   for (std::size_t i = 0; i < data.size(); ++i) materials[i] = common.materials[data[i]];
 
-  if (resetPalette) origpal.resetPalette(common.exepal, settings);
+  if (reset_palette) origpal.ResetPalette(common.exepal, settings);
 
   return true;
 }
 
-void Level::generateFromSettings(Common& common, Settings const& settings, Rand& rand) {
-  if (settings.randomLevel) {
-    generateRandom(common, settings, rand);
+void Level::GenerateFromSettings(Common& common, Settings const& settings, Rand& rand) {
+  if (settings.random_level) {
+    GenerateRandom(common, settings, rand);
   } else {
-    std::string path = settings.levelFile;
+    std::string path = settings.level_file;
     if (path.find('.', 0) == std::string::npos) path += ".LEV";
 
     bool loaded = false;
     try {
-      auto r_ptr = FsNode(path).toReader();
+      auto r_ptr = FsNode(path).ToReader();
       io::Reader& r = *r_ptr;
       loaded = load(common, settings, r);
     } catch (std::runtime_error&) {
       // Ignore
     }
 
-    if (!loaded) generateRandom(common, settings, rand);
+    if (!loaded) GenerateRandom(common, settings, rand);
   }
 
-  oldRandomLevel = settings.randomLevel;
-  oldLevelFile = settings.levelFile;
+  old_random_level = settings.random_level;
+  old_level_file = settings.level_file;
 
   if (settings.shadow) {
-    makeShadow(common);
+    MakeShadow(common);
   }
 }
 
 using std::vector;
 
-inline bool free(Material m) { return m.background() || m.anyDirt(); }
+inline bool Free(Material m) { return m.Background() || m.AnyDirt(); }
 
-bool Level::selectSpawn(Rand& rand, int w, int h, IVec2& selected) {
+bool Level::SelectSpawn(Rand& rand, int w, int h, IVec2& selected) {
   vector<int> vruns(width - w + 1);
   vector<int> vdists(width - w + 1);
 
@@ -256,7 +258,7 @@ bool Level::selectSpawn(Rand& rand, int w, int h, IVec2& selected) {
     int filled = 0;
 
     for (int x = 0; x < width; ++x) {
-      if (free(*m)) {
+      if (Free(*m)) {
         ++hrun;
       } else {
         hrun = 0;
@@ -288,23 +290,23 @@ bool Level::selectSpawn(Rand& rand, int w, int h, IVec2& selected) {
         ++vdist;
       }
 
-      filled -= !free(m[-w]);
+      filled -= !Free(m[-w]);
     }
   }
 
   return i > 0;
 }
 
-void Level::drawMiniature(Bitmap& dest, int mapX, int mapY, int step) {
+void Level::DrawMiniature(Bitmap& dest, int map_x, int map_y, int step) {
   int my = step / 2;
 
-  int mapEndY = mapY + ((height + step / 2) / step);
-  int mapEndX = mapX + ((width + step / 2) / step);
+  int map_end_y = map_y + ((height + step / 2) / step);
+  int map_end_x = map_x + ((width + step / 2) / step);
 
-  for (int y = mapY; y < mapEndY; ++y) {
+  for (int y = map_y; y < map_end_y; ++y) {
     int mx = step / 2;
-    for (int x = mapX; x < mapEndX; ++x) {
-      dest.getPixel(x, y) = checkedPixelWrap(mx, my);
+    for (int x = map_x; x < map_end_x; ++x) {
+      dest.GetPixel(x, y) = CheckedPixelWrap(mx, my);
       mx += step;
     }
     my += step;

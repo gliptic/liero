@@ -6,36 +6,36 @@
 #include "menu.hpp"
 #include "menuItem.hpp"
 
-bool EnumBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir) {
-  if (brokenLeftRight) return false;  // Left/right doesn't work for this item
+bool EnumBehavior::OnLeftRight(Menu& menu, MenuItem& item, int dir) {
+  if (broken_left_right) return false;  // Left/right doesn't work for this item
   if (dir > 0)
-    g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
+    g_sound_player->Play(common.sound_hook[SoundMenuMoveUp]);
   else
-    g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
+    g_sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
 
-  change(menu, item, dir);
+  Change(menu, item, dir);
 
   return false;
 }
 
-int EnumBehavior::onEnter(Menu& menu, MenuItem& item) {
-  g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
+int EnumBehavior::OnEnter(Menu& menu, MenuItem& item) {
+  g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
 
-  change(menu, item, 1);
+  Change(menu, item, 1);
   return -1;
 }
 
-void EnumBehavior::change(Menu& menu, MenuItem& item, int dir) {
+void EnumBehavior::Change(Menu& menu, MenuItem& item, int dir) {
   uint32_t range = max - min + 1;
-  uint32_t newV = ((v + dir + range - min) % range) + min;
+  uint32_t new_v = ((v + dir + range - min) % range) + min;
 
-  if (newV != v) {
-    v = newV;
-    menu.updateItems(common);
+  if (new_v != v) {
+    v = new_v;
+    menu.UpdateItems(common);
   }
 }
 
-void EnumBehavior::onUpdate(Menu& menu, MenuItem& item) {
-  item.value = toString(v);
-  item.hasValue = true;
+void EnumBehavior::OnUpdate(Menu& menu, MenuItem& item) {
+  item.value = ToString(v);
+  item.has_value = true;
 }

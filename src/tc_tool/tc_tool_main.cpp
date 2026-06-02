@@ -10,63 +10,63 @@
 int main(int argc, char* argv[]) {
   // Pre-strip --tc-name <value> before passing to paths::resolve so its
   // value isn't mistaken for a positional argument.
-  std::string tcName;
-  std::vector<std::string> argStorage;
-  std::vector<char*> argPtrs;
-  argStorage.reserve(argc);
-  argStorage.emplace_back(argv[0]);
+  std::string tc_name;
+  std::vector<std::string> arg_storage;
+  std::vector<char*> arg_ptrs;
+  arg_storage.reserve(argc);
+  arg_storage.emplace_back(argv[0]);
   for (int i = 1; i < argc; ++i) {
     if (std::strcmp(argv[i], "--tc-name") == 0 && i + 1 < argc) {
-      tcName = argv[++i];
+      tc_name = argv[++i];
     } else {
-      argStorage.emplace_back(argv[i]);
+      arg_storage.emplace_back(argv[i]);
     }
   }
-  for (auto& s : argStorage) argPtrs.push_back(s.data());
-  argPtrs.push_back(nullptr);
+  for (auto& s : arg_storage) arg_ptrs.push_back(s.data());
+  arg_ptrs.push_back(nullptr);
 
-  auto r = paths::resolve(static_cast<int>(argStorage.size()), argPtrs.data());
+  auto r = paths::Resolve(static_cast<int>(arg_storage.size()), arg_ptrs.data());
 
   // First positional is the path to the legacy Liero install directory.
-  if (r.positionalArgs.empty()) {
+  if (r.positional_args.empty()) {
     printf("tctool <path-to-tc>\n");
     return 0;
   }
-  std::string const& exePath = r.positionalArgs[0];
+  std::string const& exe_path = r.positional_args[0];
 
   Common common;
 
-  FsNode path(exePath);
+  FsNode path(exe_path);
 
   bool found = false;
 
-  for (auto const& name : path.iter()) {
-    if (toUpperCase(name.name).find(".EXE") != std::string::npos) {
-      auto exeReader_ptr = (path / name.name).toReader();
-      io::Reader& exeReader = *exeReader_ptr;
-      ReaderFile exe(exeReader);
+  for (auto const& name : path.Iter()) {
+    if (ToUpperCase(name.name).find(".EXE") != std::string::npos) {
+      auto exe_reader_ptr = (path / name.name).ToReader();
+      io::Reader& exe_reader = *exe_reader_ptr;
+      ReaderFile exe(exe_reader);
 
-      if (exe.len() >= 135000 && exe.len() <= 137000) {
+      if (exe.Len() >= 135000 && exe.Len() <= 137000) {
         printf("Converting %s...\n", name.name.c_str());
 
         // TODO: Some TCs change the name of the .SND or .CHR for some reason.
         // We could read that name from the exe to make them work.
-        auto gfxReader_ptr = (path / "LIERO.CHR").toReader();
-        io::Reader& gfxReader = *gfxReader_ptr;
-        ReaderFile gfx(gfxReader);
-        auto sndReader_ptr = (path / "LIERO.SND").toReader();
-        io::Reader& sndReader = *sndReader_ptr;
-        ReaderFile snd(sndReader);
+        auto gfx_reader_ptr = (path / "LIERO.CHR").ToReader();
+        io::Reader& gfx_reader = *gfx_reader_ptr;
+        ReaderFile gfx(gfx_reader);
+        auto snd_reader_ptr = (path / "LIERO.SND").ToReader();
+        io::Reader& snd_reader = *snd_reader_ptr;
+        ReaderFile snd(snd_reader);
 
-        loadFromExe(common, exe, gfx, snd);
+        LoadFromExe(common, exe, gfx, snd);
 
-        if (tcName.empty()) tcName = getLeaf(exePath);
+        if (tc_name.empty()) tc_name = GetLeaf(exe_path);
 
-        FsNode outNode = r.userConfigNode / "TC" / tcName;
+        FsNode out_node = r.user_config_node / "TC" / tc_name;
 
-        printf("Writing to %s...\n", outNode.fullPath().c_str());
+        printf("Writing to %s...\n", out_node.FullPath().c_str());
 
-        commonSave(common, outNode.fullPath());
+        CommonSave(common, out_node.FullPath());
 
         found = true;
         break;
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
   }
 
   if (!found) {
-    printf("Could not find a suitable LIERO.EXE in %s\n", exePath.c_str());
+    printf("Could not find a suitable LIERO.EXE in %s\n", exe_path.c_str());
   }
 
   return 0;

@@ -4,53 +4,53 @@
 #include "gfx/renderer.hpp"
 #include "mixer/player.hpp"
 
-NObject& NObjectType::create(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx,
-                             WormWeapon* firedBy) {
-  NObject& obj = *game.nobjects.newObjectReuse();
+NObject& NObjectType::Create(Game& game, fixedvec vel, fixedvec pos, int color, int owner_idx,
+                             WormWeapon* fired_by) {
+  NObject& obj = *game.nobjects.NewObjectReuse();
 
   obj.type = this;
-  obj.ownerIdx = ownerIdx;
+  obj.owner_idx = owner_idx;
   obj.pos = pos;
 
   obj.vel = vel;
 
   // STATS
-  obj.firedBy = firedBy;
-  obj.hasHit = false;
+  obj.fired_by = fired_by;
+  obj.has_hit = false;
 
-  Worm* owner = game.wormByIdx(ownerIdx);
-  game.statsRecorder->damagePotential(owner, firedBy, hitDamage);
+  Worm* owner = game.WormByIdx(owner_idx);
+  game.stats_recorder->DamagePotential(owner, fired_by, hit_damage);
 
-  if (startFrame > 0) {
-    obj.curFrame = game.rand(numFrames + 1);
+  if (start_frame > 0) {
+    obj.cur_frame = game.rand(num_frames + 1);
   } else if (color != 0) {
-    obj.curFrame = color;
+    obj.cur_frame = color;
   } else {
-    obj.curFrame = colorBullets;
+    obj.cur_frame = color_bullets;
   }
 
-  obj.timeLeft = timeToExplo;
+  obj.time_left = time_to_explo;
 
-  if (timeToExploV) obj.timeLeft -= game.rand(timeToExploV);
+  if (time_to_explo_v) obj.time_left -= game.rand(time_to_explo_v);
 
   return obj;
 }
 
-NObject& NObjectType::create1(Game& game, fixedvec vel, fixedvec pos, int color, int ownerIdx,
-                              WormWeapon* firedBy) {
+NObject& NObjectType::Create1(Game& game, fixedvec vel, fixedvec pos, int color, int owner_idx,
+                              WormWeapon* fired_by) {
   if (distribution) {
     vel.x += distribution - game.rand(distribution * 2);
     vel.y += distribution - game.rand(distribution * 2);
   }
 
-  return create(game, vel, pos, color, ownerIdx, firedBy);
+  return Create(game, vel, pos, color, owner_idx, fired_by);
 }
 
-void NObjectType::create2(Game& game, int angle, fixedvec vel, fixedvec pos, int color,
-                          int ownerIdx, WormWeapon* firedBy) {
-  int realSpeed = speed - game.rand(speedV);
+void NObjectType::Create2(Game& game, int angle, fixedvec vel, fixedvec pos, int color,
+                          int owner_idx, WormWeapon* fired_by) {
+  int real_speed = speed - game.rand(speed_v);
 
-  vel += cossinTable[angle] * realSpeed / 100;
+  vel += cossin_table[angle] * real_speed / 100;
 
   // TODO: !REPLAYS Make the distributions use the same code
   if (distribution) {
@@ -58,152 +58,155 @@ void NObjectType::create2(Game& game, int angle, fixedvec vel, fixedvec pos, int
     vel.y += game.rand(distribution * 2) - distribution;
   }
 
-  auto& obj = create(game, vel, pos, color, ownerIdx, firedBy);
+  auto& obj = Create(game, vel, pos, color, owner_idx, fired_by);
 
   obj.pos += obj.vel;
 }
 
-void NObject::process(Game& game) {
+void NObject::Process(Game& game) {
   Common& common = *game.common;
 
   bool bounced = false;
-  bool doExplode = false;
+  bool do_explode = false;
 
   pos += vel;
 
-  auto inewPos = ftoi(pos + vel);
-  auto ipos = ftoi(pos);
+  auto inew_pos = Ftoi(pos + vel);
+  auto ipos = Ftoi(pos);
 
   NObjectType const& t = *type;
 
   if (t.bounce > 0) {
-    if (!game.level.inside(inewPos.x, ipos.y) || game.pixelMat(inewPos.x, ipos.y).dirtRock()) {
+    if (!game.level.Inside(inew_pos.x, ipos.y) || game.PixelMat(inew_pos.x, ipos.y).DirtRock()) {
       vel.x = -vel.x * t.bounce / 100;
       vel.y = (vel.y * 4) / 5;  // TODO: Read from EXE
       bounced = true;
     }
 
-    if (!game.level.inside(ipos.x, inewPos.y) || game.pixelMat(ipos.x, inewPos.y).dirtRock()) {
+    if (!game.level.Inside(ipos.x, inew_pos.y) || game.PixelMat(ipos.x, inew_pos.y).DirtRock()) {
       vel.y = -vel.y * t.bounce / 100;
       vel.x = (vel.x * 4) / 5;  // TODO: Read from EXE
       bounced = true;
     }
   }
 
-  if (t.bloodTrail && t.bloodTrailDelay > 0 && (game.cycles % t.bloodTrailDelay) == 0) {
-    game.createBObject(pos, vel / 4);  // TODO: Read from EXE
+  if (t.blood_trail && t.blood_trail_delay > 0 && (game.cycles % t.blood_trail_delay) == 0) {
+    game.CreateBObject(pos, vel / 4);  // TODO: Read from EXE
   }
 
   // Yes, we do this again.
-  inewPos = ftoi(pos + vel);
+  inew_pos = Ftoi(pos + vel);
 
-  if (inewPos.x < 0) pos.x = 0;
-  if (inewPos.y < 0) pos.y = 0;
-  if (inewPos.x >= game.level.width) pos.x = itof(game.level.width);
-  if (inewPos.y >= game.level.height) pos.y = itof(game.level.height);
+  if (inew_pos.x < 0) pos.x = 0;
+  if (inew_pos.y < 0) pos.y = 0;
+  if (inew_pos.x >= game.level.width) pos.x = Itof(game.level.width);
+  if (inew_pos.y >= game.level.height) pos.y = Itof(game.level.height);
 
-  if (!game.level.inside(inewPos) || game.pixelMat(inewPos.x, inewPos.y).dirtRock()) {
-    vel.zero();
+  if (!game.level.Inside(inew_pos) || game.PixelMat(inew_pos.x, inew_pos.y).DirtRock()) {
+    vel.Zero();
 
-    if (t.explGround) {
-      if (t.startFrame > 0 && t.drawOnMap) {
-        blitImageOnMap(common, game.level, common.smallSprites.spritePtr(t.startFrame + curFrame),
-                       ipos.x - 3, ipos.y - 3, 7, 7);
+    if (t.expl_ground) {
+      if (t.start_frame > 0 && t.draw_on_map) {
+        BlitImageOnMap(common, game.level,
+                       common.small_sprites.SpritePtr(t.start_frame + cur_frame), ipos.x - 3,
+                       ipos.y - 3, 7, 7);
         if (game.settings->shadow)
-          correctShadow(common, game.level,
+          CorrectShadow(common, game.level,
                         Rect(ipos.x - 8, ipos.y - 8, ipos.x + 9,
                              ipos.y + 9));  // This seems like an overly large rectangle
       }
 
-      doExplode = true;
+      do_explode = true;
     }
   } else {
-    if (!bounced && t.leaveObjDelay != 0 &&
-        t.leaveObj >= 0  // NOTE: AFAIK, this doesn't exist in Liero, but some TCs seem to forget to
-                         // set leaveObjDelay to 0 when not using this trail
-        && (game.cycles % t.leaveObjDelay) == 0) {
-      common.sobjectTypes[t.leaveObj].create(game, ftoi(pos.x), ftoi(pos.y), ownerIdx, firedBy);
+    if (!bounced && t.leave_obj_delay != 0 &&
+        t.leave_obj >= 0  // NOTE: AFAIK, this doesn't exist in Liero, but some TCs seem to forget
+                          // to set leaveObjDelay to 0 when not using this trail
+        && (game.cycles % t.leave_obj_delay) == 0) {
+      common.sobject_types[t.leave_obj].Create(game, Ftoi(pos.x), Ftoi(pos.y), owner_idx, fired_by);
     }
 
     vel.y += t.gravity;
   }
 
-  if (t.numFrames > 0) {
+  if (t.num_frames > 0) {
     if ((game.cycles & 7) == 0)  // TODO: Read from EXE
     {
       if (vel.x > 0) {
-        ++curFrame;
-        if (curFrame > t.numFrames) curFrame = 0;
+        ++cur_frame;
+        if (cur_frame > t.num_frames) cur_frame = 0;
       } else if (vel.x < 0) {
-        --curFrame;
-        if (curFrame < 0) curFrame = t.numFrames;
+        --cur_frame;
+        if (cur_frame < 0) cur_frame = t.num_frames;
       }
     }
   }
 
-  if (t.timeToExplo > 0) {
-    if (--timeLeft <= 0) doExplode = true;
+  if (t.time_to_explo > 0) {
+    if (--time_left <= 0) do_explode = true;
   }
 
-  if (!doExplode) {
-    if (t.hitDamage > 0) {
+  if (!do_explode) {
+    if (t.hit_damage > 0) {
       for (std::size_t i = 0; i < game.worms.size(); ++i) {
         Worm& w = *game.worms[i];
 
-        if (checkForSpecWormHit(game, ftoi(pos.x), ftoi(pos.y), t.detectDistance, w)) {
-          w.vel += vel * t.blowAway / 100;
+        if (CheckForSpecWormHit(game, Ftoi(pos.x), Ftoi(pos.y), t.detect_distance, w)) {
+          w.vel += vel * t.blow_away / 100;
 
-          game.doDamage(w, t.hitDamage, ownerIdx);
+          game.DoDamage(w, t.hit_damage, owner_idx);
 
-          Worm* owner = game.wormByIdx(ownerIdx);
-          game.statsRecorder->damageDealt(owner, firedBy, &w, t.hitDamage, hasHit);
-          hasHit = true;
+          Worm* owner = game.WormByIdx(owner_idx);
+          game.stats_recorder->DamageDealt(owner, fired_by, &w, t.hit_damage, has_hit);
+          has_hit = true;
 
-          if (t.hitDamage > 0 && w.health > 0 && game.rand(3) == 0) {
+          if (t.hit_damage > 0 && w.health > 0 && game.rand(3) == 0) {
             int snd = 18 + game.rand(3);  // NOTE: MUST be outside the unpredictable branch below
-            if (!game.soundPlayer->isPlaying(&w)) {
-              game.soundPlayer->play(snd, &w);
+            if (!game.sound_player->IsPlaying(&w)) {
+              game.sound_player->Play(snd, &w);
             }
           }
 
-          int blood = t.bloodOnHit * game.settings->blood / 100;
+          int blood = t.blood_on_hit * game.settings->blood / 100;
 
           for (int i = 0; i < blood; ++i) {
             int angle = game.rand(128);
-            common.nobjectTypes[6].create2(game, angle, vel / 3, pos, 0, ownerIdx, 0);
+            common.nobject_types[6].Create2(game, angle, vel / 3, pos, 0, owner_idx, 0);
           }
 
-          if (t.wormExplode)
-            doExplode = true;
-          else if (t.wormDestroy && used)
-            game.nobjects.free(this);
+          if (t.worm_explode)
+            do_explode = true;
+          else if (t.worm_destroy && used)
+            game.nobjects.Free(this);
         }
       }
     }
   }
 
-  if (doExplode) {
-    if (t.createOnExp >= 0) {
-      common.sobjectTypes[t.createOnExp].create(game, ftoi(pos.x), ftoi(pos.y), ownerIdx, firedBy);
+  if (do_explode) {
+    if (t.create_on_exp >= 0) {
+      common.sobject_types[t.create_on_exp].Create(game, Ftoi(pos.x), Ftoi(pos.y), owner_idx,
+                                                   fired_by);
     }
 
-    if (t.dirtEffect >= 0) {
-      drawDirtEffect(common, game.rand, game.level, t.dirtEffect, ftoi(pos.x) - 7, ftoi(pos.y) - 7);
+    if (t.dirt_effect >= 0) {
+      DrawDirtEffect(common, game.rand, game.level, t.dirt_effect, Ftoi(pos.x) - 7,
+                     Ftoi(pos.y) - 7);
 
       if (game.settings->shadow)
-        correctShadow(common, game.level,
-                      Rect(ftoi(pos.x) - 10, ftoi(pos.y) - 10, ftoi(pos.x) + 11, ftoi(pos.y) + 11));
+        CorrectShadow(common, game.level,
+                      Rect(Ftoi(pos.x) - 10, Ftoi(pos.y) - 10, Ftoi(pos.x) + 11, Ftoi(pos.y) + 11));
     }
 
-    if (t.splinterAmount > 0) {
-      for (int i = 0; i < t.splinterAmount; ++i) {
+    if (t.splinter_amount > 0) {
+      for (int i = 0; i < t.splinter_amount; ++i) {
         int angle = game.rand(128);
-        int colorSub = game.rand(2);
-        common.nobjectTypes[t.splinterType].create2(game, angle, fixedvec(), pos,
-                                                    t.splinterColour - colorSub, ownerIdx, 0);
+        int color_sub = game.rand(2);
+        common.nobject_types[t.splinter_type].Create2(game, angle, fixedvec(), pos,
+                                                      t.splinter_colour - color_sub, owner_idx, 0);
       }
     }
 
-    if (used) game.nobjects.free(this);
+    if (used) game.nobjects.Free(this);
   }
 }

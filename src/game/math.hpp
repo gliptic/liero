@@ -6,18 +6,18 @@ using fixedvec = IVec2;
 
 typedef int fixed;
 
-inline fixed itof(int v) { return v << 16; }
+inline fixed Itof(int v) { return v << 16; }
 
-inline int ftoi(fixed v) { return v >> 16; }
+inline int Ftoi(fixed v) { return v >> 16; }
 
-inline fixedvec itof(IVec2 v) { return fixedvec(itof(v.x), itof(v.y)); }
+inline fixedvec Itof(IVec2 v) { return fixedvec(Itof(v.x), Itof(v.y)); }
 
-inline IVec2 ftoi(fixedvec v) { return IVec2(ftoi(v.x), ftoi(v.y)); }
+inline IVec2 Ftoi(fixedvec v) { return IVec2(Ftoi(v.x), Ftoi(v.y)); }
 
-extern fixedvec cossinTable[128];
+extern fixedvec cossin_table[128];
 
-int vectorLength(int x, int y);
+int VectorLength(int x, int y);
 
-inline int distanceTo(int x1, int y1, int x2, int y2) { return vectorLength(x1 - x2, y1 - y2); }
+inline int DistanceTo(int x1, int y1, int x2, int y2) { return VectorLength(x1 - x2, y1 - y2); }
 
-void precomputeTables();
+void PrecomputeTables();

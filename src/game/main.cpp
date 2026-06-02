@@ -5,11 +5,11 @@
 #include <windows.h>
 #endif
 
-int gameEntry(int argc, char* argv[]);
+int GameEntry(int argc, char* argv[]);
 
 int main(int argc, char* argv[]) {
   try {
-    return gameEntry(argc, argv);
+    return GameEntry(argc, argv);
   } catch (std::exception& ex) {
 #if _WIN32
     MessageBoxA(NULL, (std::string("Sorry, something went wrong :(\r\n\r\n") + ex.what()).c_str(),

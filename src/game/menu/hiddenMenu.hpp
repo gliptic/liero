@@ -7,32 +7,32 @@ struct ItemBehavior;
 
 struct HiddenMenu : Menu {
   enum {
-    RecordReplays,
-    LoadPowerLevels,
+    kRecordReplays,
+    kLoadPowerLevels,
     // ScalingFilter,
-    DoubleRes,
-    Fullscreen,
-    AiFrames,
-    AiMutations,
-    PaletteSelect,
-    Shadows,
-    ScreenSync,
-    SelectBotWeapons,
-    AiTraces,
-    AiParallels,
-    AllowViewingSpawnPoint,
-    SingleScreenReplay,
-    SpectatorWindow,
+    kDoubleRes,
+    kFullscreen,
+    kAiFrames,
+    kAiMutations,
+    kPaletteSelect,
+    kShadows,
+    kScreenSync,
+    kSelectBotWeapons,
+    kAiTraces,
+    kAiParallels,
+    kAllowViewingSpawnPoint,
+    kSingleScreenReplay,
+    kSpectatorWindow,
   };
 
-  HiddenMenu(int x, int y) : Menu(x, y), paletteColor(0) {}
+  HiddenMenu(int x, int y) : Menu(x, y), palette_color(0) {}
 
-  virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item);
+  virtual ItemBehavior* GetItemBehavior(Common& common, MenuItem& item);
 
-  virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
+  virtual void DrawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
                                bool disabled);
 
-  virtual void onUpdate();
+  virtual void OnUpdate();
 
-  int paletteColor;
+  int palette_color;
 };

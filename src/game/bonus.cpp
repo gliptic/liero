@@ -3,29 +3,29 @@
 #include "constants.hpp"
 #include "game.hpp"
 
-void Bonus::process(Game& game) {
+void Bonus::Process(Game& game) {
   Common& common = *game.common;
 
-  y += velY;
+  y += vel_y;
 
-  int ix = ftoi(x), iy = ftoi(y);
+  int ix = Ftoi(x), iy = Ftoi(y);
 
   assert(ix >= 0 && ix < game.level.width);
 
-  if (game.level.inside(ix, iy + 1) && game.level.mat(ix, iy + 1).background()) {
-    velY += LC(BonusGravity);
+  if (game.level.Inside(ix, iy + 1) && game.level.Mat(ix, iy + 1).Background()) {
+    vel_y += LC(BonusGravity);
   }
 
-  int inewY = ftoi(y + velY);
-  if (inewY < 0 || inewY >= game.level.height - 1 || game.level.mat(ix, inewY).dirtRock()) {
-    velY = -(velY * LC(BonusBounceMul)) / LC(BonusBounceDiv);
+  int inew_y = Ftoi(y + vel_y);
+  if (inew_y < 0 || inew_y >= game.level.height - 1 || game.level.Mat(ix, inew_y).DirtRock()) {
+    vel_y = -(vel_y * LC(BonusBounceMul)) / LC(BonusBounceDiv);
 
-    if (std::abs(velY) < 100)  // TODO: Read from EXE
-      velY = 0;
+    if (std::abs(vel_y) < 100)  // TODO: Read from EXE
+      vel_y = 0;
   }
 
   if (--timer <= 0) {
-    common.sobjectTypes[common.bonusSObjects[frame]].create(game, ix, iy, 0, 0);
-    if (used) game.bonuses.free(this);
+    common.sobject_types[common.bonus_s_objects[frame]].Create(game, ix, iy, 0, 0);
+    if (used) game.bonuses.Free(this);
   }
 }

@@ -15,32 +15,32 @@ struct Game;
 
 struct Replay {
   Game* game = nullptr;
-  int replayVersion = myReplayVersion;
+  int replay_version = kMyReplayVersion;
 };
 
 struct ReplayWriter : Replay {
   ReplayWriter(std::unique_ptr<io::Writer> sink);
   ~ReplayWriter();
 
-  void unfocus();
-  void focus();
+  void Unfocus();
+  void Focus();
 
   io::DeflateWriter writer;
-  uint64_t lastSettingsHash;
-  bool settingsExpired;
+  uint64_t last_settings_hash;
+  bool settings_expired;
 
   struct WormData {
-    WormData() : settingsExpired(true) {}
-    uint64_t lastSettingsHash;
-    bool settingsExpired;
+    WormData() : settings_expired(true) {}
+    uint64_t last_settings_hash;
+    bool settings_expired;
   };
-  std::map<Worm*, WormData> wormData;
+  std::map<Worm*, WormData> worm_data;
 
-  void beginRecord(Game& game);
-  void recordFrame();
+  void BeginRecord(Game& game);
+  void RecordFrame();
 
  private:
-  void endRecord();
+  void EndRecord();
 };
 
 struct Renderer;
@@ -48,12 +48,12 @@ struct Renderer;
 struct ReplayReader : Replay {
   ReplayReader(std::unique_ptr<io::Reader> source);
 
-  void unfocus() {}
-  void focus() {}
+  void Unfocus() {}
+  void Focus() {}
 
-  std::unique_ptr<Game> beginPlayback(std::shared_ptr<Common> common,
-                                      std::shared_ptr<SoundPlayer> soundPlayer);
-  bool playbackFrame(Renderer& renderer);
+  std::unique_ptr<Game> BeginPlayback(std::shared_ptr<Common> common,
+                                      std::shared_ptr<SoundPlayer> sound_player);
+  bool PlaybackFrame(Renderer& renderer);
 
   // The full inflated replay is held in memory so we can rewind to
   // the recorded initial position when the user presses R.

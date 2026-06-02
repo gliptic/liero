@@ -9,24 +9,25 @@
 
 #include "io/stream.hpp"
 
-std::string changeLeaf(std::string const& path, std::string const& newLeaf);
-std::string getRoot(std::string const& path);
-std::string getLeaf(std::string const& path);
-std::string getBasename(std::string const& path);
-std::string getExtension(std::string const& path);
-std::string toUpperCase(std::string str);
-std::string joinPath(std::string const& root, std::string const& leaf);
+std::string ChangeLeaf(std::string const& path, std::string const& new_leaf);
+std::string GetRoot(std::string const& path);
+std::string GetLeaf(std::string const& path);
+std::string GetBasename(std::string const& path);
+std::string GetExtension(std::string const& path);
+std::string ToUpperCase(std::string str);
+std::string JoinPath(std::string const& root, std::string const& leaf);
 
-FILE* tolerantFOpen(std::string const& name, char const* mode);
+FILE* TolerantFOpen(std::string const& name, char const* mode);
 
-std::size_t fileLength(FILE* f);
-bool create_directories(std::string const& dir);
+std::size_t FileLength(FILE* f);
+bool CreateDirectories(std::string const& dir);
 
 struct NodeName {
-  NodeName(std::string nameInit, bool isDirInit) : name(std::move(nameInit)), isDir(isDirInit) {}
+  NodeName(std::string name_init, bool is_dir_init)
+      : name(std::move(name_init)), is_dir(is_dir_init) {}
 
   std::string name;
-  bool isDir;
+  bool is_dir;
 };
 
 struct DirectoryListing {
@@ -40,32 +41,37 @@ struct DirectoryListing {
   }
 
   DirectoryListing(std::string const& dir);
-  DirectoryListing(std::vector<NodeName>&& subsInit);
+  DirectoryListing(std::vector<NodeName>&& subs_init);
   ~DirectoryListing();
 
   DirectoryListing operator|(DirectoryListing const& other) {
     DirectoryListing ret(std::move(subs));
 
     ret.subs.insert(ret.subs.end(), other.subs.begin(), other.subs.end());
-    ret.sort();
+    ret.Sort();
     return ret;
   }
 
+  // Range-for support: range-for looks up `begin`/`end` via ADL or as
+  // members, so these must stay lower_case. NOLINT keeps the
+  // identifier-naming check from renaming them on future tidy passes.
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<NodeName>::iterator begin() { return subs.begin(); }
 
+  // NOLINTNEXTLINE(readability-identifier-naming)
   std::vector<NodeName>::iterator end() { return subs.end(); }
 
-  void sort();
+  void Sort();
 };
 
 struct FsNodeImp {
   virtual ~FsNodeImp() = default;
-  virtual std::string const& fullPath() = 0;
-  virtual DirectoryListing iter() = 0;
-  virtual std::shared_ptr<FsNodeImp> go(std::string const& name) = 0;
-  virtual std::unique_ptr<io::Reader> tryToReader() = 0;
-  virtual std::unique_ptr<io::Writer> tryToWriter() = 0;
-  virtual bool exists() const = 0;
+  virtual std::string const& FullPath() = 0;
+  virtual DirectoryListing Iter() = 0;
+  virtual std::shared_ptr<FsNodeImp> Go(std::string const& name) = 0;
+  virtual std::unique_ptr<io::Reader> TryToReader() = 0;
+  virtual std::unique_ptr<io::Writer> TryToWriter() = 0;
+  virtual bool Exists() const = 0;
 };
 
 struct FsNode {
@@ -89,23 +95,23 @@ struct FsNode {
 
   operator void*() const { return imp.get(); }
 
-  std::string const& fullPath() const { return imp->fullPath(); }
+  std::string const& FullPath() const { return imp->FullPath(); }
 
-  DirectoryListing iter() const { return imp->iter(); }
+  DirectoryListing Iter() const { return imp->Iter(); }
 
-  FsNode operator/(std::string const& name) const { return FsNode(imp->go(name)); }
+  FsNode operator/(std::string const& name) const { return FsNode(imp->Go(name)); }
 
-  bool exists() const { return imp && imp->exists(); }
+  bool Exists() const { return imp && imp->Exists(); }
 
-  std::unique_ptr<io::Reader> toReader() const {
-    auto r = imp->tryToReader();
-    if (!r) throw std::runtime_error("Could not read " + fullPath());
+  std::unique_ptr<io::Reader> ToReader() const {
+    auto r = imp->TryToReader();
+    if (!r) throw std::runtime_error("Could not read " + FullPath());
     return r;
   }
 
-  std::unique_ptr<io::Writer> toWriter() const {
-    auto w = imp->tryToWriter();
-    if (!w) throw std::runtime_error("Could not write " + fullPath());
+  std::unique_ptr<io::Writer> ToWriter() const {
+    auto w = imp->TryToWriter();
+    if (!w) throw std::runtime_error("Could not write " + FullPath());
     return w;
   }
 };
@@ -113,13 +119,13 @@ struct FsNode {
 namespace paths {
 // Writable user data root. Always returns a non-empty node whose
 // directory has been created on disk. Backed by SDL_GetPrefPath.
-FsNode userDataRoot();
+FsNode UserDataRoot();
 
 // Read-only stock data root. Resolution order:
 //   1. OPENLIERO_DATADIR compile-time macro, if defined and existing.
 //   2. SDL_GetBasePath() (binary-adjacent), if it has stock content.
 // Returns an empty FsNode (!exists()) if neither resolves.
-FsNode systemDataRoot();
+FsNode SystemDataRoot();
 
 // True if Save As of `leaf` into `subdir` of the user dir would
 // shadow either a shipped file or one of the auto-managed names
@@ -129,14 +135,14 @@ FsNode systemDataRoot();
 // mode, `--config-root` aimed at the install dir) there is no
 // separate read-only layer to shadow and the user can freely
 // overwrite their own files, so the on-disk check is skipped.
-bool shadowsSystem(FsNode const& userRoot, std::string const& subdir, std::string const& leaf);
+bool ShadowsSystem(FsNode const& user_root, std::string const& subdir, std::string const& leaf);
 }  // namespace paths
 
 struct ResolvedPaths {
-  FsNode configNode;                        // merged (user + system) for reads
-  FsNode userConfigNode;                    // user dir only, for writes
-  uint16_t port;                            // from --port, 0 if not given
-  std::vector<std::string> positionalArgs;  // non-flag argv entries
+  FsNode config_node;                        // merged (user + system) for reads
+  FsNode user_config_node;                   // user dir only, for writes
+  uint16_t port;                             // from --port, 0 if not given
+  std::vector<std::string> positional_args;  // non-flag argv entries
 };
 
 namespace paths {
@@ -147,5 +153,5 @@ namespace paths {
 //   otherwise          -> configNode = join(user, system); userConfigNode = user
 //
 // basePath overrides SDL_GetBasePath() and is used by tests.
-ResolvedPaths resolve(int argc, char* argv[], std::string const& basePath = std::string());
+ResolvedPaths Resolve(int argc, char* argv[], std::string const& base_path = std::string());
 }  // namespace paths

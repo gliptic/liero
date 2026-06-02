@@ -13,56 +13,56 @@
 
 WeaponSelection::WeaponSelection(Game& game)
     : game(game),
-      enabledWeaps(0),
-      isReady(game.viewports.size()),
+      enabled_weaps(0),
+      is_ready(game.viewports.size()),
       menus(game.viewports.size()),
-      cachedBackground(false),
-      cachedSpectatorBackground(false),
+      cached_background(false),
+      cached_spectator_background(false),
       focused(true) {
   Common& common = *game.common;
 
   for (int i = 0; i < 40; ++i) {
-    if (game.settings->weapTable[i] == 0) ++enabledWeaps;
+    if (game.settings->weap_table[i] == 0) ++enabled_weaps;
   }
 
   for (std::size_t i = 0; i < menus.size(); ++i) {
-    bool weapUsed[256] = {};
+    bool weap_used[256] = {};
 
     Viewport& vp = *game.viewports[i];
 
-    Worm& worm = *game.wormByIdx(vp.wormIdx);
+    Worm& worm = *game.WormByIdx(vp.worm_idx);
     WormSettings& ws = *worm.settings;
 
     menus[i].items.push_back(MenuItem(57, 57, LS(Randomize)));
 
     {
-      int x = vp.rect.center_x() - 31;
-      int y = vp.rect.center_y() - 51;
-      menus[i].place(x, y);
+      int x = vp.rect.CenterX() - 31;
+      int y = vp.rect.CenterY() - 51;
+      menus[i].Place(x, y);
     }
 
-    bool randomWeapons = (ws.controller != 0 && game.settings->selectBotWeapons == 0);
+    bool random_weapons = (ws.controller != 0 && game.settings->select_bot_weapons == 0);
 
-    for (int j = 0; j < Settings::selectableWeapons; ++j) {
-      if (ws.weapons[j] == 0 || randomWeapons) {
+    for (int j = 0; j < Settings::kSelectableWeapons; ++j) {
+      if (ws.weapons[j] == 0 || random_weapons) {
         ws.weapons[j] = game.rand(1, 41);
       }
 
-      bool enoughWeapons = (enabledWeaps >= Settings::selectableWeapons);
+      bool enough_weapons = (enabled_weaps >= Settings::kSelectableWeapons);
 
-      if (game.settings->weapTable[common.weapOrder[ws.weapons[j] - 1]] > 0) {
+      if (game.settings->weap_table[common.weap_order[ws.weapons[j] - 1]] > 0) {
         while (true) {
           ws.weapons[j] = game.rand(1, 41);
 
-          int w = common.weapOrder[ws.weapons[j] - 1];
+          int w = common.weap_order[ws.weapons[j] - 1];
 
-          if ((!enoughWeapons || !weapUsed[w]) && game.settings->weapTable[w] <= 0) break;
+          if ((!enough_weapons || !weap_used[w]) && game.settings->weap_table[w] <= 0) break;
         }
       }
 
-      int w = common.weapOrder[ws.weapons[j] - 1];
+      int w = common.weap_order[ws.weapons[j] - 1];
 
-      weapUsed[w] = true;
+      weap_used[w] = true;
 
       WormWeapon& ww = worm.weapons[j];
 
@@ -74,255 +74,255 @@ WeaponSelection::WeaponSelection(Game& game)
 
     menus[i].items.push_back(MenuItem(10, 10, LS(Done)));
 
-    worm.currentWeapon = 0;
+    worm.current_weapon = 0;
 
-    menus[i].moveToFirstVisible();
-    isReady[i] = (ws.controller != 0 && game.settings->selectBotWeapons != 1);
+    menus[i].MoveToFirstVisible();
+    is_ready[i] = (ws.controller != 0 && game.settings->select_bot_weapons != 1);
   }
 }
 
-void WeaponSelection::drawSpectatorViewports(Renderer& renderer, GameState state) {
+void WeaponSelection::DrawSpectatorViewports(Renderer& renderer, GameState state) {
   Common& common = *game.common;
-  int centerX = renderer.renderResX / 2;
-  int centerY = renderer.renderResY / 4;
+  int center_x = renderer.render_res_x / 2;
+  int center_y = renderer.render_res_y / 4;
 
-  if (!cachedSpectatorBackground) {
-    if (game.settings->levelFile.empty()) {
-      common.font.drawCenteredText(renderer.bmp, LS(LevelRandom), centerX, centerY - 32, 7, 2);
+  if (!cached_spectator_background) {
+    if (game.settings->level_file.empty()) {
+      common.font.DrawCenteredText(renderer.bmp, LS(LevelRandom), center_x, center_y - 32, 7, 2);
     } else {
-      auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
-      common.font.drawCenteredText(renderer.bmp, LS(LevelIs1) + levelName + LS(LevelIs2), centerX,
-                                   centerY - 32, 7, 2);
+      auto level_name = GetBasename(GetLeaf(gfx.settings->level_file));
+      common.font.DrawCenteredText(renderer.bmp, LS(LevelIs1) + level_name + LS(LevelIs2), center_x,
+                                   center_y - 32, 7, 2);
     }
 
-    Worm& worm0 = *game.wormByIdx(0);
-    Worm& worm1 = *game.wormByIdx(1);
-    std::string vsText = worm0.settings->name + " vs " + worm1.settings->name;
+    Worm& worm0 = *game.WormByIdx(0);
+    Worm& worm1 = *game.WormByIdx(1);
+    std::string vs_text = worm0.settings->name + " vs " + worm1.settings->name;
     // put worm color boxes on a nice spot even if no player names have been entered
-    int textSize = std::max(common.font.getDims(vsText) * 2, 48);
-    common.font.drawCenteredText(renderer.bmp, vsText, centerX, centerY, 7, 2);
-    fillRect(renderer.bmp, centerX - (textSize / 2) - 1, centerY + 23 - 1, 16, 16, 7);
-    fillRect(renderer.bmp, centerX - textSize / 2, centerY + 23, 14, 14,
-             Palette::wormSpriteColorBase[0]);
-    fillRect(renderer.bmp, centerX + (textSize / 2) - 16 - 1, centerY + 23 - 1, 16, 16, 7);
-    fillRect(renderer.bmp, centerX + textSize / 2 - 16, centerY + 23, 14, 14,
-             Palette::wormSpriteColorBase[1]);
-    common.font.drawCenteredText(renderer.bmp, "WEAPON SELECTION", centerX, centerY + 48, 7, 2);
-    game.level.drawMiniature(renderer.bmp, centerX - 126, renderer.renderResY - 208, 2);
+    int text_size = std::max(common.font.GetDims(vs_text) * 2, 48);
+    common.font.DrawCenteredText(renderer.bmp, vs_text, center_x, center_y, 7, 2);
+    FillRect(renderer.bmp, center_x - (text_size / 2) - 1, center_y + 23 - 1, 16, 16, 7);
+    FillRect(renderer.bmp, center_x - text_size / 2, center_y + 23, 14, 14,
+             Palette::kWormSpriteColorBase[0]);
+    FillRect(renderer.bmp, center_x + (text_size / 2) - 16 - 1, center_y + 23 - 1, 16, 16, 7);
+    FillRect(renderer.bmp, center_x + text_size / 2 - 16, center_y + 23, 14, 14,
+             Palette::kWormSpriteColorBase[1]);
+    common.font.DrawCenteredText(renderer.bmp, "WEAPON SELECTION", center_x, center_y + 48, 7, 2);
+    game.level.DrawMiniature(renderer.bmp, center_x - 126, renderer.render_res_y - 208, 2);
 
-    gfx.frozenSpectatorScreen.copy(renderer.bmp);
-    cachedSpectatorBackground = true;
+    gfx.frozen_spectator_screen.Copy(renderer.bmp);
+    cached_spectator_background = true;
   }
 
-  renderer.bmp.copy(gfx.frozenSpectatorScreen);
+  renderer.bmp.Copy(gfx.frozen_spectator_screen);
 
   if (!focused) return;
 
-  if (!isReady[0]) {
-    menus[0].draw(common, renderer, false, 10);
+  if (!is_ready[0]) {
+    menus[0].Draw(common, renderer, false, 10);
   }
-  if (!isReady[1]) {
-    menus[1].draw(common, renderer, false, 560);
+  if (!is_ready[1]) {
+    menus[1].Draw(common, renderer, false, 560);
   }
 
   // TODO: This just uses the currently activated palette, which might well be wrong.
-  gfx.singleScreenRenderer.pal = gfx.singleScreenRenderer.origpal;
-  gfx.singleScreenRenderer.pal.rotateFrom(gfx.singleScreenRenderer.origpal, 168, 174,
-                                          gfx.menuCycles);
-  gfx.singleScreenRenderer.pal.fade(gfx.singleScreenRenderer.fadeValue);
+  gfx.single_screen_renderer.pal = gfx.single_screen_renderer.origpal;
+  gfx.single_screen_renderer.pal.RotateFrom(gfx.single_screen_renderer.origpal, 168, 174,
+                                            gfx.menu_cycles);
+  gfx.single_screen_renderer.pal.Fade(gfx.single_screen_renderer.fade_value);
 }
 
-void WeaponSelection::drawNormalViewports(Renderer& renderer, GameState state) {
+void WeaponSelection::DrawNormalViewports(Renderer& renderer, GameState state) {
   Common& common = *game.common;
 
-  if (!cachedBackground) {
-    game.draw(renderer, state, false);
+  if (!cached_background) {
+    game.Draw(renderer, state, false);
 
-    if (game.settings->levelFile.empty()) {
-      common.font.drawText(renderer.bmp, LS(LevelRandom), 0, 162, 50);
+    if (game.settings->level_file.empty()) {
+      common.font.DrawString(renderer.bmp, LS(LevelRandom), 0, 162, 50);
     } else {
-      auto levelName = getBasename(getLeaf(gfx.settings->levelFile));
-      common.font.drawText(renderer.bmp, (LS(LevelIs1) + levelName + LS(LevelIs2)), 0, 162, 50);
+      auto level_name = GetBasename(GetLeaf(gfx.settings->level_file));
+      common.font.DrawString(renderer.bmp, (LS(LevelIs1) + level_name + LS(LevelIs2)), 0, 162, 50);
     }
 
-    gfx.frozenScreen.copy(renderer.bmp);
-    cachedBackground = true;
+    gfx.frozen_screen.Copy(renderer.bmp);
+    cached_background = true;
   }
 
-  renderer.bmp.copy(gfx.frozenScreen);
+  renderer.bmp.Copy(gfx.frozen_screen);
 
   if (!focused) return;
 
-  drawRoundedBox(renderer.bmp, 114, 2, 0, 7, common.font.getDims(LS(SelWeap)));
+  DrawRoundedBox(renderer.bmp, 114, 2, 0, 7, common.font.GetDims(LS(SelWeap)));
 
-  common.font.drawText(renderer.bmp, LS(SelWeap), 116, 3, 50);
+  common.font.DrawString(renderer.bmp, LS(SelWeap), 116, 3, 50);
 
   for (std::size_t i = 0; i < menus.size(); ++i) {
-    Menu& weaponMenu = menus[i];
+    Menu& weapon_menu = menus[i];
 
     Viewport& vp = *game.viewports[i];
 
-    Worm& worm = *game.wormByIdx(vp.wormIdx);
+    Worm& worm = *game.WormByIdx(vp.worm_idx);
     WormSettings& ws = *worm.settings;
 
-    int width = common.font.getDims(ws.name);
-    drawRoundedBox(renderer.bmp, weaponMenu.x + 29 - width / 2, weaponMenu.y - 11, 0, 7, width);
-    common.font.drawText(renderer.bmp, ws.name, weaponMenu.x + 31 - width / 2, weaponMenu.y - 10,
-                         Palette::wormSpriteColorBase[worm.index] + 1);
+    int width = common.font.GetDims(ws.name);
+    DrawRoundedBox(renderer.bmp, weapon_menu.x + 29 - width / 2, weapon_menu.y - 11, 0, 7, width);
+    common.font.DrawString(renderer.bmp, ws.name, weapon_menu.x + 31 - width / 2,
+                           weapon_menu.y - 10, Palette::kWormSpriteColorBase[worm.index] + 1);
 
-    if (!isReady[i]) {
-      menus[i].draw(common, gfx.playRenderer, false);
+    if (!is_ready[i]) {
+      menus[i].Draw(common, gfx.play_renderer, false);
     }
   }
 
   // TODO: This just uses the currently activated palette, which might well be wrong.
-  gfx.playRenderer.pal = gfx.playRenderer.origpal;
-  gfx.playRenderer.pal.rotateFrom(gfx.playRenderer.origpal, 168, 174, gfx.menuCycles);
-  gfx.playRenderer.pal.fade(gfx.playRenderer.fadeValue);
+  gfx.play_renderer.pal = gfx.play_renderer.origpal;
+  gfx.play_renderer.pal.RotateFrom(gfx.play_renderer.origpal, 168, 174, gfx.menu_cycles);
+  gfx.play_renderer.pal.Fade(gfx.play_renderer.fade_value);
 }
 
-void WeaponSelection::draw(Renderer& renderer, GameState state, bool useSpectatorViewports) {
-  if (useSpectatorViewports) {
-    drawSpectatorViewports(renderer, state);
+void WeaponSelection::Draw(Renderer& renderer, GameState state, bool use_spectator_viewports) {
+  if (use_spectator_viewports) {
+    DrawSpectatorViewports(renderer, state);
   } else {
-    drawNormalViewports(renderer, state);
+    DrawNormalViewports(renderer, state);
   }
 }
 
-bool WeaponSelection::processFrame() {
+bool WeaponSelection::ProcessFrame() {
   Common& common = *game.common;
 
-  bool allReady = true;
+  bool all_ready = true;
 
   for (std::size_t i = 0; i < menus.size(); ++i) {
-    int weapID = menus[i].selection() - 1;
+    int weap_id = menus[i].Selection() - 1;
 
     Viewport& vp = *game.viewports[i];
-    Worm& worm = *game.wormByIdx(vp.wormIdx);
+    Worm& worm = *game.WormByIdx(vp.worm_idx);
 
     WormSettings& ws = *worm.settings;
 
-    if (!isReady[i]) {
+    if (!is_ready[i]) {
       // Find this player's gamepad (if using one)
-      int gpIdx = -1;
-      if (ws.inputDevice != WormSettingsExtensions::InputKeyboard)
-        gpIdx = gfx.findGamepadForPlayer(vp.wormIdx);
+      int gp_idx = -1;
+      if (ws.input_device != WormSettingsExtensions::kInputKeyboard)
+        gp_idx = gfx.FindGamepadForPlayer(vp.worm_idx);
 
-      if (weapID >= 0 && weapID < Settings::selectableWeapons) {
-        bool left = worm.pressed(Worm::Left);
-        if (!left && gpIdx >= 0 && gfx.joysticks[gpIdx].axisButtonState[1])  // LEFTX negative
+      if (weap_id >= 0 && weap_id < Settings::kSelectableWeapons) {
+        bool left = worm.Pressed(Worm::kLeft);
+        if (!left && gp_idx >= 0 && gfx.joysticks[gp_idx].axis_button_state[1])  // LEFTX negative
           left = true;
 
         if (left) {
-          worm.release(Worm::Left);
+          worm.Release(Worm::kLeft);
 
-          game.soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
+          game.sound_player->Play(common.sound_hook[SoundMenuMoveUp]);
 
           do {
-            --ws.weapons[weapID];
-            if (ws.weapons[weapID] < 1) ws.weapons[weapID] = (uint32_t)common.weapons.size();
-          } while (game.settings->weapTable[common.weapOrder[ws.weapons[weapID] - 1]] != 0);
+            --ws.weapons[weap_id];
+            if (ws.weapons[weap_id] < 1) ws.weapons[weap_id] = (uint32_t)common.weapons.size();
+          } while (game.settings->weap_table[common.weap_order[ws.weapons[weap_id] - 1]] != 0);
 
-          int w = common.weapOrder[ws.weapons[weapID] - 1];
-          worm.weapons[weapID].type = &common.weapons[w];
-          menus[i].selected()->string = common.weapons[w].name;
+          int w = common.weap_order[ws.weapons[weap_id] - 1];
+          worm.weapons[weap_id].type = &common.weapons[w];
+          menus[i].Selected()->string = common.weapons[w].name;
         }
 
-        bool right = worm.pressed(Worm::Right);
-        if (!right && gpIdx >= 0 && gfx.joysticks[gpIdx].axisButtonState[0])  // LEFTX positive
+        bool right = worm.Pressed(Worm::kRight);
+        if (!right && gp_idx >= 0 && gfx.joysticks[gp_idx].axis_button_state[0])  // LEFTX positive
           right = true;
 
         if (right) {
-          worm.release(Worm::Right);
+          worm.Release(Worm::kRight);
 
-          game.soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
+          game.sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
 
           do {
-            ++ws.weapons[weapID];
-            if (ws.weapons[weapID] > (uint32_t)common.weapons.size()) ws.weapons[weapID] = 1;
-          } while (game.settings->weapTable[common.weapOrder[ws.weapons[weapID] - 1]] != 0);
+            ++ws.weapons[weap_id];
+            if (ws.weapons[weap_id] > (uint32_t)common.weapons.size()) ws.weapons[weap_id] = 1;
+          } while (game.settings->weap_table[common.weap_order[ws.weapons[weap_id] - 1]] != 0);
 
-          int w = common.weapOrder[ws.weapons[weapID] - 1];
-          worm.weapons[weapID].type = &common.weapons[w];
-          menus[i].selected()->string = common.weapons[w].name;
+          int w = common.weap_order[ws.weapons[weap_id] - 1];
+          worm.weapons[weap_id].type = &common.weapons[w];
+          menus[i].Selected()->string = common.weapons[w].name;
         }
       }
 
-      bool up = worm.pressedOnce(Worm::Up);
-      if (!up && gpIdx >= 0 && gfx.joysticks[gpIdx].axisPressed[3])  // LEFTY negative
+      bool up = worm.PressedOnce(Worm::kUp);
+      if (!up && gp_idx >= 0 && gfx.joysticks[gp_idx].axis_pressed[3])  // LEFTY negative
       {
-        gfx.joysticks[gpIdx].axisPressed[3] = false;
+        gfx.joysticks[gp_idx].axis_pressed[3] = false;
         up = true;
       }
       if (up) {
-        game.soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
-        menus[i].movement(-1);
+        game.sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
+        menus[i].Movement(-1);
       }
 
-      bool down = worm.pressedOnce(Worm::Down);
-      if (!down && gpIdx >= 0 && gfx.joysticks[gpIdx].axisPressed[2])  // LEFTY positive
+      bool down = worm.PressedOnce(Worm::kDown);
+      if (!down && gp_idx >= 0 && gfx.joysticks[gp_idx].axis_pressed[2])  // LEFTY positive
       {
-        gfx.joysticks[gpIdx].axisPressed[2] = false;
+        gfx.joysticks[gp_idx].axis_pressed[2] = false;
         down = true;
       }
       if (down) {
-        game.soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
-        menus[i].movement(1);
+        game.sound_player->Play(common.sound_hook[SoundMenuMoveUp]);
+        menus[i].Movement(1);
       }
 
       // Check Fire control OR A button on assigned gamepad
-      bool confirm = worm.pressed(Worm::Fire);
-      if (!confirm && gpIdx >= 0 && gfx.joysticks[gpIdx].btnPressed[SDL_GAMEPAD_BUTTON_SOUTH]) {
-        gfx.joysticks[gpIdx].btnPressed[SDL_GAMEPAD_BUTTON_SOUTH] = false;
+      bool confirm = worm.Pressed(Worm::kFire);
+      if (!confirm && gp_idx >= 0 && gfx.joysticks[gp_idx].btn_pressed[SDL_GAMEPAD_BUTTON_SOUTH]) {
+        gfx.joysticks[gp_idx].btn_pressed[SDL_GAMEPAD_BUTTON_SOUTH] = false;
         confirm = true;
       }
 
       if (confirm) {
-        if (menus[i].selection() == 0) {
-          bool weapUsed[256] = {};
+        if (menus[i].Selection() == 0) {
+          bool weap_used[256] = {};
 
-          bool enoughWeapons = (enabledWeaps >= Settings::selectableWeapons);
+          bool enough_weapons = (enabled_weaps >= Settings::kSelectableWeapons);
 
-          for (int j = 0; j < Settings::selectableWeapons; ++j) {
+          for (int j = 0; j < Settings::kSelectableWeapons; ++j) {
             while (true) {
               ws.weapons[j] = game.rand(1, 41);
 
-              int w = common.weapOrder[ws.weapons[j] - 1];
+              int w = common.weap_order[ws.weapons[j] - 1];
 
-              if ((!enoughWeapons || !weapUsed[w]) && game.settings->weapTable[w] <= 0) break;
+              if ((!enough_weapons || !weap_used[w]) && game.settings->weap_table[w] <= 0) break;
             }
 
-            int w = common.weapOrder[ws.weapons[j] - 1];
+            int w = common.weap_order[ws.weapons[j] - 1];
 
-            weapUsed[w] = true;
+            weap_used[w] = true;
 
             menus[i].items[j + 1].string = common.weapons[w].name;
           }
-        } else if (menus[i].selection() == 6)  // TODO: Unhardcode
+        } else if (menus[i].Selection() == 6)  // TODO: Unhardcode
         {
-          game.soundPlayer->play(common.soundHook[SoundMenuSelect]);
-          isReady[i] = true;
+          game.sound_player->Play(common.sound_hook[SoundMenuSelect]);
+          is_ready[i] = true;
         }
       }
     }
 
-    allReady = allReady && isReady[i];
+    all_ready = all_ready && is_ready[i];
   }
 
-  return allReady;
+  return all_ready;
 }
 
-void WeaponSelection::finalize() {
+void WeaponSelection::Finalize() {
   for (std::size_t i = 0; i < game.worms.size(); ++i) {
     Worm& worm = *game.worms[i];
 
-    worm.initWeapons(game);
+    worm.InitWeapons(game);
   }
-  game.releaseControls();
+  game.ReleaseControls();
 
   // TODO: Make sure the weapon selection is transfered back to Gfx to be saved
 }
 
-void WeaponSelection::focus() { focused = true; }
+void WeaponSelection::Focus() { focused = true; }
 
-void WeaponSelection::unfocus() { focused = false; }
+void WeaponSelection::Unfocus() { focused = false; }

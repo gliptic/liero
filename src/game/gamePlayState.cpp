@@ -9,40 +9,40 @@
 #include "statsState.hpp"
 #include "stats_recorder.hpp"
 
-void GamePlayState::enter() { gfx->controller->focus(); }
+void GamePlayState::Enter() { gfx->controller->Focus(); }
 
-void GamePlayState::handleEvent(SDL_Event& ev) { gfx->processEvent(ev, gfx->controller.get()); }
+void GamePlayState::HandleEvent(SDL_Event& ev) { gfx->ProcessEvent(ev, gfx->controller.get()); }
 
-bool GamePlayState::update() {
+bool GamePlayState::Update() {
   // Poll network session if active
-  if (gfx->netSession) {
-    gfx->netSession->update();
-    auto state = gfx->netSession->sessionState();
-    if (state == NetSession::Disconnected || state == NetSession::Failed) {
-      gfx->controller->markUnresumable();
-      gfx->netSession.reset();
-      gfx->stateStack.scheduleReplaceTop(
+  if (gfx->net_session) {
+    gfx->net_session->Update();
+    auto state = gfx->net_session->State();
+    if (state == NetSession::kDisconnected || state == NetSession::kFailed) {
+      gfx->controller->MarkUnresumable();
+      gfx->net_session.reset();
+      gfx->state_stack.ScheduleReplaceTop(
           std::make_unique<InfoBoxState>("PEER DISCONNECTED", 320 / 2, 200 / 2, true));
       return false;
     }
-    if (gfx->netSession->desyncDetected()) {
-      uint32_t frame = gfx->netSession->desyncFrame();
+    if (gfx->net_session->DesyncDetected()) {
+      uint32_t frame = gfx->net_session->DesyncFrame();
       char msg[64];
       snprintf(msg, sizeof(msg), "DESYNC AT FRAME %u", frame);
-      gfx->controller->markUnresumable();
-      gfx->netSession.reset();
-      gfx->stateStack.scheduleReplaceTop(
+      gfx->controller->MarkUnresumable();
+      gfx->net_session.reset();
+      gfx->state_stack.ScheduleReplaceTop(
           std::make_unique<InfoBoxState>(msg, 320 / 2, 200 / 2, true));
       return false;
     }
   }
 
-  if (!gfx->controller->process()) {
+  if (!gfx->controller->Process()) {
     // Check for pending error message
-    if (!gfx->pendingErrorMessage.empty()) {
-      std::string msg = std::move(gfx->pendingErrorMessage);
-      gfx->pendingErrorMessage.clear();
-      gfx->stateStack.scheduleReplaceTop(
+    if (!gfx->pending_error_message.empty()) {
+      std::string msg = std::move(gfx->pending_error_message);
+      gfx->pending_error_message.clear();
+      gfx->state_stack.ScheduleReplaceTop(
           std::make_unique<InfoBoxState>(std::move(msg), 320 / 2, 200 / 2, true));
       return false;
     }
@@ -51,26 +51,26 @@ bool GamePlayState::update() {
     // statsGame() is the live game for single-player/replay and the
     // shadow Game for rollback multiplayer (live's recorder is a
     // no-op there — see RollbackController::setupShadowGame).
-    Game* game = gfx->controller->statsGame();
-    if (game && game->statsRecorder) {
-      auto* stats = dynamic_cast<NormalStatsRecorder*>(game->statsRecorder.get());
-      if (stats && stats->gameTime > 0) {
-        bool isMultiplayer = gfx->netSession != nullptr;
+    Game* game = gfx->controller->StatsGame();
+    if (game && game->stats_recorder) {
+      auto* stats = dynamic_cast<NormalStatsRecorder*>(game->stats_recorder.get());
+      if (stats && stats->game_time > 0) {
+        bool is_multiplayer = gfx->net_session != nullptr;
 
         // Transition network session to rematch state to keep connection alive
-        if (isMultiplayer) gfx->netSession->enterRematch();
+        if (is_multiplayer) gfx->net_session->EnterRematch();
 
-        gfx->stateStack.scheduleReplaceTop(
-            std::make_unique<StatsState>(*stats, *game, isMultiplayer));
+        gfx->state_stack.ScheduleReplaceTop(
+            std::make_unique<StatsState>(*stats, *game, is_multiplayer));
         return false;
       }
     }
 
     // Clear framebuffer so menu doesn't capture stale overlay content
-    if (gfx->netSession) {
-      gfx->netSession.reset();
-      fill(gfx->playRenderer.bmp, 0);
-      fill(gfx->singleScreenRenderer.bmp, 0);
+    if (gfx->net_session) {
+      gfx->net_session.reset();
+      Fill(gfx->play_renderer.bmp, 0);
+      Fill(gfx->single_screen_renderer.bmp, 0);
     }
     return false;
   }
@@ -78,10 +78,10 @@ bool GamePlayState::update() {
   return true;
 }
 
-void GamePlayState::draw() {
-  gfx->playRenderer.clear();
-  gfx->controller->draw(gfx->playRenderer, false);
+void GamePlayState::Draw() {
+  gfx->play_renderer.Clear();
+  gfx->controller->Draw(gfx->play_renderer, false);
 
-  gfx->singleScreenRenderer.clear();
-  gfx->controller->draw(gfx->singleScreenRenderer, true);
+  gfx->single_screen_renderer.Clear();
+  gfx->controller->Draw(gfx->single_screen_renderer, true);
 }

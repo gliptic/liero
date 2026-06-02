@@ -78,9 +78,9 @@ struct Versioned {
   std::int32_t b = 0;  // added in v2
 
   template <class Archive>
-  void serialize(Archive& ar, std::uint32_t const version) {
+  void serialize(Archive& ar, std::uint32_t const kVersion) {
     ar(CEREAL_NVP(a));
-    if (version >= 2) ar(CEREAL_NVP(b));
+    if (kVersion >= 2) ar(CEREAL_NVP(b));
   }
 };
 

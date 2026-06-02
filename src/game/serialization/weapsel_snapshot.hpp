@@ -20,25 +20,25 @@
 
 struct WeaponSelectSnap {
   bool valid = false;
-  bool wsDone = false;  // true if WeaponSelection::processFrame returned
-                        // true at this frame (both peers pressed Done).
+  bool ws_done = false;  // true if WeaponSelection::processFrame returned
+                         // true at this frame (both peers pressed Done).
 
   struct PerPlayer {
-    std::array<uint32_t, Settings::selectableWeapons> weapons{};
-    bool isReady = false;
-    int menuSelection = 0;
-    int menuTopItem = 0;
-    int menuBottomItem = 0;
-    uint16_t wormControlStates = 0;
-    int currentWeapon = 0;
+    std::array<uint32_t, Settings::kSelectableWeapons> weapons{};
+    bool is_ready = false;
+    int menu_selection = 0;
+    int menu_top_item = 0;
+    int menu_bottom_item = 0;
+    uint16_t worm_control_states = 0;
+    int current_weapon = 0;
   };
   std::array<PerPlayer, 2> players{};
 
   Rand rand;
 
   // Edge-detection / key-repeat state on the rollback controller.
-  uint8_t localPrevInput = 0;
-  uint8_t remotePrevInput = 0;
-  std::array<uint16_t, 8> localHeldFrames{};
-  std::array<uint16_t, 8> remoteHeldFrames{};
+  uint8_t local_prev_input = 0;
+  uint8_t remote_prev_input = 0;
+  std::array<uint16_t, 8> local_held_frames{};
+  std::array<uint16_t, 8> remote_held_frames{};
 };

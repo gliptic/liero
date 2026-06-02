@@ -12,22 +12,22 @@ struct Game;
 // When both are ready, starts a new game.
 struct RematchState : AppState {
   enum Items {
-    RmLevel,
-    RmReady,
-    RmDisconnect,
+    kRmLevel,
+    kRmReady,
+    kRmDisconnect,
   };
 
-  RematchState(Game& lastGame);
+  RematchState(Game& last_game);
 
-  void enter() override;
-  void handleEvent(SDL_Event& ev) override;
-  bool update() override;
-  void draw() override;
-  bool wantsMenuFlip() const override { return true; }
+  void Enter() override;
+  void HandleEvent(SDL_Event& ev) override;
+  bool Update() override;
+  void Draw() override;
+  bool WantsMenuFlip() const override { return true; }
 
  private:
-  std::string levelDisplayName() const;
-  void updateMenuItems();
+  std::string LevelDisplayName() const;
+  void UpdateMenuItems();
 
   Game& lastGame_;
   Menu menu_;

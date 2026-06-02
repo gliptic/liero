@@ -14,85 +14,85 @@
 struct DualGameFixture {
   std::shared_ptr<Common> common;
   std::shared_ptr<Settings> settings;
-  std::shared_ptr<SoundPlayer> soundPlayerA;
-  std::shared_ptr<SoundPlayer> soundPlayerB;
-  std::unique_ptr<Game> gameA;
-  std::unique_ptr<Game> gameB;
+  std::shared_ptr<SoundPlayer> sound_player_a;
+  std::shared_ptr<SoundPlayer> sound_player_b;
+  std::unique_ptr<Game> game_a;
+  std::unique_ptr<Game> game_b;
 
   DualGameFixture() {
-    precomputeTables();
+    PrecomputeTables();
 
     common = std::make_shared<Common>();
-    FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-    common->load(std::move(tcRoot));
+    FsNode tc_root(FsNode("data") / "TC" / "openliero");
+    common->load(std::move(tc_root));
 
     settings = std::make_shared<Settings>();
     // Use default settings but ensure deterministic setup
     settings->lives = 10;
-    settings->loadingTime = 0;
-    settings->randomLevel = true;
-    settings->gameMode = Settings::GMKillEmAll;
+    settings->loading_time = 0;
+    settings->random_level = true;
+    settings->game_mode = Settings::kGmKillEmAll;
 
-    soundPlayerA = std::make_shared<NullSoundPlayer>();
-    soundPlayerB = std::make_shared<NullSoundPlayer>();
+    sound_player_a = std::make_shared<NullSoundPlayer>();
+    sound_player_b = std::make_shared<NullSoundPlayer>();
 
-    gameA = std::make_unique<Game>(common, settings, soundPlayerA);
-    gameB = std::make_unique<Game>(common, settings, soundPlayerB);
+    game_a = std::make_unique<Game>(common, settings, sound_player_a);
+    game_b = std::make_unique<Game>(common, settings, sound_player_b);
 
     // Seed both with the same value
     uint32_t seed = 42;
-    gameA->rand.seed(seed);
-    gameB->rand.seed(seed);
+    game_a->rand.Seed(seed);
+    game_b->rand.Seed(seed);
 
     // Create identical worms for both games
     for (int idx = 0; idx < 2; ++idx) {
-      auto wA = std::make_shared<Worm>();
-      wA->settings = settings->wormSettings[idx];
-      wA->health = wA->settings->health;
-      wA->index = idx;
-      wA->statsX = idx == 0 ? 0 : 218;
+      auto w_a = std::make_shared<Worm>();
+      w_a->settings = settings->worm_settings[idx];
+      w_a->health = w_a->settings->health;
+      w_a->index = idx;
+      w_a->stats_x = idx == 0 ? 0 : 218;
 
-      auto wB = std::make_shared<Worm>();
-      wB->settings = settings->wormSettings[idx];
-      wB->health = wB->settings->health;
-      wB->index = idx;
-      wB->statsX = idx == 0 ? 0 : 218;
+      auto w_b = std::make_shared<Worm>();
+      w_b->settings = settings->worm_settings[idx];
+      w_b->health = w_b->settings->health;
+      w_b->index = idx;
+      w_b->stats_x = idx == 0 ? 0 : 218;
 
-      gameA->addWorm(wA);
-      gameB->addWorm(wB);
+      game_a->AddWorm(w_a);
+      game_b->AddWorm(w_b);
     }
 
     // Add viewports (needed for processFrame's viewport logic)
-    gameA->addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    gameA->addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
-    gameB->addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    gameB->addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    game_a->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    game_a->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    game_b->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    game_b->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
     // Generate levels with the same RNG state
-    gameA->level.generateFromSettings(*common, *settings, gameA->rand);
-    gameB->level.generateFromSettings(*common, *settings, gameB->rand);
+    game_a->level.GenerateFromSettings(*common, *settings, game_a->rand);
+    game_b->level.GenerateFromSettings(*common, *settings, game_b->rand);
 
     // Initialize weapons for all worms
-    for (auto const& w : gameA->worms) w->initWeapons(*gameA);
-    for (auto const& w : gameB->worms) w->initWeapons(*gameB);
+    for (auto const& w : game_a->worms) w->InitWeapons(*game_a);
+    for (auto const& w : game_b->worms) w->InitWeapons(*game_b);
 
     // Start games
-    gameA->paused = false;
-    gameB->paused = false;
-    gameA->startGame();
-    gameB->startGame();
+    game_a->paused = false;
+    game_b->paused = false;
+    game_a->StartGame();
+    game_b->StartGame();
 
     // Reset worms into game
-    gameA->resetWorms();
-    gameB->resetWorms();
+    game_a->ResetWorms();
+    game_b->ResetWorms();
   }
 
   // Apply identical random inputs to both games using a separate PRNG
-  void applyRandomInputs(Rand& inputRng) {
+  void ApplyRandomInputs(Rand& input_rng) {
     for (int idx = 0; idx < 2; ++idx) {
-      uint32_t input = inputRng() & 0x7f;  // 7 control bits
-      gameA->worms[idx]->controlStates.unpack(input);
-      gameB->worms[idx]->controlStates.unpack(input);
+      uint32_t input = input_rng() & 0x7f;  // 7 control bits
+      game_a->worms[idx]->control_states.Unpack(input);
+      game_b->worms[idx]->control_states.Unpack(input);
     }
   }
 };
@@ -100,20 +100,21 @@ struct DualGameFixture {
 TEST_CASE("Dual simulation produces identical state", "[determinism]") {
   DualGameFixture f;
 
-  Rand inputRng(12345);
+  Rand input_rng(12345);
 
-  constexpr int NUM_FRAMES = 1000;
+  constexpr int kNumFrames = 1000;
 
-  for (int frame = 0; frame < NUM_FRAMES; ++frame) {
-    f.applyRandomInputs(inputRng);
-    f.gameA->processFrame();
-    f.gameB->processFrame();
+  for (int frame = 0; frame < kNumFrames; ++frame) {
+    f.ApplyRandomInputs(input_rng);
+    f.game_a->ProcessFrame();
+    f.game_b->ProcessFrame();
 
-    uint32_t hashA = hashGameState(*f.gameA);
-    uint32_t hashB = hashGameState(*f.gameB);
+    uint32_t hash_a = HashGameState(*f.game_a);
+    uint32_t hash_b = HashGameState(*f.game_b);
 
-    INFO("Desync at frame " << frame << ": hashA=0x" << std::hex << hashA << " hashB=0x" << hashB);
-    REQUIRE(hashA == hashB);
+    INFO("Desync at frame " << frame << ": hashA=0x" << std::hex << hash_a << " hashB=0x"
+                            << hash_b);
+    REQUIRE(hash_a == hash_b);
   }
 }
 
@@ -123,16 +124,16 @@ TEST_CASE("Simulation is reproducible across runs", "[determinism]") {
 
   for (int run = 0; run < 2; ++run) {
     DualGameFixture f;
-    Rand inputRng(99999);
+    Rand input_rng(99999);
 
-    constexpr int NUM_FRAMES = 500;
+    constexpr int kNumFrames = 500;
 
-    for (int frame = 0; frame < NUM_FRAMES; ++frame) {
-      f.applyRandomInputs(inputRng);
-      f.gameA->processFrame();
+    for (int frame = 0; frame < kNumFrames; ++frame) {
+      f.ApplyRandomInputs(input_rng);
+      f.game_a->ProcessFrame();
     }
 
-    uint32_t h = hashGameState(*f.gameA);
+    uint32_t h = HashGameState(*f.game_a);
     if (run == 0)
       hash1 = h;
     else
@@ -145,19 +146,19 @@ TEST_CASE("Simulation is reproducible across runs", "[determinism]") {
 TEST_CASE("Same inputs produce same state regardless of construction order", "[determinism]") {
   // Construct games in different order but with same seed — should be identical
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tcRoot));
+  FsNode tc_root(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tc_root));
 
-  precomputeTables();
+  PrecomputeTables();
 
   auto settings = std::make_shared<Settings>();
-  settings->randomLevel = true;
+  settings->random_level = true;
 
   auto sp = std::make_shared<NullSoundPlayer>();
 
   // Game constructed first
   Game game1(common, settings, sp);
-  game1.rand.seed(777);
+  game1.rand.Seed(777);
 
   // Game constructed after some unrelated work
   volatile int dummy = 0;
@@ -165,56 +166,56 @@ TEST_CASE("Same inputs produce same state regardless of construction order", "[d
   (void)dummy;
 
   Game game2(common, settings, std::make_shared<NullSoundPlayer>());
-  game2.rand.seed(777);
+  game2.rand.Seed(777);
 
   // Same worm setup
   for (int idx = 0; idx < 2; ++idx) {
     auto w1 = std::make_shared<Worm>();
-    w1->settings = settings->wormSettings[idx];
+    w1->settings = settings->worm_settings[idx];
     w1->health = w1->settings->health;
     w1->index = idx;
-    game1.addWorm(w1);
+    game1.AddWorm(w1);
 
     auto w2 = std::make_shared<Worm>();
-    w2->settings = settings->wormSettings[idx];
+    w2->settings = settings->worm_settings[idx];
     w2->health = w2->settings->health;
     w2->index = idx;
-    game2.addWorm(w2);
+    game2.AddWorm(w2);
   }
 
-  game1.addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-  game1.addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
-  game2.addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-  game2.addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+  game1.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+  game1.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+  game2.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+  game2.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
-  game1.level.generateFromSettings(*common, *settings, game1.rand);
-  game2.level.generateFromSettings(*common, *settings, game2.rand);
+  game1.level.GenerateFromSettings(*common, *settings, game1.rand);
+  game2.level.GenerateFromSettings(*common, *settings, game2.rand);
 
-  for (auto const& w : game1.worms) w->initWeapons(game1);
-  for (auto const& w : game2.worms) w->initWeapons(game2);
+  for (auto const& w : game1.worms) w->InitWeapons(game1);
+  for (auto const& w : game2.worms) w->InitWeapons(game2);
 
   game1.paused = false;
   game2.paused = false;
-  game1.startGame();
-  game2.startGame();
-  game1.resetWorms();
-  game2.resetWorms();
+  game1.StartGame();
+  game2.StartGame();
+  game1.ResetWorms();
+  game2.ResetWorms();
 
-  Rand inputRng1(55555);
-  Rand inputRng2(55555);
+  Rand input_rng1(55555);
+  Rand input_rng2(55555);
 
   for (int frame = 0; frame < 300; ++frame) {
     for (int idx = 0; idx < 2; ++idx) {
-      uint32_t input1 = inputRng1() & 0x7f;
-      uint32_t input2 = inputRng2() & 0x7f;
-      game1.worms[idx]->controlStates.unpack(input1);
-      game2.worms[idx]->controlStates.unpack(input2);
+      uint32_t input1 = input_rng1() & 0x7f;
+      uint32_t input2 = input_rng2() & 0x7f;
+      game1.worms[idx]->control_states.Unpack(input1);
+      game2.worms[idx]->control_states.Unpack(input2);
     }
-    game1.processFrame();
-    game2.processFrame();
+    game1.ProcessFrame();
+    game2.ProcessFrame();
   }
 
-  REQUIRE(hashGameState(game1) == hashGameState(game2));
+  REQUIRE(HashGameState(game1) == HashGameState(game2));
 }
 
 TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
@@ -225,177 +226,178 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
   // This targets the known desync risk in beginRespawn() where the RNG-based
   // position search depends on level pixel state.
 
-  precomputeTables();
+  PrecomputeTables();
 
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tcRoot));
+  FsNode tc_root(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tc_root));
 
   auto settings = std::make_shared<Settings>();
-  settings->lives = 50;       // Many lives = many death/respawn cycles
-  settings->loadingTime = 0;  // Fast weapon reload
-  settings->randomLevel = true;
-  settings->gameMode = Settings::GMKillEmAll;
+  settings->lives = 50;        // Many lives = many death/respawn cycles
+  settings->loading_time = 0;  // Fast weapon reload
+  settings->random_level = true;
+  settings->game_mode = Settings::kGmKillEmAll;
   settings->blood = 100;
 
   // Use multiple seeds to cover different level layouts
   uint32_t seeds[] = {42, 1337, 99999, 0xDEAD, 0xBEEF};
 
   for (uint32_t seed : seeds) {
-    auto spA = std::make_shared<NullSoundPlayer>();
-    auto spB = std::make_shared<NullSoundPlayer>();
+    auto sp_a = std::make_shared<NullSoundPlayer>();
+    auto sp_b = std::make_shared<NullSoundPlayer>();
 
-    Game gameA(common, settings, spA);
-    Game gameB(common, settings, spB);
+    Game game_a(common, settings, sp_a);
+    Game game_b(common, settings, sp_b);
 
-    gameA.rand.seed(seed);
-    gameB.rand.seed(seed);
+    game_a.rand.Seed(seed);
+    game_b.rand.Seed(seed);
 
     for (int idx = 0; idx < 2; ++idx) {
-      auto wA = std::make_shared<Worm>();
-      wA->settings = settings->wormSettings[idx];
-      wA->health = 25;  // Low health for quick deaths
-      wA->index = idx;
-      wA->statsX = idx == 0 ? 0 : 218;
-      gameA.addWorm(wA);
+      auto w_a = std::make_shared<Worm>();
+      w_a->settings = settings->worm_settings[idx];
+      w_a->health = 25;  // Low health for quick deaths
+      w_a->index = idx;
+      w_a->stats_x = idx == 0 ? 0 : 218;
+      game_a.AddWorm(w_a);
 
-      auto wB = std::make_shared<Worm>();
-      wB->settings = settings->wormSettings[idx];
-      wB->health = 25;
-      wB->index = idx;
-      wB->statsX = idx == 0 ? 0 : 218;
-      gameB.addWorm(wB);
+      auto w_b = std::make_shared<Worm>();
+      w_b->settings = settings->worm_settings[idx];
+      w_b->health = 25;
+      w_b->index = idx;
+      w_b->stats_x = idx == 0 ? 0 : 218;
+      game_b.AddWorm(w_b);
     }
 
-    gameA.addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    gameA.addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
-    gameB.addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    gameB.addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    game_a.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    game_a.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    game_b.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    game_b.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
-    gameA.level.generateFromSettings(*common, *settings, gameA.rand);
-    gameB.level.generateFromSettings(*common, *settings, gameB.rand);
+    game_a.level.GenerateFromSettings(*common, *settings, game_a.rand);
+    game_b.level.GenerateFromSettings(*common, *settings, game_b.rand);
 
-    for (auto const& w : gameA.worms) w->initWeapons(gameA);
-    for (auto const& w : gameB.worms) w->initWeapons(gameB);
+    for (auto const& w : game_a.worms) w->InitWeapons(game_a);
+    for (auto const& w : game_b.worms) w->InitWeapons(game_b);
 
-    gameA.paused = false;
-    gameB.paused = false;
-    gameA.startGame();
-    gameB.startGame();
-    gameA.resetWorms();
-    gameB.resetWorms();
+    game_a.paused = false;
+    game_b.paused = false;
+    game_a.StartGame();
+    game_b.StartGame();
+    game_a.ResetWorms();
+    game_b.ResetWorms();
 
-    Rand inputRng(seed * 2654435761u + 1);
+    Rand input_rng(seed * 2654435761u + 1);
 
-    constexpr int NUM_FRAMES = 5000;
-    int deathCount = 0;
+    constexpr int kNumFrames = 5000;
+    int death_count = 0;
 
-    for (int frame = 0; frame < NUM_FRAMES; ++frame) {
+    for (int frame = 0; frame < kNumFrames; ++frame) {
       for (int idx = 0; idx < 2; ++idx) {
-        uint32_t input = inputRng() & 0x7f;
+        uint32_t input = input_rng() & 0x7f;
         // Bias toward combat: 60% chance fire is held
-        if ((inputRng() % 10) < 6) input |= (1 << 4);  // Fire bit
+        if ((input_rng() % 10) < 6) input |= (1 << 4);  // Fire bit
         // 40% chance of movement toward opponent
-        if ((inputRng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));  // Left/Right toward other
+        if ((input_rng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));  // Left/Right toward other
 
-        gameA.worms[idx]->controlStates.unpack(input);
-        gameB.worms[idx]->controlStates.unpack(input);
+        game_a.worms[idx]->control_states.Unpack(input);
+        game_b.worms[idx]->control_states.Unpack(input);
       }
 
-      gameA.processFrame();
-      gameB.processFrame();
+      game_a.ProcessFrame();
+      game_b.ProcessFrame();
 
       // Track deaths for info output — killedTimer is set to 150 on death,
       // then decremented each frame, so 149 means "just died this frame"
-      for (auto const& w : gameA.worms) {
-        if (!w->visible && w->killedTimer == Worm::KilledTimerInitial - 1) ++deathCount;
+      for (auto const& w : game_a.worms) {
+        if (!w->visible && w->killed_timer == Worm::kKilledTimerInitial - 1) ++death_count;
       }
 
       // Check state every frame
-      uint32_t hashA = hashGameState(gameA);
-      uint32_t hashB = hashGameState(gameB);
+      uint32_t hash_a = HashGameState(game_a);
+      uint32_t hash_b = HashGameState(game_b);
 
-      if (hashA != hashB) {
+      if (hash_a != hash_b) {
         // Identify which component diverged
-        uint32_t rngA = gameA.rand.last;
-        uint32_t rngB = gameB.rand.last;
-        bool rngMatch = (rngA == rngB);
+        uint32_t rng_a = game_a.rand.last;
+        uint32_t rng_b = game_b.rand.last;
+        bool rng_match = (rng_a == rng_b);
 
-        bool wormsMatch = true;
-        for (size_t i = 0; i < gameA.worms.size(); ++i) {
-          if (gameA.worms[i]->pos.x != gameB.worms[i]->pos.x ||
-              gameA.worms[i]->pos.y != gameB.worms[i]->pos.y ||
-              gameA.worms[i]->visible != gameB.worms[i]->visible ||
-              gameA.worms[i]->health != gameB.worms[i]->health ||
-              gameA.worms[i]->killedTimer != gameB.worms[i]->killedTimer) {
-            wormsMatch = false;
+        bool worms_match = true;
+        for (size_t i = 0; i < game_a.worms.size(); ++i) {
+          if (game_a.worms[i]->pos.x != game_b.worms[i]->pos.x ||
+              game_a.worms[i]->pos.y != game_b.worms[i]->pos.y ||
+              game_a.worms[i]->visible != game_b.worms[i]->visible ||
+              game_a.worms[i]->health != game_b.worms[i]->health ||
+              game_a.worms[i]->killed_timer != game_b.worms[i]->killed_timer) {
+            worms_match = false;
             break;
           }
         }
 
         // Check level pixels
-        bool levelMatch = true;
-        for (int i = 0; i < gameA.level.width * gameA.level.height; ++i) {
-          if (gameA.level.data[i] != gameB.level.data[i]) {
-            levelMatch = false;
+        bool level_match = true;
+        for (int i = 0; i < game_a.level.width * game_a.level.height; ++i) {
+          if (game_a.level.data[i] != game_b.level.data[i]) {
+            level_match = false;
             break;
           }
         }
 
         // Check object counts
-        int nobjectsA = 0, nobjectsB = 0;
+        int nobjects_a = 0, nobjects_b = 0;
         {
-          auto r = gameA.nobjects.all();
+          auto r = game_a.nobjects.All();
           NObject* n;
-          while ((n = r.next())) ++nobjectsA;
+          while ((n = r.Next())) ++nobjects_a;
         }
         {
-          auto r = gameB.nobjects.all();
+          auto r = game_b.nobjects.All();
           NObject* n;
-          while ((n = r.next())) ++nobjectsB;
+          while ((n = r.Next())) ++nobjects_b;
         }
 
-        int bobjectsA = 0, bobjectsB = 0;
+        int bobjects_a = 0, bobjects_b = 0;
         {
-          auto br = gameA.bobjects.begin();
-          for (; br != gameA.bobjects.end(); ++br) ++bobjectsA;
+          auto br = game_a.bobjects.Begin();
+          for (; br != game_a.bobjects.End(); ++br) ++bobjects_a;
         }
         {
-          auto br = gameB.bobjects.begin();
-          for (; br != gameB.bobjects.end(); ++br) ++bobjectsB;
+          auto br = game_b.bobjects.Begin();
+          for (; br != game_b.bobjects.End(); ++br) ++bobjects_b;
         }
 
         // Deep compare BObjects
-        bool bobjectsMatch = true;
+        bool bobjects_match = true;
         {
-          auto brA = gameA.bobjects.begin();
-          auto brB = gameB.bobjects.begin();
+          auto br_a = game_a.bobjects.Begin();
+          auto br_b = game_b.bobjects.Begin();
           int idx = 0;
-          for (; brA != gameA.bobjects.end() && brB != gameB.bobjects.end(); ++brA, ++brB, ++idx) {
-            if (brA->pos.x != brB->pos.x || brA->pos.y != brB->pos.y) {
-              INFO("  BObject[" << idx << "] pos differs: A=(" << brA->pos.x << "," << brA->pos.y
-                                << ") B=(" << brB->pos.x << "," << brB->pos.y << ")");
-              bobjectsMatch = false;
+          for (; br_a != game_a.bobjects.End() && br_b != game_b.bobjects.End();
+               ++br_a, ++br_b, ++idx) {
+            if (br_a->pos.x != br_b->pos.x || br_a->pos.y != br_b->pos.y) {
+              INFO("  BObject[" << idx << "] pos differs: A=(" << br_a->pos.x << "," << br_a->pos.y
+                                << ") B=(" << br_b->pos.x << "," << br_b->pos.y << ")");
+              bobjects_match = false;
               break;
             }
           }
         }
 
         // Deep compare NObjects
-        bool nobjectsMatch = true;
+        bool nobjects_match = true;
         {
-          auto rA = gameA.nobjects.all();
-          auto rB = gameB.nobjects.all();
-          NObject *nA, *nB;
+          auto r_a = game_a.nobjects.All();
+          auto r_b = game_b.nobjects.All();
+          NObject *n_a, *n_b;
           int idx = 0;
-          while ((nA = rA.next()) && (nB = rB.next())) {
-            if (nA->pos.x != nB->pos.x || nA->pos.y != nB->pos.y || nA->vel.x != nB->vel.x ||
-                nA->vel.y != nB->vel.y) {
-              INFO("  NObject[" << idx << "] differs: A pos=(" << nA->pos.x << "," << nA->pos.y
-                                << ") vel=(" << nA->vel.x << "," << nA->vel.y << ") B pos=("
-                                << nB->pos.x << "," << nB->pos.y << ") vel=(" << nB->vel.x << ","
-                                << nB->vel.y << ")");
-              nobjectsMatch = false;
+          while ((n_a = r_a.Next()) && (n_b = r_b.Next())) {
+            if (n_a->pos.x != n_b->pos.x || n_a->pos.y != n_b->pos.y || n_a->vel.x != n_b->vel.x ||
+                n_a->vel.y != n_b->vel.y) {
+              INFO("  NObject[" << idx << "] differs: A pos=(" << n_a->pos.x << "," << n_a->pos.y
+                                << ") vel=(" << n_a->vel.x << "," << n_a->vel.y << ") B pos=("
+                                << n_b->pos.x << "," << n_b->pos.y << ") vel=(" << n_b->vel.x << ","
+                                << n_b->vel.y << ")");
+              nobjects_match = false;
               break;
             }
             ++idx;
@@ -403,31 +405,31 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         }
 
         // Deep compare WObjects
-        bool wobjectsMatch = true;
-        int wobjectsA = 0, wobjectsB = 0;
+        bool wobjects_match = true;
+        int wobjects_a = 0, wobjects_b = 0;
         {
-          auto rA = gameA.wobjects.all();
-          auto rB = gameB.wobjects.all();
-          WObject *wA, *wB;
+          auto r_a = game_a.wobjects.All();
+          auto r_b = game_b.wobjects.All();
+          WObject *w_a, *w_b;
           int idx = 0;
-          while ((wA = rA.next())) {
-            ++wobjectsA;
-            (void)wA;
+          while ((w_a = r_a.Next())) {
+            ++wobjects_a;
+            (void)w_a;
           }
-          while ((wB = rB.next())) {
-            ++wobjectsB;
-            (void)wB;
+          while ((w_b = r_b.Next())) {
+            ++wobjects_b;
+            (void)w_b;
           }
-          rA = gameA.wobjects.all();
-          rB = gameB.wobjects.all();
-          while ((wA = rA.next()) && (wB = rB.next())) {
-            if (wA->pos.x != wB->pos.x || wA->pos.y != wB->pos.y || wA->vel.x != wB->vel.x ||
-                wA->vel.y != wB->vel.y || wA->curFrame != wB->curFrame ||
-                wA->timeLeft != wB->timeLeft) {
-              INFO("  WObject[" << idx << "] differs: A pos=(" << wA->pos.x << "," << wA->pos.y
-                                << ") tl=" << wA->timeLeft << " B pos=(" << wB->pos.x << ","
-                                << wB->pos.y << ") tl=" << wB->timeLeft);
-              wobjectsMatch = false;
+          r_a = game_a.wobjects.All();
+          r_b = game_b.wobjects.All();
+          while ((w_a = r_a.Next()) && (w_b = r_b.Next())) {
+            if (w_a->pos.x != w_b->pos.x || w_a->pos.y != w_b->pos.y || w_a->vel.x != w_b->vel.x ||
+                w_a->vel.y != w_b->vel.y || w_a->cur_frame != w_b->cur_frame ||
+                w_a->time_left != w_b->time_left) {
+              INFO("  WObject[" << idx << "] differs: A pos=(" << w_a->pos.x << "," << w_a->pos.y
+                                << ") tl=" << w_a->time_left << " B pos=(" << w_b->pos.x << ","
+                                << w_b->pos.y << ") tl=" << w_b->time_left);
+              wobjects_match = false;
               break;
             }
             ++idx;
@@ -435,26 +437,27 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         }
 
         // Deep compare SObjects
-        bool sobjectsMatch = true;
-        int sobjectsA = 0, sobjectsB = 0;
+        bool sobjects_match = true;
+        int sobjects_a = 0, sobjects_b = 0;
         {
-          auto rA = gameA.sobjects.all();
-          auto rB = gameB.sobjects.all();
-          SObject *sA, *sB;
+          auto r_a = game_a.sobjects.All();
+          auto r_b = game_b.sobjects.All();
+          SObject *s_a, *s_b;
           int idx = 0;
-          while ((sA = rA.next())) {
-            ++sobjectsA;
+          while ((s_a = r_a.Next())) {
+            ++sobjects_a;
           }
-          while ((sB = rB.next())) {
-            ++sobjectsB;
+          while ((s_b = r_b.Next())) {
+            ++sobjects_b;
           }
-          rA = gameA.sobjects.all();
-          rB = gameB.sobjects.all();
-          while ((sA = rA.next()) && (sB = rB.next())) {
-            if (sA->id != sB->id || sA->curFrame != sB->curFrame) {
-              INFO("  SObject[" << idx << "] differs: A id=" << sA->id << " frame=" << sA->curFrame
-                                << " B id=" << sB->id << " frame=" << sB->curFrame);
-              sobjectsMatch = false;
+          r_a = game_a.sobjects.All();
+          r_b = game_b.sobjects.All();
+          while ((s_a = r_a.Next()) && (s_b = r_b.Next())) {
+            if (s_a->id != s_b->id || s_a->cur_frame != s_b->cur_frame) {
+              INFO("  SObject[" << idx << "] differs: A id=" << s_a->id
+                                << " frame=" << s_a->cur_frame << " B id=" << s_b->id
+                                << " frame=" << s_b->cur_frame);
+              sobjects_match = false;
               break;
             }
             ++idx;
@@ -462,26 +465,26 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         }
 
         // Deep compare Bonuses
-        bool bonusesMatch = true;
-        int bonusesA = 0, bonusesB = 0;
+        bool bonuses_match = true;
+        int bonuses_a = 0, bonuses_b = 0;
         {
-          auto rA = gameA.bonuses.all();
-          auto rB = gameB.bonuses.all();
-          Bonus *bA, *bB;
+          auto r_a = game_a.bonuses.All();
+          auto r_b = game_b.bonuses.All();
+          Bonus *b_a, *b_b;
           int idx = 0;
-          while ((bA = rA.next())) {
-            ++bonusesA;
+          while ((b_a = r_a.Next())) {
+            ++bonuses_a;
           }
-          while ((bB = rB.next())) {
-            ++bonusesB;
+          while ((b_b = r_b.Next())) {
+            ++bonuses_b;
           }
-          rA = gameA.bonuses.all();
-          rB = gameB.bonuses.all();
-          while ((bA = rA.next()) && (bB = rB.next())) {
-            if (bA->x != bB->x || bA->y != bB->y || bA->timer != bB->timer ||
-                bA->weapon != bB->weapon) {
+          r_a = game_a.bonuses.All();
+          r_b = game_b.bonuses.All();
+          while ((b_a = r_a.Next()) && (b_b = r_b.Next())) {
+            if (b_a->x != b_b->x || b_a->y != b_b->y || b_a->timer != b_b->timer ||
+                b_a->weapon != b_b->weapon) {
               INFO("  Bonus[" << idx << "] differs");
-              bonusesMatch = false;
+              bonuses_match = false;
               break;
             }
             ++idx;
@@ -489,44 +492,44 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         }
 
         // Deep compare worm weapons
-        bool weaponsMatch = true;
-        for (size_t wi = 0; wi < gameA.worms.size(); ++wi) {
-          auto const& wA = gameA.worms[wi];
-          auto const& wB = gameB.worms[wi];
+        bool weapons_match = true;
+        for (size_t wi = 0; wi < game_a.worms.size(); ++wi) {
+          auto const& w_a = game_a.worms[wi];
+          auto const& w_b = game_b.worms[wi];
           for (int i = 0; i < NUM_WEAPONS; ++i) {
-            if (wA->weapons[i].ammo != wB->weapons[i].ammo ||
-                wA->weapons[i].delayLeft != wB->weapons[i].delayLeft ||
-                wA->weapons[i].loadingLeft != wB->weapons[i].loadingLeft) {
+            if (w_a->weapons[i].ammo != w_b->weapons[i].ammo ||
+                w_a->weapons[i].delay_left != w_b->weapons[i].delay_left ||
+                w_a->weapons[i].loading_left != w_b->weapons[i].loading_left) {
               INFO("  Worm[" << wi << "].weapons[" << i << "] differs: A ammo="
-                             << wA->weapons[i].ammo << " delay=" << wA->weapons[i].delayLeft
-                             << " loading=" << wA->weapons[i].loadingLeft << " B ammo="
-                             << wB->weapons[i].ammo << " delay=" << wB->weapons[i].delayLeft
-                             << " loading=" << wB->weapons[i].loadingLeft);
-              weaponsMatch = false;
+                             << w_a->weapons[i].ammo << " delay=" << w_a->weapons[i].delay_left
+                             << " loading=" << w_a->weapons[i].loading_left << " B ammo="
+                             << w_b->weapons[i].ammo << " delay=" << w_b->weapons[i].delay_left
+                             << " loading=" << w_b->weapons[i].loading_left);
+              weapons_match = false;
             }
           }
         }
 
-        INFO("Desync at frame " << frame << " (seed=" << seed << ", deaths=" << deathCount << ")"
-                                << "\n  RNG match=" << rngMatch << " Worms match=" << wormsMatch
-                                << " Level match=" << levelMatch << "\n  NObjects: A=" << nobjectsA
-                                << " B=" << nobjectsB << " match=" << nobjectsMatch
-                                << "\n  BObjects: A=" << bobjectsA << " B=" << bobjectsB
-                                << " match=" << bobjectsMatch << "\n  WObjects: A=" << wobjectsA
-                                << " B=" << wobjectsB << " match=" << wobjectsMatch
-                                << "\n  SObjects: A=" << sobjectsA << " B=" << sobjectsB
-                                << " match=" << sobjectsMatch << "\n  Bonuses: A=" << bonusesA
-                                << " B=" << bonusesB << " match=" << bonusesMatch
-                                << "\n  Weapons match=" << weaponsMatch << "\n  hashA=0x"
-                                << std::hex << hashA << " hashB=0x" << hashB);
-        REQUIRE(hashA == hashB);
+        INFO("Desync at frame " << frame << " (seed=" << seed << ", deaths=" << death_count << ")"
+                                << "\n  RNG match=" << rng_match << " Worms match=" << worms_match
+                                << " Level match=" << level_match << "\n  NObjects: A="
+                                << nobjects_a << " B=" << nobjects_b << " match=" << nobjects_match
+                                << "\n  BObjects: A=" << bobjects_a << " B=" << bobjects_b
+                                << " match=" << bobjects_match << "\n  WObjects: A=" << wobjects_a
+                                << " B=" << wobjects_b << " match=" << wobjects_match
+                                << "\n  SObjects: A=" << sobjects_a << " B=" << sobjects_b
+                                << " match=" << sobjects_match << "\n  Bonuses: A=" << bonuses_a
+                                << " B=" << bonuses_b << " match=" << bonuses_match
+                                << "\n  Weapons match=" << weapons_match << "\n  hashA=0x"
+                                << std::hex << hash_a << " hashB=0x" << hash_b);
+        REQUIRE(hash_a == hash_b);
       }
 
       // Stop if game is over
-      if (gameA.isGameOver()) break;
+      if (game_a.IsGameOver()) break;
     }
 
-    INFO("Seed " << seed << " completed: " << deathCount << " deaths observed");
-    REQUIRE(deathCount > 0);  // Sanity check: we actually tested deaths
+    INFO("Seed " << seed << " completed: " << death_count << " deaths observed");
+    REQUIRE(death_count > 0);  // Sanity check: we actually tested deaths
   }
 }

@@ -22,9 +22,9 @@ using socklen_t = int;
 #define BRIDGE_INVALID_SOCKET(s) ((s) < 0)
 #endif
 
-static constexpr int BRIDGE_BUFSIZE = 256 * 1024;
+static constexpr int kBridgeBufsize = 256 * 1024;
 
-static bool setNonBlocking(int fd) {
+static bool SetNonBlocking(int fd) {
 #ifdef _WIN32
   u_long mode = 1;
   return ioctlsocket(fd, FIONBIO, &mode) == 0;
@@ -35,24 +35,24 @@ static bool setNonBlocking(int fd) {
 #endif
 }
 
-static bool setBufferSizes(int fd) {
-  int sz = BRIDGE_BUFSIZE;
+static bool SetBufferSizes(int fd) {
+  int sz = kBridgeBufsize;
   setsockopt(fd, SOL_SOCKET, SO_RCVBUF, reinterpret_cast<const char*>(&sz), sizeof(sz));
   setsockopt(fd, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char*>(&sz), sizeof(sz));
   return true;
 }
 
-IceBridge::~IceBridge() { destroy(); }
+IceBridge::~IceBridge() { Destroy(); }
 
-BridgeSocket IceBridge::create(IceAgent& agent) {
+BridgeSocket IceBridge::Create(IceAgent& agent) {
   agent_ = &agent;
 
   // Create two UDP sockets on localhost — must be AF_INET6 to match ENet's dual-stack sockets
   enetSocket_ = socket(AF_INET6, SOCK_DGRAM, 0);
   bridgeSocket_ = socket(AF_INET6, SOCK_DGRAM, 0);
   if (BRIDGE_INVALID_SOCKET(enetSocket_) || BRIDGE_INVALID_SOCKET(bridgeSocket_)) {
-    destroy();
-    return BRIDGE_INVALID;
+    Destroy();
+    return kBridgeInvalid;
   }
 
   // Disable IPV6_V6ONLY so the sockets accept IPv4-mapped addresses (matching ENet)
@@ -63,42 +63,42 @@ BridgeSocket IceBridge::create(IceAgent& agent) {
              sizeof(off));
 
   // Bind both to IPv6 localhost (::1) with ephemeral ports
-  sockaddr_in6 addrA{};
-  addrA.sin6_family = AF_INET6;
-  addrA.sin6_addr = in6addr_loopback;
-  addrA.sin6_port = 0;
+  sockaddr_in6 addr_a{};
+  addr_a.sin6_family = AF_INET6;
+  addr_a.sin6_addr = in6addr_loopback;
+  addr_a.sin6_port = 0;
 
-  sockaddr_in6 addrB{};
-  addrB.sin6_family = AF_INET6;
-  addrB.sin6_addr = in6addr_loopback;
-  addrB.sin6_port = 0;
+  sockaddr_in6 addr_b{};
+  addr_b.sin6_family = AF_INET6;
+  addr_b.sin6_addr = in6addr_loopback;
+  addr_b.sin6_port = 0;
 
-  if (bind(enetSocket_, reinterpret_cast<sockaddr*>(&addrA), sizeof(addrA)) < 0 ||
-      bind(bridgeSocket_, reinterpret_cast<sockaddr*>(&addrB), sizeof(addrB)) < 0) {
-    destroy();
+  if (bind(enetSocket_, reinterpret_cast<sockaddr*>(&addr_a), sizeof(addr_a)) < 0 ||
+      bind(bridgeSocket_, reinterpret_cast<sockaddr*>(&addr_b), sizeof(addr_b)) < 0) {
+    Destroy();
     return -1;
   }
 
   // Get the assigned addresses
-  socklen_t len = sizeof(addrA);
-  getsockname(enetSocket_, reinterpret_cast<sockaddr*>(&addrA), &len);
-  len = sizeof(addrB);
-  getsockname(bridgeSocket_, reinterpret_cast<sockaddr*>(&addrB), &len);
-  bridgePort_ = ntohs(addrB.sin6_port);
-  enetAddr_ = addrA;
-  bridgeAddr_ = addrB;
+  socklen_t len = sizeof(addr_a);
+  getsockname(enetSocket_, reinterpret_cast<sockaddr*>(&addr_a), &len);
+  len = sizeof(addr_b);
+  getsockname(bridgeSocket_, reinterpret_cast<sockaddr*>(&addr_b), &len);
+  bridgePort_ = ntohs(addr_b.sin6_port);
+  enetAddr_ = addr_a;
+  bridgeAddr_ = addr_b;
 
   // NOT calling connect() — ENet uses sendto() with explicit addresses,
   // which returns EISCONN on Linux if the socket is connected.
 
   // Configure sockets
-  setNonBlocking(enetSocket_);
-  setNonBlocking(bridgeSocket_);
-  setBufferSizes(enetSocket_);
-  setBufferSizes(bridgeSocket_);
+  SetNonBlocking(enetSocket_);
+  SetNonBlocking(bridgeSocket_);
+  SetBufferSizes(enetSocket_);
+  SetBufferSizes(bridgeSocket_);
 
   // Wire IceAgent's onRecv: write incoming data to enetSocket_ via bridgeSocket_
-  agent_->onRecv = [this](const uint8_t* data, size_t len) {
+  agent_->on_recv = [this](const uint8_t* data, size_t len) {
     ::sendto(bridgeSocket_, reinterpret_cast<const char*>(data), len, 0,
              reinterpret_cast<const sockaddr*>(&enetAddr_), sizeof(enetAddr_));
   };
@@ -106,8 +106,8 @@ BridgeSocket IceBridge::create(IceAgent& agent) {
   return enetSocket_;
 }
 
-void IceBridge::poll() {
-  if (bridgeSocket_ == BRIDGE_INVALID || !agent_) return;
+void IceBridge::Poll() {
+  if (bridgeSocket_ == kBridgeInvalid || !agent_) return;
 
   uint8_t buf[2048];
   for (;;) {
@@ -117,21 +117,21 @@ void IceBridge::poll() {
       if (n < 0 && BRIDGE_WOULD_BLOCK) break;
       break;
     }
-    agent_->send(buf, static_cast<size_t>(n));
+    agent_->Send(buf, static_cast<size_t>(n));
   }
 }
 
-void IceBridge::destroy() {
+void IceBridge::Destroy() {
   if (agent_) {
-    agent_->onRecv = nullptr;
+    agent_->on_recv = nullptr;
     agent_ = nullptr;
   }
   // Don't close enetSocket_ — ownership transferred to ENet via enet_host_create.
   // ENet closes it when enet_host_destroy is called.
-  enetSocket_ = BRIDGE_INVALID;
-  if (bridgeSocket_ != BRIDGE_INVALID) {
+  enetSocket_ = kBridgeInvalid;
+  if (bridgeSocket_ != kBridgeInvalid) {
     BRIDGE_CLOSE(bridgeSocket_);
-    bridgeSocket_ = BRIDGE_INVALID;
+    bridgeSocket_ = kBridgeInvalid;
   }
   bridgePort_ = 0;
 }

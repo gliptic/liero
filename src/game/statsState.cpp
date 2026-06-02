@@ -14,36 +14,36 @@
 using cell = TextCell;
 using std::vector;
 
-static std::string percent(int nom, int den) {
+static std::string Percent(int nom, int den) {
   if (den == 0) return "";
 
-  const int BUF_MAX = 256;
-  char buf[BUF_MAX];
-  std::snprintf(buf, BUF_MAX * sizeof(char), "%.2f%%", double(nom) * 100.0 / den);
+  const int kBufMax = 256;
+  char buf[kBufMax];
+  std::snprintf(buf, kBufMax * sizeof(char), "%.2f%%", double(nom) * 100.0 / den);
   return buf;
 }
 
 struct StatsRenderer {
-  static int const textColor = 7;
+  static int const kTextColor = 7;
 
   StatsRenderer(Renderer& renderer, Game& game, NormalStatsRecorder& stats, Common& common)
       : renderer(renderer),
         game(game),
         stats(stats),
         common(common),
-        paneWidth(renderer.renderResX - 20) {}
+        pane_width(renderer.render_res_x - 20) {}
 
-  static int const paneX = 10;
+  static int const kPaneX = 10;
 
   template <typename P>
-  void pane(int n, int leftX, int topY, P const& p) {
-    offsX = n * renderer.renderResX + leftX;
+  void Pane(int n, int left_x, int top_y, P const& p) {
+    offs_x = n * renderer.render_res_x + left_x;
 
-    if (offsX >= -renderer.renderResX && offsX < renderer.renderResX) {
-      y = topY;
+    if (offs_x >= -renderer.render_res_x && offs_x < renderer.render_res_x) {
+      y = top_y;
       y += 10;
 
-      drawRoundedBox(renderer.bmp, offsX + paneX, y, 0, 2000, paneWidth);
+      DrawRoundedBox(renderer.bmp, offs_x + kPaneX, y, 0, 2000, pane_width);
 
       y += 10;
 
@@ -52,9 +52,9 @@ struct StatsRenderer {
   }
 
   template <typename B>
-  bool hblock(int height, B const& b) {
+  bool Hblock(int height, B const& b) {
     bool ran = false;
-    if (y < renderer.renderResY && y + height > 0) {
+    if (y < renderer.render_res_y && y + height > 0) {
       b();
       ran = true;
     }
@@ -62,124 +62,125 @@ struct StatsRenderer {
     return ran;
   }
 
-  void drawWorms() {
-    hblock(20, [this] {
+  void DrawWorms() {
+    Hblock(20, [this] {
       for (int i = 0; i < 2; ++i) {
-        int x = renderer.renderResX / 2 + (i == 0 ? -1 : 1) * (renderer.renderResX / 4) + offsX;
-        blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
+        int x =
+            renderer.render_res_x / 2 + (i == 0 ? -1 : 1) * (renderer.render_res_x / 4) + offs_x;
+        BlitImage(renderer.bmp, common.WormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
-        cell c(i == 0 ? TextCell::Right : TextCell::Left);
-        common.font.drawText(renderer.bmp, c << game.worms[i]->settings->name,
-                             x + (i == 0 ? -16 : 16), y + 2, textColor);
+        cell c(i == 0 ? TextCell::kRight : TextCell::kLeft);
+        common.font.DrawString(renderer.bmp, c << game.worms[i]->settings->name,
+                               x + (i == 0 ? -16 : 16), y + 2, kTextColor);
       }
     });
   }
 
-  void drawWorm(int i) {
-    bool visible = hblock(20, [this, i] {
-      int x = renderer.renderResX / 2 + offsX;
-      blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
+  void DrawWorm(int i) {
+    bool visible = Hblock(20, [this, i] {
+      int x = renderer.render_res_x / 2 + offs_x;
+      BlitImage(renderer.bmp, common.WormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
 
-      cell c(i == 0 ? TextCell::Right : TextCell::Left);
-      common.font.drawText(renderer.bmp, c << game.worms[i]->settings->name,
-                           x + (i == 0 ? -16 : 16), y + 2, textColor);
+      cell c(i == 0 ? TextCell::kRight : TextCell::kLeft);
+      common.font.DrawString(renderer.bmp, c << game.worms[i]->settings->name,
+                             x + (i == 0 ? -16 : 16), y + 2, kTextColor);
     });
 
     if (!visible) {
-      int x = 18 + offsX;
-      blitImage(renderer.bmp, common.wormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, 10);
+      int x = 18 + offs_x;
+      BlitImage(renderer.bmp, common.WormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, 10);
     }
   }
 
   template <typename Ws>
-  void drawWormStat(char const* name, Ws wormStat) {
-    hblock(11, [this, name, &wormStat] {
-      common.font.drawText(renderer.bmp, cell(TextCell::Center).ref() << name,
-                           renderer.renderResX / 2 + offsX, y, textColor);
+  void DrawWormStat(char const* name, Ws worm_stat) {
+    Hblock(11, [this, name, &worm_stat] {
+      common.font.DrawString(renderer.bmp, cell(TextCell::kCenter).Ref() << name,
+                             renderer.render_res_x / 2 + offs_x, y, kTextColor);
 
       for (int i = 0; i < 2; ++i) {
-        TextCell::Placement p = i == 0 ? TextCell::Right : TextCell::Left;
-        int x = renderer.renderResX / 2 + (i == 0 ? -40 : 40) + offsX;
+        TextCell::Placement p = i == 0 ? TextCell::kRight : TextCell::kLeft;
+        int x = renderer.render_res_x / 2 + (i == 0 ? -40 : 40) + offs_x;
 
         WormStats& w = stats.worms[i];
         cell c(p);
-        wormStat(w, c);
-        common.font.drawText(renderer.bmp, c, x, y, textColor);
+        worm_stat(w, c);
+        common.font.DrawString(renderer.bmp, c, x, y, kTextColor);
       }
     });
   }
 
   template <typename Stat>
-  void drawStat(char const* name, Stat stat) {
-    hblock(11, [this, name, &stat] {
-      common.font.drawText(renderer.bmp, cell(TextCell::Right).ref() << name,
-                           renderer.renderResX / 2 + offsX, y, textColor);
+  void DrawStat(char const* name, Stat stat) {
+    Hblock(11, [this, name, &stat] {
+      common.font.DrawString(renderer.bmp, cell(TextCell::kRight).Ref() << name,
+                             renderer.render_res_x / 2 + offs_x, y, kTextColor);
 
-      int x = renderer.renderResX / 2 + 10 + offsX;
+      int x = renderer.render_res_x / 2 + 10 + offs_x;
 
-      cell c(TextCell::Left);
+      cell c(TextCell::kLeft);
       stat(c);
-      common.font.drawText(renderer.bmp, c, x, y, textColor);
+      common.font.DrawString(renderer.bmp, c, x, y, kTextColor);
     });
   }
 
-  void drawWormStat(char const* name, int(WormStats::* field)) {
-    drawWormStat(name, [field](WormStats& w, cell& c) { c << w.*field; });
+  void DrawWormStat(char const* name, int(WormStats::* field)) {
+    DrawWormStat(name, [field](WormStats& w, cell& c) { c << w.*field; });
   }
 
-  void section(cell const& c, int level = 1) {
-    int x = offsX + 20;
-    int color = textColor;
+  void Section(cell const& c, int level = 1) {
+    int x = offs_x + 20;
+    int color = kTextColor;
     if (level > 0) {
       x += 20;
       color = 3;
     }
 
-    common.font.drawText(renderer.bmp, c, x, y, color);
+    common.font.DrawString(renderer.bmp, c, x, y, color);
 
     if (level == 0) y += 11;
   }
 
-  void gap(int n = 5) { y += n; }
+  void Gap(int n = 5) { y += n; }
 
-  void weaponStats(vector<WeaponStats> const& list) {
+  void WeaponStats(vector<WeaponStats> const& list) {
     for (auto& ws : list) {
-      if (ws.totalHp > 0) {
-        section(cell().ref() << common.weapons[ws.index].name);
-        drawStat("hits", [ws](cell& c) {
-          c << ws.actualHits << "/" << ws.potentialHits << " ("
-            << percent(ws.actualHits, ws.potentialHits) << ")";
+      if (ws.total_hp > 0) {
+        Section(cell().Ref() << common.weapons[ws.index].name);
+        DrawStat("hits", [ws](cell& c) {
+          c << ws.actual_hits << "/" << ws.potential_hits << " ("
+            << Percent(ws.actual_hits, ws.potential_hits) << ")";
         });
-        if (ws.potentialHp > 0) {
-          drawStat("damage", [ws](cell& c) {
-            c << ws.actualHp << "/" << ws.potentialHp << " ("
-              << percent(ws.actualHp, ws.potentialHp) << ")";
+        if (ws.potential_hp > 0) {
+          DrawStat("damage", [ws](cell& c) {
+            c << ws.actual_hp << "/" << ws.potential_hp << " ("
+              << Percent(ws.actual_hp, ws.potential_hp) << ")";
           });
         }
-        if (ws.totalHp != ws.actualHp) {
-          drawStat("total damage", [ws](cell& c) { c << ws.totalHp; });
+        if (ws.total_hp != ws.actual_hp) {
+          DrawStat("total damage", [ws](cell& c) { c << ws.total_hp; });
         }
-        gap();
+        Gap();
       }
     }
   }
 
-  void graph(vector<double> const& data, int height, int color, int negColor, bool balanced) {
+  void Graph(vector<double> const& data, int height, int color, int neg_color, bool balanced) {
     y += 2;
-    hblock(height, [&, this] {
-      int start = 20 + offsX;
-      drawGraph(renderer.bmp, data, height, start, y, color, negColor, balanced);
+    Hblock(height, [&, this] {
+      int start = 20 + offs_x;
+      DrawGraph(renderer.bmp, data, height, start, y, color, neg_color, balanced);
     });
     y += 7;
   }
 
-  void heatmap(Heatmap& hm) {
+  void Heatmap(Heatmap& hm) {
     y += 2;
-    hblock(hm.height, [&] {
-      int startX = paneX + paneWidth / 2 - (hm.width / 2) + offsX;
-      int startY = y;
+    Hblock(hm.height, [&] {
+      int start_x = kPaneX + pane_width / 2 - (hm.width / 2) + offs_x;
+      int start_y = y;
 
-      drawHeatmap(renderer.bmp, startX, startY, hm);
+      DrawHeatmap(renderer.bmp, start_x, start_y, hm);
     });
     y += 7;
   }
@@ -188,94 +189,95 @@ struct StatsRenderer {
   Game& game;
   NormalStatsRecorder& stats;
   Common& common;
-  int paneWidth = 300;
-  int offsX, y;
+  int pane_width = 300;
+  int offs_x, y;
 };
 
-static void sortWeaponStats(vector<WeaponStats>& ws) {
+static void SortWeaponStats(vector<WeaponStats>& ws) {
   std::sort(ws.begin(), ws.end(),
-            [](WeaponStats const& a, WeaponStats const& b) { return a.actualHp > b.actualHp; });
+            [](WeaponStats const& a, WeaponStats const& b) { return a.actual_hp > b.actual_hp; });
 }
 
-StatsState::StatsState(NormalStatsRecorder& recorder, Game& game, bool isMultiplayer)
-    : recorder_(recorder), game_(game), isMultiplayer_(isMultiplayer) {}
+StatsState::StatsState(NormalStatsRecorder& recorder, Game& game, bool is_multiplayer)
+    : recorder_(recorder), game_(game), isMultiplayer_(is_multiplayer) {}
 
-void StatsState::enter() {
-  gfx->clearKeys();
+void StatsState::Enter() {
+  gfx->ClearKeys();
 
   Common& common = *game_.common;
 
-  int graphWidth = gfx->playRenderer.renderResX - 20 - 20;
+  int graph_width = gfx->play_renderer.render_res_x - 20 - 20;
 
   for (int i = 0; i < 2; ++i) {
-    wormDamages_[i] =
-        stretch(convert<double>(pluck(recorder_.worms[i].wormFrameStats, &WormFrameStats::damage)),
-                graphWidth);
-    cumulative(wormDamages_[i]);
-    normalize(wormDamages_[i], 50);
+    wormDamages_[i] = Stretch(
+        Convert<double>(Pluck(recorder_.worms[i].worm_frame_stats, &WormFrameStats::damage)),
+        graph_width);
+    Cumulative(wormDamages_[i]);
+    Normalize(wormDamages_[i], 50);
   }
 
-  vector<double> wormTotalHp[2];
+  vector<double> worm_total_hp[2];
   for (int i = 0; i < 2; ++i)
-    wormTotalHp[i] =
-        convert<double>(pluck(recorder_.worms[i].wormFrameStats, &WormFrameStats::totalHp));
+    worm_total_hp[i] =
+        Convert<double>(Pluck(recorder_.worms[i].worm_frame_stats, &WormFrameStats::total_hp));
 
-  wormTotalHpDiff_ = stretch(zip(wormTotalHp[0], wormTotalHp[1], std::minus<double>()), graphWidth);
-  normalize(wormTotalHpDiff_, 100);
+  wormTotalHpDiff_ =
+      Stretch(Zip(worm_total_hp[0], worm_total_hp[1], std::minus<double>()), graph_width);
+  Normalize(wormTotalHpDiff_, 100);
 
   for (int i = 0; i < 40; ++i) {
     auto ws = recorder_.worms[0].weapons[i];
-    ws.combine(recorder_.worms[1].weapons[i]);
+    ws.Combine(recorder_.worms[1].weapons[i]);
     combinedWeaponStats_.push_back(ws);
 
     weaponStats_[0].push_back(recorder_.worms[0].weapons[i]);
     weaponStats_[1].push_back(recorder_.worms[1].weapons[i]);
   }
 
-  sortWeaponStats(combinedWeaponStats_);
-  sortWeaponStats(weaponStats_[0]);
-  sortWeaponStats(weaponStats_[1]);
+  SortWeaponStats(combinedWeaponStats_);
+  SortWeaponStats(weaponStats_[0]);
+  SortWeaponStats(weaponStats_[1]);
 
-  bg_.copy(gfx->playRenderer.bmp);
+  bg_.Copy(gfx->play_renderer.bmp);
 }
 
-void StatsState::handleEvent(SDL_Event& ev) { gfx->processEvent(ev); }
+void StatsState::HandleEvent(SDL_Event& ev) { gfx->ProcessEvent(ev); }
 
-bool StatsState::update() {
+bool StatsState::Update() {
   // Keep the network session alive while viewing stats
-  if (isMultiplayer_ && gfx->netSession) {
-    gfx->netSession->update();
-    auto state = gfx->netSession->sessionState();
-    if (state == NetSession::Disconnected || state == NetSession::Failed) {
-      gfx->netSession.reset();
+  if (isMultiplayer_ && gfx->net_session) {
+    gfx->net_session->Update();
+    auto state = gfx->net_session->State();
+    if (state == NetSession::kDisconnected || state == NetSession::kFailed) {
+      gfx->net_session.reset();
       isMultiplayer_ = false;
     }
   }
 
-  if (gfx->testSDLKey(SDL_SCANCODE_DOWN) || gfx->testControl(WormSettingsExtensions::Down) ||
-      gfx->testGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_DOWN)) {
+  if (gfx->TestSdlKey(SDL_SCANCODE_DOWN) || gfx->TestControl(WormSettingsExtensions::kDown) ||
+      gfx->TestGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_DOWN)) {
     destOffset_ -= 10;
-  } else if (gfx->testSDLKey(SDL_SCANCODE_UP) || gfx->testControl(WormSettingsExtensions::Up) ||
-             gfx->testGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_UP)) {
+  } else if (gfx->TestSdlKey(SDL_SCANCODE_UP) || gfx->TestControl(WormSettingsExtensions::kUp) ||
+             gfx->TestGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_UP)) {
     destOffset_ = std::min(destOffset_ + 10.0, 0.0);
-  } else if (gfx->testSDLKeyOnce(SDL_SCANCODE_RIGHT) ||
-             gfx->testControlOnce(WormSettingsExtensions::Right) ||
-             gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_RIGHT)) {
+  } else if (gfx->TestSdlKeyOnce(SDL_SCANCODE_RIGHT) ||
+             gfx->TestControlOnce(WormSettingsExtensions::kRight) ||
+             gfx->TestGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_RIGHT)) {
     destPane_ = std::min(destPane_ + 1.0, 1.0);
-  } else if (gfx->testSDLKeyOnce(SDL_SCANCODE_LEFT) ||
-             gfx->testControlOnce(WormSettingsExtensions::Left) ||
-             gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_LEFT)) {
+  } else if (gfx->TestSdlKeyOnce(SDL_SCANCODE_LEFT) ||
+             gfx->TestControlOnce(WormSettingsExtensions::kLeft) ||
+             gfx->TestGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_LEFT)) {
     destPane_ = std::max(destPane_ - 1.0, -1.0);
-  } else if (gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN) || gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE) ||
-             gfx->testControlOnce(WormSettingsExtensions::Fire) ||
-             gfx->testControlOnce(WormSettingsExtensions::Jump) ||
-             gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH) ||
-             gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST)) {
-    fill(gfx->playRenderer.bmp, 0);
-    gfx->clearKeys();
+  } else if (gfx->TestSdlKeyOnce(SDL_SCANCODE_RETURN) || gfx->TestSdlKeyOnce(SDL_SCANCODE_ESCAPE) ||
+             gfx->TestControlOnce(WormSettingsExtensions::kFire) ||
+             gfx->TestControlOnce(WormSettingsExtensions::kJump) ||
+             gfx->TestGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH) ||
+             gfx->TestGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST)) {
+    Fill(gfx->play_renderer.bmp, 0);
+    gfx->ClearKeys();
 
-    if (isMultiplayer_ && gfx->netSession) {
-      gfx->stateStack.scheduleReplaceTop(std::make_unique<RematchState>(game_));
+    if (isMultiplayer_ && gfx->net_session) {
+      gfx->state_stack.ScheduleReplaceTop(std::make_unique<RematchState>(game_));
       return true;
     }
 
@@ -290,87 +292,87 @@ bool StatsState::update() {
   return true;
 }
 
-void StatsState::draw() {
+void StatsState::Draw() {
   Common& common = *game_.common;
 
-  gfx->playRenderer.bmp.copy(bg_);
+  gfx->play_renderer.bmp.Copy(bg_);
 
-  StatsRenderer renderer(gfx->playRenderer, game_, recorder_, common);
+  StatsRenderer renderer(gfx->play_renderer, game_, recorder_, common);
 
-  int offsX = (int)std::floor(pane_ * -renderer.renderer.renderResX);
-  int offsY = (int)offset_;
+  int offs_x = (int)std::floor(pane_ * -renderer.renderer.render_res_x);
+  int offs_y = (int)offset_;
 
-  renderer.pane(0, offsX, offsY, [&] {
-    renderer.drawWorms();
+  renderer.Pane(0, offs_x, offs_y, [&] {
+    renderer.DrawWorms();
 
     int oldy = renderer.y;
     renderer.y -= 20;
 
-    renderer.drawStat(common.texts.gameModes[game_.settings->gameMode].c_str(),
-                      [&](cell& c) { c << timeToStringFrames(recorder_.gameTime); });
+    renderer.DrawStat(common.texts.game_modes[game_.settings->game_mode].c_str(),
+                      [&](cell& c) { c << TimeToStringFrames(recorder_.game_time); });
 
     renderer.y = oldy;
 
-    renderer.drawWormStat("ai processing", [&](WormStats& w, cell& c) {
-      c << (int)(std::chrono::duration_cast<std::chrono::milliseconds>(w.aiProcessTime).count())
+    renderer.DrawWormStat("ai processing", [&](WormStats& w, cell& c) {
+      c << (int)(std::chrono::duration_cast<std::chrono::milliseconds>(w.ai_process_time).count())
         << "ms";
     });
 
-    if (game_.settings->gameMode == Settings::GMHoldazone ||
-        game_.settings->gameMode == Settings::GMGameOfTag) {
-      renderer.drawWormStat("timer", [&](WormStats& w, cell& c) { c << timeToString(w.timer); });
+    if (game_.settings->game_mode == Settings::kGmHoldazone ||
+        game_.settings->game_mode == Settings::kGmGameOfTag) {
+      renderer.DrawWormStat("timer", [&](WormStats& w, cell& c) { c << TimeToString(w.timer); });
     } else {
-      renderer.drawWormStat("lives left", &WormStats::lives);
+      renderer.DrawWormStat("lives left", &WormStats::lives);
     }
-    renderer.drawWormStat("kills", &WormStats::kills);
-    renderer.drawWormStat("damage dealt", &WormStats::damageDealt);
-    renderer.drawWormStat("damage received", &WormStats::damage);
-    renderer.drawWormStat("damage to self", &WormStats::selfDamage);
+    renderer.DrawWormStat("kills", &WormStats::kills);
+    renderer.DrawWormStat("damage dealt", &WormStats::damage_dealt);
+    renderer.DrawWormStat("damage received", &WormStats::damage);
+    renderer.DrawWormStat("damage to self", &WormStats::self_damage);
 
-    renderer.drawWormStat("shortest life", [](WormStats& w, cell& c) {
+    renderer.DrawWormStat("shortest life", [](WormStats& w, cell& c) {
       int min, max;
-      w.lifeStats(min, max);
-      c << timeToStringFrames(min);
+      w.LifeStats(min, max);
+      c << TimeToStringFrames(min);
     });
 
-    renderer.drawWormStat("longest life", [](WormStats& w, cell& c) {
+    renderer.DrawWormStat("longest life", [](WormStats& w, cell& c) {
       int min, max;
-      w.lifeStats(min, max);
-      c << timeToStringFrames(max);
+      w.LifeStats(min, max);
+      c << TimeToStringFrames(max);
     });
 
-    renderer.drawWormStat("loading efficiency", [](WormStats& w, cell& c) {
-      c << percent(w.weaponChangeGood, w.weaponChangeGood + w.weaponChangeBad);
+    renderer.DrawWormStat("loading efficiency", [](WormStats& w, cell& c) {
+      c << Percent(w.weapon_change_good, w.weapon_change_good + w.weapon_change_bad);
     });
 
-    renderer.gap();
+    renderer.Gap();
 
-    renderer.weaponStats(combinedWeaponStats_);
+    renderer.WeaponStats(combinedWeaponStats_);
 
-    renderer.section(cell().ref() << "Total health difference", 0);
+    renderer.Section(cell().Ref() << "Total health difference", 0);
 
-    renderer.graph(wormTotalHpDiff_, 100, Palette::wormColourIndexes[0],
-                   Palette::wormColourIndexes[1], true);
+    renderer.Graph(wormTotalHpDiff_, 100, Palette::kWormColourIndexes[0],
+                   Palette::kWormColourIndexes[1], true);
 
-    renderer.section(cell().ref() << "Presence", 0);
-    renderer.heatmap(recorder_.presence);
+    renderer.Section(cell().Ref() << "Presence", 0);
+    renderer.Heatmap(recorder_.presence);
   });
 
   for (int i = 0; i < 2; ++i) {
-    renderer.pane(i == 0 ? -1 : 1, offsX, offsY, [&] {
-      renderer.drawWorm(i);
+    renderer.Pane(i == 0 ? -1 : 1, offs_x, offs_y, [&] {
+      renderer.DrawWorm(i);
 
-      renderer.weaponStats(weaponStats_[i]);
+      renderer.WeaponStats(weaponStats_[i]);
 
-      renderer.section(cell().ref() << "Damage over time", 0);
-      renderer.graph(wormDamages_[i], 50, Palette::wormColourIndexes[i], 0, false);
+      renderer.Section(cell().Ref() << "Damage over time", 0);
+      renderer.Graph(wormDamages_[i], 50, Palette::kWormColourIndexes[i], 0, false);
 
-      renderer.section(cell().ref() << "Presence", 0);
-      renderer.heatmap(recorder_.worms[i].presence);
-      renderer.section(cell().ref() << "Damage", 0);
-      renderer.heatmap(recorder_.worms[i].damageHm);
+      renderer.Section(cell().Ref() << "Presence", 0);
+      renderer.Heatmap(recorder_.worms[i].presence);
+      renderer.Section(cell().Ref() << "Damage", 0);
+      renderer.Heatmap(recorder_.worms[i].damage_hm);
     });
   }
 
-  gfx->playRenderer.pal = common.exepal;
+  gfx->play_renderer.pal = common.exepal;
 }

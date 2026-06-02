@@ -11,73 +11,73 @@
 #include "mixer/player.hpp"
 #include "net/session.hpp"
 
-RematchState::RematchState(Game& lastGame)
-    : lastGame_(lastGame),
+RematchState::RematchState(Game& last_game)
+    : lastGame_(last_game),
       menu_(true)  // centered
 {}
 
-void RematchState::enter() {
-  fill(gfx->playRenderer.bmp, 0);
-  gfx->playRenderer.origpal = gfx->common->exepal;
-  gfx->clearKeys();
+void RematchState::Enter() {
+  Fill(gfx->play_renderer.bmp, 0);
+  gfx->play_renderer.origpal = gfx->common->exepal;
+  gfx->ClearKeys();
 
-  prevRandomLevel_ = gfx->settings->randomLevel;
-  prevLevelFile_ = gfx->settings->levelFile;
+  prevRandomLevel_ = gfx->settings->random_level;
+  prevLevelFile_ = gfx->settings->level_file;
 
   // Build menu items
-  bool isHost = gfx->netSession && gfx->netSession->isHost();
+  bool is_host = gfx->net_session && gfx->net_session->IsHost();
 
-  menu_.addItem(MenuItem(48, 7, "LEVEL", RmLevel));
-  menu_.addItem(MenuItem(48, 7, "READY", RmReady));
-  menu_.addItem(MenuItem(48, 7, "DISCONNECT", RmDisconnect));
+  menu_.AddItem(MenuItem(48, 7, "LEVEL", kRmLevel));
+  menu_.AddItem(MenuItem(48, 7, "READY", kRmReady));
+  menu_.AddItem(MenuItem(48, 7, "DISCONNECT", kRmDisconnect));
 
   // Only host can select the level item
-  if (!isHost) menu_.items[0].selectable = false;
+  if (!is_host) menu_.items[0].selectable = false;
 
-  menu_.valueOffsetX = 80;
-  menu_.place(120, 90);
-  menu_.moveToId(RmReady);
+  menu_.value_offset_x = 80;
+  menu_.Place(120, 90);
+  menu_.MoveToId(kRmReady);
 }
 
-void RematchState::handleEvent(SDL_Event& ev) { gfx->processEvent(ev); }
+void RematchState::HandleEvent(SDL_Event& ev) { gfx->ProcessEvent(ev); }
 
-void RematchState::updateMenuItems() {
-  if (!gfx->netSession) return;
+void RematchState::UpdateMenuItems() {
+  if (!gfx->net_session) return;
 
   // Update level display
-  auto* levelItem = menu_.itemFromId(RmLevel);
-  if (levelItem) {
-    levelItem->hasValue = true;
-    levelItem->value = '"' + levelDisplayName() + '"';
+  auto* level_item = menu_.ItemFromId(kRmLevel);
+  if (level_item) {
+    level_item->has_value = true;
+    level_item->value = '"' + LevelDisplayName() + '"';
   }
 
   // Update ready item text
-  auto* readyItem = menu_.itemFromId(RmReady);
-  if (readyItem) {
-    bool localReady = gfx->netSession->localReady();
-    readyItem->string = localReady ? "CANCEL" : "READY UP";
-    readyItem->color = localReady ? 18 : 63;
+  auto* ready_item = menu_.ItemFromId(kRmReady);
+  if (ready_item) {
+    bool local_ready = gfx->net_session->LocalReady();
+    ready_item->string = local_ready ? "CANCEL" : "READY UP";
+    ready_item->color = local_ready ? 18 : 63;
   }
 }
 
-bool RematchState::update() {
-  if (!gfx->netSession) return false;
+bool RematchState::Update() {
+  if (!gfx->net_session) return false;
 
-  gfx->netSession->update();
+  gfx->net_session->Update();
 
-  auto state = gfx->netSession->sessionState();
+  auto state = gfx->net_session->State();
 
   // Rematch game is starting — transfer controller and enter gameplay
-  if (state == NetSession::Playing) {
-    auto ctrl = gfx->netSession->releaseController();
+  if (state == NetSession::kPlaying) {
+    auto ctrl = gfx->net_session->ReleaseController();
     gfx->controller = std::unique_ptr<Controller>(ctrl.release());
-    gfx->stateStack.scheduleReplaceTop(std::make_unique<GamePlayState>());
+    gfx->state_stack.ScheduleReplaceTop(std::make_unique<GamePlayState>());
     return true;
   }
 
-  if (state == NetSession::Disconnected || state == NetSession::Failed) {
-    gfx->netSession.reset();
-    gfx->stateStack.scheduleReplaceTop(
+  if (state == NetSession::kDisconnected || state == NetSession::kFailed) {
+    gfx->net_session.reset();
+    gfx->state_stack.ScheduleReplaceTop(
         std::make_unique<InfoBoxState>("PEER DISCONNECTED", 160, 100, true));
     return true;
   }
@@ -86,142 +86,142 @@ bool RematchState::update() {
   if (levelSelectorOpen_) {
     levelSelectorOpen_ = false;
 
-    bool changed = (gfx->settings->randomLevel != prevRandomLevel_) ||
-                   (gfx->settings->levelFile != prevLevelFile_);
+    bool changed = (gfx->settings->random_level != prevRandomLevel_) ||
+                   (gfx->settings->level_file != prevLevelFile_);
 
-    if (changed && gfx->netSession->isHost()) {
-      gfx->netSession->setRematchLevel(gfx->settings->randomLevel, gfx->settings->levelFile);
+    if (changed && gfx->net_session->IsHost()) {
+      gfx->net_session->SetRematchLevel(gfx->settings->random_level, gfx->settings->level_file);
     }
 
-    prevRandomLevel_ = gfx->settings->randomLevel;
-    prevLevelFile_ = gfx->settings->levelFile;
+    prevRandomLevel_ = gfx->settings->random_level;
+    prevLevelFile_ = gfx->settings->level_file;
   }
 
   Common& common = *gfx->common;
 
   // Menu navigation
-  if (gfx->testSDLKeyOnce(SDL_SCANCODE_UP) || gfx->testControlOnce(WormSettingsExtensions::Up) ||
-      gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP)) {
-    g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
-    menu_.movement(-1);
+  if (gfx->TestSdlKeyOnce(SDL_SCANCODE_UP) || gfx->TestControlOnce(WormSettingsExtensions::kUp) ||
+      gfx->TestGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP)) {
+    g_sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
+    menu_.Movement(-1);
   }
 
-  if (gfx->testSDLKeyOnce(SDL_SCANCODE_DOWN) ||
-      gfx->testControlOnce(WormSettingsExtensions::Down) ||
-      gfx->testGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN)) {
-    g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
-    menu_.movement(1);
+  if (gfx->TestSdlKeyOnce(SDL_SCANCODE_DOWN) ||
+      gfx->TestControlOnce(WormSettingsExtensions::kDown) ||
+      gfx->TestGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN)) {
+    g_sound_player->Play(common.sound_hook[SoundMenuMoveUp]);
+    menu_.Movement(1);
   }
 
   // Escape = disconnect
-  if (gfx->testSDLKeyOnce(SDL_SCANCODE_ESCAPE) ||
-      gfx->testControlOnce(WormSettingsExtensions::Jump) ||
-      gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST)) {
-    gfx->netSession->disconnect();
-    gfx->netSession.reset();
-    fill(gfx->playRenderer.bmp, 0);
-    fill(gfx->singleScreenRenderer.bmp, 0);
+  if (gfx->TestSdlKeyOnce(SDL_SCANCODE_ESCAPE) ||
+      gfx->TestControlOnce(WormSettingsExtensions::kJump) ||
+      gfx->TestGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST)) {
+    gfx->net_session->Disconnect();
+    gfx->net_session.reset();
+    Fill(gfx->play_renderer.bmp, 0);
+    Fill(gfx->single_screen_renderer.bmp, 0);
     return false;
   }
 
   // Enter/Fire = activate selected item
-  if (gfx->testSDLKeyOnce(SDL_SCANCODE_RETURN) || gfx->testSDLKeyOnce(SDL_SCANCODE_KP_ENTER) ||
-      gfx->testControlOnce(WormSettingsExtensions::Fire) ||
-      gfx->testGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH)) {
-    int sel = menu_.selectedId();
+  if (gfx->TestSdlKeyOnce(SDL_SCANCODE_RETURN) || gfx->TestSdlKeyOnce(SDL_SCANCODE_KP_ENTER) ||
+      gfx->TestControlOnce(WormSettingsExtensions::kFire) ||
+      gfx->TestGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH)) {
+    int sel = menu_.SelectedId();
     switch (sel) {
-      case RmLevel:
+      case kRmLevel:
         // Host opens level selector
-        g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
+        g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
         levelSelectorOpen_ = true;
-        gfx->stateStack.push(std::make_unique<LevelSelectorState>(), gfx);
+        gfx->state_stack.Push(std::make_unique<LevelSelectorState>(), gfx);
         break;
 
-      case RmReady:
-        g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
-        gfx->netSession->toggleReady();
+      case kRmReady:
+        g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
+        gfx->net_session->ToggleReady();
         break;
 
-      case RmDisconnect:
-        g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
-        gfx->netSession->disconnect();
-        gfx->netSession.reset();
-        fill(gfx->playRenderer.bmp, 0);
-        fill(gfx->singleScreenRenderer.bmp, 0);
+      case kRmDisconnect:
+        g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
+        gfx->net_session->Disconnect();
+        gfx->net_session.reset();
+        Fill(gfx->play_renderer.bmp, 0);
+        Fill(gfx->single_screen_renderer.bmp, 0);
         return false;
     }
   }
 
-  updateMenuItems();
+  UpdateMenuItems();
   return true;
 }
 
-std::string RematchState::levelDisplayName() const {
-  if (gfx->settings->randomLevel || gfx->settings->levelFile.empty()) return "RANDOM";
-  return getBasename(getLeaf(gfx->settings->levelFile));
+std::string RematchState::LevelDisplayName() const {
+  if (gfx->settings->random_level || gfx->settings->level_file.empty()) return "RANDOM";
+  return GetBasename(GetLeaf(gfx->settings->level_file));
 }
 
-void RematchState::draw() {
+void RematchState::Draw() {
   Common& common = *gfx->common;
   Font& font = common.font;
 
-  fill(gfx->playRenderer.bmp, 0);
+  Fill(gfx->play_renderer.bmp, 0);
 
   int cx = 160;
   int y = 40;
 
   // Title
   std::string title = "REMATCH";
-  int tw = font.getDims(title);
-  font.drawText(gfx->playRenderer.bmp, title, cx - tw / 2, y, 50);
+  int tw = font.GetDims(title);
+  font.DrawString(gfx->play_renderer.bmp, title, cx - tw / 2, y, 50);
   y += 14;
 
   // Score summary from last game
   {
-    Worm* w0 = lastGame_.wormByIdx(0);
-    Worm* w1 = lastGame_.wormByIdx(1);
+    Worm* w0 = lastGame_.WormByIdx(0);
+    Worm* w1 = lastGame_.WormByIdx(1);
     if (w0 && w1) {
       std::string score = w0->settings->name + "  " + std::to_string(w0->kills) + " - " +
                           std::to_string(w1->kills) + "  " + w1->settings->name;
-      int sw = font.getDims(score);
-      font.drawText(gfx->playRenderer.bmp, score, cx - sw / 2, y, 7);
+      int sw = font.GetDims(score);
+      font.DrawString(gfx->play_renderer.bmp, score, cx - sw / 2, y, 7);
     }
     y += 14;
   }
 
   // Peer ready status
-  if (gfx->netSession) {
-    bool isHost = gfx->netSession->isHost();
-    bool localReady = gfx->netSession->localReady();
-    bool remoteReady = gfx->netSession->remoteReady();
+  if (gfx->net_session) {
+    bool is_host = gfx->net_session->IsHost();
+    bool local_ready = gfx->net_session->LocalReady();
+    bool remote_ready = gfx->net_session->RemoteReady();
 
-    std::string peer = isHost ? "CLIENT" : "HOST";
-    std::string you = isHost ? "HOST" : "CLIENT";
+    std::string peer = is_host ? "CLIENT" : "HOST";
+    std::string you = is_host ? "HOST" : "CLIENT";
 
     // Draw local player status
-    std::string localLine = you + ":";
-    int llw = font.getDims(localLine);
-    font.drawText(gfx->playRenderer.bmp, localLine, cx - llw / 2 - 10, y, 7);
+    std::string local_line = you + ":";
+    int llw = font.GetDims(local_line);
+    font.DrawString(gfx->play_renderer.bmp, local_line, cx - llw / 2 - 10, y, 7);
     // Draw indicator after text
-    int localIndX = cx - llw / 2 - 10 + llw + 4;
-    if (localReady)
-      font.drawText(gfx->playRenderer.bmp, "READY", localIndX, y, 63);
+    int local_ind_x = cx - llw / 2 - 10 + llw + 4;
+    if (local_ready)
+      font.DrawString(gfx->play_renderer.bmp, "READY", local_ind_x, y, 63);
     else
-      font.drawText(gfx->playRenderer.bmp, "X", localIndX, y, 18);
+      font.DrawString(gfx->play_renderer.bmp, "X", local_ind_x, y, 18);
     y += 10;
 
     // Draw remote player status
-    std::string remoteLine = peer + ":";
-    int rlw = font.getDims(remoteLine);
-    font.drawText(gfx->playRenderer.bmp, remoteLine, cx - rlw / 2 - 10, y, 7);
-    int remoteIndX = cx - rlw / 2 - 10 + rlw + 4;
-    if (remoteReady)
-      font.drawText(gfx->playRenderer.bmp, "READY", remoteIndX, y, 63);
+    std::string remote_line = peer + ":";
+    int rlw = font.GetDims(remote_line);
+    font.DrawString(gfx->play_renderer.bmp, remote_line, cx - rlw / 2 - 10, y, 7);
+    int remote_ind_x = cx - rlw / 2 - 10 + rlw + 4;
+    if (remote_ready)
+      font.DrawString(gfx->play_renderer.bmp, "READY", remote_ind_x, y, 63);
     else
-      font.drawText(gfx->playRenderer.bmp, "X", remoteIndX, y, 18);
+      font.DrawString(gfx->play_renderer.bmp, "X", remote_ind_x, y, 18);
     y += 14;
   }
 
   // Draw menu
-  menu_.draw(common, gfx->playRenderer, false);
+  menu_.Draw(common, gfx->play_renderer, false);
 }

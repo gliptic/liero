@@ -3,10 +3,10 @@
 #include <cstddef>
 #include <map>
 
-std::map<int, int> SDLToDOSScanCodes;
+std::map<int, int> sdl_to_dos_scan_codes;
 
-SDL_Scancode const Z = SDL_SCANCODE_UNKNOWN;
-SDL_Scancode lieroToSDLKeys[] = {
+SDL_Scancode const kZ = SDL_SCANCODE_UNKNOWN;
+SDL_Scancode liero_to_sdl_keys[] = {
     SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_ESCAPE, SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3,
     SDL_SCANCODE_4, SDL_SCANCODE_5, SDL_SCANCODE_6, SDL_SCANCODE_7, SDL_SCANCODE_8, SDL_SCANCODE_9,
     SDL_SCANCODE_0,
@@ -31,44 +31,45 @@ SDL_Scancode lieroToSDLKeys[] = {
     SDL_SCANCODE_KP_3, SDL_SCANCODE_KP_0, SDL_SCANCODE_KP_PERIOD, SDL_SCANCODE_UNKNOWN,
     SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_NONUSBACKSLASH, SDL_SCANCODE_F11, SDL_SCANCODE_F12,
 
-    Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z,  // 27 zeroes
-    SDL_SCANCODE_KP_ENTER,                                                            // Enter (Pad)
-    SDL_SCANCODE_RCTRL,                                                               // Right Ctrl
-    Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z,                                               // 12 zeroes
-    SDL_SCANCODE_PRINTSCREEN, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z,                           // 10 zeroes
-    SDL_SCANCODE_KP_DIVIDE,                                                           // / (Pad)
-    Z, SDL_SCANCODE_PRINTSCREEN,
-    SDL_SCANCODE_RALT,                         // Right Alt
-    Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z, Z,  // 14 zeroes
-    SDL_SCANCODE_HOME,                         // Home
-    SDL_SCANCODE_UP,                           // Up
-    SDL_SCANCODE_PAGEUP,                       // Page Up
-    Z,
+    kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ,
+    kZ, kZ, kZ,                                                        // 27 zeroes
+    SDL_SCANCODE_KP_ENTER,                                             // Enter (Pad)
+    SDL_SCANCODE_RCTRL,                                                // Right Ctrl
+    kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ,                    // 12 zeroes
+    SDL_SCANCODE_PRINTSCREEN, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ,  // 10 zeroes
+    SDL_SCANCODE_KP_DIVIDE,                                            // / (Pad)
+    kZ, SDL_SCANCODE_PRINTSCREEN,
+    SDL_SCANCODE_RALT,                                       // Right Alt
+    kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ, kZ,  // 14 zeroes
+    SDL_SCANCODE_HOME,                                       // Home
+    SDL_SCANCODE_UP,                                         // Up
+    SDL_SCANCODE_PAGEUP,                                     // Page Up
+    kZ,
     SDL_SCANCODE_LEFT,  // Left
-    Z,
+    kZ,
     SDL_SCANCODE_RIGHT,  // Right
-    Z,
+    kZ,
     SDL_SCANCODE_END,       // End
     SDL_SCANCODE_DOWN,      // Down
     SDL_SCANCODE_PAGEDOWN,  // Page Down
     SDL_SCANCODE_INSERT,    // Insert
     SDL_SCANCODE_DELETE,    // Delete
-    Z, Z, Z, Z, Z           // 5 zeroes
+    kZ, kZ, kZ, kZ, kZ      // 5 zeroes
 };
 
-uint32_t const maxScanCodes = sizeof(lieroToSDLKeys) / sizeof(*lieroToSDLKeys);
+uint32_t const kMaxScanCodes = sizeof(liero_to_sdl_keys) / sizeof(*liero_to_sdl_keys);
 
-void initKeys() {
-  for (std::size_t i = 0; i < maxScanCodes; ++i) {
-    if (lieroToSDLKeys[i] != SDL_SCANCODE_UNKNOWN) {
-      SDLToDOSScanCodes[lieroToSDLKeys[i]] = int(i);
+void InitKeys() {
+  for (std::size_t i = 0; i < kMaxScanCodes; ++i) {
+    if (liero_to_sdl_keys[i] != SDL_SCANCODE_UNKNOWN) {
+      sdl_to_dos_scan_codes[liero_to_sdl_keys[i]] = int(i);
     }
   }
 }
 
 uint32_t SDLToDOSKey(SDL_Scancode scancode) {
-  std::map<int, int>::iterator i = SDLToDOSScanCodes.find(uint32_t(scancode));
-  if (i != SDLToDOSScanCodes.end()) return i->second;
+  std::map<int, int>::iterator i = sdl_to_dos_scan_codes.find(uint32_t(scancode));
+  if (i != sdl_to_dos_scan_codes.end()) return i->second;
   return 89;
 }
 

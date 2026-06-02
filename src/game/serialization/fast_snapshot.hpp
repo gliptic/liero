@@ -28,108 +28,108 @@
 
 struct WormSimState {
   fixedvec pos{}, vel{};
-  IVec2 logicRespawn{};
-  int hotspotX = 0, hotspotY = 0;
-  fixed aimingAngle = 0, aimingSpeed = 0;
-  bool ableToJump = false, ableToDig = false;
-  bool keyChangePressed = false;
+  IVec2 logic_respawn{};
+  int hotspot_x = 0, hotspot_y = 0;
+  fixed aiming_angle = 0, aiming_speed = 0;
+  bool able_to_jump = false, able_to_dig = false;
+  bool key_change_pressed = false;
   bool movable = false;
   bool animate = false, visible = false, ready = false, flag = false;
-  bool makeSightGreen = false;
+  bool make_sight_green = false;
   int health = 0, lives = 0, kills = 0;
-  int timer = 0, killedTimer = 0;
-  int currentFrame = 0;
+  int timer = 0, killed_timer = 0;
+  int current_frame = 0;
   int flags = 0;
   Ninjarope ninjarope;
-  int currentWeapon = 0;
-  int lastKilledByIdx = -1;
-  int fireCone = 0;
-  int leaveShellTimer = 0;
+  int current_weapon = 0;
+  int last_killed_by_idx = -1;
+  int fire_cone = 0;
+  int leave_shell_timer = 0;
   int reacts[4] = {0, 0, 0, 0};
   WormWeapon weapons[NUM_WEAPONS];
   int direction = 0;
-  Worm::ControlState controlStates, prevControlStates;
-  int steerableSumX = 0, steerableSumY = 0, steerableCount = 0;
+  Worm::ControlState control_states, prev_control_states;
+  int steerable_sum_x = 0, steerable_sum_y = 0, steerable_count = 0;
   int index = 0;
 };
 
-inline void saveWormSimState(WormSimState& s, Worm const& w) {
+inline void SaveWormSimState(WormSimState& s, Worm const& w) {
   s.pos = w.pos;
   s.vel = w.vel;
-  s.logicRespawn = w.logicRespawn;
-  s.hotspotX = w.hotspotX;
-  s.hotspotY = w.hotspotY;
-  s.aimingAngle = w.aimingAngle;
-  s.aimingSpeed = w.aimingSpeed;
-  s.ableToJump = w.ableToJump;
-  s.ableToDig = w.ableToDig;
-  s.keyChangePressed = w.keyChangePressed;
+  s.logic_respawn = w.logic_respawn;
+  s.hotspot_x = w.hotspot_x;
+  s.hotspot_y = w.hotspot_y;
+  s.aiming_angle = w.aiming_angle;
+  s.aiming_speed = w.aiming_speed;
+  s.able_to_jump = w.able_to_jump;
+  s.able_to_dig = w.able_to_dig;
+  s.key_change_pressed = w.key_change_pressed;
   s.movable = w.movable;
   s.animate = w.animate;
   s.visible = w.visible;
   s.ready = w.ready;
   s.flag = w.flag;
-  s.makeSightGreen = w.makeSightGreen;
+  s.make_sight_green = w.make_sight_green;
   s.health = w.health;
   s.lives = w.lives;
   s.kills = w.kills;
   s.timer = w.timer;
-  s.killedTimer = w.killedTimer;
-  s.currentFrame = w.currentFrame;
+  s.killed_timer = w.killed_timer;
+  s.current_frame = w.current_frame;
   s.flags = w.flags;
   s.ninjarope = w.ninjarope;
-  s.currentWeapon = w.currentWeapon;
-  s.lastKilledByIdx = w.lastKilledByIdx;
-  s.fireCone = w.fireCone;
-  s.leaveShellTimer = w.leaveShellTimer;
+  s.current_weapon = w.current_weapon;
+  s.last_killed_by_idx = w.last_killed_by_idx;
+  s.fire_cone = w.fire_cone;
+  s.leave_shell_timer = w.leave_shell_timer;
   std::memcpy(s.reacts, w.reacts, sizeof(s.reacts));
   for (int i = 0; i < NUM_WEAPONS; ++i) s.weapons[i] = w.weapons[i];
   s.direction = w.direction;
-  s.controlStates = w.controlStates;
-  s.prevControlStates = w.prevControlStates;
-  s.steerableSumX = w.steerableSumX;
-  s.steerableSumY = w.steerableSumY;
-  s.steerableCount = w.steerableCount;
+  s.control_states = w.control_states;
+  s.prev_control_states = w.prev_control_states;
+  s.steerable_sum_x = w.steerable_sum_x;
+  s.steerable_sum_y = w.steerable_sum_y;
+  s.steerable_count = w.steerable_count;
   s.index = w.index;
 }
 
-inline void restoreWormSimState(Worm& w, WormSimState const& s) {
+inline void RestoreWormSimState(Worm& w, WormSimState const& s) {
   w.pos = s.pos;
   w.vel = s.vel;
-  w.logicRespawn = s.logicRespawn;
-  w.hotspotX = s.hotspotX;
-  w.hotspotY = s.hotspotY;
-  w.aimingAngle = s.aimingAngle;
-  w.aimingSpeed = s.aimingSpeed;
-  w.ableToJump = s.ableToJump;
-  w.ableToDig = s.ableToDig;
-  w.keyChangePressed = s.keyChangePressed;
+  w.logic_respawn = s.logic_respawn;
+  w.hotspot_x = s.hotspot_x;
+  w.hotspot_y = s.hotspot_y;
+  w.aiming_angle = s.aiming_angle;
+  w.aiming_speed = s.aiming_speed;
+  w.able_to_jump = s.able_to_jump;
+  w.able_to_dig = s.able_to_dig;
+  w.key_change_pressed = s.key_change_pressed;
   w.movable = s.movable;
   w.animate = s.animate;
   w.visible = s.visible;
   w.ready = s.ready;
   w.flag = s.flag;
-  w.makeSightGreen = s.makeSightGreen;
+  w.make_sight_green = s.make_sight_green;
   w.health = s.health;
   w.lives = s.lives;
   w.kills = s.kills;
   w.timer = s.timer;
-  w.killedTimer = s.killedTimer;
-  w.currentFrame = s.currentFrame;
+  w.killed_timer = s.killed_timer;
+  w.current_frame = s.current_frame;
   w.flags = s.flags;
   w.ninjarope = s.ninjarope;
-  w.currentWeapon = s.currentWeapon;
-  w.lastKilledByIdx = s.lastKilledByIdx;
-  w.fireCone = s.fireCone;
-  w.leaveShellTimer = s.leaveShellTimer;
+  w.current_weapon = s.current_weapon;
+  w.last_killed_by_idx = s.last_killed_by_idx;
+  w.fire_cone = s.fire_cone;
+  w.leave_shell_timer = s.leave_shell_timer;
   std::memcpy(w.reacts, s.reacts, sizeof(w.reacts));
   for (int i = 0; i < NUM_WEAPONS; ++i) w.weapons[i] = s.weapons[i];
   w.direction = s.direction;
-  w.controlStates = s.controlStates;
-  w.prevControlStates = s.prevControlStates;
-  w.steerableSumX = s.steerableSumX;
-  w.steerableSumY = s.steerableSumY;
-  w.steerableCount = s.steerableCount;
+  w.control_states = s.control_states;
+  w.prev_control_states = s.prev_control_states;
+  w.steerable_sum_x = s.steerable_sum_x;
+  w.steerable_sum_y = s.steerable_sum_y;
+  w.steerable_count = s.steerable_count;
   w.index = s.index;
 }
 
@@ -137,9 +137,9 @@ struct GameSnapshot {
   Rand rand;
 
   int cycles = 0;
-  int screenFlash = 0;
-  int lastKilledIdx = -1;
-  bool gotChanged = false;
+  int screen_flash = 0;
+  int last_killed_idx = -1;
+  bool got_changed = false;
   Holdazone holdazone;
 
   std::array<WormSimState, 2> worms{};
@@ -149,21 +149,21 @@ struct GameSnapshot {
   Game::SObjectList sobjects;
   Game::NObjectList nobjects;
 
-  std::vector<BObject> bobjectsArr;
-  std::size_t bobjectsCount = 0;
+  std::vector<BObject> bobjects_arr;
+  std::size_t bobjects_count = 0;
 
-  std::vector<uint8_t> levelData;
-  std::vector<Material> levelMaterials;
+  std::vector<uint8_t> level_data;
+  std::vector<Material> level_materials;
 
   uint32_t checksum = 0;
 
   // Pre-size the dynamic buffers so save/load can avoid allocations.
   // Call once after the level is generated.
-  void prepare(Game const& game) {
-    bobjectsArr.resize(game.bobjects.limit);
-    std::size_t const cells =
+  void Prepare(Game const& game) {
+    bobjects_arr.resize(game.bobjects.limit);
+    std::size_t const kCells =
         static_cast<std::size_t>(game.level.width) * static_cast<std::size_t>(game.level.height);
-    levelData.resize(cells);
-    levelMaterials.resize(cells);
+    level_data.resize(kCells);
+    level_materials.resize(kCells);
   }
 };

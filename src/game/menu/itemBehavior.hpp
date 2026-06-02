@@ -10,9 +10,9 @@ struct ItemBehavior {
 
   virtual ~ItemBehavior() {}
 
-  virtual bool onLeftRight(Menu& menu, MenuItem& item, int dir) { return true; }
+  virtual bool OnLeftRight(Menu& menu, MenuItem& item, int dir) { return true; }
 
-  virtual int onEnter(Menu& menu, MenuItem& item) { return -1; }
+  virtual int OnEnter(Menu& menu, MenuItem& item) { return -1; }
 
-  virtual void onUpdate(Menu& menu, MenuItem& item) {}
+  virtual void OnUpdate(Menu& menu, MenuItem& item) {}
 };

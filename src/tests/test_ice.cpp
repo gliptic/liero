@@ -17,13 +17,13 @@
 
 // Helper: poll both agents until predicate is true or timeout
 template <typename Pred>
-static bool pollUntil(IceAgent& a, IceAgent& b, Pred&& pred, int timeoutMs = 5000) {
+static bool PollUntil(IceAgent& a, IceAgent& b, Pred&& pred, int timeout_ms = 5000) {
   auto start = std::chrono::steady_clock::now();
   while (!pred()) {
-    a.poll();
-    b.poll();
+    a.Poll();
+    b.Poll();
     auto elapsed = std::chrono::steady_clock::now() - start;
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeoutMs)
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeout_ms)
       return false;
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
@@ -31,12 +31,12 @@ static bool pollUntil(IceAgent& a, IceAgent& b, Pred&& pred, int timeoutMs = 500
 }
 
 template <typename Pred>
-static bool pollOneUntil(IceAgent& a, Pred&& pred, int timeoutMs = 5000) {
+static bool PollOneUntil(IceAgent& a, Pred&& pred, int timeout_ms = 5000) {
   auto start = std::chrono::steady_clock::now();
   while (!pred()) {
-    a.poll();
+    a.Poll();
     auto elapsed = std::chrono::steady_clock::now() - start;
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeoutMs)
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeout_ms)
       return false;
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
@@ -50,30 +50,30 @@ static bool pollOneUntil(IceAgent& a, Pred&& pred, int timeoutMs = 5000) {
 TEST_CASE("IceAgent starts and gathers candidates", "[ice]") {
   IceAgent agent;
   IceAgent::Config cfg;
-  cfg.stunServer = "";  // No STUN — only host candidates
+  cfg.stun_server = "";  // No STUN — only host candidates
 
   std::vector<std::string> candidates;
-  bool gatheringDone = false;
+  bool gathering_done = false;
 
-  agent.onLocalCandidate = [&](const std::string& c) { candidates.push_back(c); };
-  agent.onGatheringDone = [&]() { gatheringDone = true; };
+  agent.on_local_candidate = [&](const std::string& c) { candidates.push_back(c); };
+  agent.on_gathering_done = [&]() { gathering_done = true; };
 
-  agent.start(cfg);
-  REQUIRE(pollOneUntil(agent, [&] { return gatheringDone; }));
+  agent.Start(cfg);
+  REQUIRE(PollOneUntil(agent, [&] { return gathering_done; }));
   REQUIRE(!candidates.empty());
 }
 
 TEST_CASE("IceAgent local credentials available after start", "[ice]") {
   IceAgent agent;
   IceAgent::Config cfg;
-  cfg.stunServer = "";
+  cfg.stun_server = "";
 
-  agent.start(cfg);
+  agent.Start(cfg);
   // Give it a moment to initialize
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-  auto ufrag = agent.localUfrag();
-  auto pwd = agent.localPwd();
+  auto ufrag = agent.LocalUfrag();
+  auto pwd = agent.LocalPwd();
   REQUIRE(!ufrag.empty());
   REQUIRE(!pwd.empty());
   REQUIRE(ufrag.size() >= 4);
@@ -81,128 +81,128 @@ TEST_CASE("IceAgent local credentials available after start", "[ice]") {
 }
 
 TEST_CASE("Two local IceAgents connect directly", "[ice]") {
-  IceAgent agentA, agentB;
+  IceAgent agent_a, agent_b;
   IceAgent::Config cfg;
-  cfg.stunServer = "";  // Host candidates only (localhost)
+  cfg.stun_server = "";  // Host candidates only (localhost)
 
-  std::vector<std::string> candidatesA, candidatesB;
-  bool gatherDoneA = false, gatherDoneB = false;
-  IceAgent::State stateA = IceAgent::State::New;
-  IceAgent::State stateB = IceAgent::State::New;
+  std::vector<std::string> candidates_a, candidates_b;
+  bool gather_done_a = false, gather_done_b = false;
+  IceAgent::State state_a = IceAgent::State::kNew;
+  IceAgent::State state_b = IceAgent::State::kNew;
 
-  agentA.onLocalCandidate = [&](const std::string& c) { candidatesA.push_back(c); };
-  agentA.onGatheringDone = [&]() { gatherDoneA = true; };
-  agentA.onStateChange = [&](IceAgent::State s) { stateA = s; };
+  agent_a.on_local_candidate = [&](const std::string& c) { candidates_a.push_back(c); };
+  agent_a.on_gathering_done = [&]() { gather_done_a = true; };
+  agent_a.on_state_change = [&](IceAgent::State s) { state_a = s; };
 
-  agentB.onLocalCandidate = [&](const std::string& c) { candidatesB.push_back(c); };
-  agentB.onGatheringDone = [&]() { gatherDoneB = true; };
-  agentB.onStateChange = [&](IceAgent::State s) { stateB = s; };
+  agent_b.on_local_candidate = [&](const std::string& c) { candidates_b.push_back(c); };
+  agent_b.on_gathering_done = [&]() { gather_done_b = true; };
+  agent_b.on_state_change = [&](IceAgent::State s) { state_b = s; };
 
-  agentA.start(cfg);
-  agentB.start(cfg);
+  agent_a.Start(cfg);
+  agent_b.Start(cfg);
 
   // Wait for gathering to complete on both
-  REQUIRE(pollUntil(agentA, agentB, [&] { return gatherDoneA && gatherDoneB; }));
+  REQUIRE(PollUntil(agent_a, agent_b, [&] { return gather_done_a && gather_done_b; }));
 
   // Exchange credentials
-  agentA.setRemoteCredentials(agentB.localUfrag(), agentB.localPwd());
-  agentB.setRemoteCredentials(agentA.localUfrag(), agentA.localPwd());
+  agent_a.SetRemoteCredentials(agent_b.LocalUfrag(), agent_b.LocalPwd());
+  agent_b.SetRemoteCredentials(agent_a.LocalUfrag(), agent_a.LocalPwd());
 
   // Exchange candidates
-  for (auto& c : candidatesA) agentB.addRemoteCandidate(c);
-  for (auto& c : candidatesB) agentA.addRemoteCandidate(c);
-  agentA.setRemoteGatheringDone();
-  agentB.setRemoteGatheringDone();
+  for (auto& c : candidates_a) agent_b.AddRemoteCandidate(c);
+  for (auto& c : candidates_b) agent_a.AddRemoteCandidate(c);
+  agent_a.SetRemoteGatheringDone();
+  agent_b.SetRemoteGatheringDone();
 
   // Wait for connection
-  REQUIRE(pollUntil(agentA, agentB, [&] {
-    return stateA == IceAgent::State::Connected && stateB == IceAgent::State::Connected;
+  REQUIRE(PollUntil(agent_a, agent_b, [&] {
+    return state_a == IceAgent::State::kConnected && state_b == IceAgent::State::kConnected;
   }));
 }
 
 TEST_CASE("IceAgent stop is clean", "[ice]") {
   IceAgent agent;
   IceAgent::Config cfg;
-  cfg.stunServer = "";
+  cfg.stun_server = "";
 
-  agent.start(cfg);
+  agent.Start(cfg);
   std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  agent.stop();
-  REQUIRE(agent.state() == IceAgent::State::Disconnected);
+  agent.Stop();
+  REQUIRE(agent.CurrentState() == IceAgent::State::kDisconnected);
 
   // Double stop is safe
-  agent.stop();
-  REQUIRE(agent.state() == IceAgent::State::Disconnected);
+  agent.Stop();
+  REQUIRE(agent.CurrentState() == IceAgent::State::kDisconnected);
 }
 
 TEST_CASE("IceAgent data exchange via onRecv", "[ice]") {
-  IceAgent agentA, agentB;
+  IceAgent agent_a, agent_b;
   IceAgent::Config cfg;
-  cfg.stunServer = "";
+  cfg.stun_server = "";
 
-  std::vector<std::string> candidatesA, candidatesB;
-  bool gatherDoneA = false, gatherDoneB = false;
-  IceAgent::State stateA = IceAgent::State::New;
-  IceAgent::State stateB = IceAgent::State::New;
+  std::vector<std::string> candidates_a, candidates_b;
+  bool gather_done_a = false, gather_done_b = false;
+  IceAgent::State state_a = IceAgent::State::kNew;
+  IceAgent::State state_b = IceAgent::State::kNew;
 
-  std::vector<uint8_t> receivedByA, receivedByB;
+  std::vector<uint8_t> received_by_a, received_by_b;
 
-  agentA.onLocalCandidate = [&](const std::string& c) { candidatesA.push_back(c); };
-  agentA.onGatheringDone = [&]() { gatherDoneA = true; };
-  agentA.onStateChange = [&](IceAgent::State s) { stateA = s; };
-  agentA.onRecv = [&](const uint8_t* data, size_t len) {
-    receivedByA.insert(receivedByA.end(), data, data + len);
+  agent_a.on_local_candidate = [&](const std::string& c) { candidates_a.push_back(c); };
+  agent_a.on_gathering_done = [&]() { gather_done_a = true; };
+  agent_a.on_state_change = [&](IceAgent::State s) { state_a = s; };
+  agent_a.on_recv = [&](const uint8_t* data, size_t len) {
+    received_by_a.insert(received_by_a.end(), data, data + len);
   };
 
-  agentB.onLocalCandidate = [&](const std::string& c) { candidatesB.push_back(c); };
-  agentB.onGatheringDone = [&]() { gatherDoneB = true; };
-  agentB.onStateChange = [&](IceAgent::State s) { stateB = s; };
-  agentB.onRecv = [&](const uint8_t* data, size_t len) {
-    receivedByB.insert(receivedByB.end(), data, data + len);
+  agent_b.on_local_candidate = [&](const std::string& c) { candidates_b.push_back(c); };
+  agent_b.on_gathering_done = [&]() { gather_done_b = true; };
+  agent_b.on_state_change = [&](IceAgent::State s) { state_b = s; };
+  agent_b.on_recv = [&](const uint8_t* data, size_t len) {
+    received_by_b.insert(received_by_b.end(), data, data + len);
   };
 
-  agentA.start(cfg);
-  agentB.start(cfg);
+  agent_a.Start(cfg);
+  agent_b.Start(cfg);
 
-  REQUIRE(pollUntil(agentA, agentB, [&] { return gatherDoneA && gatherDoneB; }));
+  REQUIRE(PollUntil(agent_a, agent_b, [&] { return gather_done_a && gather_done_b; }));
 
-  agentA.setRemoteCredentials(agentB.localUfrag(), agentB.localPwd());
-  agentB.setRemoteCredentials(agentA.localUfrag(), agentA.localPwd());
-  for (auto& c : candidatesA) agentB.addRemoteCandidate(c);
-  for (auto& c : candidatesB) agentA.addRemoteCandidate(c);
-  agentA.setRemoteGatheringDone();
-  agentB.setRemoteGatheringDone();
+  agent_a.SetRemoteCredentials(agent_b.LocalUfrag(), agent_b.LocalPwd());
+  agent_b.SetRemoteCredentials(agent_a.LocalUfrag(), agent_a.LocalPwd());
+  for (auto& c : candidates_a) agent_b.AddRemoteCandidate(c);
+  for (auto& c : candidates_b) agent_a.AddRemoteCandidate(c);
+  agent_a.SetRemoteGatheringDone();
+  agent_b.SetRemoteGatheringDone();
 
-  REQUIRE(pollUntil(agentA, agentB, [&] {
-    return stateA == IceAgent::State::Connected && stateB == IceAgent::State::Connected;
+  REQUIRE(PollUntil(agent_a, agent_b, [&] {
+    return state_a == IceAgent::State::kConnected && state_b == IceAgent::State::kConnected;
   }));
 
   // Send data A → B
-  const uint8_t msg[] = "Hello from A";
-  agentA.send(msg, sizeof(msg));
+  const uint8_t kMsg[] = "Hello from A";
+  agent_a.Send(kMsg, sizeof(kMsg));
 
   // Wait for delivery
   auto start = std::chrono::steady_clock::now();
-  while (receivedByB.empty()) {
+  while (received_by_b.empty()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     auto elapsed = std::chrono::steady_clock::now() - start;
     if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) break;
   }
-  REQUIRE(receivedByB.size() == sizeof(msg));
-  REQUIRE(std::memcmp(receivedByB.data(), msg, sizeof(msg)) == 0);
+  REQUIRE(received_by_b.size() == sizeof(kMsg));
+  REQUIRE(std::memcmp(received_by_b.data(), kMsg, sizeof(kMsg)) == 0);
 
   // Send data B → A
-  const uint8_t reply[] = "Hello from B";
-  agentB.send(reply, sizeof(reply));
+  const uint8_t kReply[] = "Hello from B";
+  agent_b.Send(kReply, sizeof(kReply));
 
   start = std::chrono::steady_clock::now();
-  while (receivedByA.empty()) {
+  while (received_by_a.empty()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     auto elapsed = std::chrono::steady_clock::now() - start;
     if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) break;
   }
-  REQUIRE(receivedByA.size() == sizeof(reply));
-  REQUIRE(std::memcmp(receivedByA.data(), reply, sizeof(reply)) == 0);
+  REQUIRE(received_by_a.size() == sizeof(kReply));
+  REQUIRE(std::memcmp(received_by_a.data(), kReply, sizeof(kReply)) == 0);
 }
 
 // ============================================================
@@ -212,106 +212,106 @@ TEST_CASE("IceAgent data exchange via onRecv", "[ice]") {
 TEST_CASE("IceBridge creates valid socket pair", "[ice][bridge]") {
   IceAgent agent;
   IceAgent::Config cfg;
-  cfg.stunServer = "";
-  agent.start(cfg);
+  cfg.stun_server = "";
+  agent.Start(cfg);
 
   IceBridge bridge;
-  int fd = bridge.create(agent);
+  int fd = bridge.Create(agent);
   REQUIRE(fd >= 0);
-  REQUIRE(bridge.enetSocket() == fd);
-  REQUIRE(bridge.bridgePort() > 0);
+  REQUIRE(bridge.EnetSocket() == fd);
+  REQUIRE(bridge.BridgePort() > 0);
 
-  bridge.destroy();
-  agent.stop();
+  bridge.Destroy();
+  agent.Stop();
 }
 
 TEST_CASE("IceBridge proxies data bidirectionally", "[ice][bridge]") {
   // Connect two agents, set up bridges, and verify data flows through
-  IceAgent agentA, agentB;
+  IceAgent agent_a, agent_b;
   IceAgent::Config cfg;
-  cfg.stunServer = "";
+  cfg.stun_server = "";
 
-  std::vector<std::string> candidatesA, candidatesB;
-  bool gatherDoneA = false, gatherDoneB = false;
-  IceAgent::State stateA = IceAgent::State::New;
-  IceAgent::State stateB = IceAgent::State::New;
+  std::vector<std::string> candidates_a, candidates_b;
+  bool gather_done_a = false, gather_done_b = false;
+  IceAgent::State state_a = IceAgent::State::kNew;
+  IceAgent::State state_b = IceAgent::State::kNew;
 
-  agentA.onLocalCandidate = [&](const std::string& c) { candidatesA.push_back(c); };
-  agentA.onGatheringDone = [&]() { gatherDoneA = true; };
-  agentA.onStateChange = [&](IceAgent::State s) { stateA = s; };
+  agent_a.on_local_candidate = [&](const std::string& c) { candidates_a.push_back(c); };
+  agent_a.on_gathering_done = [&]() { gather_done_a = true; };
+  agent_a.on_state_change = [&](IceAgent::State s) { state_a = s; };
 
-  agentB.onLocalCandidate = [&](const std::string& c) { candidatesB.push_back(c); };
-  agentB.onGatheringDone = [&]() { gatherDoneB = true; };
-  agentB.onStateChange = [&](IceAgent::State s) { stateB = s; };
+  agent_b.on_local_candidate = [&](const std::string& c) { candidates_b.push_back(c); };
+  agent_b.on_gathering_done = [&]() { gather_done_b = true; };
+  agent_b.on_state_change = [&](IceAgent::State s) { state_b = s; };
 
-  agentA.start(cfg);
-  agentB.start(cfg);
+  agent_a.Start(cfg);
+  agent_b.Start(cfg);
 
-  REQUIRE(pollUntil(agentA, agentB, [&] { return gatherDoneA && gatherDoneB; }));
+  REQUIRE(PollUntil(agent_a, agent_b, [&] { return gather_done_a && gather_done_b; }));
 
-  agentA.setRemoteCredentials(agentB.localUfrag(), agentB.localPwd());
-  agentB.setRemoteCredentials(agentA.localUfrag(), agentA.localPwd());
-  for (auto& c : candidatesA) agentB.addRemoteCandidate(c);
-  for (auto& c : candidatesB) agentA.addRemoteCandidate(c);
-  agentA.setRemoteGatheringDone();
-  agentB.setRemoteGatheringDone();
+  agent_a.SetRemoteCredentials(agent_b.LocalUfrag(), agent_b.LocalPwd());
+  agent_b.SetRemoteCredentials(agent_a.LocalUfrag(), agent_a.LocalPwd());
+  for (auto& c : candidates_a) agent_b.AddRemoteCandidate(c);
+  for (auto& c : candidates_b) agent_a.AddRemoteCandidate(c);
+  agent_a.SetRemoteGatheringDone();
+  agent_b.SetRemoteGatheringDone();
 
-  REQUIRE(pollUntil(agentA, agentB, [&] {
-    return stateA == IceAgent::State::Connected && stateB == IceAgent::State::Connected;
+  REQUIRE(PollUntil(agent_a, agent_b, [&] {
+    return state_a == IceAgent::State::kConnected && state_b == IceAgent::State::kConnected;
   }));
 
   // Now create bridges
-  IceBridge bridgeA, bridgeB;
-  int fdA = bridgeA.create(agentA);
-  int fdB = bridgeB.create(agentB);
-  REQUIRE(fdA >= 0);
-  REQUIRE(fdB >= 0);
+  IceBridge bridge_a, bridge_b;
+  int fd_a = bridge_a.Create(agent_a);
+  int fd_b = bridge_b.Create(agent_b);
+  REQUIRE(fd_a >= 0);
+  REQUIRE(fd_b >= 0);
 
   // Send from ENet side of A → should arrive on ENet side of B
-  const uint8_t msg[] = "Bridge test data";
+  const uint8_t kMsg[] = "Bridge test data";
   // Write to ENet socket A (as if ENet is sending via sendto to bridge address)
-  sockaddr_in6 bridgeAddrA{};
-  bridgeAddrA.sin6_family = AF_INET6;
-  bridgeAddrA.sin6_addr = in6addr_loopback;
-  bridgeAddrA.sin6_port = htons(bridgeA.bridgePort());
-  ::sendto(fdA, reinterpret_cast<const char*>(msg), sizeof(msg), 0,
-           reinterpret_cast<const sockaddr*>(&bridgeAddrA), sizeof(bridgeAddrA));
+  sockaddr_in6 bridge_addr_a{};
+  bridge_addr_a.sin6_family = AF_INET6;
+  bridge_addr_a.sin6_addr = in6addr_loopback;
+  bridge_addr_a.sin6_port = htons(bridge_a.BridgePort());
+  ::sendto(fd_a, reinterpret_cast<const char*>(kMsg), sizeof(kMsg), 0,
+           reinterpret_cast<const sockaddr*>(&bridge_addr_a), sizeof(bridge_addr_a));
 
   // Poll bridge A to forward to IceAgent A → network → IceAgent B → bridge B → ENet socket B
-  bridgeA.poll();
+  bridge_a.Poll();
 
   // Wait for data to arrive at ENet socket B
   uint8_t buf[256] = {};
   auto start = std::chrono::steady_clock::now();
   ssize_t n = 0;
   while (n <= 0) {
-    n = ::recv(fdB, reinterpret_cast<char*>(buf), sizeof(buf), 0);
+    n = ::recv(fd_b, reinterpret_cast<char*>(buf), sizeof(buf), 0);
     if (n <= 0) {
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
       auto elapsed = std::chrono::steady_clock::now() - start;
       if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) break;
     }
   }
-  REQUIRE(n == sizeof(msg));
-  REQUIRE(std::memcmp(buf, msg, sizeof(msg)) == 0);
+  REQUIRE(n == sizeof(kMsg));
+  REQUIRE(std::memcmp(buf, kMsg, sizeof(kMsg)) == 0);
 
-  bridgeA.destroy();
-  bridgeB.destroy();
-  agentA.stop();
-  agentB.stop();
+  bridge_a.Destroy();
+  bridge_b.Destroy();
+  agent_a.Stop();
+  agent_b.Stop();
 }
 
 TEST_CASE("IceBridge destroy is safe", "[ice][bridge]") {
   IceAgent agent;
   IceAgent::Config cfg;
-  cfg.stunServer = "";
-  agent.start(cfg);
+  cfg.stun_server = "";
+  agent.Start(cfg);
 
   IceBridge bridge;
-  bridge.create(agent);
-  bridge.destroy();
+  bridge.Create(agent);
+  bridge.Destroy();
 
   // Double destroy is safe
-  bridge.destroy();
-  agent.stop();
+  bridge.Destroy();
+  agent.Stop();
 }

@@ -5,8 +5,8 @@
 
 struct LocalAddress {
   std::string ip;
-  bool isIPv6;
+  bool is_i_pv6;
 };
 
 // Returns non-loopback local addresses (IPv4 and IPv6 link-local/global)
-std::vector<LocalAddress> getLocalAddresses();
+std::vector<LocalAddress> GetLocalAddresses();

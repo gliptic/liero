@@ -5,12 +5,12 @@
 #include <cassert>
 #include <vector>
 
-void SpriteSet::allocate(int width, int height, int count) {
+void SpriteSet::Allocate(int width, int height, int count) {
   this->width = width;
   this->height = height;
-  this->spriteSize = width * height;
+  this->sprite_size = width * height;
   this->count = count;
 
-  int amount = spriteSize * count;
+  int amount = sprite_size * count;
   data.resize(amount);
 }

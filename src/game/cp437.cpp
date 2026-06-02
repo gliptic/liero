@@ -147,7 +147,7 @@ constexpr char32_t kHighHalf[128] = {
     0x00A0,
 };
 
-void appendUtf8(std::string& out, char32_t cp) {
+void AppendUtf8(std::string& out, char32_t cp) {
   if (cp < 0x80) {
     out.push_back(static_cast<char>(cp));
   } else if (cp < 0x800) {
@@ -167,12 +167,12 @@ void appendUtf8(std::string& out, char32_t cp) {
 
 }  // namespace
 
-char32_t byteToUnicode(uint8_t b) {
+char32_t ByteToUnicode(uint8_t b) {
   if (b < 0x80) return b;
   return kHighHalf[b - 0x80];
 }
 
-int unicodeToByte(char32_t cp) {
+int UnicodeToByte(char32_t cp) {
   if (cp < 0x80) return static_cast<int>(cp);
   for (int i = 0; i < 128; ++i) {
     if (kHighHalf[i] == cp) return i + 0x80;
@@ -180,7 +180,7 @@ int unicodeToByte(char32_t cp) {
   return -1;
 }
 
-char32_t utf8DecodeNext(char const* str, std::size_t len, std::size_t& i) {
+char32_t Utf8DecodeNext(char const* str, std::size_t len, std::size_t& i) {
   if (i >= len) return 0xFFFD;
   unsigned char c = static_cast<unsigned char>(str[i]);
   if (c < 0x80) {
@@ -227,10 +227,10 @@ char32_t utf8DecodeNext(char const* str, std::size_t len, std::size_t& i) {
   return 0xFFFD;
 }
 
-std::string cp437BytesToUtf8(std::string_view in) {
+std::string Cp437BytesToUtf8(std::string_view in) {
   std::string out;
   out.reserve(in.size());
-  for (unsigned char c : in) appendUtf8(out, byteToUnicode(c));
+  for (unsigned char c : in) AppendUtf8(out, ByteToUnicode(c));
   return out;
 }
 

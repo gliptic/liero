@@ -4,9 +4,6 @@
 # game engine port (C arrays, pointer arithmetic, magic tuning numbers).
 #
 # Disabled categories — and why:
-# * readability-identifier-naming: the original Liero codebase is
-#   camelCase / mixedCase; the check has no rules configured here so it
-#   is silent, but listed explicitly for clarity.
 # * readability-identifier-length: math/graphics code uses x, y, dx, i.
 # * readability-magic-numbers / cppcoreguidelines-avoid-magic-numbers:
 #   game tuning constants are everywhere; extracting them gains no real
@@ -44,7 +41,6 @@ Checks: "*,\
   -llvmlibc-*,\
   -modernize-use-nodiscard,\
   -misc-non-private-member-variables-in-classes,\
-  -readability-identifier-naming,\
   -readability-identifier-length,\
   -readability-magic-numbers,\
   -readability-braces-around-statements,\
@@ -121,4 +117,46 @@ CheckOptions:
     value: 'true'
   - key: 'readability-redundant-access-specifiers.CheckFirstDeclaration'
     value: 'true'
+# Identifier naming: Google C++ Style. Cereal ADL hooks (serialize,
+# save, load, save_minimal, load_minimal) are carved out by regex —
+# they are looked up by name via ADL, so renaming them would silently
+# break serialization. The on-disk format uses explicit string literals
+# in `cereal::make_nvp(...)`, so renaming the C++ fields does not
+# change the save/snapshot format.
+  - key: 'readability-identifier-naming.ClassCase'
+    value: 'CamelCase'
+  - key: 'readability-identifier-naming.StructCase'
+    value: 'CamelCase'
+  - key: 'readability-identifier-naming.EnumCase'
+    value: 'CamelCase'
+  - key: 'readability-identifier-naming.FunctionCase'
+    value: 'CamelCase'
+  - key: 'readability-identifier-naming.MethodCase'
+    value: 'CamelCase'
+  - key: 'readability-identifier-naming.VariableCase'
+    value: 'lower_case'
+  - key: 'readability-identifier-naming.ParameterCase'
+    value: 'lower_case'
+  - key: 'readability-identifier-naming.MemberCase'
+    value: 'lower_case'
+  - key: 'readability-identifier-naming.PrivateMemberSuffix'
+    value: '_'
+  - key: 'readability-identifier-naming.ProtectedMemberSuffix'
+    value: '_'
+  - key: 'readability-identifier-naming.ConstantCase'
+    value: 'CamelCase'
+  - key: 'readability-identifier-naming.ConstantPrefix'
+    value: 'k'
+  - key: 'readability-identifier-naming.EnumConstantCase'
+    value: 'CamelCase'
+  - key: 'readability-identifier-naming.EnumConstantPrefix'
+    value: 'k'
+  - key: 'readability-identifier-naming.MacroDefinitionCase'
+    value: 'UPPER_CASE'
+  - key: 'readability-identifier-naming.NamespaceCase'
+    value: 'lower_case'
+  - key: 'readability-identifier-naming.MethodIgnoredRegexp'
+    value: '^(serialize|save|load|save_minimal|load_minimal|setNextName|startNode|finishNode|saveValue|loadValue|saveBinaryValue|loadBinaryValue|sizeTag)$'
+  - key: 'readability-identifier-naming.FunctionIgnoredRegexp'
+    value: '^(serialize|save|load|save_minimal|load_minimal|prologue|epilogue)$'
 ...

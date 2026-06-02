@@ -6,107 +6,107 @@
 #include <fstream>
 #include <sstream>
 
-void writeSpriteTga(io::Writer& w, int imageWidth, int imageHeight, uint8_t* data, Palette& pal) {
-  w.put(0);
-  w.put(1);
-  w.put(1);
+void WriteSpriteTga(io::Writer& w, int image_width, int image_height, uint8_t* data, Palette& pal) {
+  w.Put(0);
+  w.Put(1);
+  w.Put(1);
 
   // Palette spec
-  io::write_uint16_le(w, 0);
-  io::write_uint16_le(w, 256);
-  w.put(24);
+  io::WriteUint16Le(w, 0);
+  io::WriteUint16Le(w, 256);
+  w.Put(24);
 
-  io::write_uint16_le(w, 0);
-  io::write_uint16_le(w, 0);
-  io::write_uint16_le(w, imageWidth);
-  io::write_uint16_le(w, imageHeight);
-  w.put(8);  // Bits per pixel
-  w.put(0);  // Descriptor
+  io::WriteUint16Le(w, 0);
+  io::WriteUint16Le(w, 0);
+  io::WriteUint16Le(w, image_width);
+  io::WriteUint16Le(w, image_height);
+  w.Put(8);  // Bits per pixel
+  w.Put(0);  // Descriptor
 
   for (auto const& entry : pal.entries) {
-    w.put(entry.b << 2);
-    w.put(entry.g << 2);
-    w.put(entry.r << 2);
+    w.Put(entry.b << 2);
+    w.Put(entry.g << 2);
+    w.Put(entry.r << 2);
   }
 
   // Bottom to top
-  for (std::size_t y = (std::size_t)imageHeight; y-- > 0;) {
-    auto const* src = &data[y * imageWidth];
-    w.put((uint8_t const*)src, imageWidth);
+  for (std::size_t y = (std::size_t)image_height; y-- > 0;) {
+    auto const* src = &data[y * image_width];
+    w.Put((uint8_t const*)src, image_width);
   }
 }
 
-void writeSpriteTga(io::Writer& w, SpriteSet& ss, Palette& pal) {
-  writeSpriteTga(w, ss.width, ss.count * ss.height, &ss.data[0], pal);
+void WriteSpriteTga(io::Writer& w, SpriteSet& ss, Palette& pal) {
+  WriteSpriteTga(w, ss.width, ss.count * ss.height, &ss.data[0], pal);
 }
 
-void commonSave(Common& common, std::string const& path) {
-  auto cfgPath = joinPath(path, "tc.cfg");
-  create_directories(cfgPath);
+void CommonSave(Common& common, std::string const& path) {
+  auto cfg_path = JoinPath(path, "tc.cfg");
+  CreateDirectories(cfg_path);
 
   {
     std::ostringstream ss;
-    saveTcConfig(common, ss);
-    io::FileWriter textWriter(cfgPath.c_str(), "wb");
+    SaveTcConfig(common, ss);
+    io::FileWriter text_writer(cfg_path.c_str(), "wb");
     auto str = ss.str();
-    for (char c : str) textWriter.put(c);
+    for (char c : str) text_writer.Put(c);
   }
 
   for (auto& s : common.sounds) {
-    std::string dir(joinPath(path, "sounds/"));
-    create_directories(dir);
+    std::string dir(JoinPath(path, "sounds/"));
+    CreateDirectories(dir);
 
-    io::FileWriter w(joinPath(dir, s.name + ".wav").c_str(), "wb");
+    io::FileWriter w(JoinPath(dir, s.name + ".wav").c_str(), "wb");
 
-    auto roundedSize = (s.originalData.size() + 1) & ~1;
+    auto rounded_size = (s.original_data.size() + 1) & ~1;
 
-    w.put((uint8_t const*)"RIFF", 4);
-    io::write_uint32_le(w, (uint32_t)roundedSize - 8);
-    w.put((uint8_t const*)"WAVE", 4);
+    w.Put((uint8_t const*)"RIFF", 4);
+    io::WriteUint32Le(w, (uint32_t)rounded_size - 8);
+    w.Put((uint8_t const*)"WAVE", 4);
 
-    w.put((uint8_t const*)"fmt ", 4);
-    io::write_uint32_le(w, 16);     // PCM header size
-    io::write_uint16_le(w, 1);      // PCM
-    io::write_uint16_le(w, 1);      // Mono
-    io::write_uint32_le(w, 22050);  // Sample rate
-    io::write_uint32_le(w, 22050 * 1 * 1);
-    io::write_uint16_le(w, 1 * 1);
-    io::write_uint16_le(w, 8);
+    w.Put((uint8_t const*)"fmt ", 4);
+    io::WriteUint32Le(w, 16);     // PCM header size
+    io::WriteUint16Le(w, 1);      // PCM
+    io::WriteUint16Le(w, 1);      // Mono
+    io::WriteUint32Le(w, 22050);  // Sample rate
+    io::WriteUint32Le(w, 22050 * 1 * 1);
+    io::WriteUint16Le(w, 1 * 1);
+    io::WriteUint16Le(w, 8);
 
-    w.put((uint8_t const*)"data", 4);
-    io::write_uint32_le(w, (uint32_t)s.originalData.size() * 1 * 1);  // Data size
+    w.Put((uint8_t const*)"data", 4);
+    io::WriteUint32Le(w, (uint32_t)s.original_data.size() * 1 * 1);  // Data size
 
-    auto curSize = s.originalData.size();
+    auto cur_size = s.original_data.size();
 
-    for (auto& z : s.originalData) w.put(z + 128);
+    for (auto& z : s.original_data) w.Put(z + 128);
 
-    while (curSize < roundedSize) {
-      w.put(0);  // Padding
-      ++curSize;
+    while (cur_size < rounded_size) {
+      w.Put(0);  // Padding
+      ++cur_size;
     }
   }
 
   {
-    std::string dir(joinPath(path, "sprites/"));
-    create_directories(dir);
+    std::string dir(JoinPath(path, "sprites/"));
+    CreateDirectories(dir);
 
     {
-      io::FileWriter w(joinPath(dir, "small.tga").c_str(), "wb");
-      writeSpriteTga(w, common.smallSprites, common.exepal);
+      io::FileWriter w(JoinPath(dir, "small.tga").c_str(), "wb");
+      WriteSpriteTga(w, common.small_sprites, common.exepal);
     }
 
     {
-      io::FileWriter w(joinPath(dir, "large.tga").c_str(), "wb");
-      writeSpriteTga(w, common.largeSprites, common.exepal);
+      io::FileWriter w(JoinPath(dir, "large.tga").c_str(), "wb");
+      WriteSpriteTga(w, common.large_sprites, common.exepal);
     }
 
     {
-      io::FileWriter w(joinPath(dir, "text.tga").c_str(), "wb");
-      writeSpriteTga(w, common.textSprites, common.exepal);
+      io::FileWriter w(JoinPath(dir, "text.tga").c_str(), "wb");
+      WriteSpriteTga(w, common.text_sprites, common.exepal);
     }
 
     {
-      io::FileWriter w(joinPath(dir, "font.tga").c_str(), "wb");
+      io::FileWriter w(JoinPath(dir, "font.tga").c_str(), "wb");
 
       std::vector<uint8_t> data(common.font.chars.size() * 7 * 8, 10);
       for (std::size_t i = 0; i < common.font.chars.size(); ++i) {
@@ -118,40 +118,40 @@ void commonSave(Common& common, std::string const& path) {
             dest[y * 7 + x] = ch.data[y * 7 + x] ? 50 : 0;
           }
       }
-      writeSpriteTga(w, 7, (int)common.font.chars.size() * 8, &data[0], common.exepal);
+      WriteSpriteTga(w, 7, (int)common.font.chars.size() * 8, &data[0], common.exepal);
     }
   }
 
   for (auto& w : common.weapons) {
-    std::string dir(joinPath(path, "weapons/"));
-    create_directories(dir);
+    std::string dir(JoinPath(path, "weapons/"));
+    CreateDirectories(dir);
 
     std::ostringstream ss;
-    saveWeaponConfig(common, w, ss);
-    io::FileWriter wWriter(joinPath(dir, w.idStr + ".cfg").c_str(), "wb");
+    SaveWeaponConfig(common, w, ss);
+    io::FileWriter w_writer(JoinPath(dir, w.id_str + ".cfg").c_str(), "wb");
     auto str = ss.str();
-    for (char c : str) wWriter.put(c);
+    for (char c : str) w_writer.Put(c);
   }
 
-  for (auto& w : common.nobjectTypes) {
-    std::string dir(joinPath(path, "nobjects/"));
-    create_directories(dir);
+  for (auto& w : common.nobject_types) {
+    std::string dir(JoinPath(path, "nobjects/"));
+    CreateDirectories(dir);
 
     std::ostringstream ss;
-    saveNObjectConfig(common, w, ss);
-    io::FileWriter nWriter(joinPath(dir, w.idStr + ".cfg").c_str(), "wb");
+    SaveNObjectConfig(common, w, ss);
+    io::FileWriter n_writer(JoinPath(dir, w.id_str + ".cfg").c_str(), "wb");
     auto str = ss.str();
-    for (char c : str) nWriter.put(c);
+    for (char c : str) n_writer.Put(c);
   }
 
-  for (auto& w : common.sobjectTypes) {
-    std::string dir(joinPath(path, "sobjects/"));
-    create_directories(dir);
+  for (auto& w : common.sobject_types) {
+    std::string dir(JoinPath(path, "sobjects/"));
+    CreateDirectories(dir);
 
     std::ostringstream ss;
-    saveSObjectConfig(common, w, ss);
-    io::FileWriter sWriter(joinPath(dir, w.idStr + ".cfg").c_str(), "wb");
+    SaveSObjectConfig(common, w, ss);
+    io::FileWriter s_writer(JoinPath(dir, w.id_str + ".cfg").c_str(), "wb");
     auto str = ss.str();
-    for (char c : str) sWriter.put(c);
+    for (char c : str) s_writer.Put(c);
   }
 }

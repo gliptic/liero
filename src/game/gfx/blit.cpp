@@ -14,7 +14,7 @@
 #include "macros.hpp"
 #include "math/rect.hpp"
 
-void fillRect(Bitmap& scr, int x, int y, int w, int h, int color) {
+void FillRect(Bitmap& scr, int x, int y, int w, int h, int color) {
   int x2 = x + w;
   int y2 = y + h;
   int clipx2 = scr.clip_rect.x2;
@@ -26,63 +26,63 @@ void fillRect(Bitmap& scr, int x, int y, int w, int h, int color) {
 
   if (x2 > x) {
     for (; y < y2; ++y) {
-      std::memset(&scr.getPixel(x, y), color, x2 - x);
+      std::memset(&scr.GetPixel(x, y), color, x2 - x);
     }
   }
 }
 
-void fill(Bitmap& scr, int color) { std::memset(scr.pixels, color, scr.pitch * scr.h); }
+void Fill(Bitmap& scr, int color) { std::memset(scr.pixels, color, scr.pitch * scr.h); }
 
-void drawBar(Bitmap& scr, int x, int y, int width, int color) {
-  drawBar(scr, x, y, width, 2, color);
+void DrawBar(Bitmap& scr, int x, int y, int width, int color) {
+  DrawBar(scr, x, y, width, 2, color);
 }
 
-void drawBar(Bitmap& scr, int x, int y, int width, int height, int color) {
+void DrawBar(Bitmap& scr, int x, int y, int width, int height, int color) {
   for (int h = 0; h < height; h++) {
     if (width > 0) {
-      std::memset(&scr.getPixel(x, y + h), color, width);
+      std::memset(&scr.GetPixel(x, y + h), color, width);
     }
   }
 }
 
-void vline(Bitmap& scr, int x, int y1, int y2, int color) {
+void Vline(Bitmap& scr, int x, int y1, int y2, int color) {
   if (x < scr.clip_rect.x1 || x >= scr.clip_rect.x2) return;
 
   y1 = std::max(y1, (int)scr.clip_rect.y1);
   y2 = std::min(y2, (int)scr.clip_rect.y2);
 
-  for (; y1 < y2; ++y1) scr.getPixel(x, y1) = color;
+  for (; y1 < y2; ++y1) scr.GetPixel(x, y1) = color;
 }
 
-void drawRoundedBox(Bitmap& scr, int x, int y, int color, int height, int width) {
-  fillRect(scr, x, y + 1, width + 3, height - 2, color);
-  fillRect(scr, x + 1, y, width + 1, 1, color);
-  fillRect(scr, x + 1, y + height - 1, width + 1, 1, color);
+void DrawRoundedBox(Bitmap& scr, int x, int y, int color, int height, int width) {
+  FillRect(scr, x, y + 1, width + 3, height - 2, color);
+  FillRect(scr, x + 1, y, width + 1, 1, color);
+  FillRect(scr, x + 1, y + height - 1, width + 1, 1, color);
   /*
   height--;
-  std::memset(&scr.getPixel(x+1,y), color, width+1);
+  std::memset(&scr.GetPixel(x+1,y), color, width+1);
   for(long i=1; i<height; i++)
   {
-          std::memset(&scr.getPixel(x,y+i), color, width+3);
+          std::memset(&scr.GetPixel(x,y+i), color, width+3);
   }
-  std::memset(&scr.getPixel(x+1,y+height), color, width+1);*/
+  std::memset(&scr.GetPixel(x+1,y+height), color, width+1);*/
 }
 
-void drawRoundedLineBox(Bitmap& scr, int x, int y, int color, int width, int height) {
-  fillRect(scr, x + 1, y, width - 2, 1, color);
-  fillRect(scr, x + 1, y + height - 1, width - 2, 1, color);
-  fillRect(scr, x, y + 1, 1, height - 2, color);
-  fillRect(scr, x + width - 1, y + 1, 1, height - 2, color);
+void DrawRoundedLineBox(Bitmap& scr, int x, int y, int color, int width, int height) {
+  FillRect(scr, x + 1, y, width - 2, 1, color);
+  FillRect(scr, x + 1, y + height - 1, width - 2, 1, color);
+  FillRect(scr, x, y + 1, 1, height - 2, color);
+  FillRect(scr, x + width - 1, y + 1, 1, height - 2, color);
 }
 
 #define DASH()                                                  \
   do {                                                          \
-    if (scr.clip_rect.inside(x1, y1) && ((p + phase) % 4) < 2)  \
-      scr.getPixel(x1, y1) = (p >= color2lim) ? color : color2; \
+    if (scr.clip_rect.Inside(x1, y1) && ((p + phase) % 4) < 2)  \
+      scr.GetPixel(x1, y1) = (p >= color2lim) ? color : color2; \
     ++p;                                                        \
   } while (0)
 
-void drawDashedLineBox(Bitmap& scr, int x, int y, int color, int color2, int num, int den,
+void DrawDashedLineBox(Bitmap& scr, int x, int y, int color, int color2, int num, int den,
                        int width, int height, int phase) {
   int p = 0;
   int x1, y1;
@@ -102,7 +102,7 @@ void drawDashedLineBox(Bitmap& scr, int x, int y, int color, int color2, int num
   for (x1 = x + width - 2; x1 > x; --x1) DASH();
 }
 
-void blitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height,
+void BlitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height,
                           int pitch) {
   CLIP_IMAGE(scr.clip_rect);
 
@@ -120,7 +120,7 @@ void blitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int
   int pitch = (s).pitch, width = (s).width, height = (s).height; \
   PalIdx* mem = (s).mem
 
-void blitImage(Bitmap& scr, Sprite spr, int x, int y) {
+void BlitImage(Bitmap& scr, Sprite spr, int x, int y) {
   UNPACK_SPRITE(spr);
 
   CLIP_IMAGE(scr.clip_rect);
@@ -143,7 +143,7 @@ void blitImage(Bitmap& scr, Sprite spr, int x, int y) {
   }
 }
 
-void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase) {
+void BlitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase) {
   UNPACK_SPRITE(spr);
 
   CLIP_IMAGE(scr.clip_rect);
@@ -232,18 +232,18 @@ void blitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase) {
     }                                                     \
   } while (false)
 
-void blitImageR(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height) {
+void BlitImageR(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height) {
   int pitch = width;
 
   CLIP_IMAGE(scr.clip_rect);
 
   PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;
 
-  for (int y_ = 0; y_ < height; ++y_) {
+  for (int y = 0; y < height; ++y) {
     PalIdx* rowdest = scrptr;
     PalIdx* rowsrc = mem;
 
-    for (int x_ = 0; x_ < width; ++x_) {
+    for (int x = 0; x < width; ++x) {
       PalIdx c = *rowsrc;
       if (c && (PalIdx(*rowdest - 160) < 8)) *rowdest = c;
       ++rowsrc;
@@ -255,7 +255,7 @@ void blitImageR(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height) {
   }
 }
 
-void blitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y) {
+void BlitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y) {
   int width = 16;
   int height = 16;
   int pitch = width;
@@ -289,17 +289,17 @@ void blitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y) {
   }
 }
 
-void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int width,
+void BlitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int width,
                     int height) {
   int pitch = width;
-  Rect clipRect(0, 0, level.width, level.height);
+  Rect clip_rect(0, 0, level.width, level.height);
 
-  CLIP_IMAGE(clipRect);
+  CLIP_IMAGE(clip_rect);
 
   BLITL(&level.data[0], level.width, &level.materials[0], {
     if (c) {
       PalIdx n;
-      if (rowmatdest->dirtBack())
+      if (rowmatdest->DirtBack())
         n = c;
       else
         n = c + 3;
@@ -309,7 +309,7 @@ void blitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int
   });
 }
 
-void blitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int width,
+void BlitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int width,
                      int height) {
   int pitch = width;
 
@@ -317,13 +317,13 @@ void blitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int
 
   PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;
 
-  for (int y_ = 0; y_ < height; ++y_) {
+  for (int y = 0; y < height; ++y) {
     PalIdx* rowdest = scrptr;
     PalIdx* rowsrc = mem;
 
-    for (int x_ = 0; x_ < width; ++x_) {
+    for (int x = 0; x < width; ++x) {
       PalIdx c = *rowsrc;
-      if (c && common.materials[*rowdest].seeShadow())  // TODO: Speed up this test?
+      if (c && common.materials[*rowdest].SeeShadow())  // TODO: Speed up this test?
         *rowdest += 4;
       ++rowsrc;
       ++rowdest;
@@ -334,7 +334,7 @@ void blitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int
   }
 }
 
-void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y) {
+void BlitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y) {
   int width = 16;
   int height = 16;
   int pitch = width;
@@ -343,19 +343,19 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
 
   CLIP_IMAGE(clip);
 
-  PalIdx* dest = level.pixelp(x, y);
-  Material* matdest = level.matp(x, y);
+  PalIdx* dest = level.Pixelp(x, y);
+  Material* matdest = level.Matp(x, y);
 
   if (p1) {
-    for (int y_ = 0; y_ < height; ++y_) {
+    for (int y = 0; y < height; ++y) {
       PalIdx* rowdest = dest;
       Material* rowmatdest = matdest;
       PalIdx* rowsrc = mem;
 
-      for (int x_ = 0; x_ < width; ++x_) {
+      for (int x = 0; x < width; ++x) {
         PalIdx c = *rowsrc;
         PalIdx n;
-        if (c && rowmatdest->dirtBack())  // TODO: Speed up this test?
+        if (c && rowmatdest->DirtBack())  // TODO: Speed up this test?
           n = c;
         else
           n = c + 3;
@@ -371,12 +371,12 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
       mem += pitch;
     }
   } else {
-    for (int y_ = 0; y_ < height; ++y_) {
+    for (int y = 0; y < height; ++y) {
       PalIdx* rowdest = dest;
       Material* rowmatdest = matdest;
       PalIdx* rowsrc = mem;
 
-      for (int x_ = 0; x_ < width; ++x_) {
+      for (int x = 0; x < width; ++x) {
         PalIdx c = *rowsrc;
         if (c) {
           *rowdest = c;
@@ -395,40 +395,40 @@ void blitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y)
   }
 }
 
-void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, int x, int y) {
-  assert(dirtEffect >= 0 && dirtEffect < 9);
-  Texture& tex = common.textures[dirtEffect];
-  PalIdx* tFrame = common.largeSprites.spritePtr(tex.sFrame + rand(tex.rFrame));
-  PalIdx* mFrame = common.largeSprites.spritePtr(tex.mFrame);
+void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, int x, int y) {
+  assert(dirt_effect >= 0 && dirt_effect < 9);
+  Texture& tex = common.textures[dirt_effect];
+  PalIdx* t_frame = common.large_sprites.SpritePtr(tex.s_frame + rand(tex.r_frame));
+  PalIdx* m_frame = common.large_sprites.SpritePtr(tex.m_frame);
 
   int width = 16;
   int height = 16;
   int pitch = width;
-  PalIdx* mem = mFrame;
+  PalIdx* mem = m_frame;
 
   Rect clip(0, 0, level.width, level.height - 1);
 
   CLIP_IMAGE(clip);
 
-  if (tex.nDrawBack) {
+  if (tex.n_draw_back) {
     BLITL(&level.data[0], level.width, &level.materials[0], {
       switch (c) {
         case 6:
-          if (rowmatdest->anyDirt()) {
+          if (rowmatdest->AnyDirt()) {
             int mx = x + x_;
             int my = y + y_;
 
-            *rowdest = tFrame[((my & 15) << 4) + (mx & 15)];
+            *rowdest = t_frame[((my & 15) << 4) + (mx & 15)];
             *rowmatdest = common.materials[*rowdest];
           }
           break;
 
         case 1:
           Material m = *rowmatdest;
-          if (m.dirt2()) {
+          if (m.Dirt2()) {
             *rowdest = 2;
             *rowmatdest = common.materials[2];
-          } else if (m.dirt()) {
+          } else if (m.Dirt()) {
             *rowdest = 1;
             *rowmatdest = common.materials[1];
           }
@@ -439,24 +439,24 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
       switch (c) {
         case 10:
         case 6:
-          if (rowmatdest->background()) {
+          if (rowmatdest->Background()) {
             int mx = x + x_;
             int my = y + y_;
 
-            *rowdest = tFrame[((my & 15) << 4) + (mx & 15)];
+            *rowdest = t_frame[((my & 15) << 4) + (mx & 15)];
             *rowmatdest = common.materials[*rowdest];
           }
           break;
 
         case 2:
-          if (rowmatdest->background()) {
+          if (rowmatdest->Background()) {
             *rowdest = 2;
             *rowmatdest = common.materials[2];
           }
           break;
 
         case 1:
-          if (rowmatdest->background()) {
+          if (rowmatdest->Background()) {
             *rowdest = 1;
             *rowmatdest = common.materials[1];
           }
@@ -465,18 +465,18 @@ void drawDirtEffect(Common& common, Rand& rand, Level& level, int dirtEffect, in
   }
 }
 
-void correctShadow(Common& common, Level& level, Rect rect) {
-  rect.intersect(Rect(0, 3, level.width - 3, level.height));
+void CorrectShadow(Common& common, Level& level, Rect rect) {
+  rect.Intersect(Rect(0, 3, level.width - 3, level.height));
 
   for (int x = rect.x1; x < rect.x2; ++x)
     for (int y = rect.y1; y < rect.y2; ++y) {
-      PalIdx pix = level.pixel(x, y);
+      PalIdx pix = level.Pixel(x, y);
 
-      if (level.mat(x, y).seeShadow() && level.mat(x + 3, y - 3).dirtRock()) {
-        level.setPixel(x, y, pix + 4, common);
+      if (level.Mat(x, y).SeeShadow() && level.Mat(x + 3, y - 3).DirtRock()) {
+        level.SetPixel(x, y, pix + 4, common);
       } else if (pix >= 164  // Remove shadow
-                 && pix <= 167 && !level.mat(x + 3, y - 3).dirtRock()) {
-        level.setPixel(x, y, pix - 4, common);
+                 && pix <= 167 && !level.Mat(x + 3, y - 3).DirtRock()) {
+        level.SetPixel(x, y, pix - 4, common);
       }
     }
 }
@@ -518,7 +518,7 @@ inline int sign(int v) { return v < 0 ? -1 : (v > 0 ? 1 : 0); }
     }                     \
   }
 
-void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY) {
+void DrawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY) {
   int color = LC(NRColourBegin);
 
   Rect& clip = scr.clip_rect;
@@ -528,90 +528,90 @@ void drawNinjarope(Common& common, Bitmap& scr, int fromX, int fromY, int toX, i
   DO_LINE({
     if (++color == LC(NRColourEnd)) color = LC(NRColourBegin);
 
-    if (clip.inside(cx, cy)) ptr[cy * pitch + cx] = color;
+    if (clip.Inside(cx, cy)) ptr[cy * pitch + cx] = color;
   });
 }
 
-void drawLaserSight(Bitmap& scr, Rand& rand, int fromX, int fromY, int toX, int toY) {
+void DrawLaserSight(Bitmap& scr, Rand& rand, int fromX, int fromY, int toX, int toY) {
   Rect& clip = scr.clip_rect;
   PalIdx* ptr = scr.pixels;
   unsigned int pitch = scr.pitch;
 
   DO_LINE({
     if (rand(5) == 0) {
-      if (clip.inside(cx, cy)) ptr[cy * pitch + cx] = rand(2) + 83;
+      if (clip.Inside(cx, cy)) ptr[cy * pitch + cx] = rand(2) + 83;
     }
   });
 }
 
-void drawShadowLine(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY) {
+void DrawShadowLine(Common& common, Bitmap& scr, int fromX, int fromY, int toX, int toY) {
   Rect& clip = scr.clip_rect;
   PalIdx* ptr = scr.pixels;
   unsigned int pitch = scr.pitch;
 
   DO_LINE({
-    if (clip.inside(cx, cy)) {
+    if (clip.Inside(cx, cy)) {
       PalIdx& pix = ptr[cy * pitch + cx];
-      if (common.materials[pix].seeShadow()) pix += 4;
+      if (common.materials[pix].SeeShadow()) pix += 4;
     }
   });
 }
 
-void drawLine(Bitmap& scr, int fromX, int fromY, int toX, int toY, int color) {
+void DrawLine(Bitmap& scr, int fromX, int fromY, int toX, int toY, int color) {
   Rect& clip = scr.clip_rect;
   PalIdx* ptr = scr.pixels;
   unsigned int pitch = scr.pitch;
 
   DO_LINE({
-    if (clip.inside(cx, cy)) {
+    if (clip.Inside(cx, cy)) {
       ptr[cy * pitch + cx] = color;
     }
   });
 }
 
-void drawGraph(Bitmap& scr, std::vector<double> const& data, int height, int startX, int startY,
-               int color, int negColor, bool balanced) {
+void DrawGraph(Bitmap& scr, std::vector<double> const& data, int height, int start_x, int start_y,
+               int color, int neg_color, bool balanced) {
   if (!data.empty()) {
-    int x = startX;
+    int x = start_x;
 
-    int baseY = startY + (balanced ? height / 2 : height);
+    int base_y = start_y + (balanced ? height / 2 : height);
 
     for (double v : data) {
-      int y1 = baseY - (int)std::floor(v + 0.5);
-      int y2 = baseY;
+      int y1 = base_y - (int)std::floor(v + 0.5);
+      int y2 = base_y;
       if (y1 > y2) std::swap(y1, y2);
-      vline(scr, x, y1, y2, v >= 0 ? color : negColor);
+      Vline(scr, x, y1, y2, v >= 0 ? color : neg_color);
       ++x;
     }
   }
 
-  drawRoundedLineBox(scr, startX, startY, 7, (int)data.size(), height);
+  DrawRoundedLineBox(scr, start_x, start_y, 7, (int)data.size(), height);
 }
 
-void drawHeatmap(Bitmap& scr, int x, int y, Heatmap& hm) {
+void DrawHeatmap(Bitmap& scr, int x, int y, Heatmap& hm) {
   int width = hm.width, height = hm.height;
   int pitch = width;
   int* mem = &hm.map[0];
 
   std::map<int, int> counts;
   int* p = mem;
-  int totalPixels = 0;
+  int total_pixels = 0;
   while (p != mem + width * height) {
     if (*p != 0) {
       ++counts[*p];
-      ++totalPixels;
+      ++total_pixels;
     }
     ++p;
   }
 
   std::map<int, int> mapping;
   int cum = 0;
-  int maxIdx = 119 - 104 + 1;
+  int max_idx = 119 - 104 + 1;
 
   mapping[0] = 0;
 
   for (auto& v : counts) {
-    mapping[v.first] = int(104 + int64_t(cum) * maxIdx / totalPixels);
+    mapping[v.first] = int(104 + int64_t(cum) * max_idx / total_pixels);
     cum += v.second;
   }
 
@@ -623,23 +623,23 @@ void drawHeatmap(Bitmap& scr, int x, int y, Heatmap& hm) {
   });
 }
 
-void scaleDraw(PalIdx* src, int w, int h, std::size_t srcPitch, uint8_t* dest,
-               std::size_t destPitch, int mag, uint32_t* pal32) {
+void ScaleDraw(PalIdx* src, int w, int h, std::size_t src_pitch, uint8_t* dest,
+               std::size_t dest_pitch, int mag, uint32_t* pal32) {
   if (mag == 1) {
     for (int y = 0; y < h; ++y) {
-      PalIdx* line = src + y * srcPitch;
-      uint32_t* destLine = reinterpret_cast<uint32_t*>(dest + y * destPitch);
+      PalIdx* line = src + y * src_pitch;
+      uint32_t* dest_line = reinterpret_cast<uint32_t*>(dest + y * dest_pitch);
 
       for (int x = 0; x < w; ++x) {
         PalIdx pix = *line++;
-        *destLine++ = pal32[pix];
+        *dest_line++ = pal32[pix];
       }
     }
   } else if (mag > 1) {
     for (int y = 0; y < h; ++y) {
-      PalIdx* line = src + y * srcPitch;
-      int destMagPitch = mag * (int)destPitch;
-      uint8_t* destLine = dest + y * destMagPitch;
+      PalIdx* line = src + y * src_pitch;
+      int dest_mag_pitch = mag * (int)dest_pitch;
+      uint8_t* dest_line = dest + y * dest_mag_pitch;
 
       for (int x = 0; x < w / 4; ++x) {
         uint32_t pix = *reinterpret_cast<uint32_t*>(line);
@@ -651,52 +651,52 @@ void scaleDraw(PalIdx* src, int w, int h, std::size_t srcPitch, uint8_t* dest,
         uint32_t d = pal32[pix & 0x000000ff];
 
         for (int dx = 0; dx < mag; ++dx) {
-          for (int dy = 0; dy < destMagPitch; dy += (int)destPitch) {
-            *reinterpret_cast<uint32_t*>(destLine + dy) = d;
+          for (int dy = 0; dy < dest_mag_pitch; dy += (int)dest_pitch) {
+            *reinterpret_cast<uint32_t*>(dest_line + dy) = d;
           }
-          destLine += 4;
+          dest_line += 4;
         }
         for (int dx = 0; dx < mag; ++dx) {
-          for (int dy = 0; dy < destMagPitch; dy += (int)destPitch) {
-            *reinterpret_cast<uint32_t*>(destLine + dy) = c;
+          for (int dy = 0; dy < dest_mag_pitch; dy += (int)dest_pitch) {
+            *reinterpret_cast<uint32_t*>(dest_line + dy) = c;
           }
-          destLine += 4;
+          dest_line += 4;
         }
         for (int dx = 0; dx < mag; ++dx) {
-          for (int dy = 0; dy < destMagPitch; dy += (int)destPitch) {
-            *reinterpret_cast<uint32_t*>(destLine + dy) = b;
+          for (int dy = 0; dy < dest_mag_pitch; dy += (int)dest_pitch) {
+            *reinterpret_cast<uint32_t*>(dest_line + dy) = b;
           }
-          destLine += 4;
+          dest_line += 4;
         }
         for (int dx = 0; dx < mag; ++dx) {
-          for (int dy = 0; dy < destMagPitch; dy += (int)destPitch) {
-            *reinterpret_cast<uint32_t*>(destLine + dy) = a;
+          for (int dy = 0; dy < dest_mag_pitch; dy += (int)dest_pitch) {
+            *reinterpret_cast<uint32_t*>(dest_line + dy) = a;
           }
-          destLine += 4;
+          dest_line += 4;
         }
       }
     }
   }
 }
 
-void preparePaletteBgra(Color realPal[256], uint32_t (&pal32)[256]) {
+void PreparePaletteBgra(Color real_pal[256], uint32_t (&pal32)[256]) {
   for (int i = 0; i < 256; ++i) {
-    pal32[i] = (realPal[i].r << 16) | (realPal[i].g << 8) | realPal[i].b;
+    pal32[i] = (real_pal[i].r << 16) | (real_pal[i].g << 8) | real_pal[i].b;
   }
 }
 
-int fitScreen(int backW, int backH, int scrW, int scrH, int& offsetX, int& offsetY) {
+int FitScreen(int back_w, int back_h, int scr_w, int scr_h, int& offset_x, int& offset_y) {
   int mag = 1;
 
-  while (scrW * mag <= backW && scrH * mag <= backH) ++mag;
+  while (scr_w * mag <= back_w && scr_h * mag <= back_h) ++mag;
 
   --mag;  // mag was the first that didn't fit
 
-  scrW *= mag;
-  scrH *= mag;
+  scr_w *= mag;
+  scr_h *= mag;
 
-  offsetX = backW / 2 - scrW / 2;
-  offsetY = backH / 2 - scrH / 2;
+  offset_x = back_w / 2 - scr_w / 2;
+  offset_y = back_h / 2 - scr_h / 2;
 
   return mag;
 }

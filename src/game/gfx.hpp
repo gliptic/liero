@@ -39,311 +39,311 @@ struct PlayerMenu : Menu {
   PlayerMenu(int x, int y) : Menu(x, y) {}
 
   enum {
-    PlName,
-    PlHealth,
-    PlRed,
-    PlGreen,
-    PlBlue,
-    PlInput,
-    PlUp,
-    PlDown,
-    PlLeft,
-    PlRight,
-    PlFire,
-    PlChange,
-    PlJump,
-    PlDig,
-    PlWeap0,
-    PlController = PlWeap0 + 5,
-    PlSaveProfile,
-    PlSaveProfileAs,
-    PlLoadProfile,
-    PlLoadedProfile,
+    kPlName,
+    kPlHealth,
+    kPlRed,
+    kPlGreen,
+    kPlBlue,
+    kPlInput,
+    kPlUp,
+    kPlDown,
+    kPlLeft,
+    kPlRight,
+    kPlFire,
+    kPlChange,
+    kPlJump,
+    kPlDig,
+    kPlWeap0,
+    kPlController = kPlWeap0 + 5,
+    kPlSaveProfile,
+    kPlSaveProfileAs,
+    kPlLoadProfile,
+    kPlLoadedProfile,
   };
 
-  virtual void drawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
+  virtual void DrawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
                                bool disabled);
 
-  virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item);
+  virtual ItemBehavior* GetItemBehavior(Common& common, MenuItem& item);
 
   std::shared_ptr<WormSettings> ws;
 };
 
 struct SettingsMenu : Menu {
   enum {
-    SiGameMode,
-    SiLives,
-    SiTimeToLose,  // Extra
-    SiTimeToWin,
-    SiZoneTimeout,
-    SiFlagsToWin,  // Extra
-    SiLoadingTimes,
-    SiMaxBonuses,
-    SiNamesOnBonuses,
-    SiMap,
-    SiAmountOfBlood,
-    SiLevel,
-    SiRegenerateLevel,
-    SiWeaponOptions,
-    LoadOptions,
-    SaveOptions,
-    LoadChange,
+    kSiGameMode,
+    kSiLives,
+    kSiTimeToLose,  // Extra
+    kSiTimeToWin,
+    kSiZoneTimeout,
+    kSiFlagsToWin,  // Extra
+    kSiLoadingTimes,
+    kSiMaxBonuses,
+    kSiNamesOnBonuses,
+    kSiMap,
+    kSiAmountOfBlood,
+    kSiLevel,
+    kSiRegenerateLevel,
+    kSiWeaponOptions,
+    kLoadOptions,
+    kSaveOptions,
+    kLoadChange,
   };
 
   SettingsMenu(int x, int y) : Menu(x, y) {}
 
-  virtual ItemBehavior* getItemBehavior(Common& common, MenuItem& item);
+  virtual ItemBehavior* GetItemBehavior(Common& common, MenuItem& item);
 
-  virtual void onUpdate();
+  virtual void OnUpdate();
 };
 
 struct Joystick {
-  SDL_Gamepad* sdlGamepad;
-  SDL_JoystickID instanceId;
-  bool btnState[SDL_GAMEPAD_BUTTON_COUNT];
-  bool btnPressed[SDL_GAMEPAD_BUTTON_COUNT];  // Latched on press, cleared by testGamepadButtonOnce
-  bool axisButtonState[12];                   // 6 axes * 2 directions
-  bool axisPressed[12];  // Latched on axis threshold cross, cleared by consumer
+  SDL_Gamepad* sdl_gamepad;
+  SDL_JoystickID instance_id;
+  bool btn_state[SDL_GAMEPAD_BUTTON_COUNT];
+  bool btn_pressed[SDL_GAMEPAD_BUTTON_COUNT];  // Latched on press, cleared by testGamepadButtonOnce
+  bool axis_button_state[12];                  // 6 axes * 2 directions
+  bool axis_pressed[12];  // Latched on axis threshold cross, cleared by consumer
 
-  void clearState() {
-    std::memset(btnState, 0, sizeof(btnState));
-    std::memset(btnPressed, 0, sizeof(btnPressed));
-    std::memset(axisButtonState, 0, sizeof(axisButtonState));
-    std::memset(axisPressed, 0, sizeof(axisPressed));
+  void ClearState() {
+    std::memset(btn_state, 0, sizeof(btn_state));
+    std::memset(btn_pressed, 0, sizeof(btn_pressed));
+    std::memset(axis_button_state, 0, sizeof(axis_button_state));
+    std::memset(axis_pressed, 0, sizeof(axis_pressed));
   }
 };
 
 struct Gfx {
   Gfx();
 
-  void init();
-  void setVideoMode();
-  void onWindowResize(uint32_t windowId);
-  void loadMenus();
+  void Init();
+  void SetVideoMode();
+  void OnWindowResize(uint32_t window_id);
+  void LoadMenus();
 
-  void process(Controller* controller = 0);
+  void Process(Controller* controller = 0);
   // draws a given surface onto an SDL texture/renderer, using a given Renderer
-  void draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdlRenderer,
+  void Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_renderer,
             Renderer& renderer);
-  void flip();
-  void menuFlip(bool quitting = false);
+  void Flip();
+  void MenuFlip(bool quitting = false);
 
-  void clearKeys();
+  void ClearKeys();
 
-  bool testKeyOnce(uint32_t key) {
-    bool state = dosKeys[key];
-    dosKeys[key] = false;
+  bool TestKeyOnce(uint32_t key) {
+    bool state = dos_keys[key];
+    dos_keys[key] = false;
     return state;
   }
 
-  bool testKey(uint32_t key) { return dosKeys[key]; }
+  bool TestKey(uint32_t key) { return dos_keys[key]; }
 
-  void releaseKey(uint32_t key) { dosKeys[key] = false; }
+  void ReleaseKey(uint32_t key) { dos_keys[key] = false; }
 
-  void pressKey(uint32_t key) { dosKeys[key] = true; }
+  void PressKey(uint32_t key) { dos_keys[key] = true; }
 
-  void setKey(uint32_t key, bool state) { dosKeys[key] = state; }
+  void SetKey(uint32_t key, bool state) { dos_keys[key] = state; }
 
-  void toggleKey(uint32_t key) { dosKeys[key] = !dosKeys[key]; }
+  void ToggleKey(uint32_t key) { dos_keys[key] = !dos_keys[key]; }
 
-  bool testSDLKeyOnce(SDL_Scancode key) {
+  bool TestSdlKeyOnce(SDL_Scancode key) {
     uint32_t k = SDLToDOSKey(key);
-    return k ? testKeyOnce(k) : false;
+    return k ? TestKeyOnce(k) : false;
   }
 
-  bool testSDLKey(SDL_Scancode key) {
+  bool TestSdlKey(SDL_Scancode key) {
     uint32_t k = SDLToDOSKey(key);
-    return k ? testKey(k) : false;
+    return k ? TestKey(k) : false;
   }
 
-  void releaseSDLKey(SDL_Scancode key) {
+  void ReleaseSdlKey(SDL_Scancode key) {
     uint32_t k = SDLToDOSKey(key);
-    if (k) dosKeys[k] = false;
+    if (k) dos_keys[k] = false;
   }
 
   // Test any key (both regular DOS keys and extended joystick keys)
-  bool testAnyKeyOnce(uint32_t key) {
+  bool TestAnyKeyOnce(uint32_t key) {
     if (key == 0) return false;
-    if (key < MaxDOSKey) return testKeyOnce(key);
-    auto it = exKeys.find(key);
-    if (it != exKeys.end() && it->second) {
+    if (key < kMaxDosKey) return TestKeyOnce(key);
+    auto it = ex_keys.find(key);
+    if (it != ex_keys.end() && it->second) {
       it->second = false;
       return true;
     }
     return false;
   }
 
-  bool testAnyKey(uint32_t key) {
+  bool TestAnyKey(uint32_t key) {
     if (key == 0) return false;
-    if (key < MaxDOSKey) return testKey(key);
-    auto it = exKeys.find(key);
-    return it != exKeys.end() && it->second;
+    if (key < kMaxDosKey) return TestKey(key);
+    auto it = ex_keys.find(key);
+    return it != ex_keys.end() && it->second;
   }
 
-  void releaseAnyKey(uint32_t key) {
+  void ReleaseAnyKey(uint32_t key) {
     if (key == 0) return;
-    if (key < MaxDOSKey)
-      dosKeys[key] = false;
+    if (key < kMaxDosKey)
+      dos_keys[key] = false;
     else
-      exKeys[key] = false;
+      ex_keys[key] = false;
   }
 
   // Test if any player's configured control for a given action was pressed.
   // Uses controlsEx which covers both keyboard and joystick bindings.
-  bool testControlOnce(int control);
+  bool TestControlOnce(int control);
 
   // Test if any connected gamepad has a raw button pressed (one-shot)
-  bool testGamepadButtonOnce(int button);
+  bool TestGamepadButtonOnce(int button);
 
   // Test if any connected gamepad has a raw button held (non-destructive)
-  bool testGamepadButton(int button);
+  bool TestGamepadButton(int button);
 
   // Directional input: checks both DPad button AND left stick axis (one-shot)
-  bool testGamepadDirOnce(int dpadButton);
+  bool TestGamepadDirOnce(int dpad_button);
 
   // Directional input: checks both DPad button AND left stick axis (held)
-  bool testGamepadDir(int dpadButton);
+  bool TestGamepadDir(int dpad_button);
 
   // Non-destructive version for held keys (left/right repeat)
-  bool testControl(int control);
+  bool TestControl(int control);
 
   // Release a control key for all players
-  void releaseControl(int control);
+  void ReleaseControl(int control);
 
-  std::string getKeyName(uint32_t key);
-  std::string getGamepadKeyName(uint32_t gamepadKey);
-  void setSpectatorFullscreen(bool newFullscreen);
-  void setFullscreen(bool newFullscreen);
-  void setDoubleRes(bool newDoubleRes);
+  std::string GetKeyName(uint32_t key);
+  std::string GetGamepadKeyName(uint32_t gamepad_key);
+  void SetSpectatorFullscreen(bool new_fullscreen);
+  void SetFullscreen(bool new_fullscreen);
+  void SetDoubleRes(bool new_double_res);
 
-  void saveSettings(FsNode node);
-  bool loadSettings(FsNode node);
+  void SaveSettings(FsNode node);
+  bool LoadSettings(FsNode node);
 
-  void processEvent(SDL_Event& ev, Controller* controller = 0);
+  void ProcessEvent(SDL_Event& ev, Controller* controller = 0);
 
-  int findGamepadIndex(SDL_JoystickID id);
-  int findGamepadForPlayer(int playerIdx);
-  void dispatchGamepadInput(int gpIdx, uint32_t gamepadKey, bool state, Controller* controller);
+  int FindGamepadIndex(SDL_JoystickID id);
+  int FindGamepadForPlayer(int player_idx);
+  void DispatchGamepadInput(int gp_idx, uint32_t gamepad_key, bool state, Controller* controller);
 
-  void mainLoop();
+  void MainLoop();
 
   // Initialize the state stack.
   // Call once before calling runOneFrame() in a loop.
-  void initFrameStepping();
+  void InitFrameStepping();
 
   // Advance the application by one frame. Returns false when the
   // application should exit (quit selected or TC change requested).
   // After a TC change, call initFrameStepping() again.
-  bool runOneFrame();
+  bool RunOneFrame();
 
   // True if a TC change was requested (caller should reload and re-init)
-  bool tcChangeRequested() const { return tcChangeRequested_; }
+  bool TcChangeRequested() const { return tcChangeRequested_; }
 
-  void drawBasicMenu(/*int curSel*/);
-  void drawSpectatorInfo();
-  void playerSettings(int player);
-  void openHiddenMenu();
+  void DrawBasicMenu(/*int curSel*/);
+  void DrawSpectatorInfo();
+  void PlayerSettings(int player);
+  void OpenHiddenMenu();
 
-  static void preparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette,
-                             Color realPal[256], uint32_t (&pal32)[256]);
+  static void PreparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette,
+                             Color real_pal[256], uint32_t (&pal32)[256]);
 
-  static void overlay(SDL_PixelFormatDetails const* format, uint8_t* src, int w, int h,
-                      std::size_t srcPitch, uint8_t* dest, std::size_t destPitch, int mag);
+  static void Overlay(SDL_PixelFormatDetails const* format, uint8_t* src, int w, int h,
+                      std::size_t src_pitch, uint8_t* dest, std::size_t dest_pitch, int mag);
 
-  void setConfigNodes(FsNode const& config, FsNode const& userConfig) {
-    configNode = config;
-    userConfigNode = userConfig;
+  void SetConfigNodes(FsNode const& config, FsNode const& user_config) {
+    config_node = config;
+    user_config_node = user_config;
   }
 
-  FsNode getConfigNode() { return configNode; }
+  FsNode GetConfigNode() { return config_node; }
 
-  FsNode getUserConfigNode() { return userConfigNode; }
+  FsNode GetUserConfigNode() { return user_config_node; }
 
   // PRNG for things that don't affect the game
   Rand rand;
 
   // renders everything for actual play
-  Renderer playRenderer;
+  Renderer play_renderer;
   // renders everything on a single screen, for single screen replay and
   // the spectator window
-  Renderer singleScreenRenderer;
+  Renderer single_screen_renderer;
 
   // the renderer currently in use by the primary window. Usually
   // playRenderer, but is singleScreenRenderer if watching a replay in
   // single screen mode.
-  Renderer* primaryRenderer;
+  Renderer* primary_renderer;
 
-  FsNode configNode;
-  FsNode userConfigNode;
+  FsNode config_node;
+  FsNode user_config_node;
 
   // Port for online play (default 19532, configurable via --port)
-  uint16_t onlinePort = 19532;
+  uint16_t online_port = 19532;
 
-  MainMenu mainMenu;
-  SettingsMenu settingsMenu;
-  PlayerMenu playerMenu;
-  HiddenMenu hiddenMenu;
+  MainMenu main_menu;
+  SettingsMenu settings_menu;
+  PlayerMenu player_menu;
+  HiddenMenu hidden_menu;
 
-  Menu* curMenu;
-  std::string prevSelectedReplayPath;
-  FsNode settingsNode;  // Currently loaded settings file. TODO: This is only used for display. We
-                        // could just remember the name.
+  Menu* cur_menu;
+  std::string prev_selected_replay_path;
+  FsNode settings_node;  // Currently loaded settings file. TODO: This is only used for display. We
+                         // could just remember the name.
   std::shared_ptr<Settings> settings;
 
-  bool dosKeys[177];
-  std::unordered_map<uint32_t, bool> exKeys;
+  bool dos_keys[177];
+  std::unordered_map<uint32_t, bool> ex_keys;
 
   // the window to render into
-  SDL_Window* sdlWindow = NULL;
+  SDL_Window* sdl_window = NULL;
   // the window to render the spectator view into
-  SDL_Window* sdlSpectatorWindow = NULL;
+  SDL_Window* sdl_spectator_window = NULL;
   // the SDL renderer to use
-  SDL_Renderer* sdlRenderer = NULL;
+  SDL_Renderer* sdl_renderer = NULL;
   // the SDL renderer to use for the spectator window
-  SDL_Renderer* sdlSpectatorRenderer = NULL;
+  SDL_Renderer* sdl_spectator_renderer = NULL;
   // full window size texture that represents the window
-  SDL_Texture* sdlTexture = NULL;
+  SDL_Texture* sdl_texture = NULL;
   // full spectator window size texture that represents the spectator window
-  SDL_Texture* sdlSpectatorTexture = NULL;
+  SDL_Texture* sdl_spectator_texture = NULL;
   // a software surface to do the actual drawing into
-  SDL_Surface* sdlDrawSurface = NULL;
+  SDL_Surface* sdl_draw_surface = NULL;
   // a software surface to do the actual drawing of the spectator view into
-  SDL_Surface* sdlSpectatorDrawSurface = NULL;
+  SDL_Surface* sdl_spectator_draw_surface = NULL;
   // when the menu is open, the ongoing game on the screen is paused and
   // stored in this bitmap
-  Bitmap frozenScreen;
+  Bitmap frozen_screen;
   // when the menu is open, the ongoing game on the spectator screen is
   // paused and stored in this bitmap
-  Bitmap frozenSpectatorScreen;
+  Bitmap frozen_spectator_screen;
 
   bool running;
-  bool spectatorFullscreen, doubleRes;
+  bool spectator_fullscreen, double_res;
 
-  uint64_t lastFrame;
-  unsigned menuCycles;
-  int windowW, windowH;
-  int prevMag;          // Previous magnification used for drawing
-  Rect lastUpdateRect;  // Last region that was updated when flipping
+  uint64_t last_frame;
+  unsigned menu_cycles;
+  int window_w, window_h;
+  int prev_mag;           // Previous magnification used for drawing
+  Rect last_update_rect;  // Last region that was updated when flipping
   std::shared_ptr<Common> common;
-  std::shared_ptr<SoundPlayer> soundPlayer;
+  std::shared_ptr<SoundPlayer> sound_player;
   std::unique_ptr<Controller> controller;
-  std::unique_ptr<NetSession> netSession;
-  std::string pendingNetAddress;
+  std::unique_ptr<NetSession> net_session;
+  std::string pending_net_address;
 
-  StateStack stateStack;
+  StateStack state_stack;
 
   // Used by sub-states to communicate a menu selection back to MainMenuState
-  int pendingMenuSelection = -1;
+  int pending_menu_selection = -1;
 
   // Error message to display after GamePlayState pops (set by controllers)
-  std::string pendingErrorMessage;
+  std::string pending_error_message;
 
   std::vector<Joystick> joysticks;
 
-  SDL_Scancode keyBuf[32], *keyBufPtr;
+  SDL_Scancode key_buf[32], *key_buf_ptr;
 
-  std::vector<std::pair<int, int>> debugPoints;
-  std::string debugInfo;
+  std::vector<std::pair<int, int>> debug_points;
+  std::string debug_info;
 
  private:
   struct MainMenuState* menuStatePtr_ = nullptr;

@@ -9,22 +9,22 @@ struct Game;
 struct WeaponSelection {
   WeaponSelection(Game& game);
 
-  void draw(Renderer& renderer, GameState state, bool useSpectatorViewports);
-  void drawNormalViewports(Renderer& renderer, GameState state);
-  void drawSpectatorViewports(Renderer& renderer, GameState state);
-  bool processFrame();
-  void finalize();
+  void Draw(Renderer& renderer, GameState state, bool use_spectator_viewports);
+  void DrawNormalViewports(Renderer& renderer, GameState state);
+  void DrawSpectatorViewports(Renderer& renderer, GameState state);
+  bool ProcessFrame();
+  void Finalize();
 
-  void focus();
-  void unfocus();
+  void Focus();
+  void Unfocus();
 
   Game& game;
 
-  int enabledWeaps;
-  int fadeValue;
-  std::vector<bool> isReady;
+  int enabled_weaps;
+  int fade_value;
+  std::vector<bool> is_ready;
   std::vector<Menu> menus;
-  bool cachedBackground, cachedSpectatorBackground;
+  bool cached_background, cached_spectator_background;
   bool focused;
 };
 

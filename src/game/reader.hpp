@@ -25,33 +25,33 @@ struct ReaderFile {
   explicit ReaderFile(io::Reader& r) {
     uint8_t buf[4096];
     for (;;) {
-      std::size_t got = r.try_get(buf, sizeof(buf));
+      std::size_t got = r.TryGet(buf, sizeof(buf));
       if (got == 0) break;
       data_.insert(data_.end(), buf, buf + got);
     }
   }
 
-  uint8_t* data() { return data_.data(); }
-  uint8_t const* data() const { return data_.data(); }
-  std::size_t len() const { return data_.size(); }
+  uint8_t* Data() { return data_.data(); }
+  uint8_t const* Data() const { return data_.data(); }
+  std::size_t Len() const { return data_.size(); }
 
   std::size_t pos = 0;
 
-  void seekg(std::size_t newPos) {
-    if (newPos > data_.size()) throw io::EndOfStream("EOF in seekg()");
-    pos = newPos;
+  void Seekg(std::size_t new_pos) {
+    if (new_pos > data_.size()) throw io::EndOfStream("EOF in seekg()");
+    pos = new_pos;
   }
 
-  std::size_t tellg() const { return pos; }
+  std::size_t Tellg() const { return pos; }
 
-  void skip(std::size_t step) { seekg(pos + step); }
+  void Skip(std::size_t step) { Seekg(pos + step); }
 
-  uint8_t get() {
+  uint8_t Get() {
     if (pos >= data_.size()) throw io::EndOfStream("EOF in get()");
     return data_[pos++];
   }
 
-  void get(uint8_t* p, std::size_t l) {
+  void Get(uint8_t* p, std::size_t l) {
     if (pos + l > data_.size()) throw io::EndOfStream("EOF in get()");
     std::memcpy(p, data_.data() + pos, l);
     pos += l;

@@ -12,18 +12,18 @@ struct IntegerBehavior : ItemBehavior {
         min(min),
         max(max),
         step(step),
-        scrollInterval(5),
+        scroll_interval(5),
         percentage(percentage),
-        allowEntry(true) {}
+        allow_entry(true) {}
 
-  bool onLeftRight(Menu& menu, MenuItem& item, int dir);
-  int onEnter(Menu& menu, MenuItem& item);
-  void onUpdate(Menu& menu, MenuItem& item);
+  bool OnLeftRight(Menu& menu, MenuItem& item, int dir);
+  int OnEnter(Menu& menu, MenuItem& item);
+  void OnUpdate(Menu& menu, MenuItem& item);
 
   Common& common;
   int& v;
   int min, max, step;
-  int scrollInterval;
+  int scroll_interval;
   bool percentage;
-  bool allowEntry;
+  bool allow_entry;
 };

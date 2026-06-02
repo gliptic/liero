@@ -5,25 +5,25 @@
 #include "menu.hpp"
 #include "menuItem.hpp"
 
-bool BooleanSwitchBehavior::onLeftRight(Menu& menu, MenuItem& item, int dir) {
+bool BooleanSwitchBehavior::OnLeftRight(Menu& menu, MenuItem& item, int dir) {
   if (dir > 0)
-    g_soundPlayer->play(common.soundHook[SoundMenuMoveUp]);
+    g_sound_player->Play(common.sound_hook[SoundMenuMoveUp]);
   else
-    g_soundPlayer->play(common.soundHook[SoundMenuMoveDown]);
+    g_sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
 
   set(!v);
-  onUpdate(menu, item);
+  OnUpdate(menu, item);
   return false;
 }
 
-int BooleanSwitchBehavior::onEnter(Menu& menu, MenuItem& item) {
-  g_soundPlayer->play(common.soundHook[SoundMenuSelect]);
+int BooleanSwitchBehavior::OnEnter(Menu& menu, MenuItem& item) {
+  g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
   set(!v);
-  onUpdate(menu, item);
+  OnUpdate(menu, item);
   return -1;
 }
 
-void BooleanSwitchBehavior::onUpdate(Menu& menu, MenuItem& item) {
+void BooleanSwitchBehavior::OnUpdate(Menu& menu, MenuItem& item) {
   item.value = common.texts.onoff[v];
-  item.hasValue = true;
+  item.has_value = true;
 }

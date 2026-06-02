@@ -5,7 +5,7 @@
 #include "menu.hpp"
 #include "menuItem.hpp"
 
-void TimeBehavior::onUpdate(Menu& menu, MenuItem& item) {
-  item.value = frames ? timeToStringFrames(v) : timeToString(v);
-  item.hasValue = true;
+void TimeBehavior::OnUpdate(Menu& menu, MenuItem& item) {
+  item.value = frames ? TimeToStringFrames(v) : TimeToString(v);
+  item.has_value = true;
 }

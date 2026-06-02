@@ -5,163 +5,164 @@
 #include "game.hpp"
 #include "text.hpp"
 
-void StatsRecorder::damagePotential(Worm* byWorm, WormWeapon* weapon, int hp) {}
+void StatsRecorder::DamagePotential(Worm* by_worm, WormWeapon* weapon, int hp) {}
 
-void StatsRecorder::damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp,
-                                bool hasHit) {}
+void StatsRecorder::DamageDealt(Worm* by_worm, WormWeapon* weapon, Worm* to_worm, int hp,
+                                bool has_hit) {}
 
-void StatsRecorder::shot(Worm* byWorm, WormWeapon* weapon) {}
+void StatsRecorder::Shot(Worm* by_worm, WormWeapon* weapon) {}
 
-void StatsRecorder::hit(Worm* byWorm, WormWeapon* weapon, Worm* toWorm) {}
+void StatsRecorder::Hit(Worm* by_worm, WormWeapon* weapon, Worm* to_worm) {}
 
-void StatsRecorder::afterSpawn(Worm* worm) {}
+void StatsRecorder::AfterSpawn(Worm* worm) {}
 
-void StatsRecorder::afterDeath(Worm* worm) {}
+void StatsRecorder::AfterDeath(Worm* worm) {}
 
-void StatsRecorder::finish(Game& game) {}
+void StatsRecorder::Finish(Game& game) {}
 
-void StatsRecorder::preTick(Game& game) {}
+void StatsRecorder::PreTick(Game& game) {}
 
-void StatsRecorder::tick(Game& game) {}
+void StatsRecorder::Tick(Game& game) {}
 
-void StatsRecorder::aiProcessTime(Worm* worm, std::chrono::nanoseconds time) {}
+void StatsRecorder::AiProcessTime(Worm* worm, std::chrono::nanoseconds time) {}
 
-void NormalStatsRecorder::damagePotential(Worm* byWorm, WormWeapon* weapon, int hp) {
+void NormalStatsRecorder::DamagePotential(Worm* by_worm, WormWeapon* weapon, int hp) {
   if (speculative) return;
-  if (!byWorm || !weapon) return;
+  if (!by_worm || !weapon) return;
 
-  WormStats& ws = worms[byWorm->index];
+  WormStats& ws = worms[by_worm->index];
   WeaponStats& weap = ws.weapons[weapon->type->id];
-  weap.potentialHp += hp;
+  weap.potential_hp += hp;
 }
 
-void NormalStatsRecorder::damageDealt(Worm* byWorm, WormWeapon* weapon, Worm* toWorm, int hp,
-                                      bool hasHit) {
+void NormalStatsRecorder::DamageDealt(Worm* by_worm, WormWeapon* weapon, Worm* to_worm, int hp,
+                                      bool has_hit) {
   if (speculative) return;
-  assert(toWorm);
+  assert(to_worm);
 
-  auto& w = worms[toWorm->index];
+  auto& w = worms[to_worm->index];
   w.damage += hp;
-  w.wormFrameStats.back().damage += hp;
-  w.damageHm.incArea(ftoi(toWorm->pos.x), ftoi(toWorm->pos.y), hp);
+  w.worm_frame_stats.back().damage += hp;
+  w.damage_hm.IncArea(Ftoi(to_worm->pos.x), Ftoi(to_worm->pos.y), hp);
 
-  if (byWorm) {
-    if (byWorm != toWorm)
-      worms[byWorm->index].damageDealt += hp;
+  if (by_worm) {
+    if (by_worm != to_worm)
+      worms[by_worm->index].damage_dealt += hp;
     else
-      worms[byWorm->index].selfDamage += hp;
+      worms[by_worm->index].self_damage += hp;
   }
 
-  if (!byWorm || !weapon) return;
+  if (!by_worm || !weapon) return;
 
-  if (byWorm != toWorm)  // Don't count if projectile already hit
+  if (by_worm != to_worm)  // Don't count if projectile already hit
   {
-    WormStats& ws = worms[byWorm->index];
+    WormStats& ws = worms[by_worm->index];
     WeaponStats& weap = ws.weapons[weapon->type->id];
-    if (!hasHit) weap.actualHp += hp;
-    weap.totalHp += hp;
+    if (!has_hit) weap.actual_hp += hp;
+    weap.total_hp += hp;
   }
 }
 
-void NormalStatsRecorder::shot(Worm* byWorm, WormWeapon* weapon) {
+void NormalStatsRecorder::Shot(Worm* by_worm, WormWeapon* weapon) {
   if (speculative) return;
-  if (!byWorm || !weapon) return;
+  if (!by_worm || !weapon) return;
 
-  WormStats& ws = worms[byWorm->index];
+  WormStats& ws = worms[by_worm->index];
   WeaponStats& weap = ws.weapons[weapon->type->id];
-  weap.potentialHits += 1;
+  weap.potential_hits += 1;
 }
 
-void NormalStatsRecorder::hit(Worm* byWorm, WormWeapon* weapon, Worm* toWorm) {
+void NormalStatsRecorder::Hit(Worm* by_worm, WormWeapon* weapon, Worm* to_worm) {
   if (speculative) return;
-  assert(toWorm);
+  assert(to_worm);
 
-  if (!byWorm || !weapon) return;
+  if (!by_worm || !weapon) return;
 
-  if (byWorm != toWorm) {
-    WormStats& ws = worms[byWorm->index];
+  if (by_worm != to_worm) {
+    WormStats& ws = worms[by_worm->index];
     WeaponStats& weap = ws.weapons[weapon->type->id];
-    weap.actualHits += 1;
+    weap.actual_hits += 1;
   }
 }
 
-void NormalStatsRecorder::afterSpawn(Worm* worm) {
+void NormalStatsRecorder::AfterSpawn(Worm* worm) {
   if (speculative) return;
   WormStats& w = worms[worm->index];
-  w.spawnTime = frame;
+  w.spawn_time = frame;
 }
 
-void NormalStatsRecorder::afterDeath(Worm* worm) {
+void NormalStatsRecorder::AfterDeath(Worm* worm) {
   if (speculative) return;
   WormStats& w = worms[worm->index];
-  w.lifeSpans.push_back(std::make_pair(w.spawnTime, frame));
-  w.spawnTime = -1;
+  w.life_spans.push_back(std::make_pair(w.spawn_time, frame));
+  w.spawn_time = -1;
 }
 
-void NormalStatsRecorder::preTick(Game& game) {
+void NormalStatsRecorder::PreTick(Game& game) {
   if (speculative) return;
-  frameStart = std::chrono::steady_clock::now();
+  frame_start = std::chrono::steady_clock::now();
 
   for (auto& w : worms) {
-    w.wormFrameStats.push_back(WormFrameStats());
+    w.worm_frame_stats.push_back(WormFrameStats());
 
     Worm& worm = *game.worms[w.index];
 
     int h = std::max(worm.health, 0);
     if (!worm.visible) h = worm.settings->health;
 
-    w.wormFrameStats.back().totalHp = worm.lives * worm.settings->health + h;
+    w.worm_frame_stats.back().total_hp = worm.lives * worm.settings->health + h;
   }
 }
 
-void NormalStatsRecorder::tick(Game& game) {
+void NormalStatsRecorder::Tick(Game& game) {
   if (speculative) return;
-  auto frameEnd = std::chrono::steady_clock::now();
-  processTimeTotal +=
-      std::chrono::duration_cast<std::chrono::milliseconds>(frameEnd - frameStart).count();
+  auto frame_end = std::chrono::steady_clock::now();
+  process_time_total +=
+      std::chrono::duration_cast<std::chrono::milliseconds>(frame_end - frame_start).count();
 
   for (auto const& w : game.worms) {
     auto& ws = worms[w->index];
     if (w->visible) {
-      presence.inc(ftoi(w->pos.x), ftoi(w->pos.y));
-      ws.presence.inc(ftoi(w->pos.x), ftoi(w->pos.y));
+      presence.Inc(Ftoi(w->pos.x), Ftoi(w->pos.y));
+      ws.presence.Inc(Ftoi(w->pos.x), Ftoi(w->pos.y));
 
       bool ok = true;
-      if (!w->controlStates[Worm::Control::Fire] &&
-          (!w->controlStates[Worm::Control::Change] ||
-           (!w->controlStates[Worm::Control::Left] && !w->controlStates[Worm::Control::Right])) &&
-          w->weapons[w->currentWeapon].loadingLeft == 0 &&
+      if (!w->control_states[Worm::Control::kFire] &&
+          (!w->control_states[Worm::Control::kChange] ||
+           (!w->control_states[Worm::Control::kLeft] &&
+            !w->control_states[Worm::Control::kRight])) &&
+          w->weapons[w->current_weapon].loading_left == 0 &&
           std::find_if(w->weapons, w->weapons + 5,
-                       [](WormWeapon& ww) { return ww.loadingLeft > 0; }) != w->weapons + 5) {
+                       [](WormWeapon& ww) { return ww.loading_left > 0; }) != w->weapons + 5) {
         ok = false;
       }
 
-      ws.weaponChangeGood += ok;
-      ws.weaponChangeBad += !ok;
+      ws.weapon_change_good += ok;
+      ws.weapon_change_bad += !ok;
     }
   }
 
   ++frame;
 }
 
-void NormalStatsRecorder::finish(Game& game) {
+void NormalStatsRecorder::Finish(Game& game) {
   for (int i = 0; i < 2; ++i) {
     auto const& gw = game.worms[i];
     WormStats& w = worms[i];
-    if (w.spawnTime >= 0) {
-      w.lifeSpans.push_back(std::make_pair(w.spawnTime, frame));
-      w.spawnTime = -1;
+    if (w.spawn_time >= 0) {
+      w.life_spans.push_back(std::make_pair(w.spawn_time, frame));
+      w.spawn_time = -1;
     }
     w.lives = gw->lives;
     w.timer = gw->timer;
     w.kills = gw->kills;
   }
 
-  gameTime = frame;
+  game_time = frame;
 }
 
-void NormalStatsRecorder::aiProcessTime(Worm* worm, std::chrono::nanoseconds time) {
+void NormalStatsRecorder::AiProcessTime(Worm* worm, std::chrono::nanoseconds time) {
   if (speculative) return;
   WormStats& w = worms[worm->index];
-  w.aiProcessTime += time;
+  w.ai_process_time += time;
 }

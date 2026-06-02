@@ -17,7 +17,7 @@ struct Rand {
   Rand() = default;
   explicit Rand(uint32_t s) : engine(s) {}
 
-  void seed(uint32_t s) {
+  void Seed(uint32_t s) {
     engine.seed(s);
     last = 0;
   }
@@ -37,9 +37,9 @@ struct Rand {
   }
 
   // Number in [0.0, 1.0).
-  double get_double() { return (*this)() / 4294967296.0; }
+  double GetDouble() { return (*this)() / 4294967296.0; }
 
-  double get_double(double max) { return get_double() * max; }
+  double GetDouble(double max) { return GetDouble() * max; }
 
   std::string serialize() const {
     std::ostringstream oss;
@@ -47,7 +47,7 @@ struct Rand {
     return oss.str();
   }
 
-  void deserialize(std::string const& s) {
+  void Deserialize(std::string const& s) {
     std::istringstream iss(s);
     iss >> engine;
   }
@@ -58,9 +58,9 @@ struct Rand {
   bool operator!=(Rand const& other) const { return !(*this == other); }
 };
 
-template <typename Archive>
-void archive(Archive ar, Rand& r) {
-  if constexpr (Archive::in) {
+template <typename Ar>
+void ArchiveRand(Ar ar, Rand& r) {
+  if constexpr (Ar::in) {
     uint32_t len = 0;
     ar.ui32(len);
     std::string s(len, '\0');
@@ -69,7 +69,7 @@ void archive(Archive ar, Rand& r) {
       ar.ui8(b);
       s[i] = static_cast<char>(b);
     }
-    r.deserialize(s);
+    r.Deserialize(s);
     ar.ui32(r.last);
   } else {
     std::string s = r.serialize();

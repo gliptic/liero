@@ -32,51 +32,51 @@ struct GameRunner {
   std::unique_ptr<Game> game;
 
   GameRunner(uint32_t seed) {
-    precomputeTables();
+    PrecomputeTables();
 
     common = std::make_shared<Common>();
-    FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-    common->load(std::move(tcRoot));
+    FsNode tc_root(FsNode("data") / "TC" / "openliero");
+    common->load(std::move(tc_root));
 
     settings = std::make_shared<Settings>();
     settings->lives = 50;
-    settings->loadingTime = 0;
-    settings->randomLevel = true;
-    settings->gameMode = Settings::GMKillEmAll;
+    settings->loading_time = 0;
+    settings->random_level = true;
+    settings->game_mode = Settings::kGmKillEmAll;
     settings->blood = 100;
 
     sp = std::make_shared<NullSoundPlayer>();
     game = std::make_unique<Game>(common, settings, sp);
-    game->rand.seed(seed);
+    game->rand.Seed(seed);
 
     for (int idx = 0; idx < 2; ++idx) {
       auto w = std::make_shared<Worm>();
-      w->settings = settings->wormSettings[idx];
+      w->settings = settings->worm_settings[idx];
       w->health = 25;
       w->index = idx;
-      w->statsX = idx == 0 ? 0 : 218;
-      game->addWorm(w);
+      w->stats_x = idx == 0 ? 0 : 218;
+      game->AddWorm(w);
     }
 
-    game->addViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    game->addViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    game->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
+    game->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
-    game->level.generateFromSettings(*common, *settings, game->rand);
-    for (auto const& w : game->worms) w->initWeapons(*game);
+    game->level.GenerateFromSettings(*common, *settings, game->rand);
+    for (auto const& w : game->worms) w->InitWeapons(*game);
 
     game->paused = false;
-    game->startGame();
-    game->resetWorms();
+    game->StartGame();
+    game->ResetWorms();
   }
 
-  void step(Rand& inputRng) {
+  void Step(Rand& input_rng) {
     for (int idx = 0; idx < 2; ++idx) {
-      uint32_t input = inputRng() & 0x7f;
-      if ((inputRng() % 10) < 6) input |= (1 << 4);
-      if ((inputRng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));
-      game->worms[idx]->controlStates.unpack(input);
+      uint32_t input = input_rng() & 0x7f;
+      if ((input_rng() % 10) < 6) input |= (1 << 4);
+      if ((input_rng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));
+      game->worms[idx]->control_states.Unpack(input);
     }
-    game->processFrame();
+    game->ProcessFrame();
   }
 };
 
@@ -86,59 +86,59 @@ TEST_CASE("Fast snapshot round-trip preserves frame-by-frame state", "[snapshot]
   constexpr uint32_t kSeed = 0xC0FFEE;
   constexpr int kPhase = 200;
 
-  std::vector<uint32_t> controlHashes;
-  controlHashes.reserve(3 * kPhase);
+  std::vector<uint32_t> control_hashes;
+  control_hashes.reserve(3 * kPhase);
   {
     GameRunner ctl(kSeed);
-    Rand inputRng(kSeed ^ 0xDEAD);
+    Rand input_rng(kSeed ^ 0xDEAD);
     for (int f = 0; f < 3 * kPhase; ++f) {
-      ctl.step(inputRng);
-      controlHashes.push_back(hashGameState(*ctl.game));
+      ctl.Step(input_rng);
+      control_hashes.push_back(HashGameState(*ctl.game));
     }
   }
 
   GameRunner sub(kSeed);
-  Rand inputRng(kSeed ^ 0xDEAD);
+  Rand input_rng(kSeed ^ 0xDEAD);
 
   GameSnapshot snap;
-  snap.prepare(*sub.game);
+  snap.Prepare(*sub.game);
 
   for (int f = 0; f < kPhase; ++f) {
-    sub.step(inputRng);
-    REQUIRE(hashGameState(*sub.game) == controlHashes[f]);
+    sub.Step(input_rng);
+    REQUIRE(HashGameState(*sub.game) == control_hashes[f]);
   }
 
-  sub.game->saveSnapshotFast(snap);
-  uint32_t hashAtSnap = hashGameState(*sub.game);
+  sub.game->SaveSnapshotFast(snap);
+  uint32_t hash_at_snap = HashGameState(*sub.game);
 
   for (int f = kPhase; f < 2 * kPhase; ++f) {
-    sub.step(inputRng);
-    REQUIRE(hashGameState(*sub.game) == controlHashes[f]);
+    sub.Step(input_rng);
+    REQUIRE(HashGameState(*sub.game) == control_hashes[f]);
   }
 
-  sub.game->loadSnapshotFast(snap);
-  REQUIRE(hashGameState(*sub.game) == hashAtSnap);
+  sub.game->LoadSnapshotFast(snap);
+  REQUIRE(HashGameState(*sub.game) == hash_at_snap);
 
   // Replay phase-2 inputs from the restored state — same scheme as the
   // cereal round-trip test.
-  Rand postSnapInputRng(kSeed ^ 0xDEAD);
+  Rand post_snap_input_rng(kSeed ^ 0xDEAD);
   for (int f = 0; f < kPhase; ++f) {
     for (int idx = 0; idx < 2; ++idx) {
-      (void)postSnapInputRng();
-      (void)postSnapInputRng();
-      (void)postSnapInputRng();
+      (void)post_snap_input_rng();
+      (void)post_snap_input_rng();
+      (void)post_snap_input_rng();
     }
   }
   for (int f = kPhase; f < 2 * kPhase; ++f) {
     for (int idx = 0; idx < 2; ++idx) {
-      uint32_t input = postSnapInputRng() & 0x7f;
-      if ((postSnapInputRng() % 10) < 6) input |= (1 << 4);
-      if ((postSnapInputRng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));
-      sub.game->worms[idx]->controlStates.unpack(input);
+      uint32_t input = post_snap_input_rng() & 0x7f;
+      if ((post_snap_input_rng() % 10) < 6) input |= (1 << 4);
+      if ((post_snap_input_rng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));
+      sub.game->worms[idx]->control_states.Unpack(input);
     }
-    sub.game->processFrame();
+    sub.game->ProcessFrame();
     INFO("Mismatch at post-restore frame " << f);
-    REQUIRE(hashGameState(*sub.game) == controlHashes[f]);
+    REQUIRE(HashGameState(*sub.game) == control_hashes[f]);
   }
 }
 
@@ -152,35 +152,35 @@ TEST_CASE("Fast snapshot matches cereal oracle across a fuzz run", "[snapshot][r
 
   GameRunner a(kSeed);
   GameRunner b(kSeed);
-  Rand inputRngA(kSeed ^ 0xBEEF), inputRngB(kSeed ^ 0xBEEF);
+  Rand input_rng_a(kSeed ^ 0xBEEF), input_rng_b(kSeed ^ 0xBEEF);
 
-  GameSnapshot fastSnap;
-  fastSnap.prepare(*a.game);
-  std::vector<uint8_t> cerealSnap;
+  GameSnapshot fast_snap;
+  fast_snap.Prepare(*a.game);
+  std::vector<uint8_t> cereal_snap;
 
-  std::size_t snapIdx = 0;
+  std::size_t snap_idx = 0;
   for (int f = 0; f < kTotal; ++f) {
-    a.step(inputRngA);
-    b.step(inputRngB);
-    REQUIRE(hashGameState(*a.game) == hashGameState(*b.game));
+    a.Step(input_rng_a);
+    b.Step(input_rng_b);
+    REQUIRE(HashGameState(*a.game) == HashGameState(*b.game));
 
-    if (snapIdx < std::size(kSnapAt) && f == kSnapAt[snapIdx]) {
-      a.game->saveSnapshotFast(fastSnap);
-      b.game->saveSnapshot(cerealSnap);
+    if (snap_idx < std::size(kSnapAt) && f == kSnapAt[snap_idx]) {
+      a.game->SaveSnapshotFast(fast_snap);
+      b.game->SaveSnapshot(cereal_snap);
 
       // Run ~30 more frames on each so the live state diverges from the
       // snapshot, then restore.
-      Rand mutateA = inputRngA, mutateB = inputRngB;
+      Rand mutate_a = input_rng_a, mutate_b = input_rng_b;
       for (int k = 0; k < 30; ++k) {
-        a.step(mutateA);
-        b.step(mutateB);
+        a.Step(mutate_a);
+        b.Step(mutate_b);
       }
-      a.game->loadSnapshotFast(fastSnap);
-      b.game->loadSnapshot(cerealSnap);
+      a.game->LoadSnapshotFast(fast_snap);
+      b.game->LoadSnapshot(cereal_snap);
 
       INFO("Cereal/fast restore divergence after snapshot at frame " << f);
-      REQUIRE(hashGameState(*a.game) == hashGameState(*b.game));
-      ++snapIdx;
+      REQUIRE(HashGameState(*a.game) == HashGameState(*b.game));
+      ++snap_idx;
     }
   }
 }
@@ -192,25 +192,25 @@ TEST_CASE("Fast snapshot save/restore microbenchmark", "[snapshot][rollback][!be
   using clock = std::chrono::steady_clock;
 
   GameRunner r(0x12345);
-  Rand inputRng(0xABCDEF);
-  for (int f = 0; f < 500; ++f) r.step(inputRng);
+  Rand input_rng(0xABCDEF);
+  for (int f = 0; f < 500; ++f) r.Step(input_rng);
 
   GameSnapshot snap;
-  snap.prepare(*r.game);
+  snap.Prepare(*r.game);
 
   constexpr int kIters = 200;
 
   auto t0 = clock::now();
-  for (int i = 0; i < kIters; ++i) r.game->saveSnapshotFast(snap);
+  for (int i = 0; i < kIters; ++i) r.game->SaveSnapshotFast(snap);
   auto t1 = clock::now();
-  for (int i = 0; i < kIters; ++i) r.game->loadSnapshotFast(snap);
+  for (int i = 0; i < kIters; ++i) r.game->LoadSnapshotFast(snap);
   auto t2 = clock::now();
 
-  double saveUs = std::chrono::duration<double, std::micro>(t1 - t0).count() / kIters;
-  double loadUs = std::chrono::duration<double, std::micro>(t2 - t1).count() / kIters;
+  double save_us = std::chrono::duration<double, std::micro>(t1 - t0).count() / kIters;
+  double load_us = std::chrono::duration<double, std::micro>(t2 - t1).count() / kIters;
 
-  std::cout << "[fast snapshot] save=" << saveUs << " us, load=" << loadUs << " us\n";
+  std::cout << "[fast snapshot] save=" << save_us << " us, load=" << load_us << " us\n";
 
-  REQUIRE(saveUs < 2000.0);
-  REQUIRE(loadUs < 2000.0);
+  REQUIRE(save_us < 2000.0);
+  REQUIRE(load_us < 2000.0);
 }

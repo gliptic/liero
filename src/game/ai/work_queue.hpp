@@ -14,66 +14,66 @@ struct LockMutex {
 };
 
 struct Work {
-  Work() : done_(false) {
+  Work() : done(false) {
     mutex = SDL_CreateMutex();
-    stateCond = SDL_CreateCondition();
+    state_cond = SDL_CreateCondition();
   }
 
   virtual ~Work() {
     SDL_DestroyMutex(mutex);
-    SDL_DestroyCondition(stateCond);
+    SDL_DestroyCondition(state_cond);
   }
 
-  bool waitDone() {
+  bool WaitDone() {
     LockMutex m(mutex);
 
-    while (!done_) SDL_WaitCondition(stateCond, mutex);
+    while (!done) SDL_WaitCondition(state_cond, mutex);
 
-    return done_;
+    return done;
   }
 
-  bool done_;
+  bool done;
   SDL_Mutex* mutex;
-  SDL_Condition* stateCond;
+  SDL_Condition* state_cond;
 
-  void run() {
-    doRun();
+  void Run() {
+    DoRun();
 
     {
       LockMutex m(mutex);
 
       SDL_MemoryBarrierAcquire();
-      done_ = true;
+      done = true;
       SDL_MemoryBarrierRelease();
 
-      SDL_SignalCondition(stateCond);
+      SDL_SignalCondition(state_cond);
     }
   }
 
-  virtual void doRun() = 0;
+  virtual void DoRun() = 0;
 };
 
 struct StopWorker {};
 
 struct WorkQueue {
-  WorkQueue(int threadCount) : queueAlive(true) {
-    queueMutex = SDL_CreateMutex();
-    queueCond = SDL_CreateCondition();
+  WorkQueue(int thread_count) : queue_alive(true) {
+    queue_mutex = SDL_CreateMutex();
+    queue_cond = SDL_CreateCondition();
 
     std::memset(threads, 0, sizeof(threads));
-    for (int i = 0; i < threadCount; ++i) {
+    for (int i = 0; i < thread_count; ++i) {
       std::stringstream thread_name;
       thread_name << "ai_" << i;
-      threads[i] = SDL_CreateThread(worker, thread_name.str().c_str(), this);
+      threads[i] = SDL_CreateThread(Worker, thread_name.str().c_str(), this);
     }
   }
 
   ~WorkQueue() {
     {
-      LockMutex m(queueMutex);
+      LockMutex m(queue_mutex);
 
-      queueAlive = false;
-      SDL_BroadcastCondition(queueCond);
+      queue_alive = false;
+      SDL_BroadcastCondition(queue_cond);
     }
 
     for (int i = 0; i < 8; ++i) {
@@ -81,36 +81,36 @@ struct WorkQueue {
       if (threads[i]) SDL_WaitThread(threads[i], &status);
     }
 
-    SDL_DestroyMutex(queueMutex);
-    SDL_DestroyCondition(queueCond);
+    SDL_DestroyMutex(queue_mutex);
+    SDL_DestroyCondition(queue_cond);
   }
 
-  void add(std::unique_ptr<Work> work) {
-    LockMutex m(queueMutex);
+  void Add(std::unique_ptr<Work> work) {
+    LockMutex m(queue_mutex);
     queue.push_back(std::move(work));
-    SDL_SignalCondition(queueCond);
+    SDL_SignalCondition(queue_cond);
   }
 
-  std::unique_ptr<Work> waitForWork() {
-    LockMutex m(queueMutex);
+  std::unique_ptr<Work> WaitForWork() {
+    LockMutex m(queue_mutex);
 
-    while (queue.empty() && queueAlive) SDL_WaitCondition(queueCond, queueMutex);
+    while (queue.empty() && queue_alive) SDL_WaitCondition(queue_cond, queue_mutex);
 
-    if (!queueAlive) throw StopWorker();
+    if (!queue_alive) throw StopWorker();
 
     auto ret = std::move(queue[0]);
     queue.erase(queue.begin());
     return ret;
   }
 
-  static int SDLCALL worker(void* self) {
+  static int SDLCALL Worker(void* self) {
     try {
       WorkQueue* queue = static_cast<WorkQueue*>(self);
 
       while (true) {
-        auto work = queue->waitForWork();
+        auto work = queue->WaitForWork();
 
-        work->run();
+        work->Run();
       }
     } catch (StopWorker&) {
     }
@@ -118,10 +118,10 @@ struct WorkQueue {
     return 0;
   }
 
-  SDL_Mutex* queueMutex;
-  SDL_Condition* queueCond;
+  SDL_Mutex* queue_mutex;
+  SDL_Condition* queue_cond;
   std::vector<std::unique_ptr<Work>> queue;
-  bool queueAlive;
+  bool queue_alive;
 
   SDL_Thread* threads[8];
 };

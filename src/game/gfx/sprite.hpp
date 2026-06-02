@@ -11,24 +11,24 @@ struct Sprite {
 };
 
 struct SpriteSet {
-  SpriteSet() : width(0), height(0), spriteSize(0), count(0) {}
+  SpriteSet() : width(0), height(0), sprite_size(0), count(0) {}
 
   std::vector<PalIdx> data;
   int width;
   int height;
-  int spriteSize;
+  int sprite_size;
   int count;
 
-  PalIdx* spritePtr(int frame) {
+  PalIdx* SpritePtr(int frame) {
     assert(frame >= 0 && frame < count);
-    return &data[frame * spriteSize];
+    return &data[frame * sprite_size];
   }
 
   Sprite operator[](int frame) {
     assert(frame >= 0 && frame < count);
-    Sprite s = {&data[frame * spriteSize], width, height, width};
+    Sprite s = {&data[frame * sprite_size], width, height, width};
     return s;
   }
 
-  void allocate(int width, int height, int count);
+  void Allocate(int width, int height, int count);
 };

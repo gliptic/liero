@@ -5,18 +5,18 @@
 #define VERSION_GIT_DATE "@VERSION_GIT_DATE@"
 #define VERSION_GIT_TIME "@VERSION_GIT_TIME@"
 
-const char* build_version(void) {
+const char* BuildVersion(void) {
   return VERSION_GIT_TAG;
 }
 
-const char* build_hash(void) {
+const char* BuildHash(void) {
   return VERSION_GIT_HASH;
 }
 
-const char* build_date(void) {
+const char* BuildDate(void) {
   return VERSION_GIT_DATE;
 }
 
-const char* build_time(void) {
+const char* BuildTime(void) {
   return VERSION_GIT_TIME;
 }

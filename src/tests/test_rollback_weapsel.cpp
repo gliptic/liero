@@ -38,50 +38,50 @@
 
 namespace {
 
-std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
-  precomputeTables();
+std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
+  PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tcRoot));
+  FsNode tc_root(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tc_root));
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
-  settings->loadingTime = 0;
-  settings->loadChange = true;
-  settings->randomLevel = true;
-  settings->gameMode = Settings::GMKillEmAll;
+  settings->loading_time = 0;
+  settings->load_change = true;
+  settings->random_level = true;
+  settings->game_mode = Settings::kGmKillEmAll;
   // Disable bot weapon auto-pick path so the test drives the menu
   // explicitly rather than auto-ready'ing.
-  settings->selectBotWeapons = 0;
+  settings->select_bot_weapons = 0;
   return {common, settings};
 }
 
-std::unique_ptr<RollbackController> makePeer(std::shared_ptr<Common> common,
-                                             std::shared_ptr<Settings> settings, int localIdx,
-                                             uint32_t worldSeed) {
-  auto c = std::make_unique<RollbackController>(common, settings, localIdx);
-  c->setInputDelay(1);
-  c->game.rand.seed(worldSeed);
+std::unique_ptr<RollbackController> MakePeer(std::shared_ptr<Common> common,
+                                             std::shared_ptr<Settings> settings, int local_idx,
+                                             uint32_t world_seed) {
+  auto c = std::make_unique<RollbackController>(common, settings, local_idx);
+  c->SetInputDelay(1);
+  c->game.rand.Seed(world_seed);
   return c;
 }
 
-constexpr uint8_t BIT_UP = uint8_t{1} << Worm::Up;
-constexpr uint8_t BIT_DOWN = uint8_t{1} << Worm::Down;
-constexpr uint8_t BIT_FIRE = uint8_t{1} << Worm::Fire;
+constexpr uint8_t kBitUp = uint8_t{1} << Worm::kUp;
+constexpr uint8_t kBitDown = uint8_t{1} << Worm::kDown;
+constexpr uint8_t kBitFire = uint8_t{1} << Worm::kFire;
 
 // Build a navigation script that presses Down `nDown` times then Fire.
 // Each press is two ticks (on, off) to produce a clean rising edge per
 // press; the trailing idle tick lets the input settle before the next.
 // Returns a vector of input bytes, one per tick.
-std::vector<uint8_t> navigateToDoneAndConfirm(int nDown) {
+std::vector<uint8_t> NavigateToDoneAndConfirm(int n_down) {
   std::vector<uint8_t> out;
-  for (int i = 0; i < nDown; ++i) {
-    out.push_back(BIT_DOWN);
+  for (int i = 0; i < n_down; ++i) {
+    out.push_back(kBitDown);
     out.push_back(0);
   }
   // A short idle pad lets any held-key repeat settle. Then a clean
   // Fire press.
   out.push_back(0);
-  out.push_back(BIT_FIRE);
+  out.push_back(kBitFire);
   out.push_back(0);
   return out;
 }
@@ -89,255 +89,255 @@ std::vector<uint8_t> navigateToDoneAndConfirm(int nDown) {
 }  // namespace
 
 TEST_CASE("WeaponSelectSnap round-trip preserves state", "[rollback][weapsel]") {
-  auto [common, settings] = makeEnv();
-  auto a = makePeer(common, settings, 0, 0xC0FFEE);
-  a->focus();
+  auto [common, settings] = MakeEnv();
+  auto a = MakePeer(common, settings, 0, 0xC0FFEE);
+  a->Focus();
 
   // Run a handful of ticks to mutate ws / worm state from its initial
   // value (cursor moves, possibly a weapon cycle). Use scripted local
   // input + a couple of pre-fill remote inputs for symmetry.
-  a->injectRemoteInput(0, 0);
+  a->InjectRemoteInput(0, 0);
   for (int i = 0; i < 6; ++i) {
-    a->setLocalControlState((i % 2 == 0) ? BIT_DOWN : 0);
-    a->process();
-    a->injectRemoteInput(static_cast<uint32_t>(i + 1), 0);
+    a->SetLocalControlState((i % 2 == 0) ? kBitDown : 0);
+    a->Process();
+    a->InjectRemoteInput(static_cast<uint32_t>(i + 1), 0);
   }
-  REQUIRE(a->currentFrame() > 0);
+  REQUIRE(a->CurrentFrame() > 0);
 
   // Capture the snapshot.
   WeaponSelectSnap snap;
-  a->saveWeaponSelectSnap(snap);
+  a->SaveWeaponSelectSnap(snap);
   REQUIRE(snap.valid);
 
   // Independently capture state we expect restore to recover.
-  int wormCurrentWeaponBefore = a->game.worms[0]->currentWeapon;
-  uint32_t weaponIdBefore = a->game.worms[0]->settings->weapons[0];
+  int worm_current_weapon_before = a->game.worms[0]->current_weapon;
+  uint32_t weapon_id_before = a->game.worms[0]->settings->weapons[0];
 
   // Mutate further by running more ticks with a different input.
   for (int i = 0; i < 8; ++i) {
-    a->setLocalControlState((i % 2 == 0) ? BIT_UP : 0);
-    a->process();
-    a->injectRemoteInput(static_cast<uint32_t>(7 + i), 0);
+    a->SetLocalControlState((i % 2 == 0) ? kBitUp : 0);
+    a->Process();
+    a->InjectRemoteInput(static_cast<uint32_t>(7 + i), 0);
   }
 
   // Save a "mutated" snapshot to verify it differs from the original.
   WeaponSelectSnap mutated;
-  a->saveWeaponSelectSnap(mutated);
+  a->SaveWeaponSelectSnap(mutated);
 
   // Restore the original snapshot.
-  a->loadWeaponSelectSnap(snap);
+  a->LoadWeaponSelectSnap(snap);
 
   // Verify the restored state matches what we captured.
-  REQUIRE(a->game.worms[0]->currentWeapon == wormCurrentWeaponBefore);
-  REQUIRE(a->game.worms[0]->settings->weapons[0] == weaponIdBefore);
+  REQUIRE(a->game.worms[0]->current_weapon == worm_current_weapon_before);
+  REQUIRE(a->game.worms[0]->settings->weapons[0] == weapon_id_before);
 
   // Save a third snapshot after restore — it must match the original.
   WeaponSelectSnap restored;
-  a->saveWeaponSelectSnap(restored);
+  a->SaveWeaponSelectSnap(restored);
   REQUIRE(restored.valid);
   for (int i = 0; i < 2; ++i) {
     REQUIRE(restored.players[i].weapons == snap.players[i].weapons);
-    REQUIRE(restored.players[i].isReady == snap.players[i].isReady);
-    REQUIRE(restored.players[i].menuSelection == snap.players[i].menuSelection);
-    REQUIRE(restored.players[i].menuTopItem == snap.players[i].menuTopItem);
-    REQUIRE(restored.players[i].menuBottomItem == snap.players[i].menuBottomItem);
-    REQUIRE(restored.players[i].wormControlStates == snap.players[i].wormControlStates);
-    REQUIRE(restored.players[i].currentWeapon == snap.players[i].currentWeapon);
+    REQUIRE(restored.players[i].is_ready == snap.players[i].is_ready);
+    REQUIRE(restored.players[i].menu_selection == snap.players[i].menu_selection);
+    REQUIRE(restored.players[i].menu_top_item == snap.players[i].menu_top_item);
+    REQUIRE(restored.players[i].menu_bottom_item == snap.players[i].menu_bottom_item);
+    REQUIRE(restored.players[i].worm_control_states == snap.players[i].worm_control_states);
+    REQUIRE(restored.players[i].current_weapon == snap.players[i].current_weapon);
   }
-  REQUIRE(restored.localPrevInput == snap.localPrevInput);
-  REQUIRE(restored.remotePrevInput == snap.remotePrevInput);
-  REQUIRE(restored.localHeldFrames == snap.localHeldFrames);
-  REQUIRE(restored.remoteHeldFrames == snap.remoteHeldFrames);
+  REQUIRE(restored.local_prev_input == snap.local_prev_input);
+  REQUIRE(restored.remote_prev_input == snap.remote_prev_input);
+  REQUIRE(restored.local_held_frames == snap.local_held_frames);
+  REQUIRE(restored.remote_held_frames == snap.remote_held_frames);
 
   // And the mutated snapshot must differ from the original on at least
   // one observable axis — otherwise the test wouldn't have exercised
   // any state change to round-trip.
-  bool mutatedDiffers = mutated.players[0].menuSelection != snap.players[0].menuSelection ||
-                        mutated.localPrevInput != snap.localPrevInput;
-  REQUIRE(mutatedDiffers);
+  bool mutated_differs = mutated.players[0].menu_selection != snap.players[0].menu_selection ||
+                         mutated.local_prev_input != snap.local_prev_input;
+  REQUIRE(mutated_differs);
 }
 
 TEST_CASE("Weapon select reaches StateGame in sync under zero jitter", "[rollback][weapsel]") {
   constexpr uint32_t kWorldSeed = 0xC0FFEE;
-  auto [common, settings] = makeEnv();
-  auto a = makePeer(common, settings, 0, kWorldSeed);
-  auto b = makePeer(common, settings, 1, kWorldSeed);
+  auto [common, settings] = MakeEnv();
+  auto a = MakePeer(common, settings, 0, kWorldSeed);
+  auto b = MakePeer(common, settings, 1, kWorldSeed);
 
   // Direct synchronous delivery — bypass the transport queue so the
   // peers behave like the production session under zero loss / zero
   // delay.
   struct Pkt {
-    uint32_t baseFrame;
+    uint32_t base_frame;
     uint8_t count;
     std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
-    uint32_t localFrame;
+    uint32_t local_frame;
   };
-  std::vector<Pkt> aToB, bToA;
+  std::vector<Pkt> a_to_b, b_to_a;
   auto enqueue = [](std::vector<Pkt>& q, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     Pkt p{};
-    p.baseFrame = bf;
+    p.base_frame = bf;
     p.count = c;
-    p.localFrame = lf;
+    p.local_frame = lf;
     for (uint8_t i = 0; i < c; ++i) p.inputs[i] = in[i];
     q.push_back(p);
   };
-  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    enqueue(aToB, bf, c, in, lf);
+  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    enqueue(a_to_b, bf, c, in, lf);
   });
-  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    enqueue(bToA, bf, c, in, lf);
+  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    enqueue(b_to_a, bf, c, in, lf);
   });
-  a->focus();
-  b->focus();
+  a->Focus();
+  b->Focus();
 
   // Pre-fill the inputDelay=1 window.
-  a->injectRemoteInput(0, 0);
-  b->injectRemoteInput(0, 0);
+  a->InjectRemoteInput(0, 0);
+  b->InjectRemoteInput(0, 0);
 
-  auto script = navigateToDoneAndConfirm(6);
+  auto script = NavigateToDoneAndConfirm(6);
   // Run the script + a healthy tail of idle ticks. The transition only
   // happens at a confirmed frame, so we need enough ticks past the Fire
   // press for the chain to catch up.
   constexpr int kIdleTail = 30;
 
-  bool aTransitioned = false, bTransitioned = false;
-  uint32_t aTransitionFrame = 0, bTransitionFrame = 0;
+  bool a_transitioned = false, b_transitioned = false;
+  uint32_t a_transition_frame = 0, b_transition_frame = 0;
 
   for (int i = 0; i < static_cast<int>(script.size()) + kIdleTail; ++i) {
     uint8_t in = (i < static_cast<int>(script.size())) ? script[i] : 0;
-    a->setLocalControlState(in);
-    b->setLocalControlState(in);
-    bool aInWeapselBefore = !aTransitioned;
-    bool bInWeapselBefore = !bTransitioned;
-    a->process();
-    b->process();
+    a->SetLocalControlState(in);
+    b->SetLocalControlState(in);
+    bool a_in_weapsel_before = !a_transitioned;
+    bool b_in_weapsel_before = !b_transitioned;
+    a->Process();
+    b->Process();
     // Track the first tick at which each peer crosses into StateGame.
-    if (aInWeapselBefore && a->gameState() == StateGame) {
-      aTransitioned = true;
-      aTransitionFrame = a->currentFrame();
+    if (a_in_weapsel_before && a->State() == kStateGame) {
+      a_transitioned = true;
+      a_transition_frame = a->CurrentFrame();
     }
-    if (bInWeapselBefore && b->gameState() == StateGame) {
-      bTransitioned = true;
-      bTransitionFrame = b->currentFrame();
+    if (b_in_weapsel_before && b->State() == kStateGame) {
+      b_transitioned = true;
+      b_transition_frame = b->CurrentFrame();
     }
-    for (auto const& p : aToB)
-      b->injectRemoteBatch(p.baseFrame, p.count, p.inputs.data(), p.localFrame);
-    for (auto const& p : bToA)
-      a->injectRemoteBatch(p.baseFrame, p.count, p.inputs.data(), p.localFrame);
-    aToB.clear();
-    bToA.clear();
+    for (auto const& p : a_to_b)
+      b->InjectRemoteBatch(p.base_frame, p.count, p.inputs.data(), p.local_frame);
+    for (auto const& p : b_to_a)
+      a->InjectRemoteBatch(p.base_frame, p.count, p.inputs.data(), p.local_frame);
+    a_to_b.clear();
+    b_to_a.clear();
   }
 
-  REQUIRE(aTransitioned);
-  REQUIRE(bTransitioned);
-  REQUIRE(aTransitionFrame == bTransitionFrame);
+  REQUIRE(a_transitioned);
+  REQUIRE(b_transitioned);
+  REQUIRE(a_transition_frame == b_transition_frame);
 
   // With zero jitter, predictions always match real input — no rollback
   // should have fired.
-  REQUIRE(a->rollbackCount() == 0);
-  REQUIRE(b->rollbackCount() == 0);
+  REQUIRE(a->RollbackCount() == 0);
+  REQUIRE(b->RollbackCount() == 0);
 
   // Both peers picked the same weapons.
   for (int i = 0; i < 2; ++i) {
-    for (int j = 0; j < Settings::selectableWeapons; ++j) {
+    for (int j = 0; j < Settings::kSelectableWeapons; ++j) {
       REQUIRE(a->game.worms[i]->settings->weapons[j] == b->game.worms[i]->settings->weapons[j]);
     }
   }
 
   // Game-phase state hashes match after transition.
-  REQUIRE(wideRollbackChecksum(a->game) == wideRollbackChecksum(b->game));
+  REQUIRE(WideRollbackChecksum(a->game) == WideRollbackChecksum(b->game));
 }
 
 TEST_CASE("Weapon select transitions cleanly under jitter", "[rollback][weapsel]") {
   constexpr uint32_t kWorldSeed = 0xBEEF1234;
-  auto [common, settings] = makeEnv();
-  auto a = makePeer(common, settings, 0, kWorldSeed);
-  auto b = makePeer(common, settings, 1, kWorldSeed);
+  auto [common, settings] = MakeEnv();
+  auto a = MakePeer(common, settings, 0, kWorldSeed);
+  auto b = MakePeer(common, settings, 1, kWorldSeed);
 
   rollback_test::JitterTransport transport({0xA5A5, /*minDelay=*/1, /*maxDelay=*/3,
                                             /*loss=*/0.0, /*duplicate=*/0.0});
 
-  a->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendAToB(gen_, bf, c, in, lf);
+  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendAToB(gen, bf, c, in, lf);
   });
-  b->setInputCallbacks([&](uint8_t gen_, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    transport.sendBToA(gen_, bf, c, in, lf);
+  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    transport.SendBToA(gen, bf, c, in, lf);
   });
-  a->focus();
-  b->focus();
+  a->Focus();
+  b->Focus();
 
-  a->injectRemoteInput(0, 0);
-  b->injectRemoteInput(0, 0);
+  a->InjectRemoteInput(0, 0);
+  b->InjectRemoteInput(0, 0);
 
-  auto deliverA = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    a->injectRemoteBatch(gen, bf, c, in, lf);
+  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    a->InjectRemoteBatch(gen, bf, c, in, lf);
   };
-  auto deliverB = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    b->injectRemoteBatch(gen, bf, c, in, lf);
+  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    b->InjectRemoteBatch(gen, bf, c, in, lf);
   };
 
-  auto script = navigateToDoneAndConfirm(6);
+  auto script = NavigateToDoneAndConfirm(6);
   constexpr int kIdleTail = 60;
 
-  bool aTransitioned = false, bTransitioned = false;
-  uint32_t aTransitionFrame = 0, bTransitionFrame = 0;
+  bool a_transitioned = false, b_transitioned = false;
+  uint32_t a_transition_frame = 0, b_transition_frame = 0;
 
   for (int i = 0; i < static_cast<int>(script.size()) + kIdleTail; ++i) {
     uint8_t in = (i < static_cast<int>(script.size())) ? script[i] : 0;
-    a->setLocalControlState(in);
-    b->setLocalControlState(in);
-    bool aInWeapselBefore = !aTransitioned;
-    bool bInWeapselBefore = !bTransitioned;
-    a->process();
-    b->process();
-    if (aInWeapselBefore && a->currentGame()->statsRecorder) {
-      aTransitioned = true;
-      aTransitionFrame = a->currentFrame();
+    a->SetLocalControlState(in);
+    b->SetLocalControlState(in);
+    bool a_in_weapsel_before = !a_transitioned;
+    bool b_in_weapsel_before = !b_transitioned;
+    a->Process();
+    b->Process();
+    if (a_in_weapsel_before && a->CurrentGame()->stats_recorder) {
+      a_transitioned = true;
+      a_transition_frame = a->CurrentFrame();
     }
-    if (bInWeapselBefore && b->currentGame()->statsRecorder) {
-      bTransitioned = true;
-      bTransitionFrame = b->currentFrame();
+    if (b_in_weapsel_before && b->CurrentGame()->stats_recorder) {
+      b_transitioned = true;
+      b_transition_frame = b->CurrentFrame();
     }
-    transport.tick(deliverA, deliverB);
+    transport.Tick(deliver_a, deliver_b);
   }
 
   // Flush any tail packets, then a few more ticks to let promote loops
   // drain.
-  transport.flush(deliverA, deliverB);
-  a->setLocalControlState(0);
-  b->setLocalControlState(0);
+  transport.Flush(deliver_a, deliver_b);
+  a->SetLocalControlState(0);
+  b->SetLocalControlState(0);
   for (int i = 0; i < 16; ++i) {
-    bool aInWeapselBefore = !aTransitioned;
-    bool bInWeapselBefore = !bTransitioned;
-    a->process();
-    b->process();
-    if (aInWeapselBefore && a->gameState() == StateGame) {
-      aTransitioned = true;
-      aTransitionFrame = a->currentFrame();
+    bool a_in_weapsel_before = !a_transitioned;
+    bool b_in_weapsel_before = !b_transitioned;
+    a->Process();
+    b->Process();
+    if (a_in_weapsel_before && a->State() == kStateGame) {
+      a_transitioned = true;
+      a_transition_frame = a->CurrentFrame();
     }
-    if (bInWeapselBefore && b->gameState() == StateGame) {
-      bTransitioned = true;
-      bTransitionFrame = b->currentFrame();
+    if (b_in_weapsel_before && b->State() == kStateGame) {
+      b_transitioned = true;
+      b_transition_frame = b->CurrentFrame();
     }
-    transport.tick(deliverA, deliverB);
+    transport.Tick(deliver_a, deliver_b);
   }
 
-  REQUIRE(aTransitioned);
-  REQUIRE(bTransitioned);
-  REQUIRE(aTransitionFrame == bTransitionFrame);
+  REQUIRE(a_transitioned);
+  REQUIRE(b_transitioned);
+  REQUIRE(a_transition_frame == b_transition_frame);
 
   // Same weapon picks, same checksums.
   for (int i = 0; i < 2; ++i) {
-    for (int j = 0; j < Settings::selectableWeapons; ++j) {
+    for (int j = 0; j < Settings::kSelectableWeapons; ++j) {
       REQUIRE(a->game.worms[i]->settings->weapons[j] == b->game.worms[i]->settings->weapons[j]);
     }
   }
 
-  REQUIRE(wideRollbackChecksum(a->game) == wideRollbackChecksum(b->game));
+  REQUIRE(WideRollbackChecksum(a->game) == WideRollbackChecksum(b->game));
 
   // Vacuity guard: jitter must have caused at least some prediction
   // events; otherwise this test devolves into the zero-jitter case.
-  bool anyRollback = a->rollbackCount() > 0 || b->rollbackCount() > 0;
-  INFO("a rollbacks=" << a->rollbackCount() << " b rollbacks=" << b->rollbackCount());
-  REQUIRE(anyRollback);
+  bool any_rollback = a->RollbackCount() > 0 || b->RollbackCount() > 0;
+  INFO("a rollbacks=" << a->RollbackCount() << " b rollbacks=" << b->RollbackCount());
+  REQUIRE(any_rollback);
 }

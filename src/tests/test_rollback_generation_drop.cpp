@@ -18,34 +18,34 @@
 
 namespace {
 
-std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> makeEnv() {
-  precomputeTables();
+std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
+  PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tcRoot(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tcRoot));
+  FsNode tc_root(FsNode("data") / "TC" / "openliero");
+  common->load(std::move(tc_root));
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
-  settings->loadingTime = 0;
-  settings->loadChange = true;
-  settings->randomLevel = true;
-  settings->gameMode = Settings::GMKillEmAll;
+  settings->loading_time = 0;
+  settings->load_change = true;
+  settings->random_level = true;
+  settings->game_mode = Settings::kGmKillEmAll;
   return {common, settings};
 }
 
 }  // namespace
 
 TEST_CASE("Rollback controller drops batches from an older generation", "[rollback][generation]") {
-  auto [common, settings] = makeEnv();
+  auto [common, settings] = MakeEnv();
   RollbackController a(common, settings, 0);
-  a.setSkipWeaponSelection(true);
-  a.game.rand.seed(0xC0FFEE);
-  a.focus();
+  a.SetSkipWeaponSelection(true);
+  a.game.rand.Seed(0xC0FFEE);
+  a.Focus();
 
   // Put the controller into the post-transition state directly
   // (production code crosses this via finishWeaponSelect).
-  a.setGenerationForTest(1);
-  REQUIRE(a.generation() == 1);
-  REQUIRE(a.droppedOldGenerationBatches() == 0);
+  a.SetGenerationForTest(1);
+  REQUIRE(a.Generation() == 1);
+  REQUIRE(a.DroppedOldGenerationBatches() == 0);
 
   // Build a stale-generation batch covering frames [0, 7]. With kInputDelay
   // = 1 (rollback default), confirmedFrame() starts at -1 and the ring
@@ -55,46 +55,46 @@ TEST_CASE("Rollback controller drops batches from an older generation", "[rollba
   uint8_t inputs[8] = {0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8};
 
   SECTION("older generation is dropped") {
-    a.injectRemoteBatch(/*generation=*/0, /*baseFrame=*/0, /*count=*/8, inputs,
+    a.InjectRemoteBatch(/*generation=*/0, /*baseFrame=*/0, /*count=*/8, inputs,
                         /*remoteLocalFrame=*/3);
 
-    REQUIRE(a.droppedOldGenerationBatches() == 1);
+    REQUIRE(a.DroppedOldGenerationBatches() == 1);
     // lastKnownRemoteFrame_ stays at its sentinel — a dropped packet
     // must not advance the frame-advantage estimate either.
-    REQUIRE(a.lastKnownRemoteFrame() == -1);
+    REQUIRE(a.LastKnownRemoteFrame() == -1);
     // confirmedFrame is unchanged.
-    REQUIRE(a.confirmedFrame() == -1);
+    REQUIRE(a.ConfirmedFrame() == -1);
   }
 
   SECTION("matching generation is accepted") {
-    a.injectRemoteBatch(/*generation=*/1, /*baseFrame=*/0, /*count=*/8, inputs,
+    a.InjectRemoteBatch(/*generation=*/1, /*baseFrame=*/0, /*count=*/8, inputs,
                         /*remoteLocalFrame=*/3);
 
-    REQUIRE(a.droppedOldGenerationBatches() == 0);
-    REQUIRE(a.lastKnownRemoteFrame() == 3);
+    REQUIRE(a.DroppedOldGenerationBatches() == 0);
+    REQUIRE(a.LastKnownRemoteFrame() == 3);
   }
 
   SECTION("immediate-future generation is buffered") {
     // gen+1 batches are buffered until resetForGamePhase bumps
     // generation_. Until then no input is applied and the drop counter
     // doesn't bump.
-    a.injectRemoteBatch(/*generation=*/2, /*baseFrame=*/0, /*count=*/8, inputs,
+    a.InjectRemoteBatch(/*generation=*/2, /*baseFrame=*/0, /*count=*/8, inputs,
                         /*remoteLocalFrame=*/3);
 
-    REQUIRE(a.droppedOldGenerationBatches() == 0);
-    REQUIRE(a.pendingFutureBatchCount() == 1);
-    REQUIRE(a.lastKnownRemoteFrame() == -1);
+    REQUIRE(a.DroppedOldGenerationBatches() == 0);
+    REQUIRE(a.PendingFutureBatchCount() == 1);
+    REQUIRE(a.LastKnownRemoteFrame() == -1);
   }
 
   SECTION("far-future generation (gen+2 or more) is dropped") {
     // Beyond one phase ahead, the packet describes a simFrame numbering
     // we may never reach in this match. Drop conservatively.
-    a.injectRemoteBatch(/*generation=*/3, /*baseFrame=*/0, /*count=*/8, inputs,
+    a.InjectRemoteBatch(/*generation=*/3, /*baseFrame=*/0, /*count=*/8, inputs,
                         /*remoteLocalFrame=*/3);
 
-    REQUIRE(a.droppedOldGenerationBatches() == 1);
-    REQUIRE(a.pendingFutureBatchCount() == 0);
-    REQUIRE(a.lastKnownRemoteFrame() == -1);
+    REQUIRE(a.DroppedOldGenerationBatches() == 1);
+    REQUIRE(a.PendingFutureBatchCount() == 0);
+    REQUIRE(a.LastKnownRemoteFrame() == -1);
   }
 }
 
@@ -102,52 +102,52 @@ TEST_CASE("Rollback controller drops batches from an older generation", "[rollba
 // game phase starts from a known-empty baseline.
 TEST_CASE("resetForGamePhase clears controller state and bumps generation",
           "[rollback][generation]") {
-  auto [common, settings] = makeEnv();
+  auto [common, settings] = MakeEnv();
   RollbackController c(common, settings, 0);
-  c.setSkipWeaponSelection(true);
-  c.game.rand.seed(0xC0FFEE);
-  c.focus();
+  c.SetSkipWeaponSelection(true);
+  c.game.rand.Seed(0xC0FFEE);
+  c.Focus();
 
   // Drive a handful of frames so simFrame, confirmedFrame, the rollback
   // ring, lastKnownRemoteFrame, etc. are non-default. Seed remote inputs
   // for the input-delay window so frames advance as confirmed.
-  for (uint32_t f = 0; f < 16; ++f) c.injectRemoteInput(f, 0);
+  for (uint32_t f = 0; f < 16; ++f) c.InjectRemoteInput(f, 0);
   for (int i = 0; i < 10; ++i) {
-    c.setLocalControlState(0);
-    c.process();
+    c.SetLocalControlState(0);
+    c.Process();
   }
   // Also feed a batched packet so lastKnownRemoteFrame advances.
   uint8_t bytes[2] = {0, 0};
-  c.injectRemoteBatch(/*generation=*/0, /*baseFrame=*/8, /*count=*/2, bytes,
+  c.InjectRemoteBatch(/*generation=*/0, /*baseFrame=*/8, /*count=*/2, bytes,
                       /*remoteLocalFrame=*/9);
 
-  REQUIRE(c.currentFrame() > 0);
-  REQUIRE(c.confirmedFrame() >= 0);
-  REQUIRE(c.lastKnownRemoteFrame() >= 0);
-  REQUIRE_FALSE(c.rollbackBuffer().empty());
-  uint8_t prevGen = c.generation();
+  REQUIRE(c.CurrentFrame() > 0);
+  REQUIRE(c.ConfirmedFrame() >= 0);
+  REQUIRE(c.LastKnownRemoteFrame() >= 0);
+  REQUIRE_FALSE(c.RollbackBuffer().Empty());
+  uint8_t prev_gen = c.Generation();
 
-  c.resetForGamePhaseForTest();
+  c.ResetForGamePhaseForTest();
 
-  REQUIRE(c.currentFrame() == 0);
-  REQUIRE(c.confirmedFrame() == -1);
-  REQUIRE(c.lastKnownRemoteFrame() == -1);
-  REQUIRE(c.lastTickResimFrames() == 0);
-  REQUIRE(c.generation() == static_cast<uint8_t>(prevGen + 1));
+  REQUIRE(c.CurrentFrame() == 0);
+  REQUIRE(c.ConfirmedFrame() == -1);
+  REQUIRE(c.LastKnownRemoteFrame() == -1);
+  REQUIRE(c.LastTickResimFrames() == 0);
+  REQUIRE(c.Generation() == static_cast<uint8_t>(prev_gen + 1));
   // Ring is empty: no slot can be looked up by frame, oldest/newest
   // sentinel back to -1.
-  REQUIRE(c.rollbackBuffer().empty());
-  REQUIRE(c.rollbackBuffer().newestFrame() == -1);
-  REQUIRE(c.rollbackBuffer().oldestFrame() == -1);
+  REQUIRE(c.RollbackBuffer().Empty());
+  REQUIRE(c.RollbackBuffer().NewestFrame() == -1);
+  REQUIRE(c.RollbackBuffer().OldestFrame() == -1);
 
   // And the post-reset filter accepts gen-1 (= prevGen+1) batches but
   // drops gen-prevGen ones — proving the new generation took effect.
-  c.injectRemoteBatch(prevGen, /*baseFrame=*/0, /*count=*/2, bytes,
+  c.InjectRemoteBatch(prev_gen, /*baseFrame=*/0, /*count=*/2, bytes,
                       /*remoteLocalFrame=*/1);
-  REQUIRE(c.droppedOldGenerationBatches() >= 1);
-  REQUIRE(c.confirmedFrame() == -1);
+  REQUIRE(c.DroppedOldGenerationBatches() >= 1);
+  REQUIRE(c.ConfirmedFrame() == -1);
 
-  c.injectRemoteBatch(static_cast<uint8_t>(prevGen + 1), /*baseFrame=*/0,
+  c.InjectRemoteBatch(static_cast<uint8_t>(prev_gen + 1), /*baseFrame=*/0,
                       /*count=*/2, bytes, /*remoteLocalFrame=*/1);
-  REQUIRE(c.lastKnownRemoteFrame() == 1);
+  REQUIRE(c.LastKnownRemoteFrame() == 1);
 }
