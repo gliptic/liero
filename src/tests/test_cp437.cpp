@@ -28,7 +28,9 @@ TEST_CASE("cp437: unmapped codepoint returns -1") {
 
 TEST_CASE("cp437: bytes -> UTF-8 -> codepoint round-trip") {
   std::string raw;
-  for (int b = 0; b < 256; ++b) raw.push_back(static_cast<char>(b));
+  for (int b = 0; b < 256; ++b) {
+    raw.push_back(static_cast<char>(b));
+  }
 
   std::string utf8 = cp437::Cp437BytesToUtf8(raw);
 

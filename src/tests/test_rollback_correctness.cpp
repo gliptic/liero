@@ -55,8 +55,12 @@ ScriptedInputs GenerateInputs(uint32_t seed, int ticks) {
   for (int i = 0; i < ticks; ++i) {
     uint8_t in_a = rng() & 0x7f;
     uint8_t in_b = rng() & 0x7f;
-    if ((rng() % 10) < 6) in_a |= (1 << Worm::kFire);
-    if ((rng() % 10) < 6) in_b |= (1 << Worm::kFire);
+    if ((rng() % 10) < 6) {
+      in_a |= (1 << Worm::kFire);
+    }
+    if ((rng() % 10) < 6) {
+      in_b |= (1 << Worm::kFire);
+    }
     out.a.push_back(in_a);
     out.b.push_back(in_b);
   }
@@ -97,7 +101,9 @@ RefResult RunReference(uint32_t world_seed, ScriptedInputs const& script, int ti
     p.base_frame = bf;
     p.count = c;
     p.local_frame = lf;
-    for (uint8_t i = 0; i < c; ++i) p.inputs[i] = in[i];
+    for (uint8_t i = 0; i < c; ++i) {
+      p.inputs[i] = in[i];
+    }
     q.push_back(p);
   };
   a->SetInputCallbacks([&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in,
@@ -117,10 +123,12 @@ RefResult RunReference(uint32_t world_seed, ScriptedInputs const& script, int ti
     b->SetLocalControlState(script.b[i]);
     a->Process();
     b->Process();
-    for (auto const& p : a_to_b)
+    for (auto const& p : a_to_b) {
       b->InjectRemoteBatch(p.base_frame, p.count, p.inputs.data(), p.local_frame);
-    for (auto const& p : b_to_a)
+    }
+    for (auto const& p : b_to_a) {
       a->InjectRemoteBatch(p.base_frame, p.count, p.inputs.data(), p.local_frame);
+    }
     a_to_b.clear();
     b_to_a.clear();
   }

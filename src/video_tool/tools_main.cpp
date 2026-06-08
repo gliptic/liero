@@ -14,8 +14,12 @@
 
 // NOLINTNEXTLINE(misc-no-recursion) — small glob matcher; recursion depth bounded by pattern length.
 bool Match(unsigned char const* str, unsigned char const* pat) {
-  if (*pat == '*') return Match(str, pat + 1) || Match(str + 1, pat);
-  if (!*str) return !*pat;
+  if (*pat == '*') {
+    return Match(str, pat + 1) || Match(str + 1, pat);
+  }
+  if (!*str) {
+    return !*pat;
+  }
   return (toupper(*str) == toupper(*pat) || *pat == '?') && Match(str + 1, pat + 1);
 }
 
@@ -45,7 +49,9 @@ int main(int argc, char* argv[]) try {
 
         case 'r':
           ++i;
-          if (i < argc) replay_path = &argv[i][0];
+          if (i < argc) {
+            replay_path = &argv[i][0];
+          }
           break;
         default:
           break;

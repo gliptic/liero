@@ -29,29 +29,47 @@ stun::Header stun::BuildRequest() {
   req.magic_cookie = htonl(kMagicCookie);
 
   std::random_device rd;
-  for (unsigned char& i : req.transaction_id) i = static_cast<uint8_t>(rd() & 0xFF);
+  for (unsigned char& i : req.transaction_id) {
+    i = static_cast<uint8_t>(rd() & 0xFF);
+  }
 
   return req;
 }
 
 bool stun::IsResponse(const uint8_t* data, size_t len, const Header& req) {
-  if (len < sizeof(Header)) return false;
+  if (len < sizeof(Header)) {
+    return false;
+  }
   const auto* resp = reinterpret_cast<const Header*>(data);
-  if (ntohs(resp->type) != kBindingResponse) return false;
-  if (ntohl(resp->magic_cookie) != kMagicCookie) return false;
+  if (ntohs(resp->type) != kBindingResponse) {
+    return false;
+  }
+  if (ntohl(resp->magic_cookie) != kMagicCookie) {
+    return false;
+  }
   return std::memcmp(resp->transaction_id, req.transaction_id, 12) == 0;
 }
 
 StunMappedAddress stun::ParseResponse(const uint8_t* data, size_t len, const stun::Header& req) {
-  if (len < sizeof(stun::Header)) return {};
+  if (len < sizeof(stun::Header)) {
+    return {};
+  }
 
   const auto* resp = reinterpret_cast<const stun::Header*>(data);
-  if (ntohs(resp->type) != stun::kBindingResponse) return {};
-  if (ntohl(resp->magic_cookie) != stun::kMagicCookie) return {};
-  if (std::memcmp(resp->transaction_id, req.transaction_id, 12) != 0) return {};
+  if (ntohs(resp->type) != stun::kBindingResponse) {
+    return {};
+  }
+  if (ntohl(resp->magic_cookie) != stun::kMagicCookie) {
+    return {};
+  }
+  if (std::memcmp(resp->transaction_id, req.transaction_id, 12) != 0) {
+    return {};
+  }
 
   uint16_t const kAttrTotalLen = ntohs(resp->length);
-  if (sizeof(stun::Header) + kAttrTotalLen > len) return {};
+  if (sizeof(stun::Header) + kAttrTotalLen > len) {
+    return {};
+  }
 
   const uint8_t* attrs = data + sizeof(stun::Header);
   size_t offset = 0;
@@ -64,7 +82,9 @@ StunMappedAddress stun::ParseResponse(const uint8_t* data, size_t len, const stu
     auto const kAttrLen = static_cast<uint16_t>(attrs[offset + 2] << 8 | attrs[offset + 3]);
     offset += 4;
 
-    if (offset + kAttrLen > kAttrTotalLen) break;
+    if (offset + kAttrLen > kAttrTotalLen) {
+      break;
+    }
 
     if (kAttrType == stun::kAttrXorMappedAddress && kAttrLen >= 8) {
       uint8_t const kFamily = attrs[offset + 1];
@@ -84,8 +104,12 @@ StunMappedAddress stun::ParseResponse(const uint8_t* data, size_t len, const stu
         uint8_t addr_bytes[16];
         std::memcpy(addr_bytes, attrs + offset + 4, 16);
         uint32_t cookie = htonl(stun::kMagicCookie);
-        for (int i = 0; i < 4; i++) addr_bytes[i] ^= (reinterpret_cast<uint8_t*>(&cookie))[i];
-        for (int i = 0; i < 12; i++) addr_bytes[4 + i] ^= req.transaction_id[i];
+        for (int i = 0; i < 4; i++) {
+          addr_bytes[i] ^= (reinterpret_cast<uint8_t*>(&cookie))[i];
+        }
+        for (int i = 0; i < 12; i++) {
+          addr_bytes[4 + i] ^= req.transaction_id[i];
+        }
         char buf[INET6_ADDRSTRLEN];
         // NOLINTNEXTLINE(cert-err33-c) — buffer is INET6_ADDRSTRLEN; the call cannot fail in this configuration.
         inet_ntop(AF_INET6, addr_bytes, buf, sizeof(buf));
@@ -110,25 +134,33 @@ StunMappedAddress stun::ParseResponse(const uint8_t* data, size_t len, const stu
     offset += (kAttrLen + 3) & ~3U;
   }
 
-  if (!xor_result.ip.empty()) return xor_result;
+  if (!xor_result.ip.empty()) {
+    return xor_result;
+  }
   return plain_result;
 }
 
 // --- StunQuery (background thread, own socket) ---
 
 void StunQuery::Start() {
-  if (started_.exchange(true)) return;
+  if (started_.exchange(true)) {
+    return;
+  }
   thread_ = std::thread(&StunQuery::Run, this);
 }
 
 void StunQuery::Start(uint16_t local_port) {
-  if (started_.exchange(true)) return;
+  if (started_.exchange(true)) {
+    return;
+  }
   localPort_ = local_port;
   thread_ = std::thread(&StunQuery::Run, this);
 }
 
 StunQuery::~StunQuery() {
-  if (thread_.joinable()) thread_.join();
+  if (thread_.joinable()) {
+    thread_.join();
+  }
 }
 
 StunResult StunQuery::Result() const {
@@ -141,7 +173,9 @@ StunMappedAddress StunQuery::QueryServer(const char* server_addr, uint16_t port,
   enet_initialize();
 
   ENetSocket const kSock = enet_socket_create(ENET_SOCKET_TYPE_DATAGRAM);
-  if (kSock == ENET_SOCKET_NULL) return {};
+  if (kSock == ENET_SOCKET_NULL) {
+    return {};
+  }
 
   if (local_port != 0) {
     enet_socket_set_option(kSock, ENET_SOCKOPT_REUSEADDR, 1);
@@ -172,15 +206,23 @@ StunMappedAddress StunQuery::QueryServer(const char* server_addr, uint16_t port,
   StunMappedAddress result;
   for (int attempt = 0; attempt < kStunRetries && result.ip.empty(); ++attempt) {
     int const kSent = enet_socket_send(kSock, &addr, &send_buf, 1);
-    if (kSent < 0) break;
+    if (kSent < 0) {
+      break;
+    }
 
     enet_uint32 wait_condition = ENET_SOCKET_WAIT_RECEIVE;
-    if (enet_socket_wait(kSock, &wait_condition, kStunTimeoutMs) != 0) continue;
-    if (!(wait_condition & ENET_SOCKET_WAIT_RECEIVE)) continue;
+    if (enet_socket_wait(kSock, &wait_condition, kStunTimeoutMs) != 0) {
+      continue;
+    }
+    if (!(wait_condition & ENET_SOCKET_WAIT_RECEIVE)) {
+      continue;
+    }
 
     ENetAddress from_addr = {};
     int const kRecvLen = enet_socket_receive(kSock, &from_addr, &recv_buf, 1);
-    if (std::cmp_less(kRecvLen, sizeof(stun::Header))) continue;
+    if (std::cmp_less(kRecvLen, sizeof(stun::Header))) {
+      continue;
+    }
 
     result = stun::ParseResponse(recv_data, static_cast<size_t>(kRecvLen), req);
   }

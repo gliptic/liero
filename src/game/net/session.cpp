@@ -31,10 +31,11 @@ void NetSession::CreateController(int local_idx) {
   // Wire protocol caps inputDelay at kMaxRollback (see setInputDelay).
   // Clamp the settings value too so pre-fill loops below stay in sync
   // with the controller.
-  if (settings_->input_delay < 0)
+  if (settings_->input_delay < 0) {
     settings_->input_delay = 0;
-  else if (settings_->input_delay > rollback::kMaxRollback)
+  } else if (settings_->input_delay > rollback::kMaxRollback) {
     settings_->input_delay = rollback::kMaxRollback;
+  }
   rollback_ = std::make_unique<RollbackController>(common_, settings_, local_idx);
   rollback_->SetInputDelay(static_cast<uint32_t>(settings_->input_delay));
 }
@@ -65,7 +66,9 @@ void NetSession::WireActiveController() {
 Game& NetSession::ActiveGame() { return rollback_->game; }
 
 bool NetSession::HostGame(uint16_t port) {
-  if (sessionState_ != kIdle) return false;
+  if (sessionState_ != kIdle) {
+    return false;
+  }
 
   role_ = kHost;
   gameSeed_ = static_cast<uint32_t>(std::time(nullptr));
@@ -83,7 +86,9 @@ bool NetSession::HostGame(uint16_t port) {
 }
 
 bool NetSession::JoinGame(const std::string& address, uint16_t port) {
-  if (sessionState_ != kIdle) return false;
+  if (sessionState_ != kIdle) {
+    return false;
+  }
 
   role_ = kClient;
   gameSeed_ = 0;  // Will be set by host's handshake
@@ -97,7 +102,9 @@ bool NetSession::JoinGame(const std::string& address, uint16_t port) {
 }
 
 bool NetSession::HostWithTransport(NetTransport&& transport) {
-  if (sessionState_ != kIdle) return false;
+  if (sessionState_ != kIdle) {
+    return false;
+  }
 
   role_ = kHost;
   gameSeed_ = static_cast<uint32_t>(std::time(nullptr));
@@ -110,7 +117,9 @@ bool NetSession::HostWithTransport(NetTransport&& transport) {
 
 bool NetSession::ConnectWithTransport(NetTransport&& transport, const std::string& peer_addr,
                                       uint16_t peer_port) {
-  if (sessionState_ != kIdle) return false;
+  if (sessionState_ != kIdle) {
+    return false;
+  }
 
   role_ = kClient;
   gameSeed_ = 0;
@@ -128,7 +137,9 @@ bool NetSession::ConnectWithTransport(NetTransport&& transport, const std::strin
 }
 
 void NetSession::Update() {
-  if (sessionState_ == kIdle || sessionState_ == kFailed || sessionState_ == kDisconnected) return;
+  if (sessionState_ == kIdle || sessionState_ == kFailed || sessionState_ == kDisconnected) {
+    return;
+  }
 
   transport_.Poll();
 
@@ -165,7 +176,9 @@ void NetSession::Disconnect() {
   // Restore client's original TC if it was changed during the session
   if (role_ == kClient && tcMemFs_) {
     settings_->tc = originalTcName_;
-    if (on_tc_reloaded) on_tc_reloaded(originalCommon_);
+    if (on_tc_reloaded) {
+      on_tc_reloaded(originalCommon_);
+    }
     common_ = originalCommon_;
     tcMemFs_.reset();
   }
@@ -199,7 +212,9 @@ void NetSession::OnConnected() {
     msd.time_to_lose = settings_->time_to_lose;
     msd.flags_to_win = settings_->flags_to_win;
     msd.load_change = settings_->load_change ? 1 : 0;
-    for (int i = 0; i < 40; ++i) msd.weap_table[i] = settings_->weap_table[i];
+    for (int i = 0; i < 40; ++i) {
+      msd.weap_table[i] = settings_->weap_table[i];
+    }
     msd.regenerate_level = settings_->regenerate_level ? 1 : 0;
     msd.shadow = settings_->shadow ? 1 : 0;
     msd.names_on_bonuses = settings_->names_on_bonuses ? 1 : 0;
@@ -213,8 +228,9 @@ void NetSession::OnConnected() {
 
   // Check if we can start (all data received)
   if (handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ && mapDataReceived_ &&
-      tcResolved_)
+      tcResolved_) {
     TryStartGame();
+  }
 }
 
 void NetSession::OnDisconnected() { sessionState_ = kDisconnected; }
@@ -235,8 +251,9 @@ void NetSession::OnHandshake(uint32_t seed, uint32_t /*settings_hash*/) {
   handshakeReceived_ = true;
 
   if (handshakeSent_ && playerInfoReceived_ && matchSettingsReceived_ && mapDataReceived_ &&
-      tcResolved_)
+      tcResolved_) {
     TryStartGame();
+  }
 }
 
 void NetSession::OnRemoteInputBatch(uint8_t generation, uint32_t base_frame, uint8_t count,
@@ -246,13 +263,19 @@ void NetSession::OnRemoteInputBatch(uint8_t generation, uint32_t base_frame, uin
     return;
   }
 
-  if (prePlayingInputBatches_.size() >= kMaxPrePlayingBatches) return;
-  if (count > rollback::kMaxRollback + 1) return;
+  if (prePlayingInputBatches_.size() >= kMaxPrePlayingBatches) {
+    return;
+  }
+  if (count > rollback::kMaxRollback + 1) {
+    return;
+  }
   PendingInputBatch b{};
   b.generation = generation;
   b.base_frame = base_frame;
   b.count = count;
-  for (uint8_t i = 0; i < count; ++i) b.inputs[i] = inputs[i];
+  for (uint8_t i = 0; i < count; ++i) {
+    b.inputs[i] = inputs[i];
+  }
   b.remote_local_frame = remote_local_frame;
   prePlayingInputBatches_.push_back(b);
 }
@@ -264,11 +287,14 @@ void NetSession::OnPlayerInfo(const NetTransport::PlayerInfo& info) {
   // During Rematch, PlayerInfo is re-sent so startRematch{,Client}() can
   // pick up the peer's latest weapons. The rematch start is driven by
   // toggleReady / onHandshake, not by this packet.
-  if (sessionState_ == kRematch) return;
+  if (sessionState_ == kRematch) {
+    return;
+  }
 
   if (handshakeSent_ && handshakeReceived_ && matchSettingsReceived_ && mapDataReceived_ &&
-      tcResolved_)
+      tcResolved_) {
     TryStartGame();
+  }
 }
 
 void NetSession::OnMatchSettings(const NetTransport::MatchSettingsData& data) {
@@ -282,7 +308,9 @@ void NetSession::OnMatchSettings(const NetTransport::MatchSettingsData& data) {
     settings_->time_to_lose = data.time_to_lose;
     settings_->flags_to_win = data.flags_to_win;
     settings_->load_change = data.load_change != 0;
-    for (int i = 0; i < 40; ++i) settings_->weap_table[i] = data.weap_table[i];
+    for (int i = 0; i < 40; ++i) {
+      settings_->weap_table[i] = data.weap_table[i];
+    }
     settings_->regenerate_level = data.regenerate_level != 0;
     settings_->shadow = data.shadow != 0;
     settings_->names_on_bonuses = data.names_on_bonuses != 0;
@@ -295,16 +323,21 @@ void NetSession::OnMatchSettings(const NetTransport::MatchSettingsData& data) {
   matchSettingsReceived_ = true;
 
   if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ && mapDataReceived_ &&
-      tcResolved_)
+      tcResolved_) {
     TryStartGame();
+  }
 }
 
 void NetSession::OnMapData(const void* data, size_t len) {
-  if (role_ != kClient) return;
+  if (role_ != kClient) {
+    return;
+  }
 
   // Reject oversized map data to prevent memory exhaustion
   static constexpr size_t kMaxMapData = 10 * 1024 * 1024;  // 10 MB
-  if (len > kMaxMapData) return;
+  if (len > kMaxMapData) {
+    return;
+  }
 
   receivedMapData_.assign(static_cast<const uint8_t*>(data),
                           static_cast<const uint8_t*>(data) + len);
@@ -317,24 +350,33 @@ void NetSession::OnMapData(const void* data, size_t len) {
   }
 
   if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ &&
-      tcResolved_)
+      tcResolved_) {
     TryStartGame();
+  }
 }
 
 void NetSession::OnPause() {
-  if (rollbackPtr_) rollbackPtr_->SetRemotePaused(/*paused=*/true);
+  if (rollbackPtr_) {
+    rollbackPtr_->SetRemotePaused(/*paused=*/true);
+  }
 }
 
 void NetSession::OnResume() {
-  if (rollbackPtr_) rollbackPtr_->SetRemotePaused(/*paused=*/false);
+  if (rollbackPtr_) {
+    rollbackPtr_->SetRemotePaused(/*paused=*/false);
+  }
 }
 
 void NetSession::OnRemoteEndMatch() {
-  if (rollbackPtr_) rollbackPtr_->EndMatch();
+  if (rollbackPtr_) {
+    rollbackPtr_->EndMatch();
+  }
 }
 
 void NetSession::OnRemotePeerLeft() {
-  if (rollbackPtr_) rollbackPtr_->PeerLeft();
+  if (rollbackPtr_) {
+    rollbackPtr_->PeerLeft();
+  }
 }
 
 void NetSession::SendPause() { transport_.SendPause(); }
@@ -372,7 +414,9 @@ void NetSession::WireCallbacks() {
 
 void NetSession::OnTcInfo(uint32_t hash, const std::string& name) {
   // Client receives TC info from host
-  if (role_ != kClient) return;
+  if (role_ != kClient) {
+    return;
+  }
 
   if (name == settings_->tc && hash == localTcHash_) {
     // Same TC, no transfer needed
@@ -380,8 +424,9 @@ void NetSession::OnTcInfo(uint32_t hash, const std::string& name) {
     tcResolved_ = true;
 
     if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ &&
-        mapDataReceived_)
+        mapDataReceived_) {
       TryStartGame();
+    }
   } else {
     // Different TC — request the data
     settings_->tc = name;
@@ -391,7 +436,9 @@ void NetSession::OnTcInfo(uint32_t hash, const std::string& name) {
 
 void NetSession::OnTcResponse(bool need_data) {
   // Host receives client's response about TC
-  if (role_ != kHost) return;
+  if (role_ != kHost) {
+    return;
+  }
 
   if (need_data) {
     // Client needs the TC archive — pack and send it
@@ -403,14 +450,20 @@ void NetSession::OnTcResponse(bool need_data) {
 
 void NetSession::OnTcData(const void* data, size_t len) {
   // Client receives TC archive from host
-  if (role_ != kClient) return;
+  if (role_ != kClient) {
+    return;
+  }
 
   // Reject oversized TC data
   static constexpr size_t kMaxTcData = 50 * 1024 * 1024;  // 50 MB
-  if (len > kMaxTcData) return;
+  if (len > kMaxTcData) {
+    return;
+  }
 
   auto files = tc_archive::Unpack(static_cast<const uint8_t*>(data), len);
-  if (files.empty()) return;
+  if (files.empty()) {
+    return;
+  }
 
   // Load TC from memory (no disk writes — platform-agnostic)
   auto mem_fs = std::make_shared<MemoryFs>();
@@ -427,22 +480,29 @@ void NetSession::OnTcData(const void* data, size_t len) {
 
   common_ = new_common;
 
-  if (on_tc_reloaded) on_tc_reloaded(new_common);
+  if (on_tc_reloaded) {
+    on_tc_reloaded(new_common);
+  }
 
   tcResolved_ = true;
 
   if (handshakeSent_ && handshakeReceived_ && playerInfoReceived_ && matchSettingsReceived_ &&
-      mapDataReceived_)
+      mapDataReceived_) {
     TryStartGame();
+  }
 }
 
 void NetSession::ApplyRemotePlayerInfo(int remote_idx) {
   Worm* remote_worm = ActiveGame().WormByIdx(remote_idx);
   // Create a distinct copy so we don't mutate the saved player profile
   auto remote_ws = std::make_shared<WormSettings>(*remote_worm->settings);
-  for (int i = 0; i < 5; ++i) remote_ws->weapons[i] = remotePlayerInfo_.weapons[i];
+  for (int i = 0; i < 5; ++i) {
+    remote_ws->weapons[i] = remotePlayerInfo_.weapons[i];
+  }
   remote_ws->color = remotePlayerInfo_.color;
-  for (int i = 0; i < 3; ++i) remote_ws->rgb[i] = remotePlayerInfo_.rgb[i];
+  for (int i = 0; i < 3; ++i) {
+    remote_ws->rgb[i] = remotePlayerInfo_.rgb[i];
+  }
   remote_ws->name.assign(remotePlayerInfo_.name,
                          strnlen(remotePlayerInfo_.name, sizeof(remotePlayerInfo_.name)));
   remote_worm->settings = remote_ws;
@@ -456,7 +516,9 @@ void NetSession::PrefillRemoteInput() {
   // frames the remote *will* fill in — injectRemoteInput drops frames
   // <= confirmedSimFrame_, so the rollback path couldn't correct later.
   auto const kPreFillCount = static_cast<uint32_t>(settings_->input_delay);
-  for (uint32_t i = 0; i < kPreFillCount; ++i) rollback_->InjectRemoteInput(i, 0);
+  for (uint32_t i = 0; i < kPreFillCount; ++i) {
+    rollback_->InjectRemoteInput(i, 0);
+  }
 }
 
 void NetSession::BeginPlaying(int local_idx, bool is_rematch) {
@@ -487,19 +549,25 @@ void NetSession::BeginPlaying(int local_idx, bool is_rematch) {
     localReady_ = false;
     remoteReady_ = false;
     // Client clears handshakeReceived_ so the next rematch's seed can land.
-    if (role_ == kClient) handshakeReceived_ = false;
+    if (role_ == kClient) {
+      handshakeReceived_ = false;
+    }
   }
 
   sessionState_ = kPlaying;
 }
 
 void NetSession::TryStartGame() {
-  if (sessionState_ == kPlaying) return;
+  if (sessionState_ == kPlaying) {
+    return;
+  }
   BeginPlaying((role_ == kHost) ? 0 : 1, /*is_rematch=*/false);
 }
 
 void NetSession::EnterRematch() {
-  if (sessionState_ != kPlaying) return;
+  if (sessionState_ != kPlaying) {
+    return;
+  }
 
   sessionState_ = kRematch;
   localReady_ = false;
@@ -522,26 +590,36 @@ void NetSession::EnterRematch() {
 void NetSession::SendLocalPlayerInfo() {
   auto& net_ws = settings_->worm_settings[Settings::kNetworkPlayerIdx];
   NetTransport::PlayerInfo info{};
-  for (int i = 0; i < 5; ++i) info.weapons[i] = net_ws->weapons[i];
+  for (int i = 0; i < 5; ++i) {
+    info.weapons[i] = net_ws->weapons[i];
+  }
   info.color = net_ws->color;
-  for (int i = 0; i < 3; ++i) info.rgb[i] = net_ws->rgb[i];
+  for (int i = 0; i < 3; ++i) {
+    info.rgb[i] = net_ws->rgb[i];
+  }
   std::strncpy(info.name, net_ws->name.c_str(), sizeof(info.name) - 1);
   info.name[sizeof(info.name) - 1] = '\0';
   transport_.SendPlayerInfo(info);
 }
 
 void NetSession::ToggleReady() {
-  if (sessionState_ != kRematch) return;
+  if (sessionState_ != kRematch) {
+    return;
+  }
 
   localReady_ = !localReady_;
   transport_.SendRematchReady(localReady_);
 
   // Only host initiates the rematch start
-  if (role_ == kHost && localReady_ && remoteReady_) StartRematch();
+  if (role_ == kHost && localReady_ && remoteReady_) {
+    StartRematch();
+  }
 }
 
 void NetSession::SetRematchLevel(bool random_level, const std::string& level_file) {
-  if (sessionState_ != kRematch || role_ != kHost) return;
+  if (sessionState_ != kRematch || role_ != kHost) {
+    return;
+  }
 
   settings_->random_level = random_level;
   settings_->level_file = level_file;
@@ -553,20 +631,28 @@ void NetSession::SetRematchLevel(bool random_level, const std::string& level_fil
     localReady_ = false;
     transport_.SendRematchReady(/*ready=*/false);
   }
-  if (remoteReady_) remoteReady_ = false;
+  if (remoteReady_) {
+    remoteReady_ = false;
+  }
 }
 
 void NetSession::OnRematchReady(bool ready) {
-  if (sessionState_ != kRematch) return;
+  if (sessionState_ != kRematch) {
+    return;
+  }
 
   remoteReady_ = ready;
 
   // Only host initiates the rematch start
-  if (role_ == kHost && localReady_ && remoteReady_) StartRematch();
+  if (role_ == kHost && localReady_ && remoteReady_) {
+    StartRematch();
+  }
 }
 
 void NetSession::OnRematchLevel(bool random_level, std::string level_file) {
-  if (sessionState_ != kRematch || role_ != kClient) return;
+  if (sessionState_ != kRematch || role_ != kClient) {
+    return;
+  }
 
   settings_->random_level = random_level;
   settings_->level_file = std::move(level_file);
@@ -578,7 +664,9 @@ void NetSession::OnRematchLevel(bool random_level, std::string level_file) {
 
 void NetSession::StartRematch() {
   // Only the host calls this directly. The client starts via onHandshake+onMapData.
-  if (sessionState_ != kRematch || role_ != kHost) return;
+  if (sessionState_ != kRematch || role_ != kHost) {
+    return;
+  }
 
   // Generate a new seed and send it before beginPlaying generates the map
   gameSeed_ = static_cast<uint32_t>(std::time(nullptr));
@@ -589,7 +677,9 @@ void NetSession::StartRematch() {
 
 void NetSession::StartRematchClient() {
   // Called on the client side when handshake (seed) + map data are both received
-  if (sessionState_ != kRematch || role_ != kClient) return;
+  if (sessionState_ != kRematch || role_ != kClient) {
+    return;
+  }
 
   BeginPlaying(/*local_idx=*/1, /*is_rematch=*/true);
 }
@@ -700,7 +790,9 @@ bool ChecksumLogEnabled() {
 }
 
 void MaybeLog(char const* who, uint64_t& counter, uint32_t frame, uint32_t checksum) {
-  if (!ChecksumLogEnabled()) return;
+  if (!ChecksumLogEnabled()) {
+    return;
+  }
   ++counter;
   if (counter % 70 == 0) {  // ~1 second at 70 Hz
     std::fprintf(stderr, "[checksum %s] count=%llu frame=%u value=%08x\n", who,
@@ -710,12 +802,16 @@ void MaybeLog(char const* who, uint64_t& counter, uint32_t frame, uint32_t check
 }  // namespace
 
 void NetSession::OnChecksum(uint8_t generation, uint32_t frame, uint32_t remote_checksum) {
-  if (desyncDetected_ || sessionState_ != kPlaying || !rollbackPtr_) return;
+  if (desyncDetected_ || sessionState_ != kPlaying || !rollbackPtr_) {
+    return;
+  }
 
   // Drop pre-transition checksums: they describe the peer's old
   // simFrame numbering and would compare against a WS-phase slot that
   // no longer exists in our ring.
-  if (generation != rollbackPtr_->Generation()) return;
+  if (generation != rollbackPtr_->Generation()) {
+    return;
+  }
 
   static uint64_t remote_count = 0;
   MaybeLog("remote", remote_count, frame, remote_checksum);

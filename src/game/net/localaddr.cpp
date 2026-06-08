@@ -68,12 +68,20 @@ std::vector<LocalAddress> GetLocalAddresses() {
 
 #else
   struct ifaddrs* ifas = nullptr;
-  if (getifaddrs(&ifas) != 0) return result;
+  if (getifaddrs(&ifas) != 0) {
+    return result;
+  }
 
   for (auto* ifa = ifas; ifa; ifa = ifa->ifa_next) {
-    if (!ifa->ifa_addr) continue;
-    if (!(ifa->ifa_flags & IFF_UP)) continue;
-    if (ifa->ifa_flags & IFF_LOOPBACK) continue;
+    if (!ifa->ifa_addr) {
+      continue;
+    }
+    if (!(ifa->ifa_flags & IFF_UP)) {
+      continue;
+    }
+    if (ifa->ifa_flags & IFF_LOOPBACK) {
+      continue;
+    }
 
     char buf[INET6_ADDRSTRLEN] = {};
 
@@ -84,7 +92,9 @@ std::vector<LocalAddress> GetLocalAddresses() {
     } else if (ifa->ifa_addr->sa_family == AF_INET6) {
       auto* sin6 = reinterpret_cast<sockaddr_in6*>(ifa->ifa_addr);
       // Skip link-local (fe80::)
-      if (IN6_IS_ADDR_LINKLOCAL(&sin6->sin6_addr)) continue;
+      if (IN6_IS_ADDR_LINKLOCAL(&sin6->sin6_addr)) {
+        continue;
+      }
       inet_ntop(AF_INET6, &sin6->sin6_addr, buf, sizeof(buf));
       result.push_back({.ip = buf, .is_i_pv6 = true});
     }

@@ -10,7 +10,9 @@ static uint32_t Sqr(uint32_t op) {
                              // 1uL<<30 for uint32_t type
 
   // "one" starts at the highest power of four <= than the argument.
-  while (one > op) one >>= 2;
+  while (one > op) {
+    one >>= 2;
+  }
 
   while (one != 0) {
     if (op >= res + one) {

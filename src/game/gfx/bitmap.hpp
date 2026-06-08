@@ -35,7 +35,9 @@ struct Bitmap {
   unsigned char& GetPixel(int x, int y) const { return (pixels + y * pitch)[x]; }
 
   void SetPixel(int x, int y, PalIdx v) const {
-    if (clip_rect.Inside(x, y)) (pixels + y * pitch)[x] = v;
+    if (clip_rect.Inside(x, y)) {
+      (pixels + y * pitch)[x] = v;
+    }
   }
 
   void Copy(Bitmap const& other) {

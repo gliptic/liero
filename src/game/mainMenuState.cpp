@@ -35,14 +35,19 @@ static int Levenshtein(char const* s1, char const* s2) {
   std::size_t const kW = s1len + 1;
   std::vector<unsigned> matrix(kW * (s2len + 1));
   matrix[0] = 0;
-  for (x = 1; x <= s2len; x++) matrix[x * kW] = matrix[(x - 1) * kW] + 1;
-  for (y = 1; y <= s1len; y++) matrix[y] = matrix[y - 1] + 1;
-  for (x = 1; x <= s2len; x++)
+  for (x = 1; x <= s2len; x++) {
+    matrix[x * kW] = matrix[(x - 1) * kW] + 1;
+  }
+  for (y = 1; y <= s1len; y++) {
+    matrix[y] = matrix[y - 1] + 1;
+  }
+  for (x = 1; x <= s2len; x++) {
     for (y = 1; y <= s1len; y++) {
       int const kC = std::tolower(s1[y - 1]) == std::tolower(s2[x - 1]) ? 0 : 1;
       matrix[x * kW + y] = MIN3(matrix[(x - 1) * kW + y] + 1, matrix[x * kW + y - 1] + 1,
                                 matrix[(x - 1) * kW + y - 1] + kC);
     }
+  }
   return static_cast<int>(matrix[s2len * kW + s1len]);
 }
 
@@ -159,10 +164,11 @@ bool MainMenuState::Update() {
   if (gfx->TestSdlKeyOnce(SDL_SCANCODE_ESCAPE) ||
       gfx->TestControlOnce(WormSettingsExtensions::kJump) ||
       gfx->TestGamepadButtonOnce(SDL_GAMEPAD_BUTTON_EAST)) {
-    if (gfx->cur_menu == &gfx->main_menu)
+    if (gfx->cur_menu == &gfx->main_menu) {
       gfx->main_menu.MoveToId(MainMenu::kMaQuit);
-    else
+    } else {
       gfx->cur_menu = &gfx->main_menu;
+    }
   }
 
   if (gfx->TestSdlKeyOnce(SDL_SCANCODE_UP) || gfx->TestControlOnce(WormSettingsExtensions::kUp) ||
@@ -319,9 +325,12 @@ bool MainMenuState::Update() {
               std::make_unique<InputStringState>(ws.name, 20, x, y, nullptr, "", false,
                                                  [this](bool accepted, std::string const& result) {
                                                    auto& ws = *gfx->player_menu.ws;
-                                                   if (accepted) ws.name = result;
-                                                   if (ws.name.empty())
+                                                   if (accepted) {
+                                                     ws.name = result;
+                                                   }
+                                                   if (ws.name.empty()) {
                                                      Settings::GenerateName(ws, gfx->rand);
+                                                   }
                                                    ws.random_name = false;
                                                    g_sound_player->Play(
                                                        gfx->common->sound_hook[SoundMenuSelect]);
@@ -362,7 +371,9 @@ bool MainMenuState::Update() {
                                                   if (is_gamepad) {
                                                     ws.gamepad_controls[kEyIdx] = k;
                                                   } else {
-                                                    if (!IsExtendedKey(k)) ws.controls[kEyIdx] = k;
+                                                    if (!IsExtendedKey(k)) {
+                                                      ws.controls[kEyIdx] = k;
+                                                    }
                                                     ws.controls_ex[kEyIdx] = k;
                                                   }
                                                   gfx->player_menu.UpdateItems(*gfx->common);
@@ -562,11 +573,15 @@ bool MainMenuState::Update() {
 
   if (gfx->TestSdlKey(SDL_SCANCODE_LEFT) || gfx->TestControl(WormSettingsExtensions::kLeft) ||
       gfx->TestGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_LEFT)) {
-    if (!gfx->cur_menu->OnLeftRight(common, -1)) ResetLeftRight();
+    if (!gfx->cur_menu->OnLeftRight(common, -1)) {
+      ResetLeftRight();
+    }
   }
   if (gfx->TestSdlKey(SDL_SCANCODE_RIGHT) || gfx->TestControl(WormSettingsExtensions::kRight) ||
       gfx->TestGamepadDir(SDL_GAMEPAD_BUTTON_DPAD_RIGHT)) {
-    if (!gfx->cur_menu->OnLeftRight(common, 1)) ResetLeftRight();
+    if (!gfx->cur_menu->OnLeftRight(common, 1)) {
+      ResetLeftRight();
+    }
   }
 
   if (gfx->TestSdlKeyOnce(SDL_SCANCODE_PAGEUP)) {
@@ -595,8 +610,9 @@ void MainMenuState::Draw() {
 
   Common& common = *gfx->common;
 
-  if (gfx->cur_menu == &gfx->main_menu)
+  if (gfx->cur_menu == &gfx->main_menu) {
     gfx->settings_menu.Draw(common, gfx->play_renderer, /*disabled=*/true);
-  else
+  } else {
     gfx->cur_menu->Draw(common, gfx->play_renderer, /*disabled=*/false);
+  }
 }

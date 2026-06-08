@@ -54,13 +54,17 @@ struct Level {
 
   unsigned char CheckedPixelWrap(int x, int y) {
     auto const kIdx = static_cast<unsigned int>(x + y * width);
-    if (kIdx < data.size()) return data[kIdx];
+    if (kIdx < data.size()) {
+      return data[kIdx];
+    }
     return 0;
   }
 
   Material CheckedMatWrap(int x, int y) {
     auto const kIdx = static_cast<unsigned int>(x + y * width);
-    if (kIdx < materials.size()) return materials[kIdx];
+    if (kIdx < materials.size()) {
+      return materials[kIdx];
+    }
     return zero_material;
   }
 

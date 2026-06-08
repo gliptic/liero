@@ -27,7 +27,9 @@ bool BObject::Process(Game& game) {
   PalIdx const kC = game.level.Pixel(ipos);
   Material const kM = game.level.Mat(ipos);
 
-  if (kM.Background()) vel.y += LC(BObjGravity);
+  if (kM.Background()) {
+    vel.y += LC(BObjGravity);
+  }
 
   if ((kC >= 1 && kC <= 2) || (kC >= 77 && kC <= 79))  // TODO: Read from EXE
   {

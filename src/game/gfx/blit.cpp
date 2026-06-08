@@ -46,12 +46,16 @@ void DrawBar(Bitmap& scr, int x, int y, int width, int height, int color) {
 }
 
 void Vline(Bitmap& scr, int x, int y1, int y2, int color) {
-  if (x < scr.clip_rect.x1 || x >= scr.clip_rect.x2) return;
+  if (x < scr.clip_rect.x1 || x >= scr.clip_rect.x2) {
+    return;
+  }
 
   y1 = std::max(y1, static_cast<int>(scr.clip_rect.y1));
   y2 = std::min(y2, static_cast<int>(scr.clip_rect.y2));
 
-  for (; y1 < y2; ++y1) scr.GetPixel(x, y1) = color;
+  for (; y1 < y2; ++y1) {
+    scr.GetPixel(x, y1) = color;
+  }
 }
 
 void DrawRoundedBox(Bitmap& scr, int x, int y, int color, int height, int width) {
@@ -91,16 +95,24 @@ void DrawDashedLineBox(Bitmap& scr, int x, int y, int color, int color2, int num
   int const color2lim = num * kPerim / den;
 
   x1 = x;
-  for (y1 = y; y1 < y + height; ++y1) DASH();
+  for (y1 = y; y1 < y + height; ++y1) {
+    DASH();
+  }
 
   y1 = y + height - 1;
-  for (x1 = x + 1; x1 < x + width - 1; ++x1) DASH();
+  for (x1 = x + 1; x1 < x + width - 1; ++x1) {
+    DASH();
+  }
 
   x1 = x + width - 1;
-  for (y1 = y + height - 1; y1 >= y; --y1) DASH();
+  for (y1 = y + height - 1; y1 >= y; --y1) {
+    DASH();
+  }
 
   y1 = y;
-  for (x1 = x + width - 2; x1 > x; --x1) DASH();
+  for (x1 = x + width - 2; x1 > x; --x1) {
+    DASH();
+  }
 }
 
 // The blitter routines below are driven by macros (CLIP_IMAGE, UNPACK_SPRITE,
@@ -143,7 +155,9 @@ void BlitImage(Bitmap& scr, Sprite spr, int x, int y) {
 
     for (int x = 0; x < width; ++x) {
       PalIdx const kC = *rowsrc;
-      if (kC) *rowdest = kC;
+      if (kC) {
+        *rowdest = kC;
+      }
       ++rowsrc;
       ++rowdest;
     }
@@ -166,7 +180,9 @@ void BlitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase) {
 
     for (int x = 0; x < width; ++x) {
       PalIdx const kC = *rowsrc;
-      if (kC && ((x ^ y ^ phase) & 1)) *rowdest = kC;
+      if (kC && ((x ^ y ^ phase) & 1)) {
+        *rowdest = kC;
+      }
       ++rowsrc;
       ++rowdest;
     }
@@ -259,7 +275,9 @@ void BlitImageR(Bitmap& scr, const PalIdx* mem, int x, int y, int width, int hei
 
     for (int x = 0; x < width; ++x) {
       PalIdx const kC = *rowsrc;
-      if (kC && (static_cast<PalIdx>(*rowdest - 160) < 8)) *rowdest = kC;
+      if (kC && (static_cast<PalIdx>(*rowdest - 160) < 8)) {
+        *rowdest = kC;
+      }
       ++rowsrc;
       ++rowdest;
     }
@@ -337,8 +355,9 @@ void BlitShadowImage(Common& common, Bitmap& scr, const PalIdx* mem, int x, int 
 
     for (int x = 0; x < width; ++x) {
       PalIdx const kC = *rowsrc;
-      if (kC && common.materials[*rowdest].SeeShadow())  // TODO: Speed up this test?
+      if (kC && common.materials[*rowdest].SeeShadow()) {  // TODO: Speed up this test?
         *rowdest += 4;
+      }
       ++rowsrc;
       ++rowdest;
     }
@@ -369,10 +388,11 @@ void BlitStone(Common& common, Level& level, bool p1, const PalIdx* mem, int x, 
       for (int x = 0; x < width; ++x) {
         PalIdx const kC = *rowsrc;
         PalIdx n = 0;
-        if (kC && rowmatdest->DirtBack())  // TODO: Speed up this test?
+        if (kC && rowmatdest->DirtBack()) {  // TODO: Speed up this test?
           n = kC;
-        else
+        } else {
           n = kC + 3;
+        }
         *rowdest = n;
         *rowmatdest = common.materials[n];
         ++rowsrc;
@@ -488,7 +508,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
 void CorrectShadow(Common& common, Level& level, Rect rect) {
   rect.Intersect(Rect(0, 3, level.width - 3, level.height));
 
-  for (int x = rect.x1; x < rect.x2; ++x)
+  for (int x = rect.x1; x < rect.x2; ++x) {
     for (int y = rect.y1; y < rect.y2; ++y) {
       PalIdx const kPix = level.Pixel(x, y);
 
@@ -499,6 +519,7 @@ void CorrectShadow(Common& common, Level& level, Rect rect) {
         level.SetPixel(x, y, kPix - 4, common);
       }
     }
+  }
 }
 
 // NOLINTNEXTLINE(readability-avoid-nested-conditional-operator) — standard sign helper; nesting matches the math.
@@ -600,7 +621,9 @@ void DrawGraph(Bitmap& scr, std::vector<double> const& data, int height, int sta
     for (double const kV : data) {
       int y1 = kBaseY - static_cast<int>(std::floor(kV + 0.5));
       int y2 = kBaseY;
-      if (y1 > y2) std::swap(y1, y2);
+      if (y1 > y2) {
+        std::swap(y1, y2);
+      }
       Vline(scr, x, y1, y2, kV >= 0 ? color : neg_color);
       ++x;
     }
@@ -710,7 +733,9 @@ void PreparePaletteBgra(Color real_pal[256], uint32_t (&pal32)[256]) {
 int FitScreen(int back_w, int back_h, int scr_w, int scr_h, int& offset_x, int& offset_y) {
   int mag = 1;
 
-  while (scr_w * mag <= back_w && scr_h * mag <= back_h) ++mag;
+  while (scr_w * mag <= back_w && scr_h * mag <= back_h) {
+    ++mag;
+  }
 
   --mag;  // mag was the first that didn't fit
 

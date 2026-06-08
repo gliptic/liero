@@ -25,7 +25,9 @@ int main(int argc, char* argv[]) try {
     }
   }
   arg_ptrs.reserve(arg_storage.size());
-  for (auto& s : arg_storage) arg_ptrs.push_back(s.data());
+  for (auto& s : arg_storage) {
+    arg_ptrs.push_back(s.data());
+  }
   arg_ptrs.push_back(nullptr);
 
   auto r = paths::Resolve(static_cast<int>(arg_storage.size()), arg_ptrs.data());
@@ -63,7 +65,9 @@ int main(int argc, char* argv[]) try {
 
         LoadFromExe(common, exe, gfx, snd);
 
-        if (tc_name.empty()) tc_name = GetLeaf(exe_path);
+        if (tc_name.empty()) {
+          tc_name = GetLeaf(exe_path);
+        }
 
         FsNode const kOutNode = r.user_config_node / "TC" / tc_name;
 

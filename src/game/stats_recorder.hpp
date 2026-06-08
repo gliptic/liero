@@ -59,7 +59,9 @@ struct WormStats {
         presence(504 / 2, 350 / 2, 504, 350),
 
         ai_process_time(0) {
-    for (int i = 0; i < 40; ++i) weapons[i].index = i;
+    for (int i = 0; i < 40; ++i) {
+      weapons[i].index = i;
+    }
   }
 
   std::vector<std::pair<int, int> > life_spans;
@@ -67,7 +69,9 @@ struct WormStats {
   void LifeStats(int& min, int& max) {
     min = 0;
     max = 0;
-    if (life_spans.empty()) return;
+    if (life_spans.empty()) {
+      return;
+    }
 
     min = life_spans[0].second - life_spans[0].first;
     max = min;

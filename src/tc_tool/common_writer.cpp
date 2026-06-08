@@ -51,7 +51,9 @@ void CommonSave(Common& common, std::string const& path) {
     SaveTcConfig(common, ss);
     io::FileWriter text_writer(cfg_path.c_str(), "wb");
     auto str = ss.str();
-    for (char const kC : str) text_writer.Put(kC);
+    for (char const kC : str) {
+      text_writer.Put(kC);
+    }
   }
 
   for (auto& s : common.sounds) {
@@ -80,7 +82,9 @@ void CommonSave(Common& common, std::string const& path) {
 
     auto cur_size = s.original_data.size();
 
-    for (auto& z : s.original_data) w.Put(z + 128);
+    for (auto& z : s.original_data) {
+      w.Put(z + 128);
+    }
 
     while (cur_size < rounded_size) {
       w.Put(0);  // Padding
@@ -115,10 +119,11 @@ void CommonSave(Common& common, std::string const& path) {
         Font::Char const& ch = common.font.chars[i];
         uint8_t* dest = &data[i * 7 * 8];
 
-        for (std::size_t y = 0; y < 8; ++y)
+        for (std::size_t y = 0; y < 8; ++y) {
           for (std::size_t x = 0; std::cmp_less(x, ch.width); ++x) {
             dest[y * 7 + x] = ch.data[y * 7 + x] ? 50 : 0;
           }
+        }
       }
       WriteSpriteTga(w, 7, static_cast<int>(common.font.chars.size()) * 8, data.data(),
                      common.exepal);
@@ -133,7 +138,9 @@ void CommonSave(Common& common, std::string const& path) {
     SaveWeaponConfig(common, w, ss);
     io::FileWriter w_writer(JoinPath(kDir, w.id_str + ".cfg").c_str(), "wb");
     auto str = ss.str();
-    for (char const kC : str) w_writer.Put(kC);
+    for (char const kC : str) {
+      w_writer.Put(kC);
+    }
   }
 
   for (auto& w : common.nobject_types) {
@@ -144,7 +151,9 @@ void CommonSave(Common& common, std::string const& path) {
     SaveNObjectConfig(common, w, ss);
     io::FileWriter n_writer(JoinPath(kDir, w.id_str + ".cfg").c_str(), "wb");
     auto str = ss.str();
-    for (char const kC : str) n_writer.Put(kC);
+    for (char const kC : str) {
+      n_writer.Put(kC);
+    }
   }
 
   for (auto& w : common.sobject_types) {
@@ -155,6 +164,8 @@ void CommonSave(Common& common, std::string const& path) {
     SaveSObjectConfig(common, w, ss);
     io::FileWriter s_writer(JoinPath(kDir, w.id_str + ".cfg").c_str(), "wb");
     auto str = ss.str();
-    for (char const kC : str) s_writer.Put(kC);
+    for (char const kC : str) {
+      s_writer.Put(kC);
+    }
   }
 }

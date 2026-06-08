@@ -64,8 +64,12 @@ static std::vector<uint8_t> BuildIPv6Response(const stun::Header& req, const cha
   uint32_t cookie = htonl(stun::kMagicCookie);
   uint8_t xor_addr[16];
   std::memcpy(xor_addr, ip_bytes, 16);
-  for (int i = 0; i < 4; i++) xor_addr[i] ^= (reinterpret_cast<uint8_t*>(&cookie))[i];
-  for (int i = 0; i < 12; i++) xor_addr[4 + i] ^= req.transaction_id[i];
+  for (int i = 0; i < 4; i++) {
+    xor_addr[i] ^= (reinterpret_cast<uint8_t*>(&cookie))[i];
+  }
+  for (int i = 0; i < 12; i++) {
+    xor_addr[4 + i] ^= req.transaction_id[i];
+  }
 
   uint16_t const kXorPort = port ^ static_cast<uint16_t>(stun::kMagicCookie >> 16);
 
@@ -136,7 +140,9 @@ static stun::Header MakeRequest() {
   req.length = 0;
   req.magic_cookie = htonl(stun::kMagicCookie);
   // Use a known transaction ID for reproducibility
-  for (int i = 0; i < 12; i++) req.transaction_id[i] = static_cast<uint8_t>(0x10 + i);
+  for (int i = 0; i < 12; i++) {
+    req.transaction_id[i] = static_cast<uint8_t>(0x10 + i);
+  }
   return req;
 }
 
@@ -343,8 +349,9 @@ TEST_CASE("StunQuery completes with done flag", "[stun][integration]") {
   query.Start();
 
   // Wait up to 6 seconds for completion
-  for (int i = 0; i < 60 && !query.Done(); i++)
+  for (int i = 0; i < 60 && !query.Done(); i++) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
 
   REQUIRE(query.Done());
 

@@ -26,7 +26,9 @@ struct ReaderFile {
     uint8_t buf[4096];
     for (;;) {
       std::size_t const kGot = r.TryGet(buf, sizeof(buf));
-      if (kGot == 0) break;
+      if (kGot == 0) {
+        break;
+      }
       data_.insert(data_.end(), buf, buf + kGot);
     }
   }
@@ -38,7 +40,9 @@ struct ReaderFile {
   std::size_t pos = 0;
 
   void Seekg(std::size_t new_pos) {
-    if (new_pos > data_.size()) throw io::EndOfStream("EOF in seekg()");
+    if (new_pos > data_.size()) {
+      throw io::EndOfStream("EOF in seekg()");
+    }
     pos = new_pos;
   }
 
@@ -47,12 +51,16 @@ struct ReaderFile {
   void Skip(std::size_t step) { Seekg(pos + step); }
 
   uint8_t Get() {
-    if (pos >= data_.size()) throw io::EndOfStream("EOF in get()");
+    if (pos >= data_.size()) {
+      throw io::EndOfStream("EOF in get()");
+    }
     return data_[pos++];
   }
 
   void Get(uint8_t* p, std::size_t l) {
-    if (pos + l > data_.size()) throw io::EndOfStream("EOF in get()");
+    if (pos + l > data_.size()) {
+      throw io::EndOfStream("EOF in get()");
+    }
     std::memcpy(p, data_.data() + pos, l);
     pos += l;
   }

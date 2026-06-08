@@ -45,7 +45,9 @@ void SerializeArray(Archive& ar, const char* name, T (&arr)[N]) {
   ar.startNode();
   cereal::size_type size = N;
   ar(cereal::make_size_tag(size));
-  for (std::size_t i = 0; i < N; ++i) ar(arr[i]);
+  for (std::size_t i = 0; i < N; ++i) {
+    ar(arr[i]);
+  }
   ar.finishNode();
 }
 
@@ -95,7 +97,9 @@ void serialize(Archive& ar, Color& c) {
 // has a fixed 256-entry C array, so we drive it manually.
 template <class Archive>
 void serialize(Archive& ar, Palette& p) {
-  for (int i = 0; i < 256; ++i) ar(cereal::make_nvp("c" + std::to_string(i), p.entries[i]));
+  for (int i = 0; i < 256; ++i) {
+    ar(cereal::make_nvp("c" + std::to_string(i), p.entries[i]));
+  }
 }
 
 // ---- Level ----
@@ -154,14 +158,17 @@ void SerializeSettingsScalars(Archive& ar, Settings& s) {
 template <class Archive>
 void SerializeSettingsFields(Archive& ar, Settings& s) {
   SerializeSettingsScalars(ar, s);
-  for (int i = 0; i < 40; ++i) ar(cereal::make_nvp("weap" + std::to_string(i), s.weap_table[i]));
+  for (int i = 0; i < 40; ++i) {
+    ar(cereal::make_nvp("weap" + std::to_string(i), s.weap_table[i]));
+  }
 }
 
 template <class Archive>
 void serialize(Archive& ar, Settings& s, std::uint32_t const kVersion) {
   SerializeSettingsFields(ar, s);
-  for (int i = 0; i < Settings::kNumWormSettings; ++i)
+  for (int i = 0; i < Settings::kNumWormSettings; ++i) {
     ar(cereal::make_nvp("worm" + std::to_string(i), s.worm_settings[i]));
+  }
   (void)kVersion;  // all fields always written now (breaking change)
 }
 CEREAL_CLASS_VERSION(Settings, 3);
@@ -217,14 +224,18 @@ void serialize(Archive& ar, WormSettings& ws) {
      cereal::make_nvp("inputDevice", ws.input_device),
      cereal::make_nvp("gamepadName", ws.gamepad_name),
      cereal::make_nvp("gamepadSerial", ws.gamepad_serial));
-  for (int i = 0; i < NUM_WEAPONS; ++i)
+  for (int i = 0; i < NUM_WEAPONS; ++i) {
     ar(cereal::make_nvp("weapon" + std::to_string(i), ws.weapons[i]));
-  for (int i = 0; i < WormSettingsExtensions::kMaxControl; ++i)
+  }
+  for (int i = 0; i < WormSettingsExtensions::kMaxControl; ++i) {
     ar(cereal::make_nvp("control" + std::to_string(i), ws.controls[i]));
-  for (int i = 0; i < WormSettingsExtensions::kMaxControlEx; ++i)
+  }
+  for (int i = 0; i < WormSettingsExtensions::kMaxControlEx; ++i) {
     ar(cereal::make_nvp("controlEx" + std::to_string(i), ws.controls_ex[i]));
-  for (int i = 0; i < WormSettingsExtensions::kMaxControlEx; ++i)
+  }
+  for (int i = 0; i < WormSettingsExtensions::kMaxControlEx; ++i) {
     ar(cereal::make_nvp("gpControl" + std::to_string(i), ws.gamepad_controls[i]));
+  }
 }
 
 // TOML-specific WormSettings serialization: uses arrays instead of indexed keys.
@@ -285,9 +296,12 @@ void serialize(Archive& ar, Worm& w) {
      cereal::make_nvp("direction", w.direction),
      cereal::make_nvp("controlStates", w.control_states),
      cereal::make_nvp("prevControlStates", w.prev_control_states));
-  for (int i = 0; i < 4; ++i) ar(cereal::make_nvp("react" + std::to_string(i), w.reacts[i]));
-  for (int i = 0; i < NUM_WEAPONS; ++i)
+  for (int i = 0; i < 4; ++i) {
+    ar(cereal::make_nvp("react" + std::to_string(i), w.reacts[i]));
+  }
+  for (int i = 0; i < NUM_WEAPONS; ++i) {
     ar(cereal::make_nvp("weapon" + std::to_string(i), w.weapons[i]));
+  }
 }
 
 // ---- Game ----
@@ -422,6 +436,7 @@ void load(Archive& ar, Game& game) {
   // Rebuild materials from data + Common (materials are not serialized —
   // they're derived from level.data and the material table in Common).
   game.level.materials.resize(game.level.width * game.level.height);
-  for (std::size_t i = 0; i < game.level.data.size(); ++i)
+  for (std::size_t i = 0; i < game.level.data.size(); ++i) {
     game.level.materials[i] = game.common->materials[game.level.data[i]];
+  }
 }

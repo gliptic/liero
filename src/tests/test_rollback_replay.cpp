@@ -92,7 +92,9 @@ static void RunRoundTrip(int recorder_idx) {
     p.base_frame = bf;
     p.count = c;
     p.local_frame = lf;
-    for (uint8_t i = 0; i < c; ++i) p.inputs[i] = in[i];
+    for (uint8_t i = 0; i < c; ++i) {
+      p.inputs[i] = in[i];
+    }
     q.push_back(p);
   };
   a->SetInputCallbacks([&](uint8_t, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
@@ -121,10 +123,12 @@ static void RunRoundTrip(int recorder_idx) {
     b->SetLocalControlState(kIn);
     a->Process();
     b->Process();
-    for (auto const& p : a_to_b)
+    for (auto const& p : a_to_b) {
       b->InjectRemoteBatch(p.base_frame, p.count, p.inputs.data(), p.local_frame);
-    for (auto const& p : b_to_a)
+    }
+    for (auto const& p : b_to_a) {
       a->InjectRemoteBatch(p.base_frame, p.count, p.inputs.data(), p.local_frame);
+    }
     a_to_b.clear();
     b_to_a.clear();
   }
@@ -166,7 +170,9 @@ static void RunRoundTrip(int recorder_idx) {
   while (rr.PlaybackFrame(renderer)) {
     playback->ProcessFrame();
     ++played_frames;
-    if (played_frames > 10000) FAIL("playback ran past expected length");
+    if (played_frames > 10000) {
+      FAIL("playback ran past expected length");
+    }
   }
 
   REQUIRE(played_frames > 0);

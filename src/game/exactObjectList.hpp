@@ -17,7 +17,9 @@ struct ExactObjectList {
     Range(T* cur, T* end) : cur(cur), end(end) {}
 
     T* Next() {
-      while (!cur->used) ++cur;
+      while (!cur->used) {
+        ++cur;
+      }
 
       T* ret = cur;
       ++cur;
@@ -54,17 +56,20 @@ struct ExactObjectList {
 
   T* NewObjectReuse() {
     T* ret = nullptr;
-    if (std::cmp_greater_equal(count, Limit))
+    if (std::cmp_greater_equal(count, Limit)) {
       ret = &arr[Limit - 1];
-    else
+    } else {
       ret = GetFreeObject();
+    }
 
     assert(ret->used && ret >= arr && ret < arr + Limit);
     return ret;
   }
 
   T* NewObject() {
-    if (std::cmp_greater_equal(count, Limit)) return nullptr;
+    if (std::cmp_greater_equal(count, Limit)) {
+      return nullptr;
+    }
 
     T* ret = GetFreeObject();
     assert(ret->used && ret >= arr && ret < arr + Limit);
@@ -92,13 +97,16 @@ struct ExactObjectList {
     std::memset(free_list, 0xff, kFreeListSize * sizeof(uint32_t));
     count = 0;
 
-    for (std::size_t i = 0; std::cmp_less(i, Limit); ++i) arr[i].used = false;
+    for (std::size_t i = 0; std::cmp_less(i, Limit); ++i) {
+      arr[i].used = false;
+    }
 
     arr[Limit].used = true;
 
     // Mark padding as used
-    for (uint32_t index = Limit; index < kFreeListSize * 32; ++index)
+    for (uint32_t index = Limit; index < kFreeListSize * 32; ++index) {
       free_list[index >> 5] &= ~(static_cast<uint32_t>(1) << (index & 31));
+    }
   }
 
   std::size_t Size() const { return count; }

@@ -13,8 +13,12 @@ struct SoundPlayer {
   virtual ~SoundPlayer() = default;
 
   void Play(int sound, void* id = nullptr, int loops = 0) {
-    if (speculative) return;
-    if (sound >= 0) PlayImpl(sound, id, loops);
+    if (speculative) {
+      return;
+    }
+    if (sound >= 0) {
+      PlayImpl(sound, id, loops);
+    }
   }
 
   void Play(SoundDefT hook, void* id = nullptr, int loops = 0);
@@ -68,7 +72,9 @@ struct RecordSoundPlayer : SoundPlayer {
   bool IsPlaying(void* id) override { return SfxIsPlaying(mixer, id) != 0; }
 
   void Stop(void* id) override {
-    if (speculative) return;
+    if (speculative) {
+      return;
+    }
     SfxMixerStop(mixer, id);
   }
 

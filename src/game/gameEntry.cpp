@@ -35,7 +35,9 @@ int GameEntry(int argc, char* argv[]) try {
 
   std::string tc_name;
   bool const kTcSet = !r.positional_args.empty();
-  if (kTcSet) tc_name = r.positional_args[0];
+  if (kTcSet) {
+    tc_name = r.positional_args[0];
+  }
 
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD);
 
@@ -55,7 +57,9 @@ int GameEntry(int argc, char* argv[]) try {
     gfx.SaveSettings(kUserConfigNode / "Setups" / "liero.cfg");
   }
 
-  if (kTcSet) gfx.settings->tc = tc_name;
+  if (kTcSet) {
+    gfx.settings->tc = tc_name;
+  }
 
   // TC loading
   FsNode const kLieroRoot(kConfigNode / "TC" / gfx.settings->tc);

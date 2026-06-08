@@ -59,7 +59,9 @@ class TomlOutputArchive : public cereal::OutputArchive<TomlOutputArchive>,
   }
 
   void finishNode() {
-    if (!frames_.back().materialized) MaterializeAll();
+    if (!frames_.back().materialized) {
+      MaterializeAll();
+    }
     frames_.pop_back();
   }
 
@@ -104,7 +106,9 @@ class TomlOutputArchive : public cereal::OutputArchive<TomlOutputArchive>,
   void MaterializeAll() {
     // Root (frame 0) is always materialized; walk down from there.
     for (std::size_t i = 1; i < frames_.size(); ++i) {
-      if (!frames_[i].materialized) MaterializeAt(i);
+      if (!frames_[i].materialized) {
+        MaterializeAt(i);
+      }
     }
   }
 
@@ -113,17 +117,19 @@ class TomlOutputArchive : public cereal::OutputArchive<TomlOutputArchive>,
     Frame& parent = frames_[i - 1];
     if (parent.container->is_table()) {
       auto* t = parent.container->as_table();
-      if (f.is_array)
+      if (f.is_array) {
         t->insert_or_assign(f.name_in_parent, toml::array{});
-      else
+      } else {
         t->insert_or_assign(f.name_in_parent, toml::table{});
+      }
       f.container = t->get(f.name_in_parent);
     } else {
       auto* a = parent.container->as_array();
-      if (f.is_array)
+      if (f.is_array) {
         a->push_back(toml::array{});
-      else
+      } else {
         a->push_back(toml::table{});
+      }
       f.container = &a->back();
     }
     f.materialized = true;
@@ -189,7 +195,9 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
       }
     }
     frames_.pop_back();
-    if (was_array_element) frames_.back().index += 1;
+    if (was_array_element) {
+      frames_.back().index += 1;
+    }
     next_name_ = nullptr;
   }
 
@@ -199,42 +207,51 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
 
   void LoadSize(cereal::size_type& size) {
     Frame& f = frames_.back();
-    if (f.node && f.node->is_array())
+    if (f.node && f.node->is_array()) {
       size = f.node->as_array()->size();
-    else
+    } else {
       size = 0;
+    }
   }
 
   void loadValue(bool& v) {
-    if (auto* n = Lookup(frames_.back()); n && n->is_boolean()) v = n->as_boolean()->get();
+    if (auto* n = Lookup(frames_.back()); n && n->is_boolean()) {
+      v = n->as_boolean()->get();
+    }
     Advance();
   }
 
   void loadValue(std::int32_t& v) {
-    if (auto* n = Lookup(frames_.back()); n && n->is_integer())
+    if (auto* n = Lookup(frames_.back()); n && n->is_integer()) {
       v = static_cast<std::int32_t>(n->as_integer()->get());
+    }
     Advance();
   }
   void loadValue(std::uint32_t& v) {
-    if (auto* n = Lookup(frames_.back()); n && n->is_integer())
+    if (auto* n = Lookup(frames_.back()); n && n->is_integer()) {
       v = static_cast<std::uint32_t>(n->as_integer()->get());
+    }
     Advance();
   }
   void loadValue(std::int64_t& v) {
-    if (auto* n = Lookup(frames_.back()); n && n->is_integer()) v = n->as_integer()->get();
+    if (auto* n = Lookup(frames_.back()); n && n->is_integer()) {
+      v = n->as_integer()->get();
+    }
     Advance();
   }
   void loadValue(std::uint64_t& v) {
-    if (auto* n = Lookup(frames_.back()); n && n->is_integer())
+    if (auto* n = Lookup(frames_.back()); n && n->is_integer()) {
       v = static_cast<std::uint64_t>(n->as_integer()->get());
+    }
     Advance();
   }
   void loadValue(double& v) {
     if (auto* n = Lookup(frames_.back())) {
-      if (n->is_floating_point())
+      if (n->is_floating_point()) {
         v = n->as_floating_point()->get();
-      else if (n->is_integer())
+      } else if (n->is_integer()) {
         v = static_cast<double>(n->as_integer()->get());
+      }
     }
     Advance();
   }
@@ -244,7 +261,9 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
     v = static_cast<float>(d);
   }
   void loadValue(std::string& v) {
-    if (auto* n = Lookup(frames_.back()); n && n->is_string()) v = n->as_string()->get();
+    if (auto* n = Lookup(frames_.back()); n && n->is_string()) {
+      v = n->as_string()->get();
+    }
     Advance();
   }
 
@@ -269,7 +288,9 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
         auto* t = f.node->as_table();
         auto it = t->find(next_name_);
         next_name_ = nullptr;
-        if (it == t->end()) return nullptr;
+        if (it == t->end()) {
+          return nullptr;
+        }
         return &it->second;
       }
       next_name_ = nullptr;
@@ -278,7 +299,9 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
     if (f.node->is_array()) {
       auto* a = f.node->as_array();
       next_name_ = nullptr;
-      if (f.index >= a->size()) return nullptr;
+      if (f.index >= a->size()) {
+        return nullptr;
+      }
       return a->get(f.index);
     }
     next_name_ = nullptr;
@@ -287,7 +310,9 @@ class TomlInputArchive : public cereal::InputArchive<TomlInputArchive>,
 
   void Advance() {
     Frame& f = frames_.back();
-    if (f.node && f.node->is_array()) f.index += 1;
+    if (f.node && f.node->is_array()) {
+      f.index += 1;
+    }
   }
 };
 

@@ -30,7 +30,9 @@ static bool SetNonBlocking(int fd) {
   return ioctlsocket(fd, FIONBIO, &mode) == 0;
 #else
   int const kFlags = fcntl(fd, F_GETFL, 0);
-  if (kFlags < 0) return false;
+  if (kFlags < 0) {
+    return false;
+  }
   return fcntl(fd, F_SETFL, kFlags | O_NONBLOCK) == 0;
 #endif
 }
@@ -107,14 +109,18 @@ BridgeSocket IceBridge::Create(IceAgent& agent) {
 }
 
 void IceBridge::Poll() {
-  if (bridgeSocket_ == kBridgeInvalid || !agent_) return;
+  if (bridgeSocket_ == kBridgeInvalid || !agent_) {
+    return;
+  }
 
   uint8_t buf[2048];
   for (;;) {
     auto n =
         ::recvfrom(bridgeSocket_, reinterpret_cast<char*>(buf), sizeof(buf), 0, nullptr, nullptr);
     if (n <= 0) {
-      if (n < 0 && BRIDGE_WOULD_BLOCK) break;
+      if (n < 0 && BRIDGE_WOULD_BLOCK) {
+        break;
+      }
       break;
     }
     agent_->Send(buf, static_cast<size_t>(n));

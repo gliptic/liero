@@ -151,7 +151,9 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][
     // Observe WS-phase skew while at least one peer is still pre-transition.
     if (!a_transitioned || !b_transitioned) {
       int gap = static_cast<int>(a->CurrentFrame()) - static_cast<int>(b->CurrentFrame());
-      if (gap < 0) gap = -gap;
+      if (gap < 0) {
+        gap = -gap;
+      }
       max_observed_skew = std::max(gap, max_observed_skew);
     }
   }
@@ -213,7 +215,9 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][
   for (int f = kLoF; f <= kHiF; ++f) {
     auto* slot_a = const_cast<rollback::RollbackBuffer&>(buf_a).Find(f);
     auto* slot_b = const_cast<rollback::RollbackBuffer&>(buf_b).Find(f);
-    if (!slot_a || !slot_b) continue;
+    if (!slot_a || !slot_b) {
+      continue;
+    }
     INFO("frame " << f << " A=" << slot_a->checksum << " B=" << slot_b->checksum);
     REQUIRE(slot_a->checksum == slot_b->checksum);
     ++compared;

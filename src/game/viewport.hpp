@@ -39,15 +39,17 @@ struct Viewport {
 
   void ScrollTo(int dest_x, int dest_y, int iter) {
     for (int c = 0; c < iter; c++) {
-      if (x < dest_x - center_x)
+      if (x < dest_x - center_x) {
         ++x;
-      else if (x > dest_x - center_x)
+      } else if (x > dest_x - center_x) {
         --x;
+      }
 
-      if (y < dest_y - center_y)
+      if (y < dest_y - center_y) {
         ++y;
-      else if (y > dest_y - center_y)
+      } else if (y > dest_y - center_y) {
         --y;
+      }
     }
   }
 

@@ -275,10 +275,11 @@ static char const* nobject_names[24] = {"Worm 1 parts",
 static std::string ToId(std::string const& name) {
   std::string ret;
   for (char const kC : name) {
-    if (static_cast<uint8_t>(kC) >= 128 || !std::isalnum(static_cast<uint8_t>(kC)))
+    if (static_cast<uint8_t>(kC) >= 128 || !std::isalnum(static_cast<uint8_t>(kC))) {
       ret += '_';
-    else
+    } else {
       ret += std::tolower(static_cast<uint8_t>(kC));
+    }
   }
   return ret;
 }
@@ -594,17 +595,25 @@ static void LoadTextures(Common& common, ReaderFile& exe) {
 static void LoadOthers(Common& common, ReaderFile& exe) {
   exe.Seekg(0x1C1E2);
 
-  for (int i = 0; i < 2; ++i)
-    for (auto& j : common.bonus_rand_timer) j[i] = io::ReadUint16Le(exe);
+  for (int i = 0; i < 2; ++i) {
+    for (auto& j : common.bonus_rand_timer) {
+      j[i] = io::ReadUint16Le(exe);
+    }
+  }
 
   exe.Seekg(0x1AEEE + 2);
 
-  for (auto& i : common.ai_params.k)
-    for (int& j : i) j = io::ReadUint16Le(exe);
+  for (auto& i : common.ai_params.k) {
+    for (int& j : i) {
+      j = io::ReadUint16Le(exe);
+    }
+  }
 
   exe.Seekg(0x1C1E0);
 
-  for (int& bonus_s_object : common.bonus_s_objects) bonus_s_object = exe.Get() - 1;
+  for (int& bonus_s_object : common.bonus_s_objects) {
+    bonus_s_object = exe.Get() - 1;
+  }
 }
 
 static void LoadSprites(SpriteSet& ss, ReaderFile& f, int width, int height, int count) {
@@ -650,8 +659,9 @@ static void CropSprites(SpriteSet& sprites, int first, int count, int min_x, int
 
     for (int y = 0; y < kSprite.height; y++) {
       for (int x = 0; x < kSprite.width; x++) {
-        if (x < min_x || x > kMaxX || y < min_y || y > kMaxY)
+        if (x < min_x || x > kMaxX || y < min_y || y > kMaxY) {
           kSprite.mem[y * kSprite.width + x] = 0;
+        }
       }
     }
   }
@@ -678,7 +688,7 @@ static void LoadGfx(Common& common, ReaderFile& exe, ReaderFile& gfx) {
 
   Rand rand;
 
-  for (int y = 0; y < 16; ++y)
+  for (int y = 0; y < 16; ++y) {
     for (int x = 0; x < 16; ++x) {
       int const kIdx = y * 16 + x;
       common.large_sprites.SpritePtr(73)[kIdx] = rand(4) + 160;
@@ -690,6 +700,7 @@ static void LoadGfx(Common& common, ReaderFile& exe, ReaderFile& gfx) {
       common.large_sprites.SpritePtr(82)[kIdx] = rand(4) + 94;
       common.large_sprites.SpritePtr(83)[kIdx] = rand(4) + 94;
     }
+  }
 }
 
 void LoadSfx(std::vector<SfxSample>& sounds, ReaderFile& snd) {
@@ -782,5 +793,7 @@ void LoadFromExe(Common& common, ReaderFile& exe, ReaderFile& gfx, ReaderFile& s
       {.hook = SoundBegin, .name = "begin"},       {.hook = SoundReloaded, .name = "reloaded"},
       {.hook = SoundAlive, .name = "alive"},       {.hook = SoundNinjaropeThrow, .name = "throw"},
   };
-  for (auto const& m : kHookNames) common.sound_hook[m.hook] = common.SoundIndex(m.name);
+  for (auto const& m : kHookNames) {
+    common.sound_hook[m.hook] = common.SoundIndex(m.name);
+  }
 }

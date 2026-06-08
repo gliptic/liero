@@ -96,8 +96,12 @@ TEST_CASE("Rollback survives reorder + duplication", "[rollback][reorder]") {
   for (int tick = 0; tick < kTicks; ++tick) {
     uint8_t in_a = input_rng() & 0x7f;
     uint8_t in_b = input_rng() & 0x7f;
-    if ((input_rng() % 10) < 6) in_a |= (1 << Worm::kFire);
-    if ((input_rng() % 10) < 6) in_b |= (1 << Worm::kFire);
+    if ((input_rng() % 10) < 6) {
+      in_a |= (1 << Worm::kFire);
+    }
+    if ((input_rng() % 10) < 6) {
+      in_b |= (1 << Worm::kFire);
+    }
     a->SetLocalControlState(in_a);
     b->SetLocalControlState(in_b);
     a->Process();

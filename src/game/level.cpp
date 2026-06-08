@@ -13,14 +13,19 @@ void Level::GenerateDirtPattern(Common& common, Rand& rand) {
 
   SetPixel(0, 0, rand(7) + 12, common);
 
-  for (int y = 1; y < height; ++y) SetPixel(0, y, ((rand(7) + 12) + Pixel(0, y - 1)) >> 1, common);
+  for (int y = 1; y < height; ++y) {
+    SetPixel(0, y, ((rand(7) + 12) + Pixel(0, y - 1)) >> 1, common);
+  }
 
-  for (int x = 1; x < width; ++x) SetPixel(x, 0, ((rand(7) + 12) + Pixel(x - 1, 0)) >> 1, common);
+  for (int x = 1; x < width; ++x) {
+    SetPixel(x, 0, ((rand(7) + 12) + Pixel(x - 1, 0)) >> 1, common);
+  }
 
-  for (int y = 1; y < height; ++y)
+  for (int y = 1; y < height; ++y) {
     for (int x = 1; x < width; ++x) {
       SetPixel(x, y, (Pixel(x - 1, y) + Pixel(x, y - 1) + rand(8) + 12) / 3, common);
     }
+  }
 
   // TODO: Optimize the following
 
@@ -36,23 +41,32 @@ void Level::GenerateDirtPattern(Common& common, Rand& rand) {
 
     for (int cy = 0; cy < 16; ++cy) {
       int const kMy = cy + kY;
-      if (kMy >= height) break;
+      if (kMy >= height) {
+        break;
+      }
 
-      if (kMy < 0) continue;
+      if (kMy < 0) {
+        continue;
+      }
 
       for (int cx = 0; cx < 16; ++cx) {
         int const kMx = cx + kX;
-        if (kMx >= width) break;
+        if (kMx >= width) {
+          break;
+        }
 
-        if (kMx < 0) continue;
+        if (kMx < 0) {
+          continue;
+        }
 
         PalIdx const kSrcPix = image[(cy << 4) + cx];
         if (kSrcPix > 0) {
           PalIdx const kPix = Pixel(kMx, kMy);
-          if (kPix > 176 && kPix < 180)
+          if (kPix > 176 && kPix < 180) {
             SetPixel(kMx, kMy, (kSrcPix + kPix) / 2, common);
-          else
+          } else {
             SetPixel(kMx, kMy, kSrcPix, common);
+          }
         }
       }
     }
@@ -75,10 +89,13 @@ static bool IsNoRock(Common& /*common*/, Level& level, int size, int x, int y) {
 
   rect.Intersect(Rect(0, 0, level.width, level.height));
 
-  for (int y = rect.y1; y < rect.y2; ++y)
+  for (int y = rect.y1; y < rect.y2; ++y) {
     for (int x = rect.x1; x < rect.x2; ++x) {
-      if (level.Mat(x, y).Rock()) return false;
+      if (level.Mat(x, y).Rock()) {
+        return false;
+      }
     }
+  }
 
   return true;
 }
@@ -124,10 +141,11 @@ void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand)
     do {
       cx = rand(width) - 16;
 
-      if (rand(4) == 0)
+      if (rand(4) == 0) {
         cy = height - 1 - rand(20);
-      else
+      } else {
         cy = rand(height) - 16;
+      }
     } while (!IsNoRock(common, *this, 32, cx, cy));
 
     int const kRock = rand(3);
@@ -150,10 +168,11 @@ void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand)
     do {
       cx = rand(width) - 8;
 
-      if (rand(5) == 0)
+      if (rand(5) == 0) {
         cy = height - 1 - rand(13);
-      else
+      } else {
         cy = rand(height) - 8;
+      }
     } while (!IsNoRock(common, *this, 15, cx, cy));
 
     BlitStone(common, *this, /*p1=*/false, common.large_sprites.SpritePtr(rand(6) + 3), cx, cy);
@@ -161,7 +180,7 @@ void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand)
 }
 
 void Level::MakeShadow(Common& common) {
-  for (int x = 0; x < width - 3; ++x)
+  for (int x = 0; x < width - 3; ++x) {
     for (int y = 3; y < height; ++y) {
       if (Mat(x, y).SeeShadow() && Mat(x + 3, y - 3).DirtRock()) {
         SetPixel(x, y, Pixel(x, y) + 4, common);
@@ -169,9 +188,12 @@ void Level::MakeShadow(Common& common) {
 
       if (Pixel(x, y) >= 12 && Pixel(x, y) <= 18 && Mat(x + 3, y - 3).Rock()) {
         SetPixel(x, y, Pixel(x, y) - 2, common);
-        if (Pixel(x, y) < 12) SetPixel(x, y, 12, common);
+        if (Pixel(x, y) < 12) {
+          SetPixel(x, y, 12, common);
+        }
       }
     }
+  }
 
   for (int x = 0; x < width; ++x) {
     if (Mat(x, height - 1).Background()) {
@@ -210,9 +232,13 @@ bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
     }
   }
 
-  for (std::size_t i = 0; i < data.size(); ++i) materials[i] = common.materials[data[i]];
+  for (std::size_t i = 0; i < data.size(); ++i) {
+    materials[i] = common.materials[data[i]];
+  }
 
-  if (reset_palette) origpal.ResetPalette(common.exepal, settings);
+  if (reset_palette) {
+    origpal.ResetPalette(common.exepal, settings);
+  }
 
   return true;
 }
@@ -222,7 +248,9 @@ void Level::GenerateFromSettings(Common& common, Settings const& settings, Rand&
     GenerateRandom(common, settings, rand);
   } else {
     std::string path = settings.level_file;
-    if (!path.contains('.')) path += ".LEV";
+    if (!path.contains('.')) {
+      path += ".LEV";
+    }
 
     bool loaded = false;
     try {
@@ -234,7 +262,9 @@ void Level::GenerateFromSettings(Common& common, Settings const& settings, Rand&
       // Ignore
     }
 
-    if (!loaded) GenerateRandom(common, settings, rand);
+    if (!loaded) {
+      GenerateRandom(common, settings, rand);
+    }
   }
 
   old_random_level = settings.random_level;
@@ -271,7 +301,9 @@ bool Level::SelectSpawn(Rand& rand, int w, int h, IVec2& selected) {
       ++m;
 
       int const kCx = x - (w - 1);
-      if (kCx < 0) continue;
+      if (kCx < 0) {
+        continue;
+      }
 
       int& vrun = vruns[kCx];
       int& vdist = vdists[kCx];

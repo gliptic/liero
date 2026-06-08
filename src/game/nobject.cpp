@@ -31,7 +31,9 @@ NObject& NObjectType::Create(Game& game, fixedvec vel, fixedvec pos, int color, 
 
   obj.time_left = time_to_explo;
 
-  if (time_to_explo_v) obj.time_left -= game.rand(time_to_explo_v);
+  if (time_to_explo_v) {
+    obj.time_left -= game.rand(time_to_explo_v);
+  }
 
   return obj;
 }
@@ -97,10 +99,18 @@ void NObject::Process(Game& game) {
   // Yes, we do this again.
   inew_pos = Ftoi(pos + vel);
 
-  if (inew_pos.x < 0) pos.x = 0;
-  if (inew_pos.y < 0) pos.y = 0;
-  if (inew_pos.x >= game.level.width) pos.x = Itof(game.level.width);
-  if (inew_pos.y >= game.level.height) pos.y = Itof(game.level.height);
+  if (inew_pos.x < 0) {
+    pos.x = 0;
+  }
+  if (inew_pos.y < 0) {
+    pos.y = 0;
+  }
+  if (inew_pos.x >= game.level.width) {
+    pos.x = Itof(game.level.width);
+  }
+  if (inew_pos.y >= game.level.height) {
+    pos.y = Itof(game.level.height);
+  }
 
   if (!game.level.Inside(inew_pos) || game.PixelMat(inew_pos.x, inew_pos.y).DirtRock()) {
     vel.Zero();
@@ -110,10 +120,11 @@ void NObject::Process(Game& game) {
         BlitImageOnMap(common, game.level,
                        common.small_sprites.SpritePtr(t.start_frame + cur_frame), ipos.x - 3,
                        ipos.y - 3, 7, 7);
-        if (game.settings->shadow)
+        if (game.settings->shadow) {
           CorrectShadow(common, game.level,
                         Rect(ipos.x - 8, ipos.y - 8, ipos.x + 9,
                              ipos.y + 9));  // This seems like an overly large rectangle
+        }
       }
 
       do_explode = true;
@@ -134,16 +145,22 @@ void NObject::Process(Game& game) {
     {
       if (vel.x > 0) {
         ++cur_frame;
-        if (cur_frame > t.num_frames) cur_frame = 0;
+        if (cur_frame > t.num_frames) {
+          cur_frame = 0;
+        }
       } else if (vel.x < 0) {
         --cur_frame;
-        if (cur_frame < 0) cur_frame = t.num_frames;
+        if (cur_frame < 0) {
+          cur_frame = t.num_frames;
+        }
       }
     }
   }
 
   if (t.time_to_explo > 0) {
-    if (--time_left <= 0) do_explode = true;
+    if (--time_left <= 0) {
+      do_explode = true;
+    }
   }
 
   if (!do_explode) {
@@ -175,10 +192,11 @@ void NObject::Process(Game& game) {
             common.nobject_types[6].Create2(game, kAngle, vel / 3, pos, 0, owner_idx, nullptr);
           }
 
-          if (t.worm_explode)
+          if (t.worm_explode) {
             do_explode = true;
-          else if (t.worm_destroy && used)
+          } else if (t.worm_destroy && used) {
             game.nobjects.Free(this);
+          }
         }
       }
     }
@@ -194,9 +212,10 @@ void NObject::Process(Game& game) {
       DrawDirtEffect(common, game.rand, game.level, t.dirt_effect, Ftoi(pos.x) - 7,
                      Ftoi(pos.y) - 7);
 
-      if (game.settings->shadow)
+      if (game.settings->shadow) {
         CorrectShadow(common, game.level,
                       Rect(Ftoi(pos.x) - 10, Ftoi(pos.y) - 10, Ftoi(pos.x) + 11, Ftoi(pos.y) + 11));
+      }
     }
 
     if (t.splinter_amount > 0) {
@@ -208,6 +227,8 @@ void NObject::Process(Game& game) {
       }
     }
 
-    if (used) game.nobjects.Free(this);
+    if (used) {
+      game.nobjects.Free(this);
+    }
   }
 }

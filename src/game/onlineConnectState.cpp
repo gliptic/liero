@@ -152,10 +152,14 @@ void OnlineConnectState::StartSignaling() {
 }
 
 void OnlineConnectState::SendBufferedCandidates() {
-  for (auto& c : bufferedCandidates_) signaling_.SendIceCandidate(c);
+  for (auto& c : bufferedCandidates_) {
+    signaling_.SendIceCandidate(c);
+  }
   bufferedCandidates_.clear();
 
-  if (gatheringDone_) signaling_.SendIceGatherDone();
+  if (gatheringDone_) {
+    signaling_.SendIceGatherDone();
+  }
 }
 
 void OnlineConnectState::HandleEvent(SDL_Event& ev) { gfx->ProcessEvent(ev); }
@@ -163,7 +167,9 @@ void OnlineConnectState::HandleEvent(SDL_Event& ev) { gfx->ProcessEvent(ev); }
 bool OnlineConnectState::Update() {
   if (cancel_) {
     if (gfx->TestSdlKeyOnce(SDL_SCANCODE_ESCAPE) || gfx->TestSdlKeyOnce(SDL_SCANCODE_RETURN)) {
-      if (iceAgent_) iceAgent_->Stop();
+      if (iceAgent_) {
+        iceAgent_->Stop();
+      }
       signaling_.Disconnect();
       return false;
     }
@@ -171,14 +177,18 @@ bool OnlineConnectState::Update() {
   }
 
   if (gfx->TestSdlKeyOnce(SDL_SCANCODE_ESCAPE)) {
-    if (iceAgent_) iceAgent_->Stop();
+    if (iceAgent_) {
+      iceAgent_->Stop();
+    }
     signaling_.Disconnect();
     gfx->ClearKeys();
     return false;
   }
 
   // Poll ICE agent (drains event queue, fires callbacks on main thread)
-  if (iceAgent_) iceAgent_->Poll();
+  if (iceAgent_) {
+    iceAgent_->Poll();
+  }
 
   // Poll signaling
   signaling_.Poll();

@@ -169,9 +169,13 @@ TEST_CASE("Transport delivers player info", "[transport]") {
   }
 
   REQUIRE(got);
-  for (int i = 0; i < 5; ++i) REQUIRE(received.weapons[i] == sent.weapons[i]);
+  for (int i = 0; i < 5; ++i) {
+    REQUIRE(received.weapons[i] == sent.weapons[i]);
+  }
   REQUIRE(received.color == sent.color);
-  for (int i = 0; i < 3; ++i) REQUIRE(received.rgb[i] == sent.rgb[i]);
+  for (int i = 0; i < 3; ++i) {
+    REQUIRE(received.rgb[i] == sent.rgb[i]);
+  }
 }
 
 TEST_CASE("Transport delivers match settings", "[transport]") {
@@ -209,7 +213,9 @@ TEST_CASE("Transport delivers match settings", "[transport]") {
   sent.time_to_lose = 600;
   sent.flags_to_win = 5;
   sent.load_change = 1;
-  for (int i = 0; i < 40; ++i) sent.weap_table[i] = (i % 4 == 0) ? 1 : 0;
+  for (int i = 0; i < 40; ++i) {
+    sent.weap_table[i] = (i % 4 == 0) ? 1 : 0;
+  }
 
   host.SendMatchSettings(sent);
 
@@ -229,7 +235,9 @@ TEST_CASE("Transport delivers match settings", "[transport]") {
   REQUIRE(received.time_to_lose == sent.time_to_lose);
   REQUIRE(received.flags_to_win == sent.flags_to_win);
   REQUIRE(received.load_change == sent.load_change);
-  for (int i = 0; i < 40; ++i) REQUIRE(received.weap_table[i] == sent.weap_table[i]);
+  for (int i = 0; i < 40; ++i) {
+    REQUIRE(received.weap_table[i] == sent.weap_table[i]);
+  }
 }
 
 TEST_CASE("Transport bidirectional input exchange", "[transport]") {
@@ -371,7 +379,9 @@ TEST_CASE("Transport delivers rollback input batches", "[transport][rollback]") 
   REQUIRE(rx_count == 8);
   REQUIRE(rx_local_frame == 105);
   REQUIRE(rx_inputs.size() == 8);
-  for (int i = 0; i < 8; ++i) REQUIRE(rx_inputs[i] == inputs[i]);
+  for (int i = 0; i < 8; ++i) {
+    REQUIRE(rx_inputs[i] == inputs[i]);
+  }
 }
 
 // The handshake carries kProtocolVersion. A peer that sends a

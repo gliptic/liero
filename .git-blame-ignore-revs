@@ -6,5 +6,13 @@
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
 # GitHub uses this file automatically in its blame UI.
 
-# Tree-wide clang-format pass — Google base, ColumnLimit 100.
-1fbf37ac19790db69ab2029f9071c63618f20ffc
+# PR1 (#85): tree-wide clang-format pass — Google base, ColumnLimit 100.
+cc82bdd9bfd72a60c6ef4432d227b9c6081f4613
+
+# PR2 (#86): tree-wide naming pass — readability-identifier-naming
+# with Google conventions and cereal ADL carve-outs.
+1587a2d0e819105b09ba576a066d297e0cbceada
+
+# PR3 (#88): tree-wide clang-tidy pass — modernize/bugprone/perf/
+# readability fixes, plus a follow-up clang-format reflow.
+09a405478a5a540a5f08e968bf39f5c590c08373

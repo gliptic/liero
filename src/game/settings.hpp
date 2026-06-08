@@ -89,8 +89,12 @@ struct Settings : GameplayExtensions, AppSettings {
 
 template <int L, int H, typename T>
 inline T Limit(T v) {
-  if (v >= static_cast<T>(H)) return static_cast<T>(H) - 1;
-  if (v < static_cast<T>(L)) return static_cast<T>(L);
+  if (v >= static_cast<T>(H)) {
+    return static_cast<T>(H) - 1;
+  }
+  if (v < static_cast<T>(L)) {
+    return static_cast<T>(L);
+  }
 
   return v;
 }

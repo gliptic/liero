@@ -80,7 +80,9 @@ struct Versioned {
   template <class Archive>
   void serialize(Archive& ar, std::uint32_t const kVersion) {
     ar(CEREAL_NVP(a));
-    if (kVersion >= 2) ar(CEREAL_NVP(b));
+    if (kVersion >= 2) {
+      ar(CEREAL_NVP(b));
+    }
   }
 };
 

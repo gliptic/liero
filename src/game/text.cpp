@@ -51,20 +51,28 @@ char const* TimeToStringFrames(int frames) {
 static int SafeToUpper(char ch) { return std::toupper(static_cast<unsigned char>(ch)); }
 
 bool CiCompare(std::string const& a, std::string const& b) {
-  if (a.size() != b.size()) return false;
+  if (a.size() != b.size()) {
+    return false;
+  }
 
   for (std::size_t i = 0; i < a.size(); ++i) {
-    if (SafeToUpper(a[i]) != SafeToUpper(b[i])) return false;
+    if (SafeToUpper(a[i]) != SafeToUpper(b[i])) {
+      return false;
+    }
   }
 
   return true;
 }
 
 bool CiStartsWith(std::string const& text, std::string const& starts_with) {
-  if (starts_with.size() > text.size()) return false;
+  if (starts_with.size() > text.size()) {
+    return false;
+  }
 
   for (std::size_t i = 0; i < starts_with.size(); ++i) {
-    if (SafeToUpper(text[i]) != SafeToUpper(starts_with[i])) return false;
+    if (SafeToUpper(text[i]) != SafeToUpper(starts_with[i])) {
+      return false;
+    }
   }
 
   return true;
@@ -72,12 +80,17 @@ bool CiStartsWith(std::string const& text, std::string const& starts_with) {
 
 bool CiLess(std::string const& a, std::string const& b) {
   for (std::size_t i = 0; i < a.size(); ++i) {
-    if (i >= b.size())  // a is longer, thus a > b
+    if (i >= b.size()) {  // a is longer, thus a > b
       return false;
+    }
     int const kAch = SafeToUpper(a[i]);
     int const kBch = SafeToUpper(b[i]);
-    if (kAch < kBch) return true;
-    if (kAch > kBch) return false;
+    if (kAch < kBch) {
+      return true;
+    }
+    if (kAch > kBch) {
+      return false;
+    }
   }
 
   return b.size() > a.size();  // if b is longer, then a < b, otherwise a == b
@@ -97,7 +110,9 @@ char Utf8ToDos(const char* str) {
   };
 
   for (const auto& i : kTable) {
-    if (i[0] == str[0] && i[1] == str[1]) return i[2];
+    if (i[0] == str[0] && i[1] == str[1]) {
+      return i[2];
+    }
   }
   return '?';
 }

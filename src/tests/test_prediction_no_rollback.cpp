@@ -84,8 +84,12 @@ TEST_CASE("Zero jitter: predictions never trigger", "[rollback][prediction]") {
   for (int tick = 0; tick < kTicks; ++tick) {
     uint8_t in_a = input_rng() & 0x7f;
     uint8_t in_b = input_rng() & 0x7f;
-    if ((input_rng() % 10) < 6) in_a |= (1 << Worm::kFire);
-    if ((input_rng() % 10) < 6) in_b |= (1 << Worm::kFire);
+    if ((input_rng() % 10) < 6) {
+      in_a |= (1 << Worm::kFire);
+    }
+    if ((input_rng() % 10) < 6) {
+      in_b |= (1 << Worm::kFire);
+    }
     rb.a->SetLocalControlState(in_a);
     rb.b->SetLocalControlState(in_b);
 
@@ -149,10 +153,11 @@ TEST_CASE("Starvation: predict up to kMaxRollback, then stall, then recover",
   for (int f = buf.OldestFrame(); f <= buf.NewestFrame(); ++f) {
     auto* slot = const_cast<rollback::RollbackBuffer&>(buf).Find(f);
     REQUIRE(slot != nullptr);
-    if (slot->remote_state == rollback::RemoteState::kPredicted)
+    if (slot->remote_state == rollback::RemoteState::kPredicted) {
       ++predicted_count;
-    else
+    } else {
       ++confirmed_count;
+    }
   }
   REQUIRE(predicted_count == rollback::kMaxRollback);
   // Buffer holds kMaxRollback+1 slots total → 1 confirmed straggler.

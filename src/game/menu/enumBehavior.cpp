@@ -7,11 +7,14 @@
 #include "menuItem.hpp"
 
 bool EnumBehavior::OnLeftRight(Menu& menu, MenuItem& item, int dir) {
-  if (broken_left_right) return false;  // Left/right doesn't work for this item
-  if (dir > 0)
+  if (broken_left_right) {
+    return false;  // Left/right doesn't work for this item
+  }
+  if (dir > 0) {
     g_sound_player->Play(common.sound_hook[SoundMenuMoveUp]);
-  else
+  } else {
     g_sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
+  }
 
   Change(menu, item, dir);
 

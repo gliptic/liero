@@ -32,17 +32,19 @@ void NetConnectState::Enter() {
   session->on_tc_reloaded = [](const std::shared_ptr<Common>& new_common) {
     ::gfx.common = new_common;
     ::gfx.play_renderer.LoadPalette(*new_common);
-    if (auto* dp = dynamic_cast<DefaultSoundPlayer*>(::gfx.sound_player.get()))
+    if (auto* dp = dynamic_cast<DefaultSoundPlayer*>(::gfx.sound_player.get())) {
       dp->SetCommon(*new_common);
+    }
   };
 
   bool ok = false;
   if (hasTransport_) {
     // Use the existing transport (from ICE bridge)
-    if (role_ == NetSession::kHost)
+    if (role_ == NetSession::kHost) {
       ok = session->HostWithTransport(std::move(existingTransport_));
-    else
+    } else {
       ok = session->ConnectWithTransport(std::move(existingTransport_), address_, port_);
+    }
   } else if (role_ == NetSession::kHost) {
     ok = session->HostGame(port_);
     if (ok) {
@@ -83,13 +85,16 @@ bool NetConnectState::Update() {
     return false;
   }
 
-  if (!gfx->net_session) return false;
+  if (!gfx->net_session) {
+    return false;
+  }
 
   gfx->net_session->Update();
 
   // Check for STUN result
-  if (externalIPs_.ipv4.empty() && externalIPs_.ipv6.empty() && stunQuery_ && stunQuery_->Done())
+  if (externalIPs_.ipv4.empty() && externalIPs_.ipv6.empty() && stunQuery_ && stunQuery_->Done()) {
     externalIPs_ = stunQuery_->Result();
+  }
 
   auto state = gfx->net_session->State();
 
@@ -126,10 +131,11 @@ void NetConnectState::Draw() {
   Fill(gfx->play_renderer.bmp, 0);
 
   std::string line1;
-  if (role_ == NetSession::kHost)
+  if (role_ == NetSession::kHost) {
     line1 = "HOSTING ON PORT " + std::to_string(port_);
-  else
+  } else {
     line1 = "CONNECTING TO " + address_;
+  }
 
   std::string line2;
   if (gfx->net_session) {
@@ -169,10 +175,11 @@ void NetConnectState::Draw() {
 
     for (auto& addr : localAddresses_) {
       std::string display;
-      if (addr.is_i_pv6)
+      if (addr.is_i_pv6) {
         display = "[" + addr.ip + "]:" + std::to_string(port_);
-      else
+      } else {
         display = addr.ip + ":" + std::to_string(port_);
+      }
       int const kWd = font.GetDims(display);
       font.DrawString(gfx->play_renderer.bmp, display, kCx - kWd / 2, addr_y, 7);
       addr_y += 10;

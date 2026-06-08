@@ -29,7 +29,9 @@ static int LightUpValue(int v, int amount) {
 }
 
 void Palette::Fade(int amount) {
-  if (amount >= 32) return;
+  if (amount >= 32) {
+    return;
+  }
 
   for (auto& entrie : entries) {
     entrie.r = FadeValue(entrie.r, amount);

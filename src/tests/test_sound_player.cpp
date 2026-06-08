@@ -12,7 +12,9 @@
 #include "settings.hpp"
 
 static std::string GetTcPath() {
-  if (auto* p = std::getenv("TC_PATH")) return p;
+  if (auto* p = std::getenv("TC_PATH")) {
+    return p;
+  }
   return "data/TC/openliero";
 }
 

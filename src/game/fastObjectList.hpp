@@ -34,16 +34,19 @@ struct FastObjectList {
 
   T* NewObjectReuse() {
     T* ret = nullptr;
-    if (count == limit)
+    if (count == limit) {
       ret = &arr[limit - 1];
-    else
+    } else {
       ret = GetFreeObject();
+    }
 
     return ret;
   }
 
   T* NewObject() {
-    if (count == limit) return nullptr;
+    if (count == limit) {
+      return nullptr;
+    }
 
     T* ret = GetFreeObject();
     return ret;

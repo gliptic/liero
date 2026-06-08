@@ -67,7 +67,9 @@ bool Settings::load(const FsNode& node, Rand& /*rand*/) {
     uint8_t buf[4096];
     for (;;) {
       std::size_t const kGot = reader.TryGet(buf, sizeof(buf));
-      if (kGot == 0) break;
+      if (kGot == 0) {
+        break;
+      }
       content.append(reinterpret_cast<char*>(buf), kGot);
     }
     FromToml(content);
@@ -78,8 +80,11 @@ bool Settings::load(const FsNode& node, Rand& /*rand*/) {
   // Validate that wormSettings were deserialized (guards against corrupt
   // or incompatible config files that lack player sections).
   // NOLINTNEXTLINE(readability-use-anyofallof) — loop body has more than the predicate check; rewriting as std::any_of/all_of would be less readable here.
-  for (auto& worm_setting : worm_settings)
-    if (!worm_setting) return false;
+  for (auto& worm_setting : worm_settings) {
+    if (!worm_setting) {
+      return false;
+    }
+  }
 
   return true;
 }
@@ -138,7 +143,9 @@ void Settings::FromToml(std::string const& data) {
   for (int i = 0; i < kNumWormSettings; ++i) {
     ar.setNextName(kWormNames[i]);
     ar.startNode();
-    if (!worm_settings[i]) worm_settings[i] = std::make_shared<WormSettings>();
+    if (!worm_settings[i]) {
+      worm_settings[i] = std::make_shared<WormSettings>();
+    }
     SerializeWormSettingsToml(ar, *worm_settings[i]);
     ar.finishNode();
   }

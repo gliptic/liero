@@ -84,10 +84,11 @@ bool ReplayController::Process() {
       game->ProcessFrame();
 
       if (going_to_menu) {
-        if (fade_value > 0)
+        if (fade_value > 0) {
           fade_value -= 1;
-        else
+        } else {
           break;
+        }
       } else if (fade_value < 33) {
         fade_value += 1;
       }
@@ -123,7 +124,9 @@ void ReplayController::Draw(Renderer& renderer, bool use_spectator_viewports) {
 }
 
 void ReplayController::ChangeState(GameState new_state) {
-  if (state == new_state) return;
+  if (state == new_state) {
+    return;
+  }
 
   if (new_state == kStateGame) {
     // FIXME: the viewports are changed based on the replay for some
@@ -167,7 +170,9 @@ void ReplayController::ChangeState(GameState new_state) {
 void ReplayController::SwapLevel(Level& new_level) { CurrentLevel()->Swap(new_level); }
 
 Level* ReplayController::CurrentLevel() {
-  if (game.get() && replay.get()) return &game->level;
+  if (game.get() && replay.get()) {
+    return &game->level;
+  }
   return nullptr;
 }
 

@@ -23,8 +23,12 @@ struct FsNodeMemDir : FsNodeImp {
     std::set<std::string> seen;
 
     for (auto& [key, _] : fs->files) {
-      if (key.size() <= kPrefix.size()) continue;
-      if (!kPrefix.empty() && !key.starts_with(kPrefix)) continue;
+      if (key.size() <= kPrefix.size()) {
+        continue;
+      }
+      if (!kPrefix.empty() && !key.starts_with(kPrefix)) {
+        continue;
+      }
 
       // Get the next path component after prefix
       auto rest = key.substr(kPrefix.size());
@@ -64,7 +68,9 @@ struct FsNodeMemDir : FsNodeImp {
 
   std::unique_ptr<io::Reader> TryToReader() override {
     auto it = fs->files.find(path);
-    if (it == fs->files.end()) return nullptr;
+    if (it == fs->files.end()) {
+      return nullptr;
+    }
 
     // The MemoryFs owns the underlying byte buffer (in fs_->files) so we
     // can hand out a MemReader that just points into it.
@@ -75,11 +81,15 @@ struct FsNodeMemDir : FsNodeImp {
 
   bool Exists() const override {
     // Exists as a file?
-    if (fs->files.contains(path)) return true;
+    if (fs->files.contains(path)) {
+      return true;
+    }
     // Exists as a directory?
     std::string const kPrefix = path + "/";
     for (auto& [key, _] : fs->files) {
-      if (key.starts_with(kPrefix)) return true;
+      if (key.starts_with(kPrefix)) {
+        return true;
+      }
     }
     return path.empty();  // Root always exists
   }

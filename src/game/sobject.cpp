@@ -20,7 +20,9 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
   assert(num_sounds < 10);
 
-  if (start_sound >= 0) game.sound_player->Play(game.rand(num_sounds) + start_sound);
+  if (start_sound >= 0) {
+    game.sound_player->Play(game.rand(num_sounds) + start_sound);
+  }
 
   for (auto& viewport : game.viewports) {
     Viewport& v = *viewport;
@@ -57,10 +59,11 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
         if (std::abs(w.vel.x) < Itof(2))  // TODO: Read from EXE
         {
-          if (delta > 0)
+          if (delta > 0) {
             w.vel.x += blow_away * power;
-          else
+          } else {
             w.vel.x -= blow_away * power;
+          }
         }
 
         delta = kWiy - y;
@@ -69,14 +72,17 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
         if (std::abs(w.vel.y) < Itof(2))  // TODO: Read from EXE
         {
-          if (delta > 0)
+          if (delta > 0) {
             w.vel.y += blow_away * power;
-          else
+          } else {
             w.vel.y -= blow_away * power;
+          }
         }
 
         int z = damage * power_sum;
-        if (detect_range) z /= detect_range;
+        if (detect_range) {
+          z /= detect_range;
+        }
 
         if (from && !from->has_hit) {
           game.stats_recorder->Hit(owner, fired_by, &w);
@@ -121,23 +127,27 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
           int power = detect_range - std::abs(delta);
 
           if (power > 0) {
-            if (delta > 0)
+            if (delta > 0) {
               i->vel.x += kObjBlowAway * power;
-            else if (delta < 0)
+            } else if (delta < 0) {
               i->vel.x -= kObjBlowAway * power;
+            }
           }
 
           delta = ipos.y - y;
           power = detect_range - std::abs(delta);
 
           if (power > 0) {
-            if (delta > 0)
+            if (delta > 0) {
               i->vel.y += kObjBlowAway * power;
-            else if (delta < 0)
+            } else if (delta < 0) {
               i->vel.y -= kObjBlowAway * power;
+            }
           }
 
-          if (weapon.chain_explosion) i->BlowUpObject(game, owner_idx);
+          if (weapon.chain_explosion) {
+            i->BlowUpObject(game, owner_idx);
+          }
         }
       }  // if( ... affectByExplosions ...
     }  // for( ... wobjects ...
@@ -154,20 +164,22 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
           int power = detect_range - std::abs(delta);
 
           if (power > 0) {
-            if (delta > 0)
+            if (delta > 0) {
               i->vel.x += kObjBlowAway * power;
-            else if (delta < 0)
+            } else if (delta < 0) {
               i->vel.x -= kObjBlowAway * power;
+            }
           }
 
           delta = ipos.y - y;
           power = detect_range - std::abs(delta);
 
           if (power > 0) {
-            if (delta > 0)
+            if (delta > 0) {
               i->vel.y += kObjBlowAway * power;
-            else if (delta < 0)
+            } else if (delta < 0) {
               i->vel.y -= kObjBlowAway * power;
+            }
           }
         }
       }
@@ -180,7 +192,7 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
       rect.Intersect(game.level.Bounds());
 
-      for (int y = rect.y1; y < rect.y2; ++y)
+      for (int y = rect.y1; y < rect.y2; ++y) {
         for (int x = rect.x1; x < rect.x2; ++x) {
           if (game.level.Mat(x, y).AnyDirt() && game.rand(8) == 0) {
             PalIdx const kPix = game.level.Pixel(x, y);
@@ -189,6 +201,7 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
                                             owner_idx, fired_by);
           }
         }
+      }
     }
 
   }  // if(damage ...
@@ -196,8 +209,9 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
   if (dirt_effect >= 0) {
     DrawDirtEffect(common, game.rand, game.level, dirt_effect, x - 7, y - 7);
 
-    if (game.settings->shadow)
+    if (game.settings->shadow) {
       CorrectShadow(common, game.level, Rect(x - 10, y - 10, x + 11, y + 11));
+    }
   }
 
   auto br = game.bonuses.All();
@@ -220,6 +234,8 @@ void SObject::Process(Game& game) {
   if (--anim_delay <= 0) {
     anim_delay = t.anim_delay;
     ++cur_frame;
-    if (cur_frame > t.num_frames) game.sobjects.Free(this);
+    if (cur_frame > t.num_frames) {
+      game.sobjects.Free(this);
+    }
   }
 }

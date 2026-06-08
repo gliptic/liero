@@ -46,7 +46,9 @@ template <typename T>
 static void CerealRead(io::MemReader& reader, T& obj) {
   uint32_t const kLen = io::ReadUint32(reader);
   std::string buf(kLen, '\0');
-  for (uint32_t i = 0; i < kLen; ++i) buf[i] = static_cast<char>(reader.Get());
+  for (uint32_t i = 0; i < kLen; ++i) {
+    buf[i] = static_cast<char>(reader.Get());
+  }
   std::istringstream ss(buf, std::ios::binary);
   {
     cereal::PortableBinaryInputArchive ar(ss);  // NOLINT(misc-const-correctness)
@@ -69,7 +71,9 @@ ReplayReader::ReplayReader(std::unique_ptr<io::Reader> source) {
   uint8_t buf[4096];
   for (;;) {
     std::size_t const kGot = inflater.TryGet(buf, sizeof(buf));
-    if (kGot == 0) break;
+    if (kGot == 0) {
+      break;
+    }
     data.insert(data.end(), buf, buf + kGot);
   }
   reader.Reset(data.data(), data.size());
@@ -80,11 +84,13 @@ uint32_t const kReplayMagic = ('L' << 24) | ('R' << 16) | ('P' << 8) | 'F';
 std::unique_ptr<Game> ReplayReader::BeginPlayback(
     const std::shared_ptr<Common>& common, const std::shared_ptr<SoundPlayer>& sound_player) {
   uint32_t const kReadMagic = io::ReadUint32(reader);
-  if (kReadMagic != kReplayMagic)
+  if (kReadMagic != kReplayMagic) {
     throw io::ArchiveCheckError("File does not appear to be a replay");
+  }
   replay_version = reader.Get();
-  if (replay_version > kMyReplayVersion)
+  if (replay_version > kMyReplayVersion) {
     throw io::ArchiveCheckError("Replay version is too recent");
+  }
 
   std::shared_ptr<Settings> const kSettings = std::make_shared<Settings>();
   std::unique_ptr<Game> game(new Game(common, kSettings, sound_player));
@@ -117,7 +123,9 @@ namespace {
 inline void Mix32(uint32_t& h, uint32_t v) { h ^= v + 0x9e3779b9U + (h << 6) + (h >> 2); }
 inline void MixBytes(uint32_t& h, void const* p, std::size_t n) {
   const auto* b = static_cast<uint8_t const*>(p);
-  for (std::size_t i = 0; i < n; ++i) Mix32(h, b[i]);
+  for (std::size_t i = 0; i < n; ++i) {
+    Mix32(h, b[i]);
+  }
 }
 }  // namespace
 
@@ -233,10 +241,11 @@ bool ReplayReader::PlaybackFrame(Renderer& renderer) {
       bool has_state = true;
 
       for (auto const& worm : game.worms) {
-        if (!has_state)
+        if (!has_state) {
           state = reader.Get();
-        else
+        } else {
           has_state = false;
+        }
 
         worm->control_states.Unpack(state ^ worm->prev_control_states.Pack());
       }
@@ -254,7 +263,9 @@ bool ReplayReader::PlaybackFrame(Renderer& renderer) {
   if ((game.cycles % (70 * 15)) == 0) {
     uint32_t const kExpected = io::ReadUint32(reader);
     uint32_t const kActual = WideRollbackChecksum(game);
-    if (kActual != kExpected) throw io::ArchiveCheckError("Replay has desynced");
+    if (kActual != kExpected) {
+      throw io::ArchiveCheckError("Replay has desynced");
+    }
   }
 
   return true;
@@ -308,14 +319,20 @@ void ReplayWriter::RecordFrame() {
 }
 
 void ReplayWriter::Unfocus() {
-  for (auto& [worm, data] : worm_data) data.last_settings_hash = worm->settings->UpdateHash();
+  for (auto& [worm, data] : worm_data) {
+    data.last_settings_hash = worm->settings->UpdateHash();
+  }
   last_settings_hash = game->settings->UpdateHash();
 }
 
 void ReplayWriter::Focus() {
   for (auto& [worm, data] : worm_data) {
-    if (data.last_settings_hash != worm->settings->UpdateHash()) data.settings_expired = true;
+    if (data.last_settings_hash != worm->settings->UpdateHash()) {
+      data.settings_expired = true;
+    }
   }
 
-  if (last_settings_hash != game->settings->UpdateHash()) settings_expired = true;
+  if (last_settings_hash != game->settings->UpdateHash()) {
+    settings_expired = true;
+  }
 }

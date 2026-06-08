@@ -19,13 +19,17 @@ void Menu::OnKeys(SDL_Scancode* begin, const SDL_Scancode* end, bool contains) {
     if ((kSym >= 32 && kSym <= 127)  // x >= SDLK_SPACE && x <= SDLK_DELETE
         || kIsTab) {
       auto time = SDL_GetTicks();
-      if (!kIsTab && time - search_time > 1500) search_prefix.clear();
+      if (!kIsTab && time - search_time > 1500) {
+        search_prefix.clear();
+      }
 
       while (true) {
         bool const kWasEmpty = search_prefix.empty();
         auto new_prefix = search_prefix;
 
-        if (!kIsTab) new_prefix += static_cast<char>(kSym);
+        if (!kIsTab) {
+          new_prefix += static_cast<char>(kSym);
+        }
         search_time = time;
 
         bool found = false;
@@ -66,7 +70,9 @@ void Menu::OnKeys(SDL_Scancode* begin, const SDL_Scancode* end, bool contains) {
         }
 
         search_prefix.clear();
-        if (kWasEmpty) break;
+        if (kWasEmpty) {
+          break;
+        }
       }
     }
   }
@@ -77,12 +83,16 @@ void Menu::Draw(Common& common, Renderer& renderer, bool disabled, int x,
   int items_left = height;
   int cur_y = y;
 
-  if (x < 0) x = this->x;
+  if (x < 0) {
+    x = this->x;
+  }
 
   for (int c = ItemFromVisibleIndex(top_item); items_left > 0 && std::cmp_less(c, items.size());
        ++c) {
     MenuItem& item = items[c];
-    if (!item.visible) continue;
+    if (!item.visible) {
+      continue;
+    }
 
     --items_left;
 
@@ -132,7 +142,9 @@ bool Menu::IsInView(int item) {
 
 bool Menu::ItemPosition(MenuItem& item, int& x, int& y) {
   int const kIndex = static_cast<int>(&item - items.data());
-  if (!IsInView(kIndex)) return false;
+  if (!IsInView(kIndex)) {
+    return false;
+  }
 
   int const kVisIdx = VisibleItemIndex(kIndex);
   x = this->x;
@@ -141,15 +153,17 @@ bool Menu::ItemPosition(MenuItem& item, int& x, int& y) {
 }
 
 void Menu::EnsureInView(int item) {
-  if (item < 0 || std::cmp_greater_equal(item, items.size()) || !items[item].visible)
+  if (item < 0 || std::cmp_greater_equal(item, items.size()) || !items[item].visible) {
     return;  // Can't show items outside the menu or invisible items
+  }
 
   int const kVisibleIndex = VisibleItemIndex(item);
 
-  if (kVisibleIndex < top_item)
+  if (kVisibleIndex < top_item) {
     SetTop(kVisibleIndex);
-  else if (kVisibleIndex >= bottom_item)
+  } else if (kVisibleIndex >= bottom_item) {
     SetBottom(kVisibleIndex + 1);
+  }
 }
 
 int Menu::FirstVisibleFrom(int item) {
@@ -175,9 +189,13 @@ int Menu::LastVisibleFrom(int item) {
 int Menu::VisibleItemIndex(int item) {
   int idx = 0;
   for (int i = 0; std::cmp_less(i, items.size()); ++i) {
-    if (!items[i].visible) continue;
+    if (!items[i].visible) {
+      continue;
+    }
 
-    if (i >= item) break;
+    if (i >= item) {
+      break;
+    }
     ++idx;
   }
   return idx;
@@ -185,9 +203,13 @@ int Menu::VisibleItemIndex(int item) {
 
 int Menu::ItemFromVisibleIndex(int idx) {
   for (int i = 0; std::cmp_less(i, items.size()); ++i) {
-    if (!items[i].visible) continue;
+    if (!items[i].visible) {
+      continue;
+    }
 
-    if (idx == 0) return i;
+    if (idx == 0) {
+      return i;
+    }
     --idx;
   }
   return static_cast<int>(items.size());
@@ -209,10 +231,11 @@ void Menu::SetVisibility(int id, bool state) {
     return;
   }
 
-  if (items[kItem].visible && !state)
+  if (items[kItem].visible && !state) {
     --visible_item_count;
-  else if (!items[kItem].visible && state)
+  } else if (!items[kItem].visible && state) {
     ++visible_item_count;
+  }
 
   int const kRealTopItem = ItemFromVisibleIndex(top_item);
 
@@ -272,7 +295,9 @@ void Menu::Movement(int direction) {
 int Menu::AddItem(const MenuItem& item) {
   int const kIdx = static_cast<int>(items.size());
   items.push_back(item);
-  if (item.visible) ++visible_item_count;
+  if (item.visible) {
+    ++visible_item_count;
+  }
   return kIdx;
 }
 
@@ -285,6 +310,8 @@ void Menu::Clear() {
 int Menu::AddItem(const MenuItem& item, int pos) {
   int const kIdx = static_cast<int>(items.size());
   items.insert(items.begin() + pos, item);
-  if (item.visible) ++visible_item_count;
+  if (item.visible) {
+    ++visible_item_count;
+  }
   return kIdx;
 }

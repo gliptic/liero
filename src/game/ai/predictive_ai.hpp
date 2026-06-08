@@ -26,7 +26,9 @@ struct InputState {
     if (!cs[Worm::kChange]) {
       // MoveJumpFire
       idx = (v >> 2) << 1;
-      if (idx > 48) idx -= (1 << 5);
+      if (idx > 48) {
+        idx -= (1 << 5);
+      }
       idx = 2;
       idx |= (v & 1);
     } else {
@@ -116,19 +118,25 @@ inline T Select([[maybe_unused]] int n, T first) {
 
 template <typename T>
 inline T Select(int n, T first, T a) {
-  if (n == 0) return first;
+  if (n == 0) {
+    return first;
+  }
   return Select(n - 1, a);
 }
 
 template <typename T>
 inline T Select(int n, T first, T a, T b) {
-  if (n == 0) return first;
+  if (n == 0) {
+    return first;
+  }
   return Select(n - 1, a, b);
 }
 
 template <typename T>
 inline T Select(int n, T first, T a, T b, T c) {
-  if (n == 0) return first;
+  if (n == 0) {
+    return first;
+  }
   return Select(n - 1, a, b, c);
 }
 
@@ -182,7 +190,9 @@ struct Model {
 
     for (int i = 0; i < FreeStates; ++i) {
       el -= v[i];
-      if (el < 0.0) return i;
+      if (el < 0.0) {
+        return i;
+      }
     }
 
     return FreeStates - 1;
@@ -233,12 +243,16 @@ struct AiContext {
     int const kWx = Ftoi(fx) >> 5;
     int const kWy = Ftoi(fy) >> 5;
 
-    for (int y = kWy - 1; y <= kWy + 1; ++y)
+    for (int y = kWy - 1; y <= kWy + 1; ++y) {
       for (int x = kWx - 1; x <= kWx + 1; ++x) {
         if (y >= 0 && y < kHeight && x >= 0 && x < kWidth) {
           double d = 1.0;
-          if (x != kWx) d *= 0.5;
-          if (y != kWy) d *= 0.5;
+          if (x != kWx) {
+            d *= 0.5;
+          }
+          if (y != kWy) {
+            d *= 0.5;
+          }
           auto& c = state[x][y];
           c.presence = d * presence;
           c.damage += d * damage;
@@ -246,6 +260,7 @@ struct AiContext {
           max_presence = std::max(max_presence, c.presence);
         }
       }
+    }
   }
 
   CellState& Cell(int fx, int fy) {

@@ -120,7 +120,9 @@ TEST_CASE("Rollback weapon select transitions to game over a real session",
   // give each peer its own copies so single-process weapon-select
   // mutations on one side don't bleed into the other.
   for (auto& ws : client_settings->worm_settings) {
-    if (ws) ws = std::make_shared<WormSettings>(*ws);
+    if (ws) {
+      ws = std::make_shared<WormSettings>(*ws);
+    }
   }
 
   NetSession host(kE.common, kE.settings, kE.tc_root);
@@ -183,7 +185,9 @@ TEST_CASE("Rollback weapon select transitions to game over a real session",
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   };
 
-  for (uint8_t const kInByte : script) run_tick(kInByte);
+  for (uint8_t const kInByte : script) {
+    run_tick(kInByte);
+  }
   // Idle tail to let promote loops drain and the transition fire on
   // both peers under loopback's small but non-zero RTT.
   for (int i = 0; i < 200 && !(host_transitioned && client_transitioned); ++i) {
@@ -216,7 +220,9 @@ TEST_CASE("Rollback session runs ≥5s game-phase post-WS without desync", "[ses
 
   auto client_settings = std::make_shared<Settings>(*kE.settings);
   for (auto& ws : client_settings->worm_settings) {
-    if (ws) ws = std::make_shared<WormSettings>(*ws);
+    if (ws) {
+      ws = std::make_shared<WormSettings>(*ws);
+    }
   }
 
   NetSession host(kE.common, kE.settings, kE.tc_root);
@@ -277,7 +283,9 @@ TEST_CASE("Rollback session runs ≥5s game-phase post-WS without desync", "[ses
   };
 
   // Drive WS to completion.
-  for (uint8_t const kB : ws_script) run_tick(kB);
+  for (uint8_t const kB : ws_script) {
+    run_tick(kB);
+  }
   for (int i = 0; i < 200 && !(host_transitioned && client_transitioned); ++i) {
     run_tick(0);
   }
@@ -297,8 +305,12 @@ TEST_CASE("Rollback session runs ≥5s game-phase post-WS without desync", "[ses
     // input doesn't matter — both peers run the same script, so any
     // mismatch must come from the sim path, not divergent inputs.
     uint8_t in = 0;
-    if ((i / 20) % 3 == 0) in |= kBitFire;
-    if ((i / 10) % 5 == 0) in |= (uint8_t{1} << Worm::kRight);
+    if ((i / 20) % 3 == 0) {
+      in |= kBitFire;
+    }
+    if ((i / 10) % 5 == 0) {
+      in |= (uint8_t{1} << Worm::kRight);
+    }
     run_tick(in);
   }
 
@@ -347,7 +359,9 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers", "[session][ro
 
   auto client_settings = std::make_shared<Settings>(*kE.settings);
   for (auto& ws : client_settings->worm_settings) {
-    if (ws) ws = std::make_shared<WormSettings>(*ws);
+    if (ws) {
+      ws = std::make_shared<WormSettings>(*ws);
+    }
   }
 
   NetSession host(kE.common, kE.settings, kE.tc_root);
@@ -399,7 +413,9 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers", "[session][ro
   // First ready up both worms with a single Fire press (rising edge
   // sets ready=true for doRespawning), then let them spawn.
   run_tick(kBitFire, kBitFire);
-  for (int i = 0; i < 5; ++i) run_tick(0, 0);
+  for (int i = 0; i < 5; ++i) {
+    run_tick(0, 0);
+  }
 
   // Pulse Fire so the rising edge fires every other tick. Held-Fire
   // wouldn't work — edge detection only counts the press.
@@ -407,7 +423,9 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers", "[session][ro
     run_tick((i & 1) ? kBitFire : 0, (i & 1) ? kBitFire : 0);
   }
   // Idle drain.
-  for (int i = 0; i < 30; ++i) run_tick(0, 0);
+  for (int i = 0; i < 30; ++i) {
+    run_tick(0, 0);
+  }
 
   auto* host_stats = dynamic_cast<NormalStatsRecorder*>(hc->StatsGame()->stats_recorder.get());
   auto* client_stats = dynamic_cast<NormalStatsRecorder*>(cc->StatsGame()->stats_recorder.get());
@@ -416,8 +434,11 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers", "[session][ro
 
   auto total_shots = [](NormalStatsRecorder* s) {
     int total = 0;
-    for (auto& worm : s->worms)
-      for (auto& weapon : worm.weapons) total += weapon.potential_hits + weapon.actual_hits;
+    for (auto& worm : s->worms) {
+      for (auto& weapon : worm.weapons) {
+        total += weapon.potential_hits + weapon.actual_hits;
+      }
+    }
     return total;
   };
 
@@ -439,7 +460,9 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
 
   auto client_settings = std::make_shared<Settings>(*kE.settings);
   for (auto& ws : client_settings->worm_settings) {
-    if (ws) ws = std::make_shared<WormSettings>(*ws);
+    if (ws) {
+      ws = std::make_shared<WormSettings>(*ws);
+    }
   }
 
   NetSession host(kE.common, kE.settings, kE.tc_root);
@@ -484,7 +507,9 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
   ws_script.push_back(0);
   ws_script.push_back(kBitFire);
   ws_script.push_back(0);
-  for (uint8_t const kB : ws_script) run_tick(kB);
+  for (uint8_t const kB : ws_script) {
+    run_tick(kB);
+  }
   for (int i = 0; i < 200 && (hc->State() != kStateGame || cc->State() != kStateGame); ++i) {
     run_tick(0);
   }
@@ -492,7 +517,9 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
   REQUIRE(cc->State() == kStateGame);
 
   // Play out a bit of game phase.
-  for (int i = 0; i < 200; ++i) run_tick(0);
+  for (int i = 0; i < 200; ++i) {
+    run_tick(0);
+  }
 
   // The shadow Game (statsGame()) is where stats live now. The live
   // game's recorder is the base no-op class — the dynamic_cast below
@@ -522,7 +549,9 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
 
   // Pause + EndMatch flow: host pauses, picks END MATCH.
   host.SendPause();
-  for (int i = 0; i < 10; ++i) run_tick(0);
+  for (int i = 0; i < 10; ++i) {
+    run_tick(0);
+  }
   REQUIRE(cc->IsPaused());
 
   host.SendResume();
@@ -534,8 +563,12 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
   for (int i = 0; i < 200 && !(host_done && client_done); ++i) {
     hc->SetLocalControlState(0);
     cc->SetLocalControlState(0);
-    if (!host_done && !hc->Process()) host_done = true;
-    if (!client_done && !cc->Process()) client_done = true;
+    if (!host_done && !hc->Process()) {
+      host_done = true;
+    }
+    if (!client_done && !cc->Process()) {
+      client_done = true;
+    }
     host.Update();
     client.Update();
     std::this_thread::sleep_for(std::chrono::milliseconds(1));

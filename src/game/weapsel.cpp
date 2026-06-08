@@ -19,7 +19,9 @@ WeaponSelection::WeaponSelection(Game& game)
   Common& common = *game.common;
 
   for (unsigned int const kI : game.settings->weap_table) {
-    if (kI == 0) ++enabled_weaps;
+    if (kI == 0) {
+      ++enabled_weaps;
+    }
   }
 
   for (std::size_t i = 0; i < menus.size(); ++i) {
@@ -53,7 +55,9 @@ WeaponSelection::WeaponSelection(Game& game)
 
           int const kW = common.weap_order[ws.weapons[j] - 1];
 
-          if ((!kEnoughWeapons || !weap_used[kW]) && game.settings->weap_table[kW] <= 0) break;
+          if ((!kEnoughWeapons || !weap_used[kW]) && game.settings->weap_table[kW] <= 0) {
+            break;
+          }
         }
       }
 
@@ -113,7 +117,9 @@ void WeaponSelection::DrawSpectatorViewports(Renderer& renderer, GameState /*sta
 
   renderer.bmp.Copy(gfx.frozen_spectator_screen);
 
-  if (!focused) return;
+  if (!focused) {
+    return;
+  }
 
   if (!is_ready[0]) {
     menus[0].Draw(common, renderer, /*disabled=*/false, 10);
@@ -148,7 +154,9 @@ void WeaponSelection::DrawNormalViewports(Renderer& renderer, GameState state) {
 
   renderer.bmp.Copy(gfx.frozen_screen);
 
-  if (!focused) return;
+  if (!focused) {
+    return;
+  }
 
   DrawRoundedBox(renderer.bmp, 114, 2, 0, 7, common.font.GetDims(LS(SelWeap)));
 
@@ -202,13 +210,15 @@ bool WeaponSelection::ProcessFrame() {
     if (!is_ready[i]) {
       // Find this player's gamepad (if using one)
       int gp_idx = -1;
-      if (ws.input_device != WormSettingsExtensions::kInputKeyboard)
+      if (ws.input_device != WormSettingsExtensions::kInputKeyboard) {
         gp_idx = gfx.FindGamepadForPlayer(vp.worm_idx);
+      }
 
       if (kWeapId >= 0 && kWeapId < Settings::kSelectableWeapons) {
         bool left = worm.Pressed(Worm::kLeft);
-        if (!left && gp_idx >= 0 && gfx.joysticks[gp_idx].axis_button_state[1])  // LEFTX negative
+        if (!left && gp_idx >= 0 && gfx.joysticks[gp_idx].axis_button_state[1]) {  // LEFTX negative
           left = true;
+        }
 
         if (left) {
           worm.Release(Worm::kLeft);
@@ -217,8 +227,9 @@ bool WeaponSelection::ProcessFrame() {
 
           do {
             --ws.weapons[kWeapId];
-            if (ws.weapons[kWeapId] < 1)
+            if (ws.weapons[kWeapId] < 1) {
               ws.weapons[kWeapId] = static_cast<uint32_t>(common.weapons.size());
+            }
           } while (game.settings->weap_table[common.weap_order[ws.weapons[kWeapId] - 1]] != 0);
 
           int const kW = common.weap_order[ws.weapons[kWeapId] - 1];
@@ -227,8 +238,10 @@ bool WeaponSelection::ProcessFrame() {
         }
 
         bool right = worm.Pressed(Worm::kRight);
-        if (!right && gp_idx >= 0 && gfx.joysticks[gp_idx].axis_button_state[0])  // LEFTX positive
+        if (!right && gp_idx >= 0 &&
+            gfx.joysticks[gp_idx].axis_button_state[0]) {  // LEFTX positive
           right = true;
+        }
 
         if (right) {
           worm.Release(Worm::kRight);
@@ -237,8 +250,9 @@ bool WeaponSelection::ProcessFrame() {
 
           do {
             ++ws.weapons[kWeapId];
-            if (ws.weapons[kWeapId] > static_cast<uint32_t>(common.weapons.size()))
+            if (ws.weapons[kWeapId] > static_cast<uint32_t>(common.weapons.size())) {
               ws.weapons[kWeapId] = 1;
+            }
           } while (game.settings->weap_table[common.weap_order[ws.weapons[kWeapId] - 1]] != 0);
 
           int const kW = common.weap_order[ws.weapons[kWeapId] - 1];
@@ -288,7 +302,9 @@ bool WeaponSelection::ProcessFrame() {
 
               int const kW = common.weap_order[ws.weapons[j] - 1];
 
-              if ((!kEnoughWeapons || !weap_used[kW]) && game.settings->weap_table[kW] <= 0) break;
+              if ((!kEnoughWeapons || !weap_used[kW]) && game.settings->weap_table[kW] <= 0) {
+                break;
+              }
             }
 
             int const kW = common.weap_order[ws.weapons[j] - 1];

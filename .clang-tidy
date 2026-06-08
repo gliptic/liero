@@ -10,8 +10,12 @@
 #   safety.
 # * modernize-use-trailing-return-type: cosmetic; LLVM, Qt, KDE,
 #   Chromium all disable it.
-# * *-braces-around-statements, readability-math-missing-parentheses,
+# * readability-math-missing-parentheses,
 #   readability-implicit-bool-conversion: style preferences.
+# * google-readability-braces-around-statements /
+#   hicpp-braces-around-statements: aliases of
+#   readability-braces-around-statements (enabled), disabled to avoid
+#   duplicate diagnostics.
 # * portability-avoid-pragma-once: we deliberately use #pragma once.
 # * misc-include-cleaner: high false-positive rate against SDL/cereal.
 # * bugprone-easily-swappable-parameters: famous false-positive generator.
@@ -126,7 +130,6 @@ Checks: "*,\
   -readability-function-cognitive-complexity,\
   -readability-identifier-length,\
   -readability-magic-numbers,\
-  -readability-braces-around-statements,\
   -readability-implicit-bool-conversion,\
   -readability-math-missing-parentheses,\
   -google-explicit-constructor,\

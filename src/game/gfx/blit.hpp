@@ -75,7 +75,7 @@ struct Heatmap {
     x = std::min(std::max(x, 0), width - 1);
     y = std::min(std::max(y, 0), height - 1);
 
-    for (int y1 = -2; y1 <= 2; ++y1)
+    for (int y1 = -2; y1 <= 2; ++y1) {
       for (int x1 = -2; x1 <= 2; ++x1) {
         int const kCx = x + x1;
         int const kCy = y + y1;
@@ -84,6 +84,7 @@ struct Heatmap {
           map[kCy * width + kCx] += v * kWeight;
         }
       }
+    }
   }
 
   int width, height;

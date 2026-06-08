@@ -271,9 +271,12 @@ TEST_CASE("cereal_types: Level round-trip preserves data and palette", "[cereal_
   src.width = 4;
   src.height = 3;
   src.data.assign(src.width * src.height, 0);
-  for (int i = 0; i < src.width * src.height; ++i)
+  for (int i = 0; i < src.width * src.height; ++i) {
     src.data[i] = static_cast<unsigned char>(i * 7 + 1);
-  for (int i = 0; i < 256; ++i) src.origpal.entries[i].r = static_cast<uint8_t>(i);
+  }
+  for (int i = 0; i < 256; ++i) {
+    src.origpal.entries[i].r = static_cast<uint8_t>(i);
+  }
 
   Level dst(common);
   // Serialize directly without dst pre-construct equivalence to old API.
@@ -289,14 +292,18 @@ TEST_CASE("cereal_types: Level round-trip preserves data and palette", "[cereal_
   CHECK(dst.width == 4);
   CHECK(dst.height == 3);
   REQUIRE(dst.data.size() == src.data.size());
-  for (size_t i = 0; i < src.data.size(); ++i) CHECK(dst.data[i] == src.data[i]);
+  for (size_t i = 0; i < src.data.size(); ++i) {
+    CHECK(dst.data[i] == src.data[i]);
+  }
   CHECK(static_cast<int>(dst.origpal.entries[0].r) == 0);
   CHECK(static_cast<int>(dst.origpal.entries[255].r) == 255);
 }
 
 TEST_CASE("cereal_types: Rand round-trip preserves stream", "[cereal_types]") {
   Rand src(0xC0FFEEU);
-  for (int i = 0; i < 10; ++i) src();
+  for (int i = 0; i < 10; ++i) {
+    src();
+  }
   Rand bin = RoundtripBinary(src);
   CHECK(bin == src);
   CHECK(bin() == src());

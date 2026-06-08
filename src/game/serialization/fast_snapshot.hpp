@@ -83,7 +83,9 @@ inline void SaveWormSimState(WormSimState& s, Worm const& w) {
   s.fire_cone = w.fire_cone;
   s.leave_shell_timer = w.leave_shell_timer;
   std::memcpy(s.reacts, w.reacts, sizeof(s.reacts));
-  for (int i = 0; i < NUM_WEAPONS; ++i) s.weapons[i] = w.weapons[i];
+  for (int i = 0; i < NUM_WEAPONS; ++i) {
+    s.weapons[i] = w.weapons[i];
+  }
   s.direction = w.direction;
   s.control_states = w.control_states;
   s.prev_control_states = w.prev_control_states;
@@ -123,7 +125,9 @@ inline void RestoreWormSimState(Worm& w, WormSimState const& s) {
   w.fire_cone = s.fire_cone;
   w.leave_shell_timer = s.leave_shell_timer;
   std::memcpy(w.reacts, s.reacts, sizeof(w.reacts));
-  for (int i = 0; i < NUM_WEAPONS; ++i) w.weapons[i] = s.weapons[i];
+  for (int i = 0; i < NUM_WEAPONS; ++i) {
+    w.weapons[i] = s.weapons[i];
+  }
   w.direction = s.direction;
   w.control_states = s.control_states;
   w.prev_control_states = s.prev_control_states;

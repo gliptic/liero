@@ -82,13 +82,17 @@ class StateStack {
 
   // Dispatch an event to the topmost state.
   void HandleEvent(SDL_Event& ev) {
-    if (auto* s = Top()) s->HandleEvent(ev);
+    if (auto* s = Top()) {
+      s->HandleEvent(ev);
+    }
   }
 
   // Update the topmost state. Returns false if the stack is empty
   // (application should quit) or if the top state signals completion.
   bool Update() {
-    if (stack_.empty()) return false;
+    if (stack_.empty()) {
+      return false;
+    }
 
     bool const kEepRunning = stack_.back()->Update();
     Gfx* g = stack_.back()->gfx;
@@ -111,13 +115,19 @@ class StateStack {
 
   // Draw states, respecting overlay transparency.
   void Draw() {
-    if (stack_.empty()) return;
+    if (stack_.empty()) {
+      return;
+    }
 
     // Find the lowest state we need to draw
     std::size_t bottom = stack_.size() - 1;
-    while (bottom > 0 && stack_[bottom]->IsOverlay()) --bottom;
+    while (bottom > 0 && stack_[bottom]->IsOverlay()) {
+      --bottom;
+    }
 
-    for (std::size_t i = bottom; i < stack_.size(); ++i) stack_[i]->Draw();
+    for (std::size_t i = bottom; i < stack_.size(); ++i) {
+      stack_[i]->Draw();
+    }
   }
 
   // Access the topmost state (for querying flip mode, etc.)

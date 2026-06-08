@@ -21,12 +21,15 @@ void Bonus::Process(Game& game) {
   if (kInewY < 0 || kInewY >= game.level.height - 1 || game.level.Mat(kIx, kInewY).DirtRock()) {
     vel_y = -(vel_y * LC(BonusBounceMul)) / LC(BonusBounceDiv);
 
-    if (std::abs(vel_y) < 100)  // TODO: Read from EXE
+    if (std::abs(vel_y) < 100) {  // TODO: Read from EXE
       vel_y = 0;
+    }
   }
 
   if (--timer <= 0) {
     common.sobject_types[common.bonus_s_objects[frame]].Create(game, kIx, kIy, 0, nullptr);
-    if (used) game.bonuses.Free(this);
+    if (used) {
+      game.bonuses.Free(this);
+    }
   }
 }

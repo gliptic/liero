@@ -23,7 +23,9 @@ FileSelectorState::FileSelectorState(std::string title) : title_(std::move(title
 void FileSelectorState::HandleEvent(SDL_Event& ev) { gfx->ProcessEvent(ev); }
 
 bool FileSelectorState::Update() {
-  if (done_) return false;
+  if (done_) {
+    return false;
+  }
 
   if (!selector_->Process()) {
     done_ = true;
@@ -232,8 +234,9 @@ bool TcSelectorState::OnSelected(FileNode* node) {
   new_common->load(node->GetFsNode());
   gfx->settings->tc = node->name;
   gfx->common.reset(new_common.release());
-  if (auto* dp = dynamic_cast<DefaultSoundPlayer*>(gfx->sound_player.get()))
+  if (auto* dp = dynamic_cast<DefaultSoundPlayer*>(gfx->sound_player.get())) {
     dp->SetCommon(*gfx->common);
+  }
   gfx->pending_menu_selection = MainMenu::kMaTc;
   return true;
 }

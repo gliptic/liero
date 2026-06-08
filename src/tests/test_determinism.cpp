@@ -73,8 +73,12 @@ struct DualGameFixture {
     game_b->level.GenerateFromSettings(*common, *settings, game_b->rand);
 
     // Initialize weapons for all worms
-    for (auto const& w : game_a->worms) w->InitWeapons(*game_a);
-    for (auto const& w : game_b->worms) w->InitWeapons(*game_b);
+    for (auto const& w : game_a->worms) {
+      w->InitWeapons(*game_a);
+    }
+    for (auto const& w : game_b->worms) {
+      w->InitWeapons(*game_b);
+    }
 
     // Start games
     game_a->paused = false;
@@ -135,10 +139,11 @@ TEST_CASE("Simulation is reproducible across runs", "[determinism]") {
     }
 
     uint32_t const kH = HashGameState(*f.game_a);
-    if (run == 0)
+    if (run == 0) {
       hash1 = kH;
-    else
+    } else {
       hash2 = kH;
+    }
   }
 
   REQUIRE(hash1 == hash2);
@@ -163,7 +168,9 @@ TEST_CASE("Same inputs produce same state regardless of construction order", "[d
 
   // Game constructed after some unrelated work
   volatile int dummy = 0;
-  for (int i = 0; i < 1000; ++i) dummy += i;
+  for (int i = 0; i < 1000; ++i) {
+    dummy += i;
+  }
   (void)dummy;
 
   Game game2(common, settings, std::make_shared<NullSoundPlayer>());
@@ -192,8 +199,12 @@ TEST_CASE("Same inputs produce same state regardless of construction order", "[d
   game1.level.GenerateFromSettings(*common, *settings, game1.rand);
   game2.level.GenerateFromSettings(*common, *settings, game2.rand);
 
-  for (auto const& w : game1.worms) w->InitWeapons(game1);
-  for (auto const& w : game2.worms) w->InitWeapons(game2);
+  for (auto const& w : game1.worms) {
+    w->InitWeapons(game1);
+  }
+  for (auto const& w : game2.worms) {
+    w->InitWeapons(game2);
+  }
 
   game1.paused = false;
   game2.paused = false;
@@ -277,8 +288,12 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
     game_a.level.GenerateFromSettings(*common, *settings, game_a.rand);
     game_b.level.GenerateFromSettings(*common, *settings, game_b.rand);
 
-    for (auto const& w : game_a.worms) w->InitWeapons(game_a);
-    for (auto const& w : game_b.worms) w->InitWeapons(game_b);
+    for (auto const& w : game_a.worms) {
+      w->InitWeapons(game_a);
+    }
+    for (auto const& w : game_b.worms) {
+      w->InitWeapons(game_b);
+    }
 
     game_a.paused = false;
     game_b.paused = false;
@@ -296,9 +311,13 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
       for (int idx = 0; idx < 2; ++idx) {
         uint32_t input = input_rng() & 0x7f;
         // Bias toward combat: 60% chance fire is held
-        if ((input_rng() % 10) < 6) input |= (1 << 4);  // Fire bit
+        if ((input_rng() % 10) < 6) {
+          input |= (1 << 4);  // Fire bit
+        }
         // 40% chance of movement toward opponent
-        if ((input_rng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));  // Left/Right toward other
+        if ((input_rng() % 10) < 4) {
+          input |= (1 << (idx == 0 ? 1 : 0));  // Left/Right toward other
+        }
 
         game_a.worms[idx]->control_states.Unpack(input);
         game_b.worms[idx]->control_states.Unpack(input);
@@ -310,7 +329,9 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
       // Track deaths for info output — killedTimer is set to 150 on death,
       // then decremented each frame, so 149 means "just died this frame"
       for (auto const& w : game_a.worms) {
-        if (!w->visible && w->killed_timer == Worm::kKilledTimerInitial - 1) ++death_count;
+        if (!w->visible && w->killed_timer == Worm::kKilledTimerInitial - 1) {
+          ++death_count;
+        }
       }
 
       // Check state every frame
@@ -350,23 +371,31 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         {
           auto r = game_a.nobjects.All();
           NObject const* n = nullptr;
-          while ((n = r.Next())) ++nobjects_a;
+          while ((n = r.Next())) {
+            ++nobjects_a;
+          }
         }
         {
           auto r = game_b.nobjects.All();
           NObject const* n = nullptr;
-          while ((n = r.Next())) ++nobjects_b;
+          while ((n = r.Next())) {
+            ++nobjects_b;
+          }
         }
 
         int bobjects_a = 0;
         int bobjects_b = 0;
         {
           auto br = game_a.bobjects.Begin();
-          for (; br != game_a.bobjects.End(); ++br) ++bobjects_a;
+          for (; br != game_a.bobjects.End(); ++br) {
+            ++bobjects_a;
+          }
         }
         {
           auto br = game_b.bobjects.Begin();
-          for (; br != game_b.bobjects.End(); ++br) ++bobjects_b;
+          for (; br != game_b.bobjects.End(); ++br) {
+            ++bobjects_b;
+          }
         }
 
         // Deep compare BObjects
@@ -536,7 +565,9 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
       }
 
       // Stop if game is over
-      if (game_a.IsGameOver()) break;
+      if (game_a.IsGameOver()) {
+        break;
+      }
     }
 
     INFO("Seed " << kSeed << " completed: " << death_count << " deaths observed");

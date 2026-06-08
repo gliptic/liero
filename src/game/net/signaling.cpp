@@ -87,7 +87,9 @@ void SignalingClient::Disconnect() {
 }
 
 void SignalingClient::Send(const void* data, size_t len) {
-  if (sock_ == ENET_SOCKET_NULL) return;
+  if (sock_ == ENET_SOCKET_NULL) {
+    return;
+  }
   ENetBuffer buf;
   buf.data = const_cast<void*>(data);
   buf.dataLength = len;
@@ -95,7 +97,9 @@ void SignalingClient::Send(const void* data, size_t len) {
 }
 
 bool SignalingClient::CreateRoom(const std::string& server_addr, uint16_t server_port) {
-  if (!Connect(server_addr, server_port)) return false;
+  if (!Connect(server_addr, server_port)) {
+    return false;
+  }
   uint8_t msg[1 + proto::kRoomCodeLen] = {};
   msg[0] = proto::kCreateRoom;
   Send(msg, sizeof(msg));
@@ -107,8 +111,12 @@ bool SignalingClient::CreateRoom(const std::string& server_addr, uint16_t server
 
 bool SignalingClient::JoinRoom(const std::string& server_addr, uint16_t server_port,
                                const std::string& room_code) {
-  if (!Connect(server_addr, server_port)) return false;
-  if (room_code.size() != proto::kRoomCodeLen) return false;
+  if (!Connect(server_addr, server_port)) {
+    return false;
+  }
+  if (room_code.size() != proto::kRoomCodeLen) {
+    return false;
+  }
 
   uint8_t msg[1 + proto::kRoomCodeLen];
   msg[0] = proto::kJoinRoom;
@@ -131,10 +139,11 @@ void SignalingClient::ReportAddress(uint8_t addr_type, const std::string& ip, ui
   msg[1 + proto::kRoomCodeLen + 2] = static_cast<uint8_t>(port & 0xFF);
 
   uint8_t ip_bytes[16] = {};
-  if (addr_type == proto::kAddrIPv4)
+  if (addr_type == proto::kAddrIPv4) {
     inet_pton(AF_INET, ip.c_str(), ip_bytes);
-  else
+  } else {
     inet_pton(AF_INET6, ip.c_str(), ip_bytes);
+  }
   std::memcpy(msg.data() + 1 + proto::kRoomCodeLen + 3, ip_bytes, kIpLen);
   Send(msg.data(), msg.size());
 }
@@ -199,7 +208,9 @@ void SignalingClient::SendKeepalive() {
 }
 
 void SignalingClient::Poll() {
-  if (sock_ == ENET_SOCKET_NULL) return;
+  if (sock_ == ENET_SOCKET_NULL) {
+    return;
+  }
 
   // Retry unacknowledged messages
   if ((state_ == kCreating || state_ == kJoining) && retryCount_ < kMaxRetries) {
@@ -208,7 +219,9 @@ void SignalingClient::Poll() {
       retryCount_++;
       uint8_t msg[1 + proto::kRoomCodeLen] = {};
       msg[0] = (state_ == kCreating) ? proto::kCreateRoom : proto::kJoinRoom;
-      if (state_ == kJoining) std::memcpy(msg + 1, roomCode_.data(), proto::kRoomCodeLen);
+      if (state_ == kJoining) {
+        std::memcpy(msg + 1, roomCode_.data(), proto::kRoomCodeLen);
+      }
       Send(msg, sizeof(msg));
       lastSendMs_ = NowMs();
     }
@@ -222,24 +235,34 @@ void SignalingClient::Poll() {
 
   for (;;) {
     enet_uint32 wait_condition = ENET_SOCKET_WAIT_RECEIVE;
-    if (enet_socket_wait(sock_, &wait_condition, 0) != 0) break;
-    if (!(wait_condition & ENET_SOCKET_WAIT_RECEIVE)) break;
+    if (enet_socket_wait(sock_, &wait_condition, 0) != 0) {
+      break;
+    }
+    if (!(wait_condition & ENET_SOCKET_WAIT_RECEIVE)) {
+      break;
+    }
 
     ENetAddress from_addr = {};
     int const kRecvLen = enet_socket_receive(sock_, &from_addr, &recv_buf, 1);
-    if (kRecvLen <= 0) break;
+    if (kRecvLen <= 0) {
+      break;
+    }
 
     HandleMessage(recv_data, static_cast<size_t>(kRecvLen));
   }
 }
 
 void SignalingClient::HandleMessage(const uint8_t* data, size_t len) {
-  if (len < 1) return;
+  if (len < 1) {
+    return;
+  }
   uint8_t const kType = data[0];
 
   switch (kType) {
     case proto::kRoomCreated: {
-      if (len < 1 + proto::kRoomCodeLen) break;
+      if (len < 1 + proto::kRoomCodeLen) {
+        break;
+      }
       roomCode_ = std::string(reinterpret_cast<const char*>(data) + 1, proto::kRoomCodeLen);
       // Parse optional TURN credentials: [1: turn_user_len] + [N: turn_user] + [1: turn_pass_len] +
       // [N: turn_pass]
@@ -256,7 +279,9 @@ void SignalingClient::HandleMessage(const uint8_t* data, size_t len) {
         }
       }
       state_ = kHosting;
-      if (on_room_created) on_room_created(roomCode_);
+      if (on_room_created) {
+        on_room_created(roomCode_);
+      }
       break;
     }
     case proto::kPeerJoined: {
@@ -275,88 +300,127 @@ void SignalingClient::HandleMessage(const uint8_t* data, size_t len) {
       }
       if (state_ == kJoining) {
         state_ = kWaitingForPeer;
-        if (on_join_acked) on_join_acked();
+        if (on_join_acked) {
+          on_join_acked();
+        }
       } else {
-        if (on_peer_joined) on_peer_joined();
+        if (on_peer_joined) {
+          on_peer_joined();
+        }
       }
       break;
     }
     case proto::kPeerAddr: {
-      if (len < 1 + proto::kRoomCodeLen + 1 + 2 + 4) break;
+      if (len < 1 + proto::kRoomCodeLen + 1 + 2 + 4) {
+        break;
+      }
       uint8_t const kAddrType = data[1 + proto::kRoomCodeLen];
       auto const kPort = static_cast<uint16_t>(data[1 + proto::kRoomCodeLen + 1] << 8 |
                                                data[1 + proto::kRoomCodeLen + 2]);
       int const kIpLen = (kAddrType == proto::kAddrIPv4) ? 4 : 16;
-      if (static_cast<int>(len) < 1 + proto::kRoomCodeLen + 3 + kIpLen) break;
+      if (static_cast<int>(len) < 1 + proto::kRoomCodeLen + 3 + kIpLen) {
+        break;
+      }
 
       char ip_str[INET6_ADDRSTRLEN] = {};
-      if (kAddrType == proto::kAddrIPv4)
+      if (kAddrType == proto::kAddrIPv4) {
         inet_ntop(AF_INET, data + 1 + proto::kRoomCodeLen + 3, ip_str, sizeof(ip_str));
-      else
+      } else {
         inet_ntop(AF_INET6, data + 1 + proto::kRoomCodeLen + 3, ip_str, sizeof(ip_str));
+      }
 
       PeerCandidate const kCand{.type = kAddrType, .ip = ip_str, .port = kPort};
       peerCandidates_.push_back(kCand);
-      if (on_peer_addr) on_peer_addr(kCand);
+      if (on_peer_addr) {
+        on_peer_addr(kCand);
+      }
       break;
     }
     case proto::kStartPunch: {
       state_ = kPunching;
-      if (on_start_punch) on_start_punch();
+      if (on_start_punch) {
+        on_start_punch();
+      }
       break;
     }
     case proto::kUseRelay: {
-      if (len < 1 + proto::kRoomCodeLen + 2 + 8) break;
+      if (len < 1 + proto::kRoomCodeLen + 2 + 8) {
+        break;
+      }
       relayPort_ = static_cast<uint16_t>(data[1 + proto::kRoomCodeLen] << 8 |
                                          data[1 + proto::kRoomCodeLen + 1]);
       relayToken_.assign(data + 1 + proto::kRoomCodeLen + 2,
                          data + 1 + proto::kRoomCodeLen + 2 + 8);
       state_ = kRelaying;
-      if (on_use_relay) on_use_relay(relayPort_);
+      if (on_use_relay) {
+        on_use_relay(relayPort_);
+      }
       break;
     }
     case proto::kRoomExpired: {
       std::fprintf(stderr, "[signaling] room expired\n");
       state_ = kFailed;
-      if (on_room_expired) on_room_expired();
+      if (on_room_expired) {
+        on_room_expired();
+      }
       break;
     }
     case proto::kError: {
       std::string msg;
-      if (len > 2) msg = std::string(reinterpret_cast<const char*>(data) + 2, len - 2);
+      if (len > 2) {
+        msg = std::string(reinterpret_cast<const char*>(data) + 2, len - 2);
+      }
       std::fprintf(stderr, "[signaling] ERROR from server: %s\n", msg.c_str());
       state_ = kFailed;
-      if (on_error) on_error(msg);
+      if (on_error) {
+        on_error(msg);
+      }
       break;
     }
     case proto::kPeerCredentials: {
       // Format: [0x87] + [6: room code] + [1: ufrag_len] + [N: ufrag] + [1: pwd_len] + [N: pwd]
       size_t off = 1 + proto::kRoomCodeLen;
-      if (off + 1 > len) break;
+      if (off + 1 > len) {
+        break;
+      }
       uint8_t const kUfragLen = data[off++];
-      if (off + kUfragLen + 1 > len) break;
+      if (off + kUfragLen + 1 > len) {
+        break;
+      }
       std::string const kUfrag(reinterpret_cast<const char*>(data) + off, kUfragLen);
       off += kUfragLen;
       uint8_t const kPwdLen = data[off++];
-      if (off + kPwdLen > len) break;
+      if (off + kPwdLen > len) {
+        break;
+      }
       std::string const kPwd(reinterpret_cast<const char*>(data) + off, kPwdLen);
       state_ = kIceExchanging;
-      if (on_peer_credentials) on_peer_credentials(kUfrag, kPwd);
+      if (on_peer_credentials) {
+        on_peer_credentials(kUfrag, kPwd);
+      }
       break;
     }
     case proto::kPeerCandidate: {
       // Format: [0x88] + [6: room code] + [2: candidate_len BE] + [N: candidate]
       size_t off = 1 + proto::kRoomCodeLen;
-      if (off + 2 > len) break;
+      if (off + 2 > len) {
+        break;
+      }
       auto const kCandLen = static_cast<uint16_t>(data[off] << 8 | data[off + 1]);
       off += 2;
-      if (off + kCandLen > len) break;
+      if (off + kCandLen > len) {
+        break;
+      }
       std::string const kCandidate(reinterpret_cast<const char*>(data) + off, kCandLen);
-      if (on_peer_candidate) on_peer_candidate(kCandidate);
+      if (on_peer_candidate) {
+        on_peer_candidate(kCandidate);
+      }
       break;
     }
     case proto::kPeerGatherDone: {
-      if (on_peer_gather_done) on_peer_gather_done();
+      if (on_peer_gather_done) {
+        on_peer_gather_done();
+      }
       break;
     }
     default:

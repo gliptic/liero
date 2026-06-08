@@ -32,7 +32,9 @@ void RematchState::Enter() {
   menu_.AddItem(MenuItem(48, 7, "DISCONNECT", kRmDisconnect));
 
   // Only host can select the level item
-  if (!kIsHost) menu_.items[0].selectable = false;
+  if (!kIsHost) {
+    menu_.items[0].selectable = false;
+  }
 
   menu_.value_offset_x = 80;
   menu_.Place(120, 90);
@@ -42,7 +44,9 @@ void RematchState::Enter() {
 void RematchState::HandleEvent(SDL_Event& ev) { gfx->ProcessEvent(ev); }
 
 void RematchState::UpdateMenuItems() {
-  if (!gfx->net_session) return;
+  if (!gfx->net_session) {
+    return;
+  }
 
   // Update level display
   auto* level_item = menu_.ItemFromId(kRmLevel);
@@ -61,7 +65,9 @@ void RematchState::UpdateMenuItems() {
 }
 
 bool RematchState::Update() {
-  if (!gfx->net_session) return false;
+  if (!gfx->net_session) {
+    return false;
+  }
 
   gfx->net_session->Update();
 
@@ -160,7 +166,9 @@ bool RematchState::Update() {
 }
 
 std::string RematchState::LevelDisplayName() const {
-  if (gfx->settings->random_level || gfx->settings->level_file.empty()) return "RANDOM";
+  if (gfx->settings->random_level || gfx->settings->level_file.empty()) {
+    return "RANDOM";
+  }
   return GetBasename(GetLeaf(gfx->settings->level_file));
 }
 
@@ -207,10 +215,11 @@ void RematchState::Draw() {
     font.DrawString(gfx->play_renderer.bmp, kLocalLine, kCx - kLlw / 2 - 10, y, 7);
     // Draw indicator after text
     int const kLocalIndX = kCx - kLlw / 2 - 10 + kLlw + 4;
-    if (kLocalReady)
+    if (kLocalReady) {
       font.DrawString(gfx->play_renderer.bmp, "READY", kLocalIndX, y, 63);
-    else
+    } else {
       font.DrawString(gfx->play_renderer.bmp, "X", kLocalIndX, y, 18);
+    }
     y += 10;
 
     // Draw remote player status
@@ -218,10 +227,11 @@ void RematchState::Draw() {
     int const kRlw = font.GetDims(kRemoteLine);
     font.DrawString(gfx->play_renderer.bmp, kRemoteLine, kCx - kRlw / 2 - 10, y, 7);
     int const kRemoteIndX = kCx - kRlw / 2 - 10 + kRlw + 4;
-    if (kRemoteReady)
+    if (kRemoteReady) {
       font.DrawString(gfx->play_renderer.bmp, "READY", kRemoteIndX, y, 63);
-    else
+    } else {
       font.DrawString(gfx->play_renderer.bmp, "X", kRemoteIndX, y, 18);
+    }
     y += 14;
   }
 

@@ -44,7 +44,9 @@ void WeaponMenuState::Enter() {
 void WeaponMenuState::HandleEvent(SDL_Event& ev) { gfx->ProcessEvent(ev); }
 
 bool WeaponMenuState::Update() {
-  if (done_) return false;
+  if (done_) {
+    return false;
+  }
 
   Common& common = *gfx->common;
 
@@ -93,7 +95,9 @@ bool WeaponMenuState::Update() {
     int count = 0;
 
     for (unsigned int const kI : gfx->settings->weap_table) {
-      if (kI == 0) ++count;
+      if (kI == 0) {
+        ++count;
+      }
     }
 
     if (count > 0) {

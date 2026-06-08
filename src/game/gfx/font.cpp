@@ -100,10 +100,14 @@ int Font::GetDims(char const* str, std::size_t len, int* height) {
     }
 
     unsigned char const kC = CodepointToFontByte(kCp);
-    if (kC >= 2 && kC < 252) width += chars[kC - 2].width;
+    if (kC >= 2 && kC < 252) {
+      width += chars[kC - 2].width;
+    }
   }
 
-  if (height) *height = max_height;
+  if (height) {
+    *height = max_height;
+  }
 
   return std::max(max_width, width);
 }

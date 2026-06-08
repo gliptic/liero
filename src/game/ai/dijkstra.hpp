@@ -52,7 +52,9 @@ struct DijkstraState {
   }
 
   void Reset() {
-    while (!open_list.empty()) open_list.pop();
+    while (!open_list.empty()) {
+      open_list.pop();
+    }
   }
 
   void SetOrigin(NodeT origin_init) {
@@ -73,8 +75,12 @@ struct DijkstraState {
       open_list.pop();
 
       // Skip stale entries from prior decreased_key operations.
-      if (kE.node->state == path_node_t::kClosed) continue;
-      if (kE.g != kE.node->g) continue;
+      if (kE.node->state == path_node_t::kClosed) {
+        continue;
+      }
+      if (kE.g != kE.node->g) {
+        continue;
+      }
 
       path_node_t* min_pn = kE.node;
       NodeT min = derived.GetNodeId(min_pn);
@@ -123,7 +129,9 @@ struct LevelCellSucc {
   bool Advance() {
     do {
       ++i;
-      if (i >= 8) return false;
+      if (i >= 8) {
+        return false;
+      }
     } while (Cost() < 0);
 
     return true;
@@ -198,7 +206,7 @@ struct DijkstraLevel : DijkstraState<LevelCell*, DijkstraLevel> {
       for (int lx = 0; lx < kWidth; ++lx) {
         int cost = 1;
 
-        for (int cy = ly * kFactor; cy < (ly + 1) * kFactor; ++cy)
+        for (int cy = ly * kFactor; cy < (ly + 1) * kFactor; ++cy) {
           for (int cx = lx * kFactor; cx < (lx + 1) * kFactor; ++cx) {
             if (!level.Inside(cx, cy)) {
               cost = -1;
@@ -216,6 +224,7 @@ struct DijkstraLevel : DijkstraState<LevelCell*, DijkstraLevel> {
               }
             }
           }
+        }
       done:
 
         LevelCell* c = Cell(lx, ly);
@@ -224,6 +233,8 @@ struct DijkstraLevel : DijkstraState<LevelCell*, DijkstraLevel> {
       }
     }
 
-    for (auto& c : cells) c.Reset();
+    for (auto& c : cells) {
+      c.Reset();
+    }
   }
 };

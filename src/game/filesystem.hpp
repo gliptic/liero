@@ -105,13 +105,17 @@ struct FsNode {
 
   std::unique_ptr<io::Reader> ToReader() const {
     auto r = imp->TryToReader();
-    if (!r) throw std::runtime_error("Could not read " + FullPath());
+    if (!r) {
+      throw std::runtime_error("Could not read " + FullPath());
+    }
     return r;
   }
 
   std::unique_ptr<io::Writer> ToWriter() const {
     auto w = imp->TryToWriter();
-    if (!w) throw std::runtime_error("Could not write " + FullPath());
+    if (!w) {
+      throw std::runtime_error("Could not write " + FullPath());
+    }
     return w;
   }
 };

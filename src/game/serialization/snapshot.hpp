@@ -83,18 +83,25 @@ struct FiredByRef {
 };
 
 inline FiredByRef EncodeFiredBy(Game const& game, WormWeapon const* fb) {
-  if (!fb) return {.worm_idx = -1, .slot = -1};
+  if (!fb) {
+    return {.worm_idx = -1, .slot = -1};
+  }
   for (std::size_t wi = 0; wi < game.worms.size(); ++wi) {
     WormWeapon const* base = game.worms[wi]->weapons;
-    if (fb >= base && fb < base + NUM_WEAPONS)
+    if (fb >= base && fb < base + NUM_WEAPONS) {
       return {.worm_idx = static_cast<int8_t>(wi), .slot = static_cast<int8_t>(fb - base)};
+    }
   }
   return {.worm_idx = -1, .slot = -1};
 }
 
 inline WormWeapon* DecodeFiredBy(Game& game, FiredByRef ref) {
-  if (ref.worm_idx < 0 || ref.slot < 0) return nullptr;
-  if (static_cast<std::size_t>(ref.worm_idx) >= game.worms.size()) return nullptr;
+  if (ref.worm_idx < 0 || ref.slot < 0) {
+    return nullptr;
+  }
+  if (static_cast<std::size_t>(ref.worm_idx) >= game.worms.size()) {
+    return nullptr;
+  }
   return &game.worms[ref.worm_idx]->weapons[ref.slot];
 }
 
@@ -112,7 +119,9 @@ void save(Archive& ar, ExactObjectList<T, Limit> const& list) {
   for (int i = 0; i < Limit; ++i) {
     T const& el = list.arr[i];
     ar(cereal::make_nvp("u", el.used));
-    if (el.used) ar(cereal::make_nvp("e", const_cast<T&>(el)));
+    if (el.used) {
+      ar(cereal::make_nvp("e", const_cast<T&>(el)));
+    }
   }
 }
 
@@ -138,7 +147,9 @@ template <class Archive, typename T>
 void save(Archive& ar, FastObjectList<T> const& list) {
   auto count = static_cast<uint32_t>(list.count);
   ar(cereal::make_nvp("count", count));
-  for (uint32_t i = 0; i < count; ++i) ar(cereal::make_nvp("e", const_cast<T&>(list.arr[i])));
+  for (uint32_t i = 0; i < count; ++i) {
+    ar(cereal::make_nvp("e", const_cast<T&>(list.arr[i])));
+  }
 }
 
 template <class Archive, typename T>

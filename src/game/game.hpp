@@ -94,14 +94,20 @@ struct Game {
   // Set during predicted frames and during rollback resim.
   void SetSpeculative(bool s) {
     speculative = s;
-    if (sound_player) sound_player->speculative = s;
-    if (stats_recorder) stats_recorder->speculative = s;
+    if (sound_player) {
+      sound_player->speculative = s;
+    }
+    if (stats_recorder) {
+      stats_recorder->speculative = s;
+    }
   }
 
   Material PixelMat(int x, int y) { return common->materials[level.Pixel(x, y)]; }
 
   Worm* WormByIdx(int idx) {
-    if (idx < 0) return nullptr;
+    if (idx < 0) {
+      return nullptr;
+    }
     return worms[idx].get();
   }
 

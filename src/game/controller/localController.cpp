@@ -16,9 +16,12 @@
 #include <utility>
 
 std::shared_ptr<WormAI> CreateAi(int controller, Worm& worm, Settings& settings) {
-  if (controller == 1) return std::shared_ptr<WormAI>(new DumbLieroAI());
-  if (controller == 2)
+  if (controller == 1) {
+    return std::shared_ptr<WormAI>(new DumbLieroAI());
+  }
+  if (controller == 2) {
     return std::shared_ptr<WormAI>(new FollowAI(Weights(), settings.ai_parallels, worm.index == 0));
+  }
 
   return {};
 }
@@ -67,8 +70,12 @@ void LocalController::OnKey(int key, bool key_state) {
       worm->Press(Worm::kLeft);
       worm->Press(Worm::kRight);
     } else {
-      if (!worm->clean_control_states[Worm::kLeft]) worm->Release(Worm::kLeft);
-      if (!worm->clean_control_states[Worm::kRight]) worm->Release(Worm::kRight);
+      if (!worm->clean_control_states[Worm::kLeft]) {
+        worm->Release(Worm::kLeft);
+      }
+      if (!worm->clean_control_states[Worm::kRight]) {
+        worm->Release(Worm::kRight);
+      }
     }
   }
 
@@ -81,8 +88,12 @@ void LocalController::OnKey(int key, bool key_state) {
 // Called when the controller loses focus. When not focused, it will not receive key events among
 // other things.
 void LocalController::Unfocus() {
-  if (replay) replay->Unfocus();
-  if (state == kStateWeaponSelection) ws->Unfocus();
+  if (replay) {
+    replay->Unfocus();
+  }
+  if (state == kStateWeaponSelection) {
+    ws->Unfocus();
+  }
 }
 
 // Called when the controller gets focus.
@@ -92,9 +103,15 @@ void LocalController::Focus() {
     fade_value = 0;
     return;
   }
-  if (state == kStateWeaponSelection) ws->Focus();
-  if (replay) replay->Focus();
-  if (state == kStateInitial) ChangeState(kStateWeaponSelection);
+  if (state == kStateWeaponSelection) {
+    ws->Focus();
+  }
+  if (replay) {
+    replay->Focus();
+  }
+  if (state == kStateInitial) {
+    ChangeState(kStateWeaponSelection);
+  }
   game.Focus(gfx.play_renderer);
   // FIXME rewrite the focus function to avoid nonsense like this?
   game.Focus(gfx.single_screen_renderer);
@@ -129,7 +146,9 @@ bool LocalController::Process() {
       }
     }
 
-    if (ws->ProcessFrame()) ChangeState(kStateGame);
+    if (ws->ProcessFrame()) {
+      ChangeState(kStateGame);
+    }
   } else if (state == kStateGame || state == kStateGameEnded) {
     int const kRealFrameSkip = inverse_frame_skip ? !(cycles % frame_skip) : frame_skip;
     for (int i = 0; i < kRealFrameSkip && (state == kStateGame || state == kStateGameEnded); ++i) {
@@ -191,7 +210,9 @@ void LocalController::Draw(Renderer& renderer, bool use_spectator_viewports) {
 }
 
 void LocalController::ChangeState(GameState new_state) {
-  if (state == new_state) return;
+  if (state == new_state) {
+    return;
+  }
 
   // NOTE: We prepare new state before destroying the old.
   // e.g. weapon selection is destroyed first after we successfully
@@ -226,10 +247,14 @@ void LocalController::ChangeState(GameState new_state) {
           std::string const& name = worm.settings->name;
           int chars = 0;
 
-          if (i > 0) player_names.push_back('-');
+          if (i > 0) {
+            player_names.push_back('-');
+          }
           for (std::size_t c = 0; c < name.size() && chars < 4; ++c, ++chars) {
             auto const kCh = static_cast<unsigned char>(name[c]);
-            if (std::isalnum(kCh)) player_names.push_back(kCh);
+            if (std::isalnum(kCh)) {
+              player_names.push_back(kCh);
+            }
           }
         }
 

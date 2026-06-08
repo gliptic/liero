@@ -23,8 +23,9 @@ static bool PollUntil(IceAgent& a, IceAgent& b, Pred pred, int timeout_ms = 5000
     a.Poll();
     b.Poll();
     auto elapsed = std::chrono::steady_clock::now() - start;
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeout_ms)
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeout_ms) {
       return false;
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
   return true;
@@ -36,8 +37,9 @@ static bool PollOneUntil(IceAgent& a, Pred pred, int timeout_ms = 5000) {
   while (!pred()) {
     a.Poll();
     auto elapsed = std::chrono::steady_clock::now() - start;
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeout_ms)
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= timeout_ms) {
       return false;
+    }
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
   }
   return true;
@@ -112,8 +114,12 @@ TEST_CASE("Two local IceAgents connect directly", "[ice]") {
   agent_b.SetRemoteCredentials(agent_a.LocalUfrag(), agent_a.LocalPwd());
 
   // Exchange candidates
-  for (auto& c : candidates_a) agent_b.AddRemoteCandidate(c);
-  for (auto& c : candidates_b) agent_a.AddRemoteCandidate(c);
+  for (auto& c : candidates_a) {
+    agent_b.AddRemoteCandidate(c);
+  }
+  for (auto& c : candidates_b) {
+    agent_a.AddRemoteCandidate(c);
+  }
   agent_a.SetRemoteGatheringDone();
   agent_b.SetRemoteGatheringDone();
 
@@ -175,8 +181,12 @@ TEST_CASE("IceAgent data exchange via onRecv", "[ice]") {
 
   agent_a.SetRemoteCredentials(agent_b.LocalUfrag(), agent_b.LocalPwd());
   agent_b.SetRemoteCredentials(agent_a.LocalUfrag(), agent_a.LocalPwd());
-  for (auto& c : candidates_a) agent_b.AddRemoteCandidate(c);
-  for (auto& c : candidates_b) agent_a.AddRemoteCandidate(c);
+  for (auto& c : candidates_a) {
+    agent_b.AddRemoteCandidate(c);
+  }
+  for (auto& c : candidates_b) {
+    agent_a.AddRemoteCandidate(c);
+  }
   agent_a.SetRemoteGatheringDone();
   agent_b.SetRemoteGatheringDone();
 
@@ -193,7 +203,9 @@ TEST_CASE("IceAgent data exchange via onRecv", "[ice]") {
   while (received_by_b.empty()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     auto elapsed = std::chrono::steady_clock::now() - start;
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) break;
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) {
+      break;
+    }
   }
   REQUIRE(received_by_b.size() == sizeof(kMsg));
   REQUIRE(std::memcmp(received_by_b.data(), kMsg, sizeof(kMsg)) == 0);
@@ -206,7 +218,9 @@ TEST_CASE("IceAgent data exchange via onRecv", "[ice]") {
   while (received_by_a.empty()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
     auto elapsed = std::chrono::steady_clock::now() - start;
-    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) break;
+    if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) {
+      break;
+    }
   }
   REQUIRE(received_by_a.size() == sizeof(kReply));
   REQUIRE(std::memcmp(received_by_a.data(), kReply, sizeof(kReply)) == 0);
@@ -261,8 +275,12 @@ TEST_CASE("IceBridge proxies data bidirectionally", "[ice][bridge]") {
 
   agent_a.SetRemoteCredentials(agent_b.LocalUfrag(), agent_b.LocalPwd());
   agent_b.SetRemoteCredentials(agent_a.LocalUfrag(), agent_a.LocalPwd());
-  for (auto& c : candidates_a) agent_b.AddRemoteCandidate(c);
-  for (auto& c : candidates_b) agent_a.AddRemoteCandidate(c);
+  for (auto& c : candidates_a) {
+    agent_b.AddRemoteCandidate(c);
+  }
+  for (auto& c : candidates_b) {
+    agent_a.AddRemoteCandidate(c);
+  }
   agent_a.SetRemoteGatheringDone();
   agent_b.SetRemoteGatheringDone();
 
@@ -300,7 +318,9 @@ TEST_CASE("IceBridge proxies data bidirectionally", "[ice][bridge]") {
     if (n <= 0) {
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
       auto elapsed = std::chrono::steady_clock::now() - start;
-      if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) break;
+      if (std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() >= 2000) {
+        break;
+      }
     }
   }
   REQUIRE(n == sizeof(kMsg));

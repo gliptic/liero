@@ -68,14 +68,18 @@ struct Menu {
 
   bool OnLeftRight(Common& common, int dir) {
     auto* s = Selected();
-    if (!s) return false;
+    if (!s) {
+      return false;
+    }
     std::unique_ptr<ItemBehavior> b(GetItemBehavior(common, *s));
     return b->OnLeftRight(*this, *s, dir);
   }
 
   int OnEnter(Common& common) {
     auto* s = Selected();
-    if (!s) return false;
+    if (!s) {
+      return false;
+    }
     std::unique_ptr<ItemBehavior> b(GetItemBehavior(common, *s));
     return b->OnEnter(*this, *s);
   }
@@ -128,7 +132,9 @@ struct Menu {
   void SetSelection(int new_selection) { selection_ = new_selection; }
 
   MenuItem* Selected() {
-    if (!IsSelectionValid()) return nullptr;
+    if (!IsSelectionValid()) {
+      return nullptr;
+    }
     return &items[selection_];
   }
 
@@ -139,7 +145,9 @@ struct Menu {
 
   int IndexFromId(int id) {
     for (int i = 0; std::cmp_less(i, items.size()); ++i) {
-      if (items[i].id == id) return i;
+      if (items[i].id == id) {
+        return i;
+      }
     }
 
     return -1;
@@ -147,7 +155,9 @@ struct Menu {
 
   MenuItem* ItemFromId(int id) {
     for (auto& item : items) {
-      if (item.id == id) return &item;
+      if (item.id == id) {
+        return &item;
+      }
     }
 
     return nullptr;

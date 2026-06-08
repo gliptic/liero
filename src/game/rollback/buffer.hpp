@@ -60,7 +60,9 @@ class RollbackBuffer {
   // Pre-size every slot's snapshot vectors. Call once after the level is
   // generated; no allocations happen on subsequent save/load.
   void Prepare(Game const& game) {
-    for (auto& slot : slots_) slot.snapshot.Prepare(game);
+    for (auto& slot : slots_) {
+      slot.snapshot.Prepare(game);
+    }
   }
 
   // Reset all slots to empty. Snapshot capacity (sized by prepare) is kept.
@@ -104,13 +106,17 @@ class RollbackBuffer {
   }
 
   Slot* Find(int frame) {
-    if (!Resident(frame)) return nullptr;
+    if (!Resident(frame)) {
+      return nullptr;
+    }
     Slot& slot = slots_[IndexOf(frame)];
     return slot.frame == frame ? &slot : nullptr;
   }
 
   Slot const* Find(int frame) const {
-    if (!Resident(frame)) return nullptr;
+    if (!Resident(frame)) {
+      return nullptr;
+    }
     Slot const& slot = slots_[IndexOf(frame)];
     return slot.frame == frame ? &slot : nullptr;
   }
@@ -123,7 +129,9 @@ class RollbackBuffer {
   // too old to apply (which would mean the local peer already advanced past
   // the rollback horizon — a stall condition).
   int OldestFrame() const {
-    if (newest_ < 0) return -1;
+    if (newest_ < 0) {
+      return -1;
+    }
     int const kFloor = newest_ - static_cast<int>(kCapacity) + 1;
     return kFloor < 0 ? 0 : kFloor;
   }
@@ -131,7 +139,9 @@ class RollbackBuffer {
   bool Empty() const { return newest_ < 0; }
 
   std::size_t Size() const {
-    if (newest_ < 0) return 0;
+    if (newest_ < 0) {
+      return 0;
+    }
     int const kSpan = newest_ + 1;
     return std::cmp_less(kSpan, kCapacity) ? static_cast<std::size_t>(kSpan) : kCapacity;
   }

@@ -24,7 +24,9 @@ struct Work {
   bool WaitDone() const {
     LockMutex const kM(mutex);
 
-    while (!done) SDL_WaitCondition(state_cond, mutex);
+    while (!done) {
+      SDL_WaitCondition(state_cond, mutex);
+    }
 
     return done;
   }
@@ -71,7 +73,9 @@ struct WorkQueue {
 
     for (auto& thread : threads) {
       int status = 0;
-      if (thread) SDL_WaitThread(thread, &status);
+      if (thread) {
+        SDL_WaitThread(thread, &status);
+      }
     }
 
     SDL_DestroyMutex(queue_mutex);
@@ -87,10 +91,14 @@ struct WorkQueue {
   std::unique_ptr<Work> WaitForWork() {
     LockMutex const kM(queue_mutex);
 
-    while (queue.empty() && queue_alive) SDL_WaitCondition(queue_cond, queue_mutex);
+    while (queue.empty() && queue_alive) {
+      SDL_WaitCondition(queue_cond, queue_mutex);
+    }
 
-    // NOLINTNEXTLINE(hicpp-exception-baseclass) — sentinel-only exception caught by the worker loop; std::exception inheritance would imply broader semantics it doesn't have.
-    if (!queue_alive) throw StopWorker();
+    if (!queue_alive) {
+      // NOLINTNEXTLINE(hicpp-exception-baseclass) — sentinel-only exception caught by the worker loop; std::exception inheritance would imply broader semantics it doesn't have.
+      throw StopWorker();
+    }
 
     auto ret = std::move(queue[0]);
     queue.erase(queue.begin());

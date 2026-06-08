@@ -309,7 +309,9 @@ void Common::load(const FsNode& node) {
     // Read entire content into a string for istringstream
     std::string content;
     try {
-      for (;;) content.push_back(static_cast<char>(text_reader.Get()));
+      for (;;) {
+        content.push_back(static_cast<char>(text_reader.Get()));
+      }
     } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — EOF signalled by exception
                                      // from text_reader.Get(); content is the full read.
     }
@@ -346,7 +348,9 @@ void Common::load(const FsNode& node) {
 
         s.original_data.resize(kDataSize);
 
-        for (auto& z : s.original_data) z = r.Get() - 128;
+        for (auto& z : s.original_data) {
+          z = r.Get() - 128;
+        }
 
         s.sound = SfxNewSound(kDataSize * 2);
 
@@ -396,7 +400,7 @@ void Common::load(const FsNode& node) {
 
         ch.width = 0;
 
-        for (std::size_t y = 0; y < 8; ++y)
+        for (std::size_t y = 0; y < 8; ++y) {
           for (std::size_t x = 0; x < 7; ++x) {
             auto p = dest[y * 7 + x];
             if (p == 0) {
@@ -408,6 +412,7 @@ void Common::load(const FsNode& node) {
               break;
             }
           }
+        }
       }
     }
   }
@@ -419,7 +424,9 @@ void Common::load(const FsNode& node) {
     io::Reader& w_reader = *w_reader_ptr;
     std::string content;
     try {
-      for (;;) content.push_back(static_cast<char>(w_reader.Get()));
+      for (;;) {
+        content.push_back(static_cast<char>(w_reader.Get()));
+      }
     } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — EOF signalled by exception
                                      // from reader; the partial read is the result.
     }
@@ -434,7 +441,9 @@ void Common::load(const FsNode& node) {
     io::Reader& n_reader = *n_reader_ptr;
     std::string content;
     try {
-      for (;;) content.push_back(static_cast<char>(n_reader.Get()));
+      for (;;) {
+        content.push_back(static_cast<char>(n_reader.Get()));
+      }
     } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — EOF signalled by exception
                                      // from reader; the partial read is the result.
     }
@@ -449,7 +458,9 @@ void Common::load(const FsNode& node) {
     io::Reader& s_reader = *s_reader_ptr;
     std::string content;
     try {
-      for (;;) content.push_back(static_cast<char>(s_reader.Get()));
+      for (;;) {
+        content.push_back(static_cast<char>(s_reader.Get()));
+      }
     } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — EOF signalled by exception
                                      // from reader; the partial read is the result.
     }
@@ -482,41 +493,48 @@ void Common::Precompute() {
   worm_sprites.Allocate(16, 16, 2 * 2 * 21);
 
   for (int i = 0; i < 21; ++i) {
-    for (int y = 0; y < 16; ++y)
+    for (int y = 0; y < 16; ++y) {
       for (int x = 0; x < 16; ++x) {
         PalIdx pix = (large_sprites.SpritePtr(16 + i) + y * 16)[x];
 
         (WormSprite(i, 1, 0) + y * 16)[x] = pix;
-        if (x == 15)
+        if (x == 15) {
           (WormSprite(i, 0, 0) + y * 16)[15] = 0;
-        else
+        } else {
           (WormSprite(i, 0, 0) + y * 16)[14 - x] = pix;
+        }
 
-        if (pix >= 30 && pix <= 34) pix += 9;  // Change worm color
+        if (pix >= 30 && pix <= 34) {
+          pix += 9;  // Change worm color
+        }
 
         (WormSprite(i, 1, 1) + y * 16)[x] = pix;
 
-        if (x == 15)
+        if (x == 15) {
           (WormSprite(i, 0, 1) + y * 16)[15] = 0;  // A bit haxy, but works
-        else
+        } else {
           (WormSprite(i, 0, 1) + y * 16)[14 - x] = pix;
+        }
       }
+    }
   }
 
   fire_cone_sprites.Allocate(16, 16, 2 * 7);
 
   for (int i = 0; i < 7; ++i) {
-    for (int y = 0; y < 16; ++y)
+    for (int y = 0; y < 16; ++y) {
       for (int x = 0; x < 16; ++x) {
         PalIdx const kPix = (large_sprites.SpritePtr(9 + i) + y * 16)[x];
 
         (FireConeSprite(i, 1) + y * 16)[x] = kPix;
 
-        if (x == 15)
+        if (x == 15) {
           (FireConeSprite(i, 0) + y * 16)[15] = 0;
-        else
+        } else {
           (FireConeSprite(i, 0) + y * 16)[14 - x] = kPix;
+        }
       }
+    }
   }
 }
 
@@ -525,22 +543,30 @@ Common::Common() = default;
 std::string Common::GuessName() const {
   std::string const& cp = s[SCopyright2];
   auto p = cp.find('(');
-  if (p == std::string::npos) p = cp.size();
+  if (p == std::string::npos) {
+    p = cp.size();
+  }
 
-  while (p > 0 && cp[p - 1] == ' ') --p;
+  while (p > 0 && cp[p - 1] == ' ') {
+    --p;
+  }
 
   return cp.substr(0, p);
 }
 
 int Common::SoundIndex(std::string_view name) const {
   for (std::size_t i = 0; i < sounds.size(); ++i) {
-    if (sounds[i].name == name) return static_cast<int>(i);
+    if (sounds[i].name == name) {
+      return static_cast<int>(i);
+    }
   }
   return -1;
 }
 
 void SfxSample::CreateSound() {
-  if (original_data.empty()) return;
+  if (original_data.empty()) {
+    return;
+  }
 
   std::vector<int16_t>& samples = SfxSoundData(sound);
   samples.clear();

@@ -69,14 +69,17 @@ void InitKeys() {
 
 uint32_t SDLToDOSKey(SDL_Scancode scancode) {
   auto const kI = sdl_to_dos_scan_codes.find(static_cast<uint32_t>(scancode));
-  if (kI != sdl_to_dos_scan_codes.end()) return kI->second;
+  if (kI != sdl_to_dos_scan_codes.end()) {
+    return kI->second;
+  }
   return 89;
 }
 
 uint32_t SDLToDOSKey(SDL_Scancode scancode, SDL_Keymod /*mod*/) {
   uint32_t const kEy = SDLToDOSKey(scancode);
 
-  if (kEy >= 177)  // Liero doesn't have keys >= 177
-    return 89;     // Arbitrarily translate it to 89
+  if (kEy >= 177) {  // Liero doesn't have keys >= 177
+    return 89;       // Arbitrarily translate it to 89
+  }
   return kEy;
 }

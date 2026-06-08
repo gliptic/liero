@@ -48,7 +48,9 @@ TEST_CASE("Settings round-trip via TOML") {
   original.tc = "customtc";
 
   // Weapon table
-  for (int i = 0; i < 40; ++i) original.weap_table[i] = i % 3;
+  for (int i = 0; i < 40; ++i) {
+    original.weap_table[i] = i % 3;
+  }
 
   // Worm settings (player 0)
   original.worm_settings[0]->controller = 1;
@@ -136,7 +138,9 @@ TEST_CASE("Settings round-trip via TOML") {
   CHECK(loaded.tc == original.tc);
 
   // Weapon table
-  for (int i = 0; i < 40; ++i) CHECK(loaded.weap_table[i] == original.weap_table[i]);
+  for (int i = 0; i < 40; ++i) {
+    CHECK(loaded.weap_table[i] == original.weap_table[i]);
+  }
 
   // Player 0
   CHECK(loaded.worm_settings[0]->controller == original.worm_settings[0]->controller);

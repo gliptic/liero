@@ -52,7 +52,9 @@ struct FileNode {
     EnsureFilled();
 
     if (menu.items.empty()) {
-      for (auto& c : children) menu.AddItem(MenuItem(c->folder ? 47 : 48, 7, c->name));
+      for (auto& c : children) {
+        menu.AddItem(MenuItem(c->folder ? 47 : 48, 7, c->name));
+      }
 
       menu.MoveToFirstVisible();
     }
@@ -62,15 +64,23 @@ struct FileNode {
 
   // NOLINTNEXTLINE(misc-no-recursion) — file tree walk; depth is bounded by user filesystem layout.
   FileNode* Find(string const& path) {
-    if (CiCompare(full_path, path)) return this;
-    if (!CiStartsWith(path, full_path)) return nullptr;
-    if (!folder) return nullptr;
+    if (CiCompare(full_path, path)) {
+      return this;
+    }
+    if (!CiStartsWith(path, full_path)) {
+      return nullptr;
+    }
+    if (!folder) {
+      return nullptr;
+    }
 
     EnsureFilled();
 
     for (auto& c : children) {
       auto* r = c->Find(path);
-      if (r) return r;
+      if (r) {
+        return r;
+      }
     }
 
     return nullptr;
@@ -112,7 +122,9 @@ struct ChildSort {
   using type = shared_ptr<FileNode>;
 
   bool operator()(type const& a, type const& b) const {
-    if (a->folder == b->folder) return CiLess(a->name, b->name);
+    if (a->folder == b->folder) {
+      return CiLess(a->name, b->name);
+    }
     return a->folder > b->folder;
   }
 };
@@ -172,7 +184,9 @@ struct FileSelector {
   bool Select(string const& path) {
     FileNode* fn = root_node.Find(path);
 
-    if (!fn) return false;
+    if (!fn) {
+      return false;
+    }
 
     FileNode* parent = fn->parent;
     if (parent) {
@@ -183,21 +197,26 @@ struct FileSelector {
         p->selected_child = fn;
 
         for (std::size_t i = 0; i < p->children.size(); ++i) {
-          if (ch == p->children[i].get()) p->GetMenu().MoveTo(static_cast<int>(i));
+          if (ch == p->children[i].get()) {
+            p->GetMenu().MoveTo(static_cast<int>(i));
+          }
         }
       }
 
-      if (fn->folder)
+      if (fn->folder) {
         SetFolder(*fn);
-      else
+      } else {
         SetFolder(*parent);
+      }
     }
 
     return true;
   }
 
   FileNode* CurSel() const {
-    if (!Menu().IsSelectionValid()) return nullptr;
+    if (!Menu().IsSelectionValid()) {
+      return nullptr;
+    }
 
     auto* c = current_node->children[Menu().Selection()].get();
 
@@ -220,7 +239,9 @@ struct FileSelector {
   }
 
   bool Exit() {
-    if (current_node->parent == nullptr) return false;
+    if (current_node->parent == nullptr) {
+      return false;
+    }
 
     SetFolder(*current_node->parent);
 

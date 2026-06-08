@@ -62,8 +62,12 @@ ScriptedInputs GenerateInputs(uint32_t seed, int ticks) {
   for (int i = 0; i < ticks; ++i) {
     uint8_t in_a = rng() & 0x7f;
     uint8_t in_b = rng() & 0x7f;
-    if ((rng() % 10) < 6) in_a |= (1 << Worm::kFire);
-    if ((rng() % 10) < 6) in_b |= (1 << Worm::kFire);
+    if ((rng() % 10) < 6) {
+      in_a |= (1 << Worm::kFire);
+    }
+    if ((rng() % 10) < 6) {
+      in_b |= (1 << Worm::kFire);
+    }
     out.a.push_back(in_a);
     out.b.push_back(in_b);
   }
@@ -156,7 +160,9 @@ TEST_CASE("Rollback desync detection — clean run produces no alarms", "[rollba
   std::size_t alarms = 0;
   for (auto const& [frame, ca] : a_checks) {
     auto it = b_checks.find(frame);
-    if (it == b_checks.end()) continue;
+    if (it == b_checks.end()) {
+      continue;
+    }
     ++compared;
     if (ca != it->second) {
       ++alarms;
@@ -211,7 +217,9 @@ TEST_CASE("Rollback desync detection — 1-bit injection fires within 200 frames
   // restored on rollback, and turn into a structural divergence rather
   // than the "1-bit drift" the plan calls for.
   b->SetChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) {
-    if (f >= kInjectFrame) c ^= 1U;
+    if (f >= kInjectFrame) {
+      c ^= 1U;
+    }
     b_checks[f] = c;
   });
 
@@ -241,14 +249,20 @@ TEST_CASE("Rollback desync detection — 1-bit injection fires within 200 frames
     // Sweep newly-matched (frame, checksum) pairs and look for the
     // first mismatch ≥ kInjectFrame.
     for (auto const& [frame, ca] : a_checks) {
-      if (frame < kInjectFrame) continue;
+      if (frame < kInjectFrame) {
+        continue;
+      }
       auto it = b_checks.find(frame);
-      if (it == b_checks.end()) continue;
+      if (it == b_checks.end()) {
+        continue;
+      }
       if (ca != it->second && frame < first_alarm_frame) {
         first_alarm_frame = frame;
       }
     }
-    if (first_alarm_frame != UINT32_MAX) break;
+    if (first_alarm_frame != UINT32_MAX) {
+      break;
+    }
   }
 
   REQUIRE(first_alarm_frame != UINT32_MAX);

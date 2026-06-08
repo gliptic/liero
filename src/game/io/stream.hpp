@@ -40,7 +40,9 @@ struct Reader {
   // Read exactly `n` bytes or throw EndOfStream.
   void Get(uint8_t* dst, std::size_t n) {
     std::size_t const kGot = TryGet(dst, n);
-    if (kGot != n) throw EndOfStream{};
+    if (kGot != n) {
+      throw EndOfStream{};
+    }
   }
 
   // Discard up to `n` bytes; return number actually discarded.
@@ -51,7 +53,9 @@ struct Reader {
       std::size_t const kTake = std::min(sizeof(buf), n - total);
       std::size_t const kGot = TryGet(buf, kTake);
       total += kGot;
-      if (kGot < kTake) break;
+      if (kGot < kTake) {
+        break;
+      }
     }
     return total;
   }
@@ -77,19 +81,24 @@ struct FileReader : Reader {
   FileReader(std::FILE* f, OwnFile /*unused*/) : f_(f), owned_(true) {}
 
   FileReader(char const* path, char const* mode) : f_(std::fopen(path, mode)) {
-    if (!f_) throw StreamError(std::string("Couldn't open ") + path);
+    if (!f_) {
+      throw StreamError(std::string("Couldn't open ") + path);
+    }
     owned_ = true;
   }
   ~FileReader() override {
-    if (owned_ && f_)
+    if (owned_ && f_) {
       std::fclose(f_);  // NOLINT(cert-err33-c) — destructor cleanup; cannot signal a failure here.
+    }
   }
   FileReader(FileReader const&) = delete;
   FileReader& operator=(FileReader const&) = delete;
 
   uint8_t Get() override {
     int const kC = std::fgetc(f_);
-    if (kC == EOF) throw EndOfStream{};
+    if (kC == EOF) {
+      throw EndOfStream{};
+    }
     return static_cast<uint8_t>(kC);
   }
 
@@ -107,7 +116,9 @@ struct FileWriter : Writer {
   FileWriter(std::FILE* f, OwnFile /*unused*/) : f_(f), owned_(true) {}
 
   FileWriter(char const* path, char const* mode) : f_(std::fopen(path, mode)) {
-    if (!f_) throw StreamError(std::string("Couldn't open ") + path);
+    if (!f_) {
+      throw StreamError(std::string("Couldn't open ") + path);
+    }
     owned_ = true;
   }
   ~FileWriter() override {
@@ -120,10 +131,14 @@ struct FileWriter : Writer {
   FileWriter& operator=(FileWriter const&) = delete;
 
   void Put(uint8_t b) override {
-    if (std::fputc(b, f_) == EOF) throw StreamError("write failed");
+    if (std::fputc(b, f_) == EOF) {
+      throw StreamError("write failed");
+    }
   }
   void Put(uint8_t const* src, std::size_t n) override {
-    if (std::fwrite(src, 1, n, f_) != n) throw StreamError("write failed");
+    if (std::fwrite(src, 1, n, f_) != n) {
+      throw StreamError("write failed");
+    }
   }
   void Flush() override {
     std::fflush(f_);  // NOLINT(cert-err33-c) — best-effort; surfaces on next IO.
@@ -153,12 +168,16 @@ struct MemReader : Reader {
 
   std::size_t Tellg() const { return pos_; }
   void Seekg(std::size_t pos) {
-    if (pos > size_) throw EndOfStream("seekg past end");
+    if (pos > size_) {
+      throw EndOfStream("seekg past end");
+    }
     pos_ = pos;
   }
 
   uint8_t Get() override {
-    if (pos_ >= size_) throw EndOfStream{};
+    if (pos_ >= size_) {
+      throw EndOfStream{};
+    }
     return data_[pos_++];
   }
 

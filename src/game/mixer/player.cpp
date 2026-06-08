@@ -7,7 +7,9 @@ SoundPlayer* g_sound_player = nullptr;
 
 void SoundPlayer::Play(SoundDefT hook, void* id, int loops) {
   Common const* c = GetCommonPtr();
-  if (c) Play(c->sound_hook[hook], id, loops);
+  if (c) {
+    Play(c->sound_hook[hook], id, loops);
+  }
 }
 
 #if !DISABLE_SOUND
@@ -49,7 +51,9 @@ DefaultSoundPlayer::DefaultSoundPlayer(Common& c) : m_common_(&c), mixer_(SfxMix
 
 DefaultSoundPlayer::~DefaultSoundPlayer() {
 #if !DISABLE_SOUND
-  if (!initialized_) return;
+  if (!initialized_) {
+    return;
+  }
   initialized_ = false;
 
   if (stream_) {
@@ -62,7 +66,9 @@ DefaultSoundPlayer::~DefaultSoundPlayer() {
 
 void DefaultSoundPlayer::PlayImpl(int sound, void* id, int loops) {
 #if !DISABLE_SOUND
-  if (!initialized_) return;
+  if (!initialized_) {
+    return;
+  }
 
   SfxMixerAdd(mixer_, m_common_->sounds[sound].sound, SfxMixerNow(mixer_), id,
               loops ? SFX_SOUND_LOOP : SFX_SOUND_NORMAL);
@@ -71,7 +77,9 @@ void DefaultSoundPlayer::PlayImpl(int sound, void* id, int loops) {
 
 bool DefaultSoundPlayer::IsPlaying(void* id) {
 #if !DISABLE_SOUND
-  if (!initialized_) return false;
+  if (!initialized_) {
+    return false;
+  }
   return SfxIsPlaying(mixer_, id) != 0;
 #else
   return false;
@@ -80,8 +88,12 @@ bool DefaultSoundPlayer::IsPlaying(void* id) {
 
 void DefaultSoundPlayer::Stop(void* id) {
 #if !DISABLE_SOUND
-  if (speculative) return;
-  if (!initialized_) return;
+  if (speculative) {
+    return;
+  }
+  if (!initialized_) {
+    return;
+  }
   SfxMixerStop(mixer_, id);
 #endif
 }

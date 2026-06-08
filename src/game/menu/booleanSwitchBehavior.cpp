@@ -6,10 +6,11 @@
 #include "menuItem.hpp"
 
 bool BooleanSwitchBehavior::OnLeftRight(Menu& menu, MenuItem& item, int dir) {
-  if (dir > 0)
+  if (dir > 0) {
     g_sound_player->Play(common.sound_hook[SoundMenuMoveUp]);
-  else
+  } else {
     g_sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
+  }
 
   set(!v);
   OnUpdate(menu, item);

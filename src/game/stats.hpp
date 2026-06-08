@@ -11,7 +11,9 @@ vector<D> Convert(vector<T> const& src) {
   vector<D> v;
 
   v.reserve(src.size());
-  for (auto& e : src) v.push_back(e);
+  for (auto& e : src) {
+    v.push_back(e);
+  }
 
   return std::move(v);
 }
@@ -21,7 +23,9 @@ vector<T> Pluck(vector<C> const& src, T(C::* a)) {
   vector<T> v;
 
   v.reserve(src.size());
-  for (auto& e : src) v.push_back(e.*a);
+  for (auto& e : src) {
+    v.push_back(e.*a);
+  }
 
   return std::move(v);
 }
@@ -43,7 +47,9 @@ vector<T> Stretch(vector<T> const& src, size_t len) {
       sum += src[i];
       ++c;
 
-      if (cum < len) break;
+      if (cum < len) {
+        break;
+      }
 
       ++i;
       cum -= len;
@@ -58,12 +64,16 @@ vector<T> Stretch(vector<T> const& src, size_t len) {
 template <typename T>
 void Cumulative(vector<T>& src) {
   T prev = T();
-  for (auto& v : src) prev = (v += prev);
+  for (auto& v : src) {
+    prev = (v += prev);
+  }
 }
 
 template <typename T>
 void Normalize(vector<T>& src, size_t limit, bool balance = true) {
-  if (src.empty()) return;
+  if (src.empty()) {
+    return;
+  }
 
   T max = *std::max_element(src.begin(), src.end());
   T min = *std::min_element(src.begin(), src.end());

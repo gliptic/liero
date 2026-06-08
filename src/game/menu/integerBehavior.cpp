@@ -11,7 +11,9 @@
 #include <cmath>
 
 bool IntegerBehavior::OnLeftRight(Menu& menu, MenuItem& item, int dir) {
-  if ((gfx.menu_cycles % scroll_interval) != 0) return true;
+  if ((gfx.menu_cycles % scroll_interval) != 0) {
+    return true;
+  }
 
   int new_v = v;
   if ((dir < 0 && new_v > min) || (dir > 0 && new_v < max)) {
@@ -31,7 +33,9 @@ static int FilterDigits(int k) { return std::isdigit(k) ? k : 0; }
 int IntegerBehavior::OnEnter(Menu& menu, MenuItem& item) {
   g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
 
-  if (!allow_entry) return -1;  // Not allowed
+  if (!allow_entry) {
+    return -1;  // Not allowed
+  }
 
   int x = 0;
   int y = 0;
@@ -51,16 +55,19 @@ int IntegerBehavior::OnEnter(Menu& menu, MenuItem& item) {
                                              if (accepted && !result.empty()) {
                                                // NOLINTNEXTLINE(bugprone-unchecked-string-to-number-conversion, cert-err34-c) — input has already been filtered by FilterDigits.
                                                int val = std::atoi(result.c_str());
-                                               if (val < kMinVal)
+                                               if (val < kMinVal) {
                                                  val = kMinVal;
-                                               else if (val > kMaxVal)
+                                               } else if (val > kMaxVal) {
                                                  val = kMaxVal;
+                                               }
                                                *dest_ptr = val;
                                              }
                                              // Update the menu item display
                                              item.value = ToString(*dest_ptr);
                                              item.has_value = true;
-                                             if (kPct) item.value += "%";
+                                             if (kPct) {
+                                               item.value += "%";
+                                             }
                                            }),
         &gfx);
   }
@@ -70,5 +77,7 @@ int IntegerBehavior::OnEnter(Menu& menu, MenuItem& item) {
 void IntegerBehavior::OnUpdate(Menu& /*menu*/, MenuItem& item) {
   item.value = ToString(v);
   item.has_value = true;
-  if (percentage) item.value += "%";
+  if (percentage) {
+    item.value += "%";
+  }
 }

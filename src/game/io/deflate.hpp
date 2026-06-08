@@ -27,7 +27,9 @@ struct InflateReader : Reader {
     stream_.avail_in = 0;
     stream_.next_out = nullptr;
     stream_.avail_out = 0;
-    if (mz_inflateInit(&stream_) != MZ_OK) throw StreamError("mz_inflateInit failed");
+    if (mz_inflateInit(&stream_) != MZ_OK) {
+      throw StreamError("mz_inflateInit failed");
+    }
   }
 
   ~InflateReader() override { mz_inflateEnd(&stream_); }
@@ -38,7 +40,9 @@ struct InflateReader : Reader {
   uint8_t Get() override {
     if (out_pos_ >= out_len_) {
       Refill();
-      if (out_len_ == 0) throw EndOfStream{};
+      if (out_len_ == 0) {
+        throw EndOfStream{};
+      }
     }
     return outbuf_[out_pos_++];
   }
@@ -48,7 +52,9 @@ struct InflateReader : Reader {
     while (total < n) {
       if (out_pos_ >= out_len_) {
         Refill();
-        if (out_len_ == 0) break;
+        if (out_len_ == 0) {
+          break;
+        }
       }
       std::size_t const kTake = std::min(n - total, out_len_ - out_pos_);
       std::memcpy(dst + total, outbuf_.data() + out_pos_, kTake);
@@ -62,7 +68,9 @@ struct InflateReader : Reader {
   void Refill() {
     out_pos_ = 0;
     out_len_ = 0;
-    if (eos_) return;
+    if (eos_) {
+      return;
+    }
 
     stream_.next_out = outbuf_.data();
     stream_.avail_out = static_cast<unsigned int>(outbuf_.size());
@@ -87,7 +95,9 @@ struct InflateReader : Reader {
       }
       if (kRc == MZ_BUF_ERROR) {
         // No progress; need more input or output buffer is full.
-        if (stream_.avail_out == 0) break;
+        if (stream_.avail_out == 0) {
+          break;
+        }
         if (input_done_) {
           eos_ = true;
           break;
@@ -95,7 +105,9 @@ struct InflateReader : Reader {
         // Otherwise loop and try to read more input.
         continue;
       }
-      if (kRc != MZ_OK) throw StreamError("mz_inflate failed");
+      if (kRc != MZ_OK) {
+        throw StreamError("mz_inflate failed");
+      }
     }
 
     out_len_ = outbuf_.size() - stream_.avail_out;
@@ -121,8 +133,9 @@ struct DeflateWriter : Writer {
     stream_.avail_in = 0;
     stream_.next_out = outbuf_.data();
     stream_.avail_out = static_cast<unsigned int>(outbuf_.size());
-    if (mz_deflateInit(&stream_, MZ_DEFAULT_COMPRESSION) != MZ_OK)
+    if (mz_deflateInit(&stream_, MZ_DEFAULT_COMPRESSION) != MZ_OK) {
       throw StreamError("mz_deflateInit failed");
+    }
   }
 
   ~DeflateWriter() override {
@@ -141,15 +154,21 @@ struct DeflateWriter : Writer {
   void Put(uint8_t b) override { Put(&b, 1); }
 
   void Put(uint8_t const* src, std::size_t n) override {
-    if (finished_) throw StreamError("write after finish");
+    if (finished_) {
+      throw StreamError("write after finish");
+    }
 
     stream_.next_in = const_cast<unsigned char*>(src);
     stream_.avail_in = static_cast<unsigned int>(n);
 
     while (stream_.avail_in > 0) {
-      if (stream_.avail_out == 0) DrainOut();
+      if (stream_.avail_out == 0) {
+        DrainOut();
+      }
       int const kRc = mz_deflate(&stream_, MZ_NO_FLUSH);
-      if (kRc != MZ_OK) throw StreamError("mz_deflate failed");
+      if (kRc != MZ_OK) {
+        throw StreamError("mz_deflate failed");
+      }
     }
   }
 
@@ -170,7 +189,9 @@ struct DeflateWriter : Writer {
   }
 
   void Finish() {
-    if (finished_) return;
+    if (finished_) {
+      return;
+    }
     finished_ = true;
 
     stream_.next_in = nullptr;
@@ -179,8 +200,12 @@ struct DeflateWriter : Writer {
     for (;;) {
       int const kRc = mz_deflate(&stream_, MZ_FINISH);
       DrainOut();
-      if (kRc == MZ_STREAM_END) break;
-      if (kRc != MZ_OK) throw StreamError("mz_deflate(MZ_FINISH) failed");
+      if (kRc == MZ_STREAM_END) {
+        break;
+      }
+      if (kRc != MZ_OK) {
+        throw StreamError("mz_deflate(MZ_FINISH) failed");
+      }
     }
     sink_->Flush();
   }

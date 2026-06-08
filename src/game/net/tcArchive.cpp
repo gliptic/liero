@@ -30,7 +30,9 @@ void CollectFiles(const FsNode& node, const std::string& prefix,
         uint8_t buf[4096];
         for (;;) {
           std::size_t const kGot = r.TryGet(buf, sizeof(buf));
-          if (kGot == 0) break;
+          if (kGot == 0) {
+            break;
+          }
           data.insert(data.end(), buf, buf + kGot);
         }
         out.emplace_back(kRelPath, std::move(data));
@@ -80,7 +82,9 @@ std::vector<uint8_t> Pack(const FsNode& root) {
   std::memcpy(raw.data(), &num_files, 4);
 
   for (auto& [name, data] : files) {
-    if (name.size() > UINT16_MAX) continue;  // Skip files with names too long to encode
+    if (name.size() > UINT16_MAX) {
+      continue;  // Skip files with names too long to encode
+    }
     auto name_len = static_cast<uint16_t>(name.size());
     auto data_len = static_cast<uint32_t>(data.size());
 
@@ -117,7 +121,9 @@ std::vector<uint8_t> Pack(const FsNode& root) {
 
 std::vector<FileEntry> Unpack(const uint8_t* data, size_t len) {
   std::vector<FileEntry> result;
-  if (len < 5) return result;
+  if (len < 5) {
+    return result;
+  }
 
   bool const kIsCompressed = data[0] != 0;
   uint32_t raw_size = 0;
@@ -125,7 +131,9 @@ std::vector<FileEntry> Unpack(const uint8_t* data, size_t len) {
 
   // Prevent decompression bombs: limit uncompressed size to 64 MB
   static constexpr uint32_t kMaxUncompressedSize = 64 * 1024 * 1024;
-  if (raw_size > kMaxUncompressedSize) return result;
+  if (raw_size > kMaxUncompressedSize) {
+    return result;
+  }
 
   std::vector<uint8_t> raw;
   if (kIsCompressed) {
@@ -133,25 +141,35 @@ std::vector<FileEntry> Unpack(const uint8_t* data, size_t len) {
     mz_ulong dest_len = raw_size;
     int const kStatus =
         mz_uncompress(raw.data(), &dest_len, data + 5, static_cast<mz_ulong>(len - 5));
-    if (kStatus != MZ_OK) return result;
+    if (kStatus != MZ_OK) {
+      return result;
+    }
   } else {
-    if (len - 5 < raw_size) return result;
+    if (len - 5 < raw_size) {
+      return result;
+    }
     raw.assign(data + 5, data + 5 + raw_size);
   }
 
   // Parse archive
-  if (raw.size() < 4) return result;
+  if (raw.size() < 4) {
+    return result;
+  }
   uint32_t num_files = 0;
   std::memcpy(&num_files, raw.data(), 4);
 
   size_t offset = 4;
   for (uint32_t i = 0; i < num_files; ++i) {
-    if (offset + 2 > raw.size()) break;
+    if (offset + 2 > raw.size()) {
+      break;
+    }
     uint16_t name_len = 0;
     std::memcpy(&name_len, raw.data() + offset, 2);
     offset += 2;
 
-    if (offset + name_len + 4 > raw.size()) break;
+    if (offset + name_len + 4 > raw.size()) {
+      break;
+    }
     std::string name(reinterpret_cast<const char*>(raw.data() + offset), name_len);
     offset += name_len;
 
@@ -159,7 +177,9 @@ std::vector<FileEntry> Unpack(const uint8_t* data, size_t len) {
     std::memcpy(&data_len, raw.data() + offset, 4);
     offset += 4;
 
-    if (offset + data_len > raw.size()) break;
+    if (offset + data_len > raw.size()) {
+      break;
+    }
     std::vector<uint8_t> file_data(raw.data() + offset, raw.data() + offset + data_len);
     offset += data_len;
 

@@ -31,7 +31,9 @@ void InputStringState::HandleEvent(SDL_Event& ev) {
     case SDL_EVENT_KEY_DOWN:
       switch (ev.key.scancode) {
         case SDL_SCANCODE_BACKSPACE:
-          if (!buffer_.empty()) buffer_.erase(buffer_.size() - 1);
+          if (!buffer_.empty()) {
+            buffer_.erase(buffer_.size() - 1);
+          }
           break;
 
         case SDL_SCANCODE_RETURN:
@@ -175,18 +177,24 @@ void InfoBoxState::Enter() {}
 void InfoBoxState::HandleEvent(SDL_Event& ev) {
   gfx->ProcessEvent(ev);
 
-  if (ev.type == SDL_EVENT_KEY_DOWN || ev.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) done_ = true;
+  if (ev.type == SDL_EVENT_KEY_DOWN || ev.type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
+    done_ = true;
+  }
 }
 
 bool InfoBoxState::Update() {
   if (done_) {
     gfx->ClearKeys();
-    if (clearScreen_) Fill(gfx->play_renderer.bmp, 0);
+    if (clearScreen_) {
+      Fill(gfx->play_renderer.bmp, 0);
+    }
     // onDismiss_ runs before this state is popped. It may call
     // scheduleReplaceTop() on the StateStack to chain into another
     // state; that takes precedence over the normal pop because the
     // stack checks pendingReplace_ before keepRunning.
-    if (onDismiss_) onDismiss_();
+    if (onDismiss_) {
+      onDismiss_();
+    }
     return false;
   }
   return true;

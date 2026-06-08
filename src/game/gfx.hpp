@@ -158,13 +158,19 @@ struct Gfx {
 
   void ReleaseSdlKey(SDL_Scancode key) {
     uint32_t const k_ = SDLToDOSKey(key);
-    if (k_) dos_keys[k_] = false;
+    if (k_) {
+      dos_keys[k_] = false;
+    }
   }
 
   // Test any key (both regular DOS keys and extended joystick keys)
   bool TestAnyKeyOnce(uint32_t key) {
-    if (key == 0) return false;
-    if (key < kMaxDosKey) return TestKeyOnce(key);
+    if (key == 0) {
+      return false;
+    }
+    if (key < kMaxDosKey) {
+      return TestKeyOnce(key);
+    }
     auto it = ex_keys.find(key);
     if (it != ex_keys.end() && it->second) {
       it->second = false;
@@ -174,18 +180,25 @@ struct Gfx {
   }
 
   bool TestAnyKey(uint32_t key) {
-    if (key == 0) return false;
-    if (key < kMaxDosKey) return TestKey(key);
+    if (key == 0) {
+      return false;
+    }
+    if (key < kMaxDosKey) {
+      return TestKey(key);
+    }
     auto it = ex_keys.find(key);
     return it != ex_keys.end() && it->second;
   }
 
   void ReleaseAnyKey(uint32_t key) {
-    if (key == 0) return;
-    if (key < kMaxDosKey)
+    if (key == 0) {
+      return;
+    }
+    if (key < kMaxDosKey) {
       dos_keys[key] = false;
-    else
+    } else {
       ex_keys[key] = false;
+    }
   }
 
   // Test if any player's configured control for a given action was pressed.

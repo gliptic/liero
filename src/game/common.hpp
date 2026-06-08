@@ -101,11 +101,15 @@ struct SfxSample {
     // A zero-length sample is a "disabled" slot. Leave `sound` null so
     // the slot survives in `Common::sounds` without occupying audio
     // memory, and so play paths can treat it as a silent no-op.
-    if (length > 0) sound = SfxNewSound(length * 2);
+    if (length > 0) {
+      sound = SfxNewSound(length * 2);
+    }
   }
 
   ~SfxSample() {
-    if (sound) SfxFreeSound(sound);
+    if (sound) {
+      SfxFreeSound(sound);
+    }
   }
 
   void CreateSound();

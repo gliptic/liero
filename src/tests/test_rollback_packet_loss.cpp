@@ -97,8 +97,12 @@ TEST_CASE("Rollback survives 10% packet loss via input redundancy", "[rollback][
   for (int tick = 0; tick < kTicks; ++tick) {
     uint8_t in_a = input_rng() & 0x7f;
     uint8_t in_b = input_rng() & 0x7f;
-    if ((input_rng() % 10) < 6) in_a |= (1 << Worm::kFire);
-    if ((input_rng() % 10) < 6) in_b |= (1 << Worm::kFire);
+    if ((input_rng() % 10) < 6) {
+      in_a |= (1 << Worm::kFire);
+    }
+    if ((input_rng() % 10) < 6) {
+      in_b |= (1 << Worm::kFire);
+    }
     a->SetLocalControlState(in_a);
     b->SetLocalControlState(in_b);
     a->Process();
@@ -112,7 +116,9 @@ TEST_CASE("Rollback survives 10% packet loss via input redundancy", "[rollback][
       uint32_t const kLagB = b->CurrentFrame() - static_cast<uint32_t>(b->ConfirmedFrame() + 1);
       max_lag_a = std::max(kLagA, max_lag_a);
       max_lag_b = std::max(kLagB, max_lag_b);
-      if (a->CurrentFrame() == prev_a && b->CurrentFrame() == prev_b) ++stall_ticks;
+      if (a->CurrentFrame() == prev_a && b->CurrentFrame() == prev_b) {
+        ++stall_ticks;
+      }
     }
     prev_a = a->CurrentFrame();
     prev_b = b->CurrentFrame();

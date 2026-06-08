@@ -287,6 +287,22 @@ cmake --build build/linux-x64-ci --target clang-tidy       # diff-only
 cmake --build build/linux-x64-ci --target clang-tidy-all   # tree-wide
 ```
 
+To apply tidy auto-fixes tree-wide (modifies source files — run on a
+clean working tree):
+
+```bash
+# all checks .clang-tidy enables
+scripts/clang-tidy-fix.sh build/linux-x64-ci
+
+# scope to a single check or family
+scripts/clang-tidy-fix.sh build/linux-x64-ci '-*,modernize-use-override'
+```
+
+This wraps `run-clang-tidy -export-fixes` with a path-canonicalisation
+pass before `clang-apply-replacements` runs — needed to avoid a
+per-TU header-rewrite race in clang-tidy 22 where the same header
+reached via different relative include paths gets edited 5–7 times.
+
 To git-blame past mechanical reformats, point blame at the ignore list once:
 
 ```bash

@@ -163,10 +163,11 @@ struct Worm {
     bool operator[](std::size_t n) const { return ((istate >> n) & 1) != 0; }
 
     void Set(std::size_t n, bool v) {
-      if (v)
+      if (v) {
         istate |= 1 << n;
-      else
+      } else {
         istate &= ~(static_cast<uint32_t>(1U) << n);
+      }
     }
 
     void Toggle(std::size_t n) { istate ^= 1 << n; }

@@ -48,15 +48,18 @@ struct Font {
   }
 
   void DrawString(Bitmap& scr, TextCell const& str, int x, int y, int color) {
-    if (str.buffer.empty()) return;
+    if (str.buffer.empty()) {
+      return;
+    }
 
     if (str.placement != TextCell::kLeft) {
       int const kW = GetDims(reinterpret_cast<char const*>(str.buffer.data()), str.buffer.size());
 
-      if (str.placement == TextCell::kCenter)
+      if (str.placement == TextCell::kCenter) {
         x -= kW / 2;
-      else if (str.placement == TextCell::kRight)
+      } else if (str.placement == TextCell::kRight) {
         x -= kW;
+      }
     }
 
     DrawString(scr, reinterpret_cast<char const*>(str.buffer.data()), str.buffer.size(), x, y,

@@ -84,7 +84,9 @@ TEST_CASE("NetSession syncs host settings to client", "[session]") {
   settings_b->flags_to_win = 3;
   settings_b->load_change = true;
   // Modify some weapTable entries
-  for (int i = 0; i < 40; ++i) settings_b->weap_table[i] = (i < 10) ? 2 : 0;
+  for (int i = 0; i < 40; ++i) {
+    settings_b->weap_table[i] = (i < 10) ? 2 : 0;
+  }
 
   NetSession host(kF.common, kF.settings, kF.tc_root);
   NetSession client(kF.common, settings_b, kF.tc_root);
@@ -108,7 +110,9 @@ TEST_CASE("NetSession syncs host settings to client", "[session]") {
   REQUIRE(settings_b->time_to_lose == kF.settings->time_to_lose);
   REQUIRE(settings_b->flags_to_win == kF.settings->flags_to_win);
   REQUIRE(settings_b->load_change == kF.settings->load_change);
-  for (int i = 0; i < 40; ++i) REQUIRE(settings_b->weap_table[i] == kF.settings->weap_table[i]);
+  for (int i = 0; i < 40; ++i) {
+    REQUIRE(settings_b->weap_table[i] == kF.settings->weap_table[i]);
+  }
 }
 
 TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]") {
@@ -117,8 +121,9 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
   // Give each player distinct colors and weapons in the network player slot
   auto settings_host = std::make_shared<Settings>(*kF.settings);
   // Create distinct WormSettings objects so shared_ptr sharing doesn't cause issues
-  for (auto& worm_setting : settings_host->worm_settings)
+  for (auto& worm_setting : settings_host->worm_settings) {
     worm_setting = std::make_shared<WormSettings>(*worm_setting);
+  }
   settings_host->worm_settings[Settings::kNetworkPlayerIdx]->color = 3;
   settings_host->worm_settings[Settings::kNetworkPlayerIdx]->rgb[0] = 255;
   settings_host->worm_settings[Settings::kNetworkPlayerIdx]->rgb[1] = 0;
@@ -130,8 +135,9 @@ TEST_CASE("NetSession syncs worm colors and weapons between peers", "[session]")
   settings_host->worm_settings[Settings::kNetworkPlayerIdx]->weapons[4] = 15;
 
   auto settings_client = std::make_shared<Settings>(*kF.settings);
-  for (auto& worm_setting : settings_client->worm_settings)
+  for (auto& worm_setting : settings_client->worm_settings) {
     worm_setting = std::make_shared<WormSettings>(*worm_setting);
+  }
   settings_client->worm_settings[Settings::kNetworkPlayerIdx]->color = 6;
   settings_client->worm_settings[Settings::kNetworkPlayerIdx]->rgb[0] = 0;
   settings_client->worm_settings[Settings::kNetworkPlayerIdx]->rgb[1] = 255;

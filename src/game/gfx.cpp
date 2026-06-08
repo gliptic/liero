@@ -52,10 +52,11 @@ struct KeyBehavior : ItemBehavior {
         extended(extended) {}
 
   void OnUpdate(Menu& /*menu*/, MenuItem& item) override {
-    if (input_device != WormSettingsExtensions::kInputKeyboard)
+    if (input_device != WormSettingsExtensions::kInputKeyboard) {
       item.value = Gfx::GetGamepadKeyName(gamepad_key);
-    else
+    } else {
       item.value = Gfx::GetKeyName(extended ? key_ex : key);
+    }
     item.has_value = true;
   }
 
@@ -123,15 +124,23 @@ struct InputDeviceBehavior : ItemBehavior {
   }
 
   int FindCurrentOption(std::vector<GamepadOption> const& opts) {
-    if (ws.input_device == WormSettingsExtensions::kInputKeyboard) return -1;
+    if (ws.input_device == WormSettingsExtensions::kInputKeyboard) {
+      return -1;
+    }
     // Try serial match first
     if (!ws.gamepad_serial.empty()) {
-      for (int i = 0; std::cmp_less(i, opts.size()); ++i)
-        if (opts[i].name == ws.gamepad_name && opts[i].serial == ws.gamepad_serial) return i;
+      for (int i = 0; std::cmp_less(i, opts.size()); ++i) {
+        if (opts[i].name == ws.gamepad_name && opts[i].serial == ws.gamepad_serial) {
+          return i;
+        }
+      }
     }
     // Fall back to name match
-    for (int i = 0; std::cmp_less(i, opts.size()); ++i)
-      if (opts[i].name == ws.gamepad_name) return i;
+    for (int i = 0; std::cmp_less(i, opts.size()); ++i) {
+      if (opts[i].name == ws.gamepad_name) {
+        return i;
+      }
+    }
     return -1;
   }
 
@@ -432,9 +441,10 @@ void Gfx::LoadMenus() {
   player_menu.AddItem(MenuItem(48, 7, "JUMP", PlayerMenu::kPlJump));
   player_menu.AddItem(MenuItem(48, 7, "DIG", PlayerMenu::kPlDig));
 
-  for (int i = 0; i < 5; ++i)
+  for (int i = 0; i < 5; ++i) {
     player_menu.AddItem(MenuItem(48, 7, std::string("WEAPON ") + static_cast<char>(i + '1'),
                                  PlayerMenu::kPlWeap0 + i));
+  }
 
   player_menu.AddItem(MenuItem(48, 7, "CONTROLLER", PlayerMenu::kPlController));
 
@@ -480,7 +490,9 @@ void Gfx::LoadMenus() {
 }
 
 void Gfx::SetSpectatorFullscreen(bool new_fullscreen) {
-  if (new_fullscreen == spectator_fullscreen) return;
+  if (new_fullscreen == spectator_fullscreen) {
+    return;
+  }
   spectator_fullscreen = new_fullscreen;
 
   if (!spectator_fullscreen) {
@@ -496,7 +508,9 @@ void Gfx::SetSpectatorFullscreen(bool new_fullscreen) {
 }
 
 void Gfx::SetFullscreen(bool new_fullscreen) {
-  if (new_fullscreen == settings->fullscreen) return;
+  if (new_fullscreen == settings->fullscreen) {
+    return;
+  }
   settings->fullscreen = new_fullscreen;
 
   // fullscreen will automatically set window size
@@ -514,7 +528,9 @@ void Gfx::SetFullscreen(bool new_fullscreen) {
 }
 
 void Gfx::SetDoubleRes(bool new_double_res) {
-  if (new_double_res == double_res) return;
+  if (new_double_res == double_res) {
+    return;
+  }
   double_res = new_double_res;
 
   if (!new_double_res) {
@@ -533,12 +549,16 @@ void Gfx::ProcessEvent(SDL_Event& ev, Controller* controller) {
     case SDL_EVENT_KEY_DOWN: {
       SDL_Scancode const kS = ev.key.scancode;
 
-      if (key_buf_ptr < key_buf + 32) *key_buf_ptr++ = ev.key.scancode;
+      if (key_buf_ptr < key_buf + 32) {
+        *key_buf_ptr++ = ev.key.scancode;
+      }
 
       uint32_t const kDosScan = SDLToDOSKey(ev.key.scancode);
       if (kDosScan) {
         dos_keys[kDosScan] = true;
-        if (controller && !ev.key.repeat) controller->OnKey(kDosScan, /*state=*/true);
+        if (controller && !ev.key.repeat) {
+          controller->OnKey(kDosScan, /*state=*/true);
+        }
       }
 
       if (kS == SDL_SCANCODE_F11) {
@@ -560,7 +580,9 @@ void Gfx::ProcessEvent(SDL_Event& ev, Controller* controller) {
       uint32_t const kDosScan = SDLToDOSKey(kS);
       if (kDosScan) {
         dos_keys[kDosScan] = false;
-        if (controller) controller->OnKey(kDosScan, /*state=*/false);
+        if (controller) {
+          controller->OnKey(kDosScan, /*state=*/false);
+        }
       }
     } break;
 
@@ -574,7 +596,9 @@ void Gfx::ProcessEvent(SDL_Event& ev, Controller* controller) {
 
     case SDL_EVENT_GAMEPAD_AXIS_MOTION: {
       int const kGpIdx = FindGamepadIndex(ev.gaxis.which);
-      if (kGpIdx < 0) break;
+      if (kGpIdx < 0) {
+        break;
+      }
       Joystick& js = joysticks[kGpIdx];
       int const kAxis = ev.gaxis.axis;
 
@@ -586,13 +610,17 @@ void Gfx::ProcessEvent(SDL_Event& ev, Controller* controller) {
 
       if (kPosState != js.axis_button_state[kPosIdx]) {
         js.axis_button_state[kPosIdx] = kPosState;
-        if (kPosState) js.axis_pressed[kPosIdx] = true;
+        if (kPosState) {
+          js.axis_pressed[kPosIdx] = true;
+        }
         DispatchGamepadInput(kGpIdx, WormSettingsExtensions::GamepadAxisPositive(kAxis), kPosState,
                              controller);
       }
       if (kNegState != js.axis_button_state[kNegIdx]) {
         js.axis_button_state[kNegIdx] = kNegState;
-        if (kNegState) js.axis_pressed[kNegIdx] = true;
+        if (kNegState) {
+          js.axis_pressed[kNegIdx] = true;
+        }
         DispatchGamepadInput(kGpIdx, WormSettingsExtensions::GamepadAxisNegative(kAxis), kNegState,
                              controller);
       }
@@ -601,12 +629,16 @@ void Gfx::ProcessEvent(SDL_Event& ev, Controller* controller) {
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP: {
       int const kGpIdx = FindGamepadIndex(ev.gbutton.which);
-      if (kGpIdx < 0) break;
+      if (kGpIdx < 0) {
+        break;
+      }
       Joystick& js = joysticks[kGpIdx];
       int const kBtn = ev.gbutton.button;
       bool const kState = ev.gbutton.down;
       js.btn_state[kBtn] = kState;
-      if (kState) js.btn_pressed[kBtn] = true;
+      if (kState) {
+        js.btn_pressed[kBtn] = true;
+      }
       DispatchGamepadInput(kGpIdx, static_cast<uint32_t>(kBtn), kState, controller);
     } break;
 
@@ -648,32 +680,46 @@ void Gfx::Process(Controller* controller) {
 
 int Gfx::FindGamepadIndex(SDL_JoystickID id) {
   for (int i = 0; std::cmp_less(i, joysticks.size()); ++i) {
-    if (joysticks[i].instance_id == id) return i;
+    if (joysticks[i].instance_id == id) {
+      return i;
+    }
   }
   return -1;
 }
 
 int Gfx::FindGamepadForPlayer(int player_idx) {
-  if (!settings || player_idx < 0 || player_idx >= 2) return -1;
+  if (!settings || player_idx < 0 || player_idx >= 2) {
+    return -1;
+  }
   WormSettings const& ws = *settings->worm_settings[player_idx];
-  if (ws.input_device == WormSettingsExtensions::kInputKeyboard) return -1;
-  if (ws.gamepad_name.empty()) return -1;
+  if (ws.input_device == WormSettingsExtensions::kInputKeyboard) {
+    return -1;
+  }
+  if (ws.gamepad_name.empty()) {
+    return -1;
+  }
 
   // Collect indices of gamepads matching by name
   std::vector<int> candidates;
   for (int i = 0; std::cmp_less(i, joysticks.size()); ++i) {
     char const* n = SDL_GetGamepadName(joysticks[i].sdl_gamepad);
-    if (!n || ws.gamepad_name != n) continue;
+    if (!n || ws.gamepad_name != n) {
+      continue;
+    }
 
     // Exact serial match is best
     if (!ws.gamepad_serial.empty()) {
       char const* s = SDL_GetGamepadSerial(joysticks[i].sdl_gamepad);
-      if (s && ws.gamepad_serial == s) return i;
+      if (s && ws.gamepad_serial == s) {
+        return i;
+      }
     }
     candidates.push_back(i);
   }
 
-  if (candidates.empty()) return -1;
+  if (candidates.empty()) {
+    return -1;
+  }
 
   // No serial match — resolve by position among same-name candidates.
   // If the other player also wants a gamepad with the same name,
@@ -691,12 +737,16 @@ int Gfx::FindGamepadForPlayer(int player_idx) {
 
 void Gfx::DispatchGamepadInput(int gp_idx, uint32_t gamepad_key, bool state,
                                Controller* controller) {
-  if (gp_idx < 0 || gp_idx >= 2) return;
+  if (gp_idx < 0 || gp_idx >= 2) {
+    return;
+  }
 
   // Start button acts as ESC for menu access
   if (gamepad_key == static_cast<uint32_t>(SDL_GAMEPAD_BUTTON_START) && state) {
     dos_keys[kDkEscape] = true;
-    if (controller) controller->OnKey(kDkEscape, /*state=*/true);
+    if (controller) {
+      controller->OnKey(kDkEscape, /*state=*/true);
+    }
     return;
   }
 
@@ -704,12 +754,17 @@ void Gfx::DispatchGamepadInput(int gp_idx, uint32_t gamepad_key, bool state,
   if (controller) {
     for (int p = 0; p < 2; ++p) {
       WormSettings const& ws = *settings->worm_settings[p];
-      if (ws.input_device == WormSettingsExtensions::kInputKeyboard) continue;
-      if (FindGamepadForPlayer(p) != gp_idx) continue;
+      if (ws.input_device == WormSettingsExtensions::kInputKeyboard) {
+        continue;
+      }
+      if (FindGamepadForPlayer(p) != gp_idx) {
+        continue;
+      }
 
       for (int c = 0; c < WormSettings::kMaxControlEx; ++c) {
-        if (ws.gamepad_controls[c] == gamepad_key)
+        if (ws.gamepad_controls[c] == gamepad_key) {
           controller->OnKey(GamepadControlToExKey(p, c), state);
+        }
       }
     }
   }
@@ -742,7 +797,9 @@ std::string Gfx::GetGamepadKeyName(uint32_t gamepad_key) {
   static char const* const kButtonNames[] = {"A",  "B",  "X",  "Y",  "Back", "Guide", "Start", "LS",
                                              "RS", "LB", "RB", "Up", "Down", "Left",  "Right"};
 
-  if (gamepad_key < 15) return kButtonNames[gamepad_key];
+  if (gamepad_key < 15) {
+    return kButtonNames[gamepad_key];
+  }
 
   return "Btn" + ToString(gamepad_key);
 }
@@ -750,17 +807,23 @@ std::string Gfx::GetGamepadKeyName(uint32_t gamepad_key) {
 void Gfx::ClearKeys() {
   std::memset(dos_keys, 0, sizeof(dos_keys));
   ex_keys.clear();
-  for (auto& js : joysticks) js.ClearState();
+  for (auto& js : joysticks) {
+    js.ClearState();
+  }
 }
 
 bool Gfx::TestControlOnce(int control) {
   // Check keyboard bindings for all player profiles (left, right, network)
   // NOLINTNEXTLINE(readability-use-anyofallof) — loop body has more than the predicate check; rewriting as std::any_of/all_of would be less readable here.
   for (auto& worm_setting : settings->worm_settings) {
-    if (worm_setting->input_device != WormSettingsExtensions::kInputKeyboard) continue;
+    if (worm_setting->input_device != WormSettingsExtensions::kInputKeyboard) {
+      continue;
+    }
     uint32_t const kEy = Settings::kExtensions ? worm_setting->controls_ex[control]
                                                : worm_setting->controls[control];
-    if (TestAnyKeyOnce(kEy)) return true;
+    if (TestAnyKeyOnce(kEy)) {
+      return true;
+    }
   }
   return false;
 }
@@ -778,7 +841,9 @@ bool Gfx::TestGamepadButtonOnce(int button) {
 bool Gfx::TestGamepadButton(int button) {
   // NOLINTNEXTLINE(readability-use-anyofallof) — loop body has more than the predicate check; rewriting as std::any_of/all_of would be less readable here.
   for (auto& joystick : joysticks) {
-    if (joystick.btn_state[button]) return true;
+    if (joystick.btn_state[button]) {
+      return true;
+    }
   }
   return false;
 }
@@ -804,7 +869,9 @@ bool Gfx::TestGamepadDirOnce(int dpad_button) {
   for (auto& joystick : joysticks) {
     if (joystick.btn_pressed[dpad_button]) {
       joystick.btn_pressed[dpad_button] = false;
-      if (kAxisIdx >= 0) joystick.axis_pressed[kAxisIdx] = false;
+      if (kAxisIdx >= 0) {
+        joystick.axis_pressed[kAxisIdx] = false;
+      }
       return true;
     }
     if (kAxisIdx >= 0 && joystick.axis_pressed[kAxisIdx]) {
@@ -820,8 +887,12 @@ bool Gfx::TestGamepadDir(int dpad_button) {
   int const kAxisIdx = DpadToAxisIndex(dpad_button);
   // NOLINTNEXTLINE(readability-use-anyofallof) — loop body has more than the predicate check; rewriting as std::any_of/all_of would be less readable here.
   for (auto& joystick : joysticks) {
-    if (joystick.btn_state[dpad_button]) return true;
-    if (kAxisIdx >= 0 && joystick.axis_button_state[kAxisIdx]) return true;
+    if (joystick.btn_state[dpad_button]) {
+      return true;
+    }
+    if (kAxisIdx >= 0 && joystick.axis_button_state[kAxisIdx]) {
+      return true;
+    }
   }
   return false;
 }
@@ -830,10 +901,14 @@ bool Gfx::TestControl(int control) {
   // Check keyboard bindings for all player profiles (left, right, network)
   // NOLINTNEXTLINE(readability-use-anyofallof) — loop body has more than the predicate check; rewriting as std::any_of/all_of would be less readable here.
   for (auto& worm_setting : settings->worm_settings) {
-    if (worm_setting->input_device != WormSettingsExtensions::kInputKeyboard) continue;
+    if (worm_setting->input_device != WormSettingsExtensions::kInputKeyboard) {
+      continue;
+    }
     uint32_t const kEy = Settings::kExtensions ? worm_setting->controls_ex[control]
                                                : worm_setting->controls[control];
-    if (TestAnyKey(kEy)) return true;
+    if (TestAnyKey(kEy)) {
+      return true;
+    }
   }
   return false;
 }
@@ -854,23 +929,29 @@ void Gfx::PreparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const
 }
 
 void Gfx::MenuFlip(bool quitting) {
-  if (play_renderer.fade_value < 32 && !quitting) ++play_renderer.fade_value;
-  if (single_screen_renderer.fade_value < 32 && !quitting) ++single_screen_renderer.fade_value;
+  if (play_renderer.fade_value < 32 && !quitting) {
+    ++play_renderer.fade_value;
+  }
+  if (single_screen_renderer.fade_value < 32 && !quitting) {
+    ++single_screen_renderer.fade_value;
+  }
 
   ++menu_cycles;
   play_renderer.pal = play_renderer.origpal;
   play_renderer.pal.RotateFrom(play_renderer.origpal, 168, 174, menu_cycles);
   play_renderer.pal.SetWormColours(*settings);
   if (cur_menu == &player_menu &&
-      player_menu.ws == settings->worm_settings[Settings::kNetworkPlayerIdx])
+      player_menu.ws == settings->worm_settings[Settings::kNetworkPlayerIdx]) {
     play_renderer.pal.SetWormColour(0, *player_menu.ws);
+  }
   play_renderer.pal.Fade(play_renderer.fade_value);
   single_screen_renderer.pal = single_screen_renderer.origpal;
   single_screen_renderer.pal.RotateFrom(single_screen_renderer.origpal, 168, 174, menu_cycles);
   single_screen_renderer.pal.SetWormColours(*settings);
   if (cur_menu == &player_menu &&
-      player_menu.ws == settings->worm_settings[Settings::kNetworkPlayerIdx])
+      player_menu.ws == settings->worm_settings[Settings::kNetworkPlayerIdx]) {
     single_screen_renderer.pal.SetWormColour(0, *player_menu.ws);
+  }
   single_screen_renderer.pal.Fade(single_screen_renderer.fade_value);
   Flip();
 }
@@ -935,7 +1016,9 @@ void Gfx::Flip() {
 
   while (true) {
     auto now = SDL_GetTicks();
-    if (now >= wanted_time) break;
+    if (now >= wanted_time) {
+      break;
+    }
 
     SDL_Delay(static_cast<uint32_t>(wanted_time - now));
   }
@@ -1106,8 +1189,9 @@ void PlayerMenu::DrawItemOverlay(Common& /*common*/, MenuItem& item, int x, int 
 }
 
 ItemBehavior* PlayerMenu::GetItemBehavior(Common& common, MenuItem& item) {
-  if (item.id >= kPlWeap0 && item.id < kPlWeap0 + 5)
+  if (item.id >= kPlWeap0 && item.id < kPlWeap0 + 5) {
     return new WeaponEnumBehavior(common, ws->weapons[item.id - kPlWeap0]);
+  }
 
   switch (item.id) {
     case kPlName:
@@ -1202,16 +1286,21 @@ void Gfx::InitFrameStepping() {
 }
 
 bool Gfx::RunOneFrame() {
-  if (state_stack.Empty()) return false;
+  if (state_stack.Empty()) {
+    return false;
+  }
 
   // Poll events
   SDL_Event ev;
   key_buf_ptr = key_buf;
   while (SDL_PollEvent(&ev)) {
-    if (ev.type == SDL_EVENT_QUIT) return false;
-    if (ev.type == SDL_EVENT_KEY_DOWN && ev.key.scancode == SDL_SCANCODE_F4 &&
-        (ev.key.mod & SDL_KMOD_ALT))
+    if (ev.type == SDL_EVENT_QUIT) {
       return false;
+    }
+    if (ev.type == SDL_EVENT_KEY_DOWN && ev.key.scancode == SDL_SCANCODE_F4 &&
+        (ev.key.mod & SDL_KMOD_ALT)) {
+      return false;
+    }
     state_stack.HandleEvent(ev);
   }
 
@@ -1224,7 +1313,9 @@ bool Gfx::RunOneFrame() {
     if (kMenuSelection >= 0) {
       menuStatePtr_ = nullptr;
 
-      if (kMenuSelection == MainMenu::kMaQuit) return false;
+      if (kMenuSelection == MainMenu::kMaQuit) {
+        return false;
+      }
 
       if (kMenuSelection == MainMenu::kMaTc) {
         tcChangeRequested_ = true;
@@ -1249,9 +1340,13 @@ bool Gfx::RunOneFrame() {
         }
         controller = std::move(new_controller);
       } else if (kMenuSelection == MainMenu::kMaResumeGame) {
-        if (controller->IsReplay()) primary_renderer = &single_screen_renderer;
+        if (controller->IsReplay()) {
+          primary_renderer = &single_screen_renderer;
+        }
       } else if (kMenuSelection == MainMenu::kMaReplay) {
-        if (settings->single_screen_replay) primary_renderer = &single_screen_renderer;
+        if (settings->single_screen_replay) {
+          primary_renderer = &single_screen_renderer;
+        }
       } else if (kMenuSelection == MainMenu::kMaHostGame) {
         state_stack.Push(std::make_unique<NetConnectState>(NetSession::kHost, "", gfx.online_port),
                          this);
@@ -1366,7 +1461,9 @@ void Gfx::MainLoop() {
     while (RunOneFrame()) {
     }
 
-    if (!TcChangeRequested()) break;
+    if (!TcChangeRequested()) {
+      break;
+    }
 
     // TC was changed (common reloaded by TcSelectorState) — reinitialize
     InitFrameStepping();
@@ -1437,14 +1534,17 @@ static int UpperCaseOnly(int k) {
   k = std::toupper(k);
 
   if ((k >= 'A' && k <= 'Z') || (k == 0x8f || k == 0x8e || k == 0x99)  // � �and �
-      || (k >= '0' && k <= '9'))
+      || (k >= '0' && k <= '9')) {
     return k;
+  }
 
   return 0;
 }
 
 void Gfx::OpenHiddenMenu() {
-  if (cur_menu == &hidden_menu) return;
+  if (cur_menu == &hidden_menu) {
+    return;
+  }
   cur_menu = &hidden_menu;
   cur_menu->UpdateItems(*common);
   cur_menu->MoveToFirstVisible();

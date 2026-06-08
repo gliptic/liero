@@ -18,15 +18,18 @@ char const* TimeToStringFrames(int frames);
 
 inline void Rtrim(std::string& str) {
   std::string::size_type const kE = str.find_last_not_of(" \t\r\n");
-  if (kE == std::string::npos)
+  if (kE == std::string::npos) {
     str.clear();
-  else
+  } else {
     str.erase(kE + 1);
+  }
 }
 
 inline void FindReplace(std::string& str, std::string const& find, std::string const& replace) {
   std::string::size_type const kP = str.find(find);
-  if (kP != std::string::npos) str.replace(kP, find.size(), replace);
+  if (kP != std::string::npos) {
+    str.replace(kP, find.size(), replace);
+  }
 }
 
 inline bool EndsWith(std::string const& str, char const* end) {

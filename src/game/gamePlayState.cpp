@@ -59,7 +59,9 @@ bool GamePlayState::Update() {
         bool const kIsMultiplayer = gfx->net_session != nullptr;
 
         // Transition network session to rematch state to keep connection alive
-        if (kIsMultiplayer) gfx->net_session->EnterRematch();
+        if (kIsMultiplayer) {
+          gfx->net_session->EnterRematch();
+        }
 
         gfx->state_stack.ScheduleReplaceTop(
             std::make_unique<StatsState>(*stats, *game, kIsMultiplayer));

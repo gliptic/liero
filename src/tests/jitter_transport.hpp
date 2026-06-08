@@ -56,13 +56,17 @@ struct JitterTransport {
   int RandomDelay() {
     int const kLo = params.min_delay_frames;
     int const kHi = params.max_delay_frames;
-    if (kHi <= kLo) return kLo;
+    if (kHi <= kLo) {
+      return kLo;
+    }
     std::uniform_int_distribution<int> d(kLo, kHi);
     return d(rng);
   }
 
   bool Roll(double p) {
-    if (p <= 0.0) return false;
+    if (p <= 0.0) {
+      return false;
+    }
     std::uniform_real_distribution<double> d(0.0, 1.0);
     return d(rng) < p;
   }
@@ -89,10 +93,12 @@ struct JitterTransport {
   // Force-deliver every in-flight packet. Used at the end of a test to
   // converge both peers regardless of how late tail packets were.
   void Flush(Deliver const& deliver_a, Deliver const& deliver_b) {
-    for (auto const& p : a_to_b)
+    for (auto const& p : a_to_b) {
       deliver_b(p.generation, p.base_frame, p.count, p.inputs.data(), p.local_frame);
-    for (auto const& p : b_to_a)
+    }
+    for (auto const& p : b_to_a) {
       deliver_a(p.generation, p.base_frame, p.count, p.inputs.data(), p.local_frame);
+    }
     a_to_b.clear();
     b_to_a.clear();
   }
@@ -112,7 +118,9 @@ struct JitterTransport {
     p.generation = generation;
     p.base_frame = base_frame;
     p.count = count;
-    for (uint8_t i = 0; i < count; ++i) p.inputs[i] = inputs[i];
+    for (uint8_t i = 0; i < count; ++i) {
+      p.inputs[i] = inputs[i];
+    }
     p.local_frame = local_frame;
     q.push_back(p);
     if (Roll(params.duplicate_probability)) {

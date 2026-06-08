@@ -15,15 +15,22 @@
 // Cross-reference resolution helpers
 template <typename T>
 inline std::string ObjRefToStr(int idx, std::vector<T> const& vec) {
-  if (idx < 0 || idx >= static_cast<int>(vec.size())) return "";
+  if (idx < 0 || idx >= static_cast<int>(vec.size())) {
+    return "";
+  }
   return vec[idx].id_str;
 }
 
 template <typename T>
 inline int ObjRefFromStr(std::string const& str, std::vector<T> const& vec) {
-  if (str.empty()) return -1;
-  for (std::size_t i = 0; i < vec.size(); ++i)
-    if (vec[i].id_str == str) return static_cast<int>(i);
+  if (str.empty()) {
+    return -1;
+  }
+  for (std::size_t i = 0; i < vec.size(); ++i) {
+    if (vec[i].id_str == str) {
+      return static_cast<int>(i);
+    }
+  }
   return 0;
 }
 
@@ -31,12 +38,16 @@ inline int ObjRefFromStr(std::string const& str, std::vector<T> const& vec) {
 // non-empty name must resolve to -1 (no sound), not 0 (would spuriously
 // play the first sound).
 inline std::string SoundRefToStr(int idx, Common const& common) {
-  if (idx < 0 || std::cmp_greater_equal(idx, common.sounds.size())) return "";
+  if (idx < 0 || std::cmp_greater_equal(idx, common.sounds.size())) {
+    return "";
+  }
   return common.sounds[idx].name;
 }
 
 inline int SoundRefFromStr(std::string const& str, Common const& common) {
-  if (str.empty()) return -1;
+  if (str.empty()) {
+    return -1;
+  }
   return common.SoundIndex(str);
 }
 
@@ -467,10 +478,18 @@ struct Sounds {
 // Save/load tc.cfg (top-level Common config)
 inline void SaveTcConfig(Common const& common, std::ostream& os) {
   tc_cfg::Types types;
-  for (const auto& s : common.sounds) types.sounds.push_back(s.name);
-  for (const auto& w : common.weapons) types.weapons.push_back(w.id_str);
-  for (const auto& n : common.nobject_types) types.nobjects.push_back(n.id_str);
-  for (const auto& s : common.sobject_types) types.sobjects.push_back(s.id_str);
+  for (const auto& s : common.sounds) {
+    types.sounds.push_back(s.name);
+  }
+  for (const auto& w : common.weapons) {
+    types.weapons.push_back(w.id_str);
+  }
+  for (const auto& n : common.nobject_types) {
+    types.nobjects.push_back(n.id_str);
+  }
+  for (const auto& s : common.sobject_types) {
+    types.sobjects.push_back(s.id_str);
+  }
 
   tc_cfg::Constants constants;
   for (int i = 0; i < NUM_BONUS_SOBJECTS; ++i) {
@@ -495,7 +514,9 @@ inline void SaveTcConfig(Common const& common, std::ostream& os) {
     ce.to = i.to;
     constants.color_anim.push_back(ce);
   }
-  for (auto material : common.materials) constants.materials.push_back(material.flags);
+  for (auto material : common.materials) {
+    constants.materials.push_back(material.flags);
+  }
 
   auto fill_ai_key = [&](tc_cfg::AiKey& k, int idx) {
     k.on = common.ai_params.k[1][idx];
@@ -558,19 +579,24 @@ inline void LoadTcConfig(Common& common, std::istream& is) {
   // Populate Common from deserialized structs
   common.sounds.clear();
   common.sounds.resize(types.sounds.size());
-  for (std::size_t i = 0; i < types.sounds.size(); ++i) common.sounds[i].name = types.sounds[i];
+  for (std::size_t i = 0; i < types.sounds.size(); ++i) {
+    common.sounds[i].name = types.sounds[i];
+  }
 
   common.weapons.resize(types.weapons.size());
-  for (std::size_t i = 0; i < types.weapons.size(); ++i)
+  for (std::size_t i = 0; i < types.weapons.size(); ++i) {
     common.weapons[i].id_str = types.weapons[i];
+  }
 
   common.nobject_types.resize(types.nobjects.size());
-  for (std::size_t i = 0; i < types.nobjects.size(); ++i)
+  for (std::size_t i = 0; i < types.nobjects.size(); ++i) {
     common.nobject_types[i].id_str = types.nobjects[i];
+  }
 
   common.sobject_types.resize(types.sobjects.size());
-  for (std::size_t i = 0; i < types.sobjects.size(); ++i)
+  for (std::size_t i = 0; i < types.sobjects.size(); ++i) {
     common.sobject_types[i].id_str = types.sobjects[i];
+  }
 
   // Constants
   for (std::size_t i = 0; i < constants.bonuses.size() && i < NUM_BONUS_SOBJECTS; ++i) {
@@ -629,9 +655,10 @@ inline void LoadTcConfig(Common& common, std::istream& is) {
                          char const* hook_label) {
     if (!configured.empty()) {
       int const kIdx = common.SoundIndex(configured);
-      if (kIdx < 0)
+      if (kIdx < 0) {
         console::WriteWarning(std::string("[sounds] ") + hook_label +
                               " references unknown sound \"" + configured + "\"");
+      }
       common.sound_hook[hook] = kIdx;
     } else {
       common.sound_hook[hook] = common.SoundIndex(default_name);

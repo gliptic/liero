@@ -34,7 +34,9 @@ struct CountingSoundPlayer : SoundPlayer {
     return false;
   }
   void Stop(void* /*id*/) override {
-    if (speculative) return;
+    if (speculative) {
+      return;
+    }
     ++stops;
   }
 
@@ -102,7 +104,9 @@ struct Runner {
     game->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
     game->level.GenerateFromSettings(*common, *settings, game->rand);
-    for (auto const& w : game->worms) w->InitWeapons(*game);
+    for (auto const& w : game->worms) {
+      w->InitWeapons(*game);
+    }
 
     game->paused = false;
     game->StartGame();
@@ -112,8 +116,12 @@ struct Runner {
   void Step(Rand& input_rng) const {
     for (int idx = 0; idx < 2; ++idx) {
       uint32_t input = input_rng() & 0x7f;
-      if ((input_rng() % 10) < 6) input |= (1 << 4);
-      if ((input_rng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));
+      if ((input_rng() % 10) < 6) {
+        input |= (1 << 4);
+      }
+      if ((input_rng() % 10) < 4) {
+        input |= (1 << (idx == 0 ? 1 : 0));
+      }
       game->worms[idx]->control_states.Unpack(input);
     }
     game->ProcessFrame();
@@ -133,7 +141,9 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
   // Control: 2 * kPhase frames with no speculation.
   Runner const kCtl(kSeed);
   Rand ctl_inputs(kSeed ^ 0xDEAD);
-  for (int f = 0; f < 2 * kPhase; ++f) kCtl.Step(ctl_inputs);
+  for (int f = 0; f < 2 * kPhase; ++f) {
+    kCtl.Step(ctl_inputs);
+  }
   int const kControlPlays = kCtl.sp->plays;
   int const kControlStops = kCtl.sp->stops;
   int const kControlEvents = kCtl.Stats().events;
@@ -146,7 +156,9 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
   GameSnapshot snap;
   snap.Prepare(*sub.game);
 
-  for (int f = 0; f < kPhase; ++f) sub.Step(sub_inputs);
+  for (int f = 0; f < kPhase; ++f) {
+    sub.Step(sub_inputs);
+  }
   int const kPlaysAtSnap = sub.sp->plays;
   int const kStopsAtSnap = sub.sp->stops;
   int const kEventsAtSnap = sub.Stats().events;
@@ -157,7 +169,9 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
   // Speculative run uses the *same* inputs the post-restore segment will
   // use, so the underlying sim work is comparable. Counters must not move.
   Rand spec_inputs = sub_inputs;
-  for (int f = 0; f < kPhase; ++f) sub.Step(spec_inputs);
+  for (int f = 0; f < kPhase; ++f) {
+    sub.Step(spec_inputs);
+  }
 
   REQUIRE(sub.sp->plays == kPlaysAtSnap);
   REQUIRE(sub.sp->stops == kStopsAtSnap);
@@ -170,7 +184,9 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
   sub.game->LoadSnapshotFast(snap);
   sub.game->SetSpeculative(/*s=*/false);
 
-  for (int f = 0; f < kPhase; ++f) sub.Step(sub_inputs);
+  for (int f = 0; f < kPhase; ++f) {
+    sub.Step(sub_inputs);
+  }
 
   REQUIRE(sub.sp->plays == kControlPlays);
   REQUIRE(sub.sp->stops == kControlStops);

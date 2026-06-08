@@ -75,7 +75,9 @@ TEST_CASE("io::DeflateWriter / InflateReader round-trip random payload", "[io]")
   std::vector<uint8_t> payload(64 * 1024);
   // NOLINTNEXTLINE(cert-msc32-c, cert-msc51-cpp, bugprone-random-generator-seed) — fixed seed for reproducible test payload.
   std::mt19937 rng(0xC0FFEE);
-  for (auto& b : payload) b = static_cast<uint8_t>(rng());
+  for (auto& b : payload) {
+    b = static_cast<uint8_t>(rng());
+  }
 
   std::vector<uint8_t> compressed;
   {

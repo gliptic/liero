@@ -62,7 +62,9 @@ struct GameRunner {
     game->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
 
     game->level.GenerateFromSettings(*common, *settings, game->rand);
-    for (auto const& w : game->worms) w->InitWeapons(*game);
+    for (auto const& w : game->worms) {
+      w->InitWeapons(*game);
+    }
 
     game->paused = false;
     game->StartGame();
@@ -72,8 +74,12 @@ struct GameRunner {
   void Step(Rand& input_rng) const {
     for (int idx = 0; idx < 2; ++idx) {
       uint32_t input = input_rng() & 0x7f;
-      if ((input_rng() % 10) < 6) input |= (1 << 4);
-      if ((input_rng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));
+      if ((input_rng() % 10) < 6) {
+        input |= (1 << 4);
+      }
+      if ((input_rng() % 10) < 4) {
+        input |= (1 << (idx == 0 ? 1 : 0));
+      }
       game->worms[idx]->control_states.Unpack(input);
     }
     game->ProcessFrame();
@@ -132,8 +138,12 @@ TEST_CASE("Fast snapshot round-trip preserves frame-by-frame state", "[snapshot]
   for (int f = kPhase; f < 2 * kPhase; ++f) {
     for (int idx = 0; idx < 2; ++idx) {
       uint32_t input = post_snap_input_rng() & 0x7f;
-      if ((post_snap_input_rng() % 10) < 6) input |= (1 << 4);
-      if ((post_snap_input_rng() % 10) < 4) input |= (1 << (idx == 0 ? 1 : 0));
+      if ((post_snap_input_rng() % 10) < 6) {
+        input |= (1 << 4);
+      }
+      if ((post_snap_input_rng() % 10) < 4) {
+        input |= (1 << (idx == 0 ? 1 : 0));
+      }
       sub.game->worms[idx]->control_states.Unpack(input);
     }
     sub.game->ProcessFrame();
@@ -195,7 +205,9 @@ TEST_CASE("Fast snapshot save/restore microbenchmark", "[snapshot][rollback][!be
 
   GameRunner r(0x12345);
   Rand input_rng(0xABCDEF);
-  for (int f = 0; f < 500; ++f) r.Step(input_rng);
+  for (int f = 0; f < 500; ++f) {
+    r.Step(input_rng);
+  }
 
   GameSnapshot snap;
   snap.Prepare(*r.game);
@@ -203,9 +215,13 @@ TEST_CASE("Fast snapshot save/restore microbenchmark", "[snapshot][rollback][!be
   constexpr int kIters = 200;
 
   auto t0 = clock::now();
-  for (int i = 0; i < kIters; ++i) r.game->SaveSnapshotFast(snap);
+  for (int i = 0; i < kIters; ++i) {
+    r.game->SaveSnapshotFast(snap);
+  }
   auto t1 = clock::now();
-  for (int i = 0; i < kIters; ++i) r.game->LoadSnapshotFast(snap);
+  for (int i = 0; i < kIters; ++i) {
+    r.game->LoadSnapshotFast(snap);
+  }
   auto t2 = clock::now();
 
   double const kSaveUs = std::chrono::duration<double, std::micro>(t1 - t0).count() / kIters;

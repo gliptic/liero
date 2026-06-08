@@ -39,7 +39,9 @@ inline uint32_t HashGameState(Game& game) {
       h = h * 31 + static_cast<uint32_t>(weapon.ammo);
       h = h * 31 + static_cast<uint32_t>(weapon.delay_left);
       h = h * 31 + static_cast<uint32_t>(weapon.loading_left);
-      if (weapon.type) h = h * 31 + static_cast<uint32_t>(weapon.type->id);
+      if (weapon.type) {
+        h = h * 31 + static_cast<uint32_t>(weapon.type->id);
+      }
     }
 
     h = h * 31 + static_cast<uint32_t>(w->ninjarope.out);
@@ -85,7 +87,9 @@ inline uint32_t HashGameState(Game& game) {
       h = h * 31 + static_cast<uint32_t>(n->vel.x);
       h = h * 31 + static_cast<uint32_t>(n->vel.y);
       h = h * 31 + static_cast<uint32_t>(n->cur_frame);
-      if (n->type) h = h * 31 + static_cast<uint32_t>(n->type->id);
+      if (n->type) {
+        h = h * 31 + static_cast<uint32_t>(n->type->id);
+      }
     }
   }
 
@@ -99,7 +103,9 @@ inline uint32_t HashGameState(Game& game) {
       h = h * 31 + static_cast<uint32_t>(wo->vel.y);
       h = h * 31 + static_cast<uint32_t>(wo->cur_frame);
       h = h * 31 + static_cast<uint32_t>(wo->time_left);
-      if (wo->type) h = h * 31 + static_cast<uint32_t>(wo->type->id);
+      if (wo->type) {
+        h = h * 31 + static_cast<uint32_t>(wo->type->id);
+      }
     }
   }
 
@@ -127,7 +133,9 @@ inline ComponentHashes HashGameComponents(Game& game) {
 
   {
     uint32_t h = 1;
-    for (int i = 0; i < game.level.width * game.level.height; ++i) h = h * 33 ^ game.level.data[i];
+    for (int i = 0; i < game.level.width * game.level.height; ++i) {
+      h = h * 33 ^ game.level.data[i];
+    }
     c.level = h;
   }
 

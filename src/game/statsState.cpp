@@ -15,7 +15,9 @@ using cell = TextCell;
 using std::vector;
 
 static std::string Percent(int nom, int den) {
-  if (den == 0) return "";
+  if (den == 0) {
+    return "";
+  }
 
   const int kBufMax = 256;
   char buf[kBufMax];
@@ -139,7 +141,9 @@ struct StatsRenderer {
 
     common.font.DrawString(renderer.bmp, c, x, y, color);
 
-    if (level == 0) y += 11;
+    if (level == 0) {
+      y += 11;
+    }
   }
 
   void Gap(int n = 5) { y += n; }
@@ -218,9 +222,10 @@ void StatsState::Enter() {
   }
 
   vector<double> worm_total_hp[2];
-  for (int i = 0; i < 2; ++i)
+  for (int i = 0; i < 2; ++i) {
     worm_total_hp[i] =
         Convert<double>(Pluck(recorder_.worms[i].worm_frame_stats, &WormFrameStats::total_hp));
+  }
 
   wormTotalHpDiff_ = Stretch(Zip(worm_total_hp[0], worm_total_hp[1], std::minus<>()), kGraphWidth);
   Normalize(wormTotalHpDiff_, 100);

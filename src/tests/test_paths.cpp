@@ -26,10 +26,11 @@ struct ScopedEnv {
     setenv(k, v, 1);
   }
   ~ScopedEnv() {
-    if (had_prev)
+    if (had_prev) {
       setenv(key.c_str(), prev.c_str(), 1);
-    else
+    } else {
       unsetenv(key.c_str());
+    }
   }
 };
 
@@ -54,8 +55,12 @@ struct Argv {
   std::vector<char*> ptrs;
   Argv(std::initializer_list<char const*> args) {
     storage.emplace_back("openliero");  // argv[0]
-    for (const auto* a : args) storage.emplace_back(a);
-    for (auto& s : storage) ptrs.push_back(s.data());
+    for (const auto* a : args) {
+      storage.emplace_back(a);
+    }
+    for (auto& s : storage) {
+      ptrs.push_back(s.data());
+    }
     ptrs.push_back(nullptr);
   }
   int Argc() const { return static_cast<int>(storage.size()); }

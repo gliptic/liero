@@ -65,14 +65,18 @@ RollbackController::RollbackController(const std::shared_ptr<Common>& common,
 RollbackController::~RollbackController() = default;
 
 void RollbackController::LoadLevelFromData(const std::vector<uint8_t>& data) {
-  if (data.size() < 5) return;
+  if (data.size() < 5) {
+    return;
+  }
 
   bool const kIsCompressed = (data[0] != 0);
   uint32_t raw_size = 0;
   std::memcpy(&raw_size, data.data() + 1, 4);
 
   static constexpr uint32_t kMaxRawSize = 10 * 1024 * 1024;
-  if (raw_size > kMaxRawSize) return;
+  if (raw_size > kMaxRawSize) {
+    return;
+  }
 
   std::vector<uint8_t> raw;
   if (kIsCompressed) {
@@ -80,25 +84,35 @@ void RollbackController::LoadLevelFromData(const std::vector<uint8_t>& data) {
     mz_ulong dest_len = raw_size;
     int const kStatus = mz_uncompress(raw.data(), &dest_len, data.data() + 5,
                                       static_cast<mz_ulong>(data.size() - 5));
-    if (kStatus != MZ_OK) return;
+    if (kStatus != MZ_OK) {
+      return;
+    }
   } else {
     raw.assign(data.begin() + 5, data.end());
   }
 
-  if (raw.size() < 8) return;
+  if (raw.size() < 8) {
+    return;
+  }
 
   uint16_t w = 0;
   uint16_t h = 0;
   std::memcpy(&w, raw.data(), 2);
   std::memcpy(&h, raw.data() + 2, 2);
 
-  if (w == 0 || h == 0 || w > 4096 || h > 4096) return;
+  if (w == 0 || h == 0 || w > 4096 || h > 4096) {
+    return;
+  }
 
   uint32_t rand_state_len = 0;
   std::memcpy(&rand_state_len, raw.data() + 4, 4);
 
-  if (rand_state_len > 64 * 1024) return;
-  if (raw.size() < 8 + rand_state_len + 4) return;
+  if (rand_state_len > 64 * 1024) {
+    return;
+  }
+  if (raw.size() < 8 + rand_state_len + 4) {
+    return;
+  }
 
   std::string const kRandState(reinterpret_cast<const char*>(raw.data() + 8), rand_state_len);
   uint32_t rand_last = 0;
@@ -106,7 +120,9 @@ void RollbackController::LoadLevelFromData(const std::vector<uint8_t>& data) {
 
   size_t const kPixelsOffset = 8 + rand_state_len + 4;
   size_t const kPixelDataSize = static_cast<size_t>(w) * h;
-  if (raw.size() < kPixelsOffset + kPixelDataSize + 768) return;
+  if (raw.size() < kPixelsOffset + kPixelDataSize + 768) {
+    return;
+  }
 
   game.level.Resize(w, h);
   Common const& common = *game.common;
@@ -135,7 +151,9 @@ void RollbackController::SetInputCallbacks(InputBatchSendCallback send) {
 }
 
 void RollbackController::SendInputWindow(uint32_t newest_frame, uint32_t local_frame) {
-  if (!sendInputBatch_) return;
+  if (!sendInputBatch_) {
+    return;
+  }
   constexpr auto kK = static_cast<uint8_t>(rollback::kMaxRollback + 1);
   uint8_t count = 0;
   uint32_t base_frame = 0;
@@ -174,7 +192,9 @@ void RollbackController::InjectRemoteBatch(uint8_t generation, uint32_t base_fra
       auto& slot = pendingFutureBatches_[pendingFutureCount_++];
       slot.base_frame = base_frame;
       slot.count = count;
-      for (uint8_t i = 0; i < count; ++i) slot.inputs[i] = inputs[i];
+      for (uint8_t i = 0; i < count; ++i) {
+        slot.inputs[i] = inputs[i];
+      }
       slot.remote_local_frame = remote_local_frame;
       return;
     }
@@ -187,7 +207,9 @@ void RollbackController::InjectRemoteInput(uint32_t frame, uint8_t input) {
   // Redundant batch packets routinely overlap the confirmation boundary;
   // re-injecting already-confirmed frames would re-set remoteInputReady
   // on a ring slot that wraps into the live rollback window.
-  if (std::cmp_less_equal(frame, confirmedSimFrame_)) return;
+  if (std::cmp_less_equal(frame, confirmedSimFrame_)) {
+    return;
+  }
   uint32_t const kSlot = frame % kInputBufferSize;
   remoteInputs_[kSlot] = input;
   remoteInputReady_[kSlot] = true;
@@ -223,33 +245,43 @@ void RollbackController::OnKey(int key, bool key_state) {
       localControlState_.Set(Worm::kLeft, /*v=*/true);
       localControlState_.Set(Worm::kRight, /*v=*/true);
     } else {
-      if (!worm->clean_control_states[Worm::kLeft])
+      if (!worm->clean_control_states[Worm::kLeft]) {
         localControlState_.Set(Worm::kLeft, /*v=*/false);
-      if (!worm->clean_control_states[Worm::kRight])
+      }
+      if (!worm->clean_control_states[Worm::kRight]) {
         localControlState_.Set(Worm::kRight, /*v=*/false);
+      }
     }
   }
 
   if (key == kDkEscape && key_state) {
     if (localPaused_) {
       localPaused_ = false;
-      if (onLocalResume_) onLocalResume_();
+      if (onLocalResume_) {
+        onLocalResume_();
+      }
     } else if (remotePaused_ && !goingToMenu_) {
       // Remote is paused, local Escapes — treat as a disconnect so the
       // peer learns and tears down in lockstep instead of waiting for
       // socket timeout.
-      if (onPeerLeft_) onPeerLeft_();
+      if (onPeerLeft_) {
+        onPeerLeft_();
+      }
       PeerLeft();
     } else if (!goingToMenu_) {
       localPaused_ = true;
       pauseMenu_.MoveToFirstVisible();
-      if (onLocalPause_) onLocalPause_();
+      if (onLocalPause_) {
+        onLocalPause_();
+      }
     }
   }
 }
 
 void RollbackController::Unfocus() {
-  if (state_ == kStateWeaponSelection && ws_) ws_->Unfocus();
+  if (state_ == kStateWeaponSelection && ws_) {
+    ws_->Unfocus();
+  }
   localPaused_ = false;
   remotePaused_ = false;
 }
@@ -260,13 +292,21 @@ void RollbackController::Focus() {
     fadeValue_ = 0;
     return;
   }
-  if (state_ == kStateWeaponSelection) ws_->Focus();
+  if (state_ == kStateWeaponSelection) {
+    ws_->Focus();
+  }
   if (state_ == kStateInitial) {
-    if (!levelPreloaded_) game.level.GenerateFromSettings(*game.common, *game.settings, game.rand);
+    if (!levelPreloaded_) {
+      game.level.GenerateFromSettings(*game.common, *game.settings, game.rand);
+    }
 
     if (skipWeaponSelection_) {
-      for (auto const& w : game.worms) w->InitWeapons(game);
-      for (auto const& w : game.worms) w->lives = game.settings->lives;
+      for (auto const& w : game.worms) {
+        w->InitWeapons(game);
+      }
+      for (auto const& w : game.worms) {
+        w->lives = game.settings->lives;
+      }
       game.StartGame();
       game.ResetWorms();
       state_ = kStateGame;
@@ -297,7 +337,9 @@ void RollbackController::Focus() {
 
 bool RollbackController::Process() {
   if (IsPaused()) {
-    if (fadeValue_ < 33) fadeValue_ += 1;
+    if (fadeValue_ < 33) {
+      fadeValue_ += 1;
+    }
 
     if (localPaused_) {
       if (gfx.TestSdlKeyOnce(SDL_SCANCODE_UP) || gfx.TestControlOnce(WormSettingsExtensions::kUp) ||
@@ -319,15 +361,25 @@ bool RollbackController::Process() {
         int const kSel = pauseMenu_.SelectedId();
         if (kSel == 0) {
           localPaused_ = false;
-          if (onLocalResume_) onLocalResume_();
+          if (onLocalResume_) {
+            onLocalResume_();
+          }
         } else if (kSel == 2) {
           localPaused_ = false;
-          if (onLocalResume_) onLocalResume_();
-          if (onEndMatch_) onEndMatch_();
+          if (onLocalResume_) {
+            onLocalResume_();
+          }
+          if (onEndMatch_) {
+            onEndMatch_();
+          }
           EndMatch();
         } else {
-          if (onLocalResume_) onLocalResume_();
-          if (onPeerLeft_) onPeerLeft_();
+          if (onLocalResume_) {
+            onLocalResume_();
+          }
+          if (onPeerLeft_) {
+            onPeerLeft_();
+          }
           PeerLeft();
         }
       }
@@ -357,7 +409,9 @@ bool RollbackController::Process() {
       return false;
     }
   } else {
-    if (fadeValue_ < 33) fadeValue_ += 1;
+    if (fadeValue_ < 33) {
+      fadeValue_ += 1;
+    }
   }
 
   return true;
@@ -507,7 +561,9 @@ void RollbackController::ResetForGamePhase() {
 }
 
 void RollbackController::FinishWeaponSelect() {
-  if (state_ != kStateWeaponSelection) return;
+  if (state_ != kStateWeaponSelection) {
+    return;
+  }
 
   ws_->Finalize();
   ws_.reset();
@@ -581,7 +637,9 @@ void RollbackController::SetupShadowGame() {
   // simulation-visible side effects (rand, holdazone, worm pos), but
   // we still need startGame() to resize bobjects to bloodParticleMax
   // since the snapshot only carries `count`, not capacity.
-  for (auto const& w : shadowGame_->worms) w->InitWeapons(*shadowGame_);
+  for (auto const& w : shadowGame_->worms) {
+    w->InitWeapons(*shadowGame_);
+  }
   shadowGame_->paused = false;
   shadowGame_->StartGame();
   shadowGame_->ResetWorms();
@@ -609,7 +667,9 @@ void RollbackController::SetupShadowGame() {
 }
 
 void RollbackController::StartReplayRecording() {
-  if (!shadowGame_) return;
+  if (!shadowGame_) {
+    return;
+  }
 
   // Test path: caller provided a writer directly; skip the gfx-driven
   // file-naming logic and just hand it to ReplayWriter.
@@ -624,13 +684,17 @@ void RollbackController::StartReplayRecording() {
     return;
   }
 
-  if (!Settings::kExtensions || !game.settings->record_replays) return;
+  if (!Settings::kExtensions || !game.settings->record_replays) {
+    return;
+  }
 
   // Tests construct RollbackControllers without first wiring up gfx,
   // so getUserConfigNode() returns a default-constructed FsNode with
   // a null impl pointer. Operator/ would dereference that and segv.
   FsNode const kConfigRoot = gfx.GetUserConfigNode();
-  if (!kConfigRoot.imp) return;
+  if (!kConfigRoot.imp) {
+    return;
+  }
 
   try {
     std::time_t const kTicks = std::time(nullptr);
@@ -643,11 +707,15 @@ void RollbackController::StartReplayRecording() {
     for (std::size_t i = 0; i < shadowGame_->worms.size() && i < 2; ++i) {
       Worm const& worm = *shadowGame_->worms[i];
       std::string const& name = worm.settings->name;
-      if (i > 0) player_names.push_back('-');
+      if (i > 0) {
+        player_names.push_back('-');
+      }
       int chars = 0;
       for (std::size_t c = 0; c < name.size() && chars < 4; ++c, ++chars) {
         auto const kCh = static_cast<unsigned char>(name[c]);
-        if (std::isalnum(kCh)) player_names.push_back(static_cast<char>(kCh));
+        if (std::isalnum(kCh)) {
+          player_names.push_back(static_cast<char>(kCh));
+        }
       }
     }
 
@@ -674,7 +742,9 @@ void RollbackController::StopReplayRecording() {
 }
 
 void RollbackController::DriveShadow() {
-  if (!shadowGame_) return;
+  if (!shadowGame_) {
+    return;
+  }
 
   while (shadowFrame_ < confirmedSimFrame_) {
     int32_t const kF = shadowFrame_ + 1;
@@ -754,7 +824,9 @@ void RollbackController::AdvanceWeaponSelection() {
   while (confirmedSimFrame_ + 1 < static_cast<int32_t>(simFrame_)) {
     int32_t const kF = confirmedSimFrame_ + 1;
     uint32_t const kS = static_cast<uint32_t>(kF) % kInputBufferSize;
-    if (!remoteInputReady_[kS]) break;
+    if (!remoteInputReady_[kS]) {
+      break;
+    }
     uint8_t const kReal = remoteInputs_[kS];
 
     auto* slot = rollbackBuffer_.Find(kF);
@@ -770,7 +842,9 @@ void RollbackController::AdvanceWeaponSelection() {
       break;
     }
 
-    if (slot) slot->remote_state = rollback::RemoteState::kConfirmed;
+    if (slot) {
+      slot->remote_state = rollback::RemoteState::kConfirmed;
+    }
     lastRemoteInput_ = kReal;
     remoteInputReady_[kS] = false;
     confirmedSimFrame_ = kF;
@@ -921,7 +995,9 @@ void RollbackController::AdvanceSimulation() {
   while (confirmedSimFrame_ + 1 < static_cast<int32_t>(simFrame_)) {
     int32_t const kF = confirmedSimFrame_ + 1;
     uint32_t const kS = static_cast<uint32_t>(kF) % kInputBufferSize;
-    if (!remoteInputReady_[kS]) break;
+    if (!remoteInputReady_[kS]) {
+      break;
+    }
     uint8_t const kReal = remoteInputs_[kS];
 
     auto* slot = rollbackBuffer_.Find(kF);
@@ -939,7 +1015,9 @@ void RollbackController::AdvanceSimulation() {
       break;
     }
 
-    if (slot) slot->remote_state = rollback::RemoteState::kConfirmed;
+    if (slot) {
+      slot->remote_state = rollback::RemoteState::kConfirmed;
+    }
     lastRemoteInput_ = kReal;
     remoteInputReady_[kS] = false;
     confirmedSimFrame_ = kF;
@@ -1098,7 +1176,9 @@ void RollbackController::AdvanceSimulation() {
 
   if (game.IsGameOver()) {
     state_ = kStateGameEnded;
-    if (!goingToMenu_) EnterGoingToMenu(180);
+    if (!goingToMenu_) {
+      EnterGoingToMenu(180);
+    }
   }
 
   DriveShadow();

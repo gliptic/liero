@@ -7,7 +7,9 @@
 
 int Weapon::ComputedLoadingTime(Settings& settings) const {
   int ret = (settings.loading_time * loading_time) / 100;
-  if (ret == 0) ret = 1;
+  if (ret == 0) {
+    ret = 1;
+  }
   return ret;
 }
 
@@ -37,21 +39,25 @@ void Weapon::Fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, 
   if (start_frame >= 0) {
     if (shot_type == kStNormal) {
       if (loop_anim) {
-        if (num_frames)
+        if (num_frames) {
           obj->cur_frame = game.rand(num_frames + 1);
-        else
+        } else {
           obj->cur_frame = game.rand(2);
+        }
       } else {
         obj->cur_frame = 0;
       }
     } else if (shot_type == kStdType1) {
-      if (angle > 64) --angle;
+      if (angle > 64) {
+        --angle;
+      }
 
       int cur_frame = (angle - 12) >> 3;
-      if (cur_frame < 0)
+      if (cur_frame < 0) {
         cur_frame = 0;
-      else if (cur_frame > 12)
+      } else if (cur_frame > 12) {
         cur_frame = 12;
+      }
       obj->cur_frame = cur_frame;
     } else if (shot_type == kStdType2 || shot_type == kStSteerable) {
       obj->cur_frame = angle;
@@ -64,7 +70,9 @@ void Weapon::Fire(Game& game, int angle, fixedvec vel, int speed, fixedvec pos, 
 
   obj->time_left = time_to_explo;
 
-  if (time_to_explo_v) obj->time_left -= game.rand(time_to_explo_v);
+  if (time_to_explo_v) {
+    obj->time_left -= game.rand(time_to_explo_v);
+  }
 }
 
 void WObject::BlowUpObject(Game& game, int cause_idx) {
@@ -110,8 +118,9 @@ void WObject::BlowUpObject(Game& game, int cause_idx) {
     int const kIx = Ftoi(kX);
     int const kIy = Ftoi(kY);
     DrawDirtEffect(common, game.rand, game.level, w.dirt_effect, Ftoi(kX) - 7, Ftoi(kY) - 7);
-    if (game.settings->shadow)
+    if (game.settings->shadow) {
       CorrectShadow(common, game.level, Rect(kIx - 10, kIy - 10, kIx + 11, kIy + 11));
+    }
   }
 }
 
@@ -224,10 +233,18 @@ void WObject::Process(Game& game) {
 
     auto inew_pos = Ftoi(pos + vel);
 
-    if (inew_pos.x < 0) pos.x = 0;
-    if (inew_pos.y < 0) pos.y = 0;
-    if (inew_pos.x >= game.level.width) pos.x = Itof(game.level.width - 1);
-    if (inew_pos.y >= game.level.height) pos.y = Itof(game.level.height - 1);
+    if (inew_pos.x < 0) {
+      pos.x = 0;
+    }
+    if (inew_pos.y < 0) {
+      pos.y = 0;
+    }
+    if (inew_pos.x >= game.level.width) {
+      pos.x = Itof(game.level.width - 1);
+    }
+    if (inew_pos.y >= game.level.height) {
+      pos.y = Itof(game.level.height - 1);
+    }
 
     if (!game.level.Inside(inew_pos) || game.PixelMat(inew_pos.x, inew_pos.y).DirtRock()) {
       if (w.bounce == 0) {
@@ -243,12 +260,18 @@ void WObject::Process(Game& game) {
       if (w.num_frames > 0) {
         if ((game.cycles & 7) == 0) {
           if (!w.loop_anim) {
-            if (++cur_frame > w.num_frames) cur_frame = 0;
+            if (++cur_frame > w.num_frames) {
+              cur_frame = 0;
+            }
           } else {
             if (vel.x < 0) {
-              if (--cur_frame < 0) cur_frame = w.num_frames;
+              if (--cur_frame < 0) {
+                cur_frame = w.num_frames;
+              }
             } else if (vel.x > 0) {
-              if (++cur_frame > w.num_frames) cur_frame = 0;
+              if (++cur_frame > w.num_frames) {
+                cur_frame = 0;
+              }
             }
           }
         }
@@ -256,7 +279,9 @@ void WObject::Process(Game& game) {
     }
 
     if (w.time_to_explo > 0) {
-      if (--time_left < 0) do_explode = true;
+      if (--time_left < 0) {
+        do_explode = true;
+      }
     }
 
     for (std::size_t i = 0; i < game.worms.size(); ++i) {
@@ -268,7 +293,9 @@ void WObject::Process(Game& game) {
 
         game.DoDamage(worm, w.hit_damage, owner_idx);
         game.stats_recorder->DamageDealt(owner, fired_by, &worm, w.hit_damage, has_hit);
-        if (!has_hit) game.stats_recorder->Hit(owner, fired_by, &worm);
+        if (!has_hit) {
+          game.stats_recorder->Hit(owner, fired_by, &worm);
+        }
         has_hit = true;
 
         int const kBloodAmount = w.blood_on_hit * game.settings->blood / 100;
@@ -288,7 +315,9 @@ void WObject::Process(Game& game) {
 
         if (w.worm_collide) {
           if (game.rand(w.worm_collide) == 0) {
-            if (w.worm_explode) do_explode = true;
+            if (w.worm_explode) {
+              do_explode = true;
+            }
 
             do_remove = true;
           }

@@ -173,7 +173,9 @@ TEST_CASE("RollbackBuffer supports Predicted -> Confirmed transition", "[rollbac
 
 TEST_CASE("RollbackBuffer clear empties without losing capacity", "[rollback]") {
   RollbackBuffer buf;
-  for (int f = 0; f < 5; ++f) buf.Write(f).local_input = 0x77;
+  for (int f = 0; f < 5; ++f) {
+    buf.Write(f).local_input = 0x77;
+  }
   REQUIRE(!buf.Empty());
 
   buf.Clear();
@@ -181,7 +183,9 @@ TEST_CASE("RollbackBuffer clear empties without losing capacity", "[rollback]") 
   REQUIRE(buf.Size() == 0);
   REQUIRE(buf.NewestFrame() == -1);
   REQUIRE(buf.OldestFrame() == -1);
-  for (int f = 0; f < 5; ++f) REQUIRE(buf.Find(f) == nullptr);
+  for (int f = 0; f < 5; ++f) {
+    REQUIRE(buf.Find(f) == nullptr);
+  }
 
   // Still usable after clear.
   buf.Write(100).local_input = 0x99;

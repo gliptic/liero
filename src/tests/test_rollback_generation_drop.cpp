@@ -111,7 +111,9 @@ TEST_CASE("resetForGamePhase clears controller state and bumps generation",
   // Drive a handful of frames so simFrame, confirmedFrame, the rollback
   // ring, lastKnownRemoteFrame, etc. are non-default. Seed remote inputs
   // for the input-delay window so frames advance as confirmed.
-  for (uint32_t f = 0; f < 16; ++f) c.InjectRemoteInput(f, 0);
+  for (uint32_t f = 0; f < 16; ++f) {
+    c.InjectRemoteInput(f, 0);
+  }
   for (int i = 0; i < 10; ++i) {
     c.SetLocalControlState(0);
     c.Process();
