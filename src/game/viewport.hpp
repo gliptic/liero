@@ -10,17 +10,18 @@ struct Renderer;
 
 struct Viewport {
   Viewport(Rect rect, int worm_idx, int levwidth, int levheight)
-      : worm_idx(worm_idx), banner_y(-8), rect(rect) {
-    max_x = levwidth - rect.Width();
-    max_y = levheight - rect.Height();
-    center_x = rect.Width() >> 1;
-    center_y = rect.Height() >> 1;
-    x = 0;
-    y = 0;
-    shake = 0;
-  }
+      : max_x(levwidth - rect.Width()),
+        max_y(levheight - rect.Height()),
+        center_x(rect.Width() >> 1),
+        center_y(rect.Height() >> 1),
+        x(0),
+        y(0),
+        shake(0),
+        worm_idx(worm_idx),
+        banner_y(-8),
+        rect(rect) {}
 
-  Viewport() {}
+  Viewport() = default;
 
   int x, y;
   int shake;

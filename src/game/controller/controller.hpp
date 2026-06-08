@@ -5,7 +5,7 @@ struct Game;
 struct Renderer;
 
 struct Controller {
-  virtual ~Controller() {}
+  virtual ~Controller() = default;
 
   // Returns true if this controller is controlling a replay, false if it is
   // an actual match

@@ -7,6 +7,7 @@
 #include <array>
 #include <catch2/catch_test_macros.hpp>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "controller/rollbackController.hpp"
@@ -24,8 +25,8 @@ namespace {
 std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
   settings->loading_time = 0;
@@ -36,9 +37,9 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   return {common, settings};
 }
 
-std::unique_ptr<RollbackController> MakePeer(std::shared_ptr<Common> common,
-                                             std::shared_ptr<Settings> settings, int local_idx,
-                                             uint32_t world_seed) {
+std::unique_ptr<RollbackController> MakePeer(const std::shared_ptr<Common>& common,
+                                             const std::shared_ptr<Settings>& settings,
+                                             int local_idx, uint32_t world_seed) {
   auto c = std::make_unique<RollbackController>(common, settings, local_idx);
   c->SetInputDelay(1);
   c->game.rand.Seed(world_seed);
@@ -84,7 +85,8 @@ static void RunRoundTrip(int recorder_idx) {
     std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
     uint32_t local_frame;
   };
-  std::vector<Pkt> a_to_b, b_to_a;
+  std::vector<Pkt> a_to_b;
+  std::vector<Pkt> b_to_a;
   auto enqueue = [](std::vector<Pkt>& q, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     Pkt p{};
     p.base_frame = bf;
@@ -112,11 +114,11 @@ static void RunRoundTrip(int recorder_idx) {
   constexpr int kWsTail = 40;
   constexpr int kGameTicks = 120;
 
-  int total_ticks = static_cast<int>(ws_script.size()) + kWsTail + kGameTicks;
-  for (int i = 0; i < total_ticks; ++i) {
-    uint8_t in = (i < static_cast<int>(ws_script.size())) ? ws_script[i] : 0;
-    a->SetLocalControlState(in);
-    b->SetLocalControlState(in);
+  int const kTotalTicks = static_cast<int>(ws_script.size()) + kWsTail + kGameTicks;
+  for (int i = 0; i < kTotalTicks; ++i) {
+    uint8_t const kIn = (std::cmp_less(i, ws_script.size())) ? ws_script[i] : 0;
+    a->SetLocalControlState(kIn);
+    b->SetLocalControlState(kIn);
     a->Process();
     b->Process();
     for (auto const& p : a_to_b)
@@ -136,8 +138,8 @@ static void RunRoundTrip(int recorder_idx) {
   // captured.
   Game* shadow = a->ShadowGameForTest();
   REQUIRE(shadow != nullptr);
-  uint32_t shadow_checksum = WideRollbackChecksum(*shadow);
-  int shadow_cycles = shadow->cycles;
+  uint32_t const kShadowChecksum = WideRollbackChecksum(*shadow);
+  int const kShadowCycles = shadow->cycles;
 
   // End the match so ReplayWriter's terminator gets flushed and the
   // DeflateWriter inside it gets finalized. Up until this point the
@@ -173,8 +175,8 @@ static void RunRoundTrip(int recorder_idx) {
   // was in when recording stopped: same cycles count, same wide
   // checksum. Any divergence here means the recorded delta stream
   // doesn't faithfully reproduce the simulation it captured.
-  REQUIRE(playback->cycles == shadow_cycles);
-  REQUIRE(WideRollbackChecksum(*playback) == shadow_checksum);
+  REQUIRE(playback->cycles == kShadowCycles);
+  REQUIRE(WideRollbackChecksum(*playback) == kShadowChecksum);
 
   // The recorded level palette must round-trip to the same bytes the
   // shadow saw when it began recording. Regression guard for the

@@ -2,12 +2,14 @@
 // leading underscore is mandatory — it's the macro spelling MSVC
 // looks for. NOLINT keeps clang-tidy's macro-naming rule from
 // stripping the underscore.
-// NOLINTNEXTLINE(readability-identifier-naming, bugprone-reserved-identifier)
+// NOLINTNEXTLINE(readability-identifier-naming, bugprone-reserved-identifier, cert-dcl37-c, cert-dcl51-cpp)
 #define _USE_MATH_DEFINES
 #include "predictive_ai.hpp"
+#include <algorithm>
 #include <cmath>
 
 #include <cfloat>
+#include <cstdio>
 #include <limits>
 #include <sstream>
 #include "../game.hpp"
@@ -15,20 +17,19 @@
 #include "../gfx/renderer.hpp"
 #include "../stats.hpp"
 
-double TotalHealth(Worm* w) {
+static double TotalHealth(Worm* w) {
   if (w->lives == 0) return -10000.0;
   int h = std::max(w->health, 0);
   if (!w->visible) h = w->settings->health;
   return w->lives * (w->settings->health * 5.0 / 4.0) + h;
 }
 
-double TotalHealthNorm(Worm* w) { return TotalHealth(w) * 100.0 / w->settings->health; }
+static double TotalHealthNorm(Worm* w) { return TotalHealth(w) * 100.0 / w->settings->health; }
 
 // 0..6*len(w->weapons)
-double TotalAmmoWorth(Game& game, Worm* w) {
+static double TotalAmmoWorth(Game& /*game*/, Worm* w) {
   double ammo_worth = 0;
-  for (int i = 0; i < 5; ++i) {
-    WormWeapon& weap = w->weapons[i];
+  for (auto& weap : w->weapons) {
     Weapon const& winfo = *weap.type;
 
     if (weap.loading_left > 0)
@@ -40,81 +41,81 @@ double TotalAmmoWorth(Game& game, Worm* w) {
   return ammo_worth;
 }
 
-int ReadyWeapons(Game& game, Worm* w) {
+static int ReadyWeapons(Game& /*game*/, Worm* w) {
   int count = 0;
-  for (int i = 0; i < 5; ++i) {
-    WormWeapon& weap = w->weapons[i];
-
+  for (auto& weap : w->weapons) {
     if (weap.loading_left == 0 && weap.delay_left < 70) ++count;
   }
 
   return count;
 }
 
-bool HasUsableWeapon(Game& game, Worm* w) {
-  for (int i = 0; i < 5; ++i) {
-    WormWeapon& weap = w->weapons[i];
-
+static bool HasUsableWeapon(Game& /*game*/, Worm* w) {
+  // NOLINTNEXTLINE(readability-use-anyofallof) — loop body has more than the predicate check; rewriting as std::any_of/all_of would be less readable here.
+  for (auto& weap : w->weapons) {
     if (weap.loading_left <= 0) return true;
   }
 
   return false;
 }
 
-int WormDistance(Worm* from, Worm* to) {
+static int WormDistance(Worm* from, Worm* to) {
   return VectorLength(Ftoi(to->pos.x) - Ftoi(from->pos.x), Ftoi(to->pos.y) - Ftoi(from->pos.y));
 }
 
 // langle in fixed point 0..128
-double LangleToRadians(int langle) {
-  double a = ((langle + Itof(32)) & (Itof(128) - 1)) * 0.04908738521234051935097880286374 / 65536.0;
-  return a;
+static double LangleToRadians(int langle) {
+  double const kA =
+      ((langle + Itof(32)) & (Itof(128) - 1)) * 0.04908738521234051935097880286374 / 65536.0;
+  return kA;
 }
 
-inline int NormalizedLangle(int langle) {
+static inline int NormalizedLangle(int langle) {
   if (langle < Itof(64)) langle = Itof(128) - langle;
   return langle;
 }
 
-inline double RadianDiff(double a, double b) {
+static inline double RadianDiff(double a, double b) {
   double aim_diff = b - a;
   while (aim_diff < -M_PI) aim_diff += 2 * M_PI;
   while (aim_diff > M_PI) aim_diff -= 2 * M_PI;
   return aim_diff;
 }
 
-double AimingDiff(Worm* from, Worm* to) {
-  double xo = std::abs(to->pos.x - from->pos.x);
-  double yo = to->pos.y - from->pos.y;
+static double AimingDiff(Worm* from, Worm* to) {
+  double const kXo = std::abs(to->pos.x - from->pos.x);
+  double const kYo = to->pos.y - from->pos.y;
 
-  double angle_to_target = xo != 0 || yo != 0 ? std::atan2(yo, xo) : 0;
+  double const kAngleToTarget = kXo != 0 || kYo != 0 ? std::atan2(kYo, kXo) : 0;
 
-  int aim = NormalizedLangle(from->aiming_angle);
+  int const kAim = NormalizedLangle(from->aiming_angle);
 
-  double current_aim = LangleToRadians(aim);
+  double const kCurrentAim = LangleToRadians(kAim);
 
-  double tolerance = M_PI / 8;
-  double aim_diff = std::abs(RadianDiff(angle_to_target, current_aim));
+  double const kTolerance = M_PI / 8;
+  double const kAimDiff = std::abs(RadianDiff(kAngleToTarget, kCurrentAim));
 
-  return std::max(aim_diff - tolerance, 0.0) / 6.0;
+  return std::max(kAimDiff - kTolerance, 0.0) / 6.0;
 }
 
-int Obstacles(Game& game, IVec2 from, IVec2 to) {
-  typedef BasicVec<double, 2> dvec2;
+static int Obstacles(Game& game, IVec2 from, IVec2 to) {
+  using dvec2 = BasicVec<double, 2>;
 
-  dvec2 org(from.x, from.y);
+  dvec2 const kOrg(from.x, from.y);
   dvec2 dir(to.x, to.y);
-  dir -= org;
+  dir -= kOrg;
 
-  double l = std::sqrt(dir.x * dir.x + dir.y * dir.y);
-  dir /= l;
+  double const kL = std::sqrt(dir.x * dir.x + dir.y * dir.y);
+  dir /= kL;
 
   int obst = 0;
 
-  for (double d = 0; d < l; d += 2.0) {
-    dvec2 p = org + dir * d;
+  // NOLINTNEXTLINE(bugprone-float-loop-counter, cert-flp30-c) — geometric raycast with fractional step; converting to integer math is a behaviour change.
+  for (double d = 0; d < kL; d += 2.0) {
+    dvec2 const kP = kOrg + dir * d;
 
-    auto m = game.common->materials[game.level.CheckedPixelWrap((int)p.x, (int)p.y)];
+    auto m = game.common->materials[game.level.CheckedPixelWrap(static_cast<int>(kP.x),
+                                                                static_cast<int>(kP.y))];
 
     if (!m.Background()) {
       if (m.Dirt())
@@ -129,23 +130,26 @@ int Obstacles(Game& game, IVec2 from, IVec2 to) {
   return obst;
 }
 
-int Obstacles(Game& game, Worm* from, Worm* to) {
-  double org_x = from->pos.x / 65536.0;
-  double org_y = from->pos.y / 65536.0;
+static int Obstacles(Game& game, Worm* from, Worm* to) {
+  double const kOrgX = from->pos.x / 65536.0;
+  double const kOrgY = from->pos.y / 65536.0;
   double dir_x = (to->pos.x - from->pos.x) / 65536.0;
   double dir_y = (to->pos.y - from->pos.y) / 65536.0;
 
-  double l = std::sqrt(dir_x * dir_x + dir_y * dir_y);
-  dir_x /= l;
-  dir_y /= l;
+  double const kL = std::sqrt(dir_x * dir_x + dir_y * dir_y);
+  dir_x /= kL;
+  dir_y /= kL;
 
   int obst = 0;
 
-  for (double d = 0; d < l; d += 2.0) {
-    double px = org_x + dir_x * d;
-    double py = org_y + dir_y * d;
+  // NOLINTNEXTLINE(bugprone-float-loop-counter, cert-flp30-c) — geometric raycast with fractional step; converting to integer math is a behaviour change.
+  for (double d = 0; d < kL; d += 2.0) {
+    double const kPx = kOrgX + dir_x * d;
+    double const kPy = kOrgY + dir_y * d;
 
-    auto m = game.common->materials[game.level.CheckedPixelWrap((int)px, (int)py)];
+    auto m =
+        game.common
+            ->materials[game.level.CheckedPixelWrap(static_cast<int>(kPx), static_cast<int>(kPy))];
 
     if (!m.Background()) {
       if (m.Dirt())
@@ -160,21 +164,23 @@ int Obstacles(Game& game, Worm* from, Worm* to) {
   return obst;
 }
 
-double AimingDiff(AiContext& context, Game& game, Worm* from, LevelCell* cell) {
+static double AimingDiff(AiContext& context, Game& game, Worm* from, LevelCell* cell) {
   if (!cell || !cell->parent) return 1.0;
 
   auto org = context.dlevel.Coords(cell);
   auto orgl = context.dlevel.CoordsLevel(cell);
 
-  double dirx = 0, diry = 0;
+  double dirx = 0;
+  double diry = 0;
   auto* c = cell;
 
   // if (from->index == 0)
-  if (true) {
+  {
     int count = 15;
     dirx = 1;
     while (c->parent && count-- > 0) {
-      c = (LevelCell*)c->parent;
+      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast) — parent is always a LevelCell; same path as Dijkstra::GetNodeId.
+      c = static_cast<LevelCell*>(c->parent);
       auto path = context.dlevel.CoordsLevel(c);
 
       if ((path.x != orgl.x && path.y != orgl.y) && Obstacles(game, orgl, path) > 4) break;
@@ -182,36 +188,20 @@ double AimingDiff(AiContext& context, Game& game, Worm* from, LevelCell* cell) {
       dirx = std::abs(path.x - orgl.x);
       diry = path.y - orgl.y;
     }
-  } else {
-    int count = 10;
-
-    while (count-- > 0) {
-      c = (LevelCell*)c->parent;
-      if (!c) break;
-
-      auto path = context.dlevel.Coords(c);
-
-      int xdiff = std::abs(path.x - org.x);
-      int ydiff = path.y - org.y;
-
-      double len = std::sqrt(xdiff * xdiff + ydiff * ydiff);
-      dirx += xdiff / len;
-      diry += ydiff / len;
-    }
   }
 
-  int aim = NormalizedLangle(from->aiming_angle);
-  double current_aim = LangleToRadians(aim);
+  int const kAim = NormalizedLangle(from->aiming_angle);
+  double const kCurrentAim = LangleToRadians(kAim);
 
-  double angle_to_target = std::atan2(diry, dirx);
+  double const kAngleToTarget = std::atan2(diry, dirx);
 
-  double tolerance = M_PI / 8;
-  double aim_diff = std::abs(RadianDiff(angle_to_target, current_aim));
+  double const kTolerance = M_PI / 8;
+  double const kAimDiff = std::abs(RadianDiff(kAngleToTarget, kCurrentAim));
 
-  return std::max(aim_diff - tolerance, 0.0) / 6.0;
+  return std::max(kAimDiff - kTolerance, 0.0) / 6.0;
 }
 
-inline int WeaponChangeOffset(int wanted_weapon, int current_weapon) {
+static inline int WeaponChangeOffset(int wanted_weapon, int current_weapon) {
   int offset = wanted_weapon - current_weapon;
   offset = ((offset + 2 + 5) % 5) - 2;
   return offset;
@@ -223,41 +213,42 @@ struct MutationStrategy {
   MutationStrategy(MutationType type, uint32_t start = 0, uint32_t stop = 0)
       : type(type), start(start), stop(stop) {}
 
-  static MutationStrategy Identity() { return MutationStrategy(kMtIdentity); }
+  static MutationStrategy Identity() { return {kMtIdentity}; }
 
-  static MutationStrategy Optimize() { return MutationStrategy(kMtOptimize); }
+  static MutationStrategy Optimize() { return {kMtOptimize}; }
 
   MutationType type;
   uint32_t start;
   uint32_t stop;
 };
 
-InputState Generate(FollowAI& ai, Rand& rand, InputContext& prev) {
+static InputState Generate(FollowAI& ai, Rand& rand, InputContext& prev) {
   return ai.model.Random(prev, rand);
 }
 
-double Sigmoid(double x) { return 1.0 / (1.0 + exp(-x)); }
+static double Sigmoid(double x) { return 1.0 / (1.0 + exp(-x)); }
 
 // psigmoid(0) = 0
 // psigmoid(1) ~= 0.5
 // psigmoid(inf) = 1
-double Psigmoid(double x) { return (Sigmoid(x) - 0.5) * 2.0; }
+static double Psigmoid(double x) { return (Sigmoid(x) - 0.5) * 2.0; }
 
 LevelCell* AiContext::PathFind(int x, int y) {
   auto* cell = dlevel.CellFromPx(x, y);
-  bool path = dlevel.Run([=] { return cell->state == PathNode::kClosed; }, LevelCellSucc());
-  return path ? cell : 0;
+  bool const kPath = dlevel.Run([=] { return cell->state == PathNode::kClosed; }, LevelCellSucc());
+  return kPath ? cell : nullptr;
 }
 
-double EvaluateState(FollowAI& ai, Worm* me, Game& game, InputContext& context, Worm* target,
-                     Game& org_game, std::size_t index) {
+static double EvaluateState(FollowAI& ai, Worm* me, Game& game, InputContext& /*context*/,
+                            Worm* target, Game& org_game, std::size_t /*index*/) {
   double score = 0;
 
-  Weights weights = ai.weights;
+  Weights const kWeights = ai.weights;
 
-  int posx = Ftoi(me->pos.x), posy = Ftoi(me->pos.y);
-  auto* worm_cell = ai.PathFind(posx, posy);
-  Worm* me_org = org_game.WormByIdx(me->index);
+  int const kPosx = Ftoi(me->pos.x);
+  int const kPosy = Ftoi(me->pos.y);
+  auto* worm_cell = ai.PathFind(kPosx, kPosy);
+  Worm const* me_org = org_game.WormByIdx(me->index);
 
   double len = 200.0;
   if (worm_cell) {
@@ -267,43 +258,44 @@ double EvaluateState(FollowAI& ai, Worm* me, Game& game, InputContext& context, 
       optimal_dist = 50.0;
     }
 
-    double d = std::max(std::abs(worm_cell->g / 256.0 - optimal_dist) - 10.0, 0.0) *
-               weights.distance_weight;
-    len *= Psigmoid(d / 100.0);
+    double const kD = std::max(std::abs(worm_cell->g / 256.0 - optimal_dist) - 10.0, 0.0) *
+                      kWeights.distance_weight;
+    len *= Psigmoid(kD / 100.0);
   } else {
     len += WormDistance(me, target) / 10.0;
   }
 
   if (me_org->steerable_count == 1) {
     auto* missile_cell = ai.dlevel.CellFromPx(me->steerable_sum_x, me->steerable_sum_y);
-    bool missile_path =
+    bool const kMissilePath =
         ai.dlevel.Run([=] { return missile_cell->state == PathNode::kClosed; }, LevelCellSucc());
 
-    if (missile_path && worm_cell && missile_cell->g < worm_cell->g) {
-      double closer = (double)worm_cell->g - missile_cell->g;
-      score += Psigmoid((closer / (double)worm_cell->g)) * 100.0 * weights.missile_weight;
+    if (kMissilePath && worm_cell && missile_cell->g < worm_cell->g) {
+      double const kCloser = static_cast<double>(worm_cell->g) - missile_cell->g;
+      score +=
+          Psigmoid((kCloser / static_cast<double>(worm_cell->g))) * 100.0 * kWeights.missile_weight;
     }
   }
 
-  double me_health = TotalHealthNorm(me);
-  double target_health = TotalHealthNorm(target);
+  double const kMeHealth = TotalHealthNorm(me);
+  double const kTargetHealth = TotalHealthNorm(target);
 
-  score += me_health * weights.health_weight * weights.defense_weight;
-  score -= target_health * weights.health_weight;
+  score += kMeHealth * kWeights.health_weight * kWeights.defense_weight;
+  score -= kTargetHealth * kWeights.health_weight;
 
   if (game.settings->game_mode == Settings::kGmHoldazone &&
       game.holdazone.holder_idx == me->index) {
-    double aim_diff = AimingDiff(me, target);
-    score -= aim_diff * 2.0 * weights.aim_weight;
+    double const kAimDiff = AimingDiff(me, target);
+    score -= kAimDiff * 2.0 * kWeights.aim_weight;
   } else {
-    double aim_diff = AimingDiff(ai, game, me, worm_cell);
-    score -= aim_diff * 2.0 * weights.aim_weight;
+    double const kAimDiff = AimingDiff(ai, game, me, worm_cell);
+    score -= kAimDiff * 2.0 * kWeights.aim_weight;
   }
 
   {
-    double me_ammo_worth = TotalAmmoWorth(game, me);
+    double const kMeAmmoWorth = TotalAmmoWorth(game, me);
 
-    score += me_ammo_worth * 2.0 * weights.ammo_weight;
+    score += kMeAmmoWorth * 2.0 * kWeights.ammo_weight;
   }
 
   if (game.settings->game_mode == Settings::kGmHoldazone) {
@@ -320,6 +312,7 @@ double EvaluateState(FollowAI& ai, Worm* me, Game& game, InputContext& context, 
     score -= len;
   }
 
+  // NOLINTNEXTLINE(bugprone-branch-clone) — visibility/ready branches are intentionally empty placeholders for future scoring tweaks.
   if (!me->visible && !me->ready) {
   } else if (me->visible) {
   }
@@ -341,10 +334,10 @@ double EvaluateResult::WeightedScore() const {
   double r = 0.0;
 
   for (std::size_t i = 1; i < score_over_time.size(); ++i) {
-    double weight = double(score_over_time.size() - i) / score_over_time.size();
+    double const kWeight = static_cast<double>(score_over_time.size() - i) / score_over_time.size();
 
-    double diff = score_over_time[i] * weight;
-    r += diff;
+    double const kDiff = score_over_time[i] * kWeight;
+    r += kDiff;
   }
 
   return r + future_score;
@@ -356,34 +349,34 @@ void SimpleAI::Process(Game& game, Worm& worm) {
   auto cs = worm.control_states;
 
   if (!worm.visible) {
-    cs.Set(Worm::kFire, true);
+    cs.Set(Worm::kFire, /*v=*/true);
   } else {
-    int aim = NormalizedLangle(worm.aiming_angle);
-    double current_aim = LangleToRadians(aim);
+    int const kAim = NormalizedLangle(worm.aiming_angle);
+    double const kCurrentAim = LangleToRadians(kAim);
 
-    double dirx = std::abs(target->pos.x - worm.pos.x);
-    double diry = target->pos.y - worm.pos.y;
-    double angle_to_target = std::atan2(diry, dirx);
+    double const kDirx = std::abs(target->pos.x - worm.pos.x);
+    double const kDiry = target->pos.y - worm.pos.y;
+    double const kAngleToTarget = std::atan2(kDiry, kDirx);
 
-    double tolerance = 2 * M_PI / 32.0;
+    double const kTolerance = 2 * M_PI / 32.0;
 
-    double aim_diff = RadianDiff(angle_to_target, current_aim);
+    double const kAimDiff = RadianDiff(kAngleToTarget, kCurrentAim);
 
-    bool fire =
-        aim_diff >= -tolerance && aim_diff <= tolerance && Obstacles(game, &worm, target) < 4;
+    bool const kFire =
+        kAimDiff >= -kTolerance && kAimDiff <= kTolerance && Obstacles(game, &worm, target) < 4;
     {
       cs = initial;
-      cs.Set(Worm::kDown, aim_diff < -tolerance);
-      cs.Set(Worm::kUp, aim_diff > tolerance);
-      cs.Set(Worm::kFire, fire || initial[Worm::kFire]);
-      cs.Set(Worm::kChange, false);
+      cs.Set(Worm::kDown, kAimDiff < -kTolerance);
+      cs.Set(Worm::kUp, kAimDiff > kTolerance);
+      cs.Set(Worm::kFire, kFire || initial[Worm::kFire]);
+      cs.Set(Worm::kChange, /*v=*/false);
 
       if (cs[Worm::kFire] && target->pos.x < worm.pos.x && worm.direction != 0) {
-        cs.Set(Worm::kLeft, true);
-        cs.Set(Worm::kRight, false);
+        cs.Set(Worm::kLeft, /*v=*/true);
+        cs.Set(Worm::kRight, /*v=*/false);
       } else if (cs[Worm::kFire] && target->pos.x > worm.pos.x && worm.direction != 1) {
-        cs.Set(Worm::kLeft, false);
-        cs.Set(Worm::kRight, true);
+        cs.Set(Worm::kLeft, /*v=*/false);
+        cs.Set(Worm::kRight, /*v=*/true);
       }
     }
   }
@@ -391,8 +384,8 @@ void SimpleAI::Process(Game& game, Worm& worm) {
   worm.control_states = cs;
 }
 
-void Evaluate(EvaluateResult& result, FollowAI& ai, Worm* me, Game& game, Worm* target, Plan& plan,
-              std::size_t plan_size, MutationStrategy const& ms) {
+static void Evaluate(EvaluateResult& result, FollowAI& ai, Worm* me, Game& game, Worm* target,
+                     Plan& plan, std::size_t plan_size, MutationStrategy const& ms) {
   Game copy(game);
   copy.PostClone(game);
   copy.quick_sim = true;
@@ -400,7 +393,7 @@ void Evaluate(EvaluateResult& result, FollowAI& ai, Worm* me, Game& game, Worm* 
   Worm* me_copy = copy.WormByIdx(me->index);
   Worm* target_copy = copy.WormByIdx(target->index);
 
-  FollowAI* target_ai = 0;
+  FollowAI* target_ai = nullptr;
 
   auto context = ai.current_context;
   InputContext target_context;
@@ -410,6 +403,7 @@ void Evaluate(EvaluateResult& result, FollowAI& ai, Worm* me, Game& game, Worm* 
 
   simple_ai.initial = target_copy->control_states;
 
+  // NOLINTNEXTLINE(readability-suspicious-call-argument) — `copy` is the sandbox sim; `game` is the original. The "swap" is the actual design.
   double prev_s = EvaluateState(ai, me_copy, copy, context, target_copy, game, 0);
 
   if (result.score_over_time.size() < plan_size + 1) result.score_over_time.resize(plan_size + 1);
@@ -449,7 +443,8 @@ void Evaluate(EvaluateResult& result, FollowAI& ai, Worm* me, Game& game, Worm* 
         // a loaded weapon, pick the one that is closest to loaded.
         for (int w = 0; w < 5; ++w) {
           if (me_copy->weapons[w].loading_left > 0) {
-            int distance_from_current = std::abs(WeaponChangeOffset(w, me_copy->current_weapon));
+            int const kDistanceFromCurrent =
+                std::abs(WeaponChangeOffset(w, me_copy->current_weapon));
             int loaded_distance = 5;
             for (int lw = 0; lw < 5; ++lw) {
               if (me_copy->weapons[lw].loading_left == 0) {
@@ -457,8 +452,8 @@ void Evaluate(EvaluateResult& result, FollowAI& ai, Worm* me, Game& game, Worm* 
               }
             }
 
-            int total_distance = distance_from_current + loaded_distance;
-            if (total_distance <= weapon_changes_left[i]) {
+            int const kTotalDistance = kDistanceFromCurrent + loaded_distance;
+            if (kTotalDistance <= weapon_changes_left[i]) {
               plan[i] = InputState::Compose(InputState::kChangeWeapon, w, 0, 0);
               break;
             }
@@ -477,27 +472,28 @@ void Evaluate(EvaluateResult& result, FollowAI& ai, Worm* me, Game& game, Worm* 
 
     copy.ProcessFrame();
 
-    double s = EvaluateState(ai, me_copy, copy, context, target_copy, game, i + 1);
+    // NOLINTNEXTLINE(readability-suspicious-call-argument) — see comment on the call above; `copy` is sandbox, `game` is the original.
+    double const kS = EvaluateState(ai, me_copy, copy, context, target_copy, game, i + 1);
 
     if (game.settings->ai_traces) {
-      int t = 119 - (int)(i * (119 - 104 + 1) / plan_size);
+      int const kT = 119 - static_cast<int>(i * (119 - 104 + 1) / plan_size);
 
-      ai.evaluate_positions.push_back(std::make_tuple(IVec2(me_copy->pos.x, me_copy->pos.y), t));
+      ai.evaluate_positions.emplace_back(IVec2(me_copy->pos.x, me_copy->pos.y), kT);
     }
 
-    result.score_over_time[i + 1] = s - prev_s;
+    result.score_over_time[i + 1] = kS - prev_s;
 
-    prev_s = s;
+    prev_s = kS;
   }
 }
 
-void Mutate(EvaluateResult& result, FollowAI& ai, Game& game, Worm& worm, Worm* target,
-            Plan& candidate, EvaluateResult const& prev_result) {
-  MutationStrategy ms(kMtRange, 0, (uint32_t)candidate.size());
+static void Mutate(EvaluateResult& result, FollowAI& ai, Game& game, Worm& worm, Worm* target,
+                   Plan& candidate, EvaluateResult const& prev_result) {
+  MutationStrategy ms(kMtRange, 0, static_cast<uint32_t>(candidate.size()));
 
   {
     // Find the minimum suffix sum
-    uint32_t j = uint32_t(prev_result.score_over_time.size() - 1);
+    auto j = static_cast<uint32_t>(prev_result.score_over_time.size() - 1);
 
     double sum = prev_result.score_over_time[j];
     double min = sum;
@@ -513,20 +509,21 @@ void Mutate(EvaluateResult& result, FollowAI& ai, Game& game, Worm& worm, Worm* 
 
     if (ai.rand(8) < 7) {
       ms.stop = ai.rand(minj);
-      ms.start = ai.rand(std::max(ms.stop, uint32_t(10)) - 10, ms.stop);
+      ms.start = ai.rand(std::max(ms.stop, static_cast<uint32_t>(10)) - 10, ms.stop);
     } else {
-      ms.start = ai.rand(0, (uint32_t)candidate.size());
-      ms.stop = ai.rand(ms.start, std::min(ms.start + 10, (uint32_t)candidate.size()));
+      ms.start = ai.rand(0, static_cast<uint32_t>(candidate.size()));
+      ms.stop = ai.rand(ms.start, std::min(ms.start + 10, static_cast<uint32_t>(candidate.size())));
     }
   }
 
   Evaluate(result, ai, &worm, game, target, candidate, game.settings->ai_frames, ms);
 }
 
-void FollowAI::DrawDebug(Game& game, Worm const& worm, Renderer& renderer, int offs_x, int offs_y) {
+void FollowAI::DrawDebug(Game& /*game*/, Worm const& /*worm*/, Renderer& renderer, int offs_x,
+                         int offs_y) {
   for (auto& p : evaluate_positions) {
     IVec2 v;
-    PalIdx t;
+    PalIdx t = 0;
     std::tie(v, t) = p;
     renderer.bmp.SetPixel(Ftoi(v.x) + offs_x, Ftoi(v.y) + offs_y, t);
   }
@@ -567,7 +564,8 @@ void FollowAI::Process(Game& game, Worm& worm) {
   Worm* target = game.worms[worm.index ^ 1].get();
 
   {
-    int targetx = Ftoi(target->pos.x), targety = Ftoi(target->pos.y);
+    int targetx = Ftoi(target->pos.x);
+    int targety = Ftoi(target->pos.y);
 
     if (game.settings->game_mode == Settings::kGmHoldazone) {
       targetx = game.holdazone.rect.CenterX();
@@ -586,7 +584,7 @@ void FollowAI::Process(Game& game, Worm& worm) {
   evaluate_positions.clear();
 
   {
-    unsigned int cand_idx;
+    unsigned int cand_idx = 0;
 
     evaluation_budget += (game.settings->ai_mutations + 1) * game.settings->ai_frames;
 
@@ -609,19 +607,18 @@ void FollowAI::Process(Game& game, Worm& worm) {
         cand.prev_result_age = 0;
       }
 
-      double weighted_score = cand.prev_result.WeightedScore();
-      if (weighted_score >= best_score) {
-        best_score = weighted_score;
+      double const kWeightedScore = cand.prev_result.WeightedScore();
+      if (kWeightedScore >= best_score) {
+        best_score = kWeightedScore;
         best = &cand;
       }
 
-      prio.push_back(std::make_pair(weighted_score, cand_idx));
+      prio.emplace_back(kWeightedScore, cand_idx);
     }
 
-    std::sort(prio.begin(), prio.end(),
-              [](std::pair<double, int> const& a, std::pair<double, int> const& b) {
-                return a.first > b.first;
-              });
+    std::ranges::sort(prio, [](std::pair<double, int> const& a, std::pair<double, int> const& b) {
+      return a.first > b.first;
+    });
 
     for (cand_idx = 0; evaluation_budget > 0;) {
       auto& cand = cand_plan[prio[cand_idx].second];
@@ -630,11 +627,11 @@ void FollowAI::Process(Game& game, Worm& worm) {
       Mutate(result, *this, game, worm, target, candidate, cand.prev_result);
       evaluation_budget -= game.settings->ai_frames;
 
-      double weighted_score = result.WeightedScore();
-      if (weighted_score > best_score) {
+      double const kWeightedScore = result.WeightedScore();
+      if (kWeightedScore > best_score) {
         cand.plan = std::move(candidate);
         best = &cand;
-        best_score = weighted_score;
+        best_score = kWeightedScore;
         cand.prev_result = std::move(result);
         cand.prev_result_age = 0;
       } else {
@@ -662,16 +659,18 @@ void FollowAI::Process(Game& game, Worm& worm) {
 }
 
 Worm::ControlState InputContext::Update(InputState new_state, Game& game, Worm* worm,
-                                        AiContext& ai_context) {
+                                        AiContext& /*ai_context*/) {
   Worm::ControlState cs;
 
   if (worm->visible && wanted_weapon != worm->current_weapon) {
-    int offset = WeaponChangeOffset(wanted_weapon, worm->current_weapon);
-    cs.Set(Worm::kLeft, offset < 0);
-    cs.Set(Worm::kRight, offset > 0);
-    cs.Set(Worm::kChange, true);
+    int const kOffset = WeaponChangeOffset(wanted_weapon, worm->current_weapon);
+    cs.Set(Worm::kLeft, kOffset < 0);
+    cs.Set(Worm::kRight, kOffset > 0);
+    cs.Set(Worm::kChange, /*v=*/true);
   } else {
-    int pa, pb, pc;
+    int pa = 0;
+    int pb = 0;
+    int pc = 0;
     switch (new_state.Decompose(pa, pb, pc)) {
       case InputState::kMoveJumpFire: {
         cs.Set(Worm::kUp, (pa >> 1) & 1);
@@ -686,7 +685,7 @@ Worm::ControlState InputContext::Update(InputState new_state, Game& game, Worm* 
       case InputState::kChangeWeapon: {
         if (wanted_weapon != pa) {
           wanted_weapon = pa;
-          cs.Set(Worm::kChange, true);
+          cs.Set(Worm::kChange, /*v=*/true);
         }
         break;
       }
@@ -694,8 +693,8 @@ Worm::ControlState InputContext::Update(InputState new_state, Game& game, Worm* 
       case InputState::kRopeUpDown: {
         cs.Set(Worm::kUp, (pa >> 1) & 1);
         cs.Set(Worm::kDown, pa & 1);
-        cs.Set(Worm::kChange, 1);
-        if (pa == 0) cs.Set(Worm::kJump, 1);
+        cs.Set(Worm::kChange, /*v=*/true);
+        if (pa == 0) cs.Set(Worm::kJump, /*v=*/true);
         break;
       }
     }
@@ -714,8 +713,8 @@ Worm::ControlState InputContext::Update(InputState new_state, Game& game, Worm* 
   return cs;
 }
 
-void TransToM(Weights& weights, double& p, int pa, int pb, int pc, int facing_enemy,
-              int ninjarope_out, int pa2, int pb2, int pc2) {
+static void TransToM(Weights& weights, double& p, int pa, int pb, int pc, int facing_enemy,
+                     int ninjarope_out, int pa2, int pb2, int pc2) {
   assert(pa < 3 && pb < 4 && pc < 4);
   assert(pa2 < 3 && pb2 < 4 && pc2 < 4);
   assert(facing_enemy < 2 && ninjarope_out < 2);
@@ -731,34 +730,41 @@ void TransToM(Weights& weights, double& p, int pa, int pb, int pc, int facing_en
   if (pb == 3) p *= Select(pb2, 0.1, 0.35, 0.35, 0.2);        // Digging
 
   // Fire
-  double start_shoot_facing_p = 0.15 * weights.firing_weight;
-  double start_shoot_unfacing_p = 0.03 * weights.firing_weight;
-  double start_shoot_p = facing_enemy ? start_shoot_facing_p : start_shoot_unfacing_p;
-  p *= Select((pc & 2) | ((pc2 & 2) >> 1), 1.0 - start_shoot_p, start_shoot_p, 0.4, 0.6);
+  double const kStartShootFacingP = 0.15 * weights.firing_weight;
+  double const kStartShootUnfacingP = 0.03 * weights.firing_weight;
+  double const kStartShootP = facing_enemy ? kStartShootFacingP : kStartShootUnfacingP;
+  p *= Select((pc & 2) | ((pc2 & 2) >> 1), 1.0 - kStartShootP, kStartShootP, 0.4, 0.6);
 
   // Jump
-  double start_jump = ninjarope_out ? 0.015 : 0.1;
-  p *= Select(((pc & 1) << 1) | (pc2 & 1), 1.0 - start_jump, start_jump,  // 0 -> 0, 0 -> 1
+  double const kStartJump = ninjarope_out ? 0.015 : 0.1;
+  p *= Select(((pc & 1) << 1) | (pc2 & 1), 1.0 - kStartJump, kStartJump,  // 0 -> 0, 0 -> 1
               0.999, 0.001);                                              // 1 -> 0, 1 -> 1
 }
 
-TransModel::TransModel(Weights& weights, bool testing) {
-  for (int i = 0; i < this->kStates; ++i) {
-    int facing_enemy, ninjarope_out;
+TransModel::TransModel(Weights& weights, bool /*testing*/) {
+  for (int i = 0; i < TransModel::kStates; ++i) {
+    int facing_enemy = 0;
+    int ninjarope_out = 0;
     auto prev = InputContext::Unpack(i, facing_enemy, ninjarope_out);
-    int pa, pb, pc;
+    int pa = 0;
+    int pb = 0;
+    int pc = 0;
     auto type = prev.Decompose(pa, pb, pc);
 
     double sum2 = 0.0;
 
-    for (int j = 0; j < this->kFreeStates; ++j) {
-      int pa2, pb2, pc2;
+    for (int j = 0; j < TransModel::kFreeStates; ++j) {
+      int pa2 = 0;
+      int pb2 = 0;
+      int pc2 = 0;
       auto type2 = InputState(j).Decompose(pa2, pb2, pc2);
 
       double p = 1;
 
       if (type == InputState::kMoveJumpFire) {
-        double m = 0.95, c = 0.03, r = 0.02;
+        double m = 0.95;
+        double c = 0.03;
+        double const kR = 0.02;
 
         c += 0.03;
         m -= 0.03;
@@ -770,7 +776,7 @@ TransModel::TransModel(Weights& weights, bool testing) {
           p *= c;
           p *= 1.0 / 5.0;  // Each weapon has equal probability
         } else if (type2 == InputState::kRopeUpDown) {
-          p *= r;
+          p *= kR;
           p *= Select(pa2, 0.98, 0.01, 0.01);  // TODO: Rope out
         }
       } else if (type == InputState::kChangeWeapon) {
@@ -805,29 +811,30 @@ TransModel::TransModel(Weights& weights, bool testing) {
     }
 
     auto& v = trans[i];
-    double sum = std::accumulate(v, v + this->kFreeStates, 0.0);
+    double const kSum = std::accumulate(v, v + TransModel::kFreeStates, 0.0);
 
-    if (sum < 0.999 || sum > 1.0001) printf("%d: %f\n", i, sum);
+    if (kSum < 0.999 || kSum > 1.0001) std::printf("%d: %f\n", i, kSum);
   }
 }
 
-void AiContext::Update(FollowAI& ai, Worm& worm) {
-  double presence = 0, damage = 0;
+void AiContext::Update(FollowAI& /*ai*/, Worm& worm) {
+  double presence = 0;
+  double damage = 0;
 
   if (worm.visible) {
     presence = 4.0 / (70.0 * 5.0);
   }
 
-  double hp = TotalHealthNorm(&worm);
+  double const kHp = TotalHealthNorm(&worm);
 
-  if (hp < prev_hp) {
-    damage = (prev_hp - hp);
+  if (kHp < prev_hp) {
+    damage = (prev_hp - kHp);
   }
 
   IncArea(worm.pos.x, worm.pos.y, presence, damage);
 
   for (int y = 0; y < kHeight; ++y)
-    for (int x = 0; x < kWidth; ++x) {
-      state[x][y].presence = std::max(state[x][y].presence - 0.5 / (70.0 * 5.0), 0.0);
+    for (auto& x : state) {
+      x[y].presence = std::max(x[y].presence - 0.5 / (70.0 * 5.0), 0.0);
     }
 }

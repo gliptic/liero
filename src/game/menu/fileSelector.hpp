@@ -1,9 +1,13 @@
 #pragma once
 
+#include <algorithm>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 #include "../common.hpp"
+#include "../gfx.hpp"
+#include "../mixer/player.hpp"
 #include "../text.hpp"
 #include "../worm.hpp"
 #include "menu.hpp"
@@ -13,25 +17,31 @@ using std::shared_ptr;
 using std::string;
 using std::vector;
 
-typedef bool (*FileFilter)(string const& name, string const& ext);
+using FileFilter = bool (*)(string const& name, string const& ext);
 
 struct FileNode {
   FileNode()
-      : folder(true), id(0), selected_child(0), parent(0), filter(0), menu(178, 28), filled(false) {
+      : folder(true),
+        id(0),
+        selected_child(nullptr),
+        parent(nullptr),
+        filter(nullptr),
+        menu(178, 28),
+        filled(false) {
     menu.SetHeight(14);
   }
 
-  FileNode(string const& name, string const& path_name, string const& full_path, bool folder,
-           FileNode* parent, FileFilter filter = 0)
-      : name(name),
-        full_path(full_path),
+  FileNode(string name, string path_name, string full_path, bool folder, FileNode* parent,
+           FileFilter filter = nullptr)
+      : name(std::move(name)),
+        full_path(std::move(full_path)),
         folder(folder),
         id(0),
-        selected_child(0),
+        selected_child(nullptr),
         parent(parent),
         filter(filter),
         menu(178, 28),
-        path_name(path_name),
+        path_name(std::move(path_name)),
         filled(false) {
     menu.SetHeight(14);
   }
@@ -50,10 +60,11 @@ struct FileNode {
     return menu;
   }
 
+  // NOLINTNEXTLINE(misc-no-recursion) — file tree walk; depth is bounded by user filesystem layout.
   FileNode* Find(string const& path) {
     if (CiCompare(full_path, path)) return this;
-    if (!CiStartsWith(path, full_path)) return 0;
-    if (!folder) return 0;
+    if (!CiStartsWith(path, full_path)) return nullptr;
+    if (!folder) return nullptr;
 
     EnsureFilled();
 
@@ -62,7 +73,7 @@ struct FileNode {
       if (r) return r;
     }
 
-    return 0;
+    return nullptr;
   }
 
   FsNode& GetFsNode() {
@@ -98,7 +109,7 @@ struct FileNode {
 };
 
 struct ChildSort {
-  typedef shared_ptr<FileNode> type;
+  using type = shared_ptr<FileNode>;
 
   bool operator()(type const& a, type const& b) const {
     if (a->folder == b->folder) return CiLess(a->name, b->name);
@@ -115,22 +126,23 @@ inline void FileNode::Fill() {
     auto const& ext = GetExtension(name.name);
 
     if (name.is_dir) {
-      shared_ptr<FileNode> node(new FileNode(name.name, name.name, full_path, true, this, filter));
+      shared_ptr<FileNode> const kNode = std::make_shared<FileNode>(name.name, name.name, full_path,
+                                                                    /*folder=*/true, this, filter);
 
-      children.push_back(node);
+      children.push_back(kNode);
     } else if (!filter || filter(name.name, ext)) {
-      children.push_back(shared_ptr<FileNode>(
-          new FileNode(GetBasename(name.name), name.name, full_path, false, this, filter)));
+      children.push_back(std::make_shared<FileNode>(GetBasename(name.name), name.name, full_path,
+                                                    /*folder=*/false, this, filter));
     }
   }
 
-  std::sort(children.begin(), children.end(), ChildSort());
+  std::ranges::sort(children, ChildSort());
 
   filled = true;
 }
 
 struct FileSelector {
-  FileSelector(Common& common, int x = 178) : common(common) {}
+  FileSelector(Common& common, int /*x*/ = 178) : common(common) {}
 
   void Fill(string const& path, FileFilter filter)  // TODO: Get rid of this
   {
@@ -147,12 +159,13 @@ struct FileSelector {
   void Draw() {
     if (current_node && current_node->parent) {
       common.font.DrawFramedText(gfx.play_renderer.bmp, "Parent directory", 28, 20, 50);
-      current_node->parent->GetMenu().Draw(common, gfx.play_renderer, true, 28, true);
+      current_node->parent->GetMenu().Draw(common, gfx.play_renderer, /*disabled=*/true, 28,
+                                           /*show_disabled_selection=*/true);
     }
-    CurrentMenu().Draw(common, gfx.play_renderer, false, 178);
+    CurrentMenu().Draw(common, gfx.play_renderer, /*disabled=*/false, 178);
   }
 
-  Menu& CurrentMenu() { return current_node->GetMenu(); }
+  Menu& CurrentMenu() const { return current_node->GetMenu(); }
 
   void SetFolder(FileNode& fn) { current_node = &fn; }
 
@@ -165,12 +178,12 @@ struct FileSelector {
     if (parent) {
       FileNode* p = fn;
       while (p->parent) {
-        FileNode* ch = p;
+        FileNode const* ch = p;
         p = p->parent;
         p->selected_child = fn;
 
         for (std::size_t i = 0; i < p->children.size(); ++i) {
-          if (ch == p->children[i].get()) p->GetMenu().MoveTo((int)i);
+          if (ch == p->children[i].get()) p->GetMenu().MoveTo(static_cast<int>(i));
         }
       }
 
@@ -183,8 +196,8 @@ struct FileSelector {
     return true;
   }
 
-  FileNode* CurSel() {
-    if (!Menu().IsSelectionValid()) return 0;
+  FileNode* CurSel() const {
+    if (!Menu().IsSelectionValid()) return nullptr;
 
     auto* c = current_node->children[Menu().Selection()].get();
 
@@ -194,20 +207,20 @@ struct FileSelector {
   FileNode* Enter() {
     auto* c = CurSel();
     if (!c) {
-      return 0;
+      return nullptr;
     }
 
     if (c->folder) {
       current_node->selected_child = c;
       SetFolder(*c);
-      return 0;
+      return nullptr;
     }
 
     return c;
   }
 
   bool Exit() {
-    if (current_node->parent == 0) return false;
+    if (current_node->parent == nullptr) return false;
 
     SetFolder(*current_node->parent);
 
@@ -260,7 +273,7 @@ struct FileSelector {
       Enter();
     }
 
-    Menu().OnKeys(gfx.key_buf, gfx.key_buf_ptr, true);
+    Menu().OnKeys(gfx.key_buf, gfx.key_buf_ptr, /*contains=*/true);
 
     return true;
   }

@@ -6,10 +6,12 @@
 #include "worm.hpp"
 
 #include <cereal/archives/portable_binary.hpp>
+#include <memory>
 #include <serialization/cereal_types.hpp>
 
 #include <cassert>
 #include <sstream>
+#include <utility>
 
 // #define DEBUG_REPLAYS 1
 
@@ -29,7 +31,8 @@ template <typename T>
 static void CerealWrite(io::Writer& writer, T& obj) {
   std::ostringstream ss(std::ios::binary);
   {
-    cereal::PortableBinaryOutputArchive ar(ss);
+    // Cereal archives mutate state on operator(); they cannot be const.
+    cereal::PortableBinaryOutputArchive ar(ss);  // NOLINT(misc-const-correctness)
     ar(obj);
   }
   std::string buf = ss.str();
@@ -41,45 +44,50 @@ static void CerealWrite(io::Writer& writer, T& obj) {
 // deserialize into obj via cereal.
 template <typename T>
 static void CerealRead(io::MemReader& reader, T& obj) {
-  uint32_t len = io::ReadUint32(reader);
-  std::string buf(len, '\0');
-  for (uint32_t i = 0; i < len; ++i) buf[i] = static_cast<char>(reader.Get());
+  uint32_t const kLen = io::ReadUint32(reader);
+  std::string buf(kLen, '\0');
+  for (uint32_t i = 0; i < kLen; ++i) buf[i] = static_cast<char>(reader.Get());
   std::istringstream ss(buf, std::ios::binary);
   {
-    cereal::PortableBinaryInputArchive ar(ss);
+    cereal::PortableBinaryInputArchive ar(ss);  // NOLINT(misc-const-correctness)
     ar(obj);
   }
 }
 
-ReplayWriter::ReplayWriter(std::unique_ptr<io::Writer> sink)
-    : writer(std::move(sink)), settings_expired(true) {}
+ReplayWriter::ReplayWriter(std::unique_ptr<io::Writer> sink) : writer(std::move(sink)) {}
 
-ReplayWriter::~ReplayWriter() { EndRecord(); }
+ReplayWriter::~ReplayWriter() {
+  try {
+    EndRecord();
+  } catch (...) {  // NOLINT(bugprone-empty-catch) — destructor: writes during destruction are
+                   // best-effort.
+  }
+}
 
 ReplayReader::ReplayReader(std::unique_ptr<io::Reader> source) {
   io::InflateReader inflater(std::move(source));
   uint8_t buf[4096];
   for (;;) {
-    std::size_t got = inflater.TryGet(buf, sizeof(buf));
-    if (got == 0) break;
-    data.insert(data.end(), buf, buf + got);
+    std::size_t const kGot = inflater.TryGet(buf, sizeof(buf));
+    if (kGot == 0) break;
+    data.insert(data.end(), buf, buf + kGot);
   }
   reader.Reset(data.data(), data.size());
 }
 
 uint32_t const kReplayMagic = ('L' << 24) | ('R' << 16) | ('P' << 8) | 'F';
 
-std::unique_ptr<Game> ReplayReader::BeginPlayback(std::shared_ptr<Common> common,
-                                                  std::shared_ptr<SoundPlayer> sound_player) {
-  uint32_t read_magic = io::ReadUint32(reader);
-  if (read_magic != kReplayMagic)
+std::unique_ptr<Game> ReplayReader::BeginPlayback(
+    const std::shared_ptr<Common>& common, const std::shared_ptr<SoundPlayer>& sound_player) {
+  uint32_t const kReadMagic = io::ReadUint32(reader);
+  if (kReadMagic != kReplayMagic)
     throw io::ArchiveCheckError("File does not appear to be a replay");
   replay_version = reader.Get();
   if (replay_version > kMyReplayVersion)
     throw io::ArchiveCheckError("Replay version is too recent");
 
-  std::shared_ptr<Settings> settings(new Settings);
-  std::unique_ptr<Game> game(new Game(common, settings, sound_player));
+  std::shared_ptr<Settings> const kSettings = std::make_shared<Settings>();
+  std::unique_ptr<Game> game(new Game(common, kSettings, sound_player));
 
   CerealRead(reader, *game);
 
@@ -106,9 +114,9 @@ void ReplayWriter::BeginRecord(Game& game) {
 void ReplayWriter::EndRecord() { writer.Put(kReplayTagEnd); }
 
 namespace {
-inline void Mix32(uint32_t& h, uint32_t v) { h ^= v + 0x9e3779b9u + (h << 6) + (h >> 2); }
+inline void Mix32(uint32_t& h, uint32_t v) { h ^= v + 0x9e3779b9U + (h << 6) + (h >> 2); }
 inline void MixBytes(uint32_t& h, void const* p, std::size_t n) {
-  auto* b = static_cast<uint8_t const*>(p);
+  const auto* b = static_cast<uint8_t const*>(p);
   for (std::size_t i = 0; i < n; ++i) Mix32(h, b[i]);
 }
 }  // namespace
@@ -137,14 +145,13 @@ uint32_t WideRollbackChecksum(Game& game) {
     Mix32(h, static_cast<uint32_t>(w.current_weapon));
     Mix32(h, static_cast<uint32_t>(w.direction));
     Mix32(h, static_cast<uint32_t>(w.flags));
-    Mix32(h, w.visible ? 1u : 0u);
-    Mix32(h, w.ready ? 1u : 0u);
-    Mix32(h, w.able_to_jump ? 1u : 0u);
-    Mix32(h, w.able_to_dig ? 1u : 0u);
+    Mix32(h, w.visible ? 1U : 0U);
+    Mix32(h, w.ready ? 1U : 0U);
+    Mix32(h, w.able_to_jump ? 1U : 0U);
+    Mix32(h, w.able_to_dig ? 1U : 0U);
     Mix32(h, static_cast<uint32_t>(w.control_states.istate));
     Mix32(h, static_cast<uint32_t>(w.prev_control_states.istate));
-    for (int i = 0; i < NUM_WEAPONS; ++i) {
-      WormWeapon const& ww = w.weapons[i];
+    for (const auto& ww : w.weapons) {
       Mix32(h, static_cast<uint32_t>(ww.ammo));
       Mix32(h, static_cast<uint32_t>(ww.delay_left));
       Mix32(h, static_cast<uint32_t>(ww.loading_left));
@@ -203,25 +210,26 @@ bool ReplayReader::PlaybackFrame(Renderer& renderer) {
   bool settings_changed = false;
 
   while (true) {
-    uint8_t first = reader.Get();
+    uint8_t const kFirst = reader.Get();
 
-    if (first == kReplayTagEmptyFrame)
+    if (kFirst == kReplayTagEmptyFrame) {
       break;
-    else if (first == kReplayTagSettings) {
+    }
+    if (kFirst == kReplayTagSettings) {
       CerealRead(reader, *game.settings);
       settings_changed = true;
-    } else if (first == kReplayTagWormSettings) {
-      uint32_t worm_id = io::ReadUint32(reader);
-      Worm* w = game.WormByIdx(worm_id);
+    } else if (kFirst == kReplayTagWormSettings) {
+      uint32_t const kWormId = io::ReadUint32(reader);
+      Worm const* w = game.WormByIdx(kWormId);
       if (w) {
         CerealRead(reader, *w->settings);
         settings_changed = true;
       }
-    } else if (first == kReplayTagEnd) {
+    } else if (kFirst == kReplayTagEnd) {
       // End of replay
       return false;
-    } else if (first < kReplayTagEmptyFrame) {
-      uint8_t state = first;
+    } else if (kFirst < kReplayTagEmptyFrame) {
+      uint8_t state = kFirst;
       bool has_state = true;
 
       for (auto const& worm : game.worms) {
@@ -234,8 +242,9 @@ bool ReplayReader::PlaybackFrame(Renderer& renderer) {
       }
 
       break;  // Read frame
-    } else
+    } else {
       throw io::ArchiveCheckError("Unexpected header byte");
+    }
   }
 
   if (settings_changed) {
@@ -243,9 +252,9 @@ bool ReplayReader::PlaybackFrame(Renderer& renderer) {
   }
 
   if ((game.cycles % (70 * 15)) == 0) {
-    uint32_t expected = io::ReadUint32(reader);
-    uint32_t actual = WideRollbackChecksum(game);
-    if (actual != expected) throw io::ArchiveCheckError("Replay has desynced");
+    uint32_t const kExpected = io::ReadUint32(reader);
+    uint32_t const kActual = WideRollbackChecksum(game);
+    if (kActual != kExpected) throw io::ArchiveCheckError("Replay has desynced");
   }
 
   return true;
@@ -262,9 +271,9 @@ void ReplayWriter::RecordFrame() {
 
   bool write_states = false;
 
-  if (game.worms.size() <= 3)  // TODO: What limit do we want here? None?
+  if (game.worms.size() <= 3) {  // TODO: What limit do we want here? None?
     write_states = true;
-  else {
+  } else {
     for (auto const& worm : game.worms) {
       WormData& data = worm_data[worm.get()];
       if (worm->control_states != worm->prev_control_states) {
@@ -282,19 +291,19 @@ void ReplayWriter::RecordFrame() {
 
   if (write_states) {
     for (auto const& worm : game.worms) {
-      uint8_t state = worm->control_states.Pack() ^ worm->prev_control_states.Pack();
+      uint8_t const kState = worm->control_states.Pack() ^ worm->prev_control_states.Pack();
 
-      assert(state < kReplayTagEmptyFrame);
+      assert(kState < kReplayTagEmptyFrame);
 
-      writer.Put(state);
+      writer.Put(kState);
     }
   } else {
     writer.Put(kReplayTagEmptyFrame);
   }
 
   if ((game.cycles % (70 * 15)) == 0) {
-    uint32_t checksum = WideRollbackChecksum(game);
-    io::WriteUint32(writer, checksum);
+    uint32_t const kChecksum = WideRollbackChecksum(game);
+    io::WriteUint32(writer, kChecksum);
   }
 }
 

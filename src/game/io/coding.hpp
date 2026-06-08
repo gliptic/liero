@@ -36,14 +36,14 @@ inline void WriteN(Writer& w, T v) {
 
 template <typename Reader>
 inline uint16_t ReadUint16(Reader& r) {
-  uint16_t v = detail::ReadN<uint16_t>(r);
+  auto v = detail::ReadN<uint16_t>(r);
   if constexpr (std::endian::native == std::endian::little) v = std::byteswap(v);
   return v;
 }
 
 template <typename Reader>
 inline uint32_t ReadUint32(Reader& r) {
-  uint32_t v = detail::ReadN<uint32_t>(r);
+  auto v = detail::ReadN<uint32_t>(r);
   if constexpr (std::endian::native == std::endian::little) v = std::byteswap(v);
   return v;
 }
@@ -64,16 +64,16 @@ inline void WriteUint32(Writer& w, uint32_t v) {
 
 template <typename Reader>
 inline uint16_t ReadUint16Le(Reader& r) {
-  uint16_t v = detail::ReadN<uint16_t>(r);
-  if constexpr (std::endian::native == std::endian::big) v = std::byteswap(v);
-  return v;
+  auto const kV = detail::ReadN<uint16_t>(r);
+  if constexpr (std::endian::native == std::endian::big) kV = std::byteswap(kV);
+  return kV;
 }
 
 template <typename Reader>
 inline uint32_t ReadUint32Le(Reader& r) {
-  uint32_t v = detail::ReadN<uint32_t>(r);
-  if constexpr (std::endian::native == std::endian::big) v = std::byteswap(v);
-  return v;
+  auto const kV = detail::ReadN<uint32_t>(r);
+  if constexpr (std::endian::native == std::endian::big) kV = std::byteswap(kV);
+  return kV;
 }
 
 template <typename Writer>

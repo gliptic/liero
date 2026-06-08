@@ -34,8 +34,8 @@ TEST_CASE("cp437: bytes -> UTF-8 -> codepoint round-trip") {
 
   std::size_t i = 0;
   for (int b = 0; b < 256; ++b) {
-    char32_t cp = cp437::Utf8DecodeNext(utf8.data(), utf8.size(), i);
-    REQUIRE(cp == cp437::ByteToUnicode(static_cast<uint8_t>(b)));
+    char32_t const kCp = cp437::Utf8DecodeNext(utf8.data(), utf8.size(), i);
+    REQUIRE(kCp == cp437::ByteToUnicode(static_cast<uint8_t>(b)));
   }
   REQUIRE(i == utf8.size());
 }

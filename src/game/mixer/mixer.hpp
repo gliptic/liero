@@ -5,14 +5,14 @@
 
 #define CHANNEL_COUNT (8)
 
-typedef struct SfxMixer sfx_mixer;
+using sfx_mixer = struct SfxMixer;
 
-typedef struct SfxSound sfx_sound;
+using sfx_sound = struct SfxSound;
 
 #define SFX_SOUND_NORMAL (0)
 #define SFX_SOUND_LOOP (1)
 
-sfx_mixer* SfxMixerCreate(void);
+sfx_mixer* SfxMixerCreate();
 int32_t SfxMixerNow(sfx_mixer* mixer);
 void SfxSetVolume(sfx_mixer* self, void* h, double volume);
 int SfxIsPlaying(sfx_mixer* self, void* h);

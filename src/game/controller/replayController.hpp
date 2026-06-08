@@ -18,29 +18,29 @@ struct Game;
 struct ReplayController : CommonController {
   ReplayController(std::shared_ptr<Common> common, std::unique_ptr<io::Reader> source);
 
-  bool IsReplay() { return true; };
-  void OnKey(int key, bool key_state);
+  bool IsReplay() override { return true; };
+  void OnKey(int key, bool key_state) override;
   // Called when the controller loses focus. When not focused, it will not receive key events among
   // other things.
-  void Unfocus();
+  void Unfocus() override;
   // Called when the controller gets focus.
-  void Focus();
-  bool Process();
-  void Draw(Renderer& renderer, bool use_spectator_viewports);
+  void Focus() override;
+  bool Process() override;
+  void Draw(Renderer& renderer, bool use_spectator_viewports) override;
   void ChangeState(GameState new_state);
-  void SwapLevel(Level& new_level);
-  Level* CurrentLevel();
-  Game* CurrentGame();
-  bool Running();
+  void SwapLevel(Level& new_level) override;
+  Level* CurrentLevel() override;
+  Game* CurrentGame() override;
+  bool Running() override;
 
   std::unique_ptr<Game> game;
 
   std::unique_ptr<Game> initial_game;
   std::size_t initial_reader_pos = 0;
 
-  GameState state;
-  int fade_value;
-  bool going_to_menu;
+  GameState state{kStateInitial};
+  int fade_value{0};
+  bool going_to_menu{false};
   std::unique_ptr<ReplayReader> replay;
   std::shared_ptr<Common> common;
 };

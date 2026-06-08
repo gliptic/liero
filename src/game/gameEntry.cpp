@@ -16,10 +16,11 @@
 #include <cstdlib>
 #include <ctime>
 #include <exception>
+#include <memory>
 
 int GameEntry(int argc, char* argv[]) try {
   // TODO: Better PRNG seeding
-  gfx.rand.Seed(uint32_t(std::time(0)));
+  gfx.rand.Seed(static_cast<uint32_t>(std::time(nullptr)));
 
 #if OPENLIERO_EMSCRIPTEN
   // Emscripten preloads all data under /openliero; use single-dir mode.
@@ -33,8 +34,8 @@ int GameEntry(int argc, char* argv[]) try {
   gfx.SetConfigNodes(r.config_node, r.user_config_node);
 
   std::string tc_name;
-  bool tc_set = !r.positional_args.empty();
-  if (tc_set) tc_name = r.positional_args[0];
+  bool const kTcSet = !r.positional_args.empty();
+  if (kTcSet) tc_name = r.positional_args[0];
 
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD);
 
@@ -46,30 +47,30 @@ int GameEntry(int argc, char* argv[]) try {
 
   gfx.Init();
 
-  FsNode config_node(gfx.GetConfigNode());
-  FsNode user_config_node(gfx.GetUserConfigNode());
+  FsNode const kConfigNode(gfx.GetConfigNode());
+  FsNode const kUserConfigNode(gfx.GetUserConfigNode());
 
-  if (!gfx.LoadSettings(config_node / "Setups" / "liero.cfg")) {
-    gfx.settings.reset(new Settings);
-    gfx.SaveSettings(user_config_node / "Setups" / "liero.cfg");
+  if (!gfx.LoadSettings(kConfigNode / "Setups" / "liero.cfg")) {
+    gfx.settings = std::make_shared<Settings>();
+    gfx.SaveSettings(kUserConfigNode / "Setups" / "liero.cfg");
   }
 
-  if (tc_set) gfx.settings->tc = tc_name;
+  if (kTcSet) gfx.settings->tc = tc_name;
 
   // TC loading
-  FsNode liero_root(config_node / "TC" / gfx.settings->tc);
-  std::shared_ptr<Common> common(new Common());
-  common->load(std::move(liero_root));
-  gfx.common = common;
-  gfx.play_renderer.LoadPalette(*common);
+  FsNode const kLieroRoot(kConfigNode / "TC" / gfx.settings->tc);
+  std::shared_ptr<Common> const kCommon = std::make_shared<Common>();
+  kCommon->load(kLieroRoot);
+  gfx.common = kCommon;
+  gfx.play_renderer.LoadPalette(*kCommon);
 
   gfx.SetVideoMode();
-  gfx.sound_player = std::make_shared<DefaultSoundPlayer>(*common);
+  gfx.sound_player = std::make_shared<DefaultSoundPlayer>(*kCommon);
   g_sound_player = gfx.sound_player.get();
 
   gfx.MainLoop();
 
-  gfx.settings->save(user_config_node / "Setups" / "liero.cfg", gfx.rand);
+  gfx.settings->save(kUserConfigNode / "Setups" / "liero.cfg", gfx.rand);
 
   g_sound_player = nullptr;
   gfx.sound_player.reset();

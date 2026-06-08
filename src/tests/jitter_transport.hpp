@@ -54,10 +54,10 @@ struct JitterTransport {
   explicit JitterTransport(Params p) : params(p), rng(p.seed) {}
 
   int RandomDelay() {
-    int lo = params.min_delay_frames;
-    int hi = params.max_delay_frames;
-    if (hi <= lo) return lo;
-    std::uniform_int_distribution<int> d(lo, hi);
+    int const kLo = params.min_delay_frames;
+    int const kHi = params.max_delay_frames;
+    if (kHi <= kLo) return kLo;
+    std::uniform_int_distribution<int> d(kLo, kHi);
     return d(rng);
   }
 
@@ -123,7 +123,7 @@ struct JitterTransport {
     }
   }
 
-  void DrainDue(std::vector<InFlight>& q, Deliver const& deliver) {
+  void DrainDue(std::vector<InFlight>& q, Deliver const& deliver) const {
     auto it = q.begin();
     while (it != q.end()) {
       if (it->deliver_at_frame <= current_frame) {

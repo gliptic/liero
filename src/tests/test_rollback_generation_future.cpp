@@ -22,8 +22,8 @@ namespace {
 std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
   settings->loading_time = 0;
@@ -38,7 +38,7 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
 TEST_CASE("Future-generation batches buffer and drain on reset", "[rollback][generation]") {
   auto [common, settings] = MakeEnv();
   RollbackController c(common, settings, 0);
-  c.SetSkipWeaponSelection(true);
+  c.SetSkipWeaponSelection(/*skip=*/true);
   c.game.rand.Seed(0xC0FFEE);
   c.Focus();
 
@@ -49,8 +49,8 @@ TEST_CASE("Future-generation batches buffer and drain on reset", "[rollback][gen
   // covering its frames [0..7], [1..8], ... while we're still at gen 0.
   // The buffer holds one window's worth (= one full K-wide batch).
   uint8_t inputs[8] = {0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7};
-  c.InjectRemoteBatch(/*generation=*/1, /*baseFrame=*/0, /*count=*/8, inputs,
-                      /*remoteLocalFrame=*/5);
+  c.InjectRemoteBatch(/*generation=*/1, /*base_frame=*/0, /*count=*/8, inputs,
+                      /*remote_local_frame=*/5);
 
   // Not applied yet — generation_ is still 0 so the wire layer holds
   // the batch. The drop counter must NOT increment (this isn't a drop).
@@ -59,8 +59,8 @@ TEST_CASE("Future-generation batches buffer and drain on reset", "[rollback][gen
   REQUIRE(c.LastKnownRemoteFrame() == -1);
 
   // Far-future packets ARE dropped (no buffer slot, no recovery path).
-  c.InjectRemoteBatch(/*generation=*/2, /*baseFrame=*/0, /*count=*/8, inputs,
-                      /*remoteLocalFrame=*/5);
+  c.InjectRemoteBatch(/*generation=*/2, /*base_frame=*/0, /*count=*/8, inputs,
+                      /*remote_local_frame=*/5);
   REQUIRE(c.PendingFutureBatchCount() == 1);
   REQUIRE(c.DroppedOldGenerationBatches() == 1);
 
@@ -90,7 +90,7 @@ TEST_CASE("Future-generation batches buffer and drain on reset", "[rollback][gen
 TEST_CASE("Future-generation buffer is bounded", "[rollback][generation]") {
   auto [common, settings] = MakeEnv();
   RollbackController c(common, settings, 0);
-  c.SetSkipWeaponSelection(true);
+  c.SetSkipWeaponSelection(/*skip=*/true);
   c.game.rand.Seed(0xBEEF);
   c.Focus();
 
@@ -99,17 +99,17 @@ TEST_CASE("Future-generation buffer is bounded", "[rollback][generation]") {
   constexpr int kCap = rollback::kMaxRollback + 1;
   for (int i = 0; i < kCap; ++i) {
     c.InjectRemoteBatch(/*generation=*/1,
-                        /*baseFrame=*/static_cast<uint32_t>(i),
+                        /*base_frame=*/static_cast<uint32_t>(i),
                         /*count=*/1, inputs,
-                        /*remoteLocalFrame=*/static_cast<uint32_t>(i));
+                        /*remote_local_frame=*/static_cast<uint32_t>(i));
   }
   REQUIRE(c.PendingFutureBatchCount() == kCap);
   REQUIRE(c.DroppedOldGenerationBatches() == 0);
 
   // One past the cap: the buffer is full, falls through, drop counter
   // bumps but the buffer doesn't grow.
-  c.InjectRemoteBatch(/*generation=*/1, /*baseFrame=*/100, /*count=*/1, inputs,
-                      /*remoteLocalFrame=*/100);
+  c.InjectRemoteBatch(/*generation=*/1, /*base_frame=*/100, /*count=*/1, inputs,
+                      /*remote_local_frame=*/100);
   REQUIRE(c.PendingFutureBatchCount() == kCap);
   REQUIRE(c.DroppedOldGenerationBatches() == 1);
 }

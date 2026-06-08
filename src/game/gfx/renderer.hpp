@@ -5,7 +5,7 @@
 #include "bitmap.hpp"
 
 struct Renderer {
-  Renderer() : fade_value(0) {}
+  Renderer() = default;
 
   void Init(int x, int y);
   void Clear();
@@ -15,7 +15,7 @@ struct Renderer {
   // the bitmap that is drawn into by this renderer
   Bitmap bmp;
   Palette pal, origpal;
-  int fade_value;
+  int fade_value{0};
   // Resolution to render the game at. This should be modified via
   // setRenderResolution() to ensure that the bitmap is re-allocated
   int render_res_x = 320;

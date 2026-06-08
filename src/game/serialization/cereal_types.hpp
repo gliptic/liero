@@ -25,6 +25,7 @@
 
 #include <cereal/types/vector.hpp>
 #include <cstdint>
+#include <utility>
 
 template <class Archive, typename T>
 void serialize(Archive& ar, BasicVec<T, 2>& v) {
@@ -336,7 +337,7 @@ void save(Archive& ar, Game const& game) {
     // Context: weapon type indices (-1 if null)
     for (int i = 0; i < NUM_WEAPONS; ++i) {
       int32_t weap_idx = w.weapons[i].type
-                             ? static_cast<int32_t>(w.weapons[i].type - &game.common->weapons[0])
+                             ? static_cast<int32_t>(w.weapons[i].type - game.common->weapons.data())
                              : -1;
       ar(cereal::make_nvp("weapIdx" + std::to_string(i), weap_idx));
     }
@@ -370,7 +371,7 @@ void load(Archive& ar, Game& game) {
   ar(cereal::make_nvp("rand", game.rand));
 
   // Worms
-  cereal::size_type worm_count;
+  cereal::size_type worm_count = 0;
   ar(cereal::make_size_tag(worm_count));
 
   game.ClearWorms();
@@ -387,7 +388,7 @@ void load(Archive& ar, Game& game) {
 
     // Context: weapon type indices
     for (int j = 0; j < NUM_WEAPONS; ++j) {
-      int32_t weap_idx;
+      int32_t weap_idx = 0;
       ar(cereal::make_nvp("weapIdx" + std::to_string(j), weap_idx));
       w.weapons[j].type = weap_idx >= 0 ? &game.common->weapons[weap_idx] : nullptr;
     }
@@ -400,18 +401,17 @@ void load(Archive& ar, Game& game) {
 
   // Resolve anchor pointers now that all worms exist
   for (std::size_t i = 0; i < game.worms.size(); ++i) {
-    int32_t idx = anchor_indices[i];
-    game.worms[i]->ninjarope.anchor = (idx >= 0 && idx < static_cast<int32_t>(game.worms.size()))
-                                          ? game.worms[idx].get()
-                                          : nullptr;
+    int32_t const kIdx = anchor_indices[i];
+    game.worms[i]->ninjarope.anchor =
+        (kIdx >= 0 && std::cmp_less(kIdx, game.worms.size())) ? game.worms[kIdx].get() : nullptr;
   }
 
   // Viewports
-  cereal::size_type vp_count;
+  cereal::size_type vp_count = 0;
   ar(cereal::make_size_tag(vp_count));
   game.ClearViewports();
   for (cereal::size_type i = 0; i < vp_count; ++i) {
-    Viewport* vp = new Viewport();
+    auto* vp = new Viewport();
     ar(cereal::make_nvp("viewport", *vp));
     game.AddViewport(vp);
   }

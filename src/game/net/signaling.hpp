@@ -84,13 +84,13 @@ class SignalingClient {
   void Send(const void* data, size_t len);
   void HandleMessage(const uint8_t* data, size_t len);
 
-  ENetSocket sock_;
-  enum State state_;
+  ENetSocket sock_{ENET_SOCKET_NULL};
+  enum State state_ { kIdle };
   std::string roomCode_;
   std::string serverAddr_;
-  uint16_t serverPort_;
+  uint16_t serverPort_{0};
   std::vector<PeerCandidate> peerCandidates_;
-  uint16_t relayPort_;
+  uint16_t relayPort_{0};
   std::vector<uint8_t> relayToken_;
   std::string turnUser_;
   std::string turnPassword_;

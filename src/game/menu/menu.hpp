@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include "../gfx/color.hpp"
 #include "../gfx/renderer.hpp"
@@ -30,7 +31,7 @@ struct Menu {
     Place(x, y);
   }
 
-  virtual ~Menu() {}
+  virtual ~Menu() = default;
 
   void Init(bool centered_init = false) {
     item_height = 8;
@@ -56,7 +57,7 @@ struct Menu {
     // Nothing by default
   }
 
-  virtual ItemBehavior* GetItemBehavior(Common& common, MenuItem& item) {
+  virtual ItemBehavior* GetItemBehavior(Common& /*common*/, MenuItem& /*item*/) {
     // Dummy item behavior by default
     return new ItemBehavior;
   }
@@ -79,13 +80,13 @@ struct Menu {
     return b->OnEnter(*this, *s);
   }
 
-  void OnKeys(SDL_Scancode* begin, SDL_Scancode* end, bool contains = false);
+  void OnKeys(SDL_Scancode* begin, const SDL_Scancode* end, bool contains = false);
 
   void UpdateItems(Common& common) {
-    for (std::size_t i = 0; i < items.size(); ++i) {
-      std::unique_ptr<ItemBehavior> b(GetItemBehavior(common, items[i]));
+    for (auto& item : items) {
+      std::unique_ptr<ItemBehavior> b(GetItemBehavior(common, item));
 
-      b->OnUpdate(*this, items[i]);
+      b->OnUpdate(*this, item);
     }
 
     OnUpdate();
@@ -96,14 +97,16 @@ struct Menu {
     y = new_y;
   }
 
-  bool IsSelectionValid() { return selection_ >= 0 && selection_ < (int)items.size(); }
+  bool IsSelectionValid() const {
+    return selection_ >= 0 && std::cmp_less(selection_, items.size());
+  }
 
   void MoveToFirstVisible();
   void Movement(int direction);
   void MovementPage(int direction);
 
-  int AddItem(MenuItem item);
-  int AddItem(MenuItem item, int pos);
+  int AddItem(const MenuItem& item);
+  int AddItem(const MenuItem& item, int pos);
   void Clear();
 
   bool ItemPosition(MenuItem& item, int& x, int& y);
@@ -116,7 +119,7 @@ struct Menu {
     SetTop(top_item);
   }
 
-  int Selection() { return selection_; }
+  int Selection() const { return selection_; }
 
   // Used by the rollback weapon-select snapshot restore. Sets the
   // selection_ field directly, bypassing visibility/scroll adjustments.
@@ -125,17 +128,17 @@ struct Menu {
   void SetSelection(int new_selection) { selection_ = new_selection; }
 
   MenuItem* Selected() {
-    if (!IsSelectionValid()) return 0;
+    if (!IsSelectionValid()) return nullptr;
     return &items[selection_];
   }
 
   int SelectedId() {
-    MenuItem* s = Selected();
+    MenuItem const* s = Selected();
     return s ? s->id : -1;
   }
 
   int IndexFromId(int id) {
-    for (int i = 0; i < (int)items.size(); ++i) {
+    for (int i = 0; std::cmp_less(i, items.size()); ++i) {
       if (items[i].id == id) return i;
     }
 
@@ -143,11 +146,11 @@ struct Menu {
   }
 
   MenuItem* ItemFromId(int id) {
-    for (int i = 0; i < (int)items.size(); ++i) {
-      if (items[i].id == id) return &items[i];
+    for (auto& item : items) {
+      if (item.id == id) return &item;
     }
 
-    return 0;
+    return nullptr;
   }
 
   void SetVisibility(int id, bool state);
@@ -159,7 +162,7 @@ struct Menu {
   void EnsureInView(int item);
   void SetBottom(int new_bottom_vis_idx);
   void SetTop(int new_top_vis_idx);
-  void Scroll(int amount);
+  void Scroll(int dir);
 
   std::string search_prefix;
   Uint64 search_time;

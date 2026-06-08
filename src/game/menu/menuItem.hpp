@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include "../gfx/color.hpp"
 #include "../gfx/renderer.hpp"
 
@@ -10,10 +11,8 @@ struct MenuItem {
   MenuItem(PalIdx color, PalIdx dis_colour, std::string string, int id = -1)
       : color(color),
         dis_colour(dis_colour),
-        string(string),
-        has_value(false),
-        visible(true),
-        selectable(true),
+        string(std::move(std::move(string))),
+
         id(id) {}
 
   static MenuItem Space() {
@@ -23,15 +22,15 @@ struct MenuItem {
   }
 
   void Draw(Common& common, Renderer& renderer, int x, int y, bool selected, bool disabled,
-            bool centered, int value_offset_x);
+            bool centered, int value_offset_x) const;
 
   PalIdx color;
   PalIdx dis_colour;
   std::string string;
 
-  bool has_value;
+  bool has_value{false};
   std::string value;
 
-  bool visible, selectable;
+  bool visible{true}, selectable{true};
   int id;
 };

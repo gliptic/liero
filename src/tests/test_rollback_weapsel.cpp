@@ -26,6 +26,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "controller/commonController.hpp"
@@ -41,8 +42,8 @@ namespace {
 std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
   settings->loading_time = 0;
@@ -55,9 +56,9 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   return {common, settings};
 }
 
-std::unique_ptr<RollbackController> MakePeer(std::shared_ptr<Common> common,
-                                             std::shared_ptr<Settings> settings, int local_idx,
-                                             uint32_t world_seed) {
+std::unique_ptr<RollbackController> MakePeer(const std::shared_ptr<Common>& common,
+                                             const std::shared_ptr<Settings>& settings,
+                                             int local_idx, uint32_t world_seed) {
   auto c = std::make_unique<RollbackController>(common, settings, local_idx);
   c->SetInputDelay(1);
   c->game.rand.Seed(world_seed);
@@ -110,8 +111,8 @@ TEST_CASE("WeaponSelectSnap round-trip preserves state", "[rollback][weapsel]") 
   REQUIRE(snap.valid);
 
   // Independently capture state we expect restore to recover.
-  int worm_current_weapon_before = a->game.worms[0]->current_weapon;
-  uint32_t weapon_id_before = a->game.worms[0]->settings->weapons[0];
+  int const kWormCurrentWeaponBefore = a->game.worms[0]->current_weapon;
+  uint32_t const kWeaponIdBefore = a->game.worms[0]->settings->weapons[0];
 
   // Mutate further by running more ticks with a different input.
   for (int i = 0; i < 8; ++i) {
@@ -128,8 +129,8 @@ TEST_CASE("WeaponSelectSnap round-trip preserves state", "[rollback][weapsel]") 
   a->LoadWeaponSelectSnap(snap);
 
   // Verify the restored state matches what we captured.
-  REQUIRE(a->game.worms[0]->current_weapon == worm_current_weapon_before);
-  REQUIRE(a->game.worms[0]->settings->weapons[0] == weapon_id_before);
+  REQUIRE(a->game.worms[0]->current_weapon == kWormCurrentWeaponBefore);
+  REQUIRE(a->game.worms[0]->settings->weapons[0] == kWeaponIdBefore);
 
   // Save a third snapshot after restore — it must match the original.
   WeaponSelectSnap restored;
@@ -152,9 +153,10 @@ TEST_CASE("WeaponSelectSnap round-trip preserves state", "[rollback][weapsel]") 
   // And the mutated snapshot must differ from the original on at least
   // one observable axis — otherwise the test wouldn't have exercised
   // any state change to round-trip.
-  bool mutated_differs = mutated.players[0].menu_selection != snap.players[0].menu_selection ||
-                         mutated.local_prev_input != snap.local_prev_input;
-  REQUIRE(mutated_differs);
+  bool const kMutatedDiffers =
+      mutated.players[0].menu_selection != snap.players[0].menu_selection ||
+      mutated.local_prev_input != snap.local_prev_input;
+  REQUIRE(kMutatedDiffers);
 }
 
 TEST_CASE("Weapon select reaches StateGame in sync under zero jitter", "[rollback][weapsel]") {
@@ -172,7 +174,8 @@ TEST_CASE("Weapon select reaches StateGame in sync under zero jitter", "[rollbac
     std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
     uint32_t local_frame;
   };
-  std::vector<Pkt> a_to_b, b_to_a;
+  std::vector<Pkt> a_to_b;
+  std::vector<Pkt> b_to_a;
   auto enqueue = [](std::vector<Pkt>& q, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     Pkt p{};
     p.base_frame = bf;
@@ -181,12 +184,10 @@ TEST_CASE("Weapon select reaches StateGame in sync under zero jitter", "[rollbac
     for (uint8_t i = 0; i < c; ++i) p.inputs[i] = in[i];
     q.push_back(p);
   };
-  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    enqueue(a_to_b, bf, c, in, lf);
-  });
-  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    enqueue(b_to_a, bf, c, in, lf);
-  });
+  a->SetInputCallbacks([&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in,
+                           uint32_t lf) { enqueue(a_to_b, bf, c, in, lf); });
+  b->SetInputCallbacks([&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in,
+                           uint32_t lf) { enqueue(b_to_a, bf, c, in, lf); });
   a->Focus();
   b->Focus();
 
@@ -200,23 +201,25 @@ TEST_CASE("Weapon select reaches StateGame in sync under zero jitter", "[rollbac
   // press for the chain to catch up.
   constexpr int kIdleTail = 30;
 
-  bool a_transitioned = false, b_transitioned = false;
-  uint32_t a_transition_frame = 0, b_transition_frame = 0;
+  bool a_transitioned = false;
+  bool b_transitioned = false;
+  uint32_t a_transition_frame = 0;
+  uint32_t b_transition_frame = 0;
 
   for (int i = 0; i < static_cast<int>(script.size()) + kIdleTail; ++i) {
-    uint8_t in = (i < static_cast<int>(script.size())) ? script[i] : 0;
-    a->SetLocalControlState(in);
-    b->SetLocalControlState(in);
-    bool a_in_weapsel_before = !a_transitioned;
-    bool b_in_weapsel_before = !b_transitioned;
+    uint8_t const kIn = (std::cmp_less(i, script.size())) ? script[i] : 0;
+    a->SetLocalControlState(kIn);
+    b->SetLocalControlState(kIn);
+    bool const kAInWeapselBefore = !a_transitioned;
+    bool const kBInWeapselBefore = !b_transitioned;
     a->Process();
     b->Process();
     // Track the first tick at which each peer crosses into StateGame.
-    if (a_in_weapsel_before && a->State() == kStateGame) {
+    if (kAInWeapselBefore && a->State() == kStateGame) {
       a_transitioned = true;
       a_transition_frame = a->CurrentFrame();
     }
-    if (b_in_weapsel_before && b->State() == kStateGame) {
+    if (kBInWeapselBefore && b->State() == kStateGame) {
       b_transitioned = true;
       b_transition_frame = b->CurrentFrame();
     }
@@ -254,8 +257,11 @@ TEST_CASE("Weapon select transitions cleanly under jitter", "[rollback][weapsel]
   auto a = MakePeer(common, settings, 0, kWorldSeed);
   auto b = MakePeer(common, settings, 1, kWorldSeed);
 
-  rollback_test::JitterTransport transport({0xA5A5, /*minDelay=*/1, /*maxDelay=*/3,
-                                            /*loss=*/0.0, /*duplicate=*/0.0});
+  rollback_test::JitterTransport transport({.seed = 0xA5A5,
+                                            /*minDelay=*/.min_delay_frames = 1,
+                                            /*maxDelay=*/.max_delay_frames = 3,
+                                            /*loss=*/.loss_probability = 0.0,
+                                            /*duplicate=*/.duplicate_probability = 0.0});
 
   a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     transport.SendAToB(gen, bf, c, in, lf);
@@ -279,22 +285,24 @@ TEST_CASE("Weapon select transitions cleanly under jitter", "[rollback][weapsel]
   auto script = NavigateToDoneAndConfirm(6);
   constexpr int kIdleTail = 60;
 
-  bool a_transitioned = false, b_transitioned = false;
-  uint32_t a_transition_frame = 0, b_transition_frame = 0;
+  bool a_transitioned = false;
+  bool b_transitioned = false;
+  uint32_t a_transition_frame = 0;
+  uint32_t b_transition_frame = 0;
 
   for (int i = 0; i < static_cast<int>(script.size()) + kIdleTail; ++i) {
-    uint8_t in = (i < static_cast<int>(script.size())) ? script[i] : 0;
-    a->SetLocalControlState(in);
-    b->SetLocalControlState(in);
-    bool a_in_weapsel_before = !a_transitioned;
-    bool b_in_weapsel_before = !b_transitioned;
+    uint8_t const kIn = (std::cmp_less(i, script.size())) ? script[i] : 0;
+    a->SetLocalControlState(kIn);
+    b->SetLocalControlState(kIn);
+    bool const kAInWeapselBefore = !a_transitioned;
+    bool const kBInWeapselBefore = !b_transitioned;
     a->Process();
     b->Process();
-    if (a_in_weapsel_before && a->CurrentGame()->stats_recorder) {
+    if (kAInWeapselBefore && a->CurrentGame()->stats_recorder) {
       a_transitioned = true;
       a_transition_frame = a->CurrentFrame();
     }
-    if (b_in_weapsel_before && b->CurrentGame()->stats_recorder) {
+    if (kBInWeapselBefore && b->CurrentGame()->stats_recorder) {
       b_transitioned = true;
       b_transition_frame = b->CurrentFrame();
     }
@@ -307,15 +315,15 @@ TEST_CASE("Weapon select transitions cleanly under jitter", "[rollback][weapsel]
   a->SetLocalControlState(0);
   b->SetLocalControlState(0);
   for (int i = 0; i < 16; ++i) {
-    bool a_in_weapsel_before = !a_transitioned;
-    bool b_in_weapsel_before = !b_transitioned;
+    bool const kAInWeapselBefore = !a_transitioned;
+    bool const kBInWeapselBefore = !b_transitioned;
     a->Process();
     b->Process();
-    if (a_in_weapsel_before && a->State() == kStateGame) {
+    if (kAInWeapselBefore && a->State() == kStateGame) {
       a_transitioned = true;
       a_transition_frame = a->CurrentFrame();
     }
-    if (b_in_weapsel_before && b->State() == kStateGame) {
+    if (kBInWeapselBefore && b->State() == kStateGame) {
       b_transitioned = true;
       b_transition_frame = b->CurrentFrame();
     }
@@ -337,7 +345,7 @@ TEST_CASE("Weapon select transitions cleanly under jitter", "[rollback][weapsel]
 
   // Vacuity guard: jitter must have caused at least some prediction
   // events; otherwise this test devolves into the zero-jitter case.
-  bool any_rollback = a->RollbackCount() > 0 || b->RollbackCount() > 0;
+  bool const kAnyRollback = a->RollbackCount() > 0 || b->RollbackCount() > 0;
   INFO("a rollbacks=" << a->RollbackCount() << " b rollbacks=" << b->RollbackCount());
-  REQUIRE(any_rollback);
+  REQUIRE(kAnyRollback);
 }

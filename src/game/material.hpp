@@ -12,17 +12,17 @@ struct Material {
     kWormM = 1 << 5
   };
 
-  bool Dirt() { return (flags & kDirt) != 0; }
-  bool Dirt2() { return (flags & kDirt2) != 0; }
-  bool Rock() { return (flags & kRock) != 0; }
-  bool Background() { return (flags & kBackground) != 0; }
-  bool SeeShadow() { return (flags & kSeeShadow) != 0; }
+  bool Dirt() const { return (flags & kDirt) != 0; }
+  bool Dirt2() const { return (flags & kDirt2) != 0; }
+  bool Rock() const { return (flags & kRock) != 0; }
+  bool Background() const { return (flags & kBackground) != 0; }
+  bool SeeShadow() const { return (flags & kSeeShadow) != 0; }
 
   // Constructed
-  bool DirtRock() { return (flags & (kDirt | kDirt2 | kRock)) != 0; }
-  bool AnyDirt() { return (flags & (kDirt | kDirt2)) != 0; }
-  bool DirtBack() { return (flags & (kDirt | kDirt2 | kBackground)) != 0; }
-  bool Worm() { return (flags & kWormM) != 0; }
+  bool DirtRock() const { return (flags & (kDirt | kDirt2 | kRock)) != 0; }
+  bool AnyDirt() const { return (flags & (kDirt | kDirt2)) != 0; }
+  bool DirtBack() const { return (flags & (kDirt | kDirt2 | kBackground)) != 0; }
+  bool Worm() const { return (flags & kWormM) != 0; }
 
   uint8_t flags;
 };

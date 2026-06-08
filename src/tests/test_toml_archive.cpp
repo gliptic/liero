@@ -89,7 +89,7 @@ struct Versioned {
 CEREAL_CLASS_VERSION(Versioned, 2);
 
 TEST_CASE("TomlArchive: primitive round-trip", "[toml_archive]") {
-  Primitives src{-42, 7u, true, "hello world", 3.5};
+  Primitives src{.i = -42, .u = 7U, .b = true, .s = "hello world", .d = 3.5};
   std::stringstream ss;
   {
     cereal::TomlOutputArchive out(ss);
@@ -105,7 +105,7 @@ TEST_CASE("TomlArchive: primitive round-trip", "[toml_archive]") {
 
 TEST_CASE("TomlArchive: nested object round-trip", "[toml_archive]") {
   Outer src;
-  src.inner = {11, 22};
+  src.inner = {.x = 11, .y = 22};
   src.flag = 99;
   std::stringstream ss;
   {
@@ -139,7 +139,7 @@ TEST_CASE("TomlArchive: arrays of primitives", "[toml_archive]") {
 
 TEST_CASE("TomlArchive: arrays of objects", "[toml_archive]") {
   ObjectArrayHolder src;
-  src.items = {{1, 2}, {3, 4}, {5, 6}};
+  src.items = {{.x = 1, .y = 2}, {.x = 3, .y = 4}, {.x = 5, .y = 6}};
   std::stringstream ss;
   {
     cereal::TomlOutputArchive out(ss);
@@ -155,27 +155,27 @@ TEST_CASE("TomlArchive: arrays of objects", "[toml_archive]") {
 
 TEST_CASE("TomlArchive: missing key keeps default", "[toml_archive]") {
   // Manually-authored TOML with only one of the Primitives fields.
-  std::string toml_text = "[p]\ni = 17\n";
-  std::stringstream ss(toml_text);
-  Primitives dst{0, 99u, true, "preserved", 1.25};
+  std::string const kTomlText = "[p]\ni = 17\n";
+  std::stringstream ss(kTomlText);
+  Primitives dst{.i = 0, .u = 99U, .b = true, .s = "preserved", .d = 1.25};
   cereal::TomlInputArchive in(ss);
   in(cereal::make_nvp("p", dst));
   CHECK(dst.i == 17);
-  CHECK(dst.u == 99u);
+  CHECK(dst.u == 99U);
   CHECK(dst.b == true);
   CHECK(dst.s == "preserved");
   CHECK(dst.d == 1.25);
 }
 
 TEST_CASE("TomlArchive: versioned type emits and reads version", "[toml_archive]") {
-  Versioned src{10, 20};
+  Versioned src{.a = 10, .b = 20};
   std::stringstream ss;
   {
     cereal::TomlOutputArchive out(ss);
     out(cereal::make_nvp("v", src));
   }
   // The serialized text should contain the cereal_class_version field.
-  CHECK(ss.str().find("cereal_class_version") != std::string::npos);
+  CHECK(ss.str().contains("cereal_class_version"));
 
   Versioned dst;
   {

@@ -282,7 +282,7 @@ TEST_CASE("versioning: Settings v2 TOML round-trip preserves bonusTimeout", "[ve
     ar(cereal::make_nvp("s", src));
   }
   // bonusTimeout = 42 must appear in the serialized text.
-  CHECK(ss.str().find("bonusTimeout") != std::string::npos);
+  CHECK(ss.str().contains("bonusTimeout"));
 
   Settings dst;
   {
@@ -315,31 +315,31 @@ TEST_CASE("versioning: Settings v1 TOML fixture reads as v2 with default bonusTi
 }
 
 TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config", "[versioning]") {
-  Settings src = MakeKnownV2();
-  src.worm_settings[0]->name = "Player1";
-  src.worm_settings[1]->name = "Player2";
-  src.worm_settings[2]->name = "NetPlayer";
+  Settings const kSrc = MakeKnownV2();
+  kSrc.worm_settings[0]->name = "Player1";
+  kSrc.worm_settings[1]->name = "Player2";
+  kSrc.worm_settings[2]->name = "NetPlayer";
 
-  std::string toml = src.ToToml();
+  std::string const kToml = kSrc.ToToml();
 
   // Human-readable: uses [settings], [player1], [player2], [network_player]
-  CHECK(toml.find("[settings]") != std::string::npos);
-  CHECK(toml.find("[player1]") != std::string::npos);
-  CHECK(toml.find("[player2]") != std::string::npos);
-  CHECK(toml.find("[network_player]") != std::string::npos);
+  CHECK(kToml.contains("[settings]"));
+  CHECK(kToml.contains("[player1]"));
+  CHECK(kToml.contains("[player2]"));
+  CHECK(kToml.contains("[network_player]"));
   // Version field present for future-proofing
-  CHECK(toml.find("version = 3") != std::string::npos);
+  CHECK(kToml.contains("version = 3"));
   // No ptr_wrapper noise
-  CHECK(toml.find("ptr_wrapper") == std::string::npos);
-  CHECK(toml.find("[s]") == std::string::npos);
+  CHECK(!kToml.contains("ptr_wrapper"));
+  CHECK(!kToml.contains("[s]"));
   // Arrays used for weapons, controls, etc.
-  CHECK(toml.find("weapons = [") != std::string::npos);
-  CHECK(toml.find("controls = [") != std::string::npos);
-  CHECK(toml.find("weapTable = [") != std::string::npos);
+  CHECK(kToml.contains("weapons = ["));
+  CHECK(kToml.contains("controls = ["));
+  CHECK(kToml.contains("weapTable = ["));
 
   // Round-trip
   Settings dst;
-  dst.FromToml(toml);
+  dst.FromToml(kToml);
   CHECK(dst.max_bonuses == 7);
   CHECK(dst.lives == 3);
   CHECK(dst.bonus_timeout == 42);

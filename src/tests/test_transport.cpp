@@ -16,8 +16,8 @@ static void PollUntil(NetTransport& t, NetTransport::State target, int max_ms = 
 TEST_CASE("Transport connects host and client", "[transport]") {
   NetTransport host;
   REQUIRE(host.Host(0));  // Bind to any available port
-  uint16_t port = host.ListeningPort();
-  REQUIRE(port != 0);
+  uint16_t const kPort = host.ListeningPort();
+  REQUIRE(kPort != 0);
   REQUIRE(host.CurrentState() == NetTransport::kListening);
 
   bool host_connected = false;
@@ -26,7 +26,7 @@ TEST_CASE("Transport connects host and client", "[transport]") {
 
   NetTransport client;
   client.on_connected = [&]() { client_connected = true; };
-  REQUIRE(client.Connect("127.0.0.1", port));
+  REQUIRE(client.Connect("127.0.0.1", kPort));
 
   // Poll both until connected
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
@@ -45,10 +45,10 @@ TEST_CASE("Transport connects host and client", "[transport]") {
 TEST_CASE("Transport delivers input packets", "[transport]") {
   NetTransport host;
   REQUIRE(host.Host(0));
-  uint16_t port = host.ListeningPort();
+  uint16_t const kPort = host.ListeningPort();
 
   NetTransport client;
-  REQUIRE(client.Connect("127.0.0.1", port));
+  REQUIRE(client.Connect("127.0.0.1", kPort));
 
   // Wait for connection
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
@@ -86,10 +86,10 @@ TEST_CASE("Transport delivers input packets", "[transport]") {
 TEST_CASE("Transport delivers handshake", "[transport]") {
   NetTransport host;
   REQUIRE(host.Host(0));
-  uint16_t port = host.ListeningPort();
+  uint16_t const kPort = host.ListeningPort();
 
   NetTransport client;
-  REQUIRE(client.Connect("127.0.0.1", port));
+  REQUIRE(client.Connect("127.0.0.1", kPort));
 
   // Wait for connection
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
@@ -102,7 +102,8 @@ TEST_CASE("Transport delivers handshake", "[transport]") {
   }
   REQUIRE(host.CurrentState() == NetTransport::kConnected);
 
-  uint32_t rx_seed = 0, rx_hash = 0;
+  uint32_t rx_seed = 0;
+  uint32_t rx_hash = 0;
   host.on_handshake = [&](uint32_t s, uint32_t h) {
     rx_seed = s;
     rx_hash = h;
@@ -124,10 +125,10 @@ TEST_CASE("Transport delivers handshake", "[transport]") {
 TEST_CASE("Transport delivers player info", "[transport]") {
   NetTransport host;
   REQUIRE(host.Host(0));
-  uint16_t port = host.ListeningPort();
+  uint16_t const kPort = host.ListeningPort();
 
   NetTransport client;
-  REQUIRE(client.Connect("127.0.0.1", port));
+  REQUIRE(client.Connect("127.0.0.1", kPort));
 
   // Wait for connection
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
@@ -176,10 +177,10 @@ TEST_CASE("Transport delivers player info", "[transport]") {
 TEST_CASE("Transport delivers match settings", "[transport]") {
   NetTransport host;
   REQUIRE(host.Host(0));
-  uint16_t port = host.ListeningPort();
+  uint16_t const kPort = host.ListeningPort();
 
   NetTransport client;
-  REQUIRE(client.Connect("127.0.0.1", port));
+  REQUIRE(client.Connect("127.0.0.1", kPort));
 
   // Wait for connection
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
@@ -234,10 +235,10 @@ TEST_CASE("Transport delivers match settings", "[transport]") {
 TEST_CASE("Transport bidirectional input exchange", "[transport]") {
   NetTransport host;
   REQUIRE(host.Host(0));
-  uint16_t port = host.ListeningPort();
+  uint16_t const kPort = host.ListeningPort();
 
   NetTransport client;
-  REQUIRE(client.Connect("127.0.0.1", port));
+  REQUIRE(client.Connect("127.0.0.1", kPort));
 
   // Wait for connection
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
@@ -250,7 +251,8 @@ TEST_CASE("Transport bidirectional input exchange", "[transport]") {
   }
 
   // Exchange 100 frames of inputs in both directions
-  int host_received = 0, client_received = 0;
+  int host_received = 0;
+  int client_received = 0;
   host.on_remote_input = [&](uint32_t, uint8_t) { ++host_received; };
   client.on_remote_input = [&](uint32_t, uint8_t) { ++client_received; };
 
@@ -275,10 +277,10 @@ TEST_CASE("Transport bidirectional input exchange", "[transport]") {
 TEST_CASE("Transport delivers large map data (100KB+)", "[transport]") {
   NetTransport host;
   REQUIRE(host.Host(0));
-  uint16_t port = host.ListeningPort();
+  uint16_t const kPort = host.ListeningPort();
 
   NetTransport client;
-  REQUIRE(client.Connect("127.0.0.1", port));
+  REQUIRE(client.Connect("127.0.0.1", kPort));
 
   // Wait for connection
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
@@ -300,7 +302,7 @@ TEST_CASE("Transport delivers large map data (100KB+)", "[transport]") {
 
   std::vector<uint8_t> received_data;
   client.on_map_data = [&](const void* data, size_t len) {
-    auto* bytes = static_cast<const uint8_t*>(data);
+    const auto* bytes = static_cast<const uint8_t*>(data);
     received_data.assign(bytes, bytes + len);
   };
 
@@ -324,10 +326,10 @@ TEST_CASE("Transport delivers large map data (100KB+)", "[transport]") {
 TEST_CASE("Transport delivers rollback input batches", "[transport][rollback]") {
   NetTransport host;
   REQUIRE(host.Host(0));
-  uint16_t port = host.ListeningPort();
+  uint16_t const kPort = host.ListeningPort();
 
   NetTransport client;
-  REQUIRE(client.Connect("127.0.0.1", port));
+  REQUIRE(client.Connect("127.0.0.1", kPort));
 
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
   while ((host.CurrentState() != NetTransport::kConnected ||
@@ -380,10 +382,10 @@ TEST_CASE("Transport delivers rollback input batches", "[transport][rollback]") 
 TEST_CASE("Transport rejects handshake with wrong protocol version", "[transport][rollback]") {
   NetTransport host;
   REQUIRE(host.Host(0));
-  uint16_t port = host.ListeningPort();
+  uint16_t const kPort = host.ListeningPort();
 
   NetTransport client;
-  REQUIRE(client.Connect("127.0.0.1", port));
+  REQUIRE(client.Connect("127.0.0.1", kPort));
 
   auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
   while ((host.CurrentState() != NetTransport::kConnected ||

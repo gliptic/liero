@@ -12,7 +12,7 @@ void Ninjarope::Process(Worm& owner, Game& game) {
 
     auto ipos = Ftoi(pos);
 
-    anchor = 0;
+    anchor = nullptr;
     for (std::size_t i = 0; i < game.worms.size(); ++i) {
       Worm& w = *game.worms[i];
 
@@ -22,12 +22,12 @@ void Ninjarope::Process(Worm& owner, Game& game) {
       }
     }
 
-    fixedvec diff = pos - owner.pos;
+    fixedvec const kDiff = pos - owner.pos;
 
-    fixedvec force((diff.x << LC(NRForceShlX)) / LC(NRForceDivX),
-                   (diff.y << LC(NRForceShlY)) / LC(NRForceDivY));
+    fixedvec const kForce((kDiff.x << LC(NRForceShlX)) / LC(NRForceDivX),
+                          (kDiff.y << LC(NRForceShlY)) / LC(NRForceDivY));
 
-    cur_len = (VectorLength(Ftoi(diff.x), Ftoi(diff.y)) + 1) << LC(NRForceLenShl);
+    cur_len = (VectorLength(Ftoi(kDiff.x), Ftoi(kDiff.y)) + 1) << LC(NRForceLenShl);
 
     if (ipos.x <= 0 || ipos.x >= game.level.width - 1 || ipos.y <= 0 ||
         ipos.y >= game.level.height - 1 || game.level.Mat(ipos).DirtRock()) {
@@ -37,11 +37,11 @@ void Ninjarope::Process(Worm& owner, Game& game) {
 
         if (game.level.Inside(ipos)) {
           if (game.level.Mat(ipos).AnyDirt()) {
-            PalIdx pix = game.level.Pixel(ipos);
+            PalIdx const kPix = game.level.Pixel(ipos);
             for (int i = 0; i < 11; ++i)  // TODO: Check 11 and read from exe
             {
-              common.nobject_types[2].Create2(game, game.rand(128), fixedvec(), pos, pix,
-                                              owner.index, 0);
+              common.nobject_types[2].Create2(game, game.rand(128), fixedvec(), pos, kPix,
+                                              owner.index, nullptr);
             }
           }
         }
@@ -56,7 +56,7 @@ void Ninjarope::Process(Worm& owner, Game& game) {
       }
 
       if (cur_len > length) {
-        anchor->vel -= force / cur_len;
+        anchor->vel -= kForce / cur_len;
       }
 
       vel = anchor->vel;
@@ -69,13 +69,13 @@ void Ninjarope::Process(Worm& owner, Game& game) {
       // curLen can't be 0
 
       if (cur_len > length) {
-        owner.vel += force / cur_len;
+        owner.vel += kForce / cur_len;
       }
     } else {
       vel.y += LC(NinjaropeGravity);
 
       if (cur_len > length) {
-        vel -= force / cur_len;
+        vel -= kForce / cur_len;
       }
     }
   }

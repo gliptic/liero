@@ -17,13 +17,13 @@
 static std::vector<uint8_t> BuildIPv4Response(const stun::Header& req, const char* ip,
                                               uint16_t port) {
   // Parse IP into network-order bytes
-  uint32_t ip_net;
+  uint32_t ip_net = 0;
   inet_pton(AF_INET, ip, &ip_net);
-  uint32_t ip_host = ntohl(ip_net);
+  uint32_t const kIpHost = ntohl(ip_net);
 
   // XOR the address and port
-  uint32_t xor_addr = htonl(ip_host ^ stun::kMagicCookie);
-  uint16_t xor_port = port ^ (uint16_t)(stun::kMagicCookie >> 16);
+  uint32_t xor_addr = htonl(kIpHost ^ stun::kMagicCookie);
+  uint16_t const kXorPort = port ^ static_cast<uint16_t>(stun::kMagicCookie >> 16);
 
   // Build response
   std::vector<uint8_t> pkt;
@@ -38,14 +38,14 @@ static std::vector<uint8_t> BuildIPv4Response(const stun::Header& req, const cha
   attr[3] = 0x08;  // length = 8
   attr[4] = 0x00;  // reserved
   attr[5] = 0x01;  // family = IPv4
-  attr[6] = (uint8_t)(xor_port >> 8);
-  attr[7] = (uint8_t)(xor_port & 0xFF);
+  attr[6] = static_cast<uint8_t>(kXorPort >> 8);
+  attr[7] = static_cast<uint8_t>(kXorPort & 0xFF);
   std::memcpy(attr + 8, &xor_addr, 4);
 
   pkt.insert(pkt.end(), attr, attr + 12);
 
   // Fill header
-  auto* hdr = (stun::Header*)pkt.data();
+  auto* hdr = reinterpret_cast<stun::Header*>(pkt.data());
   hdr->type = htons(stun::kBindingResponse);
   hdr->length = htons(12);  // attribute total length
   hdr->magic_cookie = htonl(stun::kMagicCookie);
@@ -64,10 +64,10 @@ static std::vector<uint8_t> BuildIPv6Response(const stun::Header& req, const cha
   uint32_t cookie = htonl(stun::kMagicCookie);
   uint8_t xor_addr[16];
   std::memcpy(xor_addr, ip_bytes, 16);
-  for (int i = 0; i < 4; i++) xor_addr[i] ^= ((uint8_t*)&cookie)[i];
+  for (int i = 0; i < 4; i++) xor_addr[i] ^= (reinterpret_cast<uint8_t*>(&cookie))[i];
   for (int i = 0; i < 12; i++) xor_addr[4 + i] ^= req.transaction_id[i];
 
-  uint16_t xor_port = port ^ (uint16_t)(stun::kMagicCookie >> 16);
+  uint16_t const kXorPort = port ^ static_cast<uint16_t>(stun::kMagicCookie >> 16);
 
   // Build response
   std::vector<uint8_t> pkt;
@@ -82,14 +82,14 @@ static std::vector<uint8_t> BuildIPv6Response(const stun::Header& req, const cha
   attr[3] = 20;    // length = 20
   attr[4] = 0x00;  // reserved
   attr[5] = 0x02;  // family = IPv6
-  attr[6] = (uint8_t)(xor_port >> 8);
-  attr[7] = (uint8_t)(xor_port & 0xFF);
+  attr[6] = static_cast<uint8_t>(kXorPort >> 8);
+  attr[7] = static_cast<uint8_t>(kXorPort & 0xFF);
   std::memcpy(attr + 8, xor_addr, 16);
 
   pkt.insert(pkt.end(), attr, attr + 24);
 
   // Fill header
-  auto* hdr = (stun::Header*)pkt.data();
+  auto* hdr = reinterpret_cast<stun::Header*>(pkt.data());
   hdr->type = htons(stun::kBindingResponse);
   hdr->length = htons(24);
   hdr->magic_cookie = htonl(stun::kMagicCookie);
@@ -101,7 +101,7 @@ static std::vector<uint8_t> BuildIPv6Response(const stun::Header& req, const cha
 // Helper to build a STUN Binding Response with MAPPED-ADDRESS (non-XOR, fallback)
 static std::vector<uint8_t> BuildMappedAddressResponse(const stun::Header& req, const char* ip,
                                                        uint16_t port) {
-  uint32_t ip_net;
+  uint32_t ip_net = 0;
   inet_pton(AF_INET, ip, &ip_net);
 
   std::vector<uint8_t> pkt;
@@ -115,13 +115,13 @@ static std::vector<uint8_t> BuildMappedAddressResponse(const stun::Header& req, 
   attr[3] = 0x08;  // length = 8
   attr[4] = 0x00;  // reserved
   attr[5] = 0x01;  // family = IPv4
-  attr[6] = (uint8_t)(port >> 8);
-  attr[7] = (uint8_t)(port & 0xFF);
+  attr[6] = static_cast<uint8_t>(port >> 8);
+  attr[7] = static_cast<uint8_t>(port & 0xFF);
   std::memcpy(attr + 8, &ip_net, 4);  // network byte order
 
   pkt.insert(pkt.end(), attr, attr + 12);
 
-  auto* hdr = (stun::Header*)pkt.data();
+  auto* hdr = reinterpret_cast<stun::Header*>(pkt.data());
   hdr->type = htons(stun::kBindingResponse);
   hdr->length = htons(12);
   hdr->magic_cookie = htonl(stun::kMagicCookie);
@@ -136,7 +136,7 @@ static stun::Header MakeRequest() {
   req.length = 0;
   req.magic_cookie = htonl(stun::kMagicCookie);
   // Use a known transaction ID for reproducibility
-  for (int i = 0; i < 12; i++) req.transaction_id[i] = (uint8_t)(0x10 + i);
+  for (int i = 0; i < 12; i++) req.transaction_id[i] = static_cast<uint8_t>(0x10 + i);
   return req;
 }
 
@@ -184,17 +184,17 @@ TEST_CASE("parseResponse prefers XOR-MAPPED-ADDRESS over MAPPED-ADDRESS", "[stun
   mapped_attr[5] = 0x01;  // IPv4
   mapped_attr[6] = 0x00;
   mapped_attr[7] = 0x50;  // port 80
-  uint32_t wrong_ip;
+  uint32_t wrong_ip = 0;
   inet_pton(AF_INET, "10.0.0.1", &wrong_ip);
   std::memcpy(mapped_attr + 8, &wrong_ip, 4);
   pkt.insert(pkt.end(), mapped_attr, mapped_attr + 12);
 
   // XOR-MAPPED-ADDRESS with correct IP
-  uint32_t ip_net;
+  uint32_t ip_net = 0;
   inet_pton(AF_INET, "203.0.113.42", &ip_net);
-  uint32_t ip_host = ntohl(ip_net);
-  uint32_t xor_addr = htonl(ip_host ^ stun::kMagicCookie);
-  uint16_t xor_port = 54321 ^ (uint16_t)(stun::kMagicCookie >> 16);
+  uint32_t const kIpHost = ntohl(ip_net);
+  uint32_t xor_addr = htonl(kIpHost ^ stun::kMagicCookie);
+  uint16_t const kXorPort = 54321 ^ static_cast<uint16_t>(stun::kMagicCookie >> 16);
 
   uint8_t xor_attr[12] = {};
   xor_attr[0] = 0x00;
@@ -203,12 +203,12 @@ TEST_CASE("parseResponse prefers XOR-MAPPED-ADDRESS over MAPPED-ADDRESS", "[stun
   xor_attr[3] = 0x08;
   xor_attr[4] = 0x00;
   xor_attr[5] = 0x01;  // IPv4
-  xor_attr[6] = (uint8_t)(xor_port >> 8);
-  xor_attr[7] = (uint8_t)(xor_port & 0xFF);
+  xor_attr[6] = static_cast<uint8_t>(kXorPort >> 8);
+  xor_attr[7] = static_cast<uint8_t>(kXorPort & 0xFF);
   std::memcpy(xor_attr + 8, &xor_addr, 4);
   pkt.insert(pkt.end(), xor_attr, xor_attr + 12);
 
-  auto* hdr = (stun::Header*)pkt.data();
+  auto* hdr = reinterpret_cast<stun::Header*>(pkt.data());
   hdr->type = htons(stun::kBindingResponse);
   hdr->length = htons(24);  // 12 + 12
   hdr->magic_cookie = htonl(stun::kMagicCookie);
@@ -240,7 +240,7 @@ TEST_CASE("parseResponse rejects non-binding-response", "[stun]") {
   auto pkt = BuildIPv4Response(req, "203.0.113.42", 54321);
 
   // Change type to something else
-  auto* hdr = (stun::Header*)pkt.data();
+  auto* hdr = reinterpret_cast<stun::Header*>(pkt.data());
   hdr->type = htons(0x0111);  // Binding Error Response
 
   auto result = stun::ParseResponse(pkt.data(), pkt.size(), req);
@@ -261,7 +261,7 @@ TEST_CASE("parseResponse handles empty attributes", "[stun]") {
 
   // Valid header but no attributes
   std::vector<uint8_t> pkt(sizeof(stun::Header));
-  auto* hdr = (stun::Header*)pkt.data();
+  auto* hdr = reinterpret_cast<stun::Header*>(pkt.data());
   hdr->type = htons(stun::kBindingResponse);
   hdr->length = htons(0);
   hdr->magic_cookie = htonl(stun::kMagicCookie);
@@ -289,11 +289,11 @@ TEST_CASE("parseResponse handles padded attributes", "[stun]") {
   pkt.insert(pkt.end(), unknown_attr, unknown_attr + 12);
 
   // XOR-MAPPED-ADDRESS
-  uint32_t ip_net;
+  uint32_t ip_net = 0;
   inet_pton(AF_INET, "192.0.2.1", &ip_net);
-  uint32_t ip_host = ntohl(ip_net);
-  uint32_t xor_addr = htonl(ip_host ^ stun::kMagicCookie);
-  uint16_t xor_port = 8080 ^ (uint16_t)(stun::kMagicCookie >> 16);
+  uint32_t const kIpHost = ntohl(ip_net);
+  uint32_t xor_addr = htonl(kIpHost ^ stun::kMagicCookie);
+  uint16_t const kXorPort = 8080 ^ static_cast<uint16_t>(stun::kMagicCookie >> 16);
 
   uint8_t xor_attr[12] = {};
   xor_attr[0] = 0x00;
@@ -302,12 +302,12 @@ TEST_CASE("parseResponse handles padded attributes", "[stun]") {
   xor_attr[3] = 0x08;
   xor_attr[4] = 0x00;
   xor_attr[5] = 0x01;
-  xor_attr[6] = (uint8_t)(xor_port >> 8);
-  xor_attr[7] = (uint8_t)(xor_port & 0xFF);
+  xor_attr[6] = static_cast<uint8_t>(kXorPort >> 8);
+  xor_attr[7] = static_cast<uint8_t>(kXorPort & 0xFF);
   std::memcpy(xor_attr + 8, &xor_addr, 4);
   pkt.insert(pkt.end(), xor_attr, xor_attr + 12);
 
-  auto* hdr = (stun::Header*)pkt.data();
+  auto* hdr = reinterpret_cast<stun::Header*>(pkt.data());
   hdr->type = htons(stun::kBindingResponse);
   hdr->length = htons(24);  // 12 (unknown padded) + 12 (xor-mapped)
   hdr->magic_cookie = htonl(stun::kMagicCookie);
@@ -355,6 +355,6 @@ TEST_CASE("StunQuery completes with done flag", "[stun][integration]") {
   if (!result.ipv4.empty()) {
     REQUIRE(result.ipv4_port != 0);
     // Sanity check: IP should have dots
-    REQUIRE(result.ipv4.find('.') != std::string::npos);
+    REQUIRE(result.ipv4.contains('.'));
   }
 }

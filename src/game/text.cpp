@@ -44,9 +44,11 @@ char const* TimeToStringEx(int ms, bool force_hours, bool force_minutes) {
   return ret;
 }
 
-char const* TimeToStringFrames(int frames) { return TimeToStringEx(frames * 14, false, false); }
+char const* TimeToStringFrames(int frames) {
+  return TimeToStringEx(frames * 14, /*force_hours=*/false, /*force_minutes=*/false);
+}
 
-int SafeToUpper(char ch) { return std::toupper(static_cast<unsigned char>(ch)); }
+static int SafeToUpper(char ch) { return std::toupper(static_cast<unsigned char>(ch)); }
 
 bool CiCompare(std::string const& a, std::string const& b) {
   if (a.size() != b.size()) return false;
@@ -72,12 +74,10 @@ bool CiLess(std::string const& a, std::string const& b) {
   for (std::size_t i = 0; i < a.size(); ++i) {
     if (i >= b.size())  // a is longer, thus a > b
       return false;
-    int ach = SafeToUpper(a[i]);
-    int bch = SafeToUpper(b[i]);
-    if (ach < bch)
-      return true;
-    else if (ach > bch)
-      return false;
+    int const kAch = SafeToUpper(a[i]);
+    int const kBch = SafeToUpper(b[i]);
+    if (kAch < kBch) return true;
+    if (kAch > kBch) return false;
   }
 
   return b.size() > a.size();  // if b is longer, then a < b, otherwise a == b
@@ -87,17 +87,17 @@ char Utf8ToDos(const char* str) {
   if (str[1] == 0) {
     return str[0];
   }
-  char table[][3] = {
-      {(char)0xc3, (char)0xa5, (char)0x86},  // å
-      {(char)0xc3, (char)0xa4, (char)0x84},  // ä
-      {(char)0xc3, (char)0xb6, (char)0x94},  // ö
-      {(char)0xc3, (char)0x85, (char)0x8f},  // Å
-      {(char)0xc3, (char)0x84, (char)0x8e},  // Ä
-      {(char)0xc3, (char)0x96, (char)0x99},  // Ö
+  char const kTable[][3] = {
+      {static_cast<char>(0xc3), static_cast<char>(0xa5), static_cast<char>(0x86)},  // å
+      {static_cast<char>(0xc3), static_cast<char>(0xa4), static_cast<char>(0x84)},  // ä
+      {static_cast<char>(0xc3), static_cast<char>(0xb6), static_cast<char>(0x94)},  // ö
+      {static_cast<char>(0xc3), static_cast<char>(0x85), static_cast<char>(0x8f)},  // Å
+      {static_cast<char>(0xc3), static_cast<char>(0x84), static_cast<char>(0x8e)},  // Ä
+      {static_cast<char>(0xc3), static_cast<char>(0x96), static_cast<char>(0x99)},  // Ö
   };
 
-  for (std::size_t i = 0; i < sizeof(table) / sizeof(*table); ++i) {
-    if (table[i][0] == str[0] && table[i][1] == str[1]) return table[i][2];
+  for (const auto& i : kTable) {
+    if (i[0] == str[0] && i[1] == str[1]) return i[2];
   }
   return '?';
 }

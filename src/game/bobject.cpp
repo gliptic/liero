@@ -5,7 +5,7 @@
 #include "gfx/color.hpp"
 
 void Game::CreateBObject(fixedvec pos, fixedvec vel) {
-  Common& common = *this->common;
+  Common const& common = *this->common;
 
   BObject& obj = *bobjects.NewObjectReuse();
 
@@ -23,23 +23,24 @@ bool BObject::Process(Game& game) {
 
   if (!game.level.Inside(ipos)) {
     return false;
-  } else {
-    PalIdx c = game.level.Pixel(ipos);
-    Material m = game.level.Mat(ipos);
+  }
+  PalIdx const kC = game.level.Pixel(ipos);
+  Material const kM = game.level.Mat(ipos);
 
-    if (m.Background()) vel.y += LC(BObjGravity);
+  if (kM.Background()) vel.y += LC(BObjGravity);
 
-    if ((c >= 1 && c <= 2) || (c >= 77 && c <= 79))  // TODO: Read from EXE
-    {
-      game.level.SetPixel(ipos, 77 + game.rand(3), common);
-      return false;
-    } else if (m.AnyDirt()) {
-      game.level.SetPixel(ipos, 82 + game.rand(3), common);
-      return false;
-    } else if (m.Rock()) {
-      game.level.SetPixel(ipos, 85 + game.rand(3), common);
-      return false;
-    }
+  if ((kC >= 1 && kC <= 2) || (kC >= 77 && kC <= 79))  // TODO: Read from EXE
+  {
+    game.level.SetPixel(ipos, 77 + game.rand(3), common);
+    return false;
+  }
+  if (kM.AnyDirt()) {
+    game.level.SetPixel(ipos, 82 + game.rand(3), common);
+    return false;
+  }
+  if (kM.Rock()) {
+    game.level.SetPixel(ipos, 85 + game.rand(3), common);
+    return false;
   }
 
   return true;

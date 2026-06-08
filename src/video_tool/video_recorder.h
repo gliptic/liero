@@ -5,7 +5,9 @@
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 
-typedef struct video_recorder {
+/* C header — keep `typedef struct` so video_recorder.c parses. */
+// NOLINTBEGIN(modernize-use-using)
+typedef struct VideoRecorder {
   AVFrame *picture, *tmp_picture;
   int frame_count;
   const AVOutputFormat* fmt;
@@ -17,9 +19,10 @@ typedef struct video_recorder {
   struct SwsContext* img_convert_ctx;
   int64_t audio_pts;
 } video_recorder;
+// NOLINTEND(modernize-use-using)
 
-int vidrec_init(video_recorder* self, char const* filename, int width, int height,
-                AVRational framerate);
-int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_input_frame_size);
-int vidrec_write_video_frame(video_recorder* self, AVFrame* pic);
-int vidrec_finalize(video_recorder* self);
+int VidrecInit(video_recorder* self, char const* filename, int width, int height,
+               AVRational framerate);
+int VidrecWriteAudioFrame(video_recorder* self, int16_t* samples, int audio_input_frame_size);
+int VidrecWriteVideoFrame(video_recorder* self, AVFrame* pic);
+int VidrecFinalize(video_recorder* self);

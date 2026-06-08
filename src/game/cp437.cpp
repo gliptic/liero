@@ -182,46 +182,49 @@ int UnicodeToByte(char32_t cp) {
 
 char32_t Utf8DecodeNext(char const* str, std::size_t len, std::size_t& i) {
   if (i >= len) return 0xFFFD;
-  unsigned char c = static_cast<unsigned char>(str[i]);
-  if (c < 0x80) {
+  auto const kC = static_cast<unsigned char>(str[i]);
+  if (kC < 0x80) {
     ++i;
-    return c;
+    return kC;
   }
   auto cont = [&](std::size_t k) -> int {
     if (i + k >= len) return -1;
-    unsigned char b = static_cast<unsigned char>(str[i + k]);
-    if ((b & 0xC0) != 0x80) return -1;
-    return b & 0x3F;
+    auto const kB = static_cast<unsigned char>(str[i + k]);
+    if ((kB & 0xC0) != 0x80) return -1;
+    return kB & 0x3F;
   };
-  if ((c & 0xE0) == 0xC0) {
-    int b1 = cont(1);
-    if (b1 < 0) {
+  if ((kC & 0xE0) == 0xC0) {
+    int const kB1 = cont(1);
+    if (kB1 < 0) {
       ++i;
       return 0xFFFD;
     }
-    char32_t cp = ((c & 0x1F) << 6) | b1;
+    char32_t const kCp = ((kC & 0x1F) << 6) | kB1;
     i += 2;
-    return cp < 0x80 ? 0xFFFD : cp;  // reject overlong
+    return kCp < 0x80 ? 0xFFFD : kCp;  // reject overlong
   }
-  if ((c & 0xF0) == 0xE0) {
-    int b1 = cont(1), b2 = cont(2);
-    if (b1 < 0 || b2 < 0) {
+  if ((kC & 0xF0) == 0xE0) {
+    int const kB1 = cont(1);
+    int const kB2 = cont(2);
+    if (kB1 < 0 || kB2 < 0) {
       ++i;
       return 0xFFFD;
     }
-    char32_t cp = ((c & 0x0F) << 12) | (b1 << 6) | b2;
+    char32_t const kCp = ((kC & 0x0F) << 12) | (kB1 << 6) | kB2;
     i += 3;
-    return cp < 0x800 ? 0xFFFD : cp;
+    return kCp < 0x800 ? 0xFFFD : kCp;
   }
-  if ((c & 0xF8) == 0xF0) {
-    int b1 = cont(1), b2 = cont(2), b3 = cont(3);
-    if (b1 < 0 || b2 < 0 || b3 < 0) {
+  if ((kC & 0xF8) == 0xF0) {
+    int const kB1 = cont(1);
+    int const kB2 = cont(2);
+    int const kB3 = cont(3);
+    if (kB1 < 0 || kB2 < 0 || kB3 < 0) {
       ++i;
       return 0xFFFD;
     }
-    char32_t cp = ((c & 0x07) << 18) | (b1 << 12) | (b2 << 6) | b3;
+    char32_t const kCp = ((kC & 0x07) << 18) | (kB1 << 12) | (kB2 << 6) | kB3;
     i += 4;
-    return cp < 0x10000 ? 0xFFFD : cp;
+    return kCp < 0x10000 ? 0xFFFD : kCp;
   }
   ++i;
   return 0xFFFD;
@@ -230,7 +233,7 @@ char32_t Utf8DecodeNext(char const* str, std::size_t len, std::size_t& i) {
 std::string Cp437BytesToUtf8(std::string_view in) {
   std::string out;
   out.reserve(in.size());
-  for (unsigned char c : in) AppendUtf8(out, ByteToUnicode(c));
+  for (unsigned char const kC : in) AppendUtf8(out, ByteToUnicode(kC));
   return out;
 }
 

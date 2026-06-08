@@ -39,32 +39,32 @@ struct PlayerMenu : Menu {
   PlayerMenu(int x, int y) : Menu(x, y) {}
 
   enum {
-    kPlName,
-    kPlHealth,
-    kPlRed,
-    kPlGreen,
-    kPlBlue,
-    kPlInput,
-    kPlUp,
-    kPlDown,
-    kPlLeft,
-    kPlRight,
-    kPlFire,
-    kPlChange,
-    kPlJump,
-    kPlDig,
-    kPlWeap0,
+    kPlName = 0,
+    kPlHealth = 1,
+    kPlRed = 2,
+    kPlGreen = 3,
+    kPlBlue = 4,
+    kPlInput = 5,
+    kPlUp = 6,
+    kPlDown = 7,
+    kPlLeft = 8,
+    kPlRight = 9,
+    kPlFire = 10,
+    kPlChange = 11,
+    kPlJump = 12,
+    kPlDig = 13,
+    kPlWeap0 = 14,
     kPlController = kPlWeap0 + 5,
-    kPlSaveProfile,
-    kPlSaveProfileAs,
-    kPlLoadProfile,
-    kPlLoadedProfile,
+    kPlSaveProfile = 20,
+    kPlSaveProfileAs = 21,
+    kPlLoadProfile = 22,
+    kPlLoadedProfile = 23,
   };
 
-  virtual void DrawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
-                               bool disabled);
+  void DrawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
+                       bool disabled) override;
 
-  virtual ItemBehavior* GetItemBehavior(Common& common, MenuItem& item);
+  ItemBehavior* GetItemBehavior(Common& common, MenuItem& item) override;
 
   std::shared_ptr<WormSettings> ws;
 };
@@ -92,9 +92,9 @@ struct SettingsMenu : Menu {
 
   SettingsMenu(int x, int y) : Menu(x, y) {}
 
-  virtual ItemBehavior* GetItemBehavior(Common& common, MenuItem& item);
+  ItemBehavior* GetItemBehavior(Common& common, MenuItem& item) override;
 
-  virtual void OnUpdate();
+  void OnUpdate() override;
 };
 
 struct Joystick {
@@ -121,7 +121,7 @@ struct Gfx {
   void OnWindowResize(uint32_t window_id);
   void LoadMenus();
 
-  void Process(Controller* controller = 0);
+  void Process(Controller* controller = nullptr);
   // draws a given surface onto an SDL texture/renderer, using a given Renderer
   void Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_renderer,
             Renderer& renderer);
@@ -131,9 +131,9 @@ struct Gfx {
   void ClearKeys();
 
   bool TestKeyOnce(uint32_t key) {
-    bool state = dos_keys[key];
+    bool const kState = dos_keys[key];
     dos_keys[key] = false;
-    return state;
+    return kState;
   }
 
   bool TestKey(uint32_t key) { return dos_keys[key]; }
@@ -147,18 +147,18 @@ struct Gfx {
   void ToggleKey(uint32_t key) { dos_keys[key] = !dos_keys[key]; }
 
   bool TestSdlKeyOnce(SDL_Scancode key) {
-    uint32_t k = SDLToDOSKey(key);
-    return k ? TestKeyOnce(k) : false;
+    uint32_t const k_ = SDLToDOSKey(key);
+    return k_ ? TestKeyOnce(k_) : false;
   }
 
   bool TestSdlKey(SDL_Scancode key) {
-    uint32_t k = SDLToDOSKey(key);
-    return k ? TestKey(k) : false;
+    uint32_t const k_ = SDLToDOSKey(key);
+    return k_ ? TestKey(k_) : false;
   }
 
   void ReleaseSdlKey(SDL_Scancode key) {
-    uint32_t k = SDLToDOSKey(key);
-    if (k) dos_keys[k] = false;
+    uint32_t const k_ = SDLToDOSKey(key);
+    if (k_) dos_keys[k_] = false;
   }
 
   // Test any key (both regular DOS keys and extended joystick keys)
@@ -210,16 +210,16 @@ struct Gfx {
   // Release a control key for all players
   void ReleaseControl(int control);
 
-  std::string GetKeyName(uint32_t key);
-  std::string GetGamepadKeyName(uint32_t gamepad_key);
+  static std::string GetKeyName(uint32_t key);
+  static std::string GetGamepadKeyName(uint32_t gamepad_key);
   void SetSpectatorFullscreen(bool new_fullscreen);
   void SetFullscreen(bool new_fullscreen);
   void SetDoubleRes(bool new_double_res);
 
-  void SaveSettings(FsNode node);
-  bool LoadSettings(FsNode node);
+  void SaveSettings(const FsNode& node);
+  bool LoadSettings(const FsNode& node);
 
-  void ProcessEvent(SDL_Event& ev, Controller* controller = 0);
+  void ProcessEvent(SDL_Event& ev, Controller* controller = nullptr);
 
   int FindGamepadIndex(SDL_JoystickID id);
   int FindGamepadForPlayer(int player_idx);
@@ -255,9 +255,9 @@ struct Gfx {
     user_config_node = user_config;
   }
 
-  FsNode GetConfigNode() { return config_node; }
+  FsNode GetConfigNode() const { return config_node; }
 
-  FsNode GetUserConfigNode() { return user_config_node; }
+  FsNode GetUserConfigNode() const { return user_config_node; }
 
   // PRNG for things that don't affect the game
   Rand rand;
@@ -284,7 +284,7 @@ struct Gfx {
   PlayerMenu player_menu;
   HiddenMenu hidden_menu;
 
-  Menu* cur_menu;
+  Menu* cur_menu{nullptr};
   std::string prev_selected_replay_path;
   FsNode settings_node;  // Currently loaded settings file. TODO: This is only used for display. We
                          // could just remember the name.
@@ -294,21 +294,21 @@ struct Gfx {
   std::unordered_map<uint32_t, bool> ex_keys;
 
   // the window to render into
-  SDL_Window* sdl_window = NULL;
+  SDL_Window* sdl_window = nullptr;
   // the window to render the spectator view into
-  SDL_Window* sdl_spectator_window = NULL;
+  SDL_Window* sdl_spectator_window = nullptr;
   // the SDL renderer to use
-  SDL_Renderer* sdl_renderer = NULL;
+  SDL_Renderer* sdl_renderer = nullptr;
   // the SDL renderer to use for the spectator window
-  SDL_Renderer* sdl_spectator_renderer = NULL;
+  SDL_Renderer* sdl_spectator_renderer = nullptr;
   // full window size texture that represents the window
-  SDL_Texture* sdl_texture = NULL;
+  SDL_Texture* sdl_texture = nullptr;
   // full spectator window size texture that represents the spectator window
-  SDL_Texture* sdl_spectator_texture = NULL;
+  SDL_Texture* sdl_spectator_texture = nullptr;
   // a software surface to do the actual drawing into
-  SDL_Surface* sdl_draw_surface = NULL;
+  SDL_Surface* sdl_draw_surface = nullptr;
   // a software surface to do the actual drawing of the spectator view into
-  SDL_Surface* sdl_spectator_draw_surface = NULL;
+  SDL_Surface* sdl_spectator_draw_surface = nullptr;
   // when the menu is open, the ongoing game on the screen is paused and
   // stored in this bitmap
   Bitmap frozen_screen;
@@ -316,13 +316,13 @@ struct Gfx {
   // paused and stored in this bitmap
   Bitmap frozen_spectator_screen;
 
-  bool running;
-  bool spectator_fullscreen, double_res;
+  bool running{true};
+  bool spectator_fullscreen, double_res{true};
 
   uint64_t last_frame;
-  unsigned menu_cycles;
-  int window_w, window_h;
-  int prev_mag;           // Previous magnification used for drawing
+  unsigned menu_cycles{0};
+  int window_w{320 * 2}, window_h{200 * 2};
+  int prev_mag{0};        // Previous magnification used for drawing
   Rect last_update_rect;  // Last region that was updated when flipping
   std::shared_ptr<Common> common;
   std::shared_ptr<SoundPlayer> sound_player;

@@ -27,8 +27,8 @@
 #include <vector>
 
 struct WormSimState {
-  fixedvec pos{}, vel{};
-  IVec2 logic_respawn{};
+  fixedvec pos, vel;
+  IVec2 logic_respawn;
   int hotspot_x = 0, hotspot_y = 0;
   fixed aiming_angle = 0, aiming_speed = 0;
   bool able_to_jump = false, able_to_dig = false;

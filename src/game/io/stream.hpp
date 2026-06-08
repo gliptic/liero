@@ -39,8 +39,8 @@ struct Reader {
 
   // Read exactly `n` bytes or throw EndOfStream.
   void Get(uint8_t* dst, std::size_t n) {
-    std::size_t got = TryGet(dst, n);
-    if (got != n) throw EndOfStream{};
+    std::size_t const kGot = TryGet(dst, n);
+    if (kGot != n) throw EndOfStream{};
   }
 
   // Discard up to `n` bytes; return number actually discarded.
@@ -48,10 +48,10 @@ struct Reader {
     uint8_t buf[1024];
     std::size_t total = 0;
     while (total < n) {
-      std::size_t take = std::min(sizeof(buf), n - total);
-      std::size_t got = TryGet(buf, take);
-      total += got;
-      if (got < take) break;
+      std::size_t const kTake = std::min(sizeof(buf), n - total);
+      std::size_t const kGot = TryGet(buf, kTake);
+      total += kGot;
+      if (kGot < kTake) break;
     }
     return total;
   }
@@ -74,23 +74,23 @@ struct FileReader : Reader {
 
   // Tag for the take-ownership flavour of the FILE* constructor.
   struct OwnFile {};
-  FileReader(std::FILE* f, OwnFile) : f_(f), owned_(true) {}
+  FileReader(std::FILE* f, OwnFile /*unused*/) : f_(f), owned_(true) {}
 
-  FileReader(char const* path, char const* mode) {
-    f_ = std::fopen(path, mode);
+  FileReader(char const* path, char const* mode) : f_(std::fopen(path, mode)) {
     if (!f_) throw StreamError(std::string("Couldn't open ") + path);
     owned_ = true;
   }
   ~FileReader() override {
-    if (owned_ && f_) std::fclose(f_);
+    if (owned_ && f_)
+      std::fclose(f_);  // NOLINT(cert-err33-c) — destructor cleanup; cannot signal a failure here.
   }
   FileReader(FileReader const&) = delete;
   FileReader& operator=(FileReader const&) = delete;
 
   uint8_t Get() override {
-    int c = std::fgetc(f_);
-    if (c == EOF) throw EndOfStream{};
-    return static_cast<uint8_t>(c);
+    int const kC = std::fgetc(f_);
+    if (kC == EOF) throw EndOfStream{};
+    return static_cast<uint8_t>(kC);
   }
 
   std::size_t TryGet(uint8_t* dst, std::size_t n) override { return std::fread(dst, 1, n, f_); }
@@ -104,17 +104,16 @@ struct FileWriter : Writer {
   explicit FileWriter(std::FILE* f) : f_(f), owned_(false) {}
 
   struct OwnFile {};
-  FileWriter(std::FILE* f, OwnFile) : f_(f), owned_(true) {}
+  FileWriter(std::FILE* f, OwnFile /*unused*/) : f_(f), owned_(true) {}
 
-  FileWriter(char const* path, char const* mode) {
-    f_ = std::fopen(path, mode);
+  FileWriter(char const* path, char const* mode) : f_(std::fopen(path, mode)) {
     if (!f_) throw StreamError(std::string("Couldn't open ") + path);
     owned_ = true;
   }
   ~FileWriter() override {
     if (owned_ && f_) {
-      std::fflush(f_);
-      std::fclose(f_);
+      std::fflush(f_);  // NOLINT(cert-err33-c) — destructor cleanup; cannot signal a failure here.
+      std::fclose(f_);  // NOLINT(cert-err33-c) — destructor cleanup; cannot signal a failure here.
     }
   }
   FileWriter(FileWriter const&) = delete;
@@ -126,7 +125,9 @@ struct FileWriter : Writer {
   void Put(uint8_t const* src, std::size_t n) override {
     if (std::fwrite(src, 1, n, f_) != n) throw StreamError("write failed");
   }
-  void Flush() override { std::fflush(f_); }
+  void Flush() override {
+    std::fflush(f_);  // NOLINT(cert-err33-c) — best-effort; surfaces on next IO.
+  }
 
  private:
   std::FILE* f_;
@@ -162,11 +163,11 @@ struct MemReader : Reader {
   }
 
   std::size_t TryGet(uint8_t* dst, std::size_t n) override {
-    std::size_t avail = size_ - pos_;
-    std::size_t take = std::min(n, avail);
-    std::memcpy(dst, data_ + pos_, take);
-    pos_ += take;
-    return take;
+    std::size_t const kAvail = size_ - pos_;
+    std::size_t const kTake = std::min(n, kAvail);
+    std::memcpy(dst, data_ + pos_, kTake);
+    pos_ += kTake;
+    return kTake;
   }
 
  private:

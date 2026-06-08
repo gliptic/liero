@@ -1,5 +1,7 @@
 #include "palette.hpp"
 
+#include <algorithm>
+
 #include "../gfx.hpp"
 #include "../reader.hpp"
 #include "../settings.hpp"
@@ -13,56 +15,56 @@ void Palette::Activate(Color real_pal[256]) {
   }
 }
 
-int FadeValue(int v, int amount) {
+static int FadeValue(int v, int amount) {
   assert(v < 64);
   v = (v * amount) >> 5;
-  if (v < 0) v = 0;
+  v = std::max(v, 0);
   return v;
 }
 
-int LightUpValue(int v, int amount) {
+static int LightUpValue(int v, int amount) {
   v = (v * (32 - amount) + amount * 63) >> 5;
-  if (v > 63) v = 63;
+  v = std::min(v, 63);
   return v;
 }
 
 void Palette::Fade(int amount) {
   if (amount >= 32) return;
 
-  for (int i = 0; i < 256; ++i) {
-    entries[i].r = FadeValue(entries[i].r, amount);
-    entries[i].g = FadeValue(entries[i].g, amount);
-    entries[i].b = FadeValue(entries[i].b, amount);
+  for (auto& entrie : entries) {
+    entrie.r = FadeValue(entrie.r, amount);
+    entrie.g = FadeValue(entrie.g, amount);
+    entrie.b = FadeValue(entrie.b, amount);
   }
 }
 
 void Palette::LightUp(int amount) {
-  for (int i = 0; i < 256; ++i) {
-    entries[i].r = LightUpValue(entries[i].r, amount);
-    entries[i].g = LightUpValue(entries[i].g, amount);
-    entries[i].b = LightUpValue(entries[i].b, amount);
+  for (auto& entrie : entries) {
+    entrie.r = LightUpValue(entrie.r, amount);
+    entrie.g = LightUpValue(entrie.g, amount);
+    entrie.b = LightUpValue(entrie.b, amount);
   }
 }
 
 void Palette::RotateFrom(Palette& source, int from, int to, unsigned dist) {
-  int count = (to - from + 1);
-  dist %= count;
+  int const kCount = (to - from + 1);
+  dist %= kCount;
 
-  for (int i = 0; i < count; ++i) {
-    entries[from + i] = source.entries[from + ((i + count - dist) % count)];
+  for (int i = 0; i < kCount; ++i) {
+    entries[from + i] = source.entries[from + ((i + kCount - dist) % kCount)];
   }
 }
 
 void Palette::Clear() { std::memset(entries, 0, sizeof(entries)); }
 
 void Palette::Read(io::Reader& r) {
-  for (int i = 0; i < 256; ++i) {
+  for (auto& entrie : entries) {
     uint8_t rgb[3];
     r.Get(rgb, 3);
 
-    entries[i].r = rgb[0] & 63;
-    entries[i].g = rgb[1] & 63;
-    entries[i].b = rgb[2] & 63;
+    entrie.r = rgb[0] & 63;
+    entrie.g = rgb[1] & 63;
+    entrie.b = rgb[2] & 63;
   }
 }
 
@@ -74,16 +76,16 @@ int const Palette::kWormSpriteColorBase[2] = {32, 41};
 void Palette::SetWormColour(int i, WormSettings const& settings) {
   // Always write to the sprite-referenced palette positions for this worm index.
   // Worm sprites have hardcoded pixel values: 30-34 for worm 0, 39-43 for worm 1.
-  int idx = kWormSpriteColorBase[i];
+  int const kIdx = kWormSpriteColorBase[i];
 
-  SetWormColoursSpan(idx, settings.rgb);
+  SetWormColoursSpan(kIdx, settings.rgb);
 
   for (int j = 0; j < 6; ++j) {
-    entries[kWormColourIndexes[i] + j] = entries[idx + (j % 3) - 1];
+    entries[kWormColourIndexes[i] + j] = entries[kIdx + (j % 3) - 1];
   }
 
   for (int j = 0; j < 3; ++j) {
-    entries[129 + i * 4 + j] = entries[idx + j];
+    entries[129 + i * 4 + j] = entries[kIdx + j];
   }
 }
 

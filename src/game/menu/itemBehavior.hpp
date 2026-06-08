@@ -6,13 +6,13 @@ struct Menu;
 struct MenuItem;
 
 struct ItemBehavior {
-  ItemBehavior() {}
+  ItemBehavior() = default;
 
-  virtual ~ItemBehavior() {}
+  virtual ~ItemBehavior() = default;
 
-  virtual bool OnLeftRight(Menu& menu, MenuItem& item, int dir) { return true; }
+  virtual bool OnLeftRight(Menu& /*menu*/, MenuItem& /*item*/, int /*dir*/) { return true; }
 
-  virtual int OnEnter(Menu& menu, MenuItem& item) { return -1; }
+  virtual int OnEnter(Menu& /*menu*/, MenuItem& /*item*/) { return -1; }
 
   virtual void OnUpdate(Menu& menu, MenuItem& item) {}
 };

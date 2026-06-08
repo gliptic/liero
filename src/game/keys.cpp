@@ -3,10 +3,10 @@
 #include <cstddef>
 #include <map>
 
-std::map<int, int> sdl_to_dos_scan_codes;
+static std::map<int, int> sdl_to_dos_scan_codes;
 
 SDL_Scancode const kZ = SDL_SCANCODE_UNKNOWN;
-SDL_Scancode liero_to_sdl_keys[] = {
+static SDL_Scancode liero_to_sdl_keys[] = {
     SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_ESCAPE, SDL_SCANCODE_1, SDL_SCANCODE_2, SDL_SCANCODE_3,
     SDL_SCANCODE_4, SDL_SCANCODE_5, SDL_SCANCODE_6, SDL_SCANCODE_7, SDL_SCANCODE_8, SDL_SCANCODE_9,
     SDL_SCANCODE_0,
@@ -62,21 +62,21 @@ uint32_t const kMaxScanCodes = sizeof(liero_to_sdl_keys) / sizeof(*liero_to_sdl_
 void InitKeys() {
   for (std::size_t i = 0; i < kMaxScanCodes; ++i) {
     if (liero_to_sdl_keys[i] != SDL_SCANCODE_UNKNOWN) {
-      sdl_to_dos_scan_codes[liero_to_sdl_keys[i]] = int(i);
+      sdl_to_dos_scan_codes[liero_to_sdl_keys[i]] = static_cast<int>(i);
     }
   }
 }
 
 uint32_t SDLToDOSKey(SDL_Scancode scancode) {
-  std::map<int, int>::iterator i = sdl_to_dos_scan_codes.find(uint32_t(scancode));
-  if (i != sdl_to_dos_scan_codes.end()) return i->second;
+  auto const kI = sdl_to_dos_scan_codes.find(static_cast<uint32_t>(scancode));
+  if (kI != sdl_to_dos_scan_codes.end()) return kI->second;
   return 89;
 }
 
 uint32_t SDLToDOSKey(SDL_Scancode scancode, SDL_Keymod /*mod*/) {
-  uint32_t key = SDLToDOSKey(scancode);
+  uint32_t const kEy = SDLToDOSKey(scancode);
 
-  if (key >= 177)  // Liero doesn't have keys >= 177
+  if (kEy >= 177)  // Liero doesn't have keys >= 177
     return 89;     // Arbitrarily translate it to 89
-  return key;
+  return kEy;
 }

@@ -32,9 +32,9 @@ using ChecksumSendCallback =
     std::function<void(uint8_t generation, uint32_t frame, uint32_t checksum)>;
 
 struct RollbackController : CommonController {
-  RollbackController(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings,
-                     int local_player_idx);
-  ~RollbackController();
+  RollbackController(const std::shared_ptr<Common>& common,
+                     const std::shared_ptr<Settings>& settings, int local_player_idx);
+  ~RollbackController() override;
 
   void OnKey(int key, bool key_state) override;
   void Unfocus() override;
@@ -159,7 +159,6 @@ struct RollbackController : CommonController {
 
   Game game;
 
- public:
   // Save / restore mutable state touched during weapon selection. Public
   // so tests can drive a round-trip. worm.weapons[].type and menu item
   // display strings are re-derived on restore from the snapshotted
@@ -185,16 +184,16 @@ struct RollbackController : CommonController {
   int localIdx_;
   int remoteIdx_;
 
-  ::GameState state_;
-  int fadeValue_;
-  bool goingToMenu_;
+  ::GameState state_{kStateInitial};
+  int fadeValue_{0};
+  bool goingToMenu_{false};
 
-  uint32_t simFrame_;
-  uint32_t inputDelay_;
+  uint32_t simFrame_{0};
+  uint32_t inputDelay_{3};
   // simFrame + inputDelay of the most recent local input we packed into
   // localInputs[]. Empty (no input packed yet this phase) when false.
-  uint32_t lastSentFrame_;
-  bool lastSentFrameValid_;
+  uint32_t lastSentFrame_{0};
+  bool lastSentFrameValid_{false};
 
   static constexpr uint32_t kInputBufferSize = 256;
   std::array<uint8_t, kInputBufferSize> localInputs_;
@@ -203,19 +202,19 @@ struct RollbackController : CommonController {
 
   Worm::ControlState localControlState_;
 
-  uint8_t localPrevInput_;
-  uint8_t remotePrevInput_;
+  uint8_t localPrevInput_{0};
+  uint8_t remotePrevInput_{0};
 
   static constexpr int kKeyRepeatInitial = 12;
   static constexpr int kKeyRepeatInterval = 3;
   std::array<uint16_t, 8> localHeldFrames_;
   std::array<uint16_t, 8> remoteHeldFrames_;
 
-  bool skipWeaponSelection_;
-  bool levelPreloaded_;
+  bool skipWeaponSelection_{false};
+  bool levelPreloaded_{false};
 
-  bool localPaused_;
-  bool remotePaused_;
+  bool localPaused_{false};
+  bool remotePaused_{false};
   bool resumable_ = true;
   Menu pauseMenu_;
 
@@ -260,7 +259,7 @@ struct RollbackController : CommonController {
   // bytes that produced them. Pre-sized in focus() once the level is
   // generated.
   rollback::RollbackBuffer rollbackBuffer_;
-  bool rollbackBufferPrepared_;
+  bool rollbackBufferPrepared_{false};
 
   // Prediction state.
   // confirmedSimFrame_ — highest simFrame already advanced whose remote
@@ -268,8 +267,8 @@ struct RollbackController : CommonController {
   // lastRemoteInput_ — most recent real remote input byte; used as the
   //   prediction when remote input for the current frame is missing
   //   (GGPO-style input duplication).
-  int32_t confirmedSimFrame_;
-  uint8_t lastRemoteInput_;
+  int32_t confirmedSimFrame_{-1};
+  uint8_t lastRemoteInput_{0};
 
   uint64_t rollbackCount_ = 0;
   uint32_t lastTickResimFrames_ = 0;

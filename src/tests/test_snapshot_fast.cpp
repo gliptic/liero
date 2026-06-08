@@ -35,8 +35,8 @@ struct GameRunner {
     PrecomputeTables();
 
     common = std::make_shared<Common>();
-    FsNode tc_root(FsNode("data") / "TC" / "openliero");
-    common->load(std::move(tc_root));
+    FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+    common->load(kTcRoot);
 
     settings = std::make_shared<Settings>();
     settings->lives = 50;
@@ -69,7 +69,7 @@ struct GameRunner {
     game->ResetWorms();
   }
 
-  void Step(Rand& input_rng) {
+  void Step(Rand& input_rng) const {
     for (int idx = 0; idx < 2; ++idx) {
       uint32_t input = input_rng() & 0x7f;
       if ((input_rng() % 10) < 6) input |= (1 << 4);
@@ -109,7 +109,7 @@ TEST_CASE("Fast snapshot round-trip preserves frame-by-frame state", "[snapshot]
   }
 
   sub.game->SaveSnapshotFast(snap);
-  uint32_t hash_at_snap = HashGameState(*sub.game);
+  uint32_t const kHashAtSnap = HashGameState(*sub.game);
 
   for (int f = kPhase; f < 2 * kPhase; ++f) {
     sub.Step(input_rng);
@@ -117,7 +117,7 @@ TEST_CASE("Fast snapshot round-trip preserves frame-by-frame state", "[snapshot]
   }
 
   sub.game->LoadSnapshotFast(snap);
-  REQUIRE(HashGameState(*sub.game) == hash_at_snap);
+  REQUIRE(HashGameState(*sub.game) == kHashAtSnap);
 
   // Replay phase-2 inputs from the restored state — same scheme as the
   // cereal round-trip test.
@@ -152,7 +152,8 @@ TEST_CASE("Fast snapshot matches cereal oracle across a fuzz run", "[snapshot][r
 
   GameRunner a(kSeed);
   GameRunner b(kSeed);
-  Rand input_rng_a(kSeed ^ 0xBEEF), input_rng_b(kSeed ^ 0xBEEF);
+  Rand input_rng_a(kSeed ^ 0xBEEF);
+  Rand input_rng_b(kSeed ^ 0xBEEF);
 
   GameSnapshot fast_snap;
   fast_snap.Prepare(*a.game);
@@ -170,7 +171,8 @@ TEST_CASE("Fast snapshot matches cereal oracle across a fuzz run", "[snapshot][r
 
       // Run ~30 more frames on each so the live state diverges from the
       // snapshot, then restore.
-      Rand mutate_a = input_rng_a, mutate_b = input_rng_b;
+      Rand mutate_a = input_rng_a;
+      Rand mutate_b = input_rng_b;
       for (int k = 0; k < 30; ++k) {
         a.Step(mutate_a);
         b.Step(mutate_b);
@@ -206,11 +208,11 @@ TEST_CASE("Fast snapshot save/restore microbenchmark", "[snapshot][rollback][!be
   for (int i = 0; i < kIters; ++i) r.game->LoadSnapshotFast(snap);
   auto t2 = clock::now();
 
-  double save_us = std::chrono::duration<double, std::micro>(t1 - t0).count() / kIters;
-  double load_us = std::chrono::duration<double, std::micro>(t2 - t1).count() / kIters;
+  double const kSaveUs = std::chrono::duration<double, std::micro>(t1 - t0).count() / kIters;
+  double const kLoadUs = std::chrono::duration<double, std::micro>(t2 - t1).count() / kIters;
 
-  std::cout << "[fast snapshot] save=" << save_us << " us, load=" << load_us << " us\n";
+  std::cout << "[fast snapshot] save=" << kSaveUs << " us, load=" << kLoadUs << " us\n";
 
-  REQUIRE(save_us < 2000.0);
-  REQUIRE(load_us < 2000.0);
+  REQUIRE(kSaveUs < 2000.0);
+  REQUIRE(kLoadUs < 2000.0);
 }

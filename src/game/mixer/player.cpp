@@ -6,7 +6,7 @@
 SoundPlayer* g_sound_player = nullptr;
 
 void SoundPlayer::Play(SoundDefT hook, void* id, int loops) {
-  Common* c = GetCommonPtr();
+  Common const* c = GetCommonPtr();
   if (c) Play(c->sound_hook[hook], id, loops);
 }
 
@@ -14,10 +14,10 @@ void SoundPlayer::Play(SoundDefT hook, void* id, int loops) {
 static void SDLCALL DefaultSoundPlayerStreamCallback(void* userdata, SDL_AudioStream* stream,
                                                      int additional_amount, int /*total_amount*/) {
   if (additional_amount > 0) {
-    uint8_t* data = (uint8_t*)SDL_stack_alloc(uint8_t, additional_amount);
+    auto* data = SDL_stack_alloc(uint8_t, additional_amount);
     if (data) {
-      uint32_t frame_count = additional_amount / 2;
-      SfxMixerMix((sfx_mixer*)userdata, data, frame_count);
+      uint32_t const kFrameCount = additional_amount / 2;
+      SfxMixerMix(static_cast<sfx_mixer*>(userdata), data, kFrameCount);
       SDL_PutAudioStreamData(stream, data, additional_amount);
       SDL_stack_free(data);
     }
@@ -25,15 +25,7 @@ static void SDLCALL DefaultSoundPlayerStreamCallback(void* userdata, SDL_AudioSt
 }
 #endif
 
-DefaultSoundPlayer::DefaultSoundPlayer(Common& c)
-    : m_common_(&c),
-      mixer_(nullptr)
-#if !DISABLE_SOUND
-      ,
-      stream_(nullptr)
-#endif
-      ,
-      initialized_(false) {
+DefaultSoundPlayer::DefaultSoundPlayer(Common& c) : m_common_(&c), mixer_(SfxMixerCreate()) {
 #if !DISABLE_SOUND
   // Request a small audio buffer for low latency (~5.8ms at 44100Hz).
   // Must be set before opening the audio device.
@@ -41,9 +33,7 @@ DefaultSoundPlayer::DefaultSoundPlayer(Common& c)
 
   SDL_InitSubSystem(SDL_INIT_AUDIO);
 
-  mixer_ = SfxMixerCreate();
-
-  const SDL_AudioSpec kSpec = {SDL_AUDIO_S16, 1, 44100};
+  const SDL_AudioSpec kSpec = {.format = SDL_AUDIO_S16, .channels = 1, .freq = 44100};
   stream_ = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &kSpec,
                                       DefaultSoundPlayerStreamCallback, mixer_);
 

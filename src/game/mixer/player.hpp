@@ -12,12 +12,12 @@ struct Common;
 struct SoundPlayer {
   virtual ~SoundPlayer() = default;
 
-  void Play(int sound, void* id = 0, int loops = 0) {
+  void Play(int sound, void* id = nullptr, int loops = 0) {
     if (speculative) return;
     if (sound >= 0) PlayImpl(sound, id, loops);
   }
 
-  void Play(SoundDefT hook, void* id = 0, int loops = 0);
+  void Play(SoundDefT hook, void* id = nullptr, int loops = 0);
 
   virtual bool IsPlaying(void* id) = 0;
   virtual void Stop(void* id) = 0;
@@ -36,11 +36,11 @@ struct SoundPlayer {
 };
 
 struct DefaultSoundPlayer : SoundPlayer {
-  DefaultSoundPlayer(Common& common);
-  ~DefaultSoundPlayer();
+  DefaultSoundPlayer(Common& c);
+  ~DefaultSoundPlayer() override;
 
-  bool IsPlaying(void* id);
-  void Stop(void* id);
+  bool IsPlaying(void* id) override;
+  void Stop(void* id) override;
 
   // Repoint at a new TC's Common. Called when the user switches TC at
   // runtime — without this the player keeps reading sound samples and
@@ -48,16 +48,16 @@ struct DefaultSoundPlayer : SoundPlayer {
   void SetCommon(Common& common) { m_common_ = &common; }
 
  protected:
-  void PlayImpl(int sound, void* id, int loops);
-  Common* GetCommonPtr() { return m_common_; }
+  void PlayImpl(int sound, void* id, int loops) override;
+  Common* GetCommonPtr() override { return m_common_; }
 
  private:
   Common* m_common_;
-  sfx_mixer* mixer_;
+  sfx_mixer* mixer_{nullptr};
 #if !DISABLE_SOUND
-  SDL_AudioStream* stream_;
+  SDL_AudioStream* stream_{nullptr};
 #endif
-  bool initialized_;
+  bool initialized_{false};
 };
 
 struct RecordSoundPlayer : SoundPlayer {
@@ -65,27 +65,27 @@ struct RecordSoundPlayer : SoundPlayer {
 
   sfx_mixer* mixer;
 
-  bool IsPlaying(void* id) { return SfxIsPlaying(mixer, id) != 0; }
+  bool IsPlaying(void* id) override { return SfxIsPlaying(mixer, id) != 0; }
 
-  void Stop(void* id) {
+  void Stop(void* id) override {
     if (speculative) return;
     SfxMixerStop(mixer, id);
   }
 
  protected:
-  void PlayImpl(int sound, void* id, int loops);
-  Common* GetCommonPtr() { return &m_common_; }
+  void PlayImpl(int sound, void* id, int loops) override;
+  Common* GetCommonPtr() override { return &m_common_; }
 
  private:
   Common& m_common_;
 };
 
 struct NullSoundPlayer : SoundPlayer {
-  bool IsPlaying(void* /*id*/) { return false; }
-  void Stop(void* /*id*/) {}
+  bool IsPlaying(void* /*id*/) override { return false; }
+  void Stop(void* /*id*/) override {}
 
  protected:
-  void PlayImpl(int /*sound*/, void* /*id*/, int /*loops*/) {}
+  void PlayImpl(int /*sound*/, void* /*id*/, int /*loops*/) override {}
 };
 
 extern SoundPlayer* g_sound_player;

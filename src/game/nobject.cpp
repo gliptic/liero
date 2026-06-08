@@ -48,9 +48,9 @@ NObject& NObjectType::Create1(Game& game, fixedvec vel, fixedvec pos, int color,
 
 void NObjectType::Create2(Game& game, int angle, fixedvec vel, fixedvec pos, int color,
                           int owner_idx, WormWeapon* fired_by) {
-  int real_speed = speed - game.rand(speed_v);
+  int const kRealSpeed = speed - game.rand(speed_v);
 
-  vel += cossin_table[angle] * real_speed / 100;
+  vel += cossin_table[angle] * kRealSpeed / 100;
 
   // TODO: !REPLAYS Make the distributions use the same code
   if (distribution) {
@@ -161,17 +161,18 @@ void NObject::Process(Game& game) {
           has_hit = true;
 
           if (t.hit_damage > 0 && w.health > 0 && game.rand(3) == 0) {
-            int snd = 18 + game.rand(3);  // NOTE: MUST be outside the unpredictable branch below
+            int const kSnd =
+                18 + game.rand(3);  // NOTE: MUST be outside the unpredictable branch below
             if (!game.sound_player->IsPlaying(&w)) {
-              game.sound_player->Play(snd, &w);
+              game.sound_player->Play(kSnd, &w);
             }
           }
 
-          int blood = t.blood_on_hit * game.settings->blood / 100;
+          int const kBlood = t.blood_on_hit * game.settings->blood / 100;
 
-          for (int i = 0; i < blood; ++i) {
-            int angle = game.rand(128);
-            common.nobject_types[6].Create2(game, angle, vel / 3, pos, 0, owner_idx, 0);
+          for (int i = 0; i < kBlood; ++i) {
+            int const kAngle = game.rand(128);
+            common.nobject_types[6].Create2(game, kAngle, vel / 3, pos, 0, owner_idx, nullptr);
           }
 
           if (t.worm_explode)
@@ -200,10 +201,10 @@ void NObject::Process(Game& game) {
 
     if (t.splinter_amount > 0) {
       for (int i = 0; i < t.splinter_amount; ++i) {
-        int angle = game.rand(128);
-        int color_sub = game.rand(2);
-        common.nobject_types[t.splinter_type].Create2(game, angle, fixedvec(), pos,
-                                                      t.splinter_colour - color_sub, owner_idx, 0);
+        int const kAngle = game.rand(128);
+        int const kColorSub = game.rand(2);
+        common.nobject_types[t.splinter_type].Create2(
+            game, kAngle, fixedvec(), pos, t.splinter_colour - kColorSub, owner_idx, nullptr);
       }
     }
 

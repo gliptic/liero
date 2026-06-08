@@ -5,6 +5,7 @@
 #include <cereal/types/vector.hpp>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "common.hpp"
@@ -14,7 +15,7 @@
 // Cross-reference resolution helpers
 template <typename T>
 inline std::string ObjRefToStr(int idx, std::vector<T> const& vec) {
-  if (idx < 0 || idx >= (int)vec.size()) return "";
+  if (idx < 0 || idx >= static_cast<int>(vec.size())) return "";
   return vec[idx].id_str;
 }
 
@@ -22,7 +23,7 @@ template <typename T>
 inline int ObjRefFromStr(std::string const& str, std::vector<T> const& vec) {
   if (str.empty()) return -1;
   for (std::size_t i = 0; i < vec.size(); ++i)
-    if (vec[i].id_str == str) return (int)i;
+    if (vec[i].id_str == str) return static_cast<int>(i);
   return 0;
 }
 
@@ -30,7 +31,7 @@ inline int ObjRefFromStr(std::string const& str, std::vector<T> const& vec) {
 // non-empty name must resolve to -1 (no sound), not 0 (would spuriously
 // play the first sound).
 inline std::string SoundRefToStr(int idx, Common const& common) {
-  if (idx < 0 || idx >= (int)common.sounds.size()) return "";
+  if (idx < 0 || std::cmp_greater_equal(idx, common.sounds.size())) return "";
   return common.sounds[idx].name;
 }
 
@@ -466,10 +467,10 @@ struct Sounds {
 // Save/load tc.cfg (top-level Common config)
 inline void SaveTcConfig(Common const& common, std::ostream& os) {
   tc_cfg::Types types;
-  for (auto& s : common.sounds) types.sounds.push_back(s.name);
-  for (auto& w : common.weapons) types.weapons.push_back(w.id_str);
-  for (auto& n : common.nobject_types) types.nobjects.push_back(n.id_str);
-  for (auto& s : common.sobject_types) types.sobjects.push_back(s.id_str);
+  for (const auto& s : common.sounds) types.sounds.push_back(s.name);
+  for (const auto& w : common.weapons) types.weapons.push_back(w.id_str);
+  for (const auto& n : common.nobject_types) types.nobjects.push_back(n.id_str);
+  for (const auto& s : common.sobject_types) types.sobjects.push_back(s.id_str);
 
   tc_cfg::Constants constants;
   for (int i = 0; i < NUM_BONUS_SOBJECTS; ++i) {
@@ -480,21 +481,21 @@ inline void SaveTcConfig(Common const& common, std::ostream& os) {
     be.sobj = ObjRefToStr(common.bonus_s_objects[i], common.sobject_types);
     constants.bonuses.push_back(be);
   }
-  for (int i = 0; i < NUM_TEXTURES; ++i) {
+  for (auto texture : common.textures) {
     tc_cfg::TextureEntry te;
-    te.mframe = common.textures[i].m_frame;
-    te.rframe = common.textures[i].r_frame;
-    te.sframe = common.textures[i].s_frame;
-    te.ndrawback = common.textures[i].n_draw_back;
+    te.mframe = texture.m_frame;
+    te.rframe = texture.r_frame;
+    te.sframe = texture.s_frame;
+    te.ndrawback = texture.n_draw_back;
     constants.textures.push_back(te);
   }
-  for (int i = 0; i < NUM_COLOR_ANIM; ++i) {
+  for (auto i : common.color_anim) {
     tc_cfg::ColourAnimEntry ce;
-    ce.from = common.color_anim[i].from;
-    ce.to = common.color_anim[i].to;
+    ce.from = i.from;
+    ce.to = i.to;
     constants.color_anim.push_back(ce);
   }
-  for (int i = 0; i < MAX_MATERIALS; ++i) constants.materials.push_back(common.materials[i].flags);
+  for (auto material : common.materials) constants.materials.push_back(material.flags);
 
   auto fill_ai_key = [&](tc_cfg::AiKey& k, int idx) {
     k.on = common.ai_params.k[1][idx];
@@ -523,11 +524,12 @@ inline void SaveTcConfig(Common const& common, std::ostream& os) {
 #undef COPY_FIELD_H
 
   tc_cfg::Sounds sounds;
-#define COPY_FIELD_SO(n)                                               \
-  sounds.n = (common.sound_hook[Sound##n] >= 0 &&                      \
-              common.sound_hook[Sound##n] < (int)common.sounds.size()) \
-                 ? common.sounds[common.sound_hook[Sound##n]].name     \
+#define COPY_FIELD_SO(n)                                                            \
+  sounds.n = (common.sound_hook[Sound##n] >= 0 &&                                   \
+              common.sound_hook[Sound##n] < static_cast<int>(common.sounds.size())) \
+                 ? common.sounds[common.sound_hook[Sound##n]].name                  \
                  : std::string();
+  // NOLINTNEXTLINE(modernize-use-integer-sign-comparison) — macro expansion blends int and size_t intentionally.
   LIERO_SOUNDDEFS(COPY_FIELD_SO)
 #undef COPY_FIELD_SO
 
@@ -591,7 +593,7 @@ inline void LoadTcConfig(Common& common, std::istream& is) {
   }
 
   for (std::size_t i = 0; i < constants.materials.size() && i < MAX_MATERIALS; ++i) {
-    common.materials[i].flags = (uint8_t)(constants.materials[i] & 0xff);
+    common.materials[i].flags = static_cast<uint8_t>(constants.materials[i] & 0xff);
   }
 
   auto read_ai_key = [&](tc_cfg::AiKey const& k, int idx) {
@@ -626,11 +628,11 @@ inline void LoadTcConfig(Common& common, std::istream& is) {
   auto resolveHook = [&](SoundDefT hook, std::string const& configured, char const* default_name,
                          char const* hook_label) {
     if (!configured.empty()) {
-      int idx = common.SoundIndex(configured);
-      if (idx < 0)
+      int const kIdx = common.SoundIndex(configured);
+      if (kIdx < 0)
         console::WriteWarning(std::string("[sounds] ") + hook_label +
                               " references unknown sound \"" + configured + "\"");
-      common.sound_hook[hook] = idx;
+      common.sound_hook[hook] = kIdx;
     } else {
       common.sound_hook[hook] = common.SoundIndex(default_name);
     }

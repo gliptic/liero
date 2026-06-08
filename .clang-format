@@ -4,4 +4,8 @@ ColumnLimit: 100
 DerivePointerAlignment: false
 IncludeBlocks: Preserve
 LineEnding: LF
+# Treat clang-tidy NOLINT* comments as pragmas so clang-format does not wrap
+# them; wrapping splits the rationale onto a new line and the NOLINTNEXTLINE
+# stops applying to the intended source line.
+CommentPragmas: '^ ?(NOLINT(NEXTLINE|BEGIN|END)?|clang-format|MARK|TODO|FIXME)'
 ...

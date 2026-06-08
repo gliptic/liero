@@ -32,11 +32,12 @@ struct Loopback {
   std::unique_ptr<Ctrl> b;
 
   Loopback(std::shared_ptr<Common> common_in, std::shared_ptr<Settings> settings_in, uint32_t seed)
-      : common(std::move(common_in)), settings(std::move(settings_in)) {
-    a = std::make_unique<Ctrl>(common, settings, 0);
-    b = std::make_unique<Ctrl>(common, settings, 1);
-    a->SetSkipWeaponSelection(true);
-    b->SetSkipWeaponSelection(true);
+      : common(std::move(common_in)),
+        settings(std::move(settings_in)),
+        a(std::make_unique<Ctrl>(common, settings, 0)),
+        b(std::make_unique<Ctrl>(common, settings, 1)) {
+    a->SetSkipWeaponSelection(/*skip=*/true);
+    b->SetSkipWeaponSelection(/*skip=*/true);
     a->game.rand.Seed(seed);
     b->game.rand.Seed(seed);
     a->SetInputCallbacks([this](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* inputs,
@@ -55,8 +56,8 @@ struct Loopback {
 std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
   settings->loading_time = 0;
@@ -111,7 +112,7 @@ TEST_CASE("Starvation: predict up to kMaxRollback, then stall, then recover",
   auto [common, settings] = MakeEnv();
   // Drive A directly via injectRemoteInput; B is unused. No transport.
   RollbackController a(common, settings, 0);
-  a.SetSkipWeaponSelection(true);
+  a.SetSkipWeaponSelection(/*skip=*/true);
   a.game.rand.Seed(0x1234);
   a.Focus();
 
@@ -132,18 +133,19 @@ TEST_CASE("Starvation: predict up to kMaxRollback, then stall, then recover",
   // ahead and then stalls (subsequent process() calls become no-ops on
   // simFrame).
   constexpr int kStarveTicks = rollback::kMaxRollback + 5;
-  uint32_t frame_at_starve_start = a.CurrentFrame();
+  uint32_t const kFrameAtStarveStart = a.CurrentFrame();
   for (int i = 0; i < kStarveTicks; ++i) {
     a.SetLocalControlState(0);
     a.Process();
   }
   // Bound: simFrame advanced by at most kMaxRollback past confirmedFrame.
-  REQUIRE(a.CurrentFrame() == frame_at_starve_start + rollback::kMaxRollback);
-  REQUIRE(a.ConfirmedFrame() == static_cast<int32_t>(frame_at_starve_start) - 1);
+  REQUIRE(a.CurrentFrame() == kFrameAtStarveStart + rollback::kMaxRollback);
+  REQUIRE(a.ConfirmedFrame() == static_cast<int32_t>(kFrameAtStarveStart) - 1);
 
   // The predicted frames are marked Predicted in the buffer.
   auto const& buf = a.RollbackBuffer();
-  int predicted_count = 0, confirmed_count = 0;
+  int predicted_count = 0;
+  int confirmed_count = 0;
   for (int f = buf.OldestFrame(); f <= buf.NewestFrame(); ++f) {
     auto* slot = const_cast<rollback::RollbackBuffer&>(buf).Find(f);
     REQUIRE(slot != nullptr);
@@ -160,20 +162,20 @@ TEST_CASE("Starvation: predict up to kMaxRollback, then stall, then recover",
   // promote step on the next process() should catch confirmedFrame up
   // to simFrame-1 (we sent idle 0, predicted idle 0 — they match in
   // *input* terms).
-  uint32_t sim_frame_at_stall = a.CurrentFrame();
-  for (uint32_t f = frame_at_starve_start; f < sim_frame_at_stall; ++f) {
+  uint32_t const kSimFrameAtStall = a.CurrentFrame();
+  for (uint32_t f = kFrameAtStarveStart; f < kSimFrameAtStall; ++f) {
     a.InjectRemoteInput(f, 0);
   }
   // One more process() drains the late-arriving inputs via the promote
   // step. Then a second tick can actually advance again because we keep
   // delivering input-delay frames (we also inject inputs for the next
   // few frames so the new frame can be Confirmed-advanced).
-  for (uint32_t f = sim_frame_at_stall; f < sim_frame_at_stall + 3; ++f) {
+  for (uint32_t f = kSimFrameAtStall; f < kSimFrameAtStall + 3; ++f) {
     a.InjectRemoteInput(f, 0);
   }
   a.SetLocalControlState(0);
   a.Process();
 
-  REQUIRE(a.ConfirmedFrame() >= static_cast<int32_t>(sim_frame_at_stall) - 1);
-  REQUIRE(a.CurrentFrame() > sim_frame_at_stall);
+  REQUIRE(a.ConfirmedFrame() >= static_cast<int32_t>(kSimFrameAtStall) - 1);
+  REQUIRE(a.CurrentFrame() > kSimFrameAtStall);
 }

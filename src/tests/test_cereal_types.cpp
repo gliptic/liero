@@ -18,12 +18,13 @@ template <typename T>
 T RoundtripBinary(T const& src) {
   std::stringstream ss;
   {
-    cereal::PortableBinaryOutputArchive ar(ss);
+    // Cereal archives mutate state on operator(); they cannot be const.
+    cereal::PortableBinaryOutputArchive ar(ss);  // NOLINT(misc-const-correctness)
     ar(cereal::make_nvp("v", src));
   }
   T dst{};
   {
-    cereal::PortableBinaryInputArchive ar(ss);
+    cereal::PortableBinaryInputArchive ar(ss);  // NOLINT(misc-const-correctness)
     ar(cereal::make_nvp("v", dst));
   }
   return dst;
@@ -33,12 +34,12 @@ template <typename T>
 T RoundtripToml(T const& src) {
   std::stringstream ss;
   {
-    cereal::TomlOutputArchive ar(ss);
+    cereal::TomlOutputArchive ar(ss);  // NOLINT(misc-const-correctness)
     ar(cereal::make_nvp("v", src));
   }
   T dst{};
   {
-    cereal::TomlInputArchive ar(ss);
+    cereal::TomlInputArchive ar(ss);  // NOLINT(misc-const-correctness)
     ar(cereal::make_nvp("v", dst));
   }
   return dst;
@@ -47,51 +48,51 @@ T RoundtripToml(T const& src) {
 }  // namespace
 
 TEST_CASE("cereal_types: BasicVec<int,2> binary round-trip", "[cereal_types]") {
-  IVec2 src{-12345, 6789};
-  IVec2 dst = RoundtripBinary(src);
-  CHECK(dst.x == src.x);
-  CHECK(dst.y == src.y);
+  IVec2 const kSrc{-12345, 6789};
+  IVec2 const kDst = RoundtripBinary(kSrc);
+  CHECK(kDst.x == kSrc.x);
+  CHECK(kDst.y == kSrc.y);
 }
 
 TEST_CASE("cereal_types: BasicVec<int,2> toml round-trip", "[cereal_types]") {
-  IVec2 src{-12345, 6789};
-  IVec2 dst = RoundtripToml(src);
-  CHECK(dst.x == src.x);
-  CHECK(dst.y == src.y);
+  IVec2 const kSrc{-12345, 6789};
+  IVec2 const kDst = RoundtripToml(kSrc);
+  CHECK(kDst.x == kSrc.x);
+  CHECK(kDst.y == kSrc.y);
 }
 
 TEST_CASE("cereal_types: BasicVec<float,2> binary round-trip", "[cereal_types]") {
-  FVec2 src{1.5f, -2.25f};
-  FVec2 dst = RoundtripBinary(src);
-  CHECK(dst.x == src.x);
-  CHECK(dst.y == src.y);
+  FVec2 const kSrc{1.5F, -2.25F};
+  FVec2 const kDst = RoundtripBinary(kSrc);
+  CHECK(kDst.x == kSrc.x);
+  CHECK(kDst.y == kSrc.y);
 }
 
 TEST_CASE("cereal_types: BasicRect<int> binary round-trip", "[cereal_types]") {
-  Rect src{1, 2, 100, 200};
-  Rect dst = RoundtripBinary(src);
-  CHECK(dst.x1 == 1);
-  CHECK(dst.y1 == 2);
-  CHECK(dst.x2 == 100);
-  CHECK(dst.y2 == 200);
+  Rect const kSrc{1, 2, 100, 200};
+  Rect const kDst = RoundtripBinary(kSrc);
+  CHECK(kDst.x1 == 1);
+  CHECK(kDst.y1 == 2);
+  CHECK(kDst.x2 == 100);
+  CHECK(kDst.y2 == 200);
 }
 
 TEST_CASE("cereal_types: BasicRect<int> toml round-trip", "[cereal_types]") {
-  Rect src{1, 2, 100, 200};
-  Rect dst = RoundtripToml(src);
-  CHECK(dst.x1 == 1);
-  CHECK(dst.y1 == 2);
-  CHECK(dst.x2 == 100);
-  CHECK(dst.y2 == 200);
+  Rect const kSrc{1, 2, 100, 200};
+  Rect const kDst = RoundtripToml(kSrc);
+  CHECK(kDst.x1 == 1);
+  CHECK(kDst.y1 == 2);
+  CHECK(kDst.x2 == 100);
+  CHECK(kDst.y2 == 200);
 }
 
 TEST_CASE("cereal_types: ControlState round-trip", "[cereal_types]") {
   Worm::ControlState src;
   src.istate = 0x5a;
-  Worm::ControlState bin = RoundtripBinary(src);
-  Worm::ControlState toml = RoundtripToml(src);
-  CHECK(bin.istate == src.istate);
-  CHECK(toml.istate == src.istate);
+  Worm::ControlState const kBin = RoundtripBinary(src);
+  Worm::ControlState const kToml = RoundtripToml(src);
+  CHECK(kBin.istate == src.istate);
+  CHECK(kToml.istate == src.istate);
 }
 
 TEST_CASE("cereal_types: Ninjarope round-trip excludes anchor", "[cereal_types]") {
@@ -130,13 +131,13 @@ TEST_CASE("cereal_types: Viewport round-trip", "[cereal_types]") {
   src.banner_y = -8;
   src.rect = Rect{10, 20, 30, 40};
 
-  Viewport bin = RoundtripBinary(src);
-  CHECK(bin.x == 100);
-  CHECK(bin.y == -50);
-  CHECK(bin.shake == 7);
-  CHECK(bin.worm_idx == 1);
-  CHECK(bin.rect.x1 == 10);
-  CHECK(bin.rect.y2 == 40);
+  Viewport const kBin = RoundtripBinary(src);
+  CHECK(kBin.x == 100);
+  CHECK(kBin.y == -50);
+  CHECK(kBin.shake == 7);
+  CHECK(kBin.worm_idx == 1);
+  CHECK(kBin.rect.x1 == 10);
+  CHECK(kBin.rect.y2 == 40);
 }
 
 TEST_CASE("cereal_types: Worm round-trip excludes context fields", "[cereal_types]") {
@@ -158,28 +159,28 @@ TEST_CASE("cereal_types: Worm round-trip excludes context fields", "[cereal_type
   src.ninjarope.out = true;
   src.ninjarope.length = 500;
 
-  Worm bin = RoundtripBinary(src);
-  CHECK(bin.pos.x == src.pos.x);
-  CHECK(bin.pos.y == src.pos.y);
-  CHECK(bin.logic_respawn.x == 50);
-  CHECK(bin.health == 75);
-  CHECK(bin.lives == 3);
-  CHECK(bin.aiming_angle == 90 << 16);
-  CHECK(bin.last_killed_by_idx == 2);
-  CHECK(bin.current_weapon == 3);
-  CHECK(bin.direction == 1);
-  CHECK(bin.control_states.istate == 0x42);
-  CHECK(bin.weapons[0].ammo == 99);
-  CHECK(bin.weapons[2].delay_left == 17);
-  CHECK(bin.reacts[1] == 5);
-  CHECK(bin.ninjarope.out == true);
-  CHECK(bin.ninjarope.length == 500);
+  Worm const kBin = RoundtripBinary(src);
+  CHECK(kBin.pos.x == src.pos.x);
+  CHECK(kBin.pos.y == src.pos.y);
+  CHECK(kBin.logic_respawn.x == 50);
+  CHECK(kBin.health == 75);
+  CHECK(kBin.lives == 3);
+  CHECK(kBin.aiming_angle == 90 << 16);
+  CHECK(kBin.last_killed_by_idx == 2);
+  CHECK(kBin.current_weapon == 3);
+  CHECK(kBin.direction == 1);
+  CHECK(kBin.control_states.istate == 0x42);
+  CHECK(kBin.weapons[0].ammo == 99);
+  CHECK(kBin.weapons[2].delay_left == 17);
+  CHECK(kBin.reacts[1] == 5);
+  CHECK(kBin.ninjarope.out == true);
+  CHECK(kBin.ninjarope.length == 500);
 
-  Worm toml = RoundtripToml(src);
-  CHECK(toml.pos.x == src.pos.x);
-  CHECK(toml.health == 75);
-  CHECK(toml.weapons[0].ammo == 99);
-  CHECK(toml.ninjarope.length == 500);
+  Worm const kToml = RoundtripToml(src);
+  CHECK(kToml.pos.x == src.pos.x);
+  CHECK(kToml.health == 75);
+  CHECK(kToml.weapons[0].ammo == 99);
+  CHECK(kToml.ninjarope.length == 500);
 }
 
 TEST_CASE("cereal_types: WormSettings round-trip", "[cereal_types]") {
@@ -194,7 +195,7 @@ TEST_CASE("cereal_types: WormSettings round-trip", "[cereal_types]") {
   src.rgb[2] = 30;
   src.weapons[0] = 5;
   src.weapons[4] = 7;
-  src.controls[WormSettings::kUp] = 100u;
+  src.controls[WormSettings::kUp] = 100U;
 
   WormSettings bin = RoundtripBinary(src);
   CHECK(bin.health == 150);
@@ -206,7 +207,7 @@ TEST_CASE("cereal_types: WormSettings round-trip", "[cereal_types]") {
   CHECK(bin.rgb[2] == 30);
   CHECK(bin.weapons[0] == 5);
   CHECK(bin.weapons[4] == 7);
-  CHECK(bin.controls[WormSettings::kUp] == 100u);
+  CHECK(bin.controls[WormSettings::kUp] == 100U);
 
   WormSettings toml = RoundtripToml(src);
   CHECK(toml.name == "Hero");
@@ -242,11 +243,11 @@ TEST_CASE("cereal_types: Settings round-trip with shared worm settings", "[cerea
 }
 
 TEST_CASE("cereal_types: Color round-trip", "[cereal_types]") {
-  Color src{10, 20, 30, 0};
-  Color bin = RoundtripBinary(src);
-  CHECK(bin.r == 10);
-  CHECK(bin.g == 20);
-  CHECK(bin.b == 30);
+  Color const kSrc{.r = 10, .g = 20, .b = 30, .unused = 0};
+  Color const kBin = RoundtripBinary(kSrc);
+  CHECK(kBin.r == 10);
+  CHECK(kBin.g == 20);
+  CHECK(kBin.b == 30);
 }
 
 TEST_CASE("cereal_types: Palette round-trip", "[cereal_types]") {
@@ -256,11 +257,11 @@ TEST_CASE("cereal_types: Palette round-trip", "[cereal_types]") {
     src.entries[i].g = static_cast<uint8_t>(255 - i);
     src.entries[i].b = static_cast<uint8_t>(i ^ 0x55);
   }
-  Palette bin = RoundtripBinary(src);
+  Palette const kBin = RoundtripBinary(src);
   for (int i = 0; i < 256; ++i) {
-    CHECK(static_cast<int>(bin.entries[i].r) == i);
-    CHECK(static_cast<int>(bin.entries[i].g) == 255 - i);
-    CHECK(static_cast<int>(bin.entries[i].b) == (i ^ 0x55));
+    CHECK(std::cmp_equal(kBin.entries[i].r, i));
+    CHECK(std::cmp_equal(kBin.entries[i].g, 255 - i));
+    CHECK(std::cmp_equal(kBin.entries[i].b, i ^ 0x55));
   }
 }
 
@@ -294,7 +295,7 @@ TEST_CASE("cereal_types: Level round-trip preserves data and palette", "[cereal_
 }
 
 TEST_CASE("cereal_types: Rand round-trip preserves stream", "[cereal_types]") {
-  Rand src(0xC0FFEEu);
+  Rand src(0xC0FFEEU);
   for (int i = 0; i < 10; ++i) src();
   Rand bin = RoundtripBinary(src);
   CHECK(bin == src);
@@ -309,13 +310,13 @@ TEST_CASE("cereal_types: WormWeapon round-trip excludes type pointer", "[cereal_
 
   // WormWeapon's default ctor leaves `type` uninitialized; this test
   // only checks the fields cereal serialize() touches.
-  WormWeapon bin = RoundtripBinary(src);
-  CHECK(bin.ammo == 17);
-  CHECK(bin.delay_left == 23);
-  CHECK(bin.loading_left == 41);
+  WormWeapon const kBin = RoundtripBinary(src);
+  CHECK(kBin.ammo == 17);
+  CHECK(kBin.delay_left == 23);
+  CHECK(kBin.loading_left == 41);
 
-  WormWeapon toml = RoundtripToml(src);
-  CHECK(toml.ammo == 17);
-  CHECK(toml.delay_left == 23);
-  CHECK(toml.loading_left == 41);
+  WormWeapon const kToml = RoundtripToml(src);
+  CHECK(kToml.ammo == 17);
+  CHECK(kToml.delay_left == 23);
+  CHECK(kToml.loading_left == 41);
 }

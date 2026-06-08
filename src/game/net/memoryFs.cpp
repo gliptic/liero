@@ -18,48 +18,48 @@ struct FsNodeMemDir : FsNodeImp {
 
   DirectoryListing Iter() override {
     // Collect immediate children of this directory
-    std::string prefix = path.empty() ? "" : path + "/";
+    std::string const kPrefix = path.empty() ? "" : path + "/";
     std::vector<NodeName> entries;
     std::set<std::string> seen;
 
     for (auto& [key, _] : fs->files) {
-      if (key.size() <= prefix.size()) continue;
-      if (!prefix.empty() && key.compare(0, prefix.size(), prefix) != 0) continue;
+      if (key.size() <= kPrefix.size()) continue;
+      if (!kPrefix.empty() && !key.starts_with(kPrefix)) continue;
 
       // Get the next path component after prefix
-      auto rest = key.substr(prefix.size());
+      auto rest = key.substr(kPrefix.size());
       auto slash = rest.find('/');
-      std::string name = (slash == std::string::npos) ? rest : rest.substr(0, slash);
-      bool is_dir = (slash != std::string::npos);
+      std::string const kName = (slash == std::string::npos) ? rest : rest.substr(0, slash);
+      bool const kIsDir = (slash != std::string::npos);
 
-      if (seen.insert(name).second) {
-        entries.push_back(NodeName(name, is_dir));
+      if (seen.insert(kName).second) {
+        entries.emplace_back(kName, kIsDir);
       }
     }
 
-    return DirectoryListing(std::move(entries));
+    return {std::move(entries)};
   }
 
   std::shared_ptr<FsNodeImp> Go(std::string const& name) override {
-    std::string child_path = path.empty() ? name : path + "/" + name;
+    std::string const kChildPath = path.empty() ? name : path + "/" + name;
 
     // Check if it's a file
-    auto it = fs->files.find(child_path);
+    auto it = fs->files.find(kChildPath);
     if (it != fs->files.end()) {
       // It's a file — return a file node
-      return std::make_shared<FsNodeMemDir>(child_path, fs);
+      return std::make_shared<FsNodeMemDir>(kChildPath, fs);
     }
 
     // Check if it's a directory (any file starts with childPath + "/")
-    std::string dir_prefix = child_path + "/";
+    std::string const kDirPrefix = kChildPath + "/";
     for (auto& [key, _] : fs->files) {
-      if (key.compare(0, dir_prefix.size(), dir_prefix) == 0) {
-        return std::make_shared<FsNodeMemDir>(child_path, fs);
+      if (key.starts_with(kDirPrefix)) {
+        return std::make_shared<FsNodeMemDir>(kChildPath, fs);
       }
     }
 
     // Doesn't exist, but return a node anyway (exists() will return false)
-    return std::make_shared<FsNodeMemDir>(child_path, fs);
+    return std::make_shared<FsNodeMemDir>(kChildPath, fs);
   }
 
   std::unique_ptr<io::Reader> TryToReader() override {
@@ -75,11 +75,11 @@ struct FsNodeMemDir : FsNodeImp {
 
   bool Exists() const override {
     // Exists as a file?
-    if (fs->files.count(path)) return true;
+    if (fs->files.contains(path)) return true;
     // Exists as a directory?
-    std::string prefix = path + "/";
+    std::string const kPrefix = path + "/";
     for (auto& [key, _] : fs->files) {
-      if (key.compare(0, prefix.size(), prefix) == 0) return true;
+      if (key.starts_with(kPrefix)) return true;
     }
     return path.empty();  // Root always exists
   }
@@ -87,4 +87,4 @@ struct FsNodeMemDir : FsNodeImp {
 
 }  // namespace
 
-FsNode MemoryFs::Root() { return FsNode(std::make_shared<FsNodeMemDir>("", this)); }
+FsNode MemoryFs::Root() { return {std::make_shared<FsNodeMemDir>("", this)}; }

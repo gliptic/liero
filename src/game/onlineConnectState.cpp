@@ -17,8 +17,8 @@ OnlineConnectState::OnlineConnectState(NetSession::Role role, std::string room_c
     : role_(role), roomCode_(std::move(room_code)) {}
 
 void OnlineConnectState::Enter() {
-  fprintf(stderr, "[online] enter: role=%s roomCode='%s'\n",
-          role_ == NetSession::kHost ? "Host" : "Client", roomCode_.c_str());
+  std::fprintf(stderr, "[online] enter: role=%s roomCode='%s'\n",
+               role_ == NetSession::kHost ? "Host" : "Client", roomCode_.c_str());
 
   statusLine1_ = (role_ == NetSession::kHost) ? "CREATING ONLINE ROOM..."
                                               : "JOINING ROOM " + roomCode_ + "...";
@@ -44,7 +44,7 @@ void OnlineConnectState::Enter() {
   };
 
   iceAgent_->on_state_change = [this](IceAgent::State state) {
-    fprintf(stderr, "[online] ICE state: %d\n", (int)state);
+    std::fprintf(stderr, "[online] ICE state: %d\n", static_cast<int>(state));
     switch (state) {
       case IceAgent::State::kGathering:
         statusLine2_ = "GATHERING CANDIDATES...";
@@ -79,7 +79,7 @@ void OnlineConnectState::Enter() {
 void OnlineConnectState::StartSignaling() {
   // Wire signaling callbacks
   signaling_.on_room_created = [this](const std::string& code) {
-    fprintf(stderr, "[online] onRoomCreated: code=%s\n", code.c_str());
+    std::fprintf(stderr, "[online] onRoomCreated: code=%s\n", code.c_str());
     roomCode_ = code;
     statusLine1_ = "ROOM CODE: " + code;
     statusLine2_ = "WAITING FOR PEER...";
@@ -88,7 +88,7 @@ void OnlineConnectState::StartSignaling() {
   };
 
   signaling_.on_peer_joined = [this]() {
-    fprintf(stderr, "[online] onPeerJoined\n");
+    std::fprintf(stderr, "[online] onPeerJoined\n");
     statusLine2_ = "PEER JOINED! EXCHANGING ICE...";
 
     // Now send our ICE credentials and buffered candidates
@@ -98,7 +98,7 @@ void OnlineConnectState::StartSignaling() {
   };
 
   signaling_.on_join_acked = [this]() {
-    fprintf(stderr, "[online] join acknowledged\n");
+    std::fprintf(stderr, "[online] join acknowledged\n");
     statusLine2_ = "JOINED! EXCHANGING ICE...";
 
     // Send our ICE credentials and buffered candidates
@@ -109,7 +109,7 @@ void OnlineConnectState::StartSignaling() {
 
   // ICE callbacks from signaling
   signaling_.on_peer_credentials = [this](const std::string& ufrag, const std::string& pwd) {
-    fprintf(stderr, "[online] onPeerCredentials: ufrag=%s\n", ufrag.c_str());
+    std::fprintf(stderr, "[online] onPeerCredentials: ufrag=%s\n", ufrag.c_str());
     iceAgent_->SetRemoteCredentials(ufrag, pwd);
   };
 
@@ -126,13 +126,13 @@ void OnlineConnectState::StartSignaling() {
   };
 
   signaling_.on_error = [this](const std::string& msg) {
-    fprintf(stderr, "[online] onError: %s\n", msg.c_str());
+    std::fprintf(stderr, "[online] onError: %s\n", msg.c_str());
     statusLine2_ = "ERROR: " + msg;
     cancel_ = true;
   };
 
   signaling_.on_room_expired = [this]() {
-    fprintf(stderr, "[online] onRoomExpired\n");
+    std::fprintf(stderr, "[online] onRoomExpired\n");
     statusLine2_ = "ROOM EXPIRED";
     cancel_ = true;
   };
@@ -186,10 +186,10 @@ bool OnlineConnectState::Update() {
   // Keepalive
   if (signaling_.State() != SignalingClient::kIdle &&
       signaling_.State() != SignalingClient::kFailed) {
-    uint64_t now = NowMs();
-    if (now - lastKeepaliveMs_ > 5000) {
+    uint64_t const kNow = NowMs();
+    if (kNow - lastKeepaliveMs_ > 5000) {
       signaling_.SendKeepalive();
-      lastKeepaliveMs_ = now;
+      lastKeepaliveMs_ = kNow;
     }
   }
 
@@ -203,7 +203,7 @@ bool OnlineConnectState::Update() {
 }
 
 void OnlineConnectState::TransitionToGame() {
-  fprintf(stderr, "[online] ICE connected — creating bridge and transitioning to game\n");
+  std::fprintf(stderr, "[online] ICE connected — creating bridge and transitioning to game\n");
 
   // Disconnect signaling (no longer needed)
   signaling_.Disconnect();
@@ -211,18 +211,18 @@ void OnlineConnectState::TransitionToGame() {
   // Create the loopback bridge
   auto bridge_fd = iceBridge_->Create(*iceAgent_);
   if (bridge_fd == kBridgeInvalid) {
-    fprintf(stderr, "[online] ERROR: failed to create ICE bridge\n");
+    std::fprintf(stderr, "[online] ERROR: failed to create ICE bridge\n");
     statusLine2_ = "BRIDGE CREATION FAILED";
     cancel_ = true;
     return;
   }
 
-  uint16_t bport = iceBridge_->BridgePort();
+  uint16_t const kBport = iceBridge_->BridgePort();
 
   // Create a NetTransport using the bridge socket
   NetTransport transport;
   if (!transport.CreateHostOnBridgeSocket(bridge_fd)) {
-    fprintf(stderr, "[online] ERROR: failed to create ENet host on bridge socket\n");
+    std::fprintf(stderr, "[online] ERROR: failed to create ENet host on bridge socket\n");
     statusLine2_ = "ENET BRIDGE SETUP FAILED";
     cancel_ = true;
     return;
@@ -242,8 +242,8 @@ void OnlineConnectState::TransitionToGame() {
     gfx->state_stack.ScheduleReplaceTop(
         std::make_unique<NetConnectState>(NetSession::kHost, std::move(transport)));
   } else {
-    gfx->state_stack.ScheduleReplaceTop(
-        std::make_unique<NetConnectState>(NetSession::kClient, std::move(transport), "::1", bport));
+    gfx->state_stack.ScheduleReplaceTop(std::make_unique<NetConnectState>(
+        NetSession::kClient, std::move(transport), "::1", kBport));
   }
 }
 
@@ -254,23 +254,23 @@ void OnlineConnectState::Draw() {
   gfx->play_renderer.pal = common.exepal;
   Fill(gfx->play_renderer.bmp, 0);
 
-  int cx = 160;
-  int cy = 60;
+  int const kCx = 160;
+  int const kCy = 60;
 
-  int w1 = font.GetDims(statusLine1_);
-  font.DrawString(gfx->play_renderer.bmp, statusLine1_, cx - w1 / 2, cy, 50);
+  int const kW1 = font.GetDims(statusLine1_);
+  font.DrawString(gfx->play_renderer.bmp, statusLine1_, kCx - kW1 / 2, kCy, 50);
 
-  int w2 = font.GetDims(statusLine2_);
-  font.DrawString(gfx->play_renderer.bmp, statusLine2_, cx - w2 / 2, cy + 14, 7);
+  int const kW2 = font.GetDims(statusLine2_);
+  font.DrawString(gfx->play_renderer.bmp, statusLine2_, kCx - kW2 / 2, kCy + 14, 7);
 
   if (role_ == NetSession::kHost && !roomCode_.empty() &&
       signaling_.State() == SignalingClient::kHosting) {
-    std::string code_str = "CODE: " + roomCode_;
-    int wc = font.GetDims(code_str);
-    font.DrawString(gfx->play_renderer.bmp, code_str, cx - wc / 2, cy + 30, 45);
+    std::string const kCodeStr = "CODE: " + roomCode_;
+    int const kWc = font.GetDims(kCodeStr);
+    font.DrawString(gfx->play_renderer.bmp, kCodeStr, kCx - kWc / 2, kCy + 30, 45);
   }
 
-  std::string esc = "PRESS ESC TO CANCEL";
-  int we = font.GetDims(esc);
-  font.DrawString(gfx->play_renderer.bmp, esc, cx - we / 2, 170, 7);
+  std::string const kEsc = "PRESS ESC TO CANCEL";
+  int const kWe = font.GetDims(kEsc);
+  font.DrawString(gfx->play_renderer.bmp, kEsc, kCx - kWe / 2, 170, 7);
 }

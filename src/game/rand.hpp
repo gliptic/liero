@@ -11,7 +11,8 @@
 // standard guarantees is portable across implementations — required for
 // network sync and replay reproducibility.
 struct Rand {
-  std::mt19937 engine{0x1337u};
+  // NOLINTNEXTLINE(cert-msc32-c, cert-msc51-cpp, bugprone-random-generator-seed) — deterministic seed is required: replays and rollback resims must reproduce the same sequence.
+  std::mt19937 engine{0x1337U};
   uint32_t last = 0;
 
   Rand() = default;
@@ -73,10 +74,10 @@ void ArchiveRand(Ar ar, Rand& r) {
     ar.ui32(r.last);
   } else {
     std::string s = r.serialize();
-    uint32_t len = static_cast<uint32_t>(s.size());
+    auto len = static_cast<uint32_t>(s.size());
     ar.ui32(len);
     for (uint32_t i = 0; i < len; ++i) {
-      uint8_t b = static_cast<uint8_t>(s[i]);
+      auto b = static_cast<uint8_t>(s[i]);
       ar.ui8(b);
     }
     ar.ui32(r.last);

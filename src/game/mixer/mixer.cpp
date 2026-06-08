@@ -1,11 +1,12 @@
 #include "mixer.hpp"
 #include <SDL3/SDL.h>
-#include <stdlib.h>
-#include <string.h>
+#include <algorithm>
+#include <cstdlib>
 #include <cstring>
+#include <utility>
 #include <vector>
 
-typedef struct Channel {
+using channel = struct Channel {
   // Mutator write once, mutator read, mixer write
   void* id;
 
@@ -25,7 +26,7 @@ typedef struct Channel {
   Mutator can change flags from 0xFFFFFFFF, signaling a new active channel
   Mixer or mutator can change flags to 0xFFFFFFFF, signaling a new inactive channel
   */
-} channel;
+};
 
 struct SfxMixer {
   channel channel_states[CHANNEL_COUNT];
@@ -43,7 +44,7 @@ struct SfxSound {
 int32_t SfxMixerNow(sfx_mixer* mixer) { return mixer->base_frame; }
 
 sfx_sound* SfxNewSound(std::size_t samples) {
-  sfx_sound* snd = new sfx_sound();
+  auto* snd = new sfx_sound();
 
   snd->samples = std::vector<int16_t>(samples);
   return snd;
@@ -53,13 +54,17 @@ void SfxFreeSound(sfx_sound* snd) { delete snd; }
 
 std::vector<int16_t>& SfxSoundData(sfx_sound* snd) { return snd->samples; }
 
-#define INACTIVE_FLAGS (-1)
+// Unsigned-typed: the comparisons against `channel::flags` (a uint32_t) go
+// through std::cmp_equal, which is signedness-aware — a signed -1 would
+// compare unequal to the unsigned 0xFFFFFFFF stored in `flags` and silently
+// leave every channel "active" with a null `sound`.
+#define INACTIVE_FLAGS 0xFFFFFFFFu
 #define MK_HANDLE(num, idx) ((uint32)(((num) << 8) + (idx)))
 #define CHECK_HANDLE(h) (((self)->channel_states[(h) & 0xff].id == (h)) ? ((h) & 0xff) : -1)
 
-sfx_mixer* SfxMixerCreate(void) {
-  sfx_mixer* self = new sfx_mixer();
-  uint32_t i;
+sfx_mixer* SfxMixerCreate() {
+  auto* self = new sfx_mixer();
+  uint32_t i = 0;
   for (i = 0; i < CHANNEL_COUNT; ++i) self->channel_states[i].flags = INACTIVE_FLAGS;
 
   return self;
@@ -67,33 +72,33 @@ sfx_mixer* SfxMixerCreate(void) {
 
 static int AddChannel(int16_t* out, unsigned long frame_count, uint32_t now, channel* ch) {
   sfx_sound* sound = ch->sound;
-  uint32_t pos = ch->pos;
-  int32_t scaler;
-  uint32_t cur;
+  uint32_t const kPos = ch->pos;
+  int32_t scaler = 0;
+  uint32_t cur = 0;
 
   // TODO: Get rid of undefined cast
-  int32_t diff = (int32_t)(pos - now);
-  int32_t relbegin = diff;
-  uint32_t soundlen = sound->samples.size();
-  uint32_t flags = ch->flags;
+  auto const kDiff = static_cast<int32_t>(kPos - now);
+  int32_t relbegin = kDiff;
+  uint32_t const kSoundlen = sound->samples.size();
+  uint32_t const kFlags = ch->flags;
 
-  if (relbegin < 0) relbegin = 0;
-  if (flags == INACTIVE_FLAGS) return 0;  // Stop
+  relbegin = std::max(relbegin, 0);
+  if (std::cmp_equal(kFlags, INACTIVE_FLAGS)) return 0;  // Stop
 
   scaler = (ch->volumes & 0x1fff);
 
-  for (cur = (uint32_t)relbegin; cur < frame_count; ++cur) {
+  for (cur = static_cast<uint32_t>(relbegin); cur < frame_count; ++cur) {
     int32_t samp = out[cur];
-    int32_t soundsamp = sound->samples[(uint32_t)(ch->soundpos >> 32)];
-    samp += (soundsamp * scaler) >> 12;
+    int32_t const kSoundsamp = sound->samples[static_cast<uint32_t>(ch->soundpos >> 32)];
+    samp += (kSoundsamp * scaler) >> 12;
     if (samp < -32768)
       samp = -32768;
     else if (samp > 32767)
       samp = 32767;
-    out[cur] = (int32_t)(samp);
+    out[cur] = samp;
     ch->soundpos += ch->stride;
-    if ((uint32_t)(ch->soundpos >> 32) >= soundlen) {
-      if (flags & SFX_SOUND_LOOP)
+    if (static_cast<uint32_t>(ch->soundpos >> 32) >= kSoundlen) {
+      if (kFlags & SFX_SOUND_LOOP)
         ch->soundpos = 0;
       else
         return 0;
@@ -104,8 +109,8 @@ static int AddChannel(int16_t* out, unsigned long frame_count, uint32_t now, cha
 }
 
 void SfxMixerMix(sfx_mixer* self, void* output, unsigned long frame_count) {
-  int16_t* out = (int16_t*)(output);
-  uint32_t c;
+  auto* out = static_cast<int16_t*>(output);
+  uint32_t c = 0;
   memset(out, 0, frame_count * sizeof(int16_t));
 
   // TODO: Handle discontinuous mixing.
@@ -115,12 +120,12 @@ void SfxMixerMix(sfx_mixer* self, void* output, unsigned long frame_count) {
   for (c = 0; c < CHANNEL_COUNT; ++c) {
     channel* ch = self->channel_states + c;
 
-    if (ch->flags != INACTIVE_FLAGS) {
+    if (std::cmp_not_equal(ch->flags, INACTIVE_FLAGS)) {
       if (!AddChannel(out, frame_count, self->base_frame, ch)) {
         // Remove
         SDL_MemoryBarrierAcquire();
         ch->flags = INACTIVE_FLAGS;
-        ch->id = NULL;
+        ch->id = nullptr;
         SDL_MemoryBarrierRelease();  // Make ch->flags and ch->id write visible
       }
     }
@@ -137,11 +142,12 @@ void sfx_mixer_fill(sfx_stream* str, uint32_t start, uint32_t frames)
 }*/
 
 static int FindChannel(sfx_mixer* self, void* h) {
-  uint32_t c;
+  uint32_t c = 0;
 
   for (c = 0; c < CHANNEL_COUNT;) {
-    if (self->channel_states[c].id == h && self->channel_states[c].flags != INACTIVE_FLAGS)
-      return (int)c;
+    if (self->channel_states[c].id == h &&
+        std::cmp_not_equal(self->channel_states[c].flags, INACTIVE_FLAGS))
+      return static_cast<int>(c);
     ++c;
   }
 
@@ -149,10 +155,10 @@ static int FindChannel(sfx_mixer* self, void* h) {
 }
 
 static int FindFreeChannel(sfx_mixer* self) {
-  uint32_t c;
+  uint32_t c = 0;
 
   for (c = 0; c < CHANNEL_COUNT;) {
-    if (self->channel_states[c].flags == INACTIVE_FLAGS) return (int)c;
+    if (std::cmp_equal(self->channel_states[c].flags, INACTIVE_FLAGS)) return static_cast<int>(c);
     ++c;
   }
 
@@ -160,41 +166,41 @@ static int FindFreeChannel(sfx_mixer* self) {
 }
 
 void SfxSetVolume(sfx_mixer* self, void* h, double volume) {
-  uint32_t v;
-  int ch = FindChannel(self, h);
-  if (ch < 0) return;
+  uint32_t v = 0;
+  int const kCh = FindChannel(self, h);
+  if (kCh < 0) return;
 
-  v = (uint32_t)(volume * 0x1000);
+  v = static_cast<uint32_t>(volume * 0x1000);
 
-  self->channel_states[ch].volumes = (v << 16) + v;
+  self->channel_states[kCh].volumes = (v << 16) + v;
 }
 
 int SfxIsPlaying(sfx_mixer* self, void* h) {
-  int ch = FindChannel(self, h);
-  return (ch >= 0);
+  int const kCh = FindChannel(self, h);
+  return (kCh >= 0);
 }
 
 void SfxMixerStop(sfx_mixer* self, void* h) {
-  int ch = FindChannel(self, h);
-  if (ch < 0) return;
+  int const kCh = FindChannel(self, h);
+  if (kCh < 0) return;
 
-  self->channel_states[ch].flags = -1;
+  self->channel_states[kCh].flags = INACTIVE_FLAGS;
 }
 
 void* SfxMixerAdd(sfx_mixer* self, sfx_sound* snd, uint32_t time, void* h, uint32_t flags) {
   // A null sound is a disabled/placeholder slot. Silently ignore it so
   // callers that play by index don't need to special-case it.
-  if (!snd) return NULL;
+  if (!snd) return nullptr;
 
-  int ch_idx = FindFreeChannel(self);
+  int const kChIdx = FindFreeChannel(self);
 
-  if (ch_idx >= 0) {
+  if (kChIdx >= 0) {
     SDL_MemoryBarrierAcquire();
-    channel* ch = self->channel_states + ch_idx;
+    channel* ch = self->channel_states + kChIdx;
     ch->sound = snd;
     ch->pos = time;
     ch->soundpos = 0;
-    ch->stride = 0x100000000ull;
+    ch->stride = 0x100000000ULL;
     ch->volumes = 0x10001000;
     ch->id = h;
 
@@ -204,7 +210,7 @@ void* SfxMixerAdd(sfx_mixer* self, sfx_sound* snd, uint32_t time, void* h, uint3
     return h;
   }
 
-  return NULL;
+  return nullptr;
 }
 
 #undef CHECK_HANDLE

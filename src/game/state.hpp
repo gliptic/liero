@@ -90,7 +90,7 @@ class StateStack {
   bool Update() {
     if (stack_.empty()) return false;
 
-    bool keep_running = stack_.back()->Update();
+    bool const kEepRunning = stack_.back()->Update();
     Gfx* g = stack_.back()->gfx;
 
     // Apply deferred replacement (set via scheduleReplaceTop)
@@ -100,7 +100,7 @@ class StateStack {
       return !stack_.empty();
     }
 
-    if (!keep_running) {
+    if (!kEepRunning) {
       Pop();
       // The state completed. If there's still something on the
       // stack, keep running; otherwise signal "done".

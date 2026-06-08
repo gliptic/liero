@@ -94,7 +94,7 @@ void NormalStatsRecorder::AfterSpawn(Worm* worm) {
 void NormalStatsRecorder::AfterDeath(Worm* worm) {
   if (speculative) return;
   WormStats& w = worms[worm->index];
-  w.life_spans.push_back(std::make_pair(w.spawn_time, frame));
+  w.life_spans.emplace_back(w.spawn_time, frame);
   w.spawn_time = -1;
 }
 
@@ -103,9 +103,9 @@ void NormalStatsRecorder::PreTick(Game& game) {
   frame_start = std::chrono::steady_clock::now();
 
   for (auto& w : worms) {
-    w.worm_frame_stats.push_back(WormFrameStats());
+    w.worm_frame_stats.emplace_back();
 
-    Worm& worm = *game.worms[w.index];
+    Worm const& worm = *game.worms[w.index];
 
     int h = std::max(worm.health, 0);
     if (!worm.visible) h = worm.settings->health;
@@ -150,7 +150,7 @@ void NormalStatsRecorder::Finish(Game& game) {
     auto const& gw = game.worms[i];
     WormStats& w = worms[i];
     if (w.spawn_time >= 0) {
-      w.life_spans.push_back(std::make_pair(w.spawn_time, frame));
+      w.life_spans.emplace_back(w.spawn_time, frame);
       w.spawn_time = -1;
     }
     w.lives = gw->lives;

@@ -107,7 +107,7 @@ struct NetSession {
   void OnRematchLevel(bool random_level, std::string level_file);
   void OnRemoteInputBatch(uint8_t generation, uint32_t base_frame, uint8_t count,
                           uint8_t const* inputs, uint32_t remote_local_frame);
-  void OnTcInfo(uint32_t hash, std::string name);
+  void OnTcInfo(uint32_t hash, const std::string& name);
   void OnTcResponse(bool need_data);
   void OnTcData(const void* data, size_t len);
   void WireCallbacks();
@@ -137,43 +137,43 @@ struct NetSession {
 
   Game& ActiveGame();
 
-  Role role_;
-  enum SessionState sessionState_;
+  Role role_{kHost};
+  enum SessionState sessionState_ { kIdle };
   NetTransport transport_;
   std::unique_ptr<RollbackController> rollback_;
   std::shared_ptr<Common> common_;
   std::shared_ptr<Settings> settings_;
 
-  struct RollbackController* rollbackPtr_;  // non-owning
+  struct RollbackController* rollbackPtr_{nullptr};  // non-owning
 
-  uint32_t gameSeed_;
-  uint32_t localSettingsHash_;
-  bool handshakeReceived_;
-  bool handshakeSent_;
-  bool playerInfoReceived_;
-  bool matchSettingsReceived_;  // client only; host always has settings
-  bool mapDataReceived_;        // client only; host generates locally
+  uint32_t gameSeed_{0};
+  uint32_t localSettingsHash_{0};
+  bool handshakeReceived_{false};
+  bool handshakeSent_{false};
+  bool playerInfoReceived_{false};
+  bool matchSettingsReceived_{false};  // client only; host always has settings
+  bool mapDataReceived_{false};        // client only; host generates locally
   NetTransport::PlayerInfo remotePlayerInfo_;
 
   // Rematch state
-  bool localReady_;
-  bool remoteReady_;
+  bool localReady_{false};
+  bool remoteReady_{false};
 
   // Stored compressed map data (client receives from host)
   std::vector<uint8_t> receivedMapData_;
 
   // TC sync state
   FsNode tcRoot_;                           // Root directory of the local TC
-  uint32_t localTcHash_;                    // Hash of local TC contents
-  bool tcResolved_;                         // True when TC exchange is complete
+  uint32_t localTcHash_{0};                 // Hash of local TC contents
+  bool tcResolved_{false};                  // True when TC exchange is complete
   std::shared_ptr<MemoryFs> tcMemFs_;       // Keeps received TC data alive in memory
   std::string originalTcName_;              // Client's original TC name (restored on disconnect)
   std::shared_ptr<Common> originalCommon_;  // Client's original Common (restored on disconnect)
 
   // Desync detection
-  bool desyncDetected_;
-  uint32_t desyncFrame_;
-  void OnChecksum(uint8_t generation, uint32_t frame, uint32_t checksum);
+  bool desyncDetected_{false};
+  uint32_t desyncFrame_{0};
+  void OnChecksum(uint8_t generation, uint32_t frame, uint32_t remote_checksum);
   void OnLocalChecksum(uint32_t frame, uint32_t checksum);
 
   // Ring buffer of local checksums for frame-accurate comparison

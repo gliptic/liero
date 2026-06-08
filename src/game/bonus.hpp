@@ -6,14 +6,14 @@
 struct Game;
 
 struct Bonus : ExactObjectListBase {
-  Bonus() : frame(-1), x(0), y(0), vel_y(0), timer(0), weapon(0) {}
+  Bonus() = default;
 
-  fixed x;
-  fixed y;
-  fixed vel_y;
-  int frame;
-  int timer;
-  int weapon;
+  fixed x{0};
+  fixed y{0};
+  fixed vel_y{0};
+  int frame{-1};
+  int timer{0};
+  int weapon{0};
 
   void Process(Game& game);
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-const char* BuildVersion(void);
-const char* BuildHash(void);
-const char* BuildDate(void);
-const char* BuildTime(void);
+const char* BuildVersion();
+const char* BuildHash();
+const char* BuildDate();
+const char* BuildTime();

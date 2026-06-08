@@ -12,9 +12,9 @@ struct EnumBehavior : ItemBehavior {
                bool broken_left_right = false)
       : common(common), v(v), min(min), max(max), broken_left_right(broken_left_right) {}
 
-  bool OnLeftRight(Menu& menu, MenuItem& item, int dir);
-  int OnEnter(Menu& menu, MenuItem& item);
-  void OnUpdate(Menu& menu, MenuItem& item);
+  bool OnLeftRight(Menu& menu, MenuItem& item, int dir) override;
+  int OnEnter(Menu& menu, MenuItem& item) override;
+  void OnUpdate(Menu& menu, MenuItem& item) override;
 
   void Change(Menu& menu, MenuItem& item, int dir);
 

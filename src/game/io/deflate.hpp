@@ -13,7 +13,7 @@ namespace io {
 
 namespace detail {
 constexpr std::size_t kDeflateBufSize = 65536;
-}
+}  // namespace detail
 
 struct InflateReader : Reader {
   explicit InflateReader(std::unique_ptr<Reader> source)
@@ -50,10 +50,10 @@ struct InflateReader : Reader {
         Refill();
         if (out_len_ == 0) break;
       }
-      std::size_t take = std::min(n - total, out_len_ - out_pos_);
-      std::memcpy(dst + total, outbuf_.data() + out_pos_, take);
-      out_pos_ += take;
-      total += take;
+      std::size_t const kTake = std::min(n - total, out_len_ - out_pos_);
+      std::memcpy(dst + total, outbuf_.data() + out_pos_, kTake);
+      out_pos_ += kTake;
+      total += kTake;
     }
     return total;
   }
@@ -69,23 +69,23 @@ struct InflateReader : Reader {
 
     while (stream_.avail_out > 0) {
       if (stream_.avail_in == 0 && !input_done_) {
-        std::size_t got = source_->TryGet(inbuf_.data(), inbuf_.size());
-        if (got == 0) {
+        std::size_t const kGot = source_->TryGet(inbuf_.data(), inbuf_.size());
+        if (kGot == 0) {
           input_done_ = true;
         } else {
           stream_.next_in = inbuf_.data();
-          stream_.avail_in = static_cast<unsigned int>(got);
+          stream_.avail_in = static_cast<unsigned int>(kGot);
         }
       }
 
-      int flush = input_done_ ? MZ_FINISH : MZ_NO_FLUSH;
-      int rc = mz_inflate(&stream_, flush);
+      int const kFlush = input_done_ ? MZ_FINISH : MZ_NO_FLUSH;
+      int const kRc = mz_inflate(&stream_, kFlush);
 
-      if (rc == MZ_STREAM_END) {
+      if (kRc == MZ_STREAM_END) {
         eos_ = true;
         break;
       }
-      if (rc == MZ_BUF_ERROR) {
+      if (kRc == MZ_BUF_ERROR) {
         // No progress; need more input or output buffer is full.
         if (stream_.avail_out == 0) break;
         if (input_done_) {
@@ -95,7 +95,7 @@ struct InflateReader : Reader {
         // Otherwise loop and try to read more input.
         continue;
       }
-      if (rc != MZ_OK) throw StreamError("mz_inflate failed");
+      if (kRc != MZ_OK) throw StreamError("mz_inflate failed");
     }
 
     out_len_ = outbuf_.size() - stream_.avail_out;
@@ -128,7 +128,8 @@ struct DeflateWriter : Writer {
   ~DeflateWriter() override {
     try {
       Finish();
-    } catch (...) {
+    } catch (...) {  // NOLINT(bugprone-empty-catch) — destructor must not throw; the best-effort
+                     // flush above is the entire intent.
       // Best-effort during stack unwind.
     }
     mz_deflateEnd(&stream_);
@@ -147,8 +148,8 @@ struct DeflateWriter : Writer {
 
     while (stream_.avail_in > 0) {
       if (stream_.avail_out == 0) DrainOut();
-      int rc = mz_deflate(&stream_, MZ_NO_FLUSH);
-      if (rc != MZ_OK) throw StreamError("mz_deflate failed");
+      int const kRc = mz_deflate(&stream_, MZ_NO_FLUSH);
+      if (kRc != MZ_OK) throw StreamError("mz_deflate failed");
     }
   }
 
@@ -160,9 +161,9 @@ struct DeflateWriter : Writer {
 
  private:
   void DrainOut() {
-    std::size_t produced = outbuf_.size() - stream_.avail_out;
-    if (produced > 0) {
-      sink_->Put(outbuf_.data(), produced);
+    std::size_t const kProduced = outbuf_.size() - stream_.avail_out;
+    if (kProduced > 0) {
+      sink_->Put(outbuf_.data(), kProduced);
     }
     stream_.next_out = outbuf_.data();
     stream_.avail_out = static_cast<unsigned int>(outbuf_.size());
@@ -176,10 +177,10 @@ struct DeflateWriter : Writer {
     stream_.avail_in = 0;
 
     for (;;) {
-      int rc = mz_deflate(&stream_, MZ_FINISH);
+      int const kRc = mz_deflate(&stream_, MZ_FINISH);
       DrainOut();
-      if (rc == MZ_STREAM_END) break;
-      if (rc != MZ_OK) throw StreamError("mz_deflate(MZ_FINISH) failed");
+      if (kRc == MZ_STREAM_END) break;
+      if (kRc != MZ_OK) throw StreamError("mz_deflate(MZ_FINISH) failed");
     }
     sink_->Flush();
   }

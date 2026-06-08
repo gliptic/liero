@@ -12,6 +12,7 @@
 // past a reasonable horizon, (b) the steady-state confirmation lag
 // stays bounded by kMaxRollback, and (c) checksums agree at the end.
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 #include <memory>
@@ -29,8 +30,8 @@ namespace {
 std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
   settings->loading_time = 0;
@@ -50,17 +51,20 @@ TEST_CASE("Rollback survives 10% packet loss via input redundancy", "[rollback][
   auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->SetSkipWeaponSelection(true);
-  b->SetSkipWeaponSelection(true);
+  a->SetSkipWeaponSelection(/*skip=*/true);
+  b->SetSkipWeaponSelection(/*skip=*/true);
   // Frame-advantage stall is orthogonal to packet loss; turn it off so
   // the peers freely run ahead and we measure redundancy in isolation.
-  a->SetFrameAdvantageEnabled(false);
-  b->SetFrameAdvantageEnabled(false);
+  a->SetFrameAdvantageEnabled(/*enabled=*/false);
+  b->SetFrameAdvantageEnabled(/*enabled=*/false);
   a->game.rand.Seed(kWorldSeed);
   b->game.rand.Seed(kWorldSeed);
 
-  rollback_test::JitterTransport transport({0x10ADED, /*minDelay*/ 1, /*maxDelay*/ 3,
-                                            /*lossProb*/ 0.10, /*dupProb*/ 0.0});
+  rollback_test::JitterTransport transport({.seed = 0x10ADED,
+                                            /*minDelay*/ .min_delay_frames = 1,
+                                            /*maxDelay*/ .max_delay_frames = 3,
+                                            /*lossProb*/ .loss_probability = 0.10,
+                                            /*dupProb*/ .duplicate_probability = 0.0});
 
   a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     transport.SendAToB(gen, bf, c, in, lf);
@@ -76,10 +80,10 @@ TEST_CASE("Rollback survives 10% packet loss via input redundancy", "[rollback][
     b->InjectRemoteInput(f, 0);
   }
 
-  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+  auto deliver_a = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     a->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+  auto deliver_b = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     b->InjectRemoteBatch(bf, c, in, lf);
   };
 
@@ -104,10 +108,10 @@ TEST_CASE("Rollback survives 10% packet loss via input redundancy", "[rollback][
     // Steady-state observation begins after the first ~50 ticks so the
     // warm-up doesn't pollute the running maxima.
     if (tick > 50) {
-      uint32_t lag_a = a->CurrentFrame() - static_cast<uint32_t>(a->ConfirmedFrame() + 1);
-      uint32_t lag_b = b->CurrentFrame() - static_cast<uint32_t>(b->ConfirmedFrame() + 1);
-      if (lag_a > max_lag_a) max_lag_a = lag_a;
-      if (lag_b > max_lag_b) max_lag_b = lag_b;
+      uint32_t const kLagA = a->CurrentFrame() - static_cast<uint32_t>(a->ConfirmedFrame() + 1);
+      uint32_t const kLagB = b->CurrentFrame() - static_cast<uint32_t>(b->ConfirmedFrame() + 1);
+      max_lag_a = std::max(kLagA, max_lag_a);
+      max_lag_b = std::max(kLagB, max_lag_b);
       if (a->CurrentFrame() == prev_a && b->CurrentFrame() == prev_b) ++stall_ticks;
     }
     prev_a = a->CurrentFrame();

@@ -26,21 +26,24 @@ using std::vector;
 #define MIN3(a, b, c) ((a) < (b) ? ((a) < (c) ? (a) : (c)) : ((b) < (c) ? (b) : (c)))
 
 static int Levenshtein(char const* s1, char const* s2) {
-  std::size_t x, y, s1len, s2len;
+  std::size_t x = 0;
+  std::size_t y = 0;
+  std::size_t s1len = 0;
+  std::size_t s2len = 0;
   s1len = strlen(s1);
   s2len = strlen(s2);
-  std::size_t w = s1len + 1;
-  std::vector<unsigned> matrix(w * (s2len + 1));
+  std::size_t const kW = s1len + 1;
+  std::vector<unsigned> matrix(kW * (s2len + 1));
   matrix[0] = 0;
-  for (x = 1; x <= s2len; x++) matrix[x * w] = matrix[(x - 1) * w] + 1;
+  for (x = 1; x <= s2len; x++) matrix[x * kW] = matrix[(x - 1) * kW] + 1;
   for (y = 1; y <= s1len; y++) matrix[y] = matrix[y - 1] + 1;
   for (x = 1; x <= s2len; x++)
     for (y = 1; y <= s1len; y++) {
-      int c = std::tolower(s1[y - 1]) == std::tolower(s2[x - 1]) ? 0 : 1;
-      matrix[x * w + y] = MIN3(matrix[(x - 1) * w + y] + 1, matrix[x * w + y - 1] + 1,
-                               matrix[(x - 1) * w + y - 1] + c);
+      int const kC = std::tolower(s1[y - 1]) == std::tolower(s2[x - 1]) ? 0 : 1;
+      matrix[x * kW + y] = MIN3(matrix[(x - 1) * kW + y] + 1, matrix[x * kW + y - 1] + 1,
+                                matrix[(x - 1) * kW + y - 1] + kC);
     }
-  return (int)(matrix[s2len * w + s1len]);
+  return static_cast<int>(matrix[s2len * kW + s1len]);
 }
 
 #undef MIN3
@@ -59,18 +62,18 @@ static void ResetLeftRight() {
 // end of the dialog flow — with the validated name on success, or an
 // empty string on cancel.
 static std::unique_ptr<AppState> MakeSaveAsState(
-    std::string subdir, std::string ext, std::string initial, int x, int y,
-    std::function<void(std::string const& result)> on_complete) {
+    const std::string& subdir, const std::string& ext, std::string initial, int x, int y,
+    const std::function<void(std::string const& result)>& on_complete) {
   auto cb = [subdir, ext, x, y, on_complete](bool accepted, std::string const& result) {
     if (!accepted || result.empty()) {
       on_complete(std::string());
       return;
     }
-    std::string leaf = result + ext;
-    if (paths::ShadowsSystem(gfx.GetUserConfigNode(), subdir, leaf)) {
-      std::string msg = "NAME '" + leaf + "' IS RESERVED";
+    std::string const kLeaf = result + ext;
+    if (paths::ShadowsSystem(gfx.GetUserConfigNode(), subdir, kLeaf)) {
+      std::string const kMsg = "NAME '" + kLeaf + "' IS RESERVED";
       gfx.state_stack.ScheduleReplaceTop(std::make_unique<InfoBoxState>(
-          msg, 160, 100, true, [subdir, ext, result, x, y, on_complete]() {
+          kMsg, 160, 100, true, [subdir, ext, result, x, y, on_complete]() {
             gfx.state_stack.ScheduleReplaceTop(
                 MakeSaveAsState(subdir, ext, result, x, y, on_complete));
           }));
@@ -82,11 +85,11 @@ static std::unique_ptr<AppState> MakeSaveAsState(
                                             std::move(cb));
 }
 
-MainMenuState::MainMenuState() {}
+MainMenuState::MainMenuState() = default;
 
 void MainMenuState::Enter() {
   Common& common = *gfx->common;
-  int center_x = gfx->single_screen_renderer.render_res_x / 2;
+  int const kCenterX = gfx->single_screen_renderer.render_res_x / 2;
 
   std::memset(gfx->play_renderer.pal.entries, 0, sizeof(gfx->play_renderer.pal.entries));
   std::memset(gfx->single_screen_renderer.pal.entries, 0,
@@ -98,12 +101,12 @@ void MainMenuState::Enter() {
   common.font.DrawString(gfx->play_renderer.bmp, LS(Copyright2), 2, 152, 19);
 
   if (gfx->controller->Running()) {
-    gfx->main_menu.SetVisibility(MainMenu::kMaResumeGame, true);
+    gfx->main_menu.SetVisibility(MainMenu::kMaResumeGame, /*state=*/true);
     gfx->main_menu.ItemFromId(MainMenu::kMaResumeGame)->string = "RESUME GAME (F1)";
     gfx->main_menu.ItemFromId(MainMenu::kMaNewGame)->string = "NEW GAME";
     startItemId_ = MainMenu::kMaResumeGame;
   } else {
-    gfx->main_menu.SetVisibility(MainMenu::kMaResumeGame, false);
+    gfx->main_menu.SetVisibility(MainMenu::kMaResumeGame, /*state=*/false);
     gfx->main_menu.ItemFromId(MainMenu::kMaNewGame)->string = "NEW GAME (F1)";
     startItemId_ = MainMenu::kMaNewGame;
   }
@@ -121,7 +124,7 @@ void MainMenuState::Enter() {
   gfx->frozen_screen.Copy(gfx->play_renderer.bmp);
   gfx->single_screen_renderer.Clear();
   if (gfx->controller->CurrentLevel()) {
-    gfx->controller->CurrentLevel()->DrawMiniature(gfx->single_screen_renderer.bmp, center_x - 126,
+    gfx->controller->CurrentLevel()->DrawMiniature(gfx->single_screen_renderer.bmp, kCenterX - 126,
                                                    gfx->single_screen_renderer.render_res_y - 208,
                                                    2);
   }
@@ -181,8 +184,8 @@ bool MainMenuState::Update() {
     if (gfx->cur_menu == &gfx->main_menu) {
       g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
 
-      int s = gfx->main_menu.SelectedId();
-      switch (s) {
+      int const kS = gfx->main_menu.SelectedId();
+      switch (kS) {
         case MainMenu::kMaSettings: {
           gfx->cur_menu = &gfx->settings_menu;
           break;
@@ -190,7 +193,7 @@ bool MainMenuState::Update() {
 
         case MainMenu::kMaPlayer1Settings:
         case MainMenu::kMaPlayer2Settings: {
-          gfx->PlayerSettings(s - MainMenu::kMaPlayer1Settings);
+          gfx->PlayerSettings(kS - MainMenu::kMaPlayer1Settings);
           break;
         }
 
@@ -250,12 +253,12 @@ bool MainMenuState::Update() {
 
         default: {
           gfx->cur_menu = &gfx->main_menu;
-          selected_ = s;
+          selected_ = kS;
         }
       }
     } else if (gfx->cur_menu == &gfx->settings_menu) {
-      int item_id = gfx->settings_menu.SelectedId();
-      switch (item_id) {
+      int const kItemId = gfx->settings_menu.SelectedId();
+      switch (kItemId) {
         case SettingsMenu::kSiLevel:
           g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
           gfx->state_stack.Push(std::make_unique<LevelSelectorState>(), gfx);
@@ -273,13 +276,14 @@ bool MainMenuState::Update() {
 
         case SettingsMenu::kSaveOptions: {
           g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
-          int x, y;
+          int x = 0;
+          int y = 0;
           auto* item = gfx->settings_menu.ItemFromId(SettingsMenu::kSaveOptions);
           if (item && gfx->settings_menu.ItemPosition(*item, x, y)) {
             x += gfx->settings_menu.value_offset_x + 2;
-            std::string name = GetBasename(GetLeaf(gfx->settings_node.FullPath()));
+            std::string const kName = GetBasename(GetLeaf(gfx->settings_node.FullPath()));
             gfx->state_stack.Push(
-                MakeSaveAsState("Setups", ".cfg", name, x, y,
+                MakeSaveAsState("Setups", ".cfg", kName, x, y,
                                 [this](std::string const& result) {
                                   if (!result.empty()) {
                                     gfx->SaveSettings(gfx->GetUserConfigNode() / "Setups" /
@@ -298,16 +302,17 @@ bool MainMenuState::Update() {
           break;
       }
     } else if (gfx->cur_menu == &gfx->player_menu) {
-      int item_id = gfx->player_menu.SelectedId();
+      int const kItemId = gfx->player_menu.SelectedId();
 
-      if (item_id == PlayerMenu::kPlLoadProfile) {
+      if (kItemId == PlayerMenu::kPlLoadProfile) {
         g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
         gfx->state_stack.Push(std::make_unique<ProfileSelectorState>(*gfx->player_menu.ws), gfx);
-      } else if (item_id == PlayerMenu::kPlName) {
+      } else if (kItemId == PlayerMenu::kPlName) {
         g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
         auto& ws = *gfx->player_menu.ws;
-        int x, y;
-        auto* item = gfx->player_menu.ItemFromId(item_id);
+        int x = 0;
+        int y = 0;
+        auto* item = gfx->player_menu.ItemFromId(kItemId);
         if (item && gfx->player_menu.ItemPosition(*item, x, y)) {
           x += gfx->player_menu.value_offset_x + 2;
           gfx->state_stack.Push(
@@ -324,10 +329,11 @@ bool MainMenuState::Update() {
                                                  }),
               gfx);
         }
-      } else if (item_id == PlayerMenu::kPlSaveProfileAs) {
+      } else if (kItemId == PlayerMenu::kPlSaveProfileAs) {
         g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
-        int x, y;
-        auto* item = gfx->player_menu.ItemFromId(item_id);
+        int x = 0;
+        int y = 0;
+        auto* item = gfx->player_menu.ItemFromId(kItemId);
         if (item && gfx->player_menu.ItemPosition(*item, x, y)) {
           x += gfx->player_menu.value_offset_x + 2;
           gfx->state_stack.Push(
@@ -342,59 +348,60 @@ bool MainMenuState::Update() {
                               }),
               gfx);
         }
-      } else if ((item_id >= PlayerMenu::kPlUp && item_id <= PlayerMenu::kPlJump) ||
-                 item_id == PlayerMenu::kPlDig) {
+      } else if ((kItemId >= PlayerMenu::kPlUp && kItemId <= PlayerMenu::kPlJump) ||
+                 kItemId == PlayerMenu::kPlDig) {
         g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
-        bool extended = gfx->settings->kExtensions;
-        int key_idx = item_id - PlayerMenu::kPlUp;
+        bool const kExtended = Settings::kExtensions;
+        int const kEyIdx = kItemId - PlayerMenu::kPlUp;
 
         gfx->state_stack.Push(
-            std::make_unique<WaitForKeyState>(extended,
-                                              [this, key_idx](uint32_t k, bool is_gamepad) {
+            std::make_unique<WaitForKeyState>(kExtended,
+                                              [this, kEyIdx](uint32_t k, bool is_gamepad) {
                                                 auto& ws = *gfx->player_menu.ws;
                                                 if (k != kDkEscape) {
                                                   if (is_gamepad) {
-                                                    ws.gamepad_controls[key_idx] = k;
+                                                    ws.gamepad_controls[kEyIdx] = k;
                                                   } else {
-                                                    if (!IsExtendedKey(k)) ws.controls[key_idx] = k;
-                                                    ws.controls_ex[key_idx] = k;
+                                                    if (!IsExtendedKey(k)) ws.controls[kEyIdx] = k;
+                                                    ws.controls_ex[kEyIdx] = k;
                                                   }
                                                   gfx->player_menu.UpdateItems(*gfx->common);
                                                 }
                                               }),
             gfx);
-      } else if (item_id >= PlayerMenu::kPlWeap0 && item_id < PlayerMenu::kPlWeap0 + 5) {
+      } else if (kItemId >= PlayerMenu::kPlWeap0 && kItemId < PlayerMenu::kPlWeap0 + 5) {
         g_sound_player->Play(common.sound_hook[SoundMenuSelect]);
-        int x, y;
-        auto* item = gfx->player_menu.ItemFromId(item_id);
+        int x = 0;
+        int y = 0;
+        auto* item = gfx->player_menu.ItemFromId(kItemId);
         if (item && gfx->player_menu.ItemPosition(*item, x, y)) {
           x += gfx->player_menu.value_offset_x + 2;
-          int weap_idx = item_id - PlayerMenu::kPlWeap0;
-          gfx->state_stack.Push(std::make_unique<InputStringState>(
-                                    "", 10, x, y, nullptr, "", false,
-                                    [this, weap_idx](bool accepted, std::string const& result) {
-                                      if (accepted && !result.empty()) {
-                                        Common& common = *gfx->common;
-                                        auto& ws = *gfx->player_menu.ws;
-                                        uint32_t num_weapons = (uint32_t)common.weapons.size();
+          int const kWeapIdx = kItemId - PlayerMenu::kPlWeap0;
+          gfx->state_stack.Push(
+              std::make_unique<InputStringState>(
+                  "", 10, x, y, nullptr, "", false,
+                  [this, kWeapIdx](bool accepted, std::string const& result) {
+                    if (accepted && !result.empty()) {
+                      Common& common = *gfx->common;
+                      auto& ws = *gfx->player_menu.ws;
+                      auto const kNumWeapons = static_cast<uint32_t>(common.weapons.size());
 
-                                        uint32_t best = ws.weapons[weap_idx];
-                                        double best_dist = std::numeric_limits<double>::max();
-                                        for (uint32_t i = 1; i <= num_weapons; ++i) {
-                                          std::string& name =
-                                              common.weapons[common.weap_order[i - 1]].name;
-                                          double dist = Levenshtein(name.c_str(), result.c_str()) /
-                                                        (double)name.length();
-                                          if (dist < best_dist) {
-                                            best = i;
-                                            best_dist = dist;
-                                          }
-                                        }
-                                        ws.weapons[weap_idx] = best;
-                                        gfx->player_menu.UpdateItems(common);
-                                      }
-                                    }),
-                                gfx);
+                      uint32_t best = ws.weapons[kWeapIdx];
+                      double best_dist = std::numeric_limits<double>::max();
+                      for (uint32_t i = 1; i <= kNumWeapons; ++i) {
+                        std::string const& name = common.weapons[common.weap_order[i - 1]].name;
+                        double const kDist = Levenshtein(name.c_str(), result.c_str()) /
+                                             static_cast<double>(name.length());
+                        if (kDist < best_dist) {
+                          best = i;
+                          best_dist = kDist;
+                        }
+                      }
+                      ws.weapons[kWeapIdx] = best;
+                      gfx->player_menu.UpdateItems(common);
+                    }
+                  }),
+              gfx);
         }
       } else {
         selected_ = gfx->cur_menu->OnEnter(common);
@@ -438,15 +445,16 @@ bool MainMenuState::Update() {
   }
 
   if (gfx->TestSdlKeyOnce(SDL_SCANCODE_F8)) {
-    uint32_t s = 14;
+    uint32_t const kS = 14;
 
     Rand r;
-    r.Seed(s);
+    r.Seed(kS);
 
     Common& common = *gfx->common;
 
     vector<std::size_t> nobj_map;
 
+    nobj_map.reserve(common.nobject_types.size());
     for (std::size_t i = 0; i < common.nobject_types.size(); ++i) {
       nobj_map.push_back(i);
     }
@@ -497,7 +505,7 @@ bool MainMenuState::Update() {
       w.splinter_colour = r(256);
       w.splinter_scatter = r(2);
       w.splinter_type = r(common.nobject_types.size());
-      w.start_frame = r((uint32_t)common.small_sprites.count - 13);
+      w.start_frame = r(static_cast<uint32_t>(common.small_sprites.count) - 13);
       w.num_frames = r(5);
       w.time_to_explo = 50 + r(200);
       w.time_to_explo_v = 10 + r(50);
@@ -524,7 +532,7 @@ bool MainMenuState::Update() {
       n.hit_damage = r(10);
       n.leave_obj = r(5) == 0 ? r(common.sobject_types.size()) : -1;
       n.leave_obj_delay = 10 + r(80);
-      n.start_frame = r((uint32_t)common.small_sprites.count - 13);
+      n.start_frame = r(static_cast<uint32_t>(common.small_sprites.count) - 13);
       n.num_frames = r(5);
       n.speed = r(150);
       n.splinter_amount = idx > 0 && r(5) == 0 ? r(10) : 0;
@@ -543,7 +551,7 @@ bool MainMenuState::Update() {
       s.detect_range = r(20);
       s.dirt_effect = r(9);
       s.flash = r(5);
-      s.start_frame = r((uint32_t)common.large_sprites.count - 7);
+      s.start_frame = r(static_cast<uint32_t>(common.large_sprites.count) - 7);
       s.num_frames = r(7);
       s.start_sound = r(common.sounds.size());
       s.shake = r(10);
@@ -588,7 +596,7 @@ void MainMenuState::Draw() {
   Common& common = *gfx->common;
 
   if (gfx->cur_menu == &gfx->main_menu)
-    gfx->settings_menu.Draw(common, gfx->play_renderer, true);
+    gfx->settings_menu.Draw(common, gfx->play_renderer, /*disabled=*/true);
   else
-    gfx->cur_menu->Draw(common, gfx->play_renderer, false);
+    gfx->cur_menu->Draw(common, gfx->play_renderer, /*disabled=*/false);
 }

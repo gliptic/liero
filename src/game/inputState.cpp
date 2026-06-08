@@ -51,13 +51,16 @@ void InputStringState::HandleEvent(SDL_Event& ev) {
       break;
 
     case SDL_EVENT_TEXT_INPUT: {
+      // NOLINTNEXTLINE(bugprone-signed-char-misuse, cert-str34-c) — ev.text.text is plain `char[]` (SDL ABI); Utf8ToDos handles the conversion semantics internally.
       int k = Utf8ToDos(ev.text.text);
+      // NOLINTNEXTLINE(bugprone-assignment-in-if-condition) — short-circuiting filter mutates k; refactoring degrades clarity.
       if (k && buffer_.size() < maxLen_ && (!filter_ || (k = filter_(k)))) {
-        buffer_ += char(k);
+        buffer_ += static_cast<char>(k);
       }
       break;
     }
 
+    // NOLINTNEXTLINE(bugprone-branch-clone) — explicit no-op for SDL_EVENT_TEXT_EDITING documents the choice not to handle IME composition.
     case SDL_EVENT_TEXT_EDITING:
       // No complex IME support
       break;
@@ -79,18 +82,18 @@ bool InputStringState::Update() {
 }
 
 void InputStringState::Draw() {
-  std::string str = prefix_ + buffer_ + '_';
+  std::string const kStr = prefix_ + buffer_ + '_';
 
   Font& font = gfx->common->font;
-  int width = font.GetDims(str);
-  int adjust = centered_ ? width / 2 : 0;
-  int clr_x = x_ - 10 - adjust;
+  int const kWidth = font.GetDims(kStr);
+  int const kAdjust = centered_ ? kWidth / 2 : 0;
+  int const kClrX = x_ - 10 - kAdjust;
 
-  BlitImageNoKeyColour(gfx->play_renderer.bmp, &gfx->frozen_screen.GetPixel(clr_x, y_), clr_x, y_,
-                       clr_x + 10 + width, 8, gfx->frozen_screen.pitch);
+  BlitImageNoKeyColour(gfx->play_renderer.bmp, &gfx->frozen_screen.GetPixel(kClrX, y_), kClrX, y_,
+                       kClrX + 10 + kWidth, 8, gfx->frozen_screen.pitch);
 
-  DrawRoundedBox(gfx->play_renderer.bmp, x_ - 2 - adjust, y_, 0, 7, width);
-  font.DrawString(gfx->play_renderer.bmp, str, x_ - adjust, y_ + 1, 50);
+  DrawRoundedBox(gfx->play_renderer.bmp, x_ - 2 - kAdjust, y_, 0, 7, kWidth);
+  font.DrawString(gfx->play_renderer.bmp, kStr, x_ - kAdjust, y_ + 1, 50);
 }
 
 // --- WaitForKeyState ---
@@ -105,9 +108,9 @@ void WaitForKeyState::HandleEvent(SDL_Event& ev) {
 
   switch (ev.type) {
     case SDL_EVENT_KEY_DOWN: {
-      uint32_t k = SDLToDOSKey(ev.key.scancode);
-      if (extended_ || !IsExtendedKey(k)) {
-        result_ = k;
+      uint32_t const k_ = SDLToDOSKey(ev.key.scancode);
+      if (extended_ || !IsExtendedKey(k_)) {
+        result_ = k_;
         done_ = true;
       }
       break;
@@ -146,15 +149,15 @@ bool WaitForKeyState::Update() {
 }
 
 void WaitForKeyState::Draw() {
-  std::string text = "PRESS A KEY";
-  int height;
-  int width = gfx->common->font.GetDims(text, &height);
+  std::string const kText = "PRESS A KEY";
+  int height = 0;
+  int const kWidth = gfx->common->font.GetDims(kText, &height);
 
-  int cx = 160 - width / 2 - 2;
-  int cy = 100 - height / 2 - 2;
+  int const kCx = 160 - kWidth / 2 - 2;
+  int const kCy = 100 - height / 2 - 2;
 
-  DrawRoundedBox(gfx->play_renderer.bmp, cx, cy, 0, height + 1, width + 1);
-  gfx->common->font.DrawString(gfx->play_renderer.bmp, text, cx + 2, cy + 2, 50);
+  DrawRoundedBox(gfx->play_renderer.bmp, kCx, kCy, 0, height + 1, kWidth + 1);
+  gfx->common->font.DrawString(gfx->play_renderer.bmp, kText, kCx + 2, kCy + 2, 50);
 }
 
 // --- InfoBoxState ---
@@ -195,12 +198,12 @@ void InfoBoxState::Draw() {
     Fill(gfx->play_renderer.bmp, 0);
   }
 
-  int height;
-  int width = gfx->common->font.GetDims(text_, &height);
+  int height = 0;
+  int const kWidth = gfx->common->font.GetDims(text_, &height);
 
-  int cx = x_ - width / 2 - 2;
-  int cy = y_ - height / 2 - 2;
+  int const kCx = x_ - kWidth / 2 - 2;
+  int const kCy = y_ - height / 2 - 2;
 
-  DrawRoundedBox(gfx->play_renderer.bmp, cx, cy, 0, height + 1, width + 1);
-  gfx->common->font.DrawString(gfx->play_renderer.bmp, text_, cx + 2, cy + 2, 6);
+  DrawRoundedBox(gfx->play_renderer.bmp, kCx, kCy, 0, height + 1, kWidth + 1);
+  gfx->common->font.DrawString(gfx->play_renderer.bmp, text_, kCx + 2, kCy + 2, 6);
 }

@@ -50,16 +50,19 @@ struct CountingStatsRecorder : StatsRecorder {
     if (speculative) return; \
     ++events;                \
   } while (0)
-  void DamagePotential(Worm*, WormWeapon*, int) override { EVT(); }
-  void DamageDealt(Worm*, WormWeapon*, Worm*, int, bool) override { EVT(); }
-  void Shot(Worm*, WormWeapon*) override { EVT(); }
-  void Hit(Worm*, WormWeapon*, Worm*) override { EVT(); }
-  void AfterSpawn(Worm*) override { EVT(); }
-  void AfterDeath(Worm*) override { EVT(); }
-  void PreTick(Game&) override { EVT(); }
-  void Tick(Game&) override { EVT(); }
-  void Finish(Game&) override { EVT(); }
-  void AiProcessTime(Worm*, std::chrono::nanoseconds) override { EVT(); }
+  void DamagePotential(Worm* /*by_worm*/, WormWeapon* /*weapon*/, int /*hp*/) override { EVT(); }
+  void DamageDealt(Worm* /*by_worm*/, WormWeapon* /*weapon*/, Worm* /*to_worm*/, int /*hp*/,
+                   bool /*has_hit*/) override {
+    EVT();
+  }
+  void Shot(Worm* /*by_worm*/, WormWeapon* /*weapon*/) override { EVT(); }
+  void Hit(Worm* /*by_worm*/, WormWeapon* /*weapon*/, Worm* /*to_worm*/) override { EVT(); }
+  void AfterSpawn(Worm* /*worm*/) override { EVT(); }
+  void AfterDeath(Worm* /*worm*/) override { EVT(); }
+  void PreTick(Game& /*game*/) override { EVT(); }
+  void Tick(Game& /*game*/) override { EVT(); }
+  void Finish(Game& /*game*/) override { EVT(); }
+  void AiProcessTime(Worm* /*worm*/, std::chrono::nanoseconds /*time*/) override { EVT(); }
 #undef EVT
 };
 
@@ -72,8 +75,8 @@ struct Runner {
   Runner(uint32_t seed) {
     PrecomputeTables();
     common = std::make_shared<Common>();
-    FsNode tc_root(FsNode("data") / "TC" / "openliero");
-    common->load(std::move(tc_root));
+    FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+    common->load(kTcRoot);
 
     settings = std::make_shared<Settings>();
     settings->lives = 50;
@@ -84,7 +87,7 @@ struct Runner {
 
     sp = std::make_shared<CountingSoundPlayer>();
     game = std::make_unique<Game>(common, settings, sp);
-    game->stats_recorder.reset(new CountingStatsRecorder);
+    game->stats_recorder = std::make_shared<CountingStatsRecorder>();
     game->rand.Seed(seed);
 
     for (int idx = 0; idx < 2; ++idx) {
@@ -106,7 +109,7 @@ struct Runner {
     game->ResetWorms();
   }
 
-  void Step(Rand& input_rng) {
+  void Step(Rand& input_rng) const {
     for (int idx = 0; idx < 2; ++idx) {
       uint32_t input = input_rng() & 0x7f;
       if ((input_rng() % 10) < 6) input |= (1 << 4);
@@ -116,8 +119,8 @@ struct Runner {
     game->ProcessFrame();
   }
 
-  CountingStatsRecorder& Stats() {
-    return static_cast<CountingStatsRecorder&>(*game->stats_recorder);
+  CountingStatsRecorder& Stats() const {
+    return dynamic_cast<CountingStatsRecorder&>(*game->stats_recorder);
   }
 };
 
@@ -128,12 +131,12 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
   constexpr int kPhase = 200;
 
   // Control: 2 * kPhase frames with no speculation.
-  Runner ctl(kSeed);
+  Runner const kCtl(kSeed);
   Rand ctl_inputs(kSeed ^ 0xDEAD);
-  for (int f = 0; f < 2 * kPhase; ++f) ctl.Step(ctl_inputs);
-  int control_plays = ctl.sp->plays;
-  int control_stops = ctl.sp->stops;
-  int control_events = ctl.Stats().events;
+  for (int f = 0; f < 2 * kPhase; ++f) kCtl.Step(ctl_inputs);
+  int const kControlPlays = kCtl.sp->plays;
+  int const kControlStops = kCtl.sp->stops;
+  int const kControlEvents = kCtl.Stats().events;
 
   // Subject: run kPhase normally, save snapshot, run kPhase speculatively,
   // restore, run kPhase more normally. Final counts must match the control.
@@ -144,37 +147,37 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
   snap.Prepare(*sub.game);
 
   for (int f = 0; f < kPhase; ++f) sub.Step(sub_inputs);
-  int plays_at_snap = sub.sp->plays;
-  int stops_at_snap = sub.sp->stops;
-  int events_at_snap = sub.Stats().events;
+  int const kPlaysAtSnap = sub.sp->plays;
+  int const kStopsAtSnap = sub.sp->stops;
+  int const kEventsAtSnap = sub.Stats().events;
 
   sub.game->SaveSnapshotFast(snap);
-  sub.game->SetSpeculative(true);
+  sub.game->SetSpeculative(/*s=*/true);
 
   // Speculative run uses the *same* inputs the post-restore segment will
   // use, so the underlying sim work is comparable. Counters must not move.
   Rand spec_inputs = sub_inputs;
   for (int f = 0; f < kPhase; ++f) sub.Step(spec_inputs);
 
-  REQUIRE(sub.sp->plays == plays_at_snap);
-  REQUIRE(sub.sp->stops == stops_at_snap);
-  REQUIRE(sub.Stats().events == events_at_snap);
+  REQUIRE(sub.sp->plays == kPlaysAtSnap);
+  REQUIRE(sub.sp->stops == kStopsAtSnap);
+  REQUIRE(sub.Stats().events == kEventsAtSnap);
 
   // isPlaying should have been called at least once and always passes
   // through — its count is allowed to grow during speculation.
-  int is_playing_during_spec = sub.sp->is_playing_calls;
+  int const kIsPlayingDuringSpec = sub.sp->is_playing_calls;
 
   sub.game->LoadSnapshotFast(snap);
-  sub.game->SetSpeculative(false);
+  sub.game->SetSpeculative(/*s=*/false);
 
   for (int f = 0; f < kPhase; ++f) sub.Step(sub_inputs);
 
-  REQUIRE(sub.sp->plays == control_plays);
-  REQUIRE(sub.sp->stops == control_stops);
-  REQUIRE(sub.Stats().events == control_events);
+  REQUIRE(sub.sp->plays == kControlPlays);
+  REQUIRE(sub.sp->stops == kControlStops);
+  REQUIRE(sub.Stats().events == kControlEvents);
 
   // Sanity: isPlaying did pass through during speculation (not gated).
-  REQUIRE(sub.sp->is_playing_calls >= is_playing_during_spec);
+  REQUIRE(sub.sp->is_playing_calls >= kIsPlayingDuringSpec);
 }
 
 TEST_CASE("setSpeculative propagates to soundPlayer and statsRecorder", "[rollback]") {
@@ -183,12 +186,12 @@ TEST_CASE("setSpeculative propagates to soundPlayer and statsRecorder", "[rollba
   REQUIRE(r.game->sound_player->speculative == false);
   REQUIRE(r.game->stats_recorder->speculative == false);
 
-  r.game->SetSpeculative(true);
+  r.game->SetSpeculative(/*s=*/true);
   REQUIRE(r.game->speculative == true);
   REQUIRE(r.game->sound_player->speculative == true);
   REQUIRE(r.game->stats_recorder->speculative == true);
 
-  r.game->SetSpeculative(false);
+  r.game->SetSpeculative(/*s=*/false);
   REQUIRE(r.game->speculative == false);
   REQUIRE(r.game->sound_player->speculative == false);
   REQUIRE(r.game->stats_recorder->speculative == false);

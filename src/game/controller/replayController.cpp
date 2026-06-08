@@ -1,5 +1,9 @@
 #include "replayController.hpp"
 
+#include <utility>
+
+#include <memory>
+
 #include "../game.hpp"
 #include "../gfx.hpp"
 #include "../mixer/player.hpp"
@@ -8,13 +12,9 @@
 
 ReplayController::ReplayController(std::shared_ptr<Common> common,
                                    std::unique_ptr<io::Reader> source)
-    : state(kStateInitial),
-      fade_value(0),
-      going_to_menu(false),
-      replay(new ReplayReader(std::move(source))),
-      common(common) {}
+    : replay(new ReplayReader(std::move(source))), common(std::move(std::move(common))) {}
 
-void ReplayController::OnKey(int key, bool key_state) {
+void ReplayController::OnKey(int key, bool /*key_state*/) {
   if (key == kDkEscape && !going_to_menu) {
     fade_value = 31;
     going_to_menu = true;
@@ -55,13 +55,13 @@ bool ReplayController::Process() {
   if (state == kStateGame || state == kStateGameEnded) {
     if (gfx.TestSdlKeyOnce(SDL_SCANCODE_R)) {
       *game = *initial_game;
-      game->PostClone(*initial_game, true);
+      game->PostClone(*initial_game, /*complete=*/true);
       replay->reader.Seekg(initial_reader_pos);
     }
 
-    int real_frame_skip = inverse_frame_skip ? !(cycles % frame_skip) : frame_skip;
-    for (int i = 0; i < real_frame_skip && (state == kStateGame || state == kStateGameEnded); ++i) {
-      if (replay.get()) {
+    int const kRealFrameSkip = inverse_frame_skip ? !(cycles % frame_skip) : frame_skip;
+    for (int i = 0; i < kRealFrameSkip && (state == kStateGame || state == kStateGameEnded); ++i) {
+      if (replay) {
         try {
           if (!replay->PlaybackFrame(*gfx.primary_renderer)) {
             // End of replay
@@ -107,7 +107,7 @@ bool ReplayController::Process() {
     return false;
   }
 
-  if (!replay.get() && state == kStateGame) {
+  if (!replay && state == kStateGame) {
     game->stats_recorder->Finish(*game);
     return false;
   }
@@ -117,7 +117,7 @@ bool ReplayController::Process() {
 
 void ReplayController::Draw(Renderer& renderer, bool use_spectator_viewports) {
   if (state == kStateGame || state == kStateGameEnded) {
-    game->Draw(renderer, state, use_spectator_viewports, true);
+    game->Draw(renderer, state, use_spectator_viewports, /*is_replay=*/true);
   }
   renderer.fade_value = fade_value;
 }
@@ -151,8 +151,8 @@ void ReplayController::ChangeState(GameState new_state) {
           new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index, 504, 350));
     }
     game->StartGame();
-    initial_game.reset(new Game(*game));
-    initial_game->PostClone(*game, true);
+    initial_game = std::make_unique<Game>(*game);
+    initial_game->PostClone(*game, /*complete=*/true);
     initial_reader_pos = replay->reader.Tellg();
   } else if (new_state == kStateGameEnded) {
     if (!going_to_menu) {

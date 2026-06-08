@@ -8,6 +8,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
+#include <utility>
 
 #include "rollback/buffer.hpp"
 
@@ -28,26 +29,26 @@ TEST_CASE("RollbackBuffer is empty on construction", "[rollback]") {
 TEST_CASE("RollbackBuffer stores and retrieves consecutive frames", "[rollback]") {
   RollbackBuffer buf;
 
-  for (int f = 0; f < static_cast<int>(RollbackBuffer::kCapacity); ++f) {
+  for (int f = 0; std::cmp_less(f, RollbackBuffer::kCapacity); ++f) {
     Slot& s = buf.Write(f);
     s.local_input = static_cast<uint8_t>(0x10 + f);
     s.remote_input = static_cast<uint8_t>(0x80 + f);
     s.remote_state = RemoteState::kConfirmed;
-    s.snapshot.checksum = static_cast<uint32_t>(0xC0DE0000u + f);
+    s.snapshot.checksum = static_cast<uint32_t>(0xC0DE0000U + f);
   }
 
   REQUIRE(buf.Size() == RollbackBuffer::kCapacity);
   REQUIRE(buf.NewestFrame() == static_cast<int>(RollbackBuffer::kCapacity) - 1);
   REQUIRE(buf.OldestFrame() == 0);
 
-  for (int f = 0; f < static_cast<int>(RollbackBuffer::kCapacity); ++f) {
+  for (int f = 0; std::cmp_less(f, RollbackBuffer::kCapacity); ++f) {
     Slot const* s = buf.Find(f);
     REQUIRE(s != nullptr);
     REQUIRE(s->frame == f);
     REQUIRE(s->local_input == static_cast<uint8_t>(0x10 + f));
     REQUIRE(s->remote_input == static_cast<uint8_t>(0x80 + f));
     REQUIRE(s->remote_state == RemoteState::kConfirmed);
-    REQUIRE(s->snapshot.checksum == static_cast<uint32_t>(0xC0DE0000u + f));
+    REQUIRE(s->snapshot.checksum == static_cast<uint32_t>(0xC0DE0000U + f));
   }
 }
 
@@ -58,7 +59,7 @@ TEST_CASE("RollbackBuffer wraps around and evicts oldest frame", "[rollback]") {
   for (int f = 0; f < kFrames; ++f) {
     Slot& s = buf.Write(f);
     s.local_input = static_cast<uint8_t>(f & 0xff);
-    s.snapshot.checksum = static_cast<uint32_t>(0xA0000000u + f);
+    s.snapshot.checksum = static_cast<uint32_t>(0xA0000000U + f);
   }
 
   int const kNewest = kFrames - 1;
@@ -77,7 +78,7 @@ TEST_CASE("RollbackBuffer wraps around and evicts oldest frame", "[rollback]") {
     REQUIRE(s != nullptr);
     REQUIRE(s->frame == f);
     REQUIRE(s->local_input == static_cast<uint8_t>(f & 0xff));
-    REQUIRE(s->snapshot.checksum == static_cast<uint32_t>(0xA0000000u + f));
+    REQUIRE(s->snapshot.checksum == static_cast<uint32_t>(0xA0000000U + f));
   }
   // Future frames are not resident.
   REQUIRE(buf.Find(kNewest + 1) == nullptr);
@@ -162,8 +163,8 @@ TEST_CASE("RollbackBuffer supports Predicted -> Confirmed transition", "[rollbac
   REQUIRE(readback->remote_input == 0x5A);
 
   // Other frames are unchanged.
-  for (int f : {0, 1, 3}) {
-    Slot const* other = buf.Find(f);
+  for (int const kF : {0, 1, 3}) {
+    Slot const* other = buf.Find(kF);
     REQUIRE(other != nullptr);
     REQUIRE(other->remote_state == RemoteState::kPredicted);
     REQUIRE(other->remote_input == 0);
@@ -193,7 +194,7 @@ TEST_CASE("RollbackBuffer reports oldestFrame correctly while filling", "[rollba
   // Before the buffer is full, oldestFrame() is 0; after the first eviction
   // it tracks the eviction horizon.
   RollbackBuffer buf;
-  for (int f = 0; f < static_cast<int>(RollbackBuffer::kCapacity); ++f) {
+  for (int f = 0; std::cmp_less(f, RollbackBuffer::kCapacity); ++f) {
     buf.Write(f);
     REQUIRE(buf.OldestFrame() == 0);
     REQUIRE(buf.NewestFrame() == f);

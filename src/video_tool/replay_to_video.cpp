@@ -1,5 +1,6 @@
 #include "replay_to_video.hpp"
 
+#include <cstdio>
 #include <string>
 #include "game/filesystem.hpp"
 #include "game/game.hpp"
@@ -19,9 +20,9 @@ extern "C" {
 }
 #include "game/mixer/mixer.hpp"
 
-void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
-                   std::string const& fullPath, std::string const& replayVideoName) {
-  ReplayReader replayReader(std::make_unique<io::FileReader>(fullPath.c_str(), "rb"));
+void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
+                   std::string const& full_path, std::string const& replay_video_name) {
+  ReplayReader replay_reader(std::make_unique<io::FileReader>(full_path.c_str(), "rb"));
   Renderer renderer;
 
   if (spectator) {
@@ -34,7 +35,7 @@ void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
 
   sfx_mixer* mixer = SfxMixerCreate();
 
-  std::unique_ptr<Game> game(replayReader.BeginPlayback(
+  std::unique_ptr<Game> game(replay_reader.BeginPlayback(
       common, std::shared_ptr<SoundPlayer>(new RecordSoundPlayer(*common, mixer))));
 
   // FIXME: the viewports are changed based on the replay for some
@@ -56,93 +57,96 @@ void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
   game->StartGame();
   game->Focus(renderer);
 
-  int w = 1280, h = 720;
+  int const kW = 1280;
+  int const kH = 720;
 
   AVRational framerate;
   framerate.num = 1;
   framerate.den = 60;
 
-  AVRational nativeFramerate;
-  nativeFramerate.num = 1;
-  nativeFramerate.den = 70;
+  AVRational native_framerate;
+  native_framerate.num = 1;
+  native_framerate.den = 70;
 
   video_recorder vidrec;
-  vidrec_init(&vidrec, replayVideoName.c_str(), w, h, framerate);
+  VidrecInit(&vidrec, replay_video_name.c_str(), kW, kH, framerate);
 
-  std::vector<int16_t> soundBuffer = std::vector<int16_t>();
+  std::vector<int16_t> sound_buffer = std::vector<int16_t>();
 
-  std::size_t audioCodecFrames = 1024;
+  std::size_t const kAudioCodecFrames = 1024;
 
-  AVRational sampleDebt;
-  sampleDebt.num = 0;
-  sampleDebt.den = 70;
+  AVRational sample_debt;
+  sample_debt.num = 0;
+  sample_debt.den = 70;
 
-  AVRational frameDebt;
-  frameDebt.num = 0;
-  frameDebt.den = 1;
+  AVRational frame_debt;
+  frame_debt.num = 0;
+  frame_debt.den = 1;
 
-  int offsetX, offsetY;
-  int mag = FitScreen(640, 400, renderer.bmp.w, renderer.bmp.h, offsetX, offsetY);
+  int offset_x = 0;
+  int offset_y = 0;
+  int const kMag = FitScreen(640, 400, renderer.bmp.w, renderer.bmp.h, offset_x, offset_y);
 
   int f = 0;
 
-  while (replayReader.PlaybackFrame(renderer)) {
+  while (replay_reader.PlaybackFrame(renderer)) {
     game->ProcessFrame();
     renderer.Clear();
-    game->Draw(renderer, kStateGame, spectator, true);
+    game->Draw(renderer, kStateGame, spectator, /*is_replay=*/true);
     ++f;
     renderer.fade_value = 33;
 
-    sampleDebt.num += 44100;                            // sampleDebt += 44100 / 70
-    int mixerFrames = sampleDebt.num / sampleDebt.den;  // floor(sampleDebt)
-    sampleDebt.num -= mixerFrames * sampleDebt.den;     // sampleDebt -= mixerFrames
+    sample_debt.num += 44100;                                    // sampleDebt += 44100 / 70
+    int const kMixerFrames = sample_debt.num / sample_debt.den;  // floor(sampleDebt)
+    sample_debt.num -= kMixerFrames * sample_debt.den;           // sampleDebt -= mixerFrames
 
-    std::size_t mixerStart = soundBuffer.size();
-    soundBuffer.resize(mixerStart + mixerFrames);
+    std::size_t const kMixerStart = sound_buffer.size();
+    sound_buffer.resize(kMixerStart + kMixerFrames);
 
-    SfxMixerMix(mixer, &soundBuffer[mixerStart], mixerFrames);
+    SfxMixerMix(mixer, &sound_buffer[kMixerStart], kMixerFrames);
 
     {
-      int16_t* audioSamples = &soundBuffer[0];
-      std::size_t samplesLeft = soundBuffer.size();
+      int16_t* audio_samples = sound_buffer.data();
+      std::size_t samples_left = sound_buffer.size();
 
-      while (samplesLeft > audioCodecFrames) {
-        vidrec_write_audio_frame(&vidrec, audioSamples, audioCodecFrames);
-        audioSamples += audioCodecFrames;
-        samplesLeft -= audioCodecFrames;
+      while (samples_left > kAudioCodecFrames) {
+        VidrecWriteAudioFrame(&vidrec, audio_samples, kAudioCodecFrames);
+        audio_samples += kAudioCodecFrames;
+        samples_left -= kAudioCodecFrames;
       }
 
-      frameDebt = av_add_q(frameDebt, nativeFramerate);
+      frame_debt = av_add_q(frame_debt, native_framerate);
 
-      if (av_cmp_q(frameDebt, framerate) > 0) {
-        frameDebt = av_sub_q(frameDebt, framerate);
+      if (av_cmp_q(frame_debt, framerate) > 0) {
+        frame_debt = av_sub_q(frame_debt, framerate);
 
-        Color realPal[256];
-        renderer.pal.Activate(realPal);
+        Color real_pal[256];
+        renderer.pal.Activate(real_pal);
         PalIdx* src = renderer.bmp.pixels;
-        std::size_t destPitch = vidrec.tmp_picture->linesize[0];
-        uint8_t* dest = vidrec.tmp_picture->data[0] + offsetY * destPitch + offsetX * 4;
-        std::size_t srcPitch = renderer.bmp.pitch;
+        std::size_t const kDestPitch = vidrec.tmp_picture->linesize[0];
+        uint8_t* dest = vidrec.tmp_picture->data[0] + offset_y * kDestPitch + offset_x * 4;
+        std::size_t const kSrcPitch = renderer.bmp.pitch;
 
         uint32_t pal32[256];
-        PreparePaletteBgra(realPal, pal32);
+        PreparePaletteBgra(real_pal, pal32);
 
-        ScaleDraw(src, renderer.render_res_x, renderer.render_res_y, srcPitch, dest, destPitch, mag,
-                  pal32);
+        ScaleDraw(src, renderer.render_res_x, renderer.render_res_y, kSrcPitch, dest, kDestPitch,
+                  kMag, pal32);
 
-        vidrec_write_video_frame(&vidrec, vidrec.tmp_picture);
+        VidrecWriteVideoFrame(&vidrec, vidrec.tmp_picture);
       }
 
       // Move remaining samples to the beginning of the buffer
-      std::size_t offset = audioSamples - &soundBuffer[0];
-      soundBuffer.erase(soundBuffer.begin(), soundBuffer.begin() + offset);
+      std::size_t const kOffset = audio_samples - sound_buffer.data();
+      sound_buffer.erase(sound_buffer.begin(), sound_buffer.begin() + kOffset);
     }
 
     if ((f % (70 * 5)) == 0) {
-      printf("\r%s", TimeToStringFrames(f));
-      fflush(stdout);
+      std::printf("\r%s", TimeToStringFrames(f));
+      fflush(stdout);  // NOLINT(cert-err33-c) — progress indicator on stdout; failures are
+                       // non-fatal here.
     }
   }
 
-  vidrec_finalize(&vidrec);
+  VidrecFinalize(&vidrec);
 }

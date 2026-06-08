@@ -27,12 +27,12 @@ struct ReplayWriter : Replay {
 
   io::DeflateWriter writer;
   uint64_t last_settings_hash;
-  bool settings_expired;
+  bool settings_expired{true};
 
   struct WormData {
-    WormData() : settings_expired(true) {}
+    WormData() = default;
     uint64_t last_settings_hash;
-    bool settings_expired;
+    bool settings_expired{true};
   };
   std::map<Worm*, WormData> worm_data;
 
@@ -51,8 +51,8 @@ struct ReplayReader : Replay {
   void Unfocus() {}
   void Focus() {}
 
-  std::unique_ptr<Game> BeginPlayback(std::shared_ptr<Common> common,
-                                      std::shared_ptr<SoundPlayer> sound_player);
+  std::unique_ptr<Game> BeginPlayback(const std::shared_ptr<Common>& common,
+                                      const std::shared_ptr<SoundPlayer>& sound_player);
   bool PlaybackFrame(Renderer& renderer);
 
   // The full inflated replay is held in memory so we can rewind to

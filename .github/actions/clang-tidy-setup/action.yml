@@ -1,0 +1,78 @@
+---
+
+name: Clang-Tidy environment setup
+description: >
+  Install dependencies, configure CMake (linux-x64-ci preset with tests +
+  videotool + tctool enabled so compile_commands.json covers every TU we
+  want tidy to see), and build the game target so any generated sources
+  exist before tidy parses them. The caller is responsible for doing the
+  initial actions/checkout.
+
+runs:
+  using: composite
+  steps:
+    - name: Setup sccache
+      uses: mozilla-actions/sccache-action@v0.0.10
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          clang-tidy \
+          jq \
+          autoconf \
+          autoconf-archive \
+          automake \
+          libtool \
+          pkg-config \
+          libasound2-dev \
+          libpulse-dev \
+          libaudio-dev \
+          libjack-dev \
+          libsndio-dev \
+          libx11-dev \
+          libxext-dev \
+          libxrandr-dev \
+          libxcursor-dev \
+          libxfixes-dev \
+          libxi-dev \
+          libxss-dev \
+          libxtst-dev \
+          libxkbcommon-dev \
+          libdrm-dev \
+          libgbm-dev \
+          libgl1-mesa-dev \
+          libgles2-mesa-dev \
+          libegl1-mesa-dev \
+          libdbus-1-dev \
+          libudev-dev \
+          libwayland-dev \
+          libdecor-0-dev \
+          libavcodec-dev \
+          libavformat-dev \
+          libavutil-dev \
+          libswresample-dev \
+          libswscale-dev
+
+    - name: Get cmake/ninja
+      uses: lukka/get-cmake@latest
+
+    - name: Setup vcpkg
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgDirectory: '${{ github.workspace }}/tools/vcpkg/vcpkg'
+        vcpkgConfigurationJsonGlob: 'vcpkg-configuration.json'
+        appendedCacheKey: 'sdl3-v2'
+
+    - name: Configure
+      shell: bash
+      run: |
+        cmake --preset linux-x64-ci \
+          -DOPENLIERO_BUILD_TESTS=ON \
+          -DOPENLIERO_BUILD_VIDEOTOOL=ON \
+          -DOPENLIERO_BUILD_TCTOOL=ON
+
+    - name: Build (prime generated sources)
+      shell: bash
+      run: cmake --build build/linux-x64-ci --config Release --target game

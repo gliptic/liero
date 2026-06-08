@@ -9,10 +9,10 @@ void Font::DrawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int s
   if (c >= 2 && c < 252)  // TODO: Is this correct, shouldn't it be c >= 0 && c < 250, since
                           // drawText subtracts 2?
   {
-    uint8_t* mem = chars[c].data;
+    uint8_t const* mem = chars[c].data;
     int width = 7;
     int height = 8;
-    int pitch = 7;
+    int const pitch = 7;
 
     CLIP_IMAGE(scr.clip_rect);
 
@@ -21,12 +21,12 @@ void Font::DrawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int s
     for (int cy = 0; cy < height; ++cy) {
       for (int i = 0; i < size; i++) {
         PalIdx* rowdest = scrptr;
-        PalIdx* rowsrc = mem;
+        PalIdx const* rowsrc = mem;
 
         for (int cx = 0; cx < width; ++cx) {
-          PalIdx c = *rowsrc;
+          PalIdx const kC = *rowsrc;
           for (int k = 0; k < size; k++) {
-            if (c) {
+            if (kC) {
               *rowdest = color;
             }
             ++rowdest;
@@ -48,26 +48,26 @@ void Font::DrawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int s
 namespace {
 
 unsigned char CodepointToFontByte(char32_t cp) {
-  int b = cp437::UnicodeToByte(cp);
-  return b < 0 ? 1 : static_cast<unsigned char>(b);  // 1 = skip-no-draw
+  int const kB = cp437::UnicodeToByte(cp);
+  return kB < 0 ? 1 : static_cast<unsigned char>(kB);  // 1 = skip-no-draw
 }
 
 }  // namespace
 
 void Font::DrawString(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color,
                       int size) {
-  int org_x = x;
+  int const kOrgX = x;
 
   for (std::size_t i = 0; i < len;) {
-    char32_t cp = cp437::Utf8DecodeNext(str, len, i);
+    char32_t const kCp = cp437::Utf8DecodeNext(str, len, i);
 
-    if (cp == 0) {
-      x = org_x;
+    if (kCp == 0) {
+      x = kOrgX;
       y += 8 * size;
       continue;
     }
 
-    unsigned char c = CodepointToFontByte(cp);
+    unsigned char c = CodepointToFontByte(kCp);
     if (c >= 2 && c < 252) {
       c -= 2;
 
@@ -90,17 +90,17 @@ int Font::GetDims(char const* str, std::size_t len, int* height) {
   int max_width = 0;
 
   for (std::size_t i = 0; i < len;) {
-    char32_t cp = cp437::Utf8DecodeNext(str, len, i);
+    char32_t const kCp = cp437::Utf8DecodeNext(str, len, i);
 
-    if (cp == 0) {
+    if (kCp == 0) {
       max_width = std::max(max_width, width);
       width = 0;
       max_height += 8;
       continue;
     }
 
-    unsigned char c = CodepointToFontByte(cp);
-    if (c >= 2 && c < 252) width += chars[c - 2].width;
+    unsigned char const kC = CodepointToFontByte(kCp);
+    if (kC >= 2 && kC < 252) width += chars[kC - 2].width;
   }
 
   if (height) *height = max_height;

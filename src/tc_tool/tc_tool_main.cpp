@@ -3,11 +3,13 @@
 #include "game/filesystem.hpp"
 #include "game/reader.hpp"
 
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <vector>
 
-int main(int argc, char* argv[]) {
+// NOLINTNEXTLINE(bugprone-exception-escape) — function-try-block + catch(...) below cover any throw; tidy doesn't see through that.
+int main(int argc, char* argv[]) try {
   // Pre-strip --tc-name <value> before passing to paths::resolve so its
   // value isn't mistaken for a positional argument.
   std::string tc_name;
@@ -22,6 +24,7 @@ int main(int argc, char* argv[]) {
       arg_storage.emplace_back(argv[i]);
     }
   }
+  arg_ptrs.reserve(arg_storage.size());
   for (auto& s : arg_storage) arg_ptrs.push_back(s.data());
   arg_ptrs.push_back(nullptr);
 
@@ -29,32 +32,32 @@ int main(int argc, char* argv[]) {
 
   // First positional is the path to the legacy Liero install directory.
   if (r.positional_args.empty()) {
-    printf("tctool <path-to-tc>\n");
+    std::printf("tctool <path-to-tc>\n");
     return 0;
   }
   std::string const& exe_path = r.positional_args[0];
 
   Common common;
 
-  FsNode path(exe_path);
+  FsNode const kPath(exe_path);
 
   bool found = false;
 
-  for (auto const& name : path.Iter()) {
-    if (ToUpperCase(name.name).find(".EXE") != std::string::npos) {
-      auto exe_reader_ptr = (path / name.name).ToReader();
+  for (auto const& name : kPath.Iter()) {
+    if (ToUpperCase(name.name).contains(".EXE")) {
+      auto exe_reader_ptr = (kPath / name.name).ToReader();
       io::Reader& exe_reader = *exe_reader_ptr;
       ReaderFile exe(exe_reader);
 
       if (exe.Len() >= 135000 && exe.Len() <= 137000) {
-        printf("Converting %s...\n", name.name.c_str());
+        std::printf("Converting %s...\n", name.name.c_str());
 
         // TODO: Some TCs change the name of the .SND or .CHR for some reason.
         // We could read that name from the exe to make them work.
-        auto gfx_reader_ptr = (path / "LIERO.CHR").ToReader();
+        auto gfx_reader_ptr = (kPath / "LIERO.CHR").ToReader();
         io::Reader& gfx_reader = *gfx_reader_ptr;
         ReaderFile gfx(gfx_reader);
-        auto snd_reader_ptr = (path / "LIERO.SND").ToReader();
+        auto snd_reader_ptr = (kPath / "LIERO.SND").ToReader();
         io::Reader& snd_reader = *snd_reader_ptr;
         ReaderFile snd(snd_reader);
 
@@ -62,11 +65,11 @@ int main(int argc, char* argv[]) {
 
         if (tc_name.empty()) tc_name = GetLeaf(exe_path);
 
-        FsNode out_node = r.user_config_node / "TC" / tc_name;
+        FsNode const kOutNode = r.user_config_node / "TC" / tc_name;
 
-        printf("Writing to %s...\n", out_node.FullPath().c_str());
+        std::printf("Writing to %s...\n", kOutNode.FullPath().c_str());
 
-        CommonSave(common, out_node.FullPath());
+        CommonSave(common, kOutNode.FullPath());
 
         found = true;
         break;
@@ -75,8 +78,14 @@ int main(int argc, char* argv[]) {
   }
 
   if (!found) {
-    printf("Could not find a suitable LIERO.EXE in %s\n", exe_path.c_str());
+    std::printf("Could not find a suitable LIERO.EXE in %s\n", exe_path.c_str());
   }
 
   return 0;
+} catch (std::exception const& ex) {
+  std::printf("EXCEPTION: %s\n", ex.what());
+  return 1;
+} catch (...) {  // NOLINT(bugprone-empty-catch) — last-chance handler in main; prevents any non-std
+                 // exception from escaping.
+  return 1;
 }

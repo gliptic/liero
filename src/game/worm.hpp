@@ -17,12 +17,12 @@ struct Game;
 struct Weapon;
 
 struct Ninjarope {
-  Ninjarope() : out(false), attached(false), anchor(0) {}
+  Ninjarope() = default;
 
-  bool out;  // Is the ninjarope out?
-  bool attached;
-  Worm* anchor;       // If non-zero, the worm the ninjarope is attached to
-  fixedvec pos, vel;  // Ninjarope props
+  bool out{false};  // Is the ninjarope out?
+  bool attached{false};
+  Worm* anchor{nullptr};  // If non-zero, the worm the ninjarope is attached to
+  fixedvec pos, vel;      // Ninjarope props
   // Not needed as far as I can tell: fixed forceX, forceY;
   int length, cur_len;
 
@@ -30,29 +30,29 @@ struct Ninjarope {
 };
 
 struct WormWeapon {
-  WormWeapon() : ammo(0), delay_left(0), loading_left(0) {}
+  WormWeapon() = default;
 
   bool Available() const { return loading_left == 0; }
 
   // int id;
   Weapon const* type;
-  int ammo;
-  int delay_left;
-  int loading_left;
+  int ammo{0};
+  int delay_left{0};
+  int loading_left{0};
 };
 
 struct WormSettingsExtensions {
   enum Control {
-    kUp,
-    kDown,
-    kLeft,
-    kRight,
-    kFire,
-    kChange,
-    kJump,
-    kDig,
+    kUp = 0,
+    kDown = 1,
+    kLeft = 2,
+    kRight = 3,
+    kFire = 4,
+    kChange = 5,
+    kJump = 6,
+    kDig = 7,
     kMaxControl = kDig,
-    kMaxControlEx
+    kMaxControlEx = 8
   };
 
   // Input device: 0 = keyboard, 1 = gamepad 0, 2 = gamepad 1, etc.
@@ -61,7 +61,7 @@ struct WormSettingsExtensions {
   WormSettingsExtensions() {
     std::memset(controls_ex, 0, sizeof(controls_ex));
     std::memset(gamepad_controls, 0, sizeof(gamepad_controls));
-    input_device = kInputKeyboard;
+
     InitDefaultGamepadControls();
   }
 
@@ -77,39 +77,39 @@ struct WormSettingsExtensions {
   static bool IsGamepadAxis(uint32_t v) { return v >= kGamepadAxisBase; }
 
   uint32_t gamepad_controls[kMaxControlEx];
-  uint32_t input_device;
+  uint32_t input_device{kInputKeyboard};
   std::string gamepad_name;    // Human-readable name (e.g., "Xbox Wireless Controller")
   std::string gamepad_serial;  // Hardware serial for disambiguating identical controllers
 };
 
 struct WormSettings : WormSettingsExtensions {
-  WormSettings() : health(100), controller(0), random_name(true), color(0) {
+  WormSettings() {
     rgb[0] = 26;
     rgb[1] = 26;
     rgb[2] = 62;
 
-    for (int i = 0; i < NUM_WEAPONS; ++i) {
-      weapons[i] = 1;
+    for (unsigned int& weapon : weapons) {
+      weapon = 1;
     }
     std::memset(controls, 0, sizeof(controls));
   }
 
   uint64_t& UpdateHash();
 
-  void SaveProfile(FsNode node);
-  void LoadProfile(FsNode node);
+  void SaveProfile(const FsNode& node);
+  void LoadProfile(const FsNode& node);
   std::string ToToml() const;
   void FromToml(std::string const& data);
 
-  int health;
-  uint32_t controller;  // CPU / Human
+  int health{100};
+  uint32_t controller{0};  // CPU / Human
   uint32_t controls[kMaxControl];
   uint32_t weapons[NUM_WEAPONS];  // TODO: Adjustable
   std::string name;
   int rgb[3];
-  bool random_name;
+  bool random_name{true};
 
-  int color;
+  int color{0};
 
   // std::string profilePath;
   FsNode profile_node;
@@ -128,7 +128,7 @@ struct WormAI {
 };
 
 struct DumbLieroAI : WormAI {
-  void Process(Game& game, Worm& worm);
+  void Process(Game& game, Worm& worm) override;
 
   Rand rand;
 };
@@ -144,11 +144,11 @@ struct Worm {
     kFire = WormSettings::kFire,
     kChange = WormSettings::kChange,
     kJump = WormSettings::kJump,
-    kMaxControl
+    kMaxControl = 7
   };
 
   struct ControlState {
-    ControlState() : istate(0) {}
+    ControlState() = default;
 
     bool operator==(ControlState const& b) const { return istate == b.istate; }
 
@@ -166,77 +166,32 @@ struct Worm {
       if (v)
         istate |= 1 << n;
       else
-        istate &= ~(uint32_t(1u) << n);
+        istate &= ~(static_cast<uint32_t>(1U) << n);
     }
 
     void Toggle(std::size_t n) { istate ^= 1 << n; }
 
-    uint32_t istate;
+    uint32_t istate{0};
   };
 
   Worm()
-      : pos(),
-        vel(),
-        hotspot_x(0),
-        hotspot_y(0),
-        aiming_angle(0),
-        aiming_speed(0),
-        able_to_jump(false),
-        able_to_dig(false)  // The previous state of some keys
-        ,
-        key_change_pressed(false),
-        movable(false),
-        animate(false)  // Should the worm be animated?
-        ,
-        visible(false)  // Is the worm visible?
-        ,
-        ready(false)  // Is the worm ready to play?
-        ,
-        flag(false)  // Has the worm a flag?
-        ,
-        make_sight_green(false)  // Changes the sight color
-        ,
-        health(0)  // Health left
-        ,
-        lives(0)  // lives left
-        ,
-        kills(0)  // Kills made
-        ,
-        timer(0)  // Timer for GOT
-        ,
-        killed_timer(0)  // Time until worm respawns
-        ,
-        current_frame(0),
-        flags(0)  // How many flags does this worm have?
-        ,
-        current_weapon(0),
-        last_killed_by_idx(-1),
-        fire_cone(0),
-        leave_shell_timer(0),
-        index(0),
-        direction(0),
-        steerable_count(0),
-        stats_x(0) {
-    make_sight_green = false;
+      : ready(true),
+        movable(true),
+        killed_timer(kKilledTimerInitial)
 
-    ready = true;
-    movable = true;
-
-    visible = false;
-    killed_timer = kKilledTimerInitial;
-  }
+  {}
 
   bool Pressed(Control control) const { return control_states[control]; }
 
   bool PressedOnce(Control control) {
-    bool state = control_states[control];
-    control_states.Set(control, false);
-    return state;
+    bool const kState = control_states[control];
+    control_states.Set(control, /*v=*/false);
+    return kState;
   }
 
-  void Release(Control control) { control_states.Set(control, false); }
+  void Release(Control control) { control_states.Set(control, /*v=*/false); }
 
-  void Press(Control control) { control_states.Set(control, true); }
+  void Press(Control control) { control_states.Set(control, /*v=*/true); }
 
   void SetControlState(Control control, bool state) { control_states.Set(control, state); }
 
@@ -266,52 +221,52 @@ struct Worm {
 
   IVec2 logic_respawn;
 
-  int hotspot_x, hotspot_y;  // Hotspots for laser, laser sight, etc.
-  fixed aiming_angle, aiming_speed;
+  int hotspot_x{0}, hotspot_y{0};  // Hotspots for laser, laser sight, etc.
+  fixed aiming_angle{0}, aiming_speed{0};
 
-  bool able_to_jump, able_to_dig;  // The previous state of some keys
-  bool key_change_pressed;
-  bool movable;
+  bool able_to_jump{false}, able_to_dig{false};  // The previous state of some keys
+  bool key_change_pressed{false};
+  bool movable{false};
 
-  bool animate;           // Should the worm be animated?
-  bool visible;           // Is the worm visible?
-  bool ready;             // Is the worm ready to play?
-  bool flag;              // Does the worm have a flag?
-  bool make_sight_green;  // Changes the sight color
-  int health;             // Health left
-  int lives;              // lives left
-  int kills;              // Kills made
+  bool animate{false};           // Should the worm be animated?
+  bool visible{false};           // Is the worm visible?
+  bool ready{false};             // Is the worm ready to play?
+  bool flag{false};              // Does the worm have a flag?
+  bool make_sight_green{false};  // Changes the sight color
+  int health{0};                 // Health left
+  int lives{0};                  // lives left
+  int kills{0};                  // Kills made
 
-  int timer;         // Timer for GOT
-  int killed_timer;  // Time until worm respawns
+  int timer{0};         // Timer for GOT
+  int killed_timer{0};  // Time until worm respawns
   static constexpr int kKilledTimerInitial = 150;
-  int current_frame;
+  int current_frame{0};
 
-  int flags;  // How many flags does this worm have?
+  int flags{0};  // How many flags does this worm have?
 
   Ninjarope ninjarope;
 
-  int current_weapon;      // The selected weapon
-  int last_killed_by_idx;  // What worm that last killed this worm
-  int fire_cone;           // How much is left of the firecone
-  int leave_shell_timer;   // Time until next shell drop
+  int current_weapon{0};       // The selected weapon
+  int last_killed_by_idx{-1};  // What worm that last killed this worm
+  int fire_cone{0};            // How much is left of the firecone
+  int leave_shell_timer{0};    // Time until next shell drop
 
   std::shared_ptr<WormSettings> settings;  // !CLONING
-  int index;                               // 0 or 1
+  int index{0};                            // 0 or 1
 
   std::shared_ptr<WormAI> ai;
 
   int reacts[4];
   WormWeapon weapons[NUM_WEAPONS];
-  int direction;
+  int direction{0};
   ControlState control_states;
   ControlState prev_control_states;
 
   // Temporary state for steerables
-  int steerable_sum_x, steerable_sum_y, steerable_count;
+  int steerable_sum_x, steerable_sum_y, steerable_count{0};
 
   // which X coordinate to display stats at for this worm
-  int stats_x;
+  int stats_x{0};
 
   // Data for LocalController
   ControlState clean_control_states;  // This contains the real state of real and

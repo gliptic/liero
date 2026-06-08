@@ -38,8 +38,8 @@ namespace {
 std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
   settings->loading_time = 0;
@@ -83,16 +83,17 @@ TEST_CASE("Rollback desync detection — clean run produces no alarms", "[rollba
   auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->SetSkipWeaponSelection(true);
-  b->SetSkipWeaponSelection(true);
+  a->SetSkipWeaponSelection(/*skip=*/true);
+  b->SetSkipWeaponSelection(/*skip=*/true);
   // Disable the frame-advantage stall so prediction + rollback are
   // exercised at the same rate as in test_rollback_correctness.
-  a->SetFrameAdvantageEnabled(false);
-  b->SetFrameAdvantageEnabled(false);
+  a->SetFrameAdvantageEnabled(/*enabled=*/false);
+  b->SetFrameAdvantageEnabled(/*enabled=*/false);
   a->game.rand.Seed(kWorldSeed);
   b->game.rand.Seed(kWorldSeed);
 
-  rollback_test::JitterTransport transport({kTransportSeed, 1, 4});
+  rollback_test::JitterTransport transport(
+      {.seed = kTransportSeed, .min_delay_frames = 1, .max_delay_frames = 4});
 
   a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     transport.SendAToB(gen, bf, c, in, lf);
@@ -104,7 +105,8 @@ TEST_CASE("Rollback desync detection — clean run produces no alarms", "[rollba
   // Capture every emitted checksum. The last value wins on duplicates
   // (e.g. a resim that overwrites a prior promote's value for the same
   // frame after a misprediction cascade).
-  std::unordered_map<uint32_t, uint32_t> a_checks, b_checks;
+  std::unordered_map<uint32_t, uint32_t> a_checks;
+  std::unordered_map<uint32_t, uint32_t> b_checks;
   a->SetChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { a_checks[f] = c; });
   b->SetChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { b_checks[f] = c; });
 
@@ -116,10 +118,10 @@ TEST_CASE("Rollback desync detection — clean run produces no alarms", "[rollba
     b->InjectRemoteInput(f, 0);
   }
 
-  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+  auto deliver_a = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     a->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+  auto deliver_b = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     b->InjectRemoteBatch(bf, c, in, lf);
   };
 
@@ -182,14 +184,15 @@ TEST_CASE("Rollback desync detection — 1-bit injection fires within 200 frames
   auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->SetSkipWeaponSelection(true);
-  b->SetSkipWeaponSelection(true);
-  a->SetFrameAdvantageEnabled(false);
-  b->SetFrameAdvantageEnabled(false);
+  a->SetSkipWeaponSelection(/*skip=*/true);
+  b->SetSkipWeaponSelection(/*skip=*/true);
+  a->SetFrameAdvantageEnabled(/*enabled=*/false);
+  b->SetFrameAdvantageEnabled(/*enabled=*/false);
   a->game.rand.Seed(kWorldSeed);
   b->game.rand.Seed(kWorldSeed);
 
-  rollback_test::JitterTransport transport({kTransportSeed, 1, 4});
+  rollback_test::JitterTransport transport(
+      {.seed = kTransportSeed, .min_delay_frames = 1, .max_delay_frames = 4});
 
   a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     transport.SendAToB(gen, bf, c, in, lf);
@@ -198,7 +201,8 @@ TEST_CASE("Rollback desync detection — 1-bit injection fires within 200 frames
     transport.SendBToA(gen, bf, c, in, lf);
   });
 
-  std::unordered_map<uint32_t, uint32_t> a_checks, b_checks;
+  std::unordered_map<uint32_t, uint32_t> a_checks;
+  std::unordered_map<uint32_t, uint32_t> b_checks;
   a->SetChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) { a_checks[f] = c; });
   // Inject: corrupt B's reported checksum starting at kInjectFrame to
   // simulate a peer whose post-frame state has diverged by one bit.
@@ -207,7 +211,7 @@ TEST_CASE("Rollback desync detection — 1-bit injection fires within 200 frames
   // restored on rollback, and turn into a structural divergence rather
   // than the "1-bit drift" the plan calls for.
   b->SetChecksumCallback([&](uint8_t /*gen*/, uint32_t f, uint32_t c) {
-    if (f >= kInjectFrame) c ^= 1u;
+    if (f >= kInjectFrame) c ^= 1U;
     b_checks[f] = c;
   });
 
@@ -219,10 +223,10 @@ TEST_CASE("Rollback desync detection — 1-bit injection fires within 200 frames
     b->InjectRemoteInput(f, 0);
   }
 
-  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+  auto deliver_a = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     a->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+  auto deliver_b = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     b->InjectRemoteBatch(bf, c, in, lf);
   };
 

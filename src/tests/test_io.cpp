@@ -10,8 +10,8 @@
 #include "io/stream.hpp"
 
 TEST_CASE("io::MemReader reads exact bytes", "[io]") {
-  std::vector<uint8_t> data{0x01, 0x02, 0x03};
-  io::MemReader r(data);
+  std::vector<uint8_t> const kData{0x01, 0x02, 0x03};
+  io::MemReader r(kData);
   REQUIRE(r.Get() == 0x01);
   REQUIRE(r.Get() == 0x02);
   REQUIRE(r.Get() == 0x03);
@@ -19,8 +19,8 @@ TEST_CASE("io::MemReader reads exact bytes", "[io]") {
 }
 
 TEST_CASE("io::MemReader::try_get returns short count at EOF", "[io]") {
-  std::vector<uint8_t> data{0x10, 0x20};
-  io::MemReader r(data);
+  std::vector<uint8_t> const kData{0x10, 0x20};
+  io::MemReader r(kData);
   uint8_t buf[4]{};
   REQUIRE(r.TryGet(buf, 4) == 2);
   REQUIRE(buf[0] == 0x10);
@@ -73,6 +73,7 @@ TEST_CASE("io::coding BE round-trip", "[io]") {
 
 TEST_CASE("io::DeflateWriter / InflateReader round-trip random payload", "[io]") {
   std::vector<uint8_t> payload(64 * 1024);
+  // NOLINTNEXTLINE(cert-msc32-c, cert-msc51-cpp, bugprone-random-generator-seed) — fixed seed for reproducible test payload.
   std::mt19937 rng(0xC0FFEE);
   for (auto& b : payload) b = static_cast<uint8_t>(rng());
 
@@ -95,7 +96,7 @@ TEST_CASE("io::DeflateWriter / InflateReader round-trip empty payload", "[io]") 
   std::vector<uint8_t> compressed;
   {
     auto sink = std::make_unique<io::VectorWriter>(compressed);
-    io::DeflateWriter dw(std::move(sink));
+    io::DeflateWriter const kDw(std::move(sink));
   }
   // Empty input still yields a valid zlib stream (header + final block).
   REQUIRE(!compressed.empty());

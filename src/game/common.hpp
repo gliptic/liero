@@ -61,7 +61,7 @@ struct Texts {
 
   std::string weap_states[NUM_WEAPON_STATES];
 
-  int copyright_bar_format;
+  int copyright_bar_format{64};
 };
 
 /* Colour animations sourced from [[constants.colorAnim]] in tc.cfg */
@@ -79,19 +79,19 @@ struct SfxSample {
   SfxSample(SfxSample const&) = delete;
   SfxSample& operator=(SfxSample const&) = delete;
 
-  SfxSample() : sound(0) {}
+  SfxSample() : sound(nullptr) {}
 
-  SfxSample(SfxSample&& other)
+  SfxSample(SfxSample&& other) noexcept
       : name(std::move(other.name)),
         sound(other.sound),
         original_data(std::move(other.original_data)) {
-    other.sound = 0;
+    other.sound = nullptr;
   }
 
-  SfxSample& operator=(SfxSample&& other) {
+  SfxSample& operator=(SfxSample&& other) noexcept {
     name = std::move(other.name);
     sound = other.sound;
-    sound = 0;
+    sound = nullptr;
     original_data = std::move(other.original_data);
     return *this;
   }
@@ -123,12 +123,12 @@ using std::vector;
 struct Common {
   Common();
 
-  ~Common() {}
+  ~Common() = default;
 
   static int fire_cone_offset[FIRE_CONE_OFFSET_DIRECTION][FIRE_CONE_OFFSET_ANGLE_FRAME]
                              [FIRE_CONE_OFFSET_XY];
 
-  void load(FsNode node);
+  void load(const FsNode& node);
   void DrawTextSmall(Bitmap& scr, char const* str, int x, int y);
   void Precompute();
 

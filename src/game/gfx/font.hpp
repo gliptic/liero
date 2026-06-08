@@ -16,16 +16,16 @@ struct Font {
   Font() : chars(250) {}
 
   void DrawString(Bitmap& scr, char const* str, std::size_t len, int x, int y, int color, int size);
-  int GetDims(char const* str, std::size_t len, int* height = 0);
-  void DrawChar(Bitmap& scr, unsigned char ch, int x, int y, int color, int size);
+  int GetDims(char const* str, std::size_t len, int* height = nullptr);
+  void DrawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int size);
 
-  void DrawChar(Bitmap& scr, unsigned char ch, int x, int y, int color) {
-    DrawChar(scr, ch, x, y, color, 1);
+  void DrawChar(Bitmap& scr, unsigned char c, int x, int y, int color) {
+    DrawChar(scr, c, x, y, color, 1);
   }
 
   void DrawCenteredText(Bitmap& scr, std::string const& str, int x, int y, int color, int size) {
-    int len = GetDims(str) * size;
-    DrawString(scr, str.data(), str.size(), x - (len / 2), y, color, size);
+    int const kLen = GetDims(str) * size;
+    DrawString(scr, str.data(), str.size(), x - (kLen / 2), y, color, size);
   }
 
   void DrawCenteredText(Bitmap& scr, std::string const& str, int x, int y, int color) {
@@ -51,19 +51,19 @@ struct Font {
     if (str.buffer.empty()) return;
 
     if (str.placement != TextCell::kLeft) {
-      int w = GetDims(reinterpret_cast<char const*>(&str.buffer[0]), str.buffer.size());
+      int const kW = GetDims(reinterpret_cast<char const*>(str.buffer.data()), str.buffer.size());
 
       if (str.placement == TextCell::kCenter)
-        x -= w / 2;
+        x -= kW / 2;
       else if (str.placement == TextCell::kRight)
-        x -= w;
+        x -= kW;
     }
 
-    DrawString(scr, reinterpret_cast<char const*>(&str.buffer[0]), str.buffer.size(), x, y, color,
-               1);
+    DrawString(scr, reinterpret_cast<char const*>(str.buffer.data()), str.buffer.size(), x, y,
+               color, 1);
   }
 
-  int GetDims(std::string const& str, int* height = 0) {
+  int GetDims(std::string const& str, int* height = nullptr) {
     return GetDims(str.data(), str.size(), height);
   }
 

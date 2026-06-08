@@ -1,5 +1,6 @@
 #include "sobject.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
@@ -11,8 +12,9 @@
 #include "viewport.hpp"
 #include "worm.hpp"
 
+// NOLINTNEXTLINE(misc-no-recursion) — sobject effects can spawn child sobjects; recursion mirrors the data flow and is bounded by the spec.
 void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fired_by,
-                         WObject* from) {
+                         WObject* from) const {
   Common& common = *game.common;
   SObject& obj = *game.sobjects.NewObjectReuse();
 
@@ -20,11 +22,11 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
   if (start_sound >= 0) game.sound_player->Play(game.rand(num_sounds) + start_sound);
 
-  for (std::size_t i = 0; i < game.viewports.size(); ++i) {
-    Viewport& v = *game.viewports[i];
+  for (auto& viewport : game.viewports) {
+    Viewport& v = *viewport;
 
     if (x > v.x && x < v.x + v.rect.Width() && y > v.y && y < v.y + v.rect.Height()) {
-      if (Itof(shake) > v.shake) v.shake = Itof(shake);
+      v.shake = std::max(Itof(shake), v.shake);
     }
   }
 
@@ -34,9 +36,7 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
   obj.cur_frame = 0;
   obj.anim_delay = anim_delay;
 
-  if (flash > game.screen_flash) {
-    game.screen_flash = flash;
-  }
+  game.screen_flash = std::max(flash, game.screen_flash);
 
   Worm* owner = game.WormByIdx(owner_idx);
 
@@ -46,12 +46,12 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
     for (std::size_t i = 0; i < game.worms.size(); ++i) {
       Worm& w = *game.worms[i];
 
-      int wix = Ftoi(w.pos.x);
-      int wiy = Ftoi(w.pos.y);
+      int const kWix = Ftoi(w.pos.x);
+      int const kWiy = Ftoi(w.pos.y);
 
-      if (wix < x + detect_range && wix > x - detect_range && wiy < y + detect_range &&
-          wiy > y - detect_range) {
-        int delta = wix - x;
+      if (kWix < x + detect_range && kWix > x - detect_range && kWiy < y + detect_range &&
+          kWiy > y - detect_range) {
+        int delta = kWix - x;
         int power = detect_range - std::abs(delta);
         int power_sum = power;
 
@@ -63,7 +63,7 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
             w.vel.x -= blow_away * power;
         }
 
-        delta = wiy - y;
+        delta = kWiy - y;
         power = detect_range - std::abs(delta);
         power_sum = (power_sum + power) / 2;
 
@@ -85,31 +85,32 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
         if (w.health > 0) {
           game.DoDamage(w, z, owner_idx);
-          game.stats_recorder->DamageDealt(owner, fired_by, &w, z, false);
+          game.stats_recorder->DamageDealt(owner, fired_by, &w, z, /*has_hit=*/false);
 
-          int blood_amount = game.settings->blood * power_sum / 100;
+          int const kBloodAmount = game.settings->blood * power_sum / 100;
 
-          if (blood_amount > 0) {
-            for (int i = 0; i < blood_amount; ++i) {
-              int angle = game.rand(128);
-              common.nobject_types[6].Create2(game, angle, w.vel / 3, w.pos, 0, w.index, fired_by);
+          if (kBloodAmount > 0) {
+            for (int i = 0; i < kBloodAmount; ++i) {
+              int const kAngle = game.rand(128);
+              common.nobject_types[6].Create2(game, kAngle, w.vel / 3, w.pos, 0, w.index, fired_by);
             }
           }
 
           if (game.rand(3) == 0) {
-            int snd = 18 + game.rand(3);  // NOTE: MUST be outside the unpredictable branch below
+            int const kSnd =
+                18 + game.rand(3);  // NOTE: MUST be outside the unpredictable branch below
             if (!game.sound_player->IsPlaying(&w)) {
-              game.sound_player->Play(snd, &w);
+              game.sound_player->Play(kSnd, &w);
             }
           }
         }
       }
     }  // for( ... worms ...
 
-    int obj_blow_away = blow_away / 3;  // TODO: Read from EXE
+    int const kObjBlowAway = blow_away / 3;  // TODO: Read from EXE
 
     auto wr = game.wobjects.All();
-    for (WObject* i; (i = wr.Next());) {
+    for (WObject* i = nullptr; (i = wr.Next());) {
       Weapon const& weapon = *i->type;
 
       if (weapon.affect_by_explosions) {
@@ -121,9 +122,9 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
           if (power > 0) {
             if (delta > 0)
-              i->vel.x += obj_blow_away * power;
+              i->vel.x += kObjBlowAway * power;
             else if (delta < 0)
-              i->vel.x -= obj_blow_away * power;
+              i->vel.x -= kObjBlowAway * power;
           }
 
           delta = ipos.y - y;
@@ -131,9 +132,9 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
           if (power > 0) {
             if (delta > 0)
-              i->vel.y += obj_blow_away * power;
+              i->vel.y += kObjBlowAway * power;
             else if (delta < 0)
-              i->vel.y -= obj_blow_away * power;
+              i->vel.y -= kObjBlowAway * power;
           }
 
           if (weapon.chain_explosion) i->BlowUpObject(game, owner_idx);
@@ -142,7 +143,7 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
     }  // for( ... wobjects ...
 
     auto nr = game.nobjects.All();
-    for (NObject* i; (i = nr.Next());) {
+    for (NObject* i = nullptr; (i = nr.Next());) {
       NObjectType const& t = *i->type;
 
       if (t.affect_by_explosions) {
@@ -154,9 +155,9 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
           if (power > 0) {
             if (delta > 0)
-              i->vel.x += obj_blow_away * power;
+              i->vel.x += kObjBlowAway * power;
             else if (delta < 0)
-              i->vel.x -= obj_blow_away * power;
+              i->vel.x -= kObjBlowAway * power;
           }
 
           delta = ipos.y - y;
@@ -164,27 +165,27 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
 
           if (power > 0) {
             if (delta > 0)
-              i->vel.y += obj_blow_away * power;
+              i->vel.y += kObjBlowAway * power;
             else if (delta < 0)
-              i->vel.y -= obj_blow_away * power;
+              i->vel.y -= kObjBlowAway * power;
           }
         }
       }
     }
 
     {
-      int width = detect_range / 2;
+      int const kWidth = detect_range / 2;
 
-      Rect rect(x - width, y - width, x + width + 1, y + width + 1);
+      Rect rect(x - kWidth, y - kWidth, x + kWidth + 1, y + kWidth + 1);
 
       rect.Intersect(game.level.Bounds());
 
       for (int y = rect.y1; y < rect.y2; ++y)
         for (int x = rect.x1; x < rect.x2; ++x) {
           if (game.level.Mat(x, y).AnyDirt() && game.rand(8) == 0) {
-            PalIdx pix = game.level.Pixel(x, y);
-            int angle = game.rand(128);
-            common.nobject_types[2].Create2(game, angle, fixedvec(), Itof(IVec2(x, y)), pix,
+            PalIdx const kPix = game.level.Pixel(x, y);
+            int const kAngle = game.rand(128);
+            common.nobject_types[2].Create2(game, kAngle, fixedvec(), Itof(IVec2(x, y)), kPix,
                                             owner_idx, fired_by);
           }
         }
@@ -200,20 +201,21 @@ void SObjectType::Create(Game& game, int x, int y, int owner_idx, WormWeapon* fi
   }
 
   auto br = game.bonuses.All();
-  for (Bonus* i; (i = br.Next());) {
-    int ix = Ftoi(i->x), iy = Ftoi(i->y);
+  for (Bonus const* i = nullptr; (i = br.Next());) {
+    int const kIx = Ftoi(i->x);
+    int const kIy = Ftoi(i->y);
 
-    if (ix > x - detect_range && ix < x + detect_range && iy > y - detect_range &&
-        iy < y + detect_range) {
+    if (kIx > x - detect_range && kIx < x + detect_range && kIy > y - detect_range &&
+        kIy < y + detect_range) {
       game.bonuses.Free(br);
-      common.sobject_types[0].Create(game, ix, iy, owner_idx, fired_by);
+      common.sobject_types[0].Create(game, kIx, kIy, owner_idx, fired_by);
     }
   }  // for( ... bonuses ...
 }
 
 void SObject::Process(Game& game) {
   Common& common = *game.common;
-  SObjectType& t = common.sobject_types[id];
+  SObjectType const& t = common.sobject_types[id];
 
   if (--anim_delay <= 0) {
     anim_delay = t.anim_delay;

@@ -80,13 +80,9 @@ if(CLANG_TIDY_EXE)
     set(CLANG_TIDY_JOBS 4)
   endif()
 
-  # Full-tree scan via run-clang-tidy (ships with the clang-tidy package).
-  # Useful for triaging existing findings; does not gate anything.
+  # Full-tree scan via scripts/clang-tidy-all.sh, matching what CI runs.
   add_custom_target(clang-tidy-all
-    COMMAND run-clang-tidy
-            -p "${CMAKE_BINARY_DIR}"
-            -j${CLANG_TIDY_JOBS}
-            "src/.*"
+    COMMAND "${CMAKE_SOURCE_DIR}/scripts/clang-tidy-all.sh" "${CMAKE_BINARY_DIR}"
     WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
     USES_TERMINAL
     VERBATIM

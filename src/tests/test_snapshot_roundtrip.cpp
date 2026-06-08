@@ -32,8 +32,8 @@ struct GameRunner {
     PrecomputeTables();
 
     common = std::make_shared<Common>();
-    FsNode tc_root(FsNode("data") / "TC" / "openliero");
-    common->load(std::move(tc_root));
+    FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+    common->load(kTcRoot);
 
     settings = std::make_shared<Settings>();
     settings->lives = 50;
@@ -66,7 +66,7 @@ struct GameRunner {
     game->ResetWorms();
   }
 
-  void Step(Rand& input_rng) {
+  void Step(Rand& input_rng) const {
     for (int idx = 0; idx < 2; ++idx) {
       uint32_t input = input_rng() & 0x7f;
       if ((input_rng() % 10) < 6) input |= (1 << 4);  // fire
@@ -108,7 +108,7 @@ TEST_CASE("Snapshot round-trip preserves frame-by-frame state", "[snapshot][roll
   // Snapshot at frame kPhase.
   std::vector<uint8_t> snap;
   sub.game->SaveSnapshot(snap);
-  uint32_t hash_at_snap = HashGameState(*sub.game);
+  uint32_t const kHashAtSnap = HashGameState(*sub.game);
 
   // Phase 2: frames [kPhase, 2*kPhase) — advance, ignore final hash.
   for (int f = kPhase; f < 2 * kPhase; ++f) {
@@ -118,7 +118,7 @@ TEST_CASE("Snapshot round-trip preserves frame-by-frame state", "[snapshot][roll
 
   // Restore the snapshot — state must match exactly what we saved.
   sub.game->LoadSnapshot(snap);
-  REQUIRE(HashGameState(*sub.game) == hash_at_snap);
+  REQUIRE(HashGameState(*sub.game) == kHashAtSnap);
 
   // Phase 3: replay phase-2 inputs from the restored state. Rebuild an
   // input PRNG and skip phase-1's draws so it lines up with the control
@@ -169,13 +169,13 @@ TEST_CASE("Snapshot save/restore microbenchmark", "[snapshot][rollback][!benchma
   }
   auto t2 = clock::now();
 
-  double save_us = std::chrono::duration<double, std::micro>(t1 - t0).count() / kIters;
-  double load_us = std::chrono::duration<double, std::micro>(t2 - t1).count() / kIters;
+  double const kSaveUs = std::chrono::duration<double, std::micro>(t1 - t0).count() / kIters;
+  double const kLoadUs = std::chrono::duration<double, std::micro>(t2 - t1).count() / kIters;
 
-  std::cout << "[snapshot bench] save=" << save_us << " us, load=" << load_us
+  std::cout << "[snapshot bench] save=" << kSaveUs << " us, load=" << kLoadUs
             << " us, size=" << snap.size() << " bytes\n";
 
   // Generous bound: 10 ms.
-  REQUIRE(save_us < 10000.0);
-  REQUIRE(load_us < 10000.0);
+  REQUIRE(kSaveUs < 10000.0);
+  REQUIRE(kLoadUs < 10000.0);
 }

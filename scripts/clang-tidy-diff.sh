@@ -48,6 +48,16 @@ if ! jobs=$(nproc 2>/dev/null); then
 	jobs=$(sysctl -n hw.ncpu 2>/dev/null || echo 4)
 fi
 
+# Capture without -e/pipefail: clang-tidy-diff.py exits non-zero whenever
+# any of its parallel tidy invocations errors out (e.g. a header fed
+# standalone with no compile_commands entry). With either option active,
+# the assignment dies before `echo "$output"` runs, so the actual
+# diagnostics — which are in $output — are lost. We decide pass/fail
+# from the grep below, not from the pipeline's exit status.
+# Note: `set -e` alone kills failed `$(...)` substitutions in bash 5.2+,
+# so we must disable both -e and pipefail (not just pipefail).
+set +e
+set +o pipefail
 output=$(git diff -U0 "${base_ref}"...HEAD -- 'src/*' \
 	| "$diff_cmd" \
 		-p1 \
@@ -55,10 +65,15 @@ output=$(git diff -U0 "${base_ref}"...HEAD -- 'src/*' \
 		-j"$jobs" \
 		-regex '.*\.(cpp|hpp|h|cc|cxx)$' \
 		-quiet)
+set -e
+set -o pipefail
 
 echo "$output"
 
-if echo "$output" | grep -E "^[^[:space:]]+:[0-9]+:[0-9]+: (warning|error):" >/dev/null; then
+# Only fail on diagnostics from our own source tree; ignore third-party
+# headers (vcpkg_installed, build-dir generated files, etc.).
+if echo "$output" | grep -E "^[^[:space:]]+:[0-9]+:[0-9]+: (warning|error):" \
+	| grep -vE "vcpkg_installed/|/build/" >/dev/null; then
 	echo "clang-tidy reported issues on changed lines" >&2
 	exit 1
 fi

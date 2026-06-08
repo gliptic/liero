@@ -26,9 +26,10 @@ bool GamePlayState::Update() {
       return false;
     }
     if (gfx->net_session->DesyncDetected()) {
-      uint32_t frame = gfx->net_session->DesyncFrame();
+      uint32_t const kFrame = gfx->net_session->DesyncFrame();
       char msg[64];
-      snprintf(msg, sizeof(msg), "DESYNC AT FRAME %u", frame);
+      // NOLINTNEXTLINE(cert-err33-c) — fixed-width message; buffer is generous for any uint32.
+      snprintf(msg, sizeof(msg), "DESYNC AT FRAME %u", kFrame);
       gfx->controller->MarkUnresumable();
       gfx->net_session.reset();
       gfx->state_stack.ScheduleReplaceTop(
@@ -55,13 +56,13 @@ bool GamePlayState::Update() {
     if (game && game->stats_recorder) {
       auto* stats = dynamic_cast<NormalStatsRecorder*>(game->stats_recorder.get());
       if (stats && stats->game_time > 0) {
-        bool is_multiplayer = gfx->net_session != nullptr;
+        bool const kIsMultiplayer = gfx->net_session != nullptr;
 
         // Transition network session to rematch state to keep connection alive
-        if (is_multiplayer) gfx->net_session->EnterRematch();
+        if (kIsMultiplayer) gfx->net_session->EnterRematch();
 
         gfx->state_stack.ScheduleReplaceTop(
-            std::make_unique<StatsState>(*stats, *game, is_multiplayer));
+            std::make_unique<StatsState>(*stats, *game, kIsMultiplayer));
         return false;
       }
     }
@@ -80,8 +81,8 @@ bool GamePlayState::Update() {
 
 void GamePlayState::Draw() {
   gfx->play_renderer.Clear();
-  gfx->controller->Draw(gfx->play_renderer, false);
+  gfx->controller->Draw(gfx->play_renderer, /*use_spectator_viewports=*/false);
 
   gfx->single_screen_renderer.Clear();
-  gfx->controller->Draw(gfx->single_screen_renderer, true);
+  gfx->controller->Draw(gfx->single_screen_renderer, /*use_spectator_viewports=*/true);
 }

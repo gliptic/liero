@@ -1,6 +1,7 @@
 #pragma once
 
 #include "enumBehavior.hpp"
+#include "menuItem.hpp"
 
 #include <string>
 
@@ -13,7 +14,7 @@ struct ArrayEnumBehavior : EnumBehavior {
                     bool broken_enter = false)
       : EnumBehavior(common, v, 0, N - 1, broken_enter), arr(arr) {}
 
-  void OnUpdate(Menu& menu, MenuItem& item) {
+  void OnUpdate(Menu& /*menu*/, MenuItem& item) override {
     item.value = arr[v];
     item.has_value = true;
   }

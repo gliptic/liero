@@ -33,7 +33,7 @@ struct FastObjectList {
   }
 
   T* NewObjectReuse() {
-    T* ret;
+    T* ret = nullptr;
     if (count == limit)
       ret = &arr[limit - 1];
     else
@@ -43,18 +43,18 @@ struct FastObjectList {
   }
 
   T* NewObject() {
-    if (count == limit) return 0;
+    if (count == limit) return nullptr;
 
     T* ret = GetFreeObject();
     return ret;
   }
 
-  Iterator Begin() { return Iterator(&arr[0]); }
+  Iterator Begin() { return Iterator(arr.data()); }
 
-  Iterator End() { return Iterator(&arr[0] + count); }
+  Iterator End() { return Iterator(arr.data() + count); }
 
   void Free(T* ptr) {
-    assert(ptr < &arr[0] + count && ptr >= &arr[0]);
+    assert(ptr < arr.data() + count && ptr >= arr.data());
     *ptr = arr[--count];
   }
 

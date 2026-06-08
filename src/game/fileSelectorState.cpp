@@ -1,5 +1,7 @@
 #include "fileSelectorState.hpp"
 
+#include <memory>
+
 #include "common.hpp"
 #include "controller/controller.hpp"
 #include "controller/replayController.hpp"
@@ -74,7 +76,7 @@ void LevelSelectorState::Enter() {
   randomNode_ = std::make_shared<FileNode>(LS(Random), "", "", false, &selector_->root_node);
 
   selector_->Fill(gfx->GetConfigNode(),
-                  [](string const& name, string const& ext) { return CiCompare(ext, "LEV"); });
+                  [](string const& /*name*/, string const& ext) { return CiCompare(ext, "LEV"); });
 
   randomNode_->id = 1;
   selector_->root_node.children.insert(selector_->root_node.children.begin(), randomNode_);
@@ -106,13 +108,14 @@ void LevelSelectorState::DrawExtra() {
       auto r_ptr = sel->GetFsNode().ToReader();
       io::Reader& r = *r_ptr;
       if (level.load(common, *gfx->settings, r)) {
-        int center_x = gfx->single_screen_renderer.render_res_x / 2;
+        int const kCenterX = gfx->single_screen_renderer.render_res_x / 2;
 
         level.DrawMiniature(gfx->frozen_screen, 134, 162, 10);
-        level.DrawMiniature(gfx->frozen_spectator_screen, center_x - 126,
+        level.DrawMiniature(gfx->frozen_spectator_screen, kCenterX - 126,
                             gfx->single_screen_renderer.render_res_y - 208, 2);
       }
-    } catch (std::runtime_error&) {
+    } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — bad preview is non-fatal; we
+                                     // just skip drawing it.
       // Ignore
     }
 
@@ -126,8 +129,8 @@ void LevelSelectorState::DrawExtra() {
     title += selector_->current_node->full_path;
   }
 
-  int wid = common.font.GetDims(title);
-  DrawRoundedBox(gfx->play_renderer.bmp, 178, 20, 0, 7, wid);
+  int const kWid = common.font.GetDims(title);
+  DrawRoundedBox(gfx->play_renderer.bmp, 178, 20, 0, 7, kWid);
   common.font.DrawString(gfx->play_renderer.bmp, title, 180, 21, 50);
 }
 
@@ -139,7 +142,7 @@ void ReplaySelectorState::Enter() {
   selector_ = std::make_unique<FileSelector>(*gfx->common, 28);
 
   selector_->Fill(gfx->GetConfigNode(),
-                  [](string const& name, string const& ext) { return CiCompare(ext, "LRP"); });
+                  [](string const& /*name*/, string const& ext) { return CiCompare(ext, "LRP"); });
 
   selector_->SetFolder(selector_->root_node);
   if (gfx->prev_selected_replay_path.empty() ||
@@ -153,7 +156,7 @@ bool ReplaySelectorState::OnSelected(FileNode* node) {
 
   // Reset controller before opening the replay, since we may be recording it
   gfx->controller.reset();
-  gfx->controller.reset(new ReplayController(gfx->common, node->GetFsNode().ToReader()));
+  gfx->controller = std::make_unique<ReplayController>(gfx->common, node->GetFsNode().ToReader());
 
   gfx->pending_menu_selection = MainMenu::kMaReplay;
   return true;
@@ -168,7 +171,7 @@ void ProfileSelectorState::Enter() {
   selector_ = std::make_unique<FileSelector>(*gfx->common, 28);
 
   selector_->Fill(gfx->GetConfigNode(),
-                  [](string const& name, string const& ext) { return CiCompare(ext, "TOML"); });
+                  [](string const& /*name*/, string const& ext) { return CiCompare(ext, "TOML"); });
 
   selector_->SetFolder(selector_->root_node);
   selector_->Select(JoinPath(gfx->GetConfigNode().FullPath(), "Profiles"));
@@ -189,7 +192,7 @@ void OptionsSelectorState::Enter() {
   selector_ = std::make_unique<FileSelector>(*gfx->common, 28);
 
   selector_->Fill(gfx->GetConfigNode(),
-                  [](string const& name, string const& ext) { return CiCompare(ext, "CFG"); });
+                  [](string const& /*name*/, string const& ext) { return CiCompare(ext, "CFG"); });
 
   selector_->SetFolder(selector_->root_node);
   selector_->Select(JoinPath(gfx->GetConfigNode().FullPath(), "Setups"));
@@ -208,7 +211,7 @@ TcSelectorState::TcSelectorState() : FileSelectorState("Select TC:") {}
 void TcSelectorState::Enter() {
   selector_ = std::make_unique<FileSelector>(*gfx->common, 28);
 
-  selector_->Fill(gfx->GetConfigNode() / "TC", 0);
+  selector_->Fill(gfx->GetConfigNode() / "TC", nullptr);
   selector_->SetFolder(selector_->root_node);
 
   auto end = std::remove_if(selector_->root_node.children.begin(),
@@ -225,7 +228,7 @@ void TcSelectorState::Enter() {
 }
 
 bool TcSelectorState::OnSelected(FileNode* node) {
-  std::unique_ptr<Common> new_common(new Common());
+  std::unique_ptr<Common> new_common = std::make_unique<Common>();
   new_common->load(node->GetFsNode());
   gfx->settings->tc = node->name;
   gfx->common.reset(new_common.release());

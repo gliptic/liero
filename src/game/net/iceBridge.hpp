@@ -14,6 +14,10 @@ static constexpr BridgeSocket kBridgeInvalid = -1;
 #endif
 
 struct IceAgent;
+// enet.h declares ENetHost as a typedef for `struct _ENetHost`; forward-
+// declaring under the typedef name would create a distinct incomplete
+// type, so we name the underlying struct tag.
+// NOLINTNEXTLINE(bugprone-reserved-identifier, readability-identifier-naming, cert-dcl37-c, cert-dcl51-cpp)
 struct _ENetHost;
 
 // Loopback UDP bridge between ENet and IceAgent.

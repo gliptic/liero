@@ -11,7 +11,7 @@
 
 namespace io {
 struct Reader;
-}
+}  // namespace io
 
 struct Game;
 struct Settings;
@@ -19,7 +19,7 @@ struct Rand;
 struct Common;
 
 struct Level {
-  Level(Common& common) : width(0), height(0) { zero_material = common.materials[0]; }
+  Level(Common& common) : zero_material(common.materials[0]) {}
 
   bool load(Common& common, Settings const& settings, io::Reader& r);
 
@@ -53,23 +53,23 @@ struct Level {
   Material* Matp(int x, int y) { return &materials[x + y * width]; }
 
   unsigned char CheckedPixelWrap(int x, int y) {
-    unsigned int idx = static_cast<unsigned int>(x + y * width);
-    if (idx < data.size()) return data[idx];
+    auto const kIdx = static_cast<unsigned int>(x + y * width);
+    if (kIdx < data.size()) return data[kIdx];
     return 0;
   }
 
   Material CheckedMatWrap(int x, int y) {
-    unsigned int idx = static_cast<unsigned int>(x + y * width);
-    if (idx < materials.size()) return materials[idx];
+    auto const kIdx = static_cast<unsigned int>(x + y * width);
+    if (kIdx < materials.size()) return materials[kIdx];
     return zero_material;
   }
 
-  bool Inside(int x, int y) {
+  bool Inside(int x, int y) const {
     return static_cast<unsigned int>(x) < static_cast<unsigned int>(width) &&
            static_cast<unsigned int>(y) < static_cast<unsigned int>(height);
   }
 
-  bool Inside(fixedvec pos) {
+  bool Inside(fixedvec pos) const {
     return static_cast<unsigned int>(pos.x) < static_cast<unsigned int>(width) &&
            static_cast<unsigned int>(pos.y) < static_cast<unsigned int>(height);
   }
@@ -85,7 +85,7 @@ struct Level {
     std::swap(zero_material, other.zero_material);
   }
 
-  Rect Bounds() { return Rect(0, 0, width, height); }
+  Rect Bounds() const { return {0, 0, width, height}; }
 
   void Resize(int width_new, int height_new);
 
@@ -94,7 +94,7 @@ struct Level {
 
   bool old_random_level;
   std::string old_level_file;
-  int width, height;
+  int width{0}, height{0};
   Palette origpal;
   Material zero_material;
 };

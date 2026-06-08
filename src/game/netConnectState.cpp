@@ -25,11 +25,11 @@ NetConnectState::NetConnectState(NetSession::Role role, NetTransport&& transport
       existingTransport_(std::move(transport)) {}
 
 void NetConnectState::Enter() {
-  FsNode tc_root = gfx->GetConfigNode() / "TC" / gfx->settings->tc;
-  auto session = std::make_unique<NetSession>(gfx->common, gfx->settings, tc_root);
+  FsNode const kTcRoot = gfx->GetConfigNode() / "TC" / gfx->settings->tc;
+  auto session = std::make_unique<NetSession>(gfx->common, gfx->settings, kTcRoot);
 
   // When client receives a new TC, update global gfx.common
-  session->on_tc_reloaded = [](std::shared_ptr<Common> new_common) {
+  session->on_tc_reloaded = [](const std::shared_ptr<Common>& new_common) {
     ::gfx.common = new_common;
     ::gfx.play_renderer.LoadPalette(*new_common);
     if (auto* dp = dynamic_cast<DefaultSoundPlayer*>(::gfx.sound_player.get()))
@@ -50,8 +50,9 @@ void NetConnectState::Enter() {
       stunQuery_ = std::make_unique<StunQuery>();
       stunQuery_->Start(port_);
     }
-  } else
+  } else {
     ok = session->JoinGame(address_, port_);
+  }
 
   if (!ok) {
     gfx->pending_error_message = "FAILED TO START NETWORK";
@@ -147,23 +148,23 @@ void NetConnectState::Draw() {
     line2 = "STARTING...";
   }
 
-  std::string line3 = "PRESS ESC TO CANCEL";
+  std::string const kLine3 = "PRESS ESC TO CANCEL";
 
-  int cx = 160;
-  int cy = 60;
+  int const kCx = 160;
+  int const kCy = 60;
 
-  int w1 = font.GetDims(line1);
-  font.DrawString(gfx->play_renderer.bmp, line1, cx - w1 / 2, cy, 50);
+  int const kW1 = font.GetDims(line1);
+  font.DrawString(gfx->play_renderer.bmp, line1, kCx - kW1 / 2, kCy, 50);
 
-  int w2 = font.GetDims(line2);
-  font.DrawString(gfx->play_renderer.bmp, line2, cx - w2 / 2, cy + 12, 7);
+  int const kW2 = font.GetDims(line2);
+  font.DrawString(gfx->play_renderer.bmp, line2, kCx - kW2 / 2, kCy + 12, 7);
 
   // Show local addresses when hosting
   if (role_ == NetSession::kHost && !localAddresses_.empty()) {
-    int addr_y = cy + 30;
-    std::string hdr = "CONNECT USING:";
-    int wh = font.GetDims(hdr);
-    font.DrawString(gfx->play_renderer.bmp, hdr, cx - wh / 2, addr_y, 6);
+    int addr_y = kCy + 30;
+    std::string const kHdr = "CONNECT USING:";
+    int const kWh = font.GetDims(kHdr);
+    font.DrawString(gfx->play_renderer.bmp, kHdr, kCx - kWh / 2, addr_y, 6);
     addr_y += 10;
 
     for (auto& addr : localAddresses_) {
@@ -172,30 +173,31 @@ void NetConnectState::Draw() {
         display = "[" + addr.ip + "]:" + std::to_string(port_);
       else
         display = addr.ip + ":" + std::to_string(port_);
-      int wd = font.GetDims(display);
-      font.DrawString(gfx->play_renderer.bmp, display, cx - wd / 2, addr_y, 7);
+      int const kWd = font.GetDims(display);
+      font.DrawString(gfx->play_renderer.bmp, display, kCx - kWd / 2, addr_y, 7);
       addr_y += 10;
     }
 
     if (!externalIPs_.ipv4.empty()) {
-      uint16_t ext_port = externalIPs_.ipv4_port ? externalIPs_.ipv4_port : port_;
-      std::string d = externalIPs_.ipv4 + ":" + std::to_string(ext_port) + " (EXTERNAL)";
-      int wd = font.GetDims(d);
-      font.DrawString(gfx->play_renderer.bmp, d, cx - wd / 2, addr_y, 45);
+      uint16_t const kExtPort = externalIPs_.ipv4_port ? externalIPs_.ipv4_port : port_;
+      std::string const kD = externalIPs_.ipv4 + ":" + std::to_string(kExtPort) + " (EXTERNAL)";
+      int const kWd = font.GetDims(kD);
+      font.DrawString(gfx->play_renderer.bmp, kD, kCx - kWd / 2, addr_y, 45);
       addr_y += 10;
     }
     if (!externalIPs_.ipv6.empty()) {
-      uint16_t ext_port = externalIPs_.ipv6_port ? externalIPs_.ipv6_port : port_;
-      std::string d = "[" + externalIPs_.ipv6 + "]:" + std::to_string(ext_port) + " (EXTERNAL)";
-      int wd = font.GetDims(d);
-      font.DrawString(gfx->play_renderer.bmp, d, cx - wd / 2, addr_y, 45);
+      uint16_t const kExtPort = externalIPs_.ipv6_port ? externalIPs_.ipv6_port : port_;
+      std::string const kD =
+          "[" + externalIPs_.ipv6 + "]:" + std::to_string(kExtPort) + " (EXTERNAL)";
+      int const kWd = font.GetDims(kD);
+      font.DrawString(gfx->play_renderer.bmp, kD, kCx - kWd / 2, addr_y, 45);
       addr_y += 10;
     }
 
-    int w3 = font.GetDims(line3);
-    font.DrawString(gfx->play_renderer.bmp, line3, cx - w3 / 2, addr_y + 6, 6);
+    int const kW3 = font.GetDims(kLine3);
+    font.DrawString(gfx->play_renderer.bmp, kLine3, kCx - kW3 / 2, addr_y + 6, 6);
   } else {
-    int w3 = font.GetDims(line3);
-    font.DrawString(gfx->play_renderer.bmp, line3, cx - w3 / 2, cy + 30, 6);
+    int const kW3 = font.GetDims(kLine3);
+    font.DrawString(gfx->play_renderer.bmp, kLine3, kCx - kW3 / 2, kCy + 30, 6);
   }
 }

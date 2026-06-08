@@ -13,6 +13,7 @@
 // runs of unlucky delays land back-to-back; larger delays + loss are
 // covered by the redundancy / packet-loss tests.
 
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 #include <memory>
@@ -30,8 +31,8 @@ namespace {
 std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
   settings->loading_time = 0;
@@ -74,12 +75,12 @@ RefResult RunReference(uint32_t world_seed, ScriptedInputs const& script, int ti
   auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->SetSkipWeaponSelection(true);
-  b->SetSkipWeaponSelection(true);
+  a->SetSkipWeaponSelection(/*skip=*/true);
+  b->SetSkipWeaponSelection(/*skip=*/true);
   // Isolate the rollback algorithm from the frame-advantage stall so
   // the peers freely run ahead and exercise prediction.
-  a->SetFrameAdvantageEnabled(false);
-  b->SetFrameAdvantageEnabled(false);
+  a->SetFrameAdvantageEnabled(/*enabled=*/false);
+  b->SetFrameAdvantageEnabled(/*enabled=*/false);
   a->game.rand.Seed(world_seed);
   b->game.rand.Seed(world_seed);
 
@@ -89,7 +90,8 @@ RefResult RunReference(uint32_t world_seed, ScriptedInputs const& script, int ti
     std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
     uint32_t local_frame;
   };
-  std::vector<Pkt> a_to_b, b_to_a;
+  std::vector<Pkt> a_to_b;
+  std::vector<Pkt> b_to_a;
   auto enqueue = [](std::vector<Pkt>& q, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     Pkt p{};
     p.base_frame = bf;
@@ -98,12 +100,10 @@ RefResult RunReference(uint32_t world_seed, ScriptedInputs const& script, int ti
     for (uint8_t i = 0; i < c; ++i) p.inputs[i] = in[i];
     q.push_back(p);
   };
-  a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    enqueue(a_to_b, bf, c, in, lf);
-  });
-  b->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
-    enqueue(b_to_a, bf, c, in, lf);
-  });
+  a->SetInputCallbacks([&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in,
+                           uint32_t lf) { enqueue(a_to_b, bf, c, in, lf); });
+  b->SetInputCallbacks([&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in,
+                           uint32_t lf) { enqueue(b_to_a, bf, c, in, lf); });
   a->Focus();
   b->Focus();
 
@@ -126,10 +126,10 @@ RefResult RunReference(uint32_t world_seed, ScriptedInputs const& script, int ti
   }
 
   REQUIRE(a->CurrentFrame() == b->CurrentFrame());
-  uint32_t c_a = WideRollbackChecksum(a->game);
-  uint32_t c_b = WideRollbackChecksum(b->game);
-  REQUIRE(c_a == c_b);
-  return {c_a, a->CurrentFrame()};
+  uint32_t const kCA = WideRollbackChecksum(a->game);
+  uint32_t const kCB = WideRollbackChecksum(b->game);
+  REQUIRE(kCA == kCB);
+  return {.checksum = kCA, .sim_frame = a->CurrentFrame()};
 }
 
 }  // namespace
@@ -140,7 +140,7 @@ TEST_CASE("Rollback recovers from mispredictions under random delay", "[rollback
   constexpr uint32_t kInputSeed = 0xC0FFEE;
 
   ScriptedInputs script = GenerateInputs(kInputSeed, kTicks);
-  RefResult ref = RunReference(kWorldSeed, script, kTicks);
+  RefResult const kRef = RunReference(kWorldSeed, script, kTicks);
 
   struct Case {
     char const* name;
@@ -150,30 +150,32 @@ TEST_CASE("Rollback recovers from mispredictions under random delay", "[rollback
   };
   // Delays are chosen so the steady-state gap stays well under
   // kMaxRollback even when unlucky runs of high-delay packets cluster.
-  std::vector<Case> cases = {
-      {"delay [1,3]", 1, 3, 0x1111},
-      {"delay [1,4]", 1, 4, 0x2222},
-      {"delay [2,4]", 2, 4, 0x3333},
-      {"delay [1,5]", 1, 5, 0x4444},
+  std::vector<Case> const kCases = {
+      {.name = "delay [1,3]", .min_delay = 1, .max_delay = 3, .transport_seed = 0x1111},
+      {.name = "delay [1,4]", .min_delay = 1, .max_delay = 4, .transport_seed = 0x2222},
+      {.name = "delay [2,4]", .min_delay = 2, .max_delay = 4, .transport_seed = 0x3333},
+      {.name = "delay [1,5]", .min_delay = 1, .max_delay = 5, .transport_seed = 0x4444},
   };
 
-  for (auto const& tc : cases) {
+  for (auto const& tc : kCases) {
     SECTION(tc.name) {
       INFO("transport seed = " << tc.transport_seed);
 
       auto [common, settings] = MakeEnv();
       auto a = std::make_unique<RollbackController>(common, settings, 0);
       auto b = std::make_unique<RollbackController>(common, settings, 1);
-      a->SetSkipWeaponSelection(true);
-      b->SetSkipWeaponSelection(true);
+      a->SetSkipWeaponSelection(/*skip=*/true);
+      b->SetSkipWeaponSelection(/*skip=*/true);
       // Disable the frame-advantage stall so the rollback algorithm
       // is exercised under jitter without the time-sync clamp.
-      a->SetFrameAdvantageEnabled(false);
-      b->SetFrameAdvantageEnabled(false);
+      a->SetFrameAdvantageEnabled(/*enabled=*/false);
+      b->SetFrameAdvantageEnabled(/*enabled=*/false);
       a->game.rand.Seed(kWorldSeed);
       b->game.rand.Seed(kWorldSeed);
 
-      rollback_test::JitterTransport transport({tc.transport_seed, tc.min_delay, tc.max_delay});
+      rollback_test::JitterTransport transport({.seed = tc.transport_seed,
+                                                .min_delay_frames = tc.min_delay,
+                                                .max_delay_frames = tc.max_delay});
 
       a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in,
                                uint32_t lf) { transport.SendAToB(gen, bf, c, in, lf); });
@@ -206,10 +208,8 @@ TEST_CASE("Rollback recovers from mispredictions under random delay", "[rollback
         b->SetLocalControlState(script.b[i]);
         a->Process();
         b->Process();
-        if (a->LastTickResimFrames() > max_resim_in_a_tick)
-          max_resim_in_a_tick = a->LastTickResimFrames();
-        if (b->LastTickResimFrames() > max_resim_in_a_tick)
-          max_resim_in_a_tick = b->LastTickResimFrames();
+        max_resim_in_a_tick = std::max(a->LastTickResimFrames(), max_resim_in_a_tick);
+        max_resim_in_a_tick = std::max(b->LastTickResimFrames(), max_resim_in_a_tick);
         transport.Tick(deliver_a, deliver_b);
       }
       REQUIRE(max_resim_in_a_tick > 0);
@@ -240,9 +240,9 @@ TEST_CASE("Rollback recovers from mispredictions under random delay", "[rollback
       REQUIRE(a->RollbackCount() > 0);
       REQUIRE(b->RollbackCount() > 0);
 
-      uint32_t c_a = WideRollbackChecksum(a->game);
-      uint32_t c_b = WideRollbackChecksum(b->game);
-      REQUIRE(c_a == c_b);
+      uint32_t const kCA = WideRollbackChecksum(a->game);
+      uint32_t const kCB = WideRollbackChecksum(b->game);
+      REQUIRE(kCA == kCB);
 
       // And it has to match what a zero-jitter peer would have produced
       // from the same input sequence at the same frame. The reference
@@ -261,7 +261,7 @@ TEST_CASE("Rollback recovers from mispredictions under random delay", "[rollback
           }(),
           kTicks + 12);
       REQUIRE(a->CurrentFrame() == ref_advanced.sim_frame);
-      REQUIRE(c_a == ref_advanced.checksum);
+      REQUIRE(kCA == ref_advanced.checksum);
     }
   }
 }

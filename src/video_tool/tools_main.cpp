@@ -5,26 +5,32 @@
 #include "game/reader.hpp"
 #include "game/text.hpp"
 
+#include <cstdio>
 #include <ctime>
 #include <exception>
+#include <memory>
 
 #include "replay_to_video.hpp"
 
-bool match(unsigned char const* str, unsigned char const* pat) {
-  if (*pat == '*') return match(str, pat + 1) || match(str + 1, pat);
+// NOLINTNEXTLINE(misc-no-recursion) — small glob matcher; recursion depth bounded by pattern length.
+bool Match(unsigned char const* str, unsigned char const* pat) {
+  if (*pat == '*') return Match(str, pat + 1) || Match(str + 1, pat);
   if (!*str) return !*pat;
-  return (toupper(*str) == toupper(*pat) || *pat == '?') && match(str + 1, pat + 1);
+  return (toupper(*str) == toupper(*pat) || *pat == '?') && Match(str + 1, pat + 1);
 }
 
-bool match(std::string const& str, std::string const& pat) {
-  return match((unsigned char const*)str.c_str(), (unsigned char const*)pat.c_str());
+bool Match(std::string const& str, std::string const& pat) {
+  return Match(reinterpret_cast<unsigned char const*>(str.c_str()),
+               reinterpret_cast<unsigned char const*>(pat.c_str()));
 }
 
 int main(int argc, char* argv[]) try {
-  bool tcSet = false, dir = false, spectator = false;
+  bool tc_set = false;
+  bool dir = false;
+  bool spectator = false;
 
-  std::string tcName;
-  std::string replayPath;
+  std::string tc_name;
+  std::string replay_path;
 
   for (int i = 1; i < argc; ++i) {
     if (argv[i][0] == '-') {
@@ -39,17 +45,19 @@ int main(int argc, char* argv[]) try {
 
         case 'r':
           ++i;
-          if (i < argc) replayPath = &argv[i][0];
+          if (i < argc) replay_path = &argv[i][0];
+          break;
+        default:
           break;
       }
     } else {
-      tcName = argv[i];
-      tcSet = true;
+      tc_name = argv[i];
+      tc_set = true;
     }
   }
 
-  if (!tcSet) {
-    tcName = "openliero";
+  if (!tc_set) {
+    tc_name = "openliero";
   }
 
   PrecomputeTables();
@@ -58,8 +66,8 @@ int main(int argc, char* argv[]) try {
   // paths::Resolve ignores single-dash flags, so -d/-s/-r pass through harmlessly.
   // Output videos land next to the replay file; no writes go to any config path.
   auto r = paths::Resolve(argc, argv);
-  std::shared_ptr<Common> common(new Common());
-  common->load(r.config_node / "TC" / tcName);
+  std::shared_ptr<Common> const kCommon = std::make_shared<Common>();
+  kCommon->load(r.config_node / "TC" / tc_name);
 
   std::string suffix = "_n";
   if (spectator) {
@@ -67,20 +75,20 @@ int main(int argc, char* argv[]) try {
   }
 
   if (dir) {
-    auto const& root = GetRoot(replayPath);
+    auto const& root = GetRoot(replay_path);
     DirectoryListing di(root);
 
     for (auto const& path : di) {
       if (GetExtension(path.name) == "lrp") {
-        auto const& fullPath = JoinPath(root, path.name);
-        if (match(fullPath, replayPath)) {
-          printf("Converting %s\n", fullPath.c_str());
-          replayToVideo(common, spectator, fullPath, fullPath + suffix + ".mp4");
+        auto const& full_path = JoinPath(root, path.name);
+        if (Match(full_path, replay_path)) {
+          std::printf("Converting %s\n", full_path.c_str());
+          ReplayToVideo(kCommon, spectator, full_path, full_path + suffix + ".mp4");
         }
       }
     }
   } else {
-    replayToVideo(common, spectator, replayPath, replayPath + suffix + ".mp4");
+    ReplayToVideo(kCommon, spectator, replay_path, replay_path + suffix + ".mp4");
   }
 
   return 0;

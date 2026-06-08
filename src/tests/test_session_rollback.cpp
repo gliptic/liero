@@ -13,7 +13,6 @@
 #include <thread>
 
 #include <algorithm>
-#include <cstdlib>
 
 #include "game.hpp"
 #include "math.hpp"
@@ -55,19 +54,19 @@ bool PollUntil(NetSession& a, NetSession& b, Pred pred, int max_ms = 5000) {
 }  // namespace
 
 TEST_CASE("NetSession reaches Playing and runs ticks", "[session][rollback]") {
-  Env e;
+  Env const kE;
 
-  NetSession host(e.common, e.settings, e.tc_root);
-  NetSession client(e.common, e.settings, e.tc_root);
+  NetSession host(kE.common, kE.settings, kE.tc_root);
+  NetSession client(kE.common, kE.settings, kE.tc_root);
 
   REQUIRE(host.HostGame(0));
-  uint16_t port = host.Transport().ListeningPort();
-  REQUIRE(client.JoinGame("127.0.0.1", port));
+  uint16_t const kPort = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", kPort));
 
-  bool ready = PollUntil(host, client, [&]() {
+  bool const kReady = PollUntil(host, client, [&]() {
     return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
-  REQUIRE(ready);
+  REQUIRE(kReady);
 
   REQUIRE(host.Rollback() != nullptr);
   REQUIRE(client.Rollback() != nullptr);
@@ -97,9 +96,9 @@ TEST_CASE("NetSession reaches Playing and runs ticks", "[session][rollback]") {
   // With inputDelay=1 the peers can be up to kFrameAdvantage frames
   // apart at any snapshot — the frame-advantage stall bounds the gap
   // but doesn't guarantee frame-by-frame parity mid-loop.
-  int32_t gap = static_cast<int32_t>(host.Rollback()->CurrentFrame()) -
-                static_cast<int32_t>(client.Rollback()->CurrentFrame());
-  REQUIRE(std::abs(gap) <= RollbackController::kFrameAdvantage);
+  int32_t const kGap = static_cast<int32_t>(host.Rollback()->CurrentFrame()) -
+                       static_cast<int32_t>(client.Rollback()->CurrentFrame());
+  REQUIRE(std::abs(kGap) <= RollbackController::kFrameAdvantage);
   REQUIRE(!host.DesyncDetected());
   REQUIRE(!client.DesyncDetected());
 }
@@ -112,11 +111,11 @@ TEST_CASE("Rollback weapon select transitions to game over a real session",
   // sides transition to StateGame at the same simFrame. Guards the
   // weapon-select-rollback integration with the session/transport layer
   // (not just the controller in isolation).
-  Env e;
-  e.settings->input_delay = 1;
-  e.settings->select_bot_weapons = 0;
+  Env const kE;
+  kE.settings->input_delay = 1;
+  kE.settings->select_bot_weapons = 0;
 
-  auto client_settings = std::make_shared<Settings>(*e.settings);
+  auto client_settings = std::make_shared<Settings>(*kE.settings);
   // Default copy ctor shallow-copies the wormSettings shared_ptrs;
   // give each peer its own copies so single-process weapon-select
   // mutations on one side don't bleed into the other.
@@ -124,17 +123,17 @@ TEST_CASE("Rollback weapon select transitions to game over a real session",
     if (ws) ws = std::make_shared<WormSettings>(*ws);
   }
 
-  NetSession host(e.common, e.settings, e.tc_root);
-  NetSession client(e.common, client_settings, e.tc_root);
+  NetSession host(kE.common, kE.settings, kE.tc_root);
+  NetSession client(kE.common, client_settings, kE.tc_root);
 
   REQUIRE(host.HostGame(0));
-  uint16_t port = host.Transport().ListeningPort();
-  REQUIRE(client.JoinGame("127.0.0.1", port));
+  uint16_t const kPort = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", kPort));
 
-  bool ready = PollUntil(host, client, [&]() {
+  bool const kReady = PollUntil(host, client, [&]() {
     return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
-  REQUIRE(ready);
+  REQUIRE(kReady);
 
   auto* hc = host.Rollback();
   auto* cc = client.Rollback();
@@ -167,24 +166,24 @@ TEST_CASE("Rollback weapon select transitions to game over a real session",
   auto run_tick = [&](uint8_t in_byte) {
     hc->SetLocalControlState(in_byte);
     cc->SetLocalControlState(in_byte);
-    bool host_in_ws = !host_transitioned;
-    bool client_in_ws = !client_transitioned;
+    bool const kHostInWs = !host_transitioned;
+    bool const kClientInWs = !client_transitioned;
     hc->Process();
     cc->Process();
     host.Update();
     client.Update();
-    if (host_in_ws && hc->State() == kStateGame) {
+    if (kHostInWs && hc->State() == kStateGame) {
       host_transitioned = true;
       host_transition_frame = hc->CurrentFrame();
     }
-    if (client_in_ws && cc->State() == kStateGame) {
+    if (kClientInWs && cc->State() == kStateGame) {
       client_transitioned = true;
       client_transition_frame = cc->CurrentFrame();
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
   };
 
-  for (uint8_t in_byte : script) run_tick(in_byte);
+  for (uint8_t const kInByte : script) run_tick(kInByte);
   // Idle tail to let promote loops drain and the transition fire on
   // both peers under loopback's small but non-zero RTT.
   for (int i = 0; i < 200 && !(host_transitioned && client_transitioned); ++i) {
@@ -211,26 +210,26 @@ TEST_CASE("Rollback weapon select transitions to game over a real session",
 // regression that only surfaces after both peers transition through
 // real WS and keep producing checksums for several seconds.
 TEST_CASE("Rollback session runs ≥5s game-phase post-WS without desync", "[session][rollback]") {
-  Env e;
-  e.settings->input_delay = 1;
-  e.settings->select_bot_weapons = 0;
+  Env const kE;
+  kE.settings->input_delay = 1;
+  kE.settings->select_bot_weapons = 0;
 
-  auto client_settings = std::make_shared<Settings>(*e.settings);
+  auto client_settings = std::make_shared<Settings>(*kE.settings);
   for (auto& ws : client_settings->worm_settings) {
     if (ws) ws = std::make_shared<WormSettings>(*ws);
   }
 
-  NetSession host(e.common, e.settings, e.tc_root);
-  NetSession client(e.common, client_settings, e.tc_root);
+  NetSession host(kE.common, kE.settings, kE.tc_root);
+  NetSession client(kE.common, client_settings, kE.tc_root);
 
   REQUIRE(host.HostGame(0));
-  uint16_t port = host.Transport().ListeningPort();
-  REQUIRE(client.JoinGame("127.0.0.1", port));
+  uint16_t const kPort = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", kPort));
 
-  bool ready = PollUntil(host, client, [&]() {
+  bool const kReady = PollUntil(host, client, [&]() {
     return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
-  REQUIRE(ready);
+  REQUIRE(kReady);
 
   auto* hc = host.Rollback();
   auto* cc = client.Rollback();
@@ -252,23 +251,25 @@ TEST_CASE("Rollback session runs ≥5s game-phase post-WS without desync", "[ses
   ws_script.push_back(kBitFire);
   ws_script.push_back(0);
 
-  bool host_transitioned = false, client_transitioned = false;
-  uint32_t host_transition_frame = 0, client_transition_frame = 0;
+  bool host_transitioned = false;
+  bool client_transitioned = false;
+  uint32_t host_transition_frame = 0;
+  uint32_t client_transition_frame = 0;
 
   auto run_tick = [&](uint8_t in_byte) {
     hc->SetLocalControlState(in_byte);
     cc->SetLocalControlState(in_byte);
-    bool host_in_ws = !host_transitioned;
-    bool client_in_ws = !client_transitioned;
+    bool const kHostInWs = !host_transitioned;
+    bool const kClientInWs = !client_transitioned;
     hc->Process();
     cc->Process();
     host.Update();
     client.Update();
-    if (host_in_ws && hc->State() == kStateGame) {
+    if (kHostInWs && hc->State() == kStateGame) {
       host_transitioned = true;
       host_transition_frame = hc->CurrentFrame();
     }
-    if (client_in_ws && cc->State() == kStateGame) {
+    if (kClientInWs && cc->State() == kStateGame) {
       client_transitioned = true;
       client_transition_frame = cc->CurrentFrame();
     }
@@ -276,7 +277,7 @@ TEST_CASE("Rollback session runs ≥5s game-phase post-WS without desync", "[ses
   };
 
   // Drive WS to completion.
-  for (uint8_t b : ws_script) run_tick(b);
+  for (uint8_t const kB : ws_script) run_tick(kB);
   for (int i = 0; i < 200 && !(host_transitioned && client_transitioned); ++i) {
     run_tick(0);
   }
@@ -312,8 +313,9 @@ TEST_CASE("Rollback session runs ≥5s game-phase post-WS without desync", "[ses
   REQUIRE(hc->CurrentFrame() > 0);
   REQUIRE(cc->CurrentFrame() > 0);
 
-  int32_t gap = static_cast<int32_t>(hc->CurrentFrame()) - static_cast<int32_t>(cc->CurrentFrame());
-  REQUIRE(std::abs(gap) <= RollbackController::kFrameAdvantage);
+  int32_t const kGap =
+      static_cast<int32_t>(hc->CurrentFrame()) - static_cast<int32_t>(cc->CurrentFrame());
+  REQUIRE(std::abs(kGap) <= RollbackController::kFrameAdvantage);
 
   // Headline: the desync detector did NOT fire across the run.
   REQUIRE(!host.DesyncDetected());
@@ -325,10 +327,10 @@ TEST_CASE("Rollback session runs ≥5s game-phase post-WS without desync", "[ses
   // kMaxRollback+1 confirmed frames.
   rollback::RollbackBuffer const& buf_h = hc->RollbackBuffer();
   rollback::RollbackBuffer const& buf_c = cc->RollbackBuffer();
-  int compare_frame = std::min(buf_h.NewestFrame(), buf_c.NewestFrame());
-  REQUIRE(compare_frame > 0);
-  auto* slot_h = const_cast<rollback::RollbackBuffer&>(buf_h).Find(compare_frame);
-  auto* slot_c = const_cast<rollback::RollbackBuffer&>(buf_c).Find(compare_frame);
+  int const kCompareFrame = std::min(buf_h.NewestFrame(), buf_c.NewestFrame());
+  REQUIRE(kCompareFrame > 0);
+  auto* slot_h = const_cast<rollback::RollbackBuffer&>(buf_h).Find(kCompareFrame);
+  auto* slot_c = const_cast<rollback::RollbackBuffer&>(buf_c).Find(kCompareFrame);
   REQUIRE(slot_h != nullptr);
   REQUIRE(slot_c != nullptr);
   REQUIRE(slot_h->checksum == slot_c->checksum);
@@ -340,25 +342,25 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers", "[session][ro
   // client's NormalStatsRecorder stayed empty. The shadow's recorder is
   // unconditionally non-speculative, so firing weapons through the
   // pipeline should bump shot counts on both peers.
-  Env e;
-  e.settings->input_delay = 1;
+  Env const kE;
+  kE.settings->input_delay = 1;
 
-  auto client_settings = std::make_shared<Settings>(*e.settings);
+  auto client_settings = std::make_shared<Settings>(*kE.settings);
   for (auto& ws : client_settings->worm_settings) {
     if (ws) ws = std::make_shared<WormSettings>(*ws);
   }
 
-  NetSession host(e.common, e.settings, e.tc_root);
-  NetSession client(e.common, client_settings, e.tc_root);
+  NetSession host(kE.common, kE.settings, kE.tc_root);
+  NetSession client(kE.common, client_settings, kE.tc_root);
 
   REQUIRE(host.HostGame(0));
-  uint16_t port = host.Transport().ListeningPort();
-  REQUIRE(client.JoinGame("127.0.0.1", port));
+  uint16_t const kPort = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", kPort));
 
-  bool ready = PollUntil(host, client, [&]() {
+  bool const kReady = PollUntil(host, client, [&]() {
     return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
-  REQUIRE(ready);
+  REQUIRE(kReady);
 
   auto* hc = host.Rollback();
   auto* cc = client.Rollback();
@@ -388,7 +390,7 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers", "[session][ro
   run_tick(0, 0);
   run_tick(kBitFire, kBitFire);
   run_tick(0, 0);
-  for (int i = 0; i < 200 && !(hc->State() == kStateGame && cc->State() == kStateGame); ++i) {
+  for (int i = 0; i < 200 && (hc->State() != kStateGame || cc->State() != kStateGame); ++i) {
     run_tick(0, 0);
   }
   REQUIRE(hc->State() == kStateGame);
@@ -414,9 +416,8 @@ TEST_CASE("Per-worm stats hooks fire on the shadow on both peers", "[session][ro
 
   auto total_shots = [](NormalStatsRecorder* s) {
     int total = 0;
-    for (int w = 0; w < 2; ++w)
-      for (int wp = 0; wp < 40; ++wp)
-        total += s->worms[w].weapons[wp].potential_hits + s->worms[w].weapons[wp].actual_hits;
+    for (auto& worm : s->worms)
+      for (auto& weapon : worm.weapons) total += weapon.potential_hits + weapon.actual_hits;
     return total;
   };
 
@@ -433,25 +434,25 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
   // Verify that statsGame()'s NormalStatsRecorder accumulates `frame`,
   // sets `gameTime` after finish(), and works symmetrically on host AND
   // client.
-  Env e;
-  e.settings->input_delay = 1;
+  Env const kE;
+  kE.settings->input_delay = 1;
 
-  auto client_settings = std::make_shared<Settings>(*e.settings);
+  auto client_settings = std::make_shared<Settings>(*kE.settings);
   for (auto& ws : client_settings->worm_settings) {
     if (ws) ws = std::make_shared<WormSettings>(*ws);
   }
 
-  NetSession host(e.common, e.settings, e.tc_root);
-  NetSession client(e.common, client_settings, e.tc_root);
+  NetSession host(kE.common, kE.settings, kE.tc_root);
+  NetSession client(kE.common, client_settings, kE.tc_root);
 
   REQUIRE(host.HostGame(0));
-  uint16_t port = host.Transport().ListeningPort();
-  REQUIRE(client.JoinGame("127.0.0.1", port));
+  uint16_t const kPort = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", kPort));
 
-  bool ready = PollUntil(host, client, [&]() {
+  bool const kReady = PollUntil(host, client, [&]() {
     return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
-  REQUIRE(ready);
+  REQUIRE(kReady);
 
   auto* hc = host.Rollback();
   auto* cc = client.Rollback();
@@ -483,8 +484,8 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
   ws_script.push_back(0);
   ws_script.push_back(kBitFire);
   ws_script.push_back(0);
-  for (uint8_t b : ws_script) run_tick(b);
-  for (int i = 0; i < 200 && !(hc->State() == kStateGame && cc->State() == kStateGame); ++i) {
+  for (uint8_t const kB : ws_script) run_tick(kB);
+  for (int i = 0; i < 200 && (hc->State() != kStateGame || cc->State() != kStateGame); ++i) {
     run_tick(0);
   }
   REQUIRE(hc->State() == kStateGame);
@@ -516,8 +517,8 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
   // Host and client should agree closely on frame count — the shadow's
   // counter is keyed to confirmedSimFrame_ which is the same on both
   // peers within a few-frame window.
-  int frame_gap = std::abs(host_stats->frame - client_stats->frame);
-  REQUIRE(frame_gap <= 10);
+  int const kFrameGap = std::abs(host_stats->frame - client_stats->frame);
+  REQUIRE(kFrameGap <= 10);
 
   // Pause + EndMatch flow: host pauses, picks END MATCH.
   host.SendPause();
@@ -528,7 +529,8 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
   host.Transport().SendEndMatch();
   hc->EndMatch();
 
-  bool host_done = false, client_done = false;
+  bool host_done = false;
+  bool client_done = false;
   for (int i = 0; i < 200 && !(host_done && client_done); ++i) {
     hc->SetLocalControlState(0);
     cc->SetLocalControlState(0);
@@ -549,31 +551,31 @@ TEST_CASE("Stats accumulate on both peers across a rollback game", "[session][ro
   REQUIRE(client_stats->game_time > 0);
   // gameTime is what gamePlayState checks to decide stats-vs-menu —
   // gating the symptom the user reported.
-  int gt_gap = std::abs(host_stats->game_time - client_stats->game_time);
-  REQUIRE(gt_gap <= 10);
+  int const kGtGap = std::abs(host_stats->game_time - client_stats->game_time);
+  REQUIRE(kGtGap <= 10);
 }
 
 TEST_CASE("Host's inputDelay syncs to the client over MatchSettings", "[session][rollback]") {
-  Env e;
-  e.settings->input_delay = 2;
+  Env const kE;
+  kE.settings->input_delay = 2;
 
   // Client starts with a different inputDelay; host's value must
   // overwrite it via MatchSettings before tryStartGame builds the
   // controller.
-  auto client_settings = std::make_shared<Settings>(*e.settings);
+  auto client_settings = std::make_shared<Settings>(*kE.settings);
   client_settings->input_delay = 5;
 
-  NetSession host(e.common, e.settings, e.tc_root);
-  NetSession client(e.common, client_settings, e.tc_root);
+  NetSession host(kE.common, kE.settings, kE.tc_root);
+  NetSession client(kE.common, client_settings, kE.tc_root);
 
   REQUIRE(host.HostGame(0));
-  uint16_t port = host.Transport().ListeningPort();
-  REQUIRE(client.JoinGame("127.0.0.1", port));
+  uint16_t const kPort = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", kPort));
 
-  bool ready = PollUntil(host, client, [&]() {
+  bool const kReady = PollUntil(host, client, [&]() {
     return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
-  REQUIRE(ready);
+  REQUIRE(kReady);
 
   REQUIRE(client_settings->input_delay == 2);
   REQUIRE(client.Rollback() != nullptr);
@@ -581,15 +583,15 @@ TEST_CASE("Host's inputDelay syncs to the client over MatchSettings", "[session]
 
 TEST_CASE("Input batches received pre-Playing reach controller post-Playing",
           "[session][rollback][regression]") {
-  Env e;
-  e.settings->input_delay = 1;
+  Env const kE;
+  kE.settings->input_delay = 1;
 
-  NetSession host(e.common, e.settings, e.tc_root);
-  NetSession client(e.common, e.settings, e.tc_root);
+  NetSession host(kE.common, kE.settings, kE.tc_root);
+  NetSession client(kE.common, kE.settings, kE.tc_root);
 
   REQUIRE(host.HostGame(0));
-  uint16_t port = host.Transport().ListeningPort();
-  REQUIRE(client.JoinGame("127.0.0.1", port));
+  uint16_t const kPort = host.Transport().ListeningPort();
+  REQUIRE(client.JoinGame("127.0.0.1", kPort));
 
   REQUIRE(client.State() != NetSession::kPlaying);
   REQUIRE(client.Rollback() == nullptr);
@@ -601,10 +603,10 @@ TEST_CASE("Input batches received pre-Playing reach controller post-Playing",
       /*generation=*/0, /*baseFrame=*/0, /*count=*/8, early_inputs,
       /*remoteLocalFrame=*/7);
 
-  bool reached = PollUntil(host, client, [&]() {
+  bool const kReached = PollUntil(host, client, [&]() {
     return host.State() == NetSession::kPlaying && client.State() == NetSession::kPlaying;
   });
-  REQUIRE(reached);
+  REQUIRE(kReached);
   REQUIRE(client.Rollback() != nullptr);
 
   // No rollback.process() on either side during the handshake, so the

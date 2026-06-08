@@ -19,6 +19,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "controller/rollbackController.hpp"
@@ -32,8 +33,8 @@ namespace {
 std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
   settings->loading_time = 0;
@@ -44,9 +45,9 @@ std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   return {common, settings};
 }
 
-std::unique_ptr<RollbackController> MakePeer(std::shared_ptr<Common> common,
-                                             std::shared_ptr<Settings> settings, int local_idx,
-                                             uint32_t world_seed) {
+std::unique_ptr<RollbackController> MakePeer(const std::shared_ptr<Common>& common,
+                                             const std::shared_ptr<Settings>& settings,
+                                             int local_idx, uint32_t world_seed) {
   auto c = std::make_unique<RollbackController>(common, settings, local_idx);
   c->SetInputDelay(1);
   c->game.rand.Seed(world_seed);
@@ -82,11 +83,17 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][
   // slower. The combination reliably produces a multi-frame WS-phase
   // skew while keeping both peers progressing enough to eventually
   // confirm wsDone.
-  rollback_test::JitterTransport t_ab(
-      {0x1111, /*minDelay=*/1, /*maxDelay=*/1, /*loss=*/0.0, /*dup=*/0.0});
-  rollback_test::JitterTransport t_ba(
-      {0x2222, /*minDelay=*/4, /*maxDelay=*/4, /*loss=*/0.0, /*dup=*/0.0});
-  a->SetFrameAdvantageEnabled(false);
+  rollback_test::JitterTransport t_ab({.seed = 0x1111,
+                                       /*minDelay=*/.min_delay_frames = 1,
+                                       /*maxDelay=*/.max_delay_frames = 1,
+                                       /*loss=*/.loss_probability = 0.0,
+                                       /*dup=*/.duplicate_probability = 0.0});
+  rollback_test::JitterTransport t_ba({.seed = 0x2222,
+                                       /*minDelay=*/.min_delay_frames = 4,
+                                       /*maxDelay=*/.max_delay_frames = 4,
+                                       /*loss=*/.loss_probability = 0.0,
+                                       /*dup=*/.duplicate_probability = 0.0});
+  a->SetFrameAdvantageEnabled(/*enabled=*/false);
 
   a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     t_ab.SendAToB(gen, bf, c, in, lf);
@@ -111,22 +118,24 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][
   auto script = NavigateToDoneAndConfirm(6);
   constexpr int kWsTail = 80;  // extra ticks so the slower peer catches up
 
-  bool a_transitioned = false, b_transitioned = false;
-  uint32_t a_transition_frame = 0, b_transition_frame = 0;
+  bool a_transitioned = false;
+  bool b_transitioned = false;
+  uint32_t a_transition_frame = 0;
+  uint32_t b_transition_frame = 0;
   int max_observed_skew = 0;
 
   auto step_both = [&](uint8_t in_a, uint8_t in_b) {
     a->SetLocalControlState(in_a);
     b->SetLocalControlState(in_b);
-    bool a_pre = !a_transitioned;
-    bool b_pre = !b_transitioned;
+    bool const kAPre = !a_transitioned;
+    bool const kBPre = !b_transitioned;
     a->Process();
     b->Process();
-    if (a_pre && a->State() == kStateGame) {
+    if (kAPre && a->State() == kStateGame) {
       a_transitioned = true;
       a_transition_frame = a->CurrentFrame();
     }
-    if (b_pre && b->State() == kStateGame) {
+    if (kBPre && b->State() == kStateGame) {
       b_transitioned = true;
       b_transition_frame = b->CurrentFrame();
     }
@@ -137,13 +146,13 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][
 
   for (int i = 0;
        i < static_cast<int>(script.size()) + kWsTail && !(a_transitioned && b_transitioned); ++i) {
-    uint8_t in = (i < static_cast<int>(script.size())) ? script[i] : 0;
-    step_both(in, in);
+    uint8_t const kIn = (std::cmp_less(i, script.size())) ? script[i] : 0;
+    step_both(kIn, kIn);
     // Observe WS-phase skew while at least one peer is still pre-transition.
     if (!a_transitioned || !b_transitioned) {
       int gap = static_cast<int>(a->CurrentFrame()) - static_cast<int>(b->CurrentFrame());
       if (gap < 0) gap = -gap;
-      if (gap > max_observed_skew) max_observed_skew = gap;
+      max_observed_skew = std::max(gap, max_observed_skew);
     }
   }
 
@@ -199,9 +208,9 @@ TEST_CASE("WS simFrame skew is erased at the WS→game transition", "[rollback][
   rollback::RollbackBuffer const& buf_a = a->RollbackBuffer();
   rollback::RollbackBuffer const& buf_b = b->RollbackBuffer();
   int compared = 0;
-  int lo_f = std::max(buf_a.OldestFrame(), buf_b.OldestFrame());
-  int hi_f = std::min(buf_a.NewestFrame(), buf_b.NewestFrame());
-  for (int f = lo_f; f <= hi_f; ++f) {
+  int const kLoF = std::max(buf_a.OldestFrame(), buf_b.OldestFrame());
+  int const kHiF = std::min(buf_a.NewestFrame(), buf_b.NewestFrame());
+  for (int f = kLoF; f <= kHiF; ++f) {
     auto* slot_a = const_cast<rollback::RollbackBuffer&>(buf_a).Find(f);
     auto* slot_b = const_cast<rollback::RollbackBuffer&>(buf_b).Find(f);
     if (!slot_a || !slot_b) continue;

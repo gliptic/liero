@@ -29,9 +29,9 @@ static bool SetNonBlocking(int fd) {
   u_long mode = 1;
   return ioctlsocket(fd, FIONBIO, &mode) == 0;
 #else
-  int flags = fcntl(fd, F_GETFL, 0);
-  if (flags < 0) return false;
-  return fcntl(fd, F_SETFL, flags | O_NONBLOCK) == 0;
+  int const kFlags = fcntl(fd, F_GETFL, 0);
+  if (kFlags < 0) return false;
+  return fcntl(fd, F_SETFL, kFlags | O_NONBLOCK) == 0;
 #endif
 }
 

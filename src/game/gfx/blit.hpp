@@ -22,10 +22,11 @@ void DrawRoundedLineBox(Bitmap& scr, int x, int y, int color, int width, int hei
 void BlitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height, int pitch);
 // void blitImage(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height);
 void BlitImage(Bitmap& scr, Sprite spr, int x, int y);
-void BlitImageR(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height);
+void BlitImageR(Bitmap& scr, const PalIdx* mem, int x, int y, int width, int height);
 void BlitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase);
-void BlitShadowImage(Common& common, Bitmap& scr, PalIdx* mem, int x, int y, int width, int height);
-void BlitStone(Common& common, Level& level, bool p1, PalIdx* mem, int x, int y);
+void BlitShadowImage(Common& common, Bitmap& scr, const PalIdx* mem, int x, int y, int width,
+                     int height);
+void BlitStone(Common& common, Level& level, bool p1, const PalIdx* mem, int x, int y);
 void BlitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y);
 void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, int x, int y);
 void BlitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int width, int height);
@@ -42,7 +43,7 @@ void DrawGraph(Bitmap& scr, std::vector<double> const& data, int height, int sta
                int color, int neg_color, bool balanced);
 
 void ScaleDraw(PalIdx* src, int w, int h, std::size_t src_pitch, uint8_t* dest,
-               std::size_t dest_pitch, int mag, uint32_t* pal32);
+               std::size_t dest_pitch, int mag, const uint32_t* pal32);
 
 void PreparePaletteBgra(Color real_pal[256], uint32_t (&pal32)[256]);
 int FitScreen(int back_w, int back_h, int scr_w, int scr_h, int& offset_x, int& offset_y);
@@ -76,11 +77,11 @@ struct Heatmap {
 
     for (int y1 = -2; y1 <= 2; ++y1)
       for (int x1 = -2; x1 <= 2; ++x1) {
-        int cx = x + x1;
-        int cy = y + y1;
-        if (cx >= 0 && cy >= 0 && cx < width && cy < height) {
-          int weight = (2 * 2) * (2 * 2) - (x1 * y1) * (x1 * y1);
-          map[cy * width + cx] += v * weight;
+        int const kCx = x + x1;
+        int const kCy = y + y1;
+        if (kCx >= 0 && kCy >= 0 && kCx < width && kCy < height) {
+          int const kWeight = (2 * 2) * (2 * 2) - (x1 * y1) * (x1 * y1);
+          map[kCy * width + kCx] += v * kWeight;
         }
       }
   }

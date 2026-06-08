@@ -14,10 +14,12 @@
 #include "serialization/fast_snapshot.hpp"
 #include "serialization/weapsel_snapshot.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 
 namespace rollback {
 
@@ -97,7 +99,7 @@ class RollbackBuffer {
       slot.checksum = 0;
       slot.ws_snap.valid = false;
     }
-    if (frame > newest_) newest_ = frame;
+    newest_ = std::max(frame, newest_);
     return slot;
   }
 
@@ -122,16 +124,16 @@ class RollbackBuffer {
   // the rollback horizon — a stall condition).
   int OldestFrame() const {
     if (newest_ < 0) return -1;
-    int floor = newest_ - static_cast<int>(kCapacity) + 1;
-    return floor < 0 ? 0 : floor;
+    int const kFloor = newest_ - static_cast<int>(kCapacity) + 1;
+    return kFloor < 0 ? 0 : kFloor;
   }
 
   bool Empty() const { return newest_ < 0; }
 
   std::size_t Size() const {
     if (newest_ < 0) return 0;
-    int span = newest_ + 1;
-    return span < static_cast<int>(kCapacity) ? static_cast<std::size_t>(span) : kCapacity;
+    int const kSpan = newest_ + 1;
+    return std::cmp_less(kSpan, kCapacity) ? static_cast<std::size_t>(kSpan) : kCapacity;
   }
 
  private:

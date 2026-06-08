@@ -5,8 +5,10 @@
 
 #include <fstream>
 #include <sstream>
+#include <utility>
 
-void WriteSpriteTga(io::Writer& w, int image_width, int image_height, uint8_t* data, Palette& pal) {
+static void WriteSpriteTga(io::Writer& w, int image_width, int image_height, const uint8_t* data,
+                           Palette& pal) {
   w.Put(0);
   w.Put(1);
   w.Put(1);
@@ -30,14 +32,14 @@ void WriteSpriteTga(io::Writer& w, int image_width, int image_height, uint8_t* d
   }
 
   // Bottom to top
-  for (std::size_t y = (std::size_t)image_height; y-- > 0;) {
+  for (auto y = static_cast<std::size_t>(image_height); y-- > 0;) {
     auto const* src = &data[y * image_width];
-    w.Put((uint8_t const*)src, image_width);
+    w.Put(static_cast<uint8_t const*>(src), image_width);
   }
 }
 
-void WriteSpriteTga(io::Writer& w, SpriteSet& ss, Palette& pal) {
-  WriteSpriteTga(w, ss.width, ss.count * ss.height, &ss.data[0], pal);
+static void WriteSpriteTga(io::Writer& w, SpriteSet& ss, Palette& pal) {
+  WriteSpriteTga(w, ss.width, ss.count * ss.height, ss.data.data(), pal);
 }
 
 void CommonSave(Common& common, std::string const& path) {
@@ -49,22 +51,22 @@ void CommonSave(Common& common, std::string const& path) {
     SaveTcConfig(common, ss);
     io::FileWriter text_writer(cfg_path.c_str(), "wb");
     auto str = ss.str();
-    for (char c : str) text_writer.Put(c);
+    for (char const kC : str) text_writer.Put(kC);
   }
 
   for (auto& s : common.sounds) {
-    std::string dir(JoinPath(path, "sounds/"));
-    CreateDirectories(dir);
+    std::string const kDir(JoinPath(path, "sounds/"));
+    CreateDirectories(kDir);
 
-    io::FileWriter w(JoinPath(dir, s.name + ".wav").c_str(), "wb");
+    io::FileWriter w(JoinPath(kDir, s.name + ".wav").c_str(), "wb");
 
     auto rounded_size = (s.original_data.size() + 1) & ~1;
 
-    w.Put((uint8_t const*)"RIFF", 4);
-    io::WriteUint32Le(w, (uint32_t)rounded_size - 8);
-    w.Put((uint8_t const*)"WAVE", 4);
+    w.Put(reinterpret_cast<uint8_t const*>("RIFF"), 4);
+    io::WriteUint32Le(w, static_cast<uint32_t>(rounded_size) - 8);
+    w.Put(reinterpret_cast<uint8_t const*>("WAVE"), 4);
 
-    w.Put((uint8_t const*)"fmt ", 4);
+    w.Put(reinterpret_cast<uint8_t const*>("fmt "), 4);
     io::WriteUint32Le(w, 16);     // PCM header size
     io::WriteUint16Le(w, 1);      // PCM
     io::WriteUint16Le(w, 1);      // Mono
@@ -73,8 +75,8 @@ void CommonSave(Common& common, std::string const& path) {
     io::WriteUint16Le(w, 1 * 1);
     io::WriteUint16Le(w, 8);
 
-    w.Put((uint8_t const*)"data", 4);
-    io::WriteUint32Le(w, (uint32_t)s.original_data.size() * 1 * 1);  // Data size
+    w.Put(reinterpret_cast<uint8_t const*>("data"), 4);
+    io::WriteUint32Le(w, static_cast<uint32_t>(s.original_data.size()) * 1 * 1);  // Data size
 
     auto cur_size = s.original_data.size();
 
@@ -87,71 +89,72 @@ void CommonSave(Common& common, std::string const& path) {
   }
 
   {
-    std::string dir(JoinPath(path, "sprites/"));
-    CreateDirectories(dir);
+    std::string const kDir(JoinPath(path, "sprites/"));
+    CreateDirectories(kDir);
 
     {
-      io::FileWriter w(JoinPath(dir, "small.tga").c_str(), "wb");
+      io::FileWriter w(JoinPath(kDir, "small.tga").c_str(), "wb");
       WriteSpriteTga(w, common.small_sprites, common.exepal);
     }
 
     {
-      io::FileWriter w(JoinPath(dir, "large.tga").c_str(), "wb");
+      io::FileWriter w(JoinPath(kDir, "large.tga").c_str(), "wb");
       WriteSpriteTga(w, common.large_sprites, common.exepal);
     }
 
     {
-      io::FileWriter w(JoinPath(dir, "text.tga").c_str(), "wb");
+      io::FileWriter w(JoinPath(kDir, "text.tga").c_str(), "wb");
       WriteSpriteTga(w, common.text_sprites, common.exepal);
     }
 
     {
-      io::FileWriter w(JoinPath(dir, "font.tga").c_str(), "wb");
+      io::FileWriter w(JoinPath(kDir, "font.tga").c_str(), "wb");
 
       std::vector<uint8_t> data(common.font.chars.size() * 7 * 8, 10);
       for (std::size_t i = 0; i < common.font.chars.size(); ++i) {
-        Font::Char& ch = common.font.chars[i];
+        Font::Char const& ch = common.font.chars[i];
         uint8_t* dest = &data[i * 7 * 8];
 
         for (std::size_t y = 0; y < 8; ++y)
-          for (std::size_t x = 0; x < ch.width; ++x) {
+          for (std::size_t x = 0; std::cmp_less(x, ch.width); ++x) {
             dest[y * 7 + x] = ch.data[y * 7 + x] ? 50 : 0;
           }
       }
-      WriteSpriteTga(w, 7, (int)common.font.chars.size() * 8, &data[0], common.exepal);
+      WriteSpriteTga(w, 7, static_cast<int>(common.font.chars.size()) * 8, data.data(),
+                     common.exepal);
     }
   }
 
   for (auto& w : common.weapons) {
-    std::string dir(JoinPath(path, "weapons/"));
-    CreateDirectories(dir);
+    std::string const kDir(JoinPath(path, "weapons/"));
+    CreateDirectories(kDir);
 
     std::ostringstream ss;
     SaveWeaponConfig(common, w, ss);
-    io::FileWriter w_writer(JoinPath(dir, w.id_str + ".cfg").c_str(), "wb");
+    io::FileWriter w_writer(JoinPath(kDir, w.id_str + ".cfg").c_str(), "wb");
     auto str = ss.str();
-    for (char c : str) w_writer.Put(c);
+    for (char const kC : str) w_writer.Put(kC);
   }
 
   for (auto& w : common.nobject_types) {
-    std::string dir(JoinPath(path, "nobjects/"));
-    CreateDirectories(dir);
+    std::string const kDir(JoinPath(path, "nobjects/"));
+    CreateDirectories(kDir);
 
     std::ostringstream ss;
     SaveNObjectConfig(common, w, ss);
-    io::FileWriter n_writer(JoinPath(dir, w.id_str + ".cfg").c_str(), "wb");
+    io::FileWriter n_writer(JoinPath(kDir, w.id_str + ".cfg").c_str(), "wb");
     auto str = ss.str();
-    for (char c : str) n_writer.Put(c);
+    for (char const kC : str) n_writer.Put(kC);
   }
 
   for (auto& w : common.sobject_types) {
-    std::string dir(JoinPath(path, "sobjects/"));
-    CreateDirectories(dir);
+    std::string const kDir(JoinPath(path, "sobjects/"));
+    CreateDirectories(kDir);
 
     std::ostringstream ss;
     SaveSObjectConfig(common, w, ss);
-    io::FileWriter s_writer(JoinPath(dir, w.id_str + ".cfg").c_str(), "wb");
+    io::FileWriter s_writer(JoinPath(kDir, w.id_str + ".cfg").c_str(), "wb");
     auto str = ss.str();
-    for (char c : str) s_writer.Put(c);
+    for (char const kC : str) s_writer.Put(kC);
   }
 }

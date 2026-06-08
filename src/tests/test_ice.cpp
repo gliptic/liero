@@ -17,7 +17,7 @@
 
 // Helper: poll both agents until predicate is true or timeout
 template <typename Pred>
-static bool PollUntil(IceAgent& a, IceAgent& b, Pred&& pred, int timeout_ms = 5000) {
+static bool PollUntil(IceAgent& a, IceAgent& b, Pred pred, int timeout_ms = 5000) {
   auto start = std::chrono::steady_clock::now();
   while (!pred()) {
     a.Poll();
@@ -31,7 +31,7 @@ static bool PollUntil(IceAgent& a, IceAgent& b, Pred&& pred, int timeout_ms = 50
 }
 
 template <typename Pred>
-static bool PollOneUntil(IceAgent& a, Pred&& pred, int timeout_ms = 5000) {
+static bool PollOneUntil(IceAgent& a, Pred pred, int timeout_ms = 5000) {
   auto start = std::chrono::steady_clock::now();
   while (!pred()) {
     a.Poll();
@@ -81,12 +81,15 @@ TEST_CASE("IceAgent local credentials available after start", "[ice]") {
 }
 
 TEST_CASE("Two local IceAgents connect directly", "[ice]") {
-  IceAgent agent_a, agent_b;
+  IceAgent agent_a;
+  IceAgent agent_b;
   IceAgent::Config cfg;
   cfg.stun_server = "";  // Host candidates only (localhost)
 
-  std::vector<std::string> candidates_a, candidates_b;
-  bool gather_done_a = false, gather_done_b = false;
+  std::vector<std::string> candidates_a;
+  std::vector<std::string> candidates_b;
+  bool gather_done_a = false;
+  bool gather_done_b = false;
   IceAgent::State state_a = IceAgent::State::kNew;
   IceAgent::State state_b = IceAgent::State::kNew;
 
@@ -136,16 +139,20 @@ TEST_CASE("IceAgent stop is clean", "[ice]") {
 }
 
 TEST_CASE("IceAgent data exchange via onRecv", "[ice]") {
-  IceAgent agent_a, agent_b;
+  IceAgent agent_a;
+  IceAgent agent_b;
   IceAgent::Config cfg;
   cfg.stun_server = "";
 
-  std::vector<std::string> candidates_a, candidates_b;
-  bool gather_done_a = false, gather_done_b = false;
+  std::vector<std::string> candidates_a;
+  std::vector<std::string> candidates_b;
+  bool gather_done_a = false;
+  bool gather_done_b = false;
   IceAgent::State state_a = IceAgent::State::kNew;
   IceAgent::State state_b = IceAgent::State::kNew;
 
-  std::vector<uint8_t> received_by_a, received_by_b;
+  std::vector<uint8_t> received_by_a;
+  std::vector<uint8_t> received_by_b;
 
   agent_a.on_local_candidate = [&](const std::string& c) { candidates_a.push_back(c); };
   agent_a.on_gathering_done = [&]() { gather_done_a = true; };
@@ -216,9 +223,9 @@ TEST_CASE("IceBridge creates valid socket pair", "[ice][bridge]") {
   agent.Start(cfg);
 
   IceBridge bridge;
-  int fd = bridge.Create(agent);
-  REQUIRE(fd >= 0);
-  REQUIRE(bridge.EnetSocket() == fd);
+  int const kFd = bridge.Create(agent);
+  REQUIRE(kFd >= 0);
+  REQUIRE(bridge.EnetSocket() == kFd);
   REQUIRE(bridge.BridgePort() > 0);
 
   bridge.Destroy();
@@ -227,12 +234,15 @@ TEST_CASE("IceBridge creates valid socket pair", "[ice][bridge]") {
 
 TEST_CASE("IceBridge proxies data bidirectionally", "[ice][bridge]") {
   // Connect two agents, set up bridges, and verify data flows through
-  IceAgent agent_a, agent_b;
+  IceAgent agent_a;
+  IceAgent agent_b;
   IceAgent::Config cfg;
   cfg.stun_server = "";
 
-  std::vector<std::string> candidates_a, candidates_b;
-  bool gather_done_a = false, gather_done_b = false;
+  std::vector<std::string> candidates_a;
+  std::vector<std::string> candidates_b;
+  bool gather_done_a = false;
+  bool gather_done_b = false;
   IceAgent::State state_a = IceAgent::State::kNew;
   IceAgent::State state_b = IceAgent::State::kNew;
 
@@ -261,11 +271,12 @@ TEST_CASE("IceBridge proxies data bidirectionally", "[ice][bridge]") {
   }));
 
   // Now create bridges
-  IceBridge bridge_a, bridge_b;
-  int fd_a = bridge_a.Create(agent_a);
-  int fd_b = bridge_b.Create(agent_b);
-  REQUIRE(fd_a >= 0);
-  REQUIRE(fd_b >= 0);
+  IceBridge bridge_a;
+  IceBridge bridge_b;
+  int const kFdA = bridge_a.Create(agent_a);
+  int const kFdB = bridge_b.Create(agent_b);
+  REQUIRE(kFdA >= 0);
+  REQUIRE(kFdB >= 0);
 
   // Send from ENet side of A → should arrive on ENet side of B
   const uint8_t kMsg[] = "Bridge test data";
@@ -274,7 +285,7 @@ TEST_CASE("IceBridge proxies data bidirectionally", "[ice][bridge]") {
   bridge_addr_a.sin6_family = AF_INET6;
   bridge_addr_a.sin6_addr = in6addr_loopback;
   bridge_addr_a.sin6_port = htons(bridge_a.BridgePort());
-  ::sendto(fd_a, reinterpret_cast<const char*>(kMsg), sizeof(kMsg), 0,
+  ::sendto(kFdA, reinterpret_cast<const char*>(kMsg), sizeof(kMsg), 0,
            reinterpret_cast<const sockaddr*>(&bridge_addr_a), sizeof(bridge_addr_a));
 
   // Poll bridge A to forward to IceAgent A → network → IceAgent B → bridge B → ENet socket B
@@ -285,7 +296,7 @@ TEST_CASE("IceBridge proxies data bidirectionally", "[ice][bridge]") {
   auto start = std::chrono::steady_clock::now();
   ssize_t n = 0;
   while (n <= 0) {
-    n = ::recv(fd_b, reinterpret_cast<char*>(buf), sizeof(buf), 0);
+    n = ::recv(kFdB, reinterpret_cast<char*>(buf), sizeof(buf), 0);
     if (n <= 0) {
       std::this_thread::sleep_for(std::chrono::milliseconds(5));
       auto elapsed = std::chrono::steady_clock::now() - start;

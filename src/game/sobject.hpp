@@ -16,7 +16,8 @@ and worms. Their usual usage is to make explosions or non-movable trails. Like o
 objects, they are indexed by their order in the array (counting started from 0).
 */
 struct SObjectType {
-  void Create(Game& game, int x, int y, int owned_idx, WormWeapon* fired_by, WObject* from = 0);
+  void Create(Game& game, int x, int y, int owner_idx, WormWeapon* fired_by,
+              WObject* from = nullptr) const;
 
   /*
   which sound will be played when the object is created; set -1 for no sound.

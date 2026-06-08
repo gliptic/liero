@@ -35,11 +35,11 @@ inline uint32_t HashGameState(Game& game) {
     h = h * 31 + static_cast<uint32_t>(w->visible);
     h = h * 31 + w->control_states.Pack();
 
-    for (int i = 0; i < NUM_WEAPONS; ++i) {
-      h = h * 31 + static_cast<uint32_t>(w->weapons[i].ammo);
-      h = h * 31 + static_cast<uint32_t>(w->weapons[i].delay_left);
-      h = h * 31 + static_cast<uint32_t>(w->weapons[i].loading_left);
-      if (w->weapons[i].type) h = h * 31 + static_cast<uint32_t>(w->weapons[i].type->id);
+    for (auto& weapon : w->weapons) {
+      h = h * 31 + static_cast<uint32_t>(weapon.ammo);
+      h = h * 31 + static_cast<uint32_t>(weapon.delay_left);
+      h = h * 31 + static_cast<uint32_t>(weapon.loading_left);
+      if (weapon.type) h = h * 31 + static_cast<uint32_t>(weapon.type->id);
     }
 
     h = h * 31 + static_cast<uint32_t>(w->ninjarope.out);
@@ -57,7 +57,7 @@ inline uint32_t HashGameState(Game& game) {
 
   {
     auto r = game.bonuses.All();
-    Bonus* b;
+    Bonus const* b = nullptr;
     while ((b = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(b->x);
       h = h * 31 + static_cast<uint32_t>(b->y);
@@ -69,7 +69,7 @@ inline uint32_t HashGameState(Game& game) {
 
   {
     auto r = game.sobjects.All();
-    SObject* s;
+    SObject const* s = nullptr;
     while ((s = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(s->id);
       h = h * 31 + static_cast<uint32_t>(s->cur_frame);
@@ -78,7 +78,7 @@ inline uint32_t HashGameState(Game& game) {
 
   {
     auto r = game.nobjects.All();
-    NObject* n;
+    NObject const* n = nullptr;
     while ((n = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(n->pos.x);
       h = h * 31 + static_cast<uint32_t>(n->pos.y);
@@ -91,7 +91,7 @@ inline uint32_t HashGameState(Game& game) {
 
   {
     auto r = game.wobjects.All();
-    WObject* wo;
+    WObject const* wo = nullptr;
     while ((wo = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(wo->pos.x);
       h = h * 31 + static_cast<uint32_t>(wo->pos.y);
@@ -158,7 +158,7 @@ inline ComponentHashes HashGameComponents(Game& game) {
   {
     uint32_t h = 1;
     auto r = game.bonuses.All();
-    Bonus* b;
+    Bonus const* b = nullptr;
     while ((b = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(b->x);
       h = h * 31 + static_cast<uint32_t>(b->y);
@@ -171,7 +171,7 @@ inline ComponentHashes HashGameComponents(Game& game) {
   {
     uint32_t h = 1;
     auto r = game.sobjects.All();
-    SObject* s;
+    SObject const* s = nullptr;
     while ((s = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(s->id);
       h = h * 31 + static_cast<uint32_t>(s->cur_frame);
@@ -182,7 +182,7 @@ inline ComponentHashes HashGameComponents(Game& game) {
   {
     uint32_t h = 1;
     auto r = game.nobjects.All();
-    NObject* n;
+    NObject const* n = nullptr;
     while ((n = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(n->pos.x);
       h = h * 31 + static_cast<uint32_t>(n->pos.y);
@@ -193,7 +193,7 @@ inline ComponentHashes HashGameComponents(Game& game) {
   {
     uint32_t h = 1;
     auto r = game.wobjects.All();
-    WObject* wo;
+    WObject const* wo = nullptr;
     while ((wo = r.Next())) {
       h = h * 31 + static_cast<uint32_t>(wo->pos.x);
       h = h * 31 + static_cast<uint32_t>(wo->pos.y);

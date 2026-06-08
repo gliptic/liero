@@ -2,11 +2,11 @@
 
 #include <cstdint>
 
-typedef unsigned char PalIdx;
+using PalIdx = unsigned char;
 
-typedef struct Color {
+using Color = struct Color {
   uint8_t r;
   uint8_t g;
   uint8_t b;
   uint8_t unused;
-} Color;
+};

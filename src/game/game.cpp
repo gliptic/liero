@@ -1,4 +1,5 @@
 #include <SDL3/SDL.h>
+#include <algorithm>
 #include <cstdlib>
 #include <ctime>
 
@@ -16,27 +17,24 @@
 #include "worm.hpp"
 
 #include <cereal/archives/portable_binary.hpp>
+#include <memory>
 #include <sstream>
+#include <utility>
 
-Game::Game(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings_init,
-           std::shared_ptr<SoundPlayer> sound_player)
+Game::Game(const std::shared_ptr<Common>& common, std::shared_ptr<Settings> settings_init,
+           const std::shared_ptr<SoundPlayer>& sound_player)
     : common(common),
       sound_player(sound_player),
       prev_sound_player(g_sound_player),
-      sound_player_installed(true),
-      settings(settings_init),
+
+      settings(std::move(std::move(settings_init))),
       stats_recorder(new NormalStatsRecorder),
-      level(*common),
-      screen_flash(0),
-      got_changed(false),
-      last_killed_idx(-1),
-      paused(true),
-      quick_sim(false) {
+      level(*common)
+
+{
   g_sound_player = sound_player.get();
 
-  rand.Seed(uint32_t(std::time(0)));
-
-  cycles = 0;
+  rand.Seed(static_cast<uint32_t>(std::time(nullptr)));
 }
 
 Game::~Game() {
@@ -47,8 +45,8 @@ Game::~Game() {
 }
 
 void Game::OnKey(uint32_t key, bool state) {
-  for (std::size_t i = 0; i < worms.size(); ++i) {
-    Worm& w = *worms[i];
+  for (auto& worm : worms) {
+    Worm& w = *worm;
 
     // Only check keyboard controls for players using keyboard input
     if (w.settings->input_device != WormSettingsExtensions::kInputKeyboard) continue;
@@ -64,25 +62,26 @@ void Game::OnKey(uint32_t key, bool state) {
 Worm* Game::FindControlForKey(uint32_t key, Worm::Control& control) {
   // Gamepad control keys encode the player index and control directly
   if (IsGamepadControlKey(key)) {
-    int player_idx = (key - kGamepadControlKeysStart) / 8;
-    int c = (key - kGamepadControlKeysStart) % 8;
-    if (player_idx >= 0 && player_idx < (int)worms.size()) {
-      control = static_cast<Worm::Control>(c);
-      return worms[player_idx].get();
+    int const kPlayerIdx = (key - kGamepadControlKeysStart) / 8;
+    int const kC = (key - kGamepadControlKeysStart) % 8;
+    if (kPlayerIdx >= 0 && std::cmp_less(kPlayerIdx, worms.size())) {
+      control = static_cast<Worm::Control>(kC);
+      return worms[kPlayerIdx].get();
     }
-    return 0;
+    return nullptr;
   }
 
-  for (std::size_t i = 0; i < worms.size(); ++i) {
-    Worm& w = *worms[i];
+  for (auto& worm : worms) {
+    Worm& w = *worm;
 
     // Only check keyboard bindings for players using keyboard
     if (w.settings->input_device != WormSettingsExtensions::kInputKeyboard) continue;
 
-    uint32_t* controls = settings->kExtensions ? w.settings->controls_ex : w.settings->controls;
-    std::size_t max_control =
-        settings->kExtensions ? WormSettings::kMaxControlEx : WormSettings::kMaxControl;
-    for (std::size_t c = 0; c < max_control; ++c) {
+    uint32_t const* controls =
+        Settings::kExtensions ? w.settings->controls_ex : w.settings->controls;
+    std::size_t const kMaxControl =
+        Settings::kExtensions ? WormSettings::kMaxControlEx : WormSettings::kMaxControl;
+    for (std::size_t c = 0; c < kMaxControl; ++c) {
       if (controls[c] == key) {
         control = static_cast<Worm::Control>(c);
         return &w;
@@ -90,12 +89,12 @@ Worm* Game::FindControlForKey(uint32_t key, Worm::Control& control) {
     }
   }
 
-  return 0;
+  return nullptr;
 }
 
 void Game::ReleaseControls() {
-  for (std::size_t i = 0; i < worms.size(); ++i) {
-    Worm& w = *worms[i];
+  for (auto& worm : worms) {
+    Worm& w = *worm;
 
     for (std::size_t control = 0; control < WormSettings::kMaxControl; ++control) {
       w.Release(static_cast<Worm::Control>(control));
@@ -116,31 +115,31 @@ void Game::AddViewport(Viewport* vp) {
 void Game::AddSpectatorViewport(SpectatorViewport* vp) { spectator_viewports.push_back(vp); }
 
 void Game::ProcessViewports() {
-  for (std::size_t i = 0; i < viewports.size(); ++i) {
-    viewports[i]->Process(*this);
+  for (auto& viewport : viewports) {
+    viewport->Process(*this);
   }
-  for (std::size_t i = 0; i < spectator_viewports.size(); ++i) {
-    spectator_viewports[i]->Process(*this);
+  for (auto& spectator_viewport : spectator_viewports) {
+    spectator_viewport->Process(*this);
   }
 }
 
 void Game::DrawViewports(Renderer& renderer, GameState state, bool is_replay) {
-  for (std::size_t i = 0; i < viewports.size(); ++i) {
-    viewports[i]->Draw(*this, renderer, state, is_replay);
+  for (auto& viewport : viewports) {
+    viewport->Draw(*this, renderer, state, is_replay);
   }
 }
 
 void Game::DrawSpectatorViewports(Renderer& renderer, GameState state, bool is_replay) {
-  for (std::size_t i = 0; i < spectator_viewports.size(); ++i) {
-    spectator_viewports[i]->Draw(*this, renderer, state, is_replay);
+  for (auto& spectator_viewport : spectator_viewports) {
+    spectator_viewport->Draw(*this, renderer, state, is_replay);
   }
 }
 
 void Game::ClearWorms() { worms.clear(); }
 
 void Game::ResetWorms() {
-  for (std::size_t i = 0; i < worms.size(); ++i) {
-    Worm& w = *worms[i];
+  for (auto& worm : worms) {
+    Worm& w = *worm;
     w.health = w.settings->health;
     w.lives = settings->lives;  // Not in the original!
     w.kills = 0;
@@ -164,9 +163,8 @@ void Game::Draw(Renderer& renderer, GameState state, bool use_spectator_viewport
 
   renderer.pal = renderer.origpal;
 
-  for (int w = 0; w < 4; ++w)
-    renderer.pal.RotateFrom(renderer.origpal, common->color_anim[w].from, common->color_anim[w].to,
-                            cycles >> 3);
+  for (auto& w : common->color_anim)
+    renderer.pal.RotateFrom(renderer.origpal, w.from, w.to, cycles >> 3);
 
   renderer.pal.Fade(renderer.fade_value);
 
@@ -191,7 +189,7 @@ bool CheckBonusSpawnPosition(Game& game, int x, int y) {
 void Game::CreateBonus() {
   Common& common = *this->common;
 
-  if (int(bonuses.Size()) >= settings->max_bonuses) return;
+  if (std::cmp_greater_equal(bonuses.Size(), settings->max_bonuses)) return;
 
   for (std::size_t i = 0; i < 50000; ++i) {
     int ix = rand(LC(BonusSpawnRectW));
@@ -203,7 +201,7 @@ void Game::CreateBonus() {
     }
 
     if (CheckBonusSpawnPosition(*this, ix, iy)) {
-      int frame;
+      int frame = 0;
 
       if (common.h[HBonusOnlyHealth])
         frame = 1;
@@ -224,11 +222,11 @@ void Game::CreateBonus() {
 
       if (frame == 0) {
         do {
-          bonus->weapon = rand((uint32_t)common.weapons.size());
+          bonus->weapon = rand(static_cast<uint32_t>(common.weapons.size()));
         } while (settings->weap_table[bonus->weapon] == 2);
       }
 
-      common.sobject_types[7].Create(*this, ix, iy, 0, 0);
+      common.sobject_types[7].Create(*this, ix, iy, 0, nullptr);
       return;
     }
   }  // 234F
@@ -239,23 +237,23 @@ void Game::ProcessFrame() {
 
   if (screen_flash > 0) --screen_flash;
 
-  for (std::size_t i = 0; i < viewports.size(); ++i) {
-    if (viewports[i]->shake > 0) viewports[i]->shake -= 4000;  // TODO: Read 4000 from exe?
+  for (auto& viewport : viewports) {
+    if (viewport->shake > 0) viewport->shake -= 4000;  // TODO: Read 4000 from exe?
   }
 
-  for (std::size_t i = 0; i < spectator_viewports.size(); ++i) {
-    if (spectator_viewports[i]->shake > 0)
-      spectator_viewports[i]->shake -= 4000;  // TODO: Read 4000 from exe?
+  for (auto& spectator_viewport : spectator_viewports) {
+    if (spectator_viewport->shake > 0)
+      spectator_viewport->shake -= 4000;  // TODO: Read 4000 from exe?
   }
 
   auto br = bonuses.All();
-  for (Bonus* i; (i = br.Next());) {
+  for (Bonus* i = nullptr; (i = br.Next());) {
     i->Process(*this);
   }
 
   if ((cycles & 1) == 0) {
-    for (std::size_t i = 0; i < viewports.size(); ++i) {
-      Viewport& v = *viewports[i];
+    for (auto& viewport : viewports) {
+      Viewport& v = *viewport;
 
       bool down = false;
 
@@ -268,8 +266,8 @@ void Game::ProcessFrame() {
       }
     }
     // FIXME duplicated code
-    for (std::size_t i = 0; i < spectator_viewports.size(); ++i) {
-      SpectatorViewport& v = *spectator_viewports[i];
+    for (auto& spectator_viewport : spectator_viewports) {
+      SpectatorViewport& v = *spectator_viewport;
 
       bool down = false;
 
@@ -284,17 +282,17 @@ void Game::ProcessFrame() {
   }
 
   auto sr = sobjects.All();
-  for (SObject* i; (i = sr.Next());) {
+  for (SObject* i = nullptr; (i = sr.Next());) {
     i->Process(*this);
   }
 
   auto wr = wobjects.All();
-  for (WObject* i; (i = wr.Next());) {
+  for (WObject* i = nullptr; (i = wr.Next());) {
     i->Process(*this);
   }
 
   auto nr = nobjects.All();
-  for (NObject* i; (i = nr.Next());) {
+  for (NObject* i = nullptr; (i = nr.Next());) {
     i->Process(*this);
   }
 
@@ -314,19 +312,19 @@ void Game::ProcessFrame() {
     CreateBonus();
   }
 
-  for (std::size_t i = 0; i < worms.size(); ++i) {
-    worms[i]->Process(*this);
+  for (auto& worm : worms) {
+    worm->Process(*this);
   }
 
-  for (std::size_t i = 0; i < worms.size(); ++i) {
-    worms[i]->ninjarope.Process(*worms[i], *this);
+  for (auto& worm : worms) {
+    worm->ninjarope.Process(*worm, *this);
   }
 
   switch (settings->game_mode) {
     case Settings::kGmGameOfTag: {
       bool some_invisible = false;
-      for (std::size_t i = 0; i < worms.size(); ++i) {
-        if (!worms[i]->visible) {
+      for (auto& worm : worms) {
+        if (!worm->visible) {
           some_invisible = true;
           break;
         }
@@ -345,9 +343,10 @@ void Game::ProcessFrame() {
       int contenders = 0;
 
       for (auto const& w : worms) {
-        int x = Ftoi(w->pos.x), y = Ftoi(w->pos.y);
+        int const kX = Ftoi(w->pos.x);
+        int const kY = Ftoi(w->pos.y);
 
-        if (w->visible && holdazone.rect.Inside(x, y)) {
+        if (w->visible && holdazone.rect.Inside(kX, kY)) {
           contender_idx = w->index;
           ++contenders;
         }
@@ -358,6 +357,7 @@ void Game::ProcessFrame() {
       if (contenders <= 1) {
         if (contender_idx < 0 ||
             (holdazone.contender_idx != contender_idx && holdazone.contender_frames != 0)) {
+          // NOLINTNEXTLINE(bugprone-inc-dec-in-conditions) — short-circuit-then-mutate is the entire point: only decrement when not already 0.
           if (holdazone.contender_frames == 0 || --holdazone.contender_frames == 0) {
             holdazone.contender_idx = contender_idx;
             holdazone.holder_idx = -1;
@@ -365,10 +365,11 @@ void Game::ProcessFrame() {
         } else {
           holdazone.contender_idx = contender_idx;
 
-          if (holdazone.contender_frames < settings->kZoneCaptureTime &&
-              ++holdazone.contender_frames >= settings->kZoneCaptureTime &&
+          // NOLINTBEGIN(bugprone-inc-dec-in-conditions) — guarded increment: only fire on the exact frame that crosses the capture threshold.
+          if (holdazone.contender_frames < Settings::kZoneCaptureTime &&
+              ++holdazone.contender_frames >= Settings::kZoneCaptureTime &&
               holdazone.holder_idx != holdazone.contender_idx) {
-            // New holder
+            // NOLINTEND(bugprone-inc-dec-in-conditions) New holder
 
             int new_timeout = holdazone.timeout_left;
             if (holdazone.contender_idx >= 0)
@@ -401,13 +402,15 @@ void Game::ProcessFrame() {
         }
       }
     } break;
+    default:
+      break;
   }
 
   ProcessViewports();
 
   // Store old control states so we can see what changes (mainly for replays)
-  for (std::size_t i = 0; i < worms.size(); ++i) {
-    worms[i]->prev_control_states = worms[i]->control_states;
+  for (auto& worm : worms) {
+    worm->prev_control_states = worm->control_states;
   }
 
   stats_recorder->Tick(*this);
@@ -418,8 +421,8 @@ void Game::Focus(Renderer& renderer) { UpdateSettings(renderer); }
 void Game::UpdateSettings(Renderer& renderer) {
   renderer.origpal = level.origpal;  // Activate the Level palette
 
-  for (std::size_t i = 0; i < worms.size(); ++i) {
-    Worm& worm = *worms[i];
+  for (auto& i : worms) {
+    Worm const& worm = *i;
     if (worm.index >= 0 && worm.index < 2)
       renderer.origpal.SetWormColour(worm.index, *worm.settings);
   }
@@ -458,12 +461,12 @@ void Game::StartGame() {
 bool Game::IsGameOver() {
   if (settings->game_mode == Settings::kGmKillEmAll ||
       settings->game_mode == Settings::kGmScalesOfJustice) {
-    for (std::size_t i = 0; i < worms.size(); ++i) {
-      if (worms[i]->lives <= 0) return true;
+    for (auto& worm : worms) {
+      if (worm->lives <= 0) return true;
     }
   } else if (settings->game_mode == Settings::kGmGameOfTag) {
-    for (std::size_t i = 0; i < worms.size(); ++i) {
-      if (worms[i]->timer >= settings->time_to_lose) return true;
+    for (auto& worm : worms) {
+      if (worm->timer >= settings->time_to_lose) return true;
     }
   } else if (settings->game_mode == Settings::kGmHoldazone) {
     for (auto const& w : worms)
@@ -490,9 +493,7 @@ void Game::DoHealingDirect(Worm& w, int amount) {
       w.health -= w.settings->health;
     }
   } else {
-    if (w.health > w.settings->health) {
-      w.health = w.settings->health;
-    }
+    w.health = std::min(w.health, w.settings->health);
   }
 }
 
@@ -502,15 +503,15 @@ void Game::DoDamage(Worm& w, int amount, int by_idx) {
   if (amount > 0) {
     if (settings->game_mode == Settings::kGmScalesOfJustice) {
       if (by_idx < 0 || by_idx == w.index) {
-        int parts = (int)worms.size() - 1;
+        int parts = static_cast<int>(worms.size()) - 1;
         int left = amount;
 
         for (auto const& other : worms) {
           if (other.get() != &w) {
-            int k = left / parts;
-            DoHealingDirect(*other, k);
+            int const k_ = left / parts;
+            DoHealingDirect(*other, k_);
             parts -= 1;
-            left -= k;
+            left -= k_;
           }
         }
       } else {
@@ -524,34 +525,34 @@ void Game::DoHealing(Worm& w, int amount) {
   DoHealingDirect(w, amount);
 
   if (settings->game_mode == Settings::kGmScalesOfJustice) {
-    int parts = (int)worms.size() - 1;
+    int parts = static_cast<int>(worms.size()) - 1;
     int left = amount;
 
     for (auto const& other : worms) {
       if (other.get() != &w) {
-        int k = left / parts;
-        DoDamageDirect(*other, k, w.index);
+        int const k_ = left / parts;
+        DoDamageDirect(*other, k_, w.index);
         parts -= 1;
-        left -= k;
+        left -= k_;
       }
     }
   } else {
-    if (w.health > w.settings->health) w.health = w.settings->health;
+    w.health = std::min(w.health, w.settings->health);
   }
 }
 
 bool CheckRespawnPosition(Game& game, int x2, int y2, int old_x, int old_y, int x, int y) {
-  Common& common = *game.common;
+  Common const& common = *game.common;
 
-  int delta_x = old_x;
-  int delta_y = old_y - y;
-  int enemy_dx = x2 - x;
-  int enemy_dy = y2 - y;
+  int const kDeltaX = old_x;
+  int const kDeltaY = old_y - y;
+  int const kEnemyDx = x2 - x;
+  int const kEnemyDy = y2 - y;
 
-  if ((std::abs(delta_x) <= LC(WormMinSpawnDistLast) &&
-       std::abs(delta_y) <= LC(WormMinSpawnDistLast)) ||
-      (std::abs(enemy_dx) <= LC(WormMinSpawnDistEnemy) &&
-       std::abs(enemy_dy) <= LC(WormMinSpawnDistEnemy)))
+  if ((std::abs(kDeltaX) <= LC(WormMinSpawnDistLast) &&
+       std::abs(kDeltaY) <= LC(WormMinSpawnDistLast)) ||
+      (std::abs(kEnemyDx) <= LC(WormMinSpawnDistEnemy) &&
+       std::abs(kEnemyDy) <= LC(WormMinSpawnDistEnemy)))
     return false;
 
   int max_x = x + 3;
@@ -561,8 +562,8 @@ bool CheckRespawnPosition(Game& game, int x2, int y2, int old_x, int old_y, int 
 
   if (max_x >= game.level.width) max_x = game.level.width - 1;
   if (max_y >= game.level.height) max_y = game.level.height - 1;
-  if (min_x < 0) min_x = 0;
-  if (min_y < 0) min_y = 0;
+  min_x = std::max(min_x, 0);
+  min_y = std::max(min_y, 0);
 
   for (int i = min_x; i != max_x; ++i)
     for (int j = min_y; j != max_y; ++j) {
@@ -574,16 +575,16 @@ bool CheckRespawnPosition(Game& game, int x2, int y2, int old_x, int old_y, int 
   return true;
 }
 
-void Game::PostClone(Game& original, bool complete) {
+void Game::PostClone(Game& /*original*/, bool complete) {
   sound_player_installed = false;
   prev_sound_player = nullptr;
   if (!complete) {
-    stats_recorder.reset(new StatsRecorder);
-    sound_player.reset(new NullSoundPlayer);
+    stats_recorder = std::make_shared<StatsRecorder>();
+    sound_player = std::make_shared<NullSoundPlayer>();
     viewports.clear();
   } else {
-    stats_recorder.reset(
-        new NormalStatsRecorder(static_cast<NormalStatsRecorder&>(*stats_recorder)));
+    stats_recorder =
+        std::make_shared<NormalStatsRecorder>(dynamic_cast<NormalStatsRecorder&>(*stats_recorder));
 
     for (auto& vp : viewports) {
       vp = new Viewport(*vp);

@@ -25,17 +25,17 @@ int EnumBehavior::OnEnter(Menu& menu, MenuItem& item) {
   return -1;
 }
 
-void EnumBehavior::Change(Menu& menu, MenuItem& item, int dir) {
-  uint32_t range = max - min + 1;
-  uint32_t new_v = ((v + dir + range - min) % range) + min;
+void EnumBehavior::Change(Menu& menu, MenuItem& /*item*/, int dir) {
+  uint32_t const kRange = max - min + 1;
+  uint32_t const kNewV = ((v + dir + kRange - min) % kRange) + min;
 
-  if (new_v != v) {
-    v = new_v;
+  if (kNewV != v) {
+    v = kNewV;
     menu.UpdateItems(common);
   }
 }
 
-void EnumBehavior::OnUpdate(Menu& menu, MenuItem& item) {
+void EnumBehavior::OnUpdate(Menu& /*menu*/, MenuItem& item) {
   item.value = ToString(v);
   item.has_value = true;
 }

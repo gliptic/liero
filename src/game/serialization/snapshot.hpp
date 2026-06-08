@@ -83,13 +83,13 @@ struct FiredByRef {
 };
 
 inline FiredByRef EncodeFiredBy(Game const& game, WormWeapon const* fb) {
-  if (!fb) return {-1, -1};
+  if (!fb) return {.worm_idx = -1, .slot = -1};
   for (std::size_t wi = 0; wi < game.worms.size(); ++wi) {
     WormWeapon const* base = game.worms[wi]->weapons;
     if (fb >= base && fb < base + NUM_WEAPONS)
-      return {static_cast<int8_t>(wi), static_cast<int8_t>(fb - base)};
+      return {.worm_idx = static_cast<int8_t>(wi), .slot = static_cast<int8_t>(fb - base)};
   }
-  return {-1, -1};
+  return {.worm_idx = -1, .slot = -1};
 }
 
 inline WormWeapon* DecodeFiredBy(Game& game, FiredByRef ref) {
@@ -120,14 +120,14 @@ template <class Archive, typename T, int Limit>
 void load(Archive& ar, ExactObjectList<T, Limit>& list) {
   list.Clear();
   for (int i = 0; i < Limit; ++i) {
-    bool used;
+    bool used = false;
     ar(cereal::make_nvp("u", used));
     if (used) {
       // Bypass getFreeObject — it picks the lowest free slot, not slot i.
       ar(cereal::make_nvp("e", list.arr[i]));
       list.arr[i].used = true;
       list.free_list[static_cast<uint32_t>(i) >> 5] &=
-          ~(uint32_t(1) << (static_cast<uint32_t>(i) & 31));
+          ~(static_cast<uint32_t>(1) << (static_cast<uint32_t>(i) & 31));
       ++list.count;
     }
   }
@@ -136,14 +136,14 @@ void load(Archive& ar, ExactObjectList<T, Limit>& list) {
 // ---- FastObjectList<T> ----
 template <class Archive, typename T>
 void save(Archive& ar, FastObjectList<T> const& list) {
-  uint32_t count = static_cast<uint32_t>(list.count);
+  auto count = static_cast<uint32_t>(list.count);
   ar(cereal::make_nvp("count", count));
   for (uint32_t i = 0; i < count; ++i) ar(cereal::make_nvp("e", const_cast<T&>(list.arr[i])));
 }
 
 template <class Archive, typename T>
 void load(Archive& ar, FastObjectList<T>& list) {
-  uint32_t count;
+  uint32_t count = 0;
   ar(cereal::make_nvp("count", count));
   list.Clear();
   for (uint32_t i = 0; i < count; ++i) {
@@ -183,7 +183,7 @@ void SaveGameSnapshot(Archive& ar, Game const& game) {
       if (n.used) {
         SerializeNObjectScalars(ar, const_cast<NObject&>(n));
         int32_t type_idx =
-            n.type ? static_cast<int32_t>(n.type - &game.common->nobject_types[0]) : -1;
+            n.type ? static_cast<int32_t>(n.type - game.common->nobject_types.data()) : -1;
         FiredByRef fb = EncodeFiredBy(game, n.fired_by);
         ar(cereal::make_nvp("typeIdx", type_idx), cereal::make_nvp("firedBy", fb));
       }
@@ -198,7 +198,7 @@ void SaveGameSnapshot(Archive& ar, Game const& game) {
       ar(cereal::make_nvp("u", w.used));
       if (w.used) {
         SerializeWObjectScalars(ar, const_cast<WObject&>(w));
-        int32_t type_idx = w.type ? static_cast<int32_t>(w.type - &game.common->weapons[0]) : -1;
+        int32_t type_idx = w.type ? static_cast<int32_t>(w.type - game.common->weapons.data()) : -1;
         FiredByRef fb = EncodeFiredBy(game, w.fired_by);
         ar(cereal::make_nvp("typeIdx", type_idx), cereal::make_nvp("firedBy", fb));
       }
@@ -223,16 +223,16 @@ void LoadGameSnapshot(Archive& ar, Game& game) {
     auto& list = game.nobjects;
     list.Clear();
     for (int i = 0; i < 600; ++i) {
-      bool used;
+      bool used = false;
       ar(cereal::make_nvp("u", used));
       if (used) {
         NObject& n = list.arr[i];
         SerializeNObjectScalars(ar, n);
         n.used = true;
         list.free_list[static_cast<uint32_t>(i) >> 5] &=
-            ~(uint32_t(1) << (static_cast<uint32_t>(i) & 31));
+            ~(static_cast<uint32_t>(1) << (static_cast<uint32_t>(i) & 31));
         ++list.count;
-        int32_t type_idx;
+        int32_t type_idx = 0;
         FiredByRef fb;
         ar(cereal::make_nvp("typeIdx", type_idx), cereal::make_nvp("firedBy", fb));
         n.type = (type_idx >= 0) ? &game.common->nobject_types[type_idx] : nullptr;
@@ -246,16 +246,16 @@ void LoadGameSnapshot(Archive& ar, Game& game) {
     auto& list = game.wobjects;
     list.Clear();
     for (int i = 0; i < 600; ++i) {
-      bool used;
+      bool used = false;
       ar(cereal::make_nvp("u", used));
       if (used) {
         WObject& w = list.arr[i];
         SerializeWObjectScalars(ar, w);
         w.used = true;
         list.free_list[static_cast<uint32_t>(i) >> 5] &=
-            ~(uint32_t(1) << (static_cast<uint32_t>(i) & 31));
+            ~(static_cast<uint32_t>(1) << (static_cast<uint32_t>(i) & 31));
         ++list.count;
-        int32_t type_idx;
+        int32_t type_idx = 0;
         FiredByRef fb;
         ar(cereal::make_nvp("typeIdx", type_idx), cereal::make_nvp("firedBy", fb));
         w.type = (type_idx >= 0) ? &game.common->weapons[type_idx] : nullptr;

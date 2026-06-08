@@ -1,8 +1,10 @@
 #include "common.hpp"
 
+#include <algorithm>
 #include <map>
 #include <sstream>
 #include <string>
+#include <utility>
 #include "common_model.hpp"
 #include "console.hpp"
 #include "filesystem.hpp"
@@ -220,16 +222,14 @@ Texts::Texts() {
   weap_states[0] = "Menu";
   weap_states[1] = "Bonus";
   weap_states[2] = "Banned";
-
-  copyright_bar_format = 64;
 }
 
 void Common::DrawTextSmall(Bitmap& scr, char const* str, int x, int y) {
   for (; *str; ++str) {
-    unsigned char c = *str - 'A';
+    unsigned char const kC = *str - 'A';
 
-    if (c < 26) {
-      BlitImage(scr, text_sprites[c], x, y);
+    if (kC < 26) {
+      BlitImage(scr, text_sprites[kC], x, y);
     }
 
     x += 4;
@@ -239,8 +239,13 @@ void Common::DrawTextSmall(Bitmap& scr, char const* str, int x, int y) {
 #define CHECK(c) \
   if (!(c)) goto fail
 
-int ReadSpriteTga(io::Reader& r, int dest_image_width, int dest_image_height, int dest_count,
-                  uint8_t* data, Palette* pal) {
+static int ReadSpriteTga(io::Reader& r, int dest_image_width, int dest_image_height,
+                         int /*dest_count*/, uint8_t* data, Palette* pal) {
+  // Declared before any `CHECK(...) goto fail` to avoid jumping past
+  // their initialization. The reads happen below.
+  int image_width = 0;
+  int image_height = 0;
+
   auto id_len = r.Get();
   CHECK(r.Get() == 1);
   CHECK(r.Get() == 1);
@@ -249,8 +254,6 @@ int ReadSpriteTga(io::Reader& r, int dest_image_width, int dest_image_height, in
   CHECK(io::ReadUint16Le(r) == 0);
   CHECK(io::ReadUint16Le(r) == 256);
   CHECK(r.Get() == 24);
-
-  int image_width, image_height;
 
   CHECK(io::ReadUint16Le(r) == 0);
   CHECK(io::ReadUint16Le(r) == 0);
@@ -277,9 +280,9 @@ int ReadSpriteTga(io::Reader& r, int dest_image_width, int dest_image_height, in
   }
 
   // Bottom to top
-  for (std::size_t y = (std::size_t)image_height; y-- > 0;) {
+  for (auto y = static_cast<std::size_t>(image_height); y-- > 0;) {
     auto* src = &data[y * image_width];
-    r.Get((uint8_t*)src, image_width);
+    r.Get(src, image_width);
   }
 
   return 1;
@@ -288,17 +291,18 @@ fail:
   return 0;
 }
 
-int ReadSpriteTga(io::Reader& r, SpriteSet& ss, Palette* pal) {
-  return ReadSpriteTga(r, ss.width, ss.count * ss.height, ss.count, &ss.data[0], pal);
+static int ReadSpriteTga(io::Reader& r, SpriteSet& ss, Palette* pal) {
+  return ReadSpriteTga(r, ss.width, ss.count * ss.height, ss.count, ss.data.data(), pal);
 }
 
 #undef CHECK
 
-inline uint32_t Quad(char a, char b, char c, char d) {
-  return (uint32_t)a + ((uint32_t)b << 8) + ((uint32_t)c << 16) + ((uint32_t)d << 24);
+static inline uint32_t Quad(char a, char b, char c, char d) {
+  return static_cast<uint32_t>(a) + (static_cast<uint32_t>(b) << 8) +
+         (static_cast<uint32_t>(c) << 16) + (static_cast<uint32_t>(d) << 24);
 }
 
-void Common::load(FsNode node) {
+void Common::load(const FsNode& node) {
   {
     auto text_reader_ptr = (node / "tc.cfg").ToReader();
     io::Reader& text_reader = *text_reader_ptr;
@@ -306,7 +310,8 @@ void Common::load(FsNode node) {
     std::string content;
     try {
       for (;;) content.push_back(static_cast<char>(text_reader.Get()));
-    } catch (std::runtime_error&) {
+    } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — EOF signalled by exception
+                                     // from text_reader.Get(); content is the full read.
     }
     std::istringstream is(content);
     LoadTcConfig(*this, is);
@@ -328,22 +333,22 @@ void Common::load(FsNode node) {
     io::Reader& r = *r_ptr;
 
     if (io::ReadUint32Le(r) == Quad('R', 'I', 'F', 'F')) {
-      std::size_t rounded_size = io::ReadUint32Le(r) + 8;
+      std::size_t const kRoundedSize = io::ReadUint32Le(r) + 8;
 
-      (void)rounded_size;  // Ignore
+      (void)kRoundedSize;  // Ignore
 
       if (io::ReadUint32Le(r) == Quad('W', 'A', 'V', 'E') &&
           io::ReadUint32Le(r) == Quad('f', 'm', 't', ' ') && io::ReadUint32Le(r) == 16 &&
           io::ReadUint16Le(r) == 1 && io::ReadUint16Le(r) == 1 && io::ReadUint32Le(r) == 22050 &&
           io::ReadUint32Le(r) == 22050 * 1 * 1 && io::ReadUint16Le(r) == 1 * 1 &&
           io::ReadUint16Le(r) == 8 && io::ReadUint32Le(r) == Quad('d', 'a', 't', 'a')) {
-        std::size_t data_size = io::ReadUint32Le(r);
+        std::size_t const kDataSize = io::ReadUint32Le(r);
 
-        s.original_data.resize(data_size);
+        s.original_data.resize(kDataSize);
 
         for (auto& z : s.original_data) z = r.Get() - 128;
 
-        s.sound = SfxNewSound(data_size * 2);
+        s.sound = SfxNewSound(kDataSize * 2);
 
         s.CreateSound();
       }
@@ -367,13 +372,13 @@ void Common::load(FsNode node) {
     {
       auto r_ptr = (dir / "large.tga").ToReader();
       io::Reader& r = *r_ptr;
-      ReadSpriteTga(r, large_sprites, 0);
+      ReadSpriteTga(r, large_sprites, nullptr);
     }
 
     {
       auto r_ptr = (dir / "text.tga").ToReader();
       io::Reader& r = *r_ptr;
-      ReadSpriteTga(r, text_sprites, 0);
+      ReadSpriteTga(r, text_sprites, nullptr);
     }
 
     {
@@ -382,11 +387,12 @@ void Common::load(FsNode node) {
 
       std::vector<uint8_t> data(font.chars.size() * 7 * 8, 10);
 
-      ReadSpriteTga(r, 7, (int)font.chars.size() * 8, (int)font.chars.size(), &data[0], 0);
+      ReadSpriteTga(r, 7, static_cast<int>(font.chars.size()) * 8,
+                    static_cast<int>(font.chars.size()), data.data(), nullptr);
 
       for (std::size_t i = 0; i < font.chars.size(); ++i) {
         Font::Char& ch = font.chars[i];
-        uint8_t* dest = &data[i * 7 * 8];
+        uint8_t const* dest = &data[i * 7 * 8];
 
         ch.width = 0;
 
@@ -398,7 +404,7 @@ void Common::load(FsNode node) {
             } else if (p == 50) {
               ch.data[y * 7 + x] = 8;
             } else {
-              ch.width = (int)x;
+              ch.width = static_cast<int>(x);
               break;
             }
           }
@@ -414,7 +420,8 @@ void Common::load(FsNode node) {
     std::string content;
     try {
       for (;;) content.push_back(static_cast<char>(w_reader.Get()));
-    } catch (std::runtime_error&) {
+    } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — EOF signalled by exception
+                                     // from reader; the partial read is the result.
     }
     std::istringstream is(content);
     LoadWeaponConfig(*this, w, is);
@@ -428,7 +435,8 @@ void Common::load(FsNode node) {
     std::string content;
     try {
       for (;;) content.push_back(static_cast<char>(n_reader.Get()));
-    } catch (std::runtime_error&) {
+    } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — EOF signalled by exception
+                                     // from reader; the partial read is the result.
     }
     std::istringstream is(content);
     LoadNObjectConfig(*this, w, is);
@@ -442,7 +450,8 @@ void Common::load(FsNode node) {
     std::string content;
     try {
       for (;;) content.push_back(static_cast<char>(s_reader.Get()));
-    } catch (std::runtime_error&) {
+    } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — EOF signalled by exception
+                                     // from reader; the partial read is the result.
     }
     std::istringstream is(content);
     LoadSObjectConfig(*this, w, is);
@@ -453,19 +462,19 @@ void Common::load(FsNode node) {
 
 void Common::Precompute() {
   weap_order.resize(weapons.size());
-  for (int i = 0; i < (int)weapons.size(); ++i) {
+  for (int i = 0; std::cmp_less(i, weapons.size()); ++i) {
     weap_order[i] = i;
     weapons[i].id = i;
   }
 
-  std::sort(weap_order.begin(), weap_order.end(),
-            [&](int a, int b) { return this->weapons[a].name < this->weapons[b].name; });
+  std::ranges::sort(weap_order,
+                    [&](int a, int b) { return this->weapons[a].name < this->weapons[b].name; });
 
-  for (int i = 0; i < (int)nobject_types.size(); ++i) {
+  for (int i = 0; std::cmp_less(i, nobject_types.size()); ++i) {
     nobject_types[i].id = i;
   }
 
-  for (int i = 0; i < (int)sobject_types.size(); ++i) {
+  for (int i = 0; std::cmp_less(i, sobject_types.size()); ++i) {
     sobject_types[i].id = i;
   }
 
@@ -499,19 +508,19 @@ void Common::Precompute() {
   for (int i = 0; i < 7; ++i) {
     for (int y = 0; y < 16; ++y)
       for (int x = 0; x < 16; ++x) {
-        PalIdx pix = (large_sprites.SpritePtr(9 + i) + y * 16)[x];
+        PalIdx const kPix = (large_sprites.SpritePtr(9 + i) + y * 16)[x];
 
-        (FireConeSprite(i, 1) + y * 16)[x] = pix;
+        (FireConeSprite(i, 1) + y * 16)[x] = kPix;
 
         if (x == 15)
           (FireConeSprite(i, 0) + y * 16)[15] = 0;
         else
-          (FireConeSprite(i, 0) + y * 16)[14 - x] = pix;
+          (FireConeSprite(i, 0) + y * 16)[14 - x] = kPix;
       }
   }
 }
 
-Common::Common() {}
+Common::Common() = default;
 
 std::string Common::GuessName() const {
   std::string const& cp = s[SCopyright2];

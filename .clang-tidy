@@ -31,43 +31,140 @@
 #   anything (kept from the original config).
 # * modernize-use-nodiscard: too aggressive, attribute is situationally
 #   useful (kept from the original config).
+# * abseil-*: we don't depend on Abseil; suggestions like absl::StrContains
+#   would force a new dependency.
+# * boost-*: we don't depend on Boost; suggestions like boost::range
+#   would force a new dependency.
+# * cppcoreguidelines-use-enum-class: invasive (~1000 sites), and
+#   converting Liero's plain enums to scoped enums would break the
+#   implicit int conversions threaded through serialization, weapon /
+#   nobject tables, and SDL key/event handling.
+# * cppcoreguidelines-special-member-functions / hicpp alias: requires
+#   declaring the full rule-of-five on every type with a destructor,
+#   producing >1000 boilerplate edits with no behavioural benefit.
+# * cppcoreguidelines-pro-type-member-init: enforces default member
+#   initialisers across ~1000 sites; touches POD types that are
+#   memset-initialised or fully assigned by readers in serialization.
+# * bugprone-implicit-widening-of-multiplication-result: false-positive
+#   prone in graphics code where `int*int` widened to size_t is
+#   intentional and safe.
+# * google-explicit-constructor: prescriptive style preference; the
+#   codebase relies on implicit conversions (e.g. fixed-point Scalar
+#   from int literals) where adding `explicit` would force noisy casts
+#   at hundreds of call sites.
+# * misc-use-internal-linkage: gives false positives for functions
+#   declared in `.hpp` and defined in `.cpp` whose only callers live in
+#   other TUs (e.g. `GameEntry`, `CommonSave`). The check applies
+#   `static` based on per-TU visibility and breaks the link step.
+# * clang-analyzer-*: the path-sensitive static analyzer is noisy on
+#   this codebase (false positives on raycasts, unread-final-stores in
+#   tests, init-by-helper patterns). Running it under `scan-build` is a
+#   separate workflow; the regular tidy pass should not gate on it.
+# * cppcoreguidelines-virtual-class-destructor: the codebase uses
+#   structs for data aggregates that happen to be inherited but are
+#   never deleted through a base pointer. Forcing virtual destructors
+#   would impose vtable overhead on hot paths (`Worm`, `NObject`).
+# * misc-use-anonymous-namespace / llvm-prefer-static-over-anonymous-namespace:
+#   stylistic preference between `static` and `namespace { }` for
+#   internal linkage; not worth churning ~150 sites.
+# * readability-function-cognitive-complexity: advisory only; the game
+#   sim functions are inherently complex and rewriting them is out of
+#   scope for a tidy flag day.
+# * google-global-names-in-headers: flags `using std::vector` in
+#   headers, which is intentional here for ergonomics.
+# * google-runtime-int: prefers `int64_t` over `unsigned long`; the
+#   codebase mixes SDL types and `cstdint`, so flagging every
+#   `unsigned long` is noise.
+# * fuchsia-multiple-inheritance / misc-multiple-inheritance: hits the
+#   `FollowAI : WormAI, AiContext` pattern by design.
+# * cppcoreguidelines-avoid-do-while: game loops use `do { } while`.
+# * cppcoreguidelines-pro-type-const-cast: cereal's `serialize` path
+#   const-casts when archiving non-const fields through a const archive.
+# * bugprone-narrowing-conversions / cppcoreguidelines-narrowing-conversions:
+#   pervasive in graphics/sound code where int<->uint8 is intentional.
+# * cppcoreguidelines-avoid-goto / hicpp-avoid-goto: `common.cpp` uses
+#   `goto fail` for the TGA reader's error-unwind chain.
+# * concurrency-mt-unsafe: flags `localtime`, `strerror`, etc. We are
+#   single-threaded outside the AI thread pool, which is documented.
+# * modernize-use-std-print: requires C++23 `<print>` / `std::println`,
+#   which the linux-x64-ci preset's local GCC has but CI's GCC 13 and
+#   the macOS deployment target (pre-13.3 `std::format` runtime) do not.
+#   Rewriting `printf` to `std::println` breaks the build on those
+#   toolchains.
+# * cppcoreguidelines-init-variables: auto-adds `= nullptr` to any
+#   uninitialised variable, including platform-specific struct types
+#   inside `#if _WIN32` blocks (e.g. `WIN32_FIND_DATAA scratch`) which
+#   the local linux preset never compiles. False positives are
+#   irrecoverable without per-platform manual review.
+# * cert-err33-c: flags every `fprintf`/`printf` whose return value
+#   isn't checked. The codebase uses these as fire-and-forget logging
+#   on stderr (transport, signaling, replay-recording, online-connect,
+#   tc/video tools); the check produces ~25 nuisance hits with no
+#   actionable signal. Genuine "ignored return" bugs (fopen, fclose,
+#   scanf, ...) are caught by the same family check
+#   `bugprone-unused-return-value`, which stays enabled.
 Checks: "*,\
   -google-readability-todo,\
   -altera-*,\
+  -abseil-*,\
+  -boost-*,\
+  -cert-err33-c,\
+  -clang-analyzer-*,\
+  -concurrency-mt-unsafe,\
+  -cppcoreguidelines-init-variables,\
+  -modernize-use-std-print,\
   -fuchsia-*,\
-  fuchsia-multiple-inheritance,\
   -llvm-header-guard,\
   -llvm-include-order,\
+  -llvm-prefer-static-over-anonymous-namespace,\
   -llvmlibc-*,\
   -modernize-use-nodiscard,\
+  -misc-multiple-inheritance,\
   -misc-non-private-member-variables-in-classes,\
+  -misc-use-anonymous-namespace,\
+  -misc-use-internal-linkage,\
+  -readability-function-cognitive-complexity,\
   -readability-identifier-length,\
   -readability-magic-numbers,\
   -readability-braces-around-statements,\
   -readability-implicit-bool-conversion,\
   -readability-math-missing-parentheses,\
+  -google-explicit-constructor,\
+  -google-global-names-in-headers,\
   -google-readability-braces-around-statements,\
+  -google-runtime-int,\
   -modernize-use-trailing-return-type,\
   -modernize-avoid-c-arrays,\
   -modernize-macro-to-enum,\
   -portability-avoid-pragma-once,\
   -misc-include-cleaner,\
   -bugprone-easily-swappable-parameters,\
+  -bugprone-implicit-widening-of-multiplication-result,\
+  -bugprone-narrowing-conversions,\
   -performance-enum-size,\
+  -cppcoreguidelines-avoid-do-while,\
+  -cppcoreguidelines-avoid-goto,\
   -cppcoreguidelines-avoid-magic-numbers,\
   -cppcoreguidelines-avoid-c-arrays,\
   -cppcoreguidelines-avoid-const-or-ref-data-members,\
   -cppcoreguidelines-avoid-non-const-global-variables,\
   -cppcoreguidelines-macro-usage,\
   -cppcoreguidelines-macro-to-enum,\
+  -cppcoreguidelines-narrowing-conversions,\
   -cppcoreguidelines-non-private-member-variables-in-classes,\
   -cppcoreguidelines-owning-memory,\
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,\
   -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,\
   -cppcoreguidelines-pro-bounds-constant-array-index,\
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,\
+  -cppcoreguidelines-pro-type-const-cast,\
+  -cppcoreguidelines-pro-type-member-init,\
   -cppcoreguidelines-pro-type-reinterpret-cast,\
   -cppcoreguidelines-pro-type-vararg,\
+  -cppcoreguidelines-special-member-functions,\
+  -cppcoreguidelines-use-enum-class,\
+  -cppcoreguidelines-virtual-class-destructor,\
+  -hicpp-avoid-goto,\
   -hicpp-avoid-c-arrays,\
   -hicpp-braces-around-statements,\
   -hicpp-explicit-conversions,\
@@ -84,6 +181,11 @@ Checks: "*,\
   -hicpp-use-nullptr,\
   -hicpp-use-override,\
   -hicpp-vararg"
+# Lint warnings in our own headers (anything under src/) but not in
+# third-party headers (SDL, cereal, vcpkg vendor code, system libs).
+# Without this, tidy only reports warnings whose source location is in
+# the .cpp being analyzed — inline code in headers goes unchecked.
+HeaderFilterRegex: '.*/src/.*\.(h|hpp)$'
 WarningsAsErrors: ''
 CheckOptions:
   - key: 'bugprone-argument-comment.StrictMode'
@@ -92,7 +194,7 @@ CheckOptions:
   - key: 'bugprone-argument-comment.CommentBoolLiterals'
     value: 'true'
   - key: 'bugprone-misplaced-widening-cast.CheckImplicitCasts'
-    value: 'true'
+    value: 'false'
   - key: 'bugprone-sizeof-expression.WarnOnSizeOfIntegerExpression'
     value: 'true'
   - key: 'bugprone-suspicious-string-compare.WarnOnLogicalNotComparison'

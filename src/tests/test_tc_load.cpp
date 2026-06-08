@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "common.hpp"
 #include "common_model.hpp"
@@ -23,14 +24,14 @@ static std::string GetTcPath() {
 
 TEST_CASE("TC loads without errors", "[tc_load]") {
   auto common = std::make_shared<Common>();
-  FsNode tc_root(GetTcPath());
+  FsNode const kTcRoot(GetTcPath());
 
-  REQUIRE_NOTHROW(common->load(std::move(tc_root)));
+  REQUIRE_NOTHROW(common->load(kTcRoot));
 
   // Basic sanity checks on loaded data
-  REQUIRE(common->weapons.size() > 0);
-  REQUIRE(common->nobject_types.size() > 0);
-  REQUIRE(common->sobject_types.size() > 0);
+  REQUIRE(!common->weapons.empty());
+  REQUIRE(!common->nobject_types.empty());
+  REQUIRE(!common->sobject_types.empty());
   REQUIRE(common->weap_order.size() == common->weapons.size());
 
   // Strings from tc.cfg should arrive as UTF-8. The Copyright string contains
@@ -39,15 +40,15 @@ TEST_CASE("TC loads without errors", "[tc_load]") {
   // 0xC2 0x84 — neither of which decode to 'ä'. Anchor that here.
   std::string const& copy2 = common->s[SCopyright2];
   REQUIRE(copy2.find("Liero v1.33") == 0);
-  REQUIRE(copy2.find("\xC3\xA4") != std::string::npos);  // 'ä' UTF-8
-  REQUIRE(copy2.find("\xC2\x84") == std::string::npos);  // bogus old form
+  REQUIRE(copy2.contains("\xC3\xA4"));   // 'ä' UTF-8
+  REQUIRE(!copy2.contains("\xC2\x84"));  // bogus old form
   REQUIRE(common->GuessName() == "Liero v1.33");
 
   // Sound name lookup: known names resolve to a valid index that
   // round-trips back to the same name, unknown names yield -1.
-  int select_idx = common->SoundIndex("select");
-  REQUIRE(select_idx >= 0);
-  REQUIRE(common->sounds[select_idx].name == "select");
+  int const kSelectIdx = common->SoundIndex("select");
+  REQUIRE(kSelectIdx >= 0);
+  REQUIRE(common->sounds[kSelectIdx].name == "select");
   REQUIRE(common->SoundIndex("does_not_exist") == -1);
 
   // [sounds] hooks resolve via the loaded sound table.
@@ -57,7 +58,7 @@ TEST_CASE("TC loads without errors", "[tc_load]") {
   REQUIRE(common->sound_hook[SoundBump] == common->SoundIndex("bump"));
   REQUIRE(common->sound_hook[SoundBegin] == common->SoundIndex("begin"));
   REQUIRE(common->sound_hook[SoundReloaded] == common->SoundIndex("reloaded"));
-  for (int i = 0; i < SoundDefT::kMaxSound; ++i) REQUIRE(common->sound_hook[i] >= 0);
+  for (int const kI : common->sound_hook) REQUIRE(kI >= 0);
 
   // Step 5: sound fields in weapon / sobject configs are now name-typed.
   // Anchor a couple of known values so regressions in soundRefFromStr
@@ -82,8 +83,8 @@ TEST_CASE("TC loads without errors", "[tc_load]") {
 
 TEST_CASE("weapon / sobject sound refs round-trip via save/load", "[tc_load]") {
   auto src = std::make_shared<Common>();
-  FsNode tc_root(GetTcPath());
-  src->load(std::move(tc_root));
+  FsNode const kTcRoot(GetTcPath());
+  src->load(kTcRoot);
 
   for (auto const& w : src->weapons) {
     std::stringstream ss;
@@ -107,8 +108,8 @@ TEST_CASE("weapon / sobject sound refs round-trip via save/load", "[tc_load]") {
 
 TEST_CASE("weapon cfg with unknown sound name resolves to -1, not 0", "[tc_load]") {
   auto common = std::make_shared<Common>();
-  FsNode tc_root(GetTcPath());
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(GetTcPath());
+  common->load(kTcRoot);
 
   // Round-trip a weapon, but rewrite exploSound to a bogus name. Must
   // resolve to -1 (no sound), NOT 0 (would spuriously play the first sound).
@@ -130,8 +131,8 @@ TEST_CASE("weapon cfg with unknown sound name resolves to -1, not 0", "[tc_load]
 
 TEST_CASE("tc.cfg [sounds] round-trips through save/load", "[tc_load]") {
   auto src = std::make_shared<Common>();
-  FsNode tc_root(GetTcPath());
-  src->load(std::move(tc_root));
+  FsNode const kTcRoot(GetTcPath());
+  src->load(kTcRoot);
 
   std::stringstream ss;
   SaveTcConfig(*src, ss);
@@ -145,7 +146,7 @@ TEST_CASE("tc.cfg [sounds] round-trips through save/load", "[tc_load]") {
 }
 
 TEST_CASE("[sounds] unknown name resolves to -1", "[tc_load]") {
-  std::string cfg =
+  std::string const kCfg =
       "[types]\n"
       "sounds = [\"alpha\", \"beta\"]\n"
       "weapons = []\n"
@@ -159,7 +160,7 @@ TEST_CASE("[sounds] unknown name resolves to -1", "[tc_load]") {
       "[sounds]\n"
       "MenuSelect = \"not_a_real_sound\"\n"
       "MenuMoveUp = \"alpha\"\n";
-  std::stringstream ss(cfg);
+  std::stringstream ss(kCfg);
   Common c;
   LoadTcConfig(c, ss);
   REQUIRE(c.sound_hook[SoundMenuSelect] == -1);
@@ -223,8 +224,8 @@ TEST_CASE("TC supports game initialization", "[tc_load]") {
   PrecomputeTables();
 
   auto common = std::make_shared<Common>();
-  FsNode tc_root(GetTcPath());
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(GetTcPath());
+  common->load(kTcRoot);
 
   auto settings = std::make_shared<Settings>();
   settings->lives = 5;
@@ -233,11 +234,10 @@ TEST_CASE("TC supports game initialization", "[tc_load]") {
   settings->game_mode = Settings::kGmKillEmAll;
 
   // Clamp weapon selections to valid range for this TC
-  int num_weapons = (int)common->weapons.size();
-  for (int p = 0; p < 3; ++p) {
-    for (int i = 0; i < Settings::kSelectableWeapons; ++i) {
-      if ((int)settings->worm_settings[p]->weapons[i] > num_weapons)
-        settings->worm_settings[p]->weapons[i] = 1;
+  int const kNumWeapons = static_cast<int>(common->weapons.size());
+  for (auto& worm_setting : settings->worm_settings) {
+    for (unsigned int& weapon : worm_setting->weapons) {
+      if (std::cmp_greater(weapon, kNumWeapons)) weapon = 1;
     }
   }
 
@@ -271,8 +271,8 @@ TEST_CASE("TC supports game initialization", "[tc_load]") {
 
   for (int frame = 0; frame < kNumFrames; ++frame) {
     for (int idx = 0; idx < 2; ++idx) {
-      uint32_t input = input_rng() & 0x7f;
-      game.worms[idx]->control_states.Unpack(input);
+      uint32_t const kInput = input_rng() & 0x7f;
+      game.worms[idx]->control_states.Unpack(kInput);
     }
     REQUIRE_NOTHROW(game.ProcessFrame());
   }

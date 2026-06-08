@@ -1,5 +1,7 @@
 #include "weaponMenuState.hpp"
 
+#include <utility>
+
 #include "common.hpp"
 #include "gfx.hpp"
 #include "inputState.hpp"
@@ -12,13 +14,14 @@
 struct WeaponMenu : Menu {
   WeaponMenu(int x, int y) : Menu(x, y) {}
 
-  ItemBehavior* GetItemBehavior(Common& common, MenuItem& item) {
-    int index = common.weap_order[item.id];
-    return new ArrayEnumBehavior(common, gfx.settings->weap_table[index], common.texts.weap_states);
+  ItemBehavior* GetItemBehavior(Common& common, MenuItem& item) override {
+    int const kIndex = common.weap_order[item.id];
+    return new ArrayEnumBehavior(common, gfx.settings->weap_table[kIndex],
+                                 common.texts.weap_states);
   }
 };
 
-WeaponMenuState::WeaponMenuState() {}
+WeaponMenuState::WeaponMenuState() = default;
 
 void WeaponMenuState::Enter() {
   Common& common = *gfx->common;
@@ -27,9 +30,9 @@ void WeaponMenuState::Enter() {
   menu->SetHeight(14);
   menu->value_offset_x = 89;
 
-  for (int i = 0; i < (int)common.weapons.size(); ++i) {
-    int index = common.weap_order[i];
-    menu->AddItem(MenuItem(48, 7, common.weapons[index].name, i));
+  for (int i = 0; std::cmp_less(i, common.weapons.size()); ++i) {
+    int const kIndex = common.weap_order[i];
+    menu->AddItem(MenuItem(48, 7, common.weapons[kIndex].name, i));
   }
 
   menu->MoveToFirstVisible();
@@ -69,7 +72,7 @@ bool WeaponMenuState::Update() {
     weaponMenu_->OnLeftRight(common, 1);
   }
 
-  if (gfx->settings->kExtensions) {
+  if (Settings::kExtensions) {
     if (gfx->TestSdlKeyOnce(SDL_SCANCODE_PAGEUP)) {
       g_sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
       weaponMenu_->MovementPage(-1);
@@ -89,8 +92,8 @@ bool WeaponMenuState::Update() {
       gfx->TestGamepadButtonOnce(SDL_GAMEPAD_BUTTON_SOUTH)) {
     int count = 0;
 
-    for (int i = 0; i < 40; ++i) {
-      if (gfx->settings->weap_table[i] == 0) ++count;
+    for (unsigned int const kI : gfx->settings->weap_table) {
+      if (kI == 0) ++count;
     }
 
     if (count > 0) {
@@ -116,5 +119,5 @@ void WeaponMenuState::Draw() {
   common.font.DrawString(gfx->play_renderer.bmp, LS(Weapon), 181, 21, 50);
   common.font.DrawString(gfx->play_renderer.bmp, LS(Availability), 251, 21, 50);
 
-  weaponMenu_->Draw(common, gfx->play_renderer, false);
+  weaponMenu_->Draw(common, gfx->play_renderer, /*disabled=*/false);
 }

@@ -1,4 +1,6 @@
 #include "viewport.hpp"
+
+#include <algorithm>
 #include "constants.hpp"
 #include "game.hpp"
 #include "gfx/bitmap.hpp"
@@ -8,7 +10,7 @@
 #include "text.hpp"
 
 struct PreserveClipRect {
-  PreserveClipRect(Bitmap& bmp) : bmp(bmp) { rect = bmp.clip_rect; }
+  PreserveClipRect(Bitmap& bmp) : bmp(bmp), rect(bmp.clip_rect) {}
 
   ~PreserveClipRect() { bmp.clip_rect = rect; }
 
@@ -17,7 +19,7 @@ struct PreserveClipRect {
 };
 
 void Viewport::Process(Game& game) {
-  Worm& worm = *game.WormByIdx(worm_idx);
+  Worm const& worm = *game.WormByIdx(worm_idx);
 
   if (worm.killed_timer <= 0) {
     if (worm.visible) {
@@ -36,17 +38,17 @@ void Viewport::Process(Game& game) {
     if (worm.killed_timer == Worm::kKilledTimerInitial) banner_y = -8;
   }
 
-  int real_shake = Ftoi(shake);
+  int const kRealShake = Ftoi(shake);
 
-  if (real_shake > 0) {
-    x += rand(real_shake * 2) - real_shake;
-    y += rand(real_shake * 2) - real_shake;
+  if (kRealShake > 0) {
+    x += rand(kRealShake * 2) - kRealShake;
+    y += rand(kRealShake * 2) - kRealShake;
   }
 
-  if (x < 0) x = 0;
-  if (y < 0) y = 0;
-  if (x > max_x) x = max_x;
-  if (y > max_y) y = max_y;
+  x = std::max(x, 0);
+  y = std::max(y, 0);
+  x = std::min(x, max_x);
+  y = std::min(y, max_y);
 
   /*
   if(worm->health <= 0)
@@ -67,21 +69,21 @@ void Viewport::Process(Game& game) {
   }*/
 }
 
-void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_replay) {
+void Viewport::Draw(Game& game, Renderer& renderer, GameState /*state*/, bool is_replay) {
   Common& common = *game.common;
   Worm& worm = *game.WormByIdx(worm_idx);
-  int multiplier = renderer.render_res_x / 320;
-  int center_x = renderer.render_res_x / 2;
+  int const kMultiplier = renderer.render_res_x / 320;
+  int const kCenterX = renderer.render_res_x / 2;
 
   if (worm.visible) {
-    int lifebar_width = worm.health * 100 / worm.settings->health;
-    DrawBar(renderer.bmp, worm.stats_x * multiplier, renderer.render_res_y - 39, lifebar_width,
-            lifebar_width / 10 + 234);
+    int const kLifebarWidth = worm.health * 100 / worm.settings->health;
+    DrawBar(renderer.bmp, worm.stats_x * kMultiplier, renderer.render_res_y - 39, kLifebarWidth,
+            kLifebarWidth / 10 + 234);
   } else {
     int lifebar_width = 100 - (worm.killed_timer * 25) / 37;
     if (lifebar_width > 0) {
-      if (lifebar_width > 100) lifebar_width = 100;
-      DrawBar(renderer.bmp, worm.stats_x * multiplier, renderer.render_res_y - 39, lifebar_width,
+      lifebar_width = std::min(lifebar_width, 100);
+      DrawBar(renderer.bmp, worm.stats_x * kMultiplier, renderer.render_res_y - 39, lifebar_width,
               lifebar_width / 10 + 234);
     }
   }
@@ -92,43 +94,45 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
 
   if (ww.Available()) {
     if (ww.ammo > 0) {
-      int ammo_bar_width = ww.ammo * 100 / ww.type->ammo;
+      int const kAmmoBarWidth = ww.ammo * 100 / ww.type->ammo;
 
-      if (ammo_bar_width > 0)
-        DrawBar(renderer.bmp, worm.stats_x * multiplier, renderer.render_res_y - 34, ammo_bar_width,
-                ammo_bar_width / 10 + 245);
+      if (kAmmoBarWidth > 0)
+        DrawBar(renderer.bmp, worm.stats_x * kMultiplier, renderer.render_res_y - 34, kAmmoBarWidth,
+                kAmmoBarWidth / 10 + 245);
     }
   } else {
     int ammo_bar_width = 0;
 
     if (ww.type->loading_time != 0) {
-      int computed_loading_time = ww.type->ComputedLoadingTime(*game.settings);
-      ammo_bar_width = 100 - ww.loading_left * 100 / computed_loading_time;
+      int const kComputedLoadingTime = ww.type->ComputedLoadingTime(*game.settings);
+      ammo_bar_width = 100 - ww.loading_left * 100 / kComputedLoadingTime;
     } else {
       ammo_bar_width = 100 - ww.loading_left * 100;
     }
 
     if (ammo_bar_width > 0)
-      DrawBar(renderer.bmp, worm.stats_x * multiplier, renderer.render_res_y - 34, ammo_bar_width,
+      DrawBar(renderer.bmp, worm.stats_x * kMultiplier, renderer.render_res_y - 34, ammo_bar_width,
               ammo_bar_width / 10 + 245);
 
     if ((game.cycles % 20) > 10 && worm.visible) {
-      common.font.DrawString(renderer.bmp, LS(Reloading), worm.stats_x * multiplier,
-                             164 * multiplier, 50);
+      common.font.DrawString(renderer.bmp, LS(Reloading), worm.stats_x * kMultiplier,
+                             164 * kMultiplier, 50);
     }
   }
 
   common.font.DrawString(renderer.bmp, (LS(Kills) + ToString(worm.kills)),
-                         worm.stats_x * multiplier, renderer.render_res_y - 29, 10);
+                         worm.stats_x * kMultiplier, renderer.render_res_y - 29, 10);
 
   if (is_replay) {
-    common.font.DrawString(renderer.bmp, worm.settings->name, worm.stats_x * multiplier,
+    common.font.DrawString(renderer.bmp, worm.settings->name, worm.stats_x * kMultiplier,
                            renderer.render_res_y - 15, 7);
-    FillRect(renderer.bmp, worm.stats_x * multiplier, renderer.render_res_y - 7 - 1, 8, 8, 7);
-    FillRect(renderer.bmp, (worm.stats_x + 1) * multiplier, renderer.render_res_y - 7, 6, 6,
+    FillRect(renderer.bmp, worm.stats_x * kMultiplier, renderer.render_res_y - 7 - 1, 8, 8, 7);
+    FillRect(renderer.bmp, (worm.stats_x + 1) * kMultiplier, renderer.render_res_y - 7, 6, 6,
              worm.settings->color);
-    common.font.DrawString(renderer.bmp, TimeToStringEx(game.cycles * 14, false, true),
-                           95 * multiplier, renderer.render_res_y - 15, 7);
+    common.font.DrawString(
+        renderer.bmp,
+        TimeToStringEx(game.cycles * 14, /*force_hours=*/false, /*force_minutes=*/true),
+        95 * kMultiplier, renderer.render_res_y - 15, 7);
   }
 
   int const kStateColours[2][2] = {{6, 10}, {79, 4}};
@@ -137,7 +141,7 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
     case Settings::kGmKillEmAll:
     case Settings::kGmScalesOfJustice: {
       common.font.DrawString(renderer.bmp, (LS(Lives) + ToString(worm.lives)),
-                             worm.stats_x * multiplier, renderer.render_res_y - 22, 6);
+                             worm.stats_x * kMultiplier, renderer.render_res_y - 22, 6);
     } break;
 
     case Settings::kGmHoldazone: {
@@ -146,11 +150,11 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
       for (auto const& w : game.worms)
         if (w.get() != &worm && w->timer <= worm.timer) state = 1;
 
-      int color = kStateColours[game.holdazone.holder_idx != worm.index][state];
+      int const kColor = kStateColours[game.holdazone.holder_idx != worm.index][state];
 
-      common.font.DrawString(renderer.bmp, TimeToString(worm.timer), 5 * multiplier,
-                             106 * multiplier + 84 * worm.index * multiplier,
-                             renderer.render_res_y - 39, color);
+      common.font.DrawString(renderer.bmp, TimeToString(worm.timer), 5 * kMultiplier,
+                             106 * kMultiplier + 84 * worm.index * kMultiplier,
+                             renderer.render_res_y - 39, kColor);
     } break;
 
     case Settings::kGmGameOfTag: {
@@ -159,45 +163,48 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
       for (auto const& w : game.worms)
         if (w.get() != &worm && w->timer >= worm.timer) state = 1;
 
-      int color = kStateColours[game.last_killed_idx != worm.index][state];
+      int const kColor = kStateColours[game.last_killed_idx != worm.index][state];
 
-      common.font.DrawString(renderer.bmp, TimeToString(worm.timer), 5 * multiplier,
-                             106 * multiplier + 84 * worm.index * multiplier,
-                             renderer.render_res_y - 39, color);
+      common.font.DrawString(renderer.bmp, TimeToString(worm.timer), 5 * kMultiplier,
+                             106 * kMultiplier + 84 * worm.index * kMultiplier,
+                             renderer.render_res_y - 39, kColor);
     } break;
+
+    default:
+      break;
   }
 
-  IVec2 render_pos(x, y);
+  IVec2 const kRenderPos(x, y);
 
   {
-    PreserveClipRect pcr(renderer.bmp);
+    PreserveClipRect const kPcr(renderer.bmp);
 
     renderer.bmp.clip_rect = rect;
 
-    fixedvec offs = rect.Ul() - render_pos;
+    fixedvec const kOffs = rect.Ul() - kRenderPos;
 
-    BlitImageNoKeyColour(renderer.bmp, &game.level.data[0], offs.x, offs.y, game.level.width,
+    BlitImageNoKeyColour(renderer.bmp, game.level.data.data(), kOffs.x, kOffs.y, game.level.width,
                          game.level.height);
 
     if (game.settings->game_mode == Settings::kGmHoldazone) {
-      bool timing_out = game.holdazone.timeout_left < 70 * 4;
+      bool const kTimingOut = game.holdazone.timeout_left < 70 * 4;
 
-      int color = timing_out ? 168 : 50;
-      int contender_color;
+      int const kColor = kTimingOut ? 168 : 50;
+      int contender_color = 0;
 
       if (game.holdazone.contender_idx >= 0) {
-        Worm* contender = game.WormByIdx(game.holdazone.contender_idx);
-        if (timing_out)
+        Worm const* contender = game.WormByIdx(game.holdazone.contender_idx);
+        if (kTimingOut)
           contender_color = contender->MinimapColor();
         else
           contender_color = Palette::kWormColourIndexes[contender->index] + 5;
       } else {
-        contender_color = color;
+        contender_color = kColor;
       }
 
       DrawDashedLineBox(
-          renderer.bmp, game.holdazone.rect.x1 + offs.x, game.holdazone.rect.y1 + offs.y, color,
-          contender_color, game.holdazone.contender_frames, game.settings->kZoneCaptureTime,
+          renderer.bmp, game.holdazone.rect.x1 + kOffs.x, game.holdazone.rect.y1 + kOffs.y, kColor,
+          contender_color, game.holdazone.contender_frames, Settings::kZoneCaptureTime,
           game.holdazone.rect.Width(), game.holdazone.rect.Height(), game.cycles / 10);
     }
 
@@ -206,12 +213,12 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
       common.font.DrawString(renderer.bmp, LS(PressFire), rect.CenterX() - 31, 75, 50);
 
       if (game.settings->allow_viewing_spawn_point && worm.Pressed(Worm::kChange)) {
-        int temp_x = Ftoi(worm.pos.x) - 7 + offs.x;
-        int temp_y = Ftoi(worm.pos.y) - 5 + offs.y;
+        int const kTempX = Ftoi(worm.pos.x) - 7 + kOffs.x;
+        int const kTempY = Ftoi(worm.pos.y) - 5 + kOffs.y;
 
         BlitImageTrans(renderer.bmp,
-                       common.WormSpriteObj(worm.current_frame, worm.direction, worm.index), temp_x,
-                       temp_y, game.cycles);
+                       common.WormSpriteObj(worm.current_frame, worm.direction, worm.index), kTempX,
+                       kTempY, game.cycles);
       }
     }
 
@@ -223,78 +230,78 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
     }
 
     for (std::size_t i = 0; i < game.viewports.size(); ++i) {
-      Viewport* v = game.viewports[i];
-      Worm& other_worm = *game.WormByIdx(v->worm_idx);
+      Viewport const* v = game.viewports[i];
+      Worm const& other_worm = *game.WormByIdx(v->worm_idx);
       if (v != this && other_worm.health <= 0 && v->banner_y > -8) {
         if (other_worm.last_killed_by_idx == worm.index) {
-          std::string msg(LS(KilledMsg) + other_worm.settings->name);
-          common.font.DrawString(renderer.bmp, msg, rect.x1 + 3, v->banner_y + 1, 0);
-          common.font.DrawString(renderer.bmp, msg, rect.x1 + 2, v->banner_y, 50);
+          std::string const kMsg(LS(KilledMsg) + other_worm.settings->name);
+          common.font.DrawString(renderer.bmp, kMsg, rect.x1 + 3, v->banner_y + 1, 0);
+          common.font.DrawString(renderer.bmp, kMsg, rect.x1 + 2, v->banner_y, 50);
         } else {
-          std::string msg(other_worm.settings->name + LS(CommittedSuicideMsg));
-          common.font.DrawString(renderer.bmp, msg, rect.x1 + 3, v->banner_y + 1, 0);
-          common.font.DrawString(renderer.bmp, msg, rect.x1 + 2, v->banner_y, 50);
+          std::string const kMsg(other_worm.settings->name + LS(CommittedSuicideMsg));
+          common.font.DrawString(renderer.bmp, kMsg, rect.x1 + 3, v->banner_y + 1, 0);
+          common.font.DrawString(renderer.bmp, kMsg, rect.x1 + 2, v->banner_y, 50);
         }
       }
     }
 
     auto br = game.bonuses.All();
-    for (Bonus* i; (i = br.Next());) {
+    for (Bonus const* i = nullptr; (i = br.Next());) {
       if (i->timer > LC(BonusFlickerTime) || (game.cycles & 3) == 0) {
-        int f = common.bonus_frames[i->frame];
+        int const kF = common.bonus_frames[i->frame];
 
-        BlitImage(renderer.bmp, common.small_sprites[f], Ftoi(i->x) - 3 + offs.x,
-                  Ftoi(i->y) - 3 + offs.y);
+        BlitImage(renderer.bmp, common.small_sprites[kF], Ftoi(i->x) - 3 + kOffs.x,
+                  Ftoi(i->y) - 3 + kOffs.y);
 
         if (game.settings->shadow) {
-          BlitShadowImage(common, renderer.bmp, common.small_sprites.SpritePtr(f),
-                          Ftoi(i->x) - 5 + offs.x,  // TODO: Use offsX
-                          Ftoi(i->y) - 1 + offs.y, 7, 7);
+          BlitShadowImage(common, renderer.bmp, common.small_sprites.SpritePtr(kF),
+                          Ftoi(i->x) - 5 + kOffs.x,  // TODO: Use offsX
+                          Ftoi(i->y) - 1 + kOffs.y, 7, 7);
         }
 
         if (game.settings->names_on_bonuses && i->frame == 0) {
           std::string const& name = common.weapons[i->weapon].name;
-          int len = int(name.size()) * 4;
+          int const kLen = static_cast<int>(name.size()) * 4;
 
-          common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(i->x) - len / 2 + offs.x,
-                               Ftoi(i->y) - 10 + offs.y);
+          common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(i->x) - kLen / 2 + kOffs.x,
+                               Ftoi(i->y) - 10 + kOffs.y);
         }
       }
     }
 
     auto sr = game.sobjects.All();
-    for (SObject* i; (i = sr.Next());) {
+    for (SObject const* i = nullptr; (i = sr.Next());) {
       SObjectType const& t = common.sobject_types[i->id];
-      int frame = i->cur_frame + t.start_frame;
+      int const kFrame = i->cur_frame + t.start_frame;
 
-      BlitImageR(renderer.bmp, common.large_sprites.SpritePtr(frame), i->x + offs.x, i->y + offs.y,
-                 16, 16);
+      BlitImageR(renderer.bmp, common.large_sprites.SpritePtr(kFrame), i->x + kOffs.x,
+                 i->y + kOffs.y, 16, 16);
 
       if (game.settings->shadow) {
-        BlitShadowImage(common, renderer.bmp, common.large_sprites.SpritePtr(frame),
-                        i->x + offs.x - 3,
-                        i->y + offs.y + 3,  // TODO: Original doesn't offset the shadow, which is
-                                            // clearly wrong. Check that this offset is correct.
+        BlitShadowImage(common, renderer.bmp, common.large_sprites.SpritePtr(kFrame),
+                        i->x + kOffs.x - 3,
+                        i->y + kOffs.y + 3,  // TODO: Original doesn't offset the shadow, which is
+                                             // clearly wrong. Check that this offset is correct.
                         16, 16);
       }
     }
 
     auto wr = game.wobjects.All();
-    for (WObject* i; (i = wr.Next());) {
+    for (WObject* i = nullptr; (i = wr.Next());) {
       Weapon const& w = *i->type;
 
       if (w.start_frame > -1) {
         int cur_frame = i->cur_frame;
-        int shot_type = w.shot_type;
+        int const kShotType = w.shot_type;
 
-        if (shot_type == 2) {
+        if (kShotType == 2) {
           cur_frame += 4;
           cur_frame >>= 3;
           if (cur_frame < 0)
             cur_frame = 16;
           else if (cur_frame > 15)
             cur_frame -= 16;
-        } else if (shot_type == 3) {
+        } else if (kShotType == 3) {
           if (cur_frame > 64) --cur_frame;
           cur_frame -= 12;
           cur_frame >>= 3;
@@ -304,17 +311,17 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
             cur_frame = 12;
         }
 
-        int pos_x = Ftoi(i->pos.x) - 3;
-        int pos_y = Ftoi(i->pos.y) - 3;
+        int const kPosX = Ftoi(i->pos.x) - 3;
+        int const kPosY = Ftoi(i->pos.y) - 3;
 
         if (game.settings->shadow && w.shadow) {
           BlitShadowImage(common, renderer.bmp,
                           common.small_sprites.SpritePtr(w.start_frame + cur_frame),
-                          pos_x - 3 + offs.x, pos_y + 3 + offs.y, 7, 7);
+                          kPosX - 3 + kOffs.x, kPosY + 3 + kOffs.y, 7, 7);
         }
 
-        BlitImage(renderer.bmp, common.small_sprites[w.start_frame + cur_frame], pos_x + offs.x,
-                  pos_y + offs.y);
+        BlitImage(renderer.bmp, common.small_sprites[w.start_frame + cur_frame], kPosX + kOffs.x,
+                  kPosY + kOffs.y);
       } else if (i->cur_frame > 0) {
         int pos_x = Ftoi(i->pos.x) - x + rect.x1;
         int pos_y = Ftoi(i->pos.y) - y + rect.y1;
@@ -333,24 +340,25 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
         }
       }
 
-      if (!common.h[HRemExp] && i->type - &common.weapons[0] == 34 &&
+      if (!common.h[HRemExp] && i->type - common.weapons.data() == 34 &&
           game.settings->names_on_bonuses)  // TODO: Read from EXE
       {
         if (i->cur_frame == 0) {
-          int name_num = int(&*i - game.wobjects.arr) %
-                         (int)common.weapons.size();  // TODO: Something nicer maybe
+          int const kNameNum =
+              static_cast<int>(&*i - game.wobjects.arr) %
+              static_cast<int>(common.weapons.size());  // TODO: Something nicer maybe
 
-          std::string const& name = common.weapons[name_num].name;
-          int width = int(name.size()) * 4;
+          std::string const& name = common.weapons[kNameNum].name;
+          int const kWidth = static_cast<int>(name.size()) * 4;
 
-          common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(i->pos.x) - width / 2 + offs.x,
-                               Ftoi(i->pos.y) - 10 + offs.y);
+          common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(i->pos.x) - kWidth / 2 + kOffs.x,
+                               Ftoi(i->pos.y) - 10 + kOffs.y);
         }
       }
     }
 
     auto nr = game.nobjects.All();
-    for (NObject* i; (i = nr.Next());) {
+    for (NObject const* i = nullptr; (i = nr.Next());) {
       NObjectType const& t = *i->type;
 
       if (t.start_frame > 0) {
@@ -359,16 +367,16 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
         if (game.settings->shadow) {
           BlitShadowImage(common, renderer.bmp,
                           common.small_sprites.SpritePtr(t.start_frame + i->cur_frame),
-                          pos.x - 3 + offs.x, pos.y + 3 + offs.y, 7, 7);
+                          pos.x - 3 + kOffs.x, pos.y + 3 + kOffs.y, 7, 7);
         }
 
-        BlitImage(renderer.bmp, common.small_sprites[t.start_frame + i->cur_frame], pos.x + offs.x,
-                  pos.y + offs.y);
+        BlitImage(renderer.bmp, common.small_sprites[t.start_frame + i->cur_frame], pos.x + kOffs.x,
+                  pos.y + kOffs.y);
 
       } else if (i->cur_frame > 1) {
-        auto pos = Ftoi(i->pos) + offs;
+        auto pos = Ftoi(i->pos) + kOffs;
         if (renderer.bmp.clip_rect.Encloses(pos))
-          renderer.bmp.GetPixel(pos.x, pos.y) = PalIdx(i->cur_frame);
+          renderer.bmp.GetPixel(pos.x, pos.y) = static_cast<PalIdx>(i->cur_frame);
 
         if (game.settings->shadow) {
           pos.x -= 3;
@@ -386,40 +394,40 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
       Worm const& w = *game.worms[i];
 
       if (w.visible) {
-        int temp_x = Ftoi(w.pos.x) - 7 + offs.x;
-        int temp_y = Ftoi(w.pos.y) - 5 + offs.y;
-        int angle_frame = w.AngleFrame();
+        int const kTempX = Ftoi(w.pos.x) - 7 + kOffs.x;
+        int const kTempY = Ftoi(w.pos.y) - 5 + kOffs.y;
+        int const kAngleFrame = w.AngleFrame();
 
         if (w.weapons[w.current_weapon].Available()) {
-          int hotspot_x = w.hotspot_x + offs.x;
-          int hotspot_y = w.hotspot_y + offs.y;
+          int const kHotspotX = w.hotspot_x + kOffs.x;
+          int const kHotspotY = w.hotspot_y + kOffs.y;
 
           WormWeapon const& ww = w.weapons[w.current_weapon];
           Weapon const& weapon = *ww.type;
 
           if (weapon.laser_sight) {
-            DrawLaserSight(renderer.bmp, rand, hotspot_x, hotspot_y, temp_x + 7, temp_y + 4);
+            DrawLaserSight(renderer.bmp, rand, kHotspotX, kHotspotY, kTempX + 7, kTempY + 4);
           }
 
-          if (ww.type - &common.weapons[0] == LC(LaserWeapon) - 1 && w.Pressed(Worm::kFire)) {
-            DrawLine(renderer.bmp, hotspot_x, hotspot_y, temp_x + 7, temp_y + 4,
+          if (ww.type - common.weapons.data() == LC(LaserWeapon) - 1 && w.Pressed(Worm::kFire)) {
+            DrawLine(renderer.bmp, kHotspotX, kHotspotY, kTempX + 7, kTempY + 4,
                      weapon.color_bullets);
           }
         }
 
         if (w.ninjarope.out) {
-          int ninjarope_x = Ftoi(w.ninjarope.pos.x) + offs.x;
-          int ninjarope_y = Ftoi(w.ninjarope.pos.y) + offs.y;
+          int const kNinjaropeX = Ftoi(w.ninjarope.pos.x) + kOffs.x;
+          int const kNinjaropeY = Ftoi(w.ninjarope.pos.y) + kOffs.y;
 
-          DrawNinjarope(common, renderer.bmp, ninjarope_x, ninjarope_y, temp_x + 7, temp_y + 4);
+          DrawNinjarope(common, renderer.bmp, kNinjaropeX, kNinjaropeY, kTempX + 7, kTempY + 4);
 
-          BlitImage(renderer.bmp, common.large_sprites[84], ninjarope_x - 1, ninjarope_y - 1);
+          BlitImage(renderer.bmp, common.large_sprites[84], kNinjaropeX - 1, kNinjaropeY - 1);
 
           if (game.settings->shadow) {
-            DrawShadowLine(common, renderer.bmp, ninjarope_x - 3, ninjarope_y + 3, temp_x + 7 - 3,
-                           temp_y + 4 + 3);
+            DrawShadowLine(common, renderer.bmp, kNinjaropeX - 3, kNinjaropeY + 3, kTempX + 7 - 3,
+                           kTempY + 4 + 3);
             BlitShadowImage(common, renderer.bmp, common.large_sprites.SpritePtr(84),
-                            ninjarope_x - 4, ninjarope_y + 2, 16, 16);
+                            kNinjaropeX - 4, kNinjaropeY + 2, 16, 16);
           }
         }
 
@@ -429,20 +437,20 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
           //NOTE! Check function 1071C and see what it actually does*/
 
           BlitFireCone(renderer.bmp, w.fire_cone / 2,
-                       common.FireConeSprite(angle_frame, w.direction),
-                       common.fire_cone_offset[w.direction][angle_frame][0] + temp_x,
-                       common.fire_cone_offset[w.direction][angle_frame][1] + temp_y);
+                       common.FireConeSprite(kAngleFrame, w.direction),
+                       Common::fire_cone_offset[w.direction][kAngleFrame][0] + kTempX,
+                       Common::fire_cone_offset[w.direction][kAngleFrame][1] + kTempY);
         }
 
-        BlitImage(renderer.bmp, common.WormSpriteObj(w.current_frame, w.direction, w.index), temp_x,
-                  temp_y);
+        BlitImage(renderer.bmp, common.WormSpriteObj(w.current_frame, w.direction, w.index), kTempX,
+                  kTempY);
         if (game.settings->shadow)
           BlitShadowImage(common, renderer.bmp,
-                          common.WormSprite(w.current_frame, w.direction, w.index), temp_x - 3,
-                          temp_y + 3, 16, 16);
+                          common.WormSprite(w.current_frame, w.direction, w.index), kTempX - 3,
+                          kTempY + 3, 16, 16);
       }
 
-      if (w.ai) w.ai->DrawDebug(game, w, renderer, offs.x, offs.y);
+      if (w.ai) w.ai->DrawDebug(game, w, renderer, kOffs.x, kOffs.y);
     }
 
     /*
@@ -459,7 +467,7 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
 
     if (worm.visible) {
       auto temp =
-          Ftoi(worm.pos) - IVec2(1, 2) + Ftoi(cossin_table[Ftoi(worm.aiming_angle)] * 16) + offs;
+          Ftoi(worm.pos) - IVec2(1, 2) + Ftoi(cossin_table[Ftoi(worm.aiming_angle)] * 16) + kOffs;
       // int tempX = ftoi(worm.pos.x) - 1 + ftoi(cosTable[ftoi(worm.aimingAngle)] * 16) + offs.x;
       // int tempY = ftoi(worm.pos.y) - 2 + ftoi(sinTable[ftoi(worm.aimingAngle)] * 16) + offs.y;
 
@@ -469,17 +477,17 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
       if (worm.Pressed(Worm::kChange)) {
         std::string const& name = worm.weapons[worm.current_weapon].type->name;
 
-        int len = int(name.size()) * 4;  // TODO: Read 4 from exe? (SW_CHARWID)
+        int const kLen = static_cast<int>(name.size()) * 4;  // TODO: Read 4 from exe? (SW_CHARWID)
 
-        common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(worm.pos.x) - len / 2 + 1 + offs.x,
-                             Ftoi(worm.pos.y) - 10 + offs.y);
+        common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(worm.pos.x) - kLen / 2 + 1 + kOffs.x,
+                             Ftoi(worm.pos.y) - 10 + kOffs.y);
       }
     }
 
     for (Game::BObjectList::Iterator i = game.bobjects.Begin(); i != game.bobjects.End(); ++i) {
-      auto ipos = Ftoi(i->pos) + offs;
+      auto ipos = Ftoi(i->pos) + kOffs;
       if (renderer.bmp.clip_rect.Encloses(ipos))
-        renderer.bmp.GetPixel(ipos.x, ipos.y) = PalIdx(i->color);
+        renderer.bmp.GetPixel(ipos.x, ipos.y) = static_cast<PalIdx>(i->color);
 
       if (game.settings->shadow) {
         ipos.x -= 3;
@@ -494,41 +502,41 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState state, bool is_rep
   }
 
   if (game.settings->map) {
-    int map_x = center_x - 26;
-    int map_y = renderer.render_res_y - 38;
+    int const kMapX = kCenterX - 26;
+    int const kMapY = renderer.render_res_y - 38;
 
-    game.level.DrawMiniature(renderer.bmp, map_x, map_y, 10);
+    game.level.DrawMiniature(renderer.bmp, kMapX, kMapY, 10);
 
-    for (std::size_t i = 0; i < game.worms.size(); ++i) {
-      Worm const& w = *game.worms[i];
+    for (auto& worm : game.worms) {
+      Worm const& w = *worm;
 
       if (w.visible) {
-        int x = Ftoi(w.pos.x) / 10 + map_x;
-        int y = Ftoi(w.pos.y) / 10 + map_y;
+        int const kX = Ftoi(w.pos.x) / 10 + kMapX;
+        int const kY = Ftoi(w.pos.y) / 10 + kMapY;
 
-        renderer.bmp.GetPixel(x, y) = w.MinimapColor();
+        renderer.bmp.GetPixel(kX, kY) = w.MinimapColor();
       }
     }
 
     if (game.settings->game_mode == Settings::kGmHoldazone && game.holdazone.timeout_left > 0) {
-      int x = game.holdazone.rect.CenterX() / 10 + map_x;
-      int y = game.holdazone.rect.CenterY() / 10 + map_y;
+      int const kX = game.holdazone.rect.CenterX() / 10 + kMapX;
+      int const kY = game.holdazone.rect.CenterY() / 10 + kMapY;
 
       int color = 168;
 
       if (game.holdazone.holder_idx >= 0) {
-        Worm* holder = game.WormByIdx(game.holdazone.holder_idx);
+        Worm const* holder = game.WormByIdx(game.holdazone.holder_idx);
         color = holder->MinimapColor();
       }
 
-      renderer.bmp.SetPixel(x - 1, y, color);
-      renderer.bmp.SetPixel(x + 1, y, color);
-      renderer.bmp.SetPixel(x, y - 1, color);
-      renderer.bmp.SetPixel(x, y + 1, color);
-      renderer.bmp.SetPixel(x - 1, y - 1, color);
-      renderer.bmp.SetPixel(x + 1, y - 1, color);
-      renderer.bmp.SetPixel(x - 1, y + 1, color);
-      renderer.bmp.SetPixel(x + 1, y + 1, color);
+      renderer.bmp.SetPixel(kX - 1, kY, color);
+      renderer.bmp.SetPixel(kX + 1, kY, color);
+      renderer.bmp.SetPixel(kX, kY - 1, color);
+      renderer.bmp.SetPixel(kX, kY + 1, color);
+      renderer.bmp.SetPixel(kX - 1, kY - 1, color);
+      renderer.bmp.SetPixel(kX + 1, kY - 1, color);
+      renderer.bmp.SetPixel(kX - 1, kY + 1, color);
+      renderer.bmp.SetPixel(kX + 1, kY + 1, color);
     }
   }
 }

@@ -25,14 +25,14 @@ struct HiddenMenu : Menu {
     kSpectatorWindow,
   };
 
-  HiddenMenu(int x, int y) : Menu(x, y), palette_color(0) {}
+  HiddenMenu(int x, int y) : Menu(x, y) {}
 
-  virtual ItemBehavior* GetItemBehavior(Common& common, MenuItem& item);
+  ItemBehavior* GetItemBehavior(Common& common, MenuItem& item) override;
 
-  virtual void DrawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
-                               bool disabled);
+  void DrawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
+                       bool disabled) override;
 
-  virtual void OnUpdate();
+  void OnUpdate() override;
 
-  int palette_color;
+  int palette_color{0};
 };

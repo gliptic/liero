@@ -6,6 +6,7 @@
 #include "../gfx.hpp"
 #include "../mixer/player.hpp"
 
+// NOLINTNEXTLINE(bugprone-throwing-static-initialization, cert-err58-cpp) — string-literal constructor can theoretically throw bad_alloc, but the allocations are tiny and any failure here is unrecoverable anyway.
 static std::string const kBotWeaponSel[3] = {"RANDOM", "PICK", "KEEP"};
 
 ItemBehavior* HiddenMenu::GetItemBehavior(Common& common, MenuItem& item) {
@@ -52,14 +53,14 @@ ItemBehavior* HiddenMenu::GetItemBehavior(Common& common, MenuItem& item) {
 
 void HiddenMenu::OnUpdate() {}
 
-void HiddenMenu::DrawItemOverlay(Common& common, MenuItem& item, int x, int y, bool selected,
-                                 bool disabled) {
+void HiddenMenu::DrawItemOverlay(Common& /*common*/, MenuItem& item, int x, int y, bool selected,
+                                 bool /*disabled*/) {
   if (item.id == kPaletteSelect)  // Color settings
   {
-    int w = 30;
-    int offs_x = 44;
+    int const kW = 30;
+    int const kOffsX = 44;
 
-    DrawRoundedBox(gfx.play_renderer.bmp, x + offs_x, y, selected ? 168 : 0, 7, w);
-    FillRect(gfx.play_renderer.bmp, x + offs_x + 1, y + 1, w + 1, 5, palette_color);
+    DrawRoundedBox(gfx.play_renderer.bmp, x + kOffsX, y, selected ? 168 : 0, 7, kW);
+    FillRect(gfx.play_renderer.bmp, x + kOffsX + 1, y + 1, kW + 1, 5, palette_color);
   }
 }

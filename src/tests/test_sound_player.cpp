@@ -51,8 +51,8 @@ TEST_CASE("SoundPlayer guards negative indices", "[sound_player]") {
 
 TEST_CASE("SoundPlayer SOUND_DEF_T overload resolves via Common::soundHook", "[sound_player]") {
   auto common = std::make_shared<Common>();
-  FsNode tc_root(GetTcPath());
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(GetTcPath());
+  common->load(kTcRoot);
 
   RecordingPlayer p(*common);
   p.Play(SoundMenuSelect);
@@ -71,8 +71,8 @@ TEST_CASE("SoundPlayer SOUND_DEF_T overload is a no-op when common() returns nul
 
 TEST_CASE("Game ctor installs g_soundPlayer and dtor restores it", "[sound_player]") {
   auto common = std::make_shared<Common>();
-  FsNode tc_root(GetTcPath());
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(GetTcPath());
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
 
   SoundPlayer* original_global = g_sound_player;
@@ -81,7 +81,7 @@ TEST_CASE("Game ctor installs g_soundPlayer and dtor restores it", "[sound_playe
 
   {
     auto sp = std::make_shared<RecordingPlayer>(*common);
-    Game game(common, settings, sp);
+    Game const kGame(common, settings, sp);
     REQUIRE(g_sound_player == sp.get());
   }
 

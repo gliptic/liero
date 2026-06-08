@@ -15,29 +15,29 @@ struct WeaponSelection;
 struct ReplayWriter;
 
 struct LocalController : CommonController {
-  LocalController(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings);
-  ~LocalController();
-  void OnKey(int key, bool key_state);
+  LocalController(const std::shared_ptr<Common>& common, const std::shared_ptr<Settings>& settings);
+  ~LocalController() override;
+  void OnKey(int key, bool key_state) override;
 
   // Called when the controller loses focus. When not focused, it will not receive key events among
   // other things.
-  void Unfocus();
+  void Unfocus() override;
   // Called when the controller gets focus.
-  void Focus();
-  bool Process();
-  void Draw(Renderer& renderer, bool use_spectator_viewports);
+  void Focus() override;
+  bool Process() override;
+  void Draw(Renderer& renderer, bool use_spectator_viewports) override;
   void ChangeState(GameState new_state);
   void EndRecord();
-  void SwapLevel(Level& new_level);
-  Level* CurrentLevel();
-  Game* CurrentGame();
-  bool Running();
+  void SwapLevel(Level& new_level) override;
+  Level* CurrentLevel() override;
+  Game* CurrentGame() override;
+  bool Running() override;
 
   Game game;
   std::unique_ptr<WeaponSelection> ws;
-  GameState state;
-  int fade_value;
-  bool going_to_menu;
+  GameState state{kStateInitial};
+  int fade_value{0};
+  bool going_to_menu{false};
   std::unique_ptr<ReplayWriter> replay;
 
   // Per-worm key repeat counters for weapon selection

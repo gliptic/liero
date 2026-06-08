@@ -51,6 +51,7 @@ std::string IceAgent::LocalUfrag() const {
     ufrag_start += 12;
     const char* ufrag_end = std::strstr(ufrag_start, "\r\n");
     if (!ufrag_end) ufrag_end = ufrag_start + std::strlen(ufrag_start);
+    // NOLINTNEXTLINE(modernize-return-braced-init-list) — braced init would pick the initializer-list ctor, not the iterator-range ctor.
     return std::string(ufrag_start, ufrag_end);
   }
   return {};
@@ -65,6 +66,7 @@ std::string IceAgent::LocalPwd() const {
     pwd_start += 10;
     const char* pwd_end = std::strstr(pwd_start, "\r\n");
     if (!pwd_end) pwd_end = pwd_start + std::strlen(pwd_start);
+    // NOLINTNEXTLINE(modernize-return-braced-init-list) — braced init would pick the initializer-list ctor, not the iterator-range ctor.
     return std::string(pwd_start, pwd_end);
   }
   return {};
@@ -72,8 +74,8 @@ std::string IceAgent::LocalPwd() const {
 
 void IceAgent::SetRemoteCredentials(const std::string& ufrag, const std::string& pwd) {
   if (!agent_) return;
-  std::string desc = "a=ice-ufrag:" + ufrag + "\r\na=ice-pwd:" + pwd + "\r\n";
-  juice_set_remote_description(agent_, desc.c_str());
+  std::string const kDesc = "a=ice-ufrag:" + ufrag + "\r\na=ice-pwd:" + pwd + "\r\n";
+  juice_set_remote_description(agent_, kDesc.c_str());
 }
 
 void IceAgent::AddRemoteCandidate(const std::string& candidate) {
@@ -91,7 +93,7 @@ IceAgent::State IceAgent::CurrentState() const { return state_; }
 void IceAgent::Poll() {
   std::vector<Event> events;
   {
-    std::lock_guard<std::mutex> lock(mutex_);
+    std::scoped_lock const kLock(mutex_);
     events.swap(pendingEvents_);
   }
   for (auto& ev : events) {
@@ -117,33 +119,33 @@ void IceAgent::Send(const uint8_t* data, size_t len) {
 
 // --- Static callbacks (called from libjuice's internal thread) ---
 
-void IceAgent::CbStateChanged(juice_agent_t*, juice_state_t state, void* user_ptr) {
+void IceAgent::CbStateChanged(juice_agent_t* /*unused*/, juice_state_t state, void* user_ptr) {
   auto* self = static_cast<IceAgent*>(user_ptr);
   Event ev;
   ev.type = Event::kStateChanged;
   ev.new_state = MapState(state);
-  std::lock_guard<std::mutex> lock(self->mutex_);
+  std::scoped_lock const kLock(self->mutex_);
   self->pendingEvents_.push_back(std::move(ev));
 }
 
-void IceAgent::CbCandidate(juice_agent_t*, const char* sdp, void* user_ptr) {
+void IceAgent::CbCandidate(juice_agent_t* /*unused*/, const char* sdp, void* user_ptr) {
   auto* self = static_cast<IceAgent*>(user_ptr);
   Event ev;
   ev.type = Event::kCandidate;
   ev.candidate = sdp;
-  std::lock_guard<std::mutex> lock(self->mutex_);
+  std::scoped_lock const kLock(self->mutex_);
   self->pendingEvents_.push_back(std::move(ev));
 }
 
-void IceAgent::CbGatheringDone(juice_agent_t*, void* user_ptr) {
+void IceAgent::CbGatheringDone(juice_agent_t* /*unused*/, void* user_ptr) {
   auto* self = static_cast<IceAgent*>(user_ptr);
   Event ev;
   ev.type = Event::kGatheringDone;
-  std::lock_guard<std::mutex> lock(self->mutex_);
+  std::scoped_lock const kLock(self->mutex_);
   self->pendingEvents_.push_back(std::move(ev));
 }
 
-void IceAgent::CbRecv(juice_agent_t*, const char* data, size_t size, void* user_ptr) {
+void IceAgent::CbRecv(juice_agent_t* /*unused*/, const char* data, size_t size, void* user_ptr) {
   auto* self = static_cast<IceAgent*>(user_ptr);
   if (self->on_recv) {
     self->on_recv(reinterpret_cast<const uint8_t*>(data), size);
@@ -158,6 +160,7 @@ IceAgent::State IceAgent::MapState(juice_state_t s) {
       return State::kGathering;
     case JUICE_STATE_CONNECTING:
       return State::kConnecting;
+    // NOLINTNEXTLINE(bugprone-branch-clone) — CONNECTED and COMPLETED collapse to one app-level state by design.
     case JUICE_STATE_CONNECTED:
       return State::kConnected;
     case JUICE_STATE_COMPLETED:

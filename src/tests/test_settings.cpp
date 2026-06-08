@@ -94,13 +94,13 @@ TEST_CASE("Settings round-trip via TOML") {
 
   // Save to temp file
   auto tmp_path = std::filesystem::temp_directory_path() / "openliero_test_settings.cfg";
-  FsNode node(tmp_path.string());
+  FsNode const kNode(tmp_path.string());
 
-  original.save(node, rand);
+  original.save(kNode, rand);
 
   // Load into a fresh Settings object
   Settings loaded;
-  REQUIRE(loaded.load(node, rand));
+  REQUIRE(loaded.load(kNode, rand));
 
   // Verify base settings
   CHECK(loaded.max_bonuses == original.max_bonuses);
@@ -185,8 +185,8 @@ TEST_CASE("Settings load handles missing file gracefully") {
   rand.Seed(1);
 
   Settings settings;
-  FsNode node("/tmp/nonexistent_openliero_settings.cfg");
-  CHECK_FALSE(settings.load(node, rand));
+  FsNode const kNode("/tmp/nonexistent_openliero_settings.cfg");
+  CHECK_FALSE(settings.load(kNode, rand));
 }
 
 TEST_CASE("Settings TOML with comments") {
@@ -206,9 +206,9 @@ TEST_CASE("Settings TOML with comments") {
     f << original.ToToml();
   }
 
-  FsNode node(tmp_path.string());
+  FsNode const kNode(tmp_path.string());
   Settings loaded;
-  REQUIRE(loaded.load(node, rand));
+  REQUIRE(loaded.load(kNode, rand));
   std::filesystem::remove(tmp_path);
 
   CHECK(loaded.max_bonuses == 12);
@@ -309,11 +309,11 @@ TEST_CASE("Settings toToml/fromToml round-trip") {
   original.worm_settings[0]->name = "Player1";
   original.worm_settings[0]->random_name = false;
 
-  std::string toml = original.ToToml();
-  REQUIRE(!toml.empty());
+  std::string const kToml = original.ToToml();
+  REQUIRE(!kToml.empty());
 
   Settings loaded;
-  loaded.FromToml(toml);
+  loaded.FromToml(kToml);
 
   CHECK(loaded.max_bonuses == 8);
   CHECK(loaded.blood == 150);
@@ -331,11 +331,11 @@ TEST_CASE("WormSettings toToml/fromToml round-trip") {
   original.controller = 2;
   original.controls_ex[0] = 77;
 
-  std::string toml = original.ToToml();
-  REQUIRE(!toml.empty());
+  std::string const kToml = original.ToToml();
+  REQUIRE(!kToml.empty());
 
   WormSettings loaded;
-  loaded.FromToml(toml);
+  loaded.FromToml(kToml);
 
   CHECK(loaded.name == "TestWorm");
   CHECK(loaded.health == 250);

@@ -4,5 +4,5 @@
 #include <string>
 #include "game/common.hpp"
 
-void replayToVideo(std::shared_ptr<Common> const& common, bool spectator,
-                   std::string const& fullPath, std::string const& replayVideoName);
+void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
+                   std::string const& full_path, std::string const& replay_video_name);

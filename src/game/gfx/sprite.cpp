@@ -11,6 +11,6 @@ void SpriteSet::Allocate(int width, int height, int count) {
   this->sprite_size = width * height;
   this->count = count;
 
-  int amount = sprite_size * count;
-  data.resize(amount);
+  int const kAmount = sprite_size * count;
+  data.resize(kAmount);
 }

@@ -11,13 +11,13 @@ struct Sprite {
 };
 
 struct SpriteSet {
-  SpriteSet() : width(0), height(0), sprite_size(0), count(0) {}
+  SpriteSet() = default;
 
   std::vector<PalIdx> data;
-  int width;
-  int height;
-  int sprite_size;
-  int count;
+  int width{0};
+  int height{0};
+  int sprite_size{0};
+  int count{0};
 
   PalIdx* SpritePtr(int frame) {
     assert(frame >= 0 && frame < count);
@@ -26,7 +26,8 @@ struct SpriteSet {
 
   Sprite operator[](int frame) {
     assert(frame >= 0 && frame < count);
-    Sprite s = {&data[frame * sprite_size], width, height, width};
+    Sprite s = {
+        .mem = &data[frame * sprite_size], .width = width, .height = height, .pitch = width};
     return s;
   }
 

@@ -7,10 +7,10 @@
 struct Bitmap {
   int w, h;
   unsigned int pitch;
-  unsigned char* pixels;
+  unsigned char* pixels{nullptr};
   Rect clip_rect;
 
-  Bitmap() : pixels(0) {}
+  Bitmap() = default;
 
   Bitmap(const Bitmap&) = delete;
   Bitmap& operator=(const Bitmap&) = delete;
@@ -32,12 +32,10 @@ struct Bitmap {
     clip_rect.y2 = h;
   }
 
-  unsigned char& GetPixel(int x, int y) {
-    return (static_cast<unsigned char*>(pixels) + y * pitch)[x];
-  }
+  unsigned char& GetPixel(int x, int y) const { return (pixels + y * pitch)[x]; }
 
-  void SetPixel(int x, int y, PalIdx v) {
-    if (clip_rect.Inside(x, y)) (static_cast<unsigned char*>(pixels) + y * pitch)[x] = v;
+  void SetPixel(int x, int y, PalIdx v) const {
+    if (clip_rect.Inside(x, y)) (pixels + y * pitch)[x] = v;
   }
 
   void Copy(Bitmap const& other) {
@@ -47,6 +45,6 @@ struct Bitmap {
 
   ~Bitmap() {
     delete[] pixels;
-    pixels = 0;
+    pixels = nullptr;
   }
 };

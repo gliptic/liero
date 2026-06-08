@@ -20,35 +20,31 @@ struct Viewport;
 struct Worm;
 struct Renderer;
 
-typedef enum {
+enum GameState {
   kStateInitial,
   kStateWeaponSelection,
   kStateGame,
   kStateGameEnded,
-} GameState;
+};
 
 struct Holdazone {
   Holdazone()
-      : holder_idx(-1),
-        contender_idx(-1),
-        contender_frames(0),
-        timeout_left(0),
-        zone_width(50),
-        zone_height(34) {}
+
+      = default;
 
   Rect rect;
-  int holder_idx;
+  int holder_idx{-1};
 
-  int contender_idx, contender_frames;
+  int contender_idx{-1}, contender_frames{0};
 
-  int timeout_left;
+  int timeout_left{0};
 
-  int zone_width, zone_height;
+  int zone_width{50}, zone_height{34};
 };
 
 struct Game {
-  Game(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings,
-       std::shared_ptr<SoundPlayer> sound_player);
+  Game(const std::shared_ptr<Common>& common, std::shared_ptr<Settings> settings_init,
+       const std::shared_ptr<SoundPlayer>& sound_player);
   ~Game();
 
   void OnKey(uint32_t key, bool state);
@@ -62,19 +58,19 @@ struct Game {
   void CreateBonus();
 
   void ClearViewports();
-  void AddViewport(Viewport*);
-  void AddSpectatorViewport(SpectatorViewport*);
+  void AddViewport(Viewport* /*vp*/);
+  void AddSpectatorViewport(SpectatorViewport* /*vp*/);
   void ProcessViewports();
   void DrawViewports(Renderer& renderer, GameState state, bool is_replay = false);
   void DrawSpectatorViewports(Renderer& renderer, GameState state, bool is_replay = false);
   void ClearWorms();
-  void AddWorm(std::shared_ptr<Worm>);
+  void AddWorm(std::shared_ptr<Worm> /*worm*/);
   void ResetWorms();
   void Draw(Renderer& renderer, GameState state, bool use_spectator_viewports,
             bool is_replay = false);
   void StartGame();
   bool IsGameOver();
-  void DoDamageDirect(Worm& w, int amount, int by_idx);
+  static void DoDamageDirect(Worm& w, int amount, int by_idx);
   void DoHealingDirect(Worm& w, int amount);
   void DoDamage(Worm& w, int amount, int by_idx);
   void DoHealing(Worm& w, int amount);
@@ -88,8 +84,8 @@ struct Game {
   // Fast in-memory snapshot path used by the rollback ring buffer.
   // Writes/reads directly into a pre-allocated GameSnapshot — no
   // serialisation, no allocation in the steady state.
-  void SaveSnapshotFast(struct GameSnapshot& out) const;
-  void LoadSnapshotFast(struct GameSnapshot const& in);
+  void SaveSnapshotFast(struct GameSnapshot& snap) const;
+  void LoadSnapshotFast(struct GameSnapshot const& snap);
 
   void SpawnZone();
 
@@ -105,24 +101,24 @@ struct Game {
   Material PixelMat(int x, int y) { return common->materials[level.Pixel(x, y)]; }
 
   Worm* WormByIdx(int idx) {
-    if (idx < 0) return 0;
+    if (idx < 0) return nullptr;
     return worms[idx].get();
   }
 
   std::shared_ptr<Common> common;
   std::shared_ptr<SoundPlayer> sound_player;
   SoundPlayer* prev_sound_player;
-  bool sound_player_installed;
+  bool sound_player_installed{true};
   std::shared_ptr<Settings> settings;
   std::shared_ptr<StatsRecorder> stats_recorder;
 
   Level level;
 
-  int screen_flash;
-  bool got_changed;
-  int last_killed_idx;
-  bool paused;
-  int cycles;
+  int screen_flash{0};
+  bool got_changed{false};
+  int last_killed_idx{-1};
+  bool paused{true};
+  int cycles{0};
   Rand rand;
 
   Holdazone holdazone;
@@ -131,18 +127,18 @@ struct Game {
   std::vector<SpectatorViewport*> spectator_viewports;
   std::vector<std::shared_ptr<Worm>> worms;
 
-  typedef ExactObjectList<Bonus, 99> BonusList;
-  typedef ExactObjectList<WObject, 600> WObjectList;
-  typedef ExactObjectList<SObject, 700> SObjectList;
-  typedef ExactObjectList<NObject, 600> NObjectList;
-  typedef FastObjectList<BObject> BObjectList;
+  using BonusList = ExactObjectList<Bonus, 99>;
+  using WObjectList = ExactObjectList<WObject, 600>;
+  using SObjectList = ExactObjectList<SObject, 700>;
+  using NObjectList = ExactObjectList<NObject, 600>;
+  using BObjectList = FastObjectList<BObject>;
   BonusList bonuses;
   WObjectList wobjects;
   SObjectList sobjects;
   NObjectList nobjects;
   BObjectList bobjects;
 
-  bool quick_sim;
+  bool quick_sim{false};
 
   // True during predicted/resim frames. Mirrored onto soundPlayer /
   // statsRecorder via setSpeculative(). Read by Game-internal code

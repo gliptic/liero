@@ -2,7 +2,7 @@
 
 #include "../gfx.hpp"
 
-CommonController::CommonController() : frame_skip(1), inverse_frame_skip(false), cycles(0) {}
+CommonController::CommonController() = default;
 
 bool CommonController::Process() {
   int new_frame_skip = 0;

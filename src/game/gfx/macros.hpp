@@ -28,7 +28,7 @@
 
 #define READER_8(x, src) \
   do {                   \
-    x = *(src);          \
+    (x) = *(src);        \
   } while (0)
 
 #define SHIFT_X() \
@@ -71,7 +71,7 @@
         WRITER(destLine_);                                                                       \
         SHIFT_X();                                                                               \
         destLine_ += destSize_;                                                                  \
-        if (++x_ >= width - 1) break;                                                            \
+        if (++x_ >= (width) - 1) break;                                                          \
         line_ += srcSize_;                                                                       \
         lineB_ += srcSize_;                                                                      \
         READER(F, line_);                                                                        \
@@ -84,11 +84,11 @@
       FUNC();                                                                                    \
       WRITER(destLine_);                                                                         \
     }                                                                                            \
-    for (int y_ = 1; y_ < height - 1; ++y_) {                                                    \
+    for (int y_ = 1; y_ < (height) - 1; ++y_) {                                                  \
       uint8_t const* lineA_ = src_ + (y_ - 1) * srcPitch_;                                       \
       uint8_t const* line_ = src_ + y_ * srcPitch_;                                              \
-      uint8_t const* lineB_ = src_ + (y_ + 1) * srcPitch;                                        \
-      uint8_t* destLine_ = dest_ + y_ * destPitch;                                               \
+      uint8_t const* lineB_ = src_ + (y_ + 1) * (srcPitch);                                      \
+      uint8_t* destLine_ = dest_ + y_ * (destPitch);                                             \
       A = 0;                                                                                     \
       READER(B, lineA_);                                                                         \
       READER(C, lineA_ += srcSize_);                                                             \
@@ -104,7 +104,7 @@
         WRITER(destLine_);                                                                       \
         SHIFT_X();                                                                               \
         destLine_ += destSize_;                                                                  \
-        if (++x_ >= width - 1) break;                                                            \
+        if (++x_ >= (width) - 1) break;                                                          \
         lineA_ += srcSize_;                                                                      \
         line_ += srcSize_;                                                                       \
         lineB_ += srcSize_;                                                                      \
@@ -121,9 +121,9 @@
     }                                                                                            \
     /* Last line */                                                                              \
     {                                                                                            \
-      uint8_t const* lineA_ = src_ + (height - 2) * srcPitch_;                                   \
-      uint8_t const* line_ = src_ + (height - 1) * srcPitch_;                                    \
-      uint8_t* destLine_ = dest_ + (height - 1) * destPitch;                                     \
+      uint8_t const* lineA_ = src_ + ((height) - 2) * srcPitch_;                                 \
+      uint8_t const* line_ = src_ + ((height) - 1) * srcPitch_;                                  \
+      uint8_t* destLine_ = dest_ + ((height) - 1) * (destPitch);                                 \
       A = 0;                                                                                     \
       READER(B, lineA_);                                                                         \
       READER(C, lineA_ += srcSize_);                                                             \
@@ -139,7 +139,7 @@
         WRITER(destLine_);                                                                       \
         SHIFT_X();                                                                               \
         destLine_ += destSize_;                                                                  \
-        if (++x_ >= width - 1) break;                                                            \
+        if (++x_ >= (width) - 1) break;                                                          \
         lineA_ += srcSize_;                                                                      \
         line_ += srcSize_;                                                                       \
         READER(C, lineA_);                                                                       \
@@ -154,23 +154,23 @@
     }                                                                                            \
   } while (0)
 
-#define CLIP_IMAGE(clip)                   \
-  {                                        \
-    int top = y - (clip).y1;               \
-    if (top < 0) {                         \
-      mem += -top * pitch;                 \
-      height += top;                       \
-      y = (clip).y1;                       \
-    }                                      \
-    int bottom = y + height - ((clip).y2); \
-    if (bottom > 0) height -= bottom;      \
-    int left = x - (clip).x1;              \
-    if (left < 0) {                        \
-      mem -= left;                         \
-      width += left;                       \
-      x = (clip).x1;                       \
-    }                                      \
-    int right = x + width - ((clip).x2);   \
-    if (right > 0) width -= right;         \
-    if (width <= 0 || height <= 0) return; \
+#define CLIP_IMAGE(clip)                         \
+  {                                              \
+    int const top = y - (clip).y1;               \
+    if (top < 0) {                               \
+      mem += -top * pitch;                       \
+      height += top;                             \
+      y = (clip).y1;                             \
+    }                                            \
+    int const bottom = y + height - ((clip).y2); \
+    if (bottom > 0) height -= bottom;            \
+    int const left = x - (clip).x1;              \
+    if (left < 0) {                              \
+      mem -= left;                               \
+      width += left;                             \
+      x = (clip).x1;                             \
+    }                                            \
+    int const right = x + width - ((clip).x2);   \
+    if (right > 0) width -= right;               \
+    if (width <= 0 || height <= 0) return;       \
   }

@@ -19,7 +19,8 @@ static std::string Percent(int nom, int den) {
 
   const int kBufMax = 256;
   char buf[kBufMax];
-  std::snprintf(buf, kBufMax * sizeof(char), "%.2f%%", double(nom) * 100.0 / den);
+  // NOLINTNEXTLINE(cert-err33-c) — buffer is 256 bytes for a "%.2f%%" formatted number; fits trivially.
+  std::snprintf(buf, kBufMax * sizeof(char), "%.2f%%", static_cast<double>(nom) * 100.0 / den);
   return buf;
 }
 
@@ -65,30 +66,30 @@ struct StatsRenderer {
   void DrawWorms() {
     Hblock(20, [this] {
       for (int i = 0; i < 2; ++i) {
-        int x =
+        int const kX =
             renderer.render_res_x / 2 + (i == 0 ? -1 : 1) * (renderer.render_res_x / 4) + offs_x;
-        BlitImage(renderer.bmp, common.WormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
+        BlitImage(renderer.bmp, common.WormSpriteObj(2, i == 0 ? 1 : 0, i), kX - 8, y);
 
         cell c(i == 0 ? TextCell::kRight : TextCell::kLeft);
         common.font.DrawString(renderer.bmp, c << game.worms[i]->settings->name,
-                               x + (i == 0 ? -16 : 16), y + 2, kTextColor);
+                               kX + (i == 0 ? -16 : 16), y + 2, kTextColor);
       }
     });
   }
 
   void DrawWorm(int i) {
-    bool visible = Hblock(20, [this, i] {
-      int x = renderer.render_res_x / 2 + offs_x;
-      BlitImage(renderer.bmp, common.WormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, y);
+    bool const kVisible = Hblock(20, [this, i] {
+      int const kX = renderer.render_res_x / 2 + offs_x;
+      BlitImage(renderer.bmp, common.WormSpriteObj(2, i == 0 ? 1 : 0, i), kX - 8, y);
 
       cell c(i == 0 ? TextCell::kRight : TextCell::kLeft);
       common.font.DrawString(renderer.bmp, c << game.worms[i]->settings->name,
-                             x + (i == 0 ? -16 : 16), y + 2, kTextColor);
+                             kX + (i == 0 ? -16 : 16), y + 2, kTextColor);
     });
 
-    if (!visible) {
-      int x = 18 + offs_x;
-      BlitImage(renderer.bmp, common.WormSpriteObj(2, i == 0 ? 1 : 0, i), x - 8, 10);
+    if (!kVisible) {
+      int const kX = 18 + offs_x;
+      BlitImage(renderer.bmp, common.WormSpriteObj(2, i == 0 ? 1 : 0, i), kX - 8, 10);
     }
   }
 
@@ -99,13 +100,13 @@ struct StatsRenderer {
                              renderer.render_res_x / 2 + offs_x, y, kTextColor);
 
       for (int i = 0; i < 2; ++i) {
-        TextCell::Placement p = i == 0 ? TextCell::kRight : TextCell::kLeft;
-        int x = renderer.render_res_x / 2 + (i == 0 ? -40 : 40) + offs_x;
+        TextCell::Placement const kP = i == 0 ? TextCell::kRight : TextCell::kLeft;
+        int const kX = renderer.render_res_x / 2 + (i == 0 ? -40 : 40) + offs_x;
 
         WormStats& w = stats.worms[i];
-        cell c(p);
+        cell c(kP);
         worm_stat(w, c);
-        common.font.DrawString(renderer.bmp, c, x, y, kTextColor);
+        common.font.DrawString(renderer.bmp, c, kX, y, kTextColor);
       }
     });
   }
@@ -116,11 +117,11 @@ struct StatsRenderer {
       common.font.DrawString(renderer.bmp, cell(TextCell::kRight).Ref() << name,
                              renderer.render_res_x / 2 + offs_x, y, kTextColor);
 
-      int x = renderer.render_res_x / 2 + 10 + offs_x;
+      int const kX = renderer.render_res_x / 2 + 10 + offs_x;
 
       cell c(TextCell::kLeft);
       stat(c);
-      common.font.DrawString(renderer.bmp, c, x, y, kTextColor);
+      common.font.DrawString(renderer.bmp, c, kX, y, kTextColor);
     });
   }
 
@@ -144,7 +145,7 @@ struct StatsRenderer {
   void Gap(int n = 5) { y += n; }
 
   void WeaponStats(vector<WeaponStats> const& list) {
-    for (auto& ws : list) {
+    for (const auto& ws : list) {
       if (ws.total_hp > 0) {
         Section(cell().Ref() << common.weapons[ws.index].name);
         DrawStat("hits", [ws](cell& c) {
@@ -168,8 +169,8 @@ struct StatsRenderer {
   void Graph(vector<double> const& data, int height, int color, int neg_color, bool balanced) {
     y += 2;
     Hblock(height, [&, this] {
-      int start = 20 + offs_x;
-      DrawGraph(renderer.bmp, data, height, start, y, color, neg_color, balanced);
+      int const kStart = 20 + offs_x;
+      DrawGraph(renderer.bmp, data, height, kStart, y, color, neg_color, balanced);
     });
     y += 7;
   }
@@ -177,10 +178,10 @@ struct StatsRenderer {
   void Heatmap(Heatmap& hm) {
     y += 2;
     Hblock(hm.height, [&] {
-      int start_x = kPaneX + pane_width / 2 - (hm.width / 2) + offs_x;
-      int start_y = y;
+      int const kStartX = kPaneX + pane_width / 2 - (hm.width / 2) + offs_x;
+      int const kStartY = y;
 
-      DrawHeatmap(renderer.bmp, start_x, start_y, hm);
+      DrawHeatmap(renderer.bmp, kStartX, kStartY, hm);
     });
     y += 7;
   }
@@ -194,8 +195,8 @@ struct StatsRenderer {
 };
 
 static void SortWeaponStats(vector<WeaponStats>& ws) {
-  std::sort(ws.begin(), ws.end(),
-            [](WeaponStats const& a, WeaponStats const& b) { return a.actual_hp > b.actual_hp; });
+  std::ranges::sort(
+      ws, [](WeaponStats const& a, WeaponStats const& b) { return a.actual_hp > b.actual_hp; });
 }
 
 StatsState::StatsState(NormalStatsRecorder& recorder, Game& game, bool is_multiplayer)
@@ -204,14 +205,14 @@ StatsState::StatsState(NormalStatsRecorder& recorder, Game& game, bool is_multip
 void StatsState::Enter() {
   gfx->ClearKeys();
 
-  Common& common = *game_.common;
+  Common const& common = *game_.common;
 
-  int graph_width = gfx->play_renderer.render_res_x - 20 - 20;
+  int const kGraphWidth = gfx->play_renderer.render_res_x - 20 - 20;
 
   for (int i = 0; i < 2; ++i) {
     wormDamages_[i] = Stretch(
         Convert<double>(Pluck(recorder_.worms[i].worm_frame_stats, &WormFrameStats::damage)),
-        graph_width);
+        kGraphWidth);
     Cumulative(wormDamages_[i]);
     Normalize(wormDamages_[i], 50);
   }
@@ -221,8 +222,7 @@ void StatsState::Enter() {
     worm_total_hp[i] =
         Convert<double>(Pluck(recorder_.worms[i].worm_frame_stats, &WormFrameStats::total_hp));
 
-  wormTotalHpDiff_ =
-      Stretch(Zip(worm_total_hp[0], worm_total_hp[1], std::minus<double>()), graph_width);
+  wormTotalHpDiff_ = Stretch(Zip(worm_total_hp[0], worm_total_hp[1], std::minus<>()), kGraphWidth);
   Normalize(wormTotalHpDiff_, 100);
 
   for (int i = 0; i < 40; ++i) {
@@ -287,7 +287,7 @@ bool StatsState::Update() {
   pane_ = pane_ * 0.89 + destPane_ * 0.11;
   offset_ = offset_ * 0.89 + destOffset_ * 0.11;
 
-  if (offset_ > 0) offset_ = 0;
+  offset_ = std::min<double>(offset_, 0);
 
   return true;
 }
@@ -299,22 +299,23 @@ void StatsState::Draw() {
 
   StatsRenderer renderer(gfx->play_renderer, game_, recorder_, common);
 
-  int offs_x = (int)std::floor(pane_ * -renderer.renderer.render_res_x);
-  int offs_y = (int)offset_;
+  int const kOffsX = static_cast<int>(std::floor(pane_ * -renderer.renderer.render_res_x));
+  int const kOffsY = static_cast<int>(offset_);
 
-  renderer.Pane(0, offs_x, offs_y, [&] {
+  renderer.Pane(0, kOffsX, kOffsY, [&] {
     renderer.DrawWorms();
 
-    int oldy = renderer.y;
+    int const kOldy = renderer.y;
     renderer.y -= 20;
 
     renderer.DrawStat(common.texts.game_modes[game_.settings->game_mode].c_str(),
                       [&](cell& c) { c << TimeToStringFrames(recorder_.game_time); });
 
-    renderer.y = oldy;
+    renderer.y = kOldy;
 
     renderer.DrawWormStat("ai processing", [&](WormStats& w, cell& c) {
-      c << (int)(std::chrono::duration_cast<std::chrono::milliseconds>(w.ai_process_time).count())
+      c << static_cast<int>(
+               std::chrono::duration_cast<std::chrono::milliseconds>(w.ai_process_time).count())
         << "ms";
     });
 
@@ -330,13 +331,15 @@ void StatsState::Draw() {
     renderer.DrawWormStat("damage to self", &WormStats::self_damage);
 
     renderer.DrawWormStat("shortest life", [](WormStats& w, cell& c) {
-      int min, max;
+      int min = 0;
+      int max = 0;
       w.LifeStats(min, max);
       c << TimeToStringFrames(min);
     });
 
     renderer.DrawWormStat("longest life", [](WormStats& w, cell& c) {
-      int min, max;
+      int min = 0;
+      int max = 0;
       w.LifeStats(min, max);
       c << TimeToStringFrames(max);
     });
@@ -352,20 +355,20 @@ void StatsState::Draw() {
     renderer.Section(cell().Ref() << "Total health difference", 0);
 
     renderer.Graph(wormTotalHpDiff_, 100, Palette::kWormColourIndexes[0],
-                   Palette::kWormColourIndexes[1], true);
+                   Palette::kWormColourIndexes[1], /*balanced=*/true);
 
     renderer.Section(cell().Ref() << "Presence", 0);
     renderer.Heatmap(recorder_.presence);
   });
 
   for (int i = 0; i < 2; ++i) {
-    renderer.Pane(i == 0 ? -1 : 1, offs_x, offs_y, [&] {
+    renderer.Pane(i == 0 ? -1 : 1, kOffsX, kOffsY, [&] {
       renderer.DrawWorm(i);
 
       renderer.WeaponStats(weaponStats_[i]);
 
       renderer.Section(cell().Ref() << "Damage over time", 0);
-      renderer.Graph(wormDamages_[i], 50, Palette::kWormColourIndexes[i], 0, false);
+      renderer.Graph(wormDamages_[i], 50, Palette::kWormColourIndexes[i], 0, /*balanced=*/false);
 
       renderer.Section(cell().Ref() << "Presence", 0);
       renderer.Heatmap(recorder_.worms[i].presence);

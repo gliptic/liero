@@ -12,21 +12,25 @@
 struct PathNode {
   enum { kNone, kOpen, kClosed };
 
-  PathNode() : parent(0), state(kNone), g(0) {}
+  PathNode() = default;
 
   void Reset() {
     state = kNone;
-    parent = 0;
+    parent = nullptr;
   }
 
-  PathNode* parent;
-  int state;
-  int g;
+  PathNode* parent{nullptr};
+  int state{kNone};
+  int g{0};
 };
 
 template <typename NodeT, typename DerivedT>
 struct DijkstraState {
-  typedef PathNode path_node_t;
+ private:
+  DijkstraState() = default;
+
+ public:
+  using path_node_t = PathNode;
 
   // Lazy-deletion min-heap. When a node's cost is lowered, we push a new
   // entry; the stale entry remains in the heap and is skipped at pop time
@@ -52,27 +56,27 @@ struct DijkstraState {
   }
 
   void SetOrigin(NodeT origin_init) {
-    DerivedT& derived = static_cast<DerivedT&>(*this);
+    auto& derived = static_cast<DerivedT&>(*this);
 
     path_node_t* origin_pn = derived.GetNode(origin_init);
     origin_pn->g = 0;
-    origin_pn->parent = 0;
+    origin_pn->parent = nullptr;
     AddOpen(origin_pn);
   }
 
   template <typename StopPred, typename SuccessorIter>
   bool Run(StopPred stop, SuccessorIter succ_iter) {
-    DerivedT& derived = static_cast<DerivedT&>(*this);
+    auto& derived = static_cast<DerivedT&>(*this);
 
     while (!open_list.empty() && !stop()) {
-      Entry e = open_list.top();
+      Entry const kE = open_list.top();
       open_list.pop();
 
       // Skip stale entries from prior decreased_key operations.
-      if (e.node->state == path_node_t::kClosed) continue;
-      if (e.g != e.node->g) continue;
+      if (kE.node->state == path_node_t::kClosed) continue;
+      if (kE.g != kE.node->g) continue;
 
-      path_node_t* min_pn = e.node;
+      path_node_t* min_pn = kE.node;
       NodeT min = derived.GetNodeId(min_pn);
 
       min_pn->state = path_node_t::kClosed;
@@ -83,16 +87,16 @@ struct DijkstraState {
         NodeT node = succ_iter.Node();
         path_node_t* pn = derived.GetNode(node);
         if (pn->state != path_node_t::kClosed) {
-          int g = min_pn->g + succ_iter.Cost();
+          int const kG = min_pn->g + succ_iter.Cost();
           if (pn->state != path_node_t::kOpen) {
-            pn->g = g;
+            pn->g = kG;
             pn->parent = min_pn;
             AddOpen(pn);
-          } else if (g < pn->g) {
-            pn->g = g;
+          } else if (kG < pn->g) {
+            pn->g = kG;
             pn->parent = min_pn;
             // Push a new entry; the older one will be ignored at pop.
-            open_list.push({g, pn});
+            open_list.push({kG, pn});
           }
         }
       }
@@ -100,6 +104,7 @@ struct DijkstraState {
 
     return stop();
   }
+  friend DerivedT;
 };
 
 struct LevelCell : PathNode {
@@ -124,10 +129,10 @@ struct LevelCellSucc {
     return true;
   }
 
-  LevelCell* Node() { return &c[kLevelCellOffsets[i]]; }
+  LevelCell* Node() const { return &c[kLevelCellOffsets[i]]; }
 
-  int Cost() {
-    LevelCell* n = c + kLevelCellOffsets[i];
+  int Cost() const {
+    LevelCell const* n = c + kLevelCellOffsets[i];
     return kLevelCellCosts[i] * n->cost;
   }
 
@@ -148,17 +153,20 @@ struct DijkstraLevel : DijkstraState<LevelCell*, DijkstraLevel> {
 
   LevelCell cells[(kWidth + 2) * (kHeight + 2)];
 
-  path_node_t* GetNode(LevelCell* c) { return c; }
+  static path_node_t* GetNode(LevelCell* c) { return c; }
 
-  LevelCell* GetNodeId(path_node_t* c) { return static_cast<LevelCell*>(c); }
+  // path_node_t IS the base of LevelCell; the cast is structurally safe and
+  // hot enough that dynamic_cast would matter.
+  // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
+  static LevelCell* GetNodeId(path_node_t* c) { return static_cast<LevelCell*>(c); }
 
   LevelCell* Cell(int x, int y) { return &cells[(y + 1) * kPitch + x + 1]; }
 
   IVec2 Coords(LevelCell* c) {
-    int offset = (int)(c - cells);
-    int y = offset / kPitch;
-    int x = offset % kPitch;
-    return IVec2(x - 1, y - 1);
+    int const kOffset = static_cast<int>(c - cells);
+    int const kY = kOffset / kPitch;
+    int const kX = kOffset % kPitch;
+    return {kX - 1, kY - 1};
   }
 
   IVec2 CoordsLevel(LevelCell* c) { return Coords(c) * kFactor + IVec2(kFactor / 2, kFactor / 2); }
@@ -174,7 +182,7 @@ struct DijkstraLevel : DijkstraState<LevelCell*, DijkstraLevel> {
   void Build(Level& level, Common& common) {
     this->Reset();
 
-    Material* mat = common.materials;
+    Material const* mat = common.materials;
 
     for (int x = 0; x < kWidth + 2; ++x) {
       cells[x].cost = -1;
@@ -197,10 +205,10 @@ struct DijkstraLevel : DijkstraState<LevelCell*, DijkstraLevel> {
               goto done;
             }
 
-            Material m = mat[level.Pixel(cx, cy)];
+            Material const kM = mat[level.Pixel(cx, cy)];
 
-            if (!m.Background()) {
-              if (m.AnyDirt()) {
+            if (!kM.Background()) {
+              if (kM.AnyDirt()) {
                 cost = 2;
               } else {
                 cost = -1;

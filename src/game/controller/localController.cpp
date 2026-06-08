@@ -12,21 +12,20 @@
 #include "../worm.hpp"
 
 #include <cctype>
+#include <memory>
+#include <utility>
 
 std::shared_ptr<WormAI> CreateAi(int controller, Worm& worm, Settings& settings) {
-  if (controller == 1)
-    return std::shared_ptr<WormAI>(new DumbLieroAI());
-  else if (controller == 2)
+  if (controller == 1) return std::shared_ptr<WormAI>(new DumbLieroAI());
+  if (controller == 2)
     return std::shared_ptr<WormAI>(new FollowAI(Weights(), settings.ai_parallels, worm.index == 0));
 
-  return std::shared_ptr<WormAI>();
+  return {};
 }
 
-LocalController::LocalController(std::shared_ptr<Common> common, std::shared_ptr<Settings> settings)
-    : game(common, settings, gfx.sound_player),
-      state(kStateInitial),
-      fade_value(0),
-      going_to_menu(false) {
+LocalController::LocalController(const std::shared_ptr<Common>& common,
+                                 const std::shared_ptr<Settings>& settings)
+    : game(common, settings, gfx.sound_player) {
   auto worm1 = std::make_shared<Worm>();
   worm1->settings = settings->worm_settings[0];
   worm1->health = worm1->settings->health;
@@ -54,7 +53,7 @@ LocalController::LocalController(std::shared_ptr<Common> common, std::shared_ptr
 LocalController::~LocalController() { EndRecord(); }
 
 void LocalController::OnKey(int key, bool key_state) {
-  Worm::Control control;
+  Worm::Control control{};
   Worm* worm = game.FindControlForKey(key, control);
   if (worm) {
     worm->clean_control_states.Set(control, key_state);
@@ -82,7 +81,7 @@ void LocalController::OnKey(int key, bool key_state) {
 // Called when the controller loses focus. When not focused, it will not receive key events among
 // other things.
 void LocalController::Unfocus() {
-  if (replay.get()) replay->Unfocus();
+  if (replay) replay->Unfocus();
   if (state == kStateWeaponSelection) ws->Unfocus();
 }
 
@@ -94,7 +93,7 @@ void LocalController::Focus() {
     return;
   }
   if (state == kStateWeaponSelection) ws->Focus();
-  if (replay.get()) replay->Focus();
+  if (replay) replay->Focus();
   if (state == kStateInitial) ChangeState(kStateWeaponSelection);
   game.Focus(gfx.play_renderer);
   // FIXME rewrite the focus function to avoid nonsense like this?
@@ -111,8 +110,8 @@ bool LocalController::Process() {
     for (std::size_t wi = 0; wi < game.worms.size(); ++wi) {
       Worm& worm = *game.worms[wi];
       for (int bit = 0; bit < 7; ++bit) {
-        bool held = worm.clean_control_states[bit];
-        if (held) {
+        bool const kHeld = worm.clean_control_states[bit];
+        if (kHeld) {
           if (!worm.control_states[bit]) {
             // Key is physically held but bit was consumed — apply repeat logic
             ++worm_held_frames[wi][bit];
@@ -132,11 +131,11 @@ bool LocalController::Process() {
 
     if (ws->ProcessFrame()) ChangeState(kStateGame);
   } else if (state == kStateGame || state == kStateGameEnded) {
-    int real_frame_skip = inverse_frame_skip ? !(cycles % frame_skip) : frame_skip;
-    for (int i = 0; i < real_frame_skip && (state == kStateGame || state == kStateGameEnded); ++i) {
-      int phase = game.cycles % 2;
+    int const kRealFrameSkip = inverse_frame_skip ? !(cycles % frame_skip) : frame_skip;
+    for (int i = 0; i < kRealFrameSkip && (state == kStateGame || state == kStateGameEnded); ++i) {
+      int const kPhase = game.cycles % 2;
       for (std::size_t i = 0; i < game.worms.size(); ++i) {
-        Worm& worm = *game.worms[(i + phase) % game.worms.size()];
+        Worm& worm = *game.worms[(i + kPhase) % game.worms.size()];
         if (worm.ai.get()) {
           auto start_time = std::chrono::steady_clock::now();
           worm.ai->Process(game, worm);
@@ -144,7 +143,7 @@ bool LocalController::Process() {
           game.stats_recorder->AiProcessTime(&worm, time);
         }
       }
-      if (replay.get()) {
+      if (replay) {
         try {
           replay->RecordFrame();
         } catch (std::runtime_error& e) {
@@ -164,9 +163,9 @@ bool LocalController::Process() {
   // CommonController::process();
 
   if (going_to_menu) {
-    if (fade_value > 0)
+    if (fade_value > 0) {
       fade_value -= 1;
-    else {
+    } else {
       if (state == kStateGameEnded) {
         EndRecord();
         game.stats_recorder->Finish(game);
@@ -204,38 +203,39 @@ void LocalController::ChangeState(GameState new_state) {
   }
 
   if (new_state == kStateWeaponSelection) {
-    ws.reset(new WeaponSelection(game));
+    ws = std::make_unique<WeaponSelection>(game);
   } else if (new_state == kStateGame) {
     // NOTE: This must be done before the replay recording starts below
-    for (std::size_t i = 0; i < game.worms.size(); ++i) {
-      Worm& worm = *game.worms[i];
+    for (auto& i : game.worms) {
+      Worm& worm = *i;
       worm.lives = game.settings->lives;
     }
 
-    if (game.settings->kExtensions && game.settings->record_replays) {
+    if (Settings::kExtensions && game.settings->record_replays) {
       try {
-        std::time_t ticks = std::time(0);
-        std::tm* now = std::localtime(&ticks);
+        std::time_t const kTicks = std::time(nullptr);
+        std::tm* now = std::localtime(&kTicks);
 
         char buf[512];
+        // NOLINTNEXTLINE(cert-err33-c) — buffer is generous; truncation only on a malformed locale and is non-fatal here.
         std::strftime(buf, sizeof(buf), "%Y-%m-%d %H.%M.%S", now);
 
         std::string player_names = " ";
         for (std::size_t i = 0; i < 2; ++i) {
-          Worm& worm = *game.worms[i];
+          Worm const& worm = *game.worms[i];
           std::string const& name = worm.settings->name;
           int chars = 0;
 
           if (i > 0) player_names.push_back('-');
           for (std::size_t c = 0; c < name.size() && chars < 4; ++c, ++chars) {
-            unsigned char ch = (unsigned char)name[c];
-            if (std::isalnum(ch)) player_names.push_back(ch);
+            auto const kCh = static_cast<unsigned char>(name[c]);
+            if (std::isalnum(kCh)) player_names.push_back(kCh);
           }
         }
 
         auto node = gfx.GetUserConfigNode() / "Replays" / (buf + player_names + ".lrp");
 
-        replay.reset(new ReplayWriter(node.ToWriter()));
+        replay = std::make_unique<ReplayWriter>(node.ToWriter());
 
         replay->BeginRecord(game);
       } catch (std::runtime_error& e) {
@@ -263,7 +263,7 @@ void LocalController::ChangeState(GameState new_state) {
 }
 
 void LocalController::EndRecord() {
-  if (replay.get()) {
+  if (replay) {
     replay.reset();
   }
 }

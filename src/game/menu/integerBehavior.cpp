@@ -33,38 +33,41 @@ int IntegerBehavior::OnEnter(Menu& menu, MenuItem& item) {
 
   if (!allow_entry) return -1;  // Not allowed
 
-  int x, y;
+  int x = 0;
+  int y = 0;
   if (menu.ItemPosition(item, x, y)) {
     x += menu.value_offset_x;
-    int digits = 1 + int(std::floor(std::log10(double(max))));
+    int const kDigits = 1 + static_cast<int>(std::floor(std::log10(static_cast<double>(max))));
 
     int* dest_ptr = &v;
-    int min_val = min, max_val = max;
-    bool pct = percentage;
+    int const kMinVal = min;
+    int const kMaxVal = max;
+    bool const kPct = percentage;
 
     gfx.state_stack.Push(
-        std::make_unique<InputStringState>(ToString(v), digits, x + 2, y, FilterDigits, "", false,
-                                           [dest_ptr, min_val, max_val, pct, &menu, &item](
+        std::make_unique<InputStringState>(ToString(v), kDigits, x + 2, y, FilterDigits, "", false,
+                                           [dest_ptr, kMinVal, kMaxVal, kPct, &menu, &item](
                                                bool accepted, std::string const& result) {
                                              if (accepted && !result.empty()) {
+                                               // NOLINTNEXTLINE(bugprone-unchecked-string-to-number-conversion, cert-err34-c) — input has already been filtered by FilterDigits.
                                                int val = std::atoi(result.c_str());
-                                               if (val < min_val)
-                                                 val = min_val;
-                                               else if (val > max_val)
-                                                 val = max_val;
+                                               if (val < kMinVal)
+                                                 val = kMinVal;
+                                               else if (val > kMaxVal)
+                                                 val = kMaxVal;
                                                *dest_ptr = val;
                                              }
                                              // Update the menu item display
                                              item.value = ToString(*dest_ptr);
                                              item.has_value = true;
-                                             if (pct) item.value += "%";
+                                             if (kPct) item.value += "%";
                                            }),
         &gfx);
   }
   return -1;
 }
 
-void IntegerBehavior::OnUpdate(Menu& menu, MenuItem& item) {
+void IntegerBehavior::OnUpdate(Menu& /*menu*/, MenuItem& item) {
   item.value = ToString(v);
   item.has_value = true;
   if (percentage) item.value += "%";

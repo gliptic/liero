@@ -25,9 +25,9 @@ struct ReaderFile {
   explicit ReaderFile(io::Reader& r) {
     uint8_t buf[4096];
     for (;;) {
-      std::size_t got = r.TryGet(buf, sizeof(buf));
-      if (got == 0) break;
-      data_.insert(data_.end(), buf, buf + got);
+      std::size_t const kGot = r.TryGet(buf, sizeof(buf));
+      if (kGot == 0) break;
+      data_.insert(data_.end(), buf, buf + kGot);
     }
   }
 

@@ -78,15 +78,15 @@ std::vector<LocalAddress> GetLocalAddresses() {
     char buf[INET6_ADDRSTRLEN] = {};
 
     if (ifa->ifa_addr->sa_family == AF_INET) {
-      auto* sin = (sockaddr_in*)ifa->ifa_addr;
+      auto* sin = reinterpret_cast<sockaddr_in*>(ifa->ifa_addr);
       inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf));
-      result.push_back({buf, false});
+      result.push_back({.ip = buf, .is_i_pv6 = false});
     } else if (ifa->ifa_addr->sa_family == AF_INET6) {
-      auto* sin6 = (sockaddr_in6*)ifa->ifa_addr;
+      auto* sin6 = reinterpret_cast<sockaddr_in6*>(ifa->ifa_addr);
       // Skip link-local (fe80::)
       if (IN6_IS_ADDR_LINKLOCAL(&sin6->sin6_addr)) continue;
       inet_ntop(AF_INET6, &sin6->sin6_addr, buf, sizeof(buf));
-      result.push_back({buf, true});
+      result.push_back({.ip = buf, .is_i_pv6 = true});
     }
   }
   freeifaddrs(ifas);

@@ -33,9 +33,9 @@ struct NodeName {
 struct DirectoryListing {
   std::vector<NodeName> subs;
 
-  DirectoryListing(DirectoryListing&& other) : subs(std::move(other.subs)) {}
+  DirectoryListing(DirectoryListing&& other) noexcept : subs(std::move(other.subs)) {}
 
-  DirectoryListing& operator=(DirectoryListing&& other) {
+  DirectoryListing& operator=(DirectoryListing&& other) noexcept {
     subs = std::move(other.subs);
     return *this;
   }
@@ -77,18 +77,18 @@ struct FsNodeImp {
 struct FsNode {
   std::shared_ptr<FsNodeImp> imp;
 
-  FsNode() {}
+  FsNode() = default;
 
   explicit FsNode(std::string const& path);
 
   FsNode(FsNode const& other) = default;
   FsNode& operator=(FsNode const& other) = default;
 
-  FsNode(FsNode&& other) : imp(std::move(other.imp)) {}
+  FsNode(FsNode&& other) noexcept : imp(std::move(other.imp)) {}
 
   FsNode(std::shared_ptr<FsNodeImp> imp) : imp(std::move(imp)) {}
 
-  FsNode& operator=(FsNode&& other) {
+  FsNode& operator=(FsNode&& other) noexcept {
     imp = std::move(other.imp);
     return *this;
   }
@@ -99,7 +99,7 @@ struct FsNode {
 
   DirectoryListing Iter() const { return imp->Iter(); }
 
-  FsNode operator/(std::string const& name) const { return FsNode(imp->Go(name)); }
+  FsNode operator/(std::string const& name) const { return {imp->Go(name)}; }
 
   bool Exists() const { return imp && imp->Exists(); }
 

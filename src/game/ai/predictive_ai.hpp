@@ -45,13 +45,16 @@ struct InputState {
   int idx;  // 0..56
 
   bool IsNeutral() const {
-    int pa, pb, pc;
+    int pa = 0;
+    int pb = 0;
+    int pc = 0;
     auto type = Decompose(pa, pb, pc);
     return type == kChangeWeapon;
   }
 
   bool IsFiring() const {
-    int dummy, pc;
+    int dummy = 0;
+    int pc = 0;
     return Decompose(dummy, dummy, pc) == kMoveJumpFire && ((pc >> 1) & 1);
   }
 
@@ -99,14 +102,14 @@ struct InputState {
       }
     }
 
-    return InputState(idx);
+    return {idx};
   }
 };
 
-typedef std::vector<InputState> Plan;
+using Plan = std::vector<InputState>;
 
 template <typename T>
-inline T Select(int n, T first) {
+inline T Select([[maybe_unused]] int n, T first) {
   assert(n == 0);
   return first;
 }
@@ -132,11 +135,11 @@ inline T Select(int n, T first, T a, T b, T c) {
 struct AiContext;
 
 struct InputContext {
-  InputContext() : wanted_weapon(0), hidden_frames(0), facing_enemy(0), ninjarope_out(0) {}
+  InputContext() = default;
 
   Worm::ControlState Update(InputState new_state, Game& game, Worm* worm, AiContext& ai_context);
 
-  int Pack() {
+  int Pack() const {
     int i = ninjarope_out;
     i = i * 2 + facing_enemy;
     i = i * 56 + current_state.idx;
@@ -144,12 +147,12 @@ struct InputContext {
   }
 
   static InputState Unpack(int idx, int& facing_enemy, int& ninjarope_out) {
-    int s = idx % 56;
+    int const kS = idx % 56;
     idx /= 56;
     facing_enemy = idx % 2;
     idx /= 2;
     ninjarope_out = idx;
-    return InputState(s);
+    return {kS};
   }
 
   static int const kSize = 56 * 2 * 2;
@@ -158,10 +161,10 @@ struct InputContext {
   InputState current_state;
 
   // Dependent part
-  int wanted_weapon;
-  int hidden_frames;
-  int facing_enemy;
-  int ninjarope_out;
+  int wanted_weapon{0};
+  int hidden_frames{0};
+  int facing_enemy{0};
+  int ninjarope_out{0};
 };
 
 template <int States, int FreeStates>
@@ -174,8 +177,8 @@ struct Model {
     assert(context < States);
     auto& v = trans[context];
 
-    double max = std::accumulate(v, v + FreeStates, 0.0);
-    double el = rand.GetDouble(max);
+    double const kMax = std::accumulate(v, v + FreeStates, 0.0);
+    double el = rand.GetDouble(kMax);
 
     for (int i = 0; i < FreeStates; ++i) {
       el -= v[i];
@@ -188,16 +191,12 @@ struct Model {
 
 struct Weights {
   Weights()
-      : health_weight(1.0),
-        aim_weight(1.0),
-        distance_weight(1.0),
-        ammo_weight(1.0),
-        missile_weight(1.0),
-        defense_weight(1.3),
-        firing_weight(1.0) {}
 
-  double health_weight, aim_weight, distance_weight, ammo_weight, missile_weight;
-  double defense_weight, firing_weight;
+      = default;
+
+  double health_weight{1.0}, aim_weight{1.0}, distance_weight{1.0}, ammo_weight{1.0},
+      missile_weight{1.0};
+  double defense_weight{1.3}, firing_weight{1.0};
 };
 
 struct TransModel : Model<InputContext::kSize, 56> {
@@ -206,7 +205,7 @@ struct TransModel : Model<InputContext::kSize, 56> {
   void Update(InputContext context, InputState v) { trans[context.Pack()][v.idx] += 0.005; }
 
   InputState Random(InputContext context, Rand& rand) {
-    return InputState(Model<InputContext::kSize, 56>::Random(context.Pack(), rand));
+    return {Model<InputContext::kSize, 56>::Random(context.Pack(), rand)};
   }
 };
 
@@ -221,25 +220,25 @@ struct AiContext {
   static int const kWidth = (504 + 31) >> 5;
   static int const kHeight = (350 + 31) >> 5;
 
-  AiContext() : prev_hp(0), max_damage(0), max_presence(0) {}
+  AiContext() = default;
 
   DijkstraLevel dlevel;
 
   CellState state[kWidth][kHeight];
 
-  int prev_hp;
-  double max_damage, max_presence;
+  int prev_hp{0};
+  double max_damage{0}, max_presence{0};
 
   void IncArea(int fx, int fy, double presence, double damage) {
-    int wx = Ftoi(fx) >> 5;
-    int wy = Ftoi(fy) >> 5;
+    int const kWx = Ftoi(fx) >> 5;
+    int const kWy = Ftoi(fy) >> 5;
 
-    for (int y = wy - 1; y <= wy + 1; ++y)
-      for (int x = wx - 1; x <= wx + 1; ++x) {
+    for (int y = kWy - 1; y <= kWy + 1; ++y)
+      for (int x = kWx - 1; x <= kWx + 1; ++x) {
         if (y >= 0 && y < kHeight && x >= 0 && x < kWidth) {
           double d = 1.0;
-          if (x != wx) d *= 0.5;
-          if (y != wy) d *= 0.5;
+          if (x != kWx) d *= 0.5;
+          if (y != kWy) d *= 0.5;
           auto& c = state[x][y];
           c.presence = d * presence;
           c.damage += d * damage;
@@ -264,43 +263,41 @@ struct AiContext {
 };
 
 struct EvaluateResult {
-  EvaluateResult() : future_score(0.0) {}
+  EvaluateResult() = default;
 
   double WeightedScore() const;
 
   std::vector<double> score_over_time;
-  double future_score;
+  double future_score{0.0};
 };
 
 struct SimpleAI : WormAI {
-  void Process(Game& game, Worm& worm);
+  void Process(Game& game, Worm& worm) override;
 
   Worm::ControlState initial;
 };
 
 struct AIThread {
-  AIThread() : th(0) {}
+  AIThread() = default;
 
-  SDL_Thread* th;
+  SDL_Thread* th{nullptr};
 };
 
 struct CandPlan {
-  CandPlan() : prev_result_age(0) {}
+  CandPlan() = default;
 
   Plan plan;
   EvaluateResult prev_result;
-  int prev_result_age;
+  int prev_result_age{0};
 };
 
 struct FollowAI : WormAI, AiContext {
-  FollowAI(Weights weights, int cand_pop_size, bool testing, FollowAI* target_ai_init = 0)
-      : frame(0),
-        model(weights, testing),
-        evaluation_budget(0),
-        effect_scaler(0),
+  FollowAI(Weights weights, int cand_pop_size, bool testing, FollowAI* target_ai_init = nullptr)
+      : model(weights, testing),
+
         target_ai(target_ai_init),
         cand_plan(cand_pop_size),
-        best(0),
+
         testing(testing),
         weights(weights)
 #if AI_THREADS
@@ -310,27 +307,27 @@ struct FollowAI : WormAI, AiContext {
   {
   }
 
-  ~FollowAI() {}
+  ~FollowAI() = default;
 
-  void Process(Game& game, Worm& worm);
+  void Process(Game& game, Worm& worm) override;
 
-  void DrawDebug(Game& game, Worm const& worm, Renderer& renderer, int offs_x, int offs_y);
+  void DrawDebug(Game& game, Worm const& worm, Renderer& renderer, int offs_x, int offs_y) override;
 
   Rand rand;
-  int frame;
+  int frame{0};
   InputContext current_context;
   TransModel model;
-  int evaluation_budget;
+  int evaluation_budget{0};
 
   std::vector<std::tuple<IVec2, PalIdx>> evaluate_positions;
 
   std::vector<double> neg_effect, pos_effect;
-  int effect_scaler;
+  int effect_scaler{0};
 
   FollowAI* target_ai;
 
   std::vector<CandPlan> cand_plan;
-  CandPlan* best;
+  CandPlan* best{nullptr};
 
   bool testing;
 

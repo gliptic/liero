@@ -29,8 +29,8 @@ namespace {
 std::pair<std::shared_ptr<Common>, std::shared_ptr<Settings>> MakeEnv() {
   PrecomputeTables();
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
   auto settings = std::make_shared<Settings>();
   settings->lives = 10;
   settings->loading_time = 0;
@@ -50,13 +50,13 @@ TEST_CASE("Rollback survives reorder + duplication", "[rollback][reorder]") {
   auto [common, settings] = MakeEnv();
   auto a = std::make_unique<RollbackController>(common, settings, 0);
   auto b = std::make_unique<RollbackController>(common, settings, 1);
-  a->SetSkipWeaponSelection(true);
-  b->SetSkipWeaponSelection(true);
+  a->SetSkipWeaponSelection(/*skip=*/true);
+  b->SetSkipWeaponSelection(/*skip=*/true);
   // Frame-advantage stall clamps the peers to lockstep and
   // suppresses the prediction window we need to exercise the reorder
   // path — disable it so we measure the dedup mechanism directly.
-  a->SetFrameAdvantageEnabled(false);
-  b->SetFrameAdvantageEnabled(false);
+  a->SetFrameAdvantageEnabled(/*enabled=*/false);
+  b->SetFrameAdvantageEnabled(/*enabled=*/false);
   a->game.rand.Seed(kWorldSeed);
   b->game.rand.Seed(kWorldSeed);
 
@@ -65,8 +65,11 @@ TEST_CASE("Rollback survives reorder + duplication", "[rollback][reorder]") {
   // later-sent ones; 30% duplication exercises the idempotent overwrite
   // path on remoteInputs slots and the stale-frame drop inside
   // injectRemoteInput. No loss here — that's covered by the loss test.
-  rollback_test::JitterTransport transport({0xACE1, /*minDelay*/ 1, /*maxDelay*/ 5,
-                                            /*lossProb*/ 0.0, /*dupProb*/ 0.30});
+  rollback_test::JitterTransport transport({.seed = 0xACE1,
+                                            /*minDelay*/ .min_delay_frames = 1,
+                                            /*maxDelay*/ .max_delay_frames = 5,
+                                            /*lossProb*/ .loss_probability = 0.0,
+                                            /*dupProb*/ .duplicate_probability = 0.30});
 
   a->SetInputCallbacks([&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     transport.SendAToB(gen, bf, c, in, lf);
@@ -82,10 +85,10 @@ TEST_CASE("Rollback survives reorder + duplication", "[rollback][reorder]") {
     b->InjectRemoteInput(f, 0);
   }
 
-  auto deliver_a = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+  auto deliver_a = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     a->InjectRemoteBatch(bf, c, in, lf);
   };
-  auto deliver_b = [&](uint8_t gen, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+  auto deliver_b = [&](uint8_t /*gen*/, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
     b->InjectRemoteBatch(bf, c, in, lf);
   };
 

@@ -75,7 +75,8 @@ struct BasicRect {
   constexpr BasicVec<T, 2> Ul() const { return {x1, y1}; }
 
   constexpr bool Inside(T vx, T vy) const {
-    T dx = vx - x1, dy = vy - y1;
+    T dx = vx - x1;
+    T dy = vy - y1;
     return dx >= T(0) && dx < Width() && dy >= T(0) && dy < Height();
   }
 

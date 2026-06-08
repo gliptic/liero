@@ -4,9 +4,9 @@
 
 struct CommonController : Controller {
   CommonController();
-  bool Process();
+  bool Process() override;
 
-  int frame_skip;
-  bool inverse_frame_skip;
-  int cycles;
+  int frame_skip{1};
+  bool inverse_frame_skip{false};
+  int cycles{0};
 };

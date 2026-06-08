@@ -71,7 +71,7 @@ static AVFrame *alloc_frame(enum AVPixelFormat pix_fmt, int width, int height)
 	return frame;
 }
 
-int vidrec_init(video_recorder* self, char const* filename, int width, int height, AVRational framerate)
+int VidrecInit(video_recorder* self, char const* filename, int width, int height, AVRational framerate)
 {
 	memset(self, 0, sizeof(*self));
 
@@ -240,7 +240,7 @@ int vidrec_init(video_recorder* self, char const* filename, int width, int heigh
 	return 0;
 }
 
-int vidrec_finalize(video_recorder* self)
+int VidrecFinalize(video_recorder* self)
 {
 	/* Flush video encoder */
 	write_encoded_frame(self->oc, self->video_enc, self->video_st, NULL, self->tmp_pkt);
@@ -272,7 +272,7 @@ int vidrec_finalize(video_recorder* self)
 	return 0;
 }
 
-int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_input_frame_size)
+int VidrecWriteAudioFrame(video_recorder* self, int16_t* samples, int audio_input_frame_size)
 {
 	AVCodecContext *c = self->audio_enc;
 	AVFrame *frame;
@@ -317,7 +317,7 @@ int vidrec_write_audio_frame(video_recorder* self, int16_t* samples, int audio_i
 	return ret < 0 ? 1 : 0;
 }
 
-int vidrec_write_video_frame(video_recorder* self, AVFrame* pic)
+int VidrecWriteVideoFrame(video_recorder* self, AVFrame* pic)
 {
 	int ret;
 	AVCodecContext *c = self->video_enc;

@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <utility>
 
 struct ExactObjectListBase {
   bool used;
@@ -21,7 +22,7 @@ struct ExactObjectList {
       T* ret = cur;
       ++cur;
 
-      return ret == end ? 0 : ret;
+      return ret == end ? nullptr : ret;
     }
 
     T* cur;
@@ -31,16 +32,16 @@ struct ExactObjectList {
   ExactObjectList() { Clear(); }
 
   T* GetFreeObject() {
-    assert(count < Limit);
+    assert(std::cmp_less(count, Limit));
     ++count;
 
-    T* ptr = 0;
+    T* ptr = nullptr;
     for (uint32_t i = 0; i < kFreeListSize; ++i) {
       if (free_list[i] != 0) {
-        int bit = std::countr_zero(free_list[i]);
-        uint32_t index = (i << 5) + bit;
-        ptr = arr + index;
-        free_list[i] &= ~(uint32_t(1) << bit);
+        int const kBit = std::countr_zero(free_list[i]);
+        uint32_t const kIndex = (i << 5) + kBit;
+        ptr = arr + kIndex;
+        free_list[i] &= ~(static_cast<uint32_t>(1) << kBit);
         break;
       }
     }
@@ -52,8 +53,8 @@ struct ExactObjectList {
   }
 
   T* NewObjectReuse() {
-    T* ret;
-    if (count >= Limit)
+    T* ret = nullptr;
+    if (std::cmp_greater_equal(count, Limit))
       ret = &arr[Limit - 1];
     else
       ret = GetFreeObject();
@@ -63,7 +64,7 @@ struct ExactObjectList {
   }
 
   T* NewObject() {
-    if (count >= Limit) return 0;
+    if (std::cmp_greater_equal(count, Limit)) return nullptr;
 
     T* ret = GetFreeObject();
     assert(ret->used && ret >= arr && ret < arr + Limit);
@@ -75,8 +76,8 @@ struct ExactObjectList {
   void Free(T* ptr) {
     assert(ptr->used);
     if (ptr->used) {
-      uint32_t index = uint32_t(ptr - arr);
-      free_list[index >> 5] |= (uint32_t(1) << (index & 31));
+      auto const kIndex = uint32_t(ptr - arr);
+      free_list[kIndex >> 5] |= (static_cast<uint32_t>(1) << (kIndex & 31));
 
       ptr->used = false;
 
@@ -91,13 +92,13 @@ struct ExactObjectList {
     std::memset(free_list, 0xff, kFreeListSize * sizeof(uint32_t));
     count = 0;
 
-    for (std::size_t i = 0; i < Limit; ++i) arr[i].used = false;
+    for (std::size_t i = 0; std::cmp_less(i, Limit); ++i) arr[i].used = false;
 
     arr[Limit].used = true;
 
     // Mark padding as used
     for (uint32_t index = Limit; index < kFreeListSize * 32; ++index)
-      free_list[index >> 5] &= ~(uint32_t(1) << (index & 31));
+      free_list[index >> 5] &= ~(static_cast<uint32_t>(1) << (index & 31));
   }
 
   std::size_t Size() const { return count; }

@@ -8,8 +8,15 @@
 #include <string>
 #include <vector>
 
+// enet.h declares these as `typedef struct _ENetHost ENetHost`; forward-
+// declaring under the user-facing typedef would create a distinct
+// incomplete type, so we name the underlying struct tags.
+// NOLINTBEGIN(bugprone-reserved-identifier, readability-identifier-naming, cert-dcl37-c, cert-dcl51-cpp)
 struct _ENetHost;
 struct _ENetPeer;
+using ENetHost = _ENetHost;
+using ENetPeer = _ENetPeer;
+// NOLINTEND(bugprone-reserved-identifier, readability-identifier-naming, cert-dcl37-c, cert-dcl51-cpp)
 struct IceAgent;
 
 // Handles UDP communication between two peers using ENet.
@@ -147,7 +154,7 @@ struct NetTransport {
   uint16_t ListeningPort() const;
 
   // Access the ENet host (for STUN-via-host integration)
-  _ENetHost* EnetHost() const { return enetHost_; }
+  ENetHost* EnetHost() const { return enetHost_; }
 
   // Callbacks
   std::function<void(uint32_t frame, uint8_t input)> on_remote_input;
@@ -183,11 +190,11 @@ struct NetTransport {
   bool CreateHost(uint16_t port);
   void SetupIntercept();
 
-  static int InterceptCallback(_ENetHost* host, void* event);
+  static int InterceptCallback(ENetHost* host, void* event);
 
-  _ENetHost* enetHost_;
-  _ENetPeer* peer_;
-  enum State state_;
+  ENetHost* enetHost_{nullptr};
+  ENetPeer* peer_{nullptr};
+  enum State state_ { kDisconnected };
   std::unique_ptr<IceBridge> iceBridge_;
   std::unique_ptr<IceAgent> iceAgent_;
 };

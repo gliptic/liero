@@ -20,12 +20,12 @@ struct WeaponSelection {
 
   Game& game;
 
-  int enabled_weaps;
+  int enabled_weaps{0};
   int fade_value;
   std::vector<bool> is_ready;
   std::vector<Menu> menus;
-  bool cached_background, cached_spectator_background;
-  bool focused;
+  bool cached_background{false}, cached_spectator_background{false};
+  bool focused{true};
 };
 
 // void selectWeapons(Game& game);

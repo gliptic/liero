@@ -23,7 +23,7 @@ int BooleanSwitchBehavior::OnEnter(Menu& menu, MenuItem& item) {
   return -1;
 }
 
-void BooleanSwitchBehavior::OnUpdate(Menu& menu, MenuItem& item) {
+void BooleanSwitchBehavior::OnUpdate(Menu& /*menu*/, MenuItem& item) {
   item.value = common.texts.onoff[v];
   item.has_value = true;
 }

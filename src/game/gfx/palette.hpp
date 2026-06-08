@@ -9,7 +9,7 @@ struct WormSettings;
 
 namespace io {
 struct Reader;
-}
+}  // namespace io
 
 struct Palette {
   static int const kWormColourIndexes[2];
@@ -41,7 +41,7 @@ struct Palette {
     ScaleAdd(base + 2, c, 28, 2205);
   }
 
-  void ResetPalette(Palette const& new_pal, Settings const& settings) {
+  void ResetPalette(Palette const& new_pal, Settings const& /*settings*/) {
     *this = new_pal;
     // setWormColours(settings);
   }

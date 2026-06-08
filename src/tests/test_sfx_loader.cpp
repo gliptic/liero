@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <catch2/catch_test_macros.hpp>
 
 #include <cstdint>
@@ -24,10 +25,10 @@ void PutU32le(std::vector<uint8_t>& buf, uint32_t v) {
 }
 
 void PutName8(std::vector<uint8_t>& buf, char const* name) {
-  uint8_t pad[8] = {0};
+  uint8_t pad[9] = {0};
   std::size_t n = std::strlen(name);
-  if (n > 8) n = 8;
-  std::memcpy(pad, name, n);
+  n = std::min<std::size_t>(n, 8);
+  strcpy(reinterpret_cast<char*>(pad), name);
   buf.insert(buf.end(), pad, pad + 8);
 }
 

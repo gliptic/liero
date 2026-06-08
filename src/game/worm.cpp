@@ -1,4 +1,5 @@
 #include "worm.hpp"
+#include <algorithm>
 #include <cstdlib>
 #include <sstream>
 #include "console.hpp"
@@ -56,7 +57,7 @@ void WormSettings::FromToml(std::string const& data) {
   SerializeWormSettingsToml(ar, *this);
 }
 
-void WormSettings::SaveProfile(FsNode node) {
+void WormSettings::SaveProfile(const FsNode& node) {
   try {
     auto writer_ptr = node.ToWriter();
     io::Writer& writer = *writer_ptr;
@@ -69,8 +70,8 @@ void WormSettings::SaveProfile(FsNode node) {
   }
 }
 
-void WormSettings::LoadProfile(FsNode node) {
-  int old_color = color;
+void WormSettings::LoadProfile(const FsNode& node) {
+  int const kOldColor = color;
   try {
     auto reader_ptr = node.ToReader();
     io::Reader& reader = *reader_ptr;
@@ -79,51 +80,51 @@ void WormSettings::LoadProfile(FsNode node) {
     std::string content;
     uint8_t buf[4096];
     for (;;) {
-      std::size_t got = reader.TryGet(buf, sizeof(buf));
-      if (got == 0) break;
-      content.append(reinterpret_cast<char*>(buf), got);
+      std::size_t const kGot = reader.TryGet(buf, sizeof(buf));
+      if (kGot == 0) break;
+      content.append(reinterpret_cast<char*>(buf), kGot);
     }
     FromToml(content);
   } catch (std::runtime_error& e) {
     console::WriteWarning(std::string("Error loading profile: ") + e.what());
   }
 
-  color = old_color;  // We preserve the color
+  color = kOldColor;  // We preserve the color
 }
 
 void Worm::CalculateReactionForce(Game& game, int new_x, int new_y, int dir) {
   static Point const kColPoints[4][7] = {{// DOWN reaction points
-                                          {-1, -4},
-                                          {0, -4},
-                                          {1, -4},
-                                          {0, 0},
-                                          {0, 0},
-                                          {0, 0},
-                                          {0, 0}},
+                                          {.x = -1, .y = -4},
+                                          {.x = 0, .y = -4},
+                                          {.x = 1, .y = -4},
+                                          {.x = 0, .y = 0},
+                                          {.x = 0, .y = 0},
+                                          {.x = 0, .y = 0},
+                                          {.x = 0, .y = 0}},
                                          {// LEFT reaction points
-                                          {1, -3},
-                                          {1, -2},
-                                          {1, -1},
-                                          {1, 0},
-                                          {1, 1},
-                                          {1, 2},
-                                          {1, 3}},
+                                          {.x = 1, .y = -3},
+                                          {.x = 1, .y = -2},
+                                          {.x = 1, .y = -1},
+                                          {.x = 1, .y = 0},
+                                          {.x = 1, .y = 1},
+                                          {.x = 1, .y = 2},
+                                          {.x = 1, .y = 3}},
                                          {// UP reaction points
-                                          {-1, 4},
-                                          {0, 4},
-                                          {1, 4},
-                                          {0, 0},
-                                          {0, 0},
-                                          {0, 0},
-                                          {0, 0}},
+                                          {.x = -1, .y = 4},
+                                          {.x = 0, .y = 4},
+                                          {.x = 1, .y = 4},
+                                          {.x = 0, .y = 0},
+                                          {.x = 0, .y = 0},
+                                          {.x = 0, .y = 0},
+                                          {.x = 0, .y = 0}},
                                          {// RIGHT reaction points
-                                          {-1, -3},
-                                          {-1, -2},
-                                          {-1, -1},
-                                          {-1, 0},
-                                          {-1, 1},
-                                          {-1, 2},
-                                          {-1, 3}}
+                                          {.x = -1, .y = -3},
+                                          {.x = -1, .y = -2},
+                                          {.x = -1, .y = -1},
+                                          {.x = -1, .y = 0},
+                                          {.x = -1, .y = 1},
+                                          {.x = -1, .y = 2},
+                                          {.x = -1, .y = 3}}
 
   };
 
@@ -134,23 +135,26 @@ void Worm::CalculateReactionForce(Game& game, int new_x, int new_y, int dir) {
   // newX should be x + velX at the first call
 
   for (int i = 0; i < kColPointCount[dir]; ++i) {
-    int col_x = new_x + kColPoints[dir][i].x;
-    int col_y = new_y + kColPoints[dir][i].y;
+    int const kColX = new_x + kColPoints[dir][i].x;
+    int const kColY = new_y + kColPoints[dir][i].y;
 
-    if (!game.level.CheckedMatWrap(col_x, col_y).Background()) {
+    if (!game.level.CheckedMatWrap(kColX, kColY).Background()) {
       ++reacts[dir];
     }
   }
 }
 
 void Worm::ProcessPhysics(Game& game) {
-  Common& common = *game.common;
+  Common const& common = *game.common;
 
   if (reacts[kRfUp] > 0) vel.x = (vel.x * LC(WormFricMult)) / LC(WormFricDiv);
 
-  fixedvec absvel(std::abs(vel.x), std::abs(vel.y));
+  fixedvec const kAbsvel(std::abs(vel.x), std::abs(vel.y));
 
-  int32_t rh, rv, mbh, mbv;
+  int32_t rh = 0;
+  int32_t rv = 0;
+  int32_t mbh = 0;
+  int32_t mbv = 0;
 
   rh = reacts[vel.x >= 0 ? kRfLeft : kRfRight];
   rv = reacts[vel.y >= 0 ? kRfUp : kRfDown];
@@ -160,25 +164,27 @@ void Worm::ProcessPhysics(Game& game) {
   if (vel.x &&
       rh)  // TODO: We wouldn't need the vel.x check if we knew that mbh/mbv were always non-zero
   {
-    if (absvel.x > mbh) {
+    if (kAbsvel.x > mbh) {
       if (common.h[HFallDamage])
         health -= LC(FallDamageRight);
       else
         game.sound_player->Play(common.sound_hook[SoundBump]);
       vel.x = -vel.x / 3;
-    } else
+    } else {
       vel.x = 0;
+    }
   }
 
   if (vel.y && rv) {
-    if (absvel.y > mbv) {
+    if (kAbsvel.y > mbv) {
       if (common.h[HFallDamage])
         health -= LC(FallDamageDown);
       else
         game.sound_player->Play(common.sound_hook[SoundBump]);
       vel.y = -vel.y / 3;
-    } else
+    } else {
       vel.y = 0;
+    }
   }
 
   if (reacts[kRfUp] == 0) {
@@ -194,7 +200,7 @@ void Worm::ProcessPhysics(Game& game) {
 void Worm::Process(Game& game) {
   Common& common = *game.common;
 
-  if (health > settings->health) health = settings->health;
+  health = std::min(health, settings->health);
 
   if ((game.settings->game_mode != Settings::kGmKillEmAll &&
        game.settings->game_mode != Settings::kGmScalesOfJustice) ||
@@ -267,7 +273,7 @@ void Worm::Process(Game& game) {
       auto ipos = Ftoi(pos);
 
       auto br = game.bonuses.All();
-      for (Bonus* i; (i = br.Next());) {
+      for (Bonus const* i = nullptr; (i = br.Next());) {
         if (ipos.x + 5 > Ftoi(i->x) && ipos.x - 5 < Ftoi(i->x) && ipos.y + 5 > Ftoi(i->y) &&
             ipos.y - 5 < Ftoi(i->y)) {
           if (i->frame == 1) {
@@ -294,10 +300,10 @@ void Worm::Process(Game& game) {
 
               ww.loading_left = 0;
             } else {
-              int bix = Ftoi(i->x);
-              int biy = Ftoi(i->y);
+              int const kBix = Ftoi(i->x);
+              int const kBiy = Ftoi(i->y);
               game.bonuses.Free(br);
-              common.sobject_types[0].Create(game, bix, biy, index, 0);
+              common.sobject_types[0].Create(game, kBix, kBiy, index, nullptr);
             }
           }
         }
@@ -336,13 +342,14 @@ void Worm::Process(Game& game) {
       if (health < settings->health / 4) {
         if (game.rand(health + 6) == 0) {
           if (game.rand(3) == 0) {
-            int snd = 18 + game.rand(3);  // NOTE: MUST be outside the unpredictable branch below
+            int const kSnd =
+                18 + game.rand(3);  // NOTE: MUST be outside the unpredictable branch below
             if (!game.sound_player->IsPlaying(this)) {
-              game.sound_player->Play(snd, this);
+              game.sound_player->Play(kSnd, this);
             }
           }
 
-          common.nobject_types[6].Create1(game, vel, pos, 0, index, 0);
+          common.nobject_types[6].Create1(game, vel, pos, 0, index, nullptr);
         }
       }
 
@@ -355,8 +362,8 @@ void Worm::Process(Game& game) {
           game.sound_player->Stop(&weapons[current_weapon]);
         }
 
-        int death_snd = 15 + game.rand(3);
-        game.sound_player->Play(death_snd, this);
+        int const kDeathSnd = 15 + game.rand(3);
+        game.sound_player->Play(kDeathSnd, this);
 
         fire_cone = 0;
         ninjarope.out = false;
@@ -370,7 +377,7 @@ void Worm::Process(Game& game) {
           --lives;
         }
 
-        int old_last_killed = game.last_killed_idx;
+        int const kOldLastKilled = game.last_killed_idx;
         // For GameOfTag, 'it' doesn't change if the killer
         // was not 'it', itself, unknown or there were no 'it'.
         if (game.settings->game_mode != Settings::kGmGameOfTag || game.last_killed_idx < 0 ||
@@ -378,7 +385,7 @@ void Worm::Process(Game& game) {
             last_killed_by_idx == game.last_killed_idx) {
           game.last_killed_idx = index;
         }
-        game.got_changed = (old_last_killed != game.last_killed_idx);
+        game.got_changed = (kOldLastKilled != game.last_killed_idx);
 
         if (last_killed_by_idx >= 0 && last_killed_by_idx != index) {
           ++game.WormByIdx(last_killed_by_idx)->kills;
@@ -387,16 +394,17 @@ void Worm::Process(Game& game) {
         visible = false;
         killed_timer = kKilledTimerInitial;
 
-        int max = 120 * game.settings->blood / 100;
+        int const kMax = 120 * game.settings->blood / 100;
 
-        if (max > 1) {
-          for (int i = 1; i <= max; ++i) {
-            common.nobject_types[6].Create2(game, game.rand(128), vel / 3, pos, 0, index, 0);
+        if (kMax > 1) {
+          for (int i = 1; i <= kMax; ++i) {
+            common.nobject_types[6].Create2(game, game.rand(128), vel / 3, pos, 0, index, nullptr);
           }
         }
 
         for (int i = 7; i <= 105; i += 14) {
-          common.nobject_types[index].Create2(game, i + game.rand(14), vel / 3, pos, 0, index, 0);
+          common.nobject_types[index].Create2(game, i + game.rand(14), vel / 3, pos, 0, index,
+                                              nullptr);
         }
 
         game.stats_recorder->AfterDeath(this);
@@ -405,8 +413,8 @@ void Worm::Process(Game& game) {
       }
 
       // Update frame
-      int anim_frame = animate ? ((game.cycles & 31) >> 3) : 0;
-      current_frame = AngleFrame() + game.settings->kWormAnimTab[anim_frame];
+      int const kAnimFrame = animate ? ((game.cycles & 31) >> 3) : 0;
+      current_frame = AngleFrame() + Settings::kWormAnimTab[kAnimFrame];
     } else {
       // Worm is dead
       steerable_count = 0;
@@ -444,26 +452,26 @@ int Worm::AngleFrame() const {
 int SqrVectorLength(int x, int y) { return x * x + y * y; }
 
 void DumbLieroAI::Process(Game& game, Worm& worm) {
-  Common& common = *game.common;
+  Common const& common = *game.common;
 
-  Worm* target = 0;
+  Worm const* target = nullptr;
   int min_len = 0;
-  for (std::size_t i = 0; i < game.worms.size(); ++i) {
-    Worm* w = game.worms[i].get();
+  for (auto& i : game.worms) {
+    Worm const* w = i.get();
     if (w != &worm) {
-      int len =
+      int const kLen =
           SqrVectorLength(Ftoi(worm.pos.x) - Ftoi(w->pos.x), Ftoi(worm.pos.y) - Ftoi(w->pos.y));
-      if (!target || len < min_len)  // First or closer worm
+      if (!target || kLen < min_len)  // First or closer worm
       {
         target = w;
-        min_len = len;
+        min_len = kLen;
       }
     }
   }
 
-  int max_dist;
+  int max_dist = 0;
 
-  WormWeapon& ww = worm.weapons[worm.current_weapon];
+  WormWeapon const& ww = worm.weapons[worm.current_weapon];
   Weapon const& w = *ww.type;
 
   if (w.time_to_explo > 0 && w.time_to_explo < 500) {
@@ -472,26 +480,26 @@ void DumbLieroAI::Process(Game& game, Worm& worm) {
     max_dist = w.speed - w.gravity / 10;
   }  // 4D43
 
-  if (max_dist < 90) max_dist = 90;
+  max_dist = std::max(max_dist, 90);
 
   fixedvec delta = target->pos - worm.pos;
   auto idelta = Ftoi(delta);
 
-  int real_dist = VectorLength(idelta.x, idelta.y);
+  int const kRealDist = VectorLength(idelta.x, idelta.y);
 
-  if (real_dist < max_dist || !worm.visible) {
+  if (kRealDist < max_dist || !worm.visible) {
     // The other worm is close enough
-    bool fire = worm.Pressed(Worm::kFire);
-    if (rand(common.ai_params.k[fire][WormSettings::kFire]) == 0) {
-      worm.SetControlState(Worm::kFire, !fire);
+    bool const kFire = worm.Pressed(Worm::kFire);
+    if (rand(common.ai_params.k[kFire][WormSettings::kFire]) == 0) {
+      worm.SetControlState(Worm::kFire, !kFire);
     }  // 4DE7
   } else if (worm.visible) {
     worm.Release(Worm::kFire);
   }  // 4DFA
 
   // In Liero this is a loop with two iterations, that's better maybe
-  bool jump = worm.Pressed(Worm::kJump);
-  if (rand(common.ai_params.k[jump][WormSettings::kJump]) == 0) {
+  bool const kJump = worm.Pressed(Worm::kJump);
+  if (rand(common.ai_params.k[kJump][WormSettings::kJump]) == 0) {
     worm.ToggleControlState(Worm::kJump);
   }
 
@@ -504,8 +512,8 @@ void DumbLieroAI::Process(Game& game, Worm& worm) {
   //  Moves up
 
   // l_4EE5:
-  if (real_dist > 0) {
-    delta /= real_dist;
+  if (kRealDist > 0) {
+    delta /= kRealDist;
   } else {
     delta.Zero();
   }  // 4F2F
@@ -518,36 +526,36 @@ void DumbLieroAI::Process(Game& game, Worm& worm) {
       break;
   }  // 4F93
 
-  fixed adelta_x = std::abs(delta.x);
-  fixed adelta_y = std::abs(delta.y);
+  fixed const kAdeltaX = std::abs(delta.x);
+  fixed const kAdeltaY = std::abs(delta.y);
 
   if (dir >= 128) {
     if (delta.x > 0) {
       if (delta.y < 0) {
-        if (adelta_y > adelta_x)
+        if (kAdeltaY > kAdeltaX)
           dir = 64 + rand(16);
-        else if (adelta_x > adelta_y)
+        else if (kAdeltaX > kAdeltaY)
           dir = 80 + rand(16);
         else
           dir = 80;
       } else  // deltaY >= 0
       {
-        if (adelta_x > adelta_y)
+        if (kAdeltaX > kAdeltaY)
           dir = 96 + rand(16);
         else
           dir = 116;
       }
     } else {
       if (delta.y < 0) {
-        if (adelta_y > adelta_x)
+        if (kAdeltaY > kAdeltaX)
           dir = 48 + rand(16);
-        else if (adelta_x > adelta_y)
+        else if (kAdeltaX > kAdeltaY)
           dir = 32 + rand(16);
         else
           dir = 48;  // This was 56, but that seems wrong
       } else         // deltaX <= 0 && deltaY >= 0
       {
-        if (adelta_x > adelta_y)
+        if (kAdeltaX > kAdeltaY)
           dir = 12 + rand(16);
         else
           dir = 12;
@@ -595,14 +603,14 @@ void DumbLieroAI::Process(Game& game, Worm& worm) {
 
     if (worm.ninjarope.out && worm.ninjarope.attached) {
       // l_525F:
-      bool up = worm.Pressed(Worm::kUp);
+      bool const kUp = worm.Pressed(Worm::kUp);
 
-      if (rand(common.ai_params.k[up][WormSettings::kUp]) == 0) {
+      if (rand(common.ai_params.k[kUp][WormSettings::kUp]) == 0) {
         worm.ToggleControlState(Worm::kUp);
       }
 
-      bool down = worm.Pressed(Worm::kDown);
-      if (rand(common.ai_params.k[down][WormSettings::kDown]) == 0) {
+      bool const kDown = worm.Pressed(Worm::kDown);
+      if (rand(common.ai_params.k[kDown][WormSettings::kDown]) == 0) {
         worm.ToggleControlState(Worm::kDown);
       }
     } else {
@@ -612,7 +620,7 @@ void DumbLieroAI::Process(Game& game, Worm& worm) {
     }  // 52F8
   }  // if(change)
   else {
-    if (real_dist > max_dist) {
+    if (kRealDist > max_dist) {
       worm.SetControlState(Worm::kRight, (delta.x > 0));
       worm.SetControlState(Worm::kLeft, (delta.x <= 0));
     }  // 5347
@@ -666,7 +674,7 @@ void Worm::InitWeapons(Game& game) {
 }
 
 void Worm::BeginRespawn(Game& game) {
-  Common& common = *game.common;
+  Common const& common = *game.common;
 
   auto temp = Ftoi(pos);
 
@@ -696,14 +704,14 @@ void Worm::BeginRespawn(Game& game) {
   killed_timer = -1;
 }
 
-void LimitXy(int& x, int& y, int max_x, int max_y) {
+static void LimitXy(int& x, int& y, int max_x, int max_y) {
   if (x < 0)
     x = 0;
   else if (x > max_x)
     x = max_x;
 
-  if (y < 0) y = 0;
-  if (y > max_y) y = max_y;
+  y = std::max(y, 0);
+  y = std::min(y, max_y);
 }
 
 void Worm::DoRespawning(Game& game) {
@@ -760,16 +768,16 @@ void Worm::DoRespawning(Game& game) {
 void Worm::ProcessWeapons(Game& game) {
   Common& common = *game.common;
 
-  for (int i = 0; i < Settings::kSelectableWeapons; ++i) {
-    if (weapons[i].delay_left >= 0) --weapons[i].delay_left;
+  for (auto& weapon : weapons) {
+    if (weapon.delay_left >= 0) --weapon.delay_left;
   }
 
   WormWeapon& ww = weapons[current_weapon];
   Weapon const& w = *ww.type;
 
   if (ww.ammo <= 0) {
-    int computed_loading_time = w.ComputedLoadingTime(*game.settings);
-    ww.loading_left = computed_loading_time;
+    int const kComputedLoadingTime = w.ComputedLoadingTime(*game.settings);
+    ww.loading_left = kComputedLoadingTime;
     ww.ammo = w.ammo;
   }
 
@@ -787,9 +795,9 @@ void Worm::ProcessWeapons(Game& game) {
 
   if (leave_shell_timer > 0) {
     if (--leave_shell_timer <= 0) {
-      auto vel_y = -int(game.rand(20000));
+      auto vel_y = -static_cast<int>(game.rand(20000));
       auto vel_x = game.rand(16000) - 8000;
-      common.nobject_types[7].Create1(game, fixedvec(vel_x, vel_y), pos, 0, index, 0);
+      common.nobject_types[7].Create1(game, fixedvec(vel_x, vel_y), pos, 0, index, nullptr);
     }
   }
 }
@@ -798,10 +806,10 @@ void Worm::ProcessMovement(Game& game) {
   Common& common = *game.common;
 
   if (movable) {
-    bool left = Pressed(kLeft);
-    bool right = Pressed(kRight);
+    bool const kLeft = Pressed(Worm::kLeft);
+    bool const kRight = Pressed(Worm::kRight);
 
-    if (left && !right) {
+    if (kLeft && !kRight) {
       if (vel.x > LC(MaxVelLeft)) vel.x -= LC(WalkVelLeft);
 
       if (direction != 0) {
@@ -813,7 +821,7 @@ void Worm::ProcessMovement(Game& game) {
       animate = true;
     }
 
-    if (!left && right) {
+    if (!kLeft && kRight) {
       if (vel.x < LC(MaxVelRight)) vel.x += LC(WalkVelRight);
 
       if (direction != 1) {
@@ -825,13 +833,13 @@ void Worm::ProcessMovement(Game& game) {
       animate = true;
     }
 
-    if (left && right) {
+    if (kLeft && kRight) {
       if (able_to_dig) {
         able_to_dig = false;
 
-        fixedvec dir(cossin_table[Ftoi(aiming_angle)]);
+        fixedvec const kDir(cossin_table[Ftoi(aiming_angle)]);
 
-        auto dig_pos = dir * 2 + pos;
+        auto dig_pos = kDir * 2 + pos;
 
         /* TODO
         long iDigx = ftoi(fTempx) - 4;
@@ -872,7 +880,7 @@ void Worm::ProcessMovement(Game& game) {
           CorrectShadow(common, game.level,
                         Rect(idig_pos.x - 3, idig_pos.y - 3, idig_pos.x + 18, idig_pos.y + 18));
 
-        dig_pos += dir * 2;
+        dig_pos += kDir * 2;
 
         // l_43EB:
         idig_pos = Ftoi(dig_pos);
@@ -887,14 +895,14 @@ void Worm::ProcessMovement(Game& game) {
       able_to_dig = true;
     }
 
-    if (!left && !right) {
+    if (!kLeft && !kRight) {
       animate = false;  // Don't animate the this unless he is moving
     }  // 458C
   }
 }
 
 void Worm::ProcessTasks(Game& game) {
-  Common& common = *game.common;
+  Common const& common = *game.common;
 
   if (Pressed(kChange)) {
     if (ninjarope.out) {
@@ -927,21 +935,22 @@ void Worm::ProcessTasks(Game& game) {
         vel.y -= LC(JumpForce);
         able_to_jump = false;
       }
-    } else
+    } else {
       able_to_jump = true;
+    }
   }
 }
 
 void Worm::ProcessAiming(Game& game) {
-  Common& common = *game.common;
+  Common const& common = *game.common;
 
-  bool up = Pressed(kUp);
-  bool down = Pressed(kDown);
+  bool const kUp = Pressed(Worm::kUp);
+  bool const kDown = Pressed(Worm::kDown);
 
   if (aiming_speed != 0) {
     aiming_angle += aiming_speed;
 
-    if (!up && !down) {
+    if (!kUp && !kDown) {
       aiming_speed = (aiming_speed * LC(AimFricMult)) / LC(AimFricDiv);
     }
 
@@ -967,7 +976,7 @@ void Worm::ProcessAiming(Game& game) {
   }
 
   if (movable && (!ninjarope.out || !Pressed(kChange))) {
-    if (up) {
+    if (kUp) {
       if (direction == 0) {
         if (aiming_speed < LC(MaxAimVelLeft)) aiming_speed += LC(AimAccLeft);
       } else {
@@ -975,7 +984,7 @@ void Worm::ProcessAiming(Game& game) {
       }
     }
 
-    if (down) {
+    if (kDown) {
       if (direction == 1) {
         if (aiming_speed < LC(MaxAimVelLeft)) aiming_speed += LC(AimAccLeft);
       } else {
@@ -1018,7 +1027,7 @@ void Worm::ProcessWeaponChange(Game& game) {
 }
 
 void Worm::Fire(Game& game) {
-  Common& common = *game.common;
+  Common const& common = *game.common;
   WormWeapon& ww = weapons[current_weapon];
   Weapon const& w = *ww.type;
 
@@ -1027,8 +1036,8 @@ void Worm::Fire(Game& game) {
 
   fire_cone = w.fire_cone;
 
-  fixedvec firing(cossin_table[Ftoi(aiming_angle)] * (w.detect_distance + 5) + pos -
-                  fixedvec(0, Itof(1)));
+  fixedvec const kFiring(cossin_table[Ftoi(aiming_angle)] * (w.detect_distance + 5) + pos -
+                         fixedvec(0, Itof(1)));
 
   if (w.leave_shells > 0) {
     if (game.rand(w.leave_shells) == 0) {
@@ -1046,16 +1055,16 @@ void Worm::Fire(Game& game) {
 
   int speed = w.speed;
   fixedvec firing_vel;
-  int parts = w.parts;
+  int const kParts = w.parts;
 
   if (w.affect_by_worm) {
-    if (speed < 100) speed = 100;
+    speed = std::max(speed, 100);
 
     firing_vel = vel * 100 / speed;
   }
 
-  for (int i = 0; i < parts; ++i) {
-    w.Fire(game, Ftoi(aiming_angle), firing_vel, speed, firing, index, &ww);
+  for (int i = 0; i < kParts; ++i) {
+    w.Fire(game, Ftoi(aiming_angle), firing_vel, speed, kFiring, index, &ww);
   }
 
   int recoil = w.recoil;
@@ -1082,12 +1091,12 @@ bool CheckForSpecWormHit(Game& game, int x, int y, int dist, Worm& w) {
 
   if (!w.visible) return false;
 
-  PalIdx* worm_sprite = common.WormSprite(w.current_frame, w.direction, 0);
+  PalIdx const* worm_sprite = common.WormSprite(w.current_frame, w.direction, 0);
 
-  int delta_x = x - Ftoi(w.pos.x) + 7;
-  int delta_y = y - Ftoi(w.pos.y) + 5;
+  int const kDeltaX = x - Ftoi(w.pos.x) + 7;
+  int const kDeltaY = y - Ftoi(w.pos.y) + 5;
 
-  Rect r(delta_x - dist, delta_y - dist, delta_x + dist + 1, delta_y + dist + 1);
+  Rect r(kDeltaX - dist, kDeltaY - dist, kDeltaX + dist + 1, kDeltaY + dist + 1);
 
   r.Intersect(Rect(0, 0, 16, 16));
 
@@ -1103,15 +1112,15 @@ bool CheckForSpecWormHit(Game& game, int x, int y, int dist, Worm& w) {
 void Worm::ProcessSight(Game& game) {
   Common& common = *game.common;
 
-  WormWeapon& ww = weapons[current_weapon];
+  WormWeapon const& ww = weapons[current_weapon];
   Weapon const& w = *ww.type;
 
-  if (ww.Available() && (w.laser_sight || ww.type - &common.weapons[0] == LC(LaserWeapon) - 1)) {
-    fixedvec dir = cossin_table[Ftoi(aiming_angle)];
-    fixedvec temp = fixedvec(pos.x + dir.x * 6, pos.y + dir.y * 6 - Itof(1));
+  if (ww.Available() && (w.laser_sight || ww.type - common.weapons.data() == LC(LaserWeapon) - 1)) {
+    fixedvec const kDir = cossin_table[Ftoi(aiming_angle)];
+    fixedvec temp = fixedvec(pos.x + kDir.x * 6, pos.y + kDir.y * 6 - Itof(1));
 
     do {
-      temp += dir;
+      temp += kDir;
       make_sight_green = CheckForWormHit(game, Ftoi(temp.x), Ftoi(temp.y), 0, this);
     } while (temp.x >= 0 && temp.y >= 0 && temp.x < Itof(game.level.width) &&
              temp.y < Itof(game.level.height) && game.level.Mat(Ftoi(temp)).Background() &&
@@ -1119,8 +1128,9 @@ void Worm::ProcessSight(Game& game) {
 
     hotspot_x = Ftoi(temp.x);
     hotspot_y = Ftoi(temp.y);
-  } else
+  } else {
     make_sight_green = false;
+  }
 }
 
 void Worm::ProcessSteerables(Game& game) {
@@ -1128,10 +1138,10 @@ void Worm::ProcessSteerables(Game& game) {
   steerable_sum_x = 0;
   steerable_sum_y = 0;
 
-  WormWeapon& ww = weapons[current_weapon];
+  WormWeapon const& ww = weapons[current_weapon];
   if (ww.type->shot_type == Weapon::kStSteerable) {
     auto wr = game.wobjects.All();
-    for (WObject* i; (i = wr.Next());) {
+    for (WObject* i = nullptr; (i = wr.Next());) {
       if (i->type == ww.type && i->owner_idx == index) {
         if (Pressed(kLeft)) i->cur_frame -= (game.cycles & 1) + 1;
 

@@ -23,8 +23,8 @@ struct DualGameFixture {
     PrecomputeTables();
 
     common = std::make_shared<Common>();
-    FsNode tc_root(FsNode("data") / "TC" / "openliero");
-    common->load(std::move(tc_root));
+    FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+    common->load(kTcRoot);
 
     settings = std::make_shared<Settings>();
     // Use default settings but ensure deterministic setup
@@ -40,9 +40,9 @@ struct DualGameFixture {
     game_b = std::make_unique<Game>(common, settings, sound_player_b);
 
     // Seed both with the same value
-    uint32_t seed = 42;
-    game_a->rand.Seed(seed);
-    game_b->rand.Seed(seed);
+    uint32_t const kSeed = 42;
+    game_a->rand.Seed(kSeed);
+    game_b->rand.Seed(kSeed);
 
     // Create identical worms for both games
     for (int idx = 0; idx < 2; ++idx) {
@@ -88,11 +88,11 @@ struct DualGameFixture {
   }
 
   // Apply identical random inputs to both games using a separate PRNG
-  void ApplyRandomInputs(Rand& input_rng) {
+  void ApplyRandomInputs(Rand& input_rng) const {
     for (int idx = 0; idx < 2; ++idx) {
-      uint32_t input = input_rng() & 0x7f;  // 7 control bits
-      game_a->worms[idx]->control_states.Unpack(input);
-      game_b->worms[idx]->control_states.Unpack(input);
+      uint32_t const kInput = input_rng() & 0x7f;  // 7 control bits
+      game_a->worms[idx]->control_states.Unpack(kInput);
+      game_b->worms[idx]->control_states.Unpack(kInput);
     }
   }
 };
@@ -109,18 +109,19 @@ TEST_CASE("Dual simulation produces identical state", "[determinism]") {
     f.game_a->ProcessFrame();
     f.game_b->ProcessFrame();
 
-    uint32_t hash_a = HashGameState(*f.game_a);
-    uint32_t hash_b = HashGameState(*f.game_b);
+    uint32_t const kHashA = HashGameState(*f.game_a);
+    uint32_t const kHashB = HashGameState(*f.game_b);
 
-    INFO("Desync at frame " << frame << ": hashA=0x" << std::hex << hash_a << " hashB=0x"
-                            << hash_b);
-    REQUIRE(hash_a == hash_b);
+    INFO("Desync at frame " << frame << ": hashA=0x" << std::hex << kHashA << " hashB=0x"
+                            << kHashB);
+    REQUIRE(kHashA == kHashB);
   }
 }
 
 TEST_CASE("Simulation is reproducible across runs", "[determinism]") {
   // Run the same simulation twice from scratch and verify identical results
-  uint32_t hash1, hash2;
+  uint32_t hash1 = 0;
+  uint32_t hash2 = 0;
 
   for (int run = 0; run < 2; ++run) {
     DualGameFixture f;
@@ -133,11 +134,11 @@ TEST_CASE("Simulation is reproducible across runs", "[determinism]") {
       f.game_a->ProcessFrame();
     }
 
-    uint32_t h = HashGameState(*f.game_a);
+    uint32_t const kH = HashGameState(*f.game_a);
     if (run == 0)
-      hash1 = h;
+      hash1 = kH;
     else
-      hash2 = h;
+      hash2 = kH;
   }
 
   REQUIRE(hash1 == hash2);
@@ -146,8 +147,8 @@ TEST_CASE("Simulation is reproducible across runs", "[determinism]") {
 TEST_CASE("Same inputs produce same state regardless of construction order", "[determinism]") {
   // Construct games in different order but with same seed — should be identical
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
 
   PrecomputeTables();
 
@@ -206,10 +207,10 @@ TEST_CASE("Same inputs produce same state regardless of construction order", "[d
 
   for (int frame = 0; frame < 300; ++frame) {
     for (int idx = 0; idx < 2; ++idx) {
-      uint32_t input1 = input_rng1() & 0x7f;
-      uint32_t input2 = input_rng2() & 0x7f;
-      game1.worms[idx]->control_states.Unpack(input1);
-      game2.worms[idx]->control_states.Unpack(input2);
+      uint32_t const kInput1 = input_rng1() & 0x7f;
+      uint32_t const kInput2 = input_rng2() & 0x7f;
+      game1.worms[idx]->control_states.Unpack(kInput1);
+      game2.worms[idx]->control_states.Unpack(kInput2);
     }
     game1.ProcessFrame();
     game2.ProcessFrame();
@@ -229,8 +230,8 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
   PrecomputeTables();
 
   auto common = std::make_shared<Common>();
-  FsNode tc_root(FsNode("data") / "TC" / "openliero");
-  common->load(std::move(tc_root));
+  FsNode const kTcRoot(FsNode("data") / "TC" / "openliero");
+  common->load(kTcRoot);
 
   auto settings = std::make_shared<Settings>();
   settings->lives = 50;        // Many lives = many death/respawn cycles
@@ -240,17 +241,17 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
   settings->blood = 100;
 
   // Use multiple seeds to cover different level layouts
-  uint32_t seeds[] = {42, 1337, 99999, 0xDEAD, 0xBEEF};
+  uint32_t const kSeeds[] = {42, 1337, 99999, 0xDEAD, 0xBEEF};
 
-  for (uint32_t seed : seeds) {
+  for (uint32_t const kSeed : kSeeds) {
     auto sp_a = std::make_shared<NullSoundPlayer>();
     auto sp_b = std::make_shared<NullSoundPlayer>();
 
     Game game_a(common, settings, sp_a);
     Game game_b(common, settings, sp_b);
 
-    game_a.rand.Seed(seed);
-    game_b.rand.Seed(seed);
+    game_a.rand.Seed(kSeed);
+    game_b.rand.Seed(kSeed);
 
     for (int idx = 0; idx < 2; ++idx) {
       auto w_a = std::make_shared<Worm>();
@@ -286,7 +287,7 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
     game_a.ResetWorms();
     game_b.ResetWorms();
 
-    Rand input_rng(seed * 2654435761u + 1);
+    Rand input_rng(kSeed * 2654435761U + 1);
 
     constexpr int kNumFrames = 5000;
     int death_count = 0;
@@ -313,14 +314,14 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
       }
 
       // Check state every frame
-      uint32_t hash_a = HashGameState(game_a);
-      uint32_t hash_b = HashGameState(game_b);
+      uint32_t const kHashA = HashGameState(game_a);
+      uint32_t const kHashB = HashGameState(game_b);
 
-      if (hash_a != hash_b) {
+      if (kHashA != kHashB) {
         // Identify which component diverged
-        uint32_t rng_a = game_a.rand.last;
-        uint32_t rng_b = game_b.rand.last;
-        bool rng_match = (rng_a == rng_b);
+        uint32_t const kRngA = game_a.rand.last;
+        uint32_t const kRngB = game_b.rand.last;
+        bool const kRngMatch = (kRngA == kRngB);
 
         bool worms_match = true;
         for (size_t i = 0; i < game_a.worms.size(); ++i) {
@@ -344,19 +345,21 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         }
 
         // Check object counts
-        int nobjects_a = 0, nobjects_b = 0;
+        int nobjects_a = 0;
+        int nobjects_b = 0;
         {
           auto r = game_a.nobjects.All();
-          NObject* n;
+          NObject const* n = nullptr;
           while ((n = r.Next())) ++nobjects_a;
         }
         {
           auto r = game_b.nobjects.All();
-          NObject* n;
+          NObject const* n = nullptr;
           while ((n = r.Next())) ++nobjects_b;
         }
 
-        int bobjects_a = 0, bobjects_b = 0;
+        int bobjects_a = 0;
+        int bobjects_b = 0;
         {
           auto br = game_a.bobjects.Begin();
           for (; br != game_a.bobjects.End(); ++br) ++bobjects_a;
@@ -388,7 +391,8 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         {
           auto r_a = game_a.nobjects.All();
           auto r_b = game_b.nobjects.All();
-          NObject *n_a, *n_b;
+          NObject const* n_a = nullptr;
+          NObject const* n_b = nullptr;
           int idx = 0;
           while ((n_a = r_a.Next()) && (n_b = r_b.Next())) {
             if (n_a->pos.x != n_b->pos.x || n_a->pos.y != n_b->pos.y || n_a->vel.x != n_b->vel.x ||
@@ -406,11 +410,13 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
 
         // Deep compare WObjects
         bool wobjects_match = true;
-        int wobjects_a = 0, wobjects_b = 0;
+        int wobjects_a = 0;
+        int wobjects_b = 0;
         {
           auto r_a = game_a.wobjects.All();
           auto r_b = game_b.wobjects.All();
-          WObject *w_a, *w_b;
+          WObject const* w_a = nullptr;
+          WObject const* w_b = nullptr;
           int idx = 0;
           while ((w_a = r_a.Next())) {
             ++wobjects_a;
@@ -438,11 +444,13 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
 
         // Deep compare SObjects
         bool sobjects_match = true;
-        int sobjects_a = 0, sobjects_b = 0;
+        int sobjects_a = 0;
+        int sobjects_b = 0;
         {
           auto r_a = game_a.sobjects.All();
           auto r_b = game_b.sobjects.All();
-          SObject *s_a, *s_b;
+          SObject const* s_a = nullptr;
+          SObject const* s_b = nullptr;
           int idx = 0;
           while ((s_a = r_a.Next())) {
             ++sobjects_a;
@@ -466,11 +474,13 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
 
         // Deep compare Bonuses
         bool bonuses_match = true;
-        int bonuses_a = 0, bonuses_b = 0;
+        int bonuses_a = 0;
+        int bonuses_b = 0;
         {
           auto r_a = game_a.bonuses.All();
           auto r_b = game_b.bonuses.All();
-          Bonus *b_a, *b_b;
+          Bonus const* b_a = nullptr;
+          Bonus const* b_b = nullptr;
           int idx = 0;
           while ((b_a = r_a.Next())) {
             ++bonuses_a;
@@ -510,8 +520,8 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
           }
         }
 
-        INFO("Desync at frame " << frame << " (seed=" << seed << ", deaths=" << death_count << ")"
-                                << "\n  RNG match=" << rng_match << " Worms match=" << worms_match
+        INFO("Desync at frame " << frame << " (seed=" << kSeed << ", deaths=" << death_count << ")"
+                                << "\n  RNG match=" << kRngMatch << " Worms match=" << worms_match
                                 << " Level match=" << level_match << "\n  NObjects: A="
                                 << nobjects_a << " B=" << nobjects_b << " match=" << nobjects_match
                                 << "\n  BObjects: A=" << bobjects_a << " B=" << bobjects_b
@@ -521,15 +531,15 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
                                 << " match=" << sobjects_match << "\n  Bonuses: A=" << bonuses_a
                                 << " B=" << bonuses_b << " match=" << bonuses_match
                                 << "\n  Weapons match=" << weapons_match << "\n  hashA=0x"
-                                << std::hex << hash_a << " hashB=0x" << hash_b);
-        REQUIRE(hash_a == hash_b);
+                                << std::hex << kHashA << " hashB=0x" << kHashB);
+        REQUIRE(kHashA == kHashB);
       }
 
       // Stop if game is over
       if (game_a.IsGameOver()) break;
     }
 
-    INFO("Seed " << seed << " completed: " << death_count << " deaths observed");
+    INFO("Seed " << kSeed << " completed: " << death_count << " deaths observed");
     REQUIRE(death_count > 0);  // Sanity check: we actually tested deaths
   }
 }
