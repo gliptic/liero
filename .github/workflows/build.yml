@@ -316,7 +316,7 @@ jobs:
           upload-artifact: false
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest@v4
         with:
           subject-path: |
             artifacts/linux-build/*
@@ -419,7 +419,7 @@ jobs:
           upload-artifact: false
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest@v4
         with:
           subject-path: |
             artifacts/linux-build/*
