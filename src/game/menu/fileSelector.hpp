@@ -214,11 +214,11 @@ struct FileSelector {
   }
 
   FileNode* CurSel() const {
-    if (!Menu().IsSelectionValid()) {
+    if (!CurrentMenu().IsSelectionValid()) {
       return nullptr;
     }
 
-    auto* c = current_node->children[Menu().Selection()].get();
+    auto* c = current_node->children[CurrentMenu().Selection()].get();
 
     return c;
   }
@@ -253,7 +253,7 @@ struct FileSelector {
         gfx.TestGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_UP)) {
       g_sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
 
-      Menu().Movement(-1);
+      CurrentMenu().Movement(-1);
     }
 
     if (gfx.TestSdlKeyOnce(SDL_SCANCODE_DOWN) ||
@@ -261,19 +261,19 @@ struct FileSelector {
         gfx.TestGamepadDirOnce(SDL_GAMEPAD_BUTTON_DPAD_DOWN)) {
       g_sound_player->Play(common.sound_hook[SoundMenuMoveUp]);
 
-      Menu().Movement(1);
+      CurrentMenu().Movement(1);
     }
 
     if (gfx.TestSdlKeyOnce(SDL_SCANCODE_PAGEUP)) {
       g_sound_player->Play(common.sound_hook[SoundMenuMoveDown]);
 
-      Menu().MovementPage(-1);
+      CurrentMenu().MovementPage(-1);
     }
 
     if (gfx.TestSdlKeyOnce(SDL_SCANCODE_PAGEDOWN)) {
       g_sound_player->Play(common.sound_hook[SoundMenuMoveUp]);
 
-      Menu().MovementPage(1);
+      CurrentMenu().MovementPage(1);
     }
 
     if (gfx.TestSdlKeyOnce(SDL_SCANCODE_ESCAPE) ||
@@ -294,7 +294,7 @@ struct FileSelector {
       Enter();
     }
 
-    Menu().OnKeys(gfx.key_buf, gfx.key_buf_ptr, /*contains=*/true);
+    CurrentMenu().OnKeys(gfx.key_buf, gfx.key_buf_ptr, /*contains=*/true);
 
     return true;
   }
