@@ -2,10 +2,12 @@
 
 #include <cstdio>
 #include "controller/controller.hpp"
+#include "controller/rollbackController.hpp"
 #include "game.hpp"
 #include "gfx.hpp"
 #include "inputState.hpp"
 #include "net/session.hpp"
+#include "rematchState.hpp"
 #include "statsState.hpp"
 #include "stats_recorder.hpp"
 
@@ -67,6 +69,19 @@ bool GamePlayState::Update() {
             std::make_unique<StatsState>(*stats, *game, kIsMultiplayer));
         return false;
       }
+    }
+
+    // Multiplayer match deliberately ended (END MATCH) but produced no
+    // stats — END MATCH during weapon selection. Keep the session alive
+    // and go straight to the rematch screen so the host can fix the
+    // level pick; there is nothing to show on a stats screen. PeerLeft
+    // and local Disconnect never reach StateGameEnded, so they fall
+    // through to the session teardown below.
+    auto* rollback = dynamic_cast<RollbackController*>(gfx->controller.get());
+    if (gfx->net_session && rollback && rollback->State() == kStateGameEnded && game) {
+      gfx->net_session->EnterRematch();
+      gfx->state_stack.ScheduleReplaceTop(std::make_unique<RematchState>(*game));
+      return false;
     }
 
     // Clear framebuffer so menu doesn't capture stale overlay content

@@ -310,6 +310,7 @@ void RollbackController::Focus() {
       game.StartGame();
       game.ResetWorms();
       state_ = kStateGame;
+      gamePhaseEntered_ = true;
 
       SeedRollbackAndShadow();
     } else {
@@ -392,7 +393,14 @@ bool RollbackController::Process() {
 
   if (state_ == kStateWeaponSelection) {
     AdvanceWeaponSelection();
-  } else if (state_ == kStateGame || state_ == kStateGameEnded) {
+  } else if (state_ == kStateGame || (state_ == kStateGameEnded && gamePhaseEntered_)) {
+    // The gamePhaseEntered_ gate covers END MATCH picked during weapon
+    // selection: that jumps straight to StateGameEnded without ever
+    // running finishWeaponSelect (no startGame, no resetForGamePhase,
+    // no generation bump). Advancing the game sim from there would
+    // exchange same-generation checksums computed from a never-started
+    // Game — the peers end ticks apart, so the values diverge and trip
+    // the desync detector.
     AdvanceSimulation();
   }
 
@@ -574,6 +582,7 @@ void RollbackController::FinishWeaponSelect() {
   game.StartGame();
   game.ResetWorms();
   state_ = kStateGame;
+  gamePhaseEntered_ = true;
 
   // The WS phase can leave peers at different simFrame counters
   // (asymmetric stalls + WS-rollback resims). Carrying that skew into
@@ -1265,8 +1274,14 @@ void RollbackController::EnterGoingToMenu(int fade) {
 
 void RollbackController::EndMatch() {
   if (state_ == kStateGame || state_ == kStateWeaponSelection) {
+    bool const kFromWeaponSelection = state_ == kStateWeaponSelection;
     state_ = kStateGameEnded;
-    EnterGoingToMenu(33);
+    // Ending from weapon selection skips the fade: there is no started
+    // game to keep drawing during it (process() won't advance the sim
+    // either — see the gamePhaseEntered_ gate). Stats finalize with
+    // gameTime 0, so GamePlayState skips the stats screen and routes
+    // straight to the rematch screen via the StateGameEnded check.
+    EnterGoingToMenu(kFromWeaponSelection ? 0 : 33);
     StopReplayRecording();
   }
 }

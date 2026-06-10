@@ -185,6 +185,11 @@ struct RollbackController : CommonController {
   int remoteIdx_;
 
   ::GameState state_{kStateInitial};
+  // True once the game phase actually started (startGame ran). Gates
+  // StateGameEnded ticks in process(): END MATCH during weapon
+  // selection enters StateGameEnded without a started Game, and the
+  // game-phase sim must not run on it.
+  bool gamePhaseEntered_{false};
   int fadeValue_{0};
   bool goingToMenu_{false};
 

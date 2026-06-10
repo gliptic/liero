@@ -353,3 +353,125 @@ TEST_CASE("Weapon select transitions cleanly under jitter", "[rollback][weapsel]
   INFO("a rollbacks=" << a->RollbackCount() << " b rollbacks=" << b->RollbackCount());
   REQUIRE(kAnyRollback);
 }
+
+// Regression: END MATCH picked from the pause menu during weapon
+// selection. endMatch() flips state to StateGameEnded, and process()
+// used to route StateGameEnded into advanceSimulation() — running the
+// game-phase sim on a Game that never went through finishWeaponSelect
+// (no startGame, no resetForGamePhase, no generation bump). The peers
+// reach that state ticks apart (packet latency), so they exchanged
+// same-generation checksums computed from divergent never-started
+// games and tripped the desync detector.
+TEST_CASE("End match during weapon selection exits without running game sim",
+          "[rollback][weapsel]") {
+  constexpr uint32_t kWorldSeed = 0xC0FFEE;
+  auto [common, settings] = MakeEnv();
+  auto a = MakePeer(common, settings, 0, kWorldSeed);
+  auto b = MakePeer(common, settings, 1, kWorldSeed);
+
+  struct Pkt {
+    uint8_t gen;
+    uint32_t base_frame;
+    uint8_t count;
+    std::array<uint8_t, rollback::kMaxRollback + 1> inputs;
+    uint32_t local_frame;
+  };
+  std::vector<Pkt> a_to_b;
+  std::vector<Pkt> b_to_a;
+  auto enqueue = [](std::vector<Pkt>& q, uint8_t g, uint32_t bf, uint8_t c, uint8_t const* in,
+                    uint32_t lf) {
+    Pkt p{};
+    p.gen = g;
+    p.base_frame = bf;
+    p.count = c;
+    p.local_frame = lf;
+    for (uint8_t i = 0; i < c; ++i) {
+      p.inputs[i] = in[i];
+    }
+    q.push_back(p);
+  };
+  a->SetInputCallbacks([&](uint8_t g, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    enqueue(a_to_b, g, bf, c, in, lf);
+  });
+  b->SetInputCallbacks([&](uint8_t g, uint32_t bf, uint8_t c, uint8_t const* in, uint32_t lf) {
+    enqueue(b_to_a, g, bf, c, in, lf);
+  });
+
+  // Record every checksum each peer emits. NetSession compares these
+  // per (generation, frame) — any same-key mismatch is a desync.
+  struct Sum {
+    uint8_t gen;
+    uint32_t frame;
+    uint32_t checksum;
+  };
+  std::vector<Sum> a_sums;
+  std::vector<Sum> b_sums;
+  a->SetChecksumCallback([&](uint8_t g, uint32_t f, uint32_t c) {
+    a_sums.push_back({.gen = g, .frame = f, .checksum = c});
+  });
+  b->SetChecksumCallback([&](uint8_t g, uint32_t f, uint32_t c) {
+    b_sums.push_back({.gen = g, .frame = f, .checksum = c});
+  });
+
+  a->Focus();
+  b->Focus();
+  a->InjectRemoteInput(0, 0);
+  b->InjectRemoteInput(0, 0);
+
+  // A ends the match mid-weapon-select; the (reliable) EndMatch packet
+  // reaches B a few ticks later, so B keeps advancing its WS phase in
+  // between — exactly the skew that produced divergent checksums.
+  constexpr int kEndTickA = 10;
+  constexpr int kEndTickB = kEndTickA + 3;
+
+  bool a_done = false;
+  bool b_done = false;
+  for (int i = 0; i < 100 && !(a_done && b_done); ++i) {
+    if (i == kEndTickA) {
+      a->EndMatch();
+    }
+    if (i == kEndTickB) {
+      b->EndMatch();
+    }
+
+    uint8_t const kIn = (i < 8 && i % 2 == 0) ? kBitDown : 0;
+    if (!a_done) {
+      a->SetLocalControlState(kIn);
+      a_done = !a->Process();
+    }
+    if (!b_done) {
+      b->SetLocalControlState(kIn);
+      b_done = !b->Process();
+    }
+
+    for (auto const& p : a_to_b) {
+      b->InjectRemoteBatch(p.gen, p.base_frame, p.count, p.inputs.data(), p.local_frame);
+    }
+    for (auto const& p : b_to_a) {
+      a->InjectRemoteBatch(p.gen, p.base_frame, p.count, p.inputs.data(), p.local_frame);
+    }
+    a_to_b.clear();
+    b_to_a.clear();
+  }
+
+  REQUIRE(a_done);
+  REQUIRE(b_done);
+  REQUIRE(a->State() == kStateGameEnded);
+  REQUIRE(b->State() == kStateGameEnded);
+
+  // The game-phase simulation must never have run: the Game was never
+  // started, and Game::processFrame is the only place cycles advances.
+  REQUIRE(a->game.cycles == 0);
+  REQUIRE(b->game.cycles == 0);
+
+  // No same-generation frame may carry different checksums on the two
+  // peers — that is exactly NetSession::onChecksum's desync condition.
+  for (auto const& sa : a_sums) {
+    for (auto const& sb : b_sums) {
+      if (sa.gen == sb.gen && sa.frame == sb.frame) {
+        INFO("gen=" << int(sa.gen) << " frame=" << sa.frame);
+        REQUIRE(sa.checksum == sb.checksum);
+      }
+    }
+  }
+}
