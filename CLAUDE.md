@@ -20,7 +20,12 @@ cmake --install build/linux-x64 --config Release
 
 # run
 ./install/linux-x64/bin/openliero
+
+# headless smoke test (no display/audio needed); exit 124 = ran fine until timeout
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy timeout 8 ./install/linux-x64/bin/openliero
 ```
+
+ctest is not a smoke test — SDL/audio/menu init paths only break when the game actually launches, so smoke-launch the installed binary before declaring UI- or startup-adjacent changes done.
 
 Optional build targets are gated by CMake options (off by default):
 
@@ -30,19 +35,21 @@ Optional build targets are gated by CMake options (off by default):
 
 ### Tests
 
-CI uses the `linux-x64-ci` preset with tests on:
+Enable tests on the normal preset:
 
 ```bash
-cmake --preset linux-x64-ci -DOPENLIERO_BUILD_TESTS=ON
-cmake --build build/linux-x64-ci --config Release
-ctest --test-dir build/linux-x64-ci --build-config Release --output-on-failure
+cmake --preset linux-x64 -DOPENLIERO_BUILD_TESTS=ON
+cmake --build build/linux-x64 --config Release
+ctest --test-dir build/linux-x64 --build-config Release --output-on-failure
 
-# Single test binary:
-./build/linux-x64-ci/test_rollback_correctness
+# Single test binary (Ninja Multi-Config puts binaries in a <Config> subdir):
+./build/linux-x64/Release/test_rollback_correctness
 
 # Single Catch2 test case within a binary:
-./build/linux-x64-ci/test_rollback_correctness "name of test case"
+./build/linux-x64/Release/test_rollback_correctness "name of test case"
 ```
+
+CI runs the same thing via the `linux-x64-ci` preset, which differs only in using `sccache` as compiler launcher and is condition-gated on `CI=true` in the environment — don't use it locally.
 
 Each `src/tests/test_*.cpp` is wired as its own `add_executable` in `CMakeLists.txt`; if you add a test file you must add a matching block there. Several tests use `WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"` because they load assets from `data/`.
 
@@ -51,12 +58,12 @@ Each `src/tests/test_*.cpp` is wired as its own `add_executable` in `CMakeLists.
 When touching anything that affects simulation determinism, run the in-tree determinism and rollback suites (each is its own Catch2 binary):
 
 ```bash
-./build/linux-x64-ci/test_determinism
-./build/linux-x64-ci/test_rollback_correctness
-./build/linux-x64-ci/test_rollback_desync
+./build/linux-x64/Release/test_determinism
+./build/linux-x64/Release/test_rollback_correctness
+./build/linux-x64/Release/test_rollback_desync
 ```
 
-These cover lockstep determinism, rollback resimulation correctness, and desync detection. (A standalone `desync_fuzzer` binary existed before PR #78 but was retired in favor of the in-tree suite.)
+These cover lockstep determinism, rollback resimulation correctness, and desync detection.
 
 ### Relay server (Go)
 
@@ -115,6 +122,15 @@ Polymorphism over how the simulation is driven, all under `Controller` (`control
 - A custom `toml_archive` adapts cereal's archive interface to toml++.
 - `fast_snapshot.hpp` is the rollback-hot path; do not introduce allocation there.
 - The serialization layer is adapted from gvl (BSD-2-Clause) — see README.
+
+### Data & user paths (`src/game/filesystem.cpp`)
+
+`paths::Resolve()` decides where the game reads and writes at startup:
+
+- `--config-root <p>` on the command line, or a `portable.txt` next to the binary → fully portable: reads and writes go to that one directory.
+- Otherwise → reads see a merged view of the per-user dir (`SDL_GetPrefPath`, e.g. `~/.local/share/openliero/openliero/` on Linux) layered over the read-only stock data next to the binary; all writes go to the per-user dir only.
+
+`test_paths` covers this resolution; the Save As dialogs use `paths::ShadowsSystem()` to refuse names that would shadow shipped files.
 
 ### Game states
 
