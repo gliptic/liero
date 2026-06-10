@@ -22,17 +22,20 @@
 #include <utility>
 
 Game::Game(const std::shared_ptr<Common>& common, std::shared_ptr<Settings> settings_init,
-           const std::shared_ptr<SoundPlayer>& sound_player)
+           const std::shared_ptr<SoundPlayer>& sound_player, bool install_global_sound_player)
     : common(common),
       sound_player(sound_player),
       prev_sound_player(g_sound_player),
+      sound_player_installed(install_global_sound_player),
 
       settings(std::move(std::move(settings_init))),
       stats_recorder(new NormalStatsRecorder),
       level(*common)
 
 {
-  g_sound_player = sound_player.get();
+  if (install_global_sound_player) {
+    g_sound_player = sound_player.get();
+  }
 
   rand.Seed(static_cast<uint32_t>(std::time(nullptr)));
 }
@@ -40,6 +43,11 @@ Game::Game(const std::shared_ptr<Common>& common, std::shared_ptr<Settings> sett
 Game::~Game() {
   ClearViewports();
   ClearWorms();
+  // The player may be shared (gfx.soundPlayer); never leave it muted
+  // past this game's lifetime.
+  if (sound_player) {
+    sound_player->speculative = false;
+  }
   if (sound_player_installed && g_sound_player == sound_player.get()) {
     g_sound_player = prev_sound_player;
   }

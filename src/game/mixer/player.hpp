@@ -26,9 +26,13 @@ struct SoundPlayer {
   virtual bool IsPlaying(void* id) = 0;
   virtual void Stop(void* id) = 0;
 
-  // When true, play()/stop() are suppressed but isPlaying() passes
-  // through. Set during predicted/resim frames to avoid duplicate
-  // sound emission.
+  // When true, play() is suppressed but stop()/isPlaying() pass
+  // through. Set during rollback resim to avoid duplicate sound
+  // emission. stop() is deliberately not gated: it is idempotent, a
+  // spurious stop self-heals on the next fire (the isPlaying check
+  // restarts the loop), but a *suppressed* stop leaks a looping
+  // mixer channel forever — and the mixer only has CHANNEL_COUNT of
+  // them, shared with menu sounds.
   bool speculative = false;
 
  protected:
@@ -71,12 +75,7 @@ struct RecordSoundPlayer : SoundPlayer {
 
   bool IsPlaying(void* id) override { return SfxIsPlaying(mixer, id) != 0; }
 
-  void Stop(void* id) override {
-    if (speculative) {
-      return;
-    }
-    SfxMixerStop(mixer, id);
-  }
+  void Stop(void* id) override { SfxMixerStop(mixer, id); }
 
  protected:
   void PlayImpl(int sound, void* id, int loops) override;

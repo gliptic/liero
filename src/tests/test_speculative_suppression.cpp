@@ -1,11 +1,13 @@
 // Game::speculative side-effect suppression.
 //
-// Contract: while game.setSpeculative(true), SoundPlayer::play/stop and
-// StatsRecorder writes must not be observable. isPlaying may pass
-// through.
+// Contract: while game.setSpeculative(true), SoundPlayer::play and
+// StatsRecorder writes must not be observable. stop and isPlaying pass
+// through: stop is idempotent and self-healing, while a suppressed
+// stop would leak a looping mixer channel forever.
 //
 // An N-frame run that goes run→snapshot→speculative-run→restore→run
-// must produce the same observable counts as a single 2N-frame run.
+// must produce the same observable play/stats counts as a single
+// 2N-frame run.
 
 #include <catch2/catch_test_macros.hpp>
 #include <chrono>
@@ -33,12 +35,7 @@ struct CountingSoundPlayer : SoundPlayer {
     ++is_playing_calls;
     return false;
   }
-  void Stop(void* /*id*/) override {
-    if (speculative) {
-      return;
-    }
-    ++stops;
-  }
+  void Stop(void* /*id*/) override { ++stops; }
 
  protected:
   void PlayImpl(int /*sound*/, void* /*id*/, int /*loops*/) override { ++plays; }
@@ -167,14 +164,16 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
   sub.game->SetSpeculative(/*s=*/true);
 
   // Speculative run uses the *same* inputs the post-restore segment will
-  // use, so the underlying sim work is comparable. Counters must not move.
+  // use, so the underlying sim work is identical. Play/stats counters
+  // must not move; stop passes through, so the speculative segment emits
+  // exactly the stops the control's second phase emits.
   Rand spec_inputs = sub_inputs;
   for (int f = 0; f < kPhase; ++f) {
     sub.Step(spec_inputs);
   }
 
   REQUIRE(sub.sp->plays == kPlaysAtSnap);
-  REQUIRE(sub.sp->stops == kStopsAtSnap);
+  REQUIRE(sub.sp->stops == kControlStops);
   REQUIRE(sub.Stats().events == kEventsAtSnap);
 
   // isPlaying should have been called at least once and always passes
@@ -189,7 +188,9 @@ TEST_CASE("Speculative frames suppress sound and stats", "[rollback]") {
   }
 
   REQUIRE(sub.sp->plays == kControlPlays);
-  REQUIRE(sub.sp->stops == kControlStops);
+  // Second phase ran twice (once speculatively, once for real); its
+  // stop calls were emitted both times.
+  REQUIRE(sub.sp->stops == 2 * kControlStops - kStopsAtSnap);
   REQUIRE(sub.Stats().events == kControlEvents);
 
   // Sanity: isPlaying did pass through during speculation (not gated).

@@ -88,9 +88,6 @@ bool DefaultSoundPlayer::IsPlaying(void* id) {
 
 void DefaultSoundPlayer::Stop(void* id) {
 #if !DISABLE_SOUND
-  if (speculative) {
-    return;
-  }
   if (!initialized_) {
     return;
   }

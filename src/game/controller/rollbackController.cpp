@@ -612,8 +612,13 @@ void RollbackController::SetupShadowGame() {
   // Mirror the live game's construction: same Common/Settings, silent
   // sound player, identical worm+viewport configuration so the
   // snapshot we load below produces an identical processFrame path.
+  // install_global_sound_player=false: the shadow must not replace
+  // g_sound_player with its NullSoundPlayer — that would mute every
+  // menu/UI sound for the rest of the match (and leave a dangling
+  // global after a rematch cycle).
   shadowGame_ =
-      std::make_unique<Game>(game.common, game.settings, std::make_shared<NullSoundPlayer>());
+      std::make_unique<Game>(game.common, game.settings, std::make_shared<NullSoundPlayer>(),
+                             /*install_global_sound_player=*/false);
 
   ConfigureGameSlots(*shadowGame_, {game.worms[0]->settings, game.worms[1]->settings});
 
@@ -935,9 +940,9 @@ void RollbackController::AdvanceWeaponSelection() {
     predicted = true;
   }
 
-  game.SetSpeculative(predicted);
+  // First execution runs audible even when predicted — see the matching
+  // comment in advanceSimulation. Only resim re-executions are speculative.
   bool const kWsDone = WeaponSelectStep(kCurLocal, cur_remote);
-  game.SetSpeculative(/*s=*/false);
   ++simFrame_;
 
   if (!predicted) {
@@ -1148,9 +1153,14 @@ void RollbackController::AdvanceSimulation() {
   localPrevInput_ = kCurLocal;
   remotePrevInput_ = cur_remote;
 
-  game.SetSpeculative(predicted);
+  // First execution of this frame, predicted or not — run it audible.
+  // Under real latency remote input is almost never in by now, so
+  // gating sound on `predicted` would mute the whole match (a frame
+  // whose prediction holds is later promoted without re-execution, so
+  // its sounds would never be heard at all). Only resim re-executions
+  // are speculative; a misprediction can play a sound that "didn't
+  // happen", which is the standard rollback trade-off.
   game.ProcessFrame();
-  game.SetSpeculative(/*s=*/false);
   ++simFrame_;
 
   if (!predicted) {

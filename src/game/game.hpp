@@ -43,8 +43,11 @@ struct Holdazone {
 };
 
 struct Game {
+  // install_global_sound_player: whether this game takes over g_sound_player
+  // for UI code. Pass false for auxiliary games (e.g. the rollback shadow
+  // game) whose sound player must not be heard by menus.
   Game(const std::shared_ptr<Common>& common, std::shared_ptr<Settings> settings_init,
-       const std::shared_ptr<SoundPlayer>& sound_player);
+       const std::shared_ptr<SoundPlayer>& sound_player, bool install_global_sound_player = true);
   ~Game();
 
   void OnKey(uint32_t key, bool state);
@@ -90,8 +93,9 @@ struct Game {
   void SpawnZone();
 
   // While speculative is true, sim-driven side effects
-  // (SoundPlayer::play/stop, StatsRecorder writes) are suppressed.
-  // Set during predicted frames and during rollback resim.
+  // (SoundPlayer::play, StatsRecorder writes) are suppressed.
+  // Set during rollback resim, i.e. re-execution of frames whose side
+  // effects already fired on their first (forward) execution.
   void SetSpeculative(bool s) {
     speculative = s;
     if (sound_player) {
@@ -114,7 +118,7 @@ struct Game {
   std::shared_ptr<Common> common;
   std::shared_ptr<SoundPlayer> sound_player;
   SoundPlayer* prev_sound_player;
-  bool sound_player_installed{true};
+  bool sound_player_installed;
   std::shared_ptr<Settings> settings;
   std::shared_ptr<StatsRecorder> stats_recorder;
 
@@ -146,7 +150,7 @@ struct Game {
 
   bool quick_sim{false};
 
-  // True during predicted/resim frames. Mirrored onto soundPlayer /
+  // True during rollback resim frames. Mirrored onto soundPlayer /
   // statsRecorder via setSpeculative(). Read by Game-internal code
   // that short-circuits a side effect at its source.
   bool speculative = false;

@@ -9,16 +9,31 @@
 //      confirmedFrame catches up.
 
 #include <catch2/catch_test_macros.hpp>
+#include <climits>
 #include <cstdint>
 #include <memory>
 
 #include "controller/rollbackController.hpp"
 #include "game.hpp"
+#include "gfx.hpp"
 #include "math.hpp"
 #include "mixer/player.hpp"
 #include "rollback/buffer.hpp"
+#include "weapon.hpp"
 
 namespace {
+
+// IsPlaying always answers false so the sim's sound-dependent branches
+// (loop-sound retrigger checks) behave identically across controllers,
+// keeping play counts comparable between runs.
+struct CountingSoundPlayer : SoundPlayer {
+  int plays = 0;
+  bool IsPlaying(void* /*id*/) override { return false; }
+  void Stop(void* /*id*/) override {}
+
+ protected:
+  void PlayImpl(int /*sound*/, void* /*id*/, int /*loops*/) override { ++plays; }
+};
 
 // Zero-jitter loopback: each peer's batched send fans straight into the
 // other peer's injectRemoteInput. The dedup inside injectRemoteInput
@@ -183,4 +198,129 @@ TEST_CASE("Starvation: predict up to kMaxRollback, then stall, then recover",
 
   REQUIRE(a.ConfirmedFrame() >= static_cast<int32_t>(kSimFrameAtStall) - 1);
   REQUIRE(a.CurrentFrame() > kSimFrameAtStall);
+}
+
+TEST_CASE("Predicted frames emit sound and promote does not re-emit",
+          "[rollback][prediction][sound]") {
+  // Regression for the netplay silence bug: frames first executed as
+  // *predicted* used to run speculatively, so their sounds were never
+  // emitted — and a correct prediction is later promoted without
+  // re-execution, so they never got a second chance. Under real
+  // latency that muted essentially the whole match.
+  //
+  // The remote worm does all the playing: its input is a pure function
+  // of the frame index (so subject and control see identical input
+  // streams), toggling Fire for spawn edges, then holding Fire from
+  // well before the starve window through the end so predictions are
+  // always correct and every frame is executed exactly once. The
+  // subject is starved (frames run predicted, inputs delivered late);
+  // the control gets every input on time. Their final play counts
+  // must match exactly: predicted execution emits, promotion does not
+  // duplicate.
+  auto [common, settings] = MakeEnv();
+
+  constexpr uint8_t kFireBit = (1 << Worm::kFire);
+  // Long enough for the remote worm to spawn and settle into firing:
+  // the respawn camera scroll alone takes up to ~160 frames.
+  constexpr uint32_t kWarm = 500;
+  constexpr uint32_t kHoldFrom = kWarm - 60;
+  constexpr uint32_t kFinal = kWarm + rollback::kMaxRollback + 30;
+
+  auto remote_in = [](uint32_t f) -> uint8_t {
+    if (f >= kHoldFrom) {
+      return kFireBit;  // constant across the prediction window
+    }
+    return (f % 24) < 16 ? kFireBit : 0;  // edges so the worm spawns
+  };
+
+  // Give every worm slot the fastest-firing weapon with a launch sound
+  // so shots land inside the kMaxRollback-frame prediction window.
+  int best_pos = -1;
+  int best_delay = INT_MAX;
+  for (std::size_t p = 0; p < common->weap_order.size(); ++p) {
+    Weapon const& w = common->weapons[common->weap_order[p]];
+    if (w.launch_sound >= 0 && w.ammo >= 10 && w.delay < best_delay) {
+      best_delay = w.delay;
+      best_pos = static_cast<int>(p);
+    }
+  }
+  REQUIRE(best_pos >= 0);
+  REQUIRE(best_delay < rollback::kMaxRollback);
+  for (int const kWs : {0, 1, Settings::kNetworkPlayerIdx}) {
+    for (uint32_t& w : settings->worm_settings[kWs]->weapons) {
+      w = static_cast<uint32_t>(best_pos) + 1;
+    }
+  }
+
+  auto setup = [](RollbackController& c, std::shared_ptr<CountingSoundPlayer> const& sp) {
+    c.SetSkipWeaponSelection(/*skip=*/true);
+    c.game.rand.Seed(0x5EED);
+    c.game.sound_player = sp;
+    c.Focus();
+  };
+
+  auto sp_sub = std::make_shared<CountingSoundPlayer>();
+  RollbackController sub(common, settings, 0);
+  setup(sub, sp_sub);
+
+  // Warm-up: remote input present, frames run confirmed. Inject
+  // per-tick — the input ring is small, injecting the whole range up
+  // front would wrap it.
+  for (uint32_t i = 0; i < kWarm; ++i) {
+    sub.InjectRemoteInput(i, remote_in(i));
+    sub.SetLocalControlState(0);
+    sub.Process();
+  }
+  REQUIRE(sub.CurrentFrame() == kWarm);
+  int const kPlaysWarm = sp_sub->plays;
+  REQUIRE(kPlaysWarm > 1);
+
+  // Starve: every executed frame is predicted. They must still sound.
+  for (int i = 0; i < rollback::kMaxRollback + 5; ++i) {
+    sub.SetLocalControlState(0);
+    sub.Process();
+  }
+  REQUIRE(sub.CurrentFrame() == kWarm + rollback::kMaxRollback);
+  REQUIRE(sp_sub->plays > kPlaysWarm);
+
+  // Late delivery of the (matching) remote inputs lifts the stall via
+  // the promote path; keep feeding inputs and run to kFinal.
+  for (uint32_t f = kWarm; f < kFinal + 8; ++f) {
+    sub.InjectRemoteInput(f, remote_in(f));
+  }
+  for (int guard = 0; sub.CurrentFrame() < kFinal && guard < 1000; ++guard) {
+    sub.SetLocalControlState(0);
+    sub.Process();
+  }
+  REQUIRE(sub.CurrentFrame() == kFinal);
+
+  // Control: identical seed and inputs, never starved.
+  auto sp_ctl = std::make_shared<CountingSoundPlayer>();
+  RollbackController ctl(common, settings, 0);
+  setup(ctl, sp_ctl);
+  for (uint32_t i = 0; i < kFinal; ++i) {
+    ctl.InjectRemoteInput(i, remote_in(i));
+    ctl.SetLocalControlState(0);
+    ctl.Process();
+  }
+  REQUIRE(ctl.CurrentFrame() == kFinal);
+
+  REQUIRE(sp_sub->plays == sp_ctl->plays);
+}
+
+TEST_CASE("Shadow game does not hijack g_soundPlayer", "[rollback][sound]") {
+  // Regression: the shadow game's ctor used to install its
+  // NullSoundPlayer as g_soundPlayer, muting every menu/UI sound for
+  // the rest of the match — and leaving a dangling global after a
+  // rematch cycle.
+  auto [common, settings] = MakeEnv();
+
+  RollbackController a(common, settings, 0);
+  a.SetSkipWeaponSelection(/*skip=*/true);
+  a.game.rand.Seed(0x1234);
+  a.Focus();
+
+  REQUIRE(a.ShadowGameForTest() != nullptr);
+  // The live game's (gfx-shared) player must still be the global one.
+  REQUIRE(g_sound_player == gfx.sound_player.get());
 }
