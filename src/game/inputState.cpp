@@ -91,8 +91,7 @@ void InputStringState::Draw() {
   int const kAdjust = centered_ ? kWidth / 2 : 0;
   int const kClrX = x_ - 10 - kAdjust;
 
-  BlitImageNoKeyColour(gfx->play_renderer.bmp, &gfx->frozen_screen.GetPixel(kClrX, y_), kClrX, y_,
-                       kClrX + 10 + kWidth, 8, gfx->frozen_screen.pitch);
+  BlitBitmap(gfx->play_renderer.bmp, gfx->frozen_screen, kClrX, y_, kClrX + 10 + kWidth, 8);
 
   DrawRoundedBox(gfx->play_renderer.bmp, x_ - 2 - kAdjust, y_, 0, 7, kWidth);
   font.DrawString(gfx->play_renderer.bmp, kStr, x_ - kAdjust, y_ + 1, 50);
@@ -203,6 +202,7 @@ bool InfoBoxState::Update() {
 void InfoBoxState::Draw() {
   if (clearScreen_) {
     gfx->play_renderer.pal = gfx->common->exepal;
+    gfx->play_renderer.UpdatePal32();
     Fill(gfx->play_renderer.bmp, 0);
   }
 

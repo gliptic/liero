@@ -38,6 +38,10 @@ void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
   std::unique_ptr<Game> game(replay_reader.BeginPlayback(
       common, std::shared_ptr<SoundPlayer>(new RecordSoundPlayer(*common, mixer))));
 
+  // BeginPlayback doesn't wire the game into the reader; ReplayController
+  // normally does that (replayController.cpp).
+  replay_reader.game = game.get();
+
   // FIXME: the viewports are changed based on the replay for some
   // reason, so we need to restore them here. Probably makes more sense
   // to not save the viewports at all. But that probably breaks save
@@ -46,8 +50,10 @@ void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
 
   // for backwards compatibility reasons, this is not stored within the
   // replay. Yet.
-  game->worms[0]->stats_x = 0;
-  game->worms[1]->stats_x = 218;
+  if (game->worms.size() >= 2) {
+    game->worms[0]->stats_x = 0;
+    game->worms[1]->stats_x = 218;
+  }
 
   // spectator viewport is always full size
   // +68 on x to align the viewport in the middle
@@ -94,7 +100,6 @@ void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
     renderer.Clear();
     game->Draw(renderer, kStateGame, spectator, /*is_replay=*/true);
     ++f;
-    renderer.fade_value = 33;
 
     sample_debt.num += 44100;                                    // sampleDebt += 44100 / 70
     int const kMixerFrames = sample_debt.num / sample_debt.den;  // floor(sampleDebt)
@@ -120,21 +125,21 @@ void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
       if (av_cmp_q(frame_debt, framerate) > 0) {
         frame_debt = av_sub_q(frame_debt, framerate);
 
-        Color real_pal[256];
-        renderer.pal.Activate(real_pal);
-        PalIdx* src = renderer.bmp.pixels;
         std::size_t const kDestPitch = vidrec.tmp_picture->linesize[0];
         uint8_t* dest = vidrec.tmp_picture->data[0] + offset_y * kDestPitch + offset_x * 4;
         std::size_t const kSrcPitch = renderer.bmp.pitch;
 
-        uint32_t pal32[256];
-        PreparePaletteBgra(real_pal, pal32);
-
-        ScaleDraw(src, renderer.render_res_x, renderer.render_res_y, kSrcPitch, dest, kDestPitch,
-                  kMag, pal32);
+        // The back buffer is already ARGB (BGRA byte order, as the encoder
+        // expects); composition applies the renderer fade.
+        ScaleDraw(renderer.bmp.pixels, renderer.render_res_x, renderer.render_res_y, kSrcPitch,
+                  dest, kDestPitch, kMag, renderer.fade_value);
 
         VidrecWriteVideoFrame(&vidrec, vidrec.tmp_picture);
       }
+
+      // Composition above uses the fade in effect during the draw (0 on
+      // the very first frame, faded-out black like the old palette path).
+      renderer.fade_value = 33;
 
       // Move remaining samples to the beginning of the buffer
       std::size_t const kOffset = audio_samples - sound_buffer.data();

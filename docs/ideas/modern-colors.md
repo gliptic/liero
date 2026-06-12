@@ -5,11 +5,12 @@ constraints, in three independently-shippable stages, with a per-renderer
 "color mode" toggle that can hot-swap between classic VGA and modern looks
 in-game.
 
-This is a design document. **Stage 1 is implemented** (see
-`docs/plans/modern-colors-stage1.md` for the task-level record); its
-section below describes what was actually built and what was learned.
-Stages 2 and 3 remain unimplemented designs — each stands alone and can
-be shipped or abandoned independently.
+This is a design document. **Stages 1 and 2 are implemented** (see
+`docs/plans/modern-colors-stage1.md` and
+`docs/plans/modern-colors-stage2.md` for the task-level records; the
+Stage 2 plan also records where the implementation deviated from the
+design below). Stage 3 remains an unimplemented design and can be
+shipped or abandoned independently.
 
 ---
 
@@ -87,7 +88,7 @@ palette entries. `SetWormColoursSpan` applies a hand-tuned 64-step gradient
 | Stage | What ships | Estimated cost | Risk | Ship independently? |
 |---|---|---|---|---|
 | **Stage 1** — Modern Player Colors (**shipped**) | Unlock 6→8 bit per channel; per-worm `ColorBlock` indirection; `ColorMode` enum on Renderer; modern palette derived from the classic one (faithful, full-range); netplay protocol bump for 24-bit worm color | 1–2 days (actual: ~1 day + iteration) | None | Yes |
-| **Stage 2** — ARGB Screen | Widen `Bitmap` to ARGB; convert ~30 blit primitive sites to `pal32[]` LUT stores; rewrite `ScaleDraw`; introduce `ShadowQuery` helper for the 8 shadow-inspector sites; introduce `Level::AppearanceAt()` accessor | ~12 days | Low | Yes |
+| **Stage 2** — ARGB Screen (**shipped**) | Widen `Bitmap` to ARGB; convert the blit primitives to `pal32[]` LUT stores; rewrite `ScaleDraw`; `ShadowQuery` helper for the nine shadow/material-inspector sites; `Level::AppearanceAt()` accessor; fade moved to composition time | ~12 days | Low | Yes |
 | **Stage 3** — Full-Fidelity Terrain | Add `display_data` (ARGB) parallel layer to `Level`; make `AppearanceAt` mode-aware; modern level loader; snapshot `display_data` in `GameSnapshot` | ~9 days | Low | Yes (Stage 2 required) |
 | **Hot-toggle** (cross-cutting) | F11 (or settings menu) swaps mode live; per-frame palette rebuild picks the right `origpal` | +0.5 / +0 / +0.5 days per stage | None | With Stage 1 |
 | **Per-window mode** (cross-cutting) | Each `Renderer` has its own `mode`; player screen and spectator window can be in different modes simultaneously | +0.5 / +0 / +0 days per stage | None | With Stage 1 |
@@ -177,6 +178,16 @@ be toggled live. As built:
 ---
 
 ## Stage 2 — ARGB Screen
+
+**Implemented** — `docs/plans/modern-colors-stage2.md` is the task-level
+record, including where the as-built code deviates from this section:
+fade applies at composition (`ScaleDraw`) rather than in the palette
+rebuild, so frozen ARGB captures keep fading; `Game::Draw` repaints the
+background after its palette rebuild; the Scale2x macros turned out to be
+dead code and were deleted (no 32-bit variants needed); verification used
+a new headless per-frame output hasher (`framehash`) rather than video
+diffs. Palette rotation and worm-colour previews no longer animate inside
+frozen captures (accepted; live-drawn content animates as before).
 
 ### Goal
 

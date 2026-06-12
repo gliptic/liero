@@ -1233,7 +1233,7 @@ void RollbackController::Draw(Renderer& renderer, bool use_spectator_viewports) 
         renderer.mode == ColorMode::kModern ? game.common->modernpal : game.common->exepal;
     renderer.pal = base_pal;
     renderer.pal.RotateFrom(base_pal, 168, 174, gfx.menu_cycles);
-    renderer.pal.Fade(fadeValue_);
+    renderer.UpdatePal32();
 
     if (localPaused_) {
       std::string const kTitle = "GAME PAUSED";

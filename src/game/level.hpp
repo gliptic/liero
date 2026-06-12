@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <cstdio>
 #include <string>
 #include <utility>
@@ -29,6 +30,11 @@ struct Level {
   void GenerateFromSettings(Common& common, Settings const& settings, Rand& rand);
   bool SelectSpawn(Rand& rand, int w, int h, IVec2& selected);
   void DrawMiniature(Bitmap& dest, int map_x, int map_y, int step);
+
+  // What the renderer shows for level pixel `idx`. Stage 2: the palette
+  // colour of the material index. Stage 3 makes this mode-aware (authored
+  // ARGB terrain where present).
+  uint32_t AppearanceAt(int idx, uint32_t const* pal32) const { return pal32[data[idx]]; }
 
   unsigned char Pixel(int x, int y) { return data[x + y * width]; }
 

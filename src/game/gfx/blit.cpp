@@ -13,6 +13,7 @@
 #include "bitmap.hpp"
 #include "macros.hpp"
 #include "math/rect.hpp"
+#include "shadow_query.hpp"
 
 void FillRect(Bitmap& scr, int x, int y, int w, int h, int color) {
   int x2 = x + w;
@@ -25,22 +26,28 @@ void FillRect(Bitmap& scr, int x, int y, int w, int h, int color) {
   y2 = std::min(y2, kClipy2);
 
   if (x2 > x) {
+    uint32_t const kArgb = scr.pal32[color];
     for (; y < y2; ++y) {
-      std::memset(&scr.GetPixel(x, y), color, x2 - x);
+      uint32_t* row = &scr.GetPixel(x, y);
+      std::fill(row, row + (x2 - x), kArgb);
     }
   }
 }
 
-void Fill(Bitmap& scr, int color) { std::memset(scr.pixels, color, scr.pitch * scr.h); }
+void Fill(Bitmap& scr, int color) {
+  std::fill(scr.pixels, scr.pixels + scr.pitch * scr.h, scr.pal32[color]);
+}
 
 void DrawBar(Bitmap& scr, int x, int y, int width, int color) {
   DrawBar(scr, x, y, width, 2, color);
 }
 
 void DrawBar(Bitmap& scr, int x, int y, int width, int height, int color) {
+  uint32_t const kArgb = scr.pal32[color];
   for (int h = 0; h < height; h++) {
     if (width > 0) {
-      std::memset(&scr.GetPixel(x, y + h), color, width);
+      uint32_t* row = &scr.GetPixel(x, y + h);
+      std::fill(row, row + width, kArgb);
     }
   }
 }
@@ -54,7 +61,7 @@ void Vline(Bitmap& scr, int x, int y1, int y2, int color) {
   y2 = std::min(y2, static_cast<int>(scr.clip_rect.y2));
 
   for (; y1 < y2; ++y1) {
-    scr.GetPixel(x, y1) = color;
+    scr.GetPixel(x, y1) = scr.pal32[color];
   }
 }
 
@@ -79,11 +86,11 @@ void DrawRoundedLineBox(Bitmap& scr, int x, int y, int color, int width, int hei
   FillRect(scr, x + width - 1, y + 1, 1, height - 2, color);
 }
 
-#define DASH()                                                  \
-  do {                                                          \
-    if (scr.clip_rect.Inside(x1, y1) && ((p + phase) % 4) < 2)  \
-      scr.GetPixel(x1, y1) = (p >= color2lim) ? color : color2; \
-    ++p;                                                        \
+#define DASH()                                                             \
+  do {                                                                     \
+    if (scr.clip_rect.Inside(x1, y1) && ((p + phase) % 4) < 2)             \
+      scr.GetPixel(x1, y1) = scr.pal32[(p >= color2lim) ? color : color2]; \
+    ++p;                                                                   \
   } while (0)
 
 void DrawDashedLineBox(Bitmap& scr, int x, int y, int color, int color2, int num, int den,
@@ -116,20 +123,47 @@ void DrawDashedLineBox(Bitmap& scr, int x, int y, int color, int color2, int num
 }
 
 // The blitter routines below are driven by macros (CLIP_IMAGE, UNPACK_SPRITE,
-// BLIT/BLIT2/BLIT3/BLITL, DO_LINE) that hide which locals are mutated and
+// BLIT/BLIT3/BLITL, DO_LINE) that hide which locals are mutated and
 // which aren't. clang-tidy's const-correctness reasoning across the macro
 // boundary produces spurious "can be const" warnings on the parameters and
 // macro-injected locals; declaring them const breaks the macros that update
 // them. Disable the check for this region.
 // NOLINTBEGIN(misc-const-correctness)
-void BlitImageNoKeyColour(Bitmap& scr, PalIdx* mem, int x, int y, int width, int height,
-                          int pitch) {
+// Paints the level's appearance into the screen at (x, y) — the only place
+// terrain reaches the screen. Stage 3 makes AppearanceAt mode-aware.
+void DrawLevel(Bitmap& scr, Level const& level, int x, int y) {
+  int width = level.width;
+  int height = level.height;
+  int const pitch = level.width;
+  PalIdx const* mem = level.data.data();
+
   CLIP_IMAGE(scr.clip_rect);
 
-  PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;
+  uint32_t* scrptr = scr.pixels + y * scr.pitch + x;
+  int idx = static_cast<int>(mem - level.data.data());
 
-  for (int y = 0; y < height; ++y) {
-    std::memcpy(scrptr, mem, width);
+  for (int dy = 0; dy < height; ++dy) {
+    for (int dx = 0; dx < width; ++dx) {
+      scrptr[dx] = level.AppearanceAt(idx + dx, scr.pal32);
+    }
+
+    scrptr += scr.pitch;
+    idx += pitch;
+  }
+}
+
+// ARGB -> ARGB rectangle copy at identical coordinates; the frozen_screen
+// restore path. No palette involved.
+void BlitBitmap(Bitmap& scr, Bitmap const& src, int x, int y, int width, int height) {
+  int const pitch = static_cast<int>(src.pitch);
+  uint32_t const* mem = src.pixels + y * pitch + x;
+
+  CLIP_IMAGE(scr.clip_rect);
+
+  uint32_t* scrptr = scr.pixels + y * scr.pitch + x;
+
+  for (int dy = 0; dy < height; ++dy) {
+    std::memcpy(scrptr, mem, sizeof(uint32_t) * width);
 
     scrptr += scr.pitch;
     mem += pitch;
@@ -147,16 +181,16 @@ void BlitImage(Bitmap& scr, Sprite spr, int x, int y) {
 
   CLIP_IMAGE(scr.clip_rect);
 
-  PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;
+  uint32_t* scrptr = scr.pixels + y * scr.pitch + x;
 
   for (int y = 0; y < height; ++y) {
-    PalIdx* rowdest = scrptr;
+    uint32_t* rowdest = scrptr;
     PalIdx const* rowsrc = mem;
 
     for (int x = 0; x < width; ++x) {
       PalIdx const kC = *rowsrc;
       if (kC) {
-        *rowdest = kC;
+        *rowdest = scr.pal32[kC];
       }
       ++rowsrc;
       ++rowdest;
@@ -172,16 +206,16 @@ void BlitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase) {
 
   CLIP_IMAGE(scr.clip_rect);
 
-  PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;
+  uint32_t* scrptr = scr.pixels + y * scr.pitch + x;
 
   for (int y = 0; y < height; ++y) {
-    PalIdx* rowdest = scrptr;
+    uint32_t* rowdest = scrptr;
     PalIdx const* rowsrc = mem;
 
     for (int x = 0; x < width; ++x) {
       PalIdx const kC = *rowsrc;
       if (kC && ((x ^ y ^ phase) & 1)) {
-        *rowdest = kC;
+        *rowdest = scr.pal32[kC];
       }
       ++rowsrc;
       ++rowdest;
@@ -192,11 +226,13 @@ void BlitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase) {
   }
 }
 
+// Screen-destination blit driver: `rowdest` is ARGB, bodies resolve palette
+// indices through scr.pal32.
 #define BLIT(body)                                                                                   \
   do {                                                                                               \
-    PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;                           \
+    uint32_t* scrptr = scr.pixels + y * scr.pitch + x;                                               \
     for (int y_ = 0; y_ < height; ++y_) {                                                            \
-      PalIdx* rowdest = scrptr;                                                                      \
+      uint32_t* rowdest = scrptr;                                                                    \
       PalIdx* rowsrc = mem;                                                                          \
       for (int x_ = 0; x_ < width; ++x_) {                                                           \
         PalIdx c = *rowsrc;                                                                          \
@@ -209,28 +245,11 @@ void BlitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase) {
     }                                                                                                \
   } while (false)
 
-#define BLIT2(pixels, destpitch, body)                                                               \
-  do {                                                                                               \
-    PalIdx* scrptr = static_cast<PalIdx*>(pixels) + y * (destpitch) + x;                             \
-    for (int y_ = 0; y_ < height; ++y_) {                                                            \
-      PalIdx* rowdest = scrptr;                                                                      \
-      PalIdx* rowsrc = mem;                                                                          \
-      for (int x_ = 0; x_ < width; ++x_) {                                                           \
-        PalIdx c = *rowsrc;                                                                          \
-        body++ rowsrc; /* NOLINT(bugprone-macro-parentheses) — body expands to a statement, not an \
-                          expression */                                                              \
-        ++rowdest;                                                                                   \
-      }                                                                                              \
-      scrptr += (destpitch);                                                                         \
-      mem += pitch;                                                                                  \
-    }                                                                                                \
-  } while (false)
-
 #define BLIT3(body)                                                                               \
   do {                                                                                            \
-    PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;                        \
+    uint32_t* scrptr = scr.pixels + y * scr.pitch + x;                                            \
     for (int y_ = 0; y_ < height; ++y_) {                                                         \
-      PalIdx* rowdest = scrptr;                                                                   \
+      uint32_t* rowdest = scrptr;                                                                 \
       for (int x_ = 0; x_ < width; ++x_) {                                                        \
         body++ mem; /* NOLINT(bugprone-macro-parentheses) — body expands to a statement, not an \
                        expression */                                                              \
@@ -262,21 +281,27 @@ void BlitImageTrans(Bitmap& scr, Sprite spr, int x, int y, int phase) {
     }                                                                                                \
   } while (false)
 
-void BlitImageR(Bitmap& scr, const PalIdx* mem, int x, int y, int width, int height) {
+void BlitImageR(ShadowQuery const& shadow, Bitmap& scr, const PalIdx* mem, int x, int y, int width,
+                int height) {
   int const pitch = width;
 
   CLIP_IMAGE(scr.clip_rect);
 
-  PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;
+  uint32_t* scrptr = scr.pixels + y * scr.pitch + x;
 
-  for (int y = 0; y < height; ++y) {
-    PalIdx* rowdest = scrptr;
+  for (int dy = 0; dy < height; ++dy) {
+    uint32_t* rowdest = scrptr;
     PalIdx const* rowsrc = mem;
 
-    for (int x = 0; x < width; ++x) {
+    for (int dx = 0; dx < width; ++dx) {
       PalIdx const kC = *rowsrc;
-      if (kC && (static_cast<PalIdx>(*rowdest - 160) < 8)) {
-        *rowdest = kC;
+      if (kC) {
+        // Draw only over the level's special range (classically water);
+        // the level, not the screen, is the material source of truth.
+        int const kP = shadow.PixelAt(x + dx, y + dy);
+        if (kP >= 160 && kP < 168) {
+          *rowdest = scr.pal32[kC];
+        }
       }
       ++rowsrc;
       ++rowdest;
@@ -297,25 +322,25 @@ void BlitFireCone(Bitmap& scr, int fc, PalIdx* mem, int x, int y) {
   switch (fc) {
     case 0:
       BLIT({
-        if (c > 116) *rowdest = c - 5;
+        if (c > 116) *rowdest = scr.pal32[c - 5];
       });
       break;
 
     case 1:
       BLIT({
-        if (c > 114) *rowdest = c - 3;
+        if (c > 114) *rowdest = scr.pal32[c - 3];
       });
       break;
 
     case 2:
       BLIT({
-        if (c > 112) *rowdest = c - 1;
+        if (c > 112) *rowdest = scr.pal32[c - 1];
       });
       break;
 
     default:
       BLIT({
-        if (c) *rowdest = c;
+        if (c) *rowdest = scr.pal32[c];
       });
       break;
   }
@@ -341,22 +366,25 @@ void BlitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int
   });
 }
 
-void BlitShadowImage(Common& common, Bitmap& scr, const PalIdx* mem, int x, int y, int width,
-                     int height) {
+void BlitShadowImage(ShadowQuery const& shadow, Bitmap& scr, const PalIdx* mem, int x, int y,
+                     int width, int height) {
   int const pitch = width;
 
   CLIP_IMAGE(scr.clip_rect);
 
-  PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;
+  uint32_t* scrptr = scr.pixels + y * scr.pitch + x;
 
-  for (int y = 0; y < height; ++y) {
-    PalIdx* rowdest = scrptr;
+  for (int dy = 0; dy < height; ++dy) {
+    uint32_t* rowdest = scrptr;
     PalIdx const* rowsrc = mem;
 
-    for (int x = 0; x < width; ++x) {
+    for (int dx = 0; dx < width; ++dx) {
       PalIdx const kC = *rowsrc;
-      if (kC && common.materials[*rowdest].SeeShadow()) {  // TODO: Speed up this test?
-        *rowdest += 4;
+      if (kC) {
+        uint32_t const kShadowed = shadow.ShadowedArgb(x + dx, y + dy);
+        if (kShadowed != 0) {
+          *rowdest = kShadowed;
+        }
       }
       ++rowsrc;
       ++rowdest;
@@ -564,49 +592,50 @@ void DrawNinjarope(Common& common, Bitmap& scr, int from_x, int from_y, int to_x
   int color = LC(NRColourBegin);
 
   Rect const& clip = scr.clip_rect;
-  PalIdx* ptr = scr.pixels;
+  uint32_t* ptr = scr.pixels;
   unsigned int const kPitch = scr.pitch;
 
   DO_LINE({
     if (++color == LC(NRColourEnd)) color = LC(NRColourBegin);
 
-    if (clip.Inside(cx, cy)) ptr[cy * kPitch + cx] = color;
+    if (clip.Inside(cx, cy)) ptr[cy * kPitch + cx] = scr.pal32[color];
   });
 }
 
 void DrawLaserSight(Bitmap& scr, Rand& rand, int from_x, int from_y, int to_x, int to_y) {
   Rect const& clip = scr.clip_rect;
-  PalIdx* ptr = scr.pixels;
+  uint32_t* ptr = scr.pixels;
   unsigned int const kPitch = scr.pitch;
 
   DO_LINE({
     if (rand(5) == 0) {
-      if (clip.Inside(cx, cy)) ptr[cy * kPitch + cx] = rand(2) + 83;
+      if (clip.Inside(cx, cy)) ptr[cy * kPitch + cx] = scr.pal32[rand(2) + 83];
     }
   });
 }
 
-void DrawShadowLine(Common& common, Bitmap& scr, int from_x, int from_y, int to_x, int to_y) {
+void DrawShadowLine(ShadowQuery const& shadow, Bitmap& scr, int from_x, int from_y, int to_x,
+                    int to_y) {
   Rect const& clip = scr.clip_rect;
-  PalIdx* ptr = scr.pixels;
+  uint32_t* ptr = scr.pixels;
   unsigned int const kPitch = scr.pitch;
 
   DO_LINE({
     if (clip.Inside(cx, cy)) {
-      PalIdx& pix = ptr[cy * kPitch + cx];
-      if (common.materials[pix].SeeShadow()) pix += 4;
+      uint32_t const kShadowed = shadow.ShadowedArgb(cx, cy);
+      if (kShadowed != 0) ptr[cy * kPitch + cx] = kShadowed;
     }
   });
 }
 
 void DrawLine(Bitmap& scr, int from_x, int from_y, int to_x, int to_y, int color) {
   Rect const& clip = scr.clip_rect;
-  PalIdx* ptr = scr.pixels;
+  uint32_t* ptr = scr.pixels;
   unsigned int const kPitch = scr.pitch;
 
   DO_LINE({
     if (clip.Inside(cx, cy)) {
-      ptr[cy * kPitch + cx] = color;
+      ptr[cy * kPitch + cx] = scr.pal32[color];
     }
   });
 }
@@ -664,69 +693,47 @@ void DrawHeatmap(Bitmap& scr, int x, int y, Heatmap& hm) {
 
   BLIT3({
     int v = mapping[*mem];
-    *rowdest = v;
+    *rowdest = scr.pal32[v];
   });
 }
 
-void ScaleDraw(PalIdx* src, int w, int h, std::size_t src_pitch, uint8_t* dest,
-               std::size_t dest_pitch, int mag, const uint32_t* pal32) {
-  if (mag == 1) {
-    for (int y = 0; y < h; ++y) {
-      PalIdx const* line = src + y * src_pitch;
-      auto* dest_line = reinterpret_cast<uint32_t*>(dest + y * dest_pitch);
-
-      for (int x = 0; x < w; ++x) {
-        PalIdx const kPix = *line++;
-        *dest_line++ = pal32[kPix];
-      }
-    }
-  } else if (mag > 1) {
-    for (int y = 0; y < h; ++y) {
-      PalIdx* line = src + y * src_pitch;
-      int const kDestMagPitch = mag * static_cast<int>(dest_pitch);
-      uint8_t* dest_line = dest + y * kDestMagPitch;
-
-      for (int x = 0; x < w / 4; ++x) {
-        uint32_t const kPix = *reinterpret_cast<uint32_t*>(line);
-        line += 4;
-
-        uint32_t const kA = pal32[kPix >> 24];
-        uint32_t const kB = pal32[(kPix & 0x00ff0000) >> 16];
-        uint32_t const kC = pal32[(kPix & 0x0000ff00) >> 8];
-        uint32_t const kD = pal32[kPix & 0x000000ff];
-
-        for (int dx = 0; dx < mag; ++dx) {
-          for (int dy = 0; dy < kDestMagPitch; dy += static_cast<int>(dest_pitch)) {
-            *reinterpret_cast<uint32_t*>(dest_line + dy) = kD;
-          }
-          dest_line += 4;
-        }
-        for (int dx = 0; dx < mag; ++dx) {
-          for (int dy = 0; dy < kDestMagPitch; dy += static_cast<int>(dest_pitch)) {
-            *reinterpret_cast<uint32_t*>(dest_line + dy) = kC;
-          }
-          dest_line += 4;
-        }
-        for (int dx = 0; dx < mag; ++dx) {
-          for (int dy = 0; dy < kDestMagPitch; dy += static_cast<int>(dest_pitch)) {
-            *reinterpret_cast<uint32_t*>(dest_line + dy) = kB;
-          }
-          dest_line += 4;
-        }
-        for (int dx = 0; dx < mag; ++dx) {
-          for (int dy = 0; dy < kDestMagPitch; dy += static_cast<int>(dest_pitch)) {
-            *reinterpret_cast<uint32_t*>(dest_line + dy) = kA;
-          }
-          dest_line += 4;
-        }
-      }
-    }
-  }
+// Per-channel fade at composition time. Identical arithmetic to
+// Palette::Fade ((v * amount) >> 5), so fading at composition is
+// value-identical to the old palette fade — and it also applies to
+// frozen/captured ARGB content, which palette fade used to cover.
+static inline uint32_t FadeArgb(uint32_t c, int amount) {
+  uint32_t const kR = (((c >> 16) & 0xFFU) * amount) >> 5;
+  uint32_t const kG = (((c >> 8) & 0xFFU) * amount) >> 5;
+  uint32_t const kB = ((c & 0xFFU) * amount) >> 5;
+  return 0xFF000000U | (kR << 16) | (kG << 8) | kB;
 }
 
-void PreparePaletteBgra(Color real_pal[256], uint32_t (&pal32)[256]) {
-  for (int i = 0; i < 256; ++i) {
-    pal32[i] = (real_pal[i].r << 16) | (real_pal[i].g << 8) | real_pal[i].b;
+void ScaleDraw(uint32_t const* src, int w, int h, std::size_t src_pitch, uint8_t* dest,
+               std::size_t dest_pitch, int mag, int fade) {
+  bool const kFaded = fade < 32;
+
+  if (mag == 1 && !kFaded) {
+    for (int y = 0; y < h; ++y) {
+      std::memcpy(dest + y * dest_pitch, src + y * src_pitch, sizeof(uint32_t) * w);
+    }
+    return;
+  }
+
+  for (int y = 0; y < h; ++y) {
+    uint32_t const* line = src + y * src_pitch;
+    uint8_t* dest_block = dest + y * mag * dest_pitch;
+
+    for (int x = 0; x < w; ++x) {
+      uint32_t const kPix = kFaded ? FadeArgb(line[x], fade) : line[x];
+
+      uint8_t* dest_col = dest_block + static_cast<std::size_t>(x) * mag * sizeof(uint32_t);
+      for (int dy = 0; dy < mag; ++dy) {
+        auto* dest_line = reinterpret_cast<uint32_t*>(dest_col + dy * dest_pitch);
+        for (int dx = 0; dx < mag; ++dx) {
+          dest_line[dx] = kPix;
+        }
+      }
+    }
   }
 }
 

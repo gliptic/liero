@@ -166,6 +166,26 @@ void Game::ResetWorms() {
 void Game::AddWorm(std::shared_ptr<Worm> worm) { worms.push_back(std::move(worm)); }
 
 void Game::Draw(Renderer& renderer, GameState state, bool use_spectator_viewports, bool is_replay) {
+  // Finalize the palette before drawing: blits resolve through pal32 at
+  // draw time, so the rebuild must precede everything drawn this frame.
+  renderer.pal = renderer.Origpal();
+
+  for (auto& w : common->color_anim) {
+    renderer.pal.RotateFrom(renderer.Origpal(), w.from, w.to, cycles >> 3);
+  }
+
+  if (screen_flash > 0) {
+    renderer.pal.LightUp(screen_flash);
+  }
+
+  renderer.UpdatePal32();
+
+  // Repaint the background through the freshly rebuilt palette. Callers
+  // clear before drawing, but that resolves entry 0 through the previous
+  // frame's LUT — visible as a one-frame lag on the border pixels while a
+  // screen flash lights up the palette.
+  Fill(renderer.bmp, 0);
+
   if (use_spectator_viewports) {
     DrawSpectatorViewports(renderer, state, is_replay);
   } else {
@@ -173,18 +193,6 @@ void Game::Draw(Renderer& renderer, GameState state, bool use_spectator_viewport
   }
 
   // common->font.drawText(toString(cycles / 70), 10, 10, 7);
-
-  renderer.pal = renderer.Origpal();
-
-  for (auto& w : common->color_anim) {
-    renderer.pal.RotateFrom(renderer.Origpal(), w.from, w.to, cycles >> 3);
-  }
-
-  renderer.pal.Fade(renderer.fade_value);
-
-  if (screen_flash > 0) {
-    renderer.pal.LightUp(screen_flash);
-  }
 }
 
 bool CheckBonusSpawnPosition(Game& game, int x, int y) {

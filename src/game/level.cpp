@@ -345,7 +345,7 @@ void Level::DrawMiniature(Bitmap& dest, int map_x, int map_y, int step) {
   for (int y = map_y; y < kMapEndY; ++y) {
     int mx = step / 2;
     for (int x = map_x; x < kMapEndX; ++x) {
-      dest.GetPixel(x, y) = CheckedPixelWrap(mx, my);
+      dest.SetPixel(x, y, CheckedPixelWrap(mx, my));
       mx += step;
     }
     my += step;

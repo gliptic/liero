@@ -300,6 +300,11 @@ bool StatsState::Update() {
 void StatsState::Draw() {
   Common& common = *game_.common;
 
+  // The stats screen renders on the plain EXE palette (no rotation/fade);
+  // finalize it before drawing so blits resolve through fresh pal32.
+  gfx->play_renderer.pal = common.exepal;
+  gfx->play_renderer.UpdatePal32();
+
   gfx->play_renderer.bmp.Copy(bg_);
 
   StatsRenderer renderer(gfx->play_renderer, game_, recorder_, common);
@@ -382,6 +387,4 @@ void StatsState::Draw() {
       renderer.Heatmap(recorder_.worms[i].damage_hm);
     });
   }
-
-  gfx->play_renderer.pal = common.exepal;
 }

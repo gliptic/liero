@@ -16,18 +16,19 @@ void Font::DrawChar(Bitmap& scr, unsigned char c, int x, int y, int color, int s
 
     CLIP_IMAGE(scr.clip_rect);
 
-    PalIdx* scrptr = static_cast<PalIdx*>(scr.pixels) + y * scr.pitch + x;
+    uint32_t* scrptr = scr.pixels + y * scr.pitch + x;
+    uint32_t const kArgb = scr.pal32[color];
 
     for (int cy = 0; cy < height; ++cy) {
       for (int i = 0; i < size; i++) {
-        PalIdx* rowdest = scrptr;
+        uint32_t* rowdest = scrptr;
         PalIdx const* rowsrc = mem;
 
         for (int cx = 0; cx < width; ++cx) {
           PalIdx const kC = *rowsrc;
           for (int k = 0; k < size; k++) {
             if (kC) {
-              *rowdest = color;
+              *rowdest = kArgb;
             }
             ++rowdest;
           }

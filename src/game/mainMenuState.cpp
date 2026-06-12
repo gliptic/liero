@@ -96,9 +96,10 @@ void MainMenuState::Enter() {
   Common& common = *gfx->common;
   int const kCenterX = gfx->single_screen_renderer.render_res_x / 2;
 
-  std::memset(gfx->play_renderer.pal.entries, 0, sizeof(gfx->play_renderer.pal.entries));
-  std::memset(gfx->single_screen_renderer.pal.entries, 0,
-              sizeof(gfx->single_screen_renderer.pal.entries));
+  // Show a black frame while the menu is set up. Classically done by
+  // blacking the palette; with ARGB composition the fade does the same.
+  gfx->play_renderer.fade_value = 0;
+  gfx->single_screen_renderer.fade_value = 0;
   gfx->Flip();
   gfx->Process();
 

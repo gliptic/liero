@@ -11,6 +11,10 @@ struct Renderer {
   void Clear();
   void LoadPalette(Common const& common);
   void SetRenderResolution(int x, int y);
+  // Repacks `pal` into `pal32`. Every palette-rebuild block must end with
+  // this, and must run before anything draws into `bmp` for the frame —
+  // blits resolve palette indices through `pal32` at draw time.
+  void UpdatePal32();
 
   // The palette `pal` is rebuilt from every frame, picked by `mode`.
   Palette const& Origpal() const { return mode == ColorMode::kModern ? origpal_modern : origpal; }
@@ -18,6 +22,8 @@ struct Renderer {
   // the bitmap that is drawn into by this renderer
   Bitmap bmp;
   Palette pal;
+  // ARGB8888 (0xFF000000 | r<<16 | g<<8 | b) image of `pal`, frame scope.
+  uint32_t pal32[256] = {};
   // Classic palette origin: the EXE/TC palette, or a level's custom palette.
   Palette origpal;
   // Modern palette origin: the TC's modern.pal (or a full-range expansion of

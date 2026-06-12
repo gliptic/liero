@@ -126,7 +126,9 @@ struct Gfx {
   void Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_renderer,
             Renderer& renderer);
   void Flip();
-  void MenuFlip(bool quitting = false);
+  // Per-frame menu palette rebuild (fade step, rotation, worm colours).
+  // Runs before state drawing so blits resolve through fresh pal32.
+  void UpdateMenuPalettes(bool quitting = false);
 
   void ClearKeys();
 
@@ -259,9 +261,6 @@ struct Gfx {
   void DrawSpectatorInfo();
   void PlayerSettings(int player);
   void OpenHiddenMenu();
-
-  static void PreparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette,
-                             Color real_pal[256], uint32_t (&pal32)[256]);
 
   static void Overlay(SDL_PixelFormatDetails const* format, uint8_t* src, int w, int h,
                       std::size_t src_pitch, uint8_t* dest, std::size_t dest_pitch, int mag);

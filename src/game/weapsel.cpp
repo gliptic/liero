@@ -11,6 +11,20 @@
 #include "weapsel.hpp"
 #include "worm.hpp"
 
+namespace {
+
+// Weapon selection runs its own menu-style palette: water rotation from the
+// menu clock plus the controller fade. Rebuilt before drawing each frame
+// (blits resolve through pal32 at draw time).
+// TODO: This just uses the currently activated palette, which might well be wrong.
+void UpdateWeapselPalette(Renderer& renderer) {
+  renderer.pal = renderer.Origpal();
+  renderer.pal.RotateFrom(renderer.Origpal(), 168, 174, gfx.menu_cycles);
+  renderer.UpdatePal32();
+}
+
+}  // namespace
+
 WeaponSelection::WeaponSelection(Game& game)
     : game(game),
 
@@ -87,6 +101,8 @@ void WeaponSelection::DrawSpectatorViewports(Renderer& renderer, GameState /*sta
   int const kCenterX = renderer.render_res_x / 2;
   int const kCenterY = renderer.render_res_y / 4;
 
+  UpdateWeapselPalette(gfx.single_screen_renderer);
+
   if (!cached_spectator_background) {
     if (game.settings->level_file.empty()) {
       common.font.DrawCenteredText(renderer.bmp, LS(LevelRandom), kCenterX, kCenterY - 32, 7, 2);
@@ -127,19 +143,18 @@ void WeaponSelection::DrawSpectatorViewports(Renderer& renderer, GameState /*sta
   if (!is_ready[1]) {
     menus[1].Draw(common, renderer, /*disabled=*/false, 560);
   }
-
-  // TODO: This just uses the currently activated palette, which might well be wrong.
-  gfx.single_screen_renderer.pal = gfx.single_screen_renderer.Origpal();
-  gfx.single_screen_renderer.pal.RotateFrom(gfx.single_screen_renderer.Origpal(), 168, 174,
-                                            gfx.menu_cycles);
-  gfx.single_screen_renderer.pal.Fade(gfx.single_screen_renderer.fade_value);
 }
 
 void WeaponSelection::DrawNormalViewports(Renderer& renderer, GameState state) {
   Common& common = *game.common;
 
+  UpdateWeapselPalette(gfx.play_renderer);
+
   if (!cached_background) {
     game.Draw(renderer, state, /*use_spectator_viewports=*/false);
+    // game.Draw rebuilds the palette for the level draw; restore the
+    // weapon-selection palette for everything drawn after it.
+    UpdateWeapselPalette(gfx.play_renderer);
 
     if (game.settings->level_file.empty()) {
       common.font.DrawString(renderer.bmp, LS(LevelRandom), 0, 162, 50);
@@ -179,11 +194,6 @@ void WeaponSelection::DrawNormalViewports(Renderer& renderer, GameState state) {
       menus[i].Draw(common, gfx.play_renderer, /*disabled=*/false);
     }
   }
-
-  // TODO: This just uses the currently activated palette, which might well be wrong.
-  gfx.play_renderer.pal = gfx.play_renderer.Origpal();
-  gfx.play_renderer.pal.RotateFrom(gfx.play_renderer.Origpal(), 168, 174, gfx.menu_cycles);
-  gfx.play_renderer.pal.Fade(gfx.play_renderer.fade_value);
 }
 
 void WeaponSelection::Draw(Renderer& renderer, GameState state, bool use_spectator_viewports) {

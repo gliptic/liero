@@ -940,14 +940,7 @@ void Gfx::ReleaseControl(int control) {
   }
 }
 
-void Gfx::PreparePalette(SDL_PixelFormatDetails const* format, SDL_Palette const* palette,
-                         Color real_pal[256], uint32_t (&pal32)[256]) {
-  for (int i = 0; i < 256; ++i) {
-    pal32[i] = SDL_MapRGB(format, palette, real_pal[i].r, real_pal[i].g, real_pal[i].b);
-  }
-}
-
-void Gfx::MenuFlip(bool quitting) {
+void Gfx::UpdateMenuPalettes(bool quitting) {
   if (play_renderer.fade_value < 32 && !quitting) {
     ++play_renderer.fade_value;
   }
@@ -963,7 +956,9 @@ void Gfx::MenuFlip(bool quitting) {
       player_menu.ws == settings->worm_settings[Settings::kNetworkPlayerIdx]) {
     play_renderer.pal.SetWormColour(0, *player_menu.ws, play_renderer.mode);
   }
-  play_renderer.pal.Fade(play_renderer.fade_value);
+  // The fade applies at composition (ScaleDraw); menus draw through pal32,
+  // so every rebuild must end with a repack.
+  play_renderer.UpdatePal32();
   single_screen_renderer.pal = single_screen_renderer.Origpal();
   single_screen_renderer.pal.RotateFrom(single_screen_renderer.Origpal(), 168, 174, menu_cycles);
   single_screen_renderer.pal.SetWormColours(*settings, single_screen_renderer.mode);
@@ -971,15 +966,12 @@ void Gfx::MenuFlip(bool quitting) {
       player_menu.ws == settings->worm_settings[Settings::kNetworkPlayerIdx]) {
     single_screen_renderer.pal.SetWormColour(0, *player_menu.ws, single_screen_renderer.mode);
   }
-  single_screen_renderer.pal.Fade(single_screen_renderer.fade_value);
-  Flip();
+  single_screen_renderer.UpdatePal32();
 }
 
 void Gfx::Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_renderer,
                Renderer& renderer) {
   Rect update_rect;
-  Color real_pal[256];
-  renderer.pal.Activate(real_pal);
   int offset_x = 0;
   int offset_y = 0;
   int const kMag = FitScreen(surface.w, surface.h, renderer.render_res_x, renderer.render_res_y,
@@ -1001,15 +993,13 @@ void Gfx::Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_ren
   std::size_t const kDestPitch = surface.pitch;
   std::size_t const kSrcPitch = renderer.bmp.pitch;
 
-  SDL_PixelFormatDetails const* format_details = SDL_GetPixelFormatDetails(surface.format);
-  PalIdx* dest = reinterpret_cast<PalIdx*>(surface.pixels) + offset_y * kDestPitch +
-                 offset_x * format_details->bytes_per_pixel;
-  PalIdx* src = renderer.bmp.pixels;
+  // Both surfaces are fixed SDL_PIXELFORMAT_ARGB8888; the back buffer is
+  // already ARGB, so composition is a (faded) magnifying copy.
+  uint8_t* dest = static_cast<uint8_t*>(surface.pixels) + offset_y * kDestPitch +
+                  static_cast<std::size_t>(offset_x) * 4;
 
-  uint32_t pal32[256];
-  PreparePalette(format_details, nullptr, real_pal, pal32);
-  ScaleDraw(src, renderer.render_res_x, renderer.render_res_y, kSrcPitch, dest, kDestPitch, kMag,
-            pal32);
+  ScaleDraw(renderer.bmp.pixels, renderer.render_res_x, renderer.render_res_y, kSrcPitch, dest,
+            kDestPitch, kMag, renderer.fade_value);
 
   SDL_UpdateTexture(&texture, nullptr, surface.pixels, surface.w * 4);
   SDL_RenderClear(&sdl_renderer);
@@ -1452,16 +1442,20 @@ bool Gfx::RunOneFrame() {
     return true;
   }
 
+  // Menu states finalize their palettes before drawing (blits resolve
+  // through pal32 at draw time); game states rebuild inside Game::Draw.
+  auto* top = state_stack.Top();
+  bool const kUseMenuFlip = !top || top->WantsMenuFlip();
+  if (kUseMenuFlip) {
+    UpdateMenuPalettes(kMenuFadingOut);
+  }
+
   state_stack.Draw();
 
-  // Flip: game states use plain flip(), menu states use menuFlip()
-  auto* top = state_stack.Top();
-  if (top && !top->WantsMenuFlip()) {
+  if (!kUseMenuFlip) {
     ++menu_cycles;
-    Flip();
-  } else {
-    MenuFlip(kMenuFadingOut);
   }
+  Flip();
 
   return true;
 }
