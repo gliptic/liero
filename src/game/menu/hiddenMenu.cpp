@@ -40,6 +40,10 @@ ItemBehavior* HiddenMenu::GetItemBehavior(Common& common, MenuItem& item) {
       return new BooleanSwitchBehavior(common, gfx.settings->allow_viewing_spawn_point);
     case kSingleScreenReplay:
       return new BooleanSwitchBehavior(common, gfx.settings->single_screen_replay);
+    case kColorMode:
+      return new BooleanSwitchBehavior(common, gfx.settings->modern_colors, [](bool v) {
+        gfx.SetColorMode(v ? ColorMode::kModern : ColorMode::kClassic);
+      });
     case kSpectatorWindow:
       return new BooleanSwitchBehavior(common, gfx.settings->spectator_window, [](bool v) {
         gfx.settings->spectator_window = v;

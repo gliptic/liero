@@ -84,12 +84,29 @@ struct Level {
     std::swap(width, other.width);
     std::swap(height, other.height);
     std::swap(origpal, other.origpal);
+    std::swap(has_custom_palette, other.has_custom_palette);
     std::swap(old_random_level, other.old_random_level);
     std::swap(old_level_file, other.old_level_file);
     std::swap(zero_material, other.zero_material);
   }
 
   Rect Bounds() const { return {0, 0, width, height}; }
+
+  // Levels received over the wire or from a replay don't carry the
+  // custom-palette flag; derive it by comparing against the stock palette.
+  // A custom palette that happens to equal the stock one is visually
+  // indistinguishable either way.
+  void DeriveHasCustomPalette(Palette const& stock) {
+    has_custom_palette = false;
+    for (int i = 0; i < 256; ++i) {
+      if (origpal.entries[i].r != stock.entries[i].r ||
+          origpal.entries[i].g != stock.entries[i].g ||
+          origpal.entries[i].b != stock.entries[i].b) {
+        has_custom_palette = true;
+        return;
+      }
+    }
+  }
 
   void Resize(int width_new, int height_new);
 
@@ -100,5 +117,9 @@ struct Level {
   std::string old_level_file;
   int width{0}, height{0};
   Palette origpal;
+  // True when the level shipped its own palette (e.g. POWERLEVEL); such a
+  // palette wins in both colour modes. Not serialized: netplay- and
+  // replay-received levels re-derive it (DeriveHasCustomPalette).
+  bool has_custom_palette = false;
   Material zero_material;
 };

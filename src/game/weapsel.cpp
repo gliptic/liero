@@ -104,10 +104,10 @@ void WeaponSelection::DrawSpectatorViewports(Renderer& renderer, GameState /*sta
     common.font.DrawCenteredText(renderer.bmp, kVsText, kCenterX, kCenterY, 7, 2);
     FillRect(renderer.bmp, kCenterX - (kTextSize / 2) - 1, kCenterY + 23 - 1, 16, 16, 7);
     FillRect(renderer.bmp, kCenterX - kTextSize / 2, kCenterY + 23, 14, 14,
-             Palette::kWormSpriteColorBase[0]);
+             Palette::kWormColorBlocks[0].base);
     FillRect(renderer.bmp, kCenterX + (kTextSize / 2) - 16 - 1, kCenterY + 23 - 1, 16, 16, 7);
     FillRect(renderer.bmp, kCenterX + kTextSize / 2 - 16, kCenterY + 23, 14, 14,
-             Palette::kWormSpriteColorBase[1]);
+             Palette::kWormColorBlocks[1].base);
     common.font.DrawCenteredText(renderer.bmp, "WEAPON SELECTION", kCenterX, kCenterY + 48, 7, 2);
     game.level.DrawMiniature(renderer.bmp, kCenterX - 126, renderer.render_res_y - 208, 2);
 
@@ -129,8 +129,8 @@ void WeaponSelection::DrawSpectatorViewports(Renderer& renderer, GameState /*sta
   }
 
   // TODO: This just uses the currently activated palette, which might well be wrong.
-  gfx.single_screen_renderer.pal = gfx.single_screen_renderer.origpal;
-  gfx.single_screen_renderer.pal.RotateFrom(gfx.single_screen_renderer.origpal, 168, 174,
+  gfx.single_screen_renderer.pal = gfx.single_screen_renderer.Origpal();
+  gfx.single_screen_renderer.pal.RotateFrom(gfx.single_screen_renderer.Origpal(), 168, 174,
                                             gfx.menu_cycles);
   gfx.single_screen_renderer.pal.Fade(gfx.single_screen_renderer.fade_value);
 }
@@ -173,7 +173,7 @@ void WeaponSelection::DrawNormalViewports(Renderer& renderer, GameState state) {
     int const kWidth = common.font.GetDims(ws.name);
     DrawRoundedBox(renderer.bmp, weapon_menu.x + 29 - kWidth / 2, weapon_menu.y - 11, 0, 7, kWidth);
     common.font.DrawString(renderer.bmp, ws.name, weapon_menu.x + 31 - kWidth / 2,
-                           weapon_menu.y - 10, Palette::kWormSpriteColorBase[worm.index] + 1);
+                           weapon_menu.y - 10, Palette::kWormColorBlocks[worm.index].base + 1);
 
     if (!is_ready[i]) {
       menus[i].Draw(common, gfx.play_renderer, /*disabled=*/false);
@@ -181,8 +181,8 @@ void WeaponSelection::DrawNormalViewports(Renderer& renderer, GameState state) {
   }
 
   // TODO: This just uses the currently activated palette, which might well be wrong.
-  gfx.play_renderer.pal = gfx.play_renderer.origpal;
-  gfx.play_renderer.pal.RotateFrom(gfx.play_renderer.origpal, 168, 174, gfx.menu_cycles);
+  gfx.play_renderer.pal = gfx.play_renderer.Origpal();
+  gfx.play_renderer.pal.RotateFrom(gfx.play_renderer.Origpal(), 168, 174, gfx.menu_cycles);
   gfx.play_renderer.pal.Fade(gfx.play_renderer.fade_value);
 }
 

@@ -84,9 +84,9 @@ struct WormSettingsExtensions {
 
 struct WormSettings : WormSettingsExtensions {
   WormSettings() {
-    rgb[0] = 26;
-    rgb[1] = 26;
-    rgb[2] = 62;
+    rgb[0] = 104;
+    rgb[1] = 104;
+    rgb[2] = 248;
 
     for (unsigned int& weapon : weapons) {
       weapon = 1;
@@ -106,7 +106,7 @@ struct WormSettings : WormSettingsExtensions {
   uint32_t controls[kMaxControl];
   uint32_t weapons[NUM_WEAPONS];  // TODO: Adjustable
   std::string name;
-  int rgb[3];
+  int rgb[3];  // 0..255 per channel (classic rendering quantizes to the VGA grid)
   bool random_name{true};
 
   int color{0};

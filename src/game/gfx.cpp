@@ -408,6 +408,7 @@ void Gfx::OnWindowResize(uint32_t window_id) {
 
 void Gfx::LoadMenus() {
   hidden_menu.AddItem(MenuItem(48, 7, "FULLSCREEN (F11)", HiddenMenu::kFullscreen));
+  hidden_menu.AddItem(MenuItem(48, 7, "MODERN COLORS (F10)", HiddenMenu::kColorMode));
   hidden_menu.AddItem(MenuItem(48, 7, "DOUBLE SIZE", HiddenMenu::kDoubleRes));
   hidden_menu.AddItem(MenuItem(48, 7, "POWERLEVEL PALETTES", HiddenMenu::kLoadPowerLevels));
   hidden_menu.AddItem(MenuItem(48, 7, "SHADOWS", HiddenMenu::kShadows));
@@ -507,6 +508,19 @@ void Gfx::SetSpectatorFullscreen(bool new_fullscreen) {
   SetVideoMode();
 }
 
+void Gfx::SetColorMode(ColorMode new_mode) {
+  play_renderer.mode = new_mode;
+  single_screen_renderer.mode = new_mode;
+  settings->modern_colors = new_mode == ColorMode::kModern;
+
+  // Item value strings are only rebuilt on menu events, and the colour
+  // picker renders its numbers in mode-dependent units — refresh the open
+  // menu so they don't go stale.
+  if (cur_menu && common) {
+    cur_menu->UpdateItems(*common);
+  }
+}
+
 void Gfx::SetFullscreen(bool new_fullscreen) {
   if (new_fullscreen == settings->fullscreen) {
     return;
@@ -567,6 +581,11 @@ void Gfx::ProcessEvent(SDL_Event& ev, Controller* controller) {
         } else {
           SetSpectatorFullscreen(!spectator_fullscreen);
         }
+      }
+
+      if (kS == SDL_SCANCODE_F10) {
+        SetColorMode(play_renderer.mode == ColorMode::kModern ? ColorMode::kClassic
+                                                              : ColorMode::kModern);
       }
 
       if (kS == SDL_SCANCODE_F4 && (ev.key.mod & SDL_KMOD_ALT)) {
@@ -937,20 +956,20 @@ void Gfx::MenuFlip(bool quitting) {
   }
 
   ++menu_cycles;
-  play_renderer.pal = play_renderer.origpal;
-  play_renderer.pal.RotateFrom(play_renderer.origpal, 168, 174, menu_cycles);
-  play_renderer.pal.SetWormColours(*settings);
+  play_renderer.pal = play_renderer.Origpal();
+  play_renderer.pal.RotateFrom(play_renderer.Origpal(), 168, 174, menu_cycles);
+  play_renderer.pal.SetWormColours(*settings, play_renderer.mode);
   if (cur_menu == &player_menu &&
       player_menu.ws == settings->worm_settings[Settings::kNetworkPlayerIdx]) {
-    play_renderer.pal.SetWormColour(0, *player_menu.ws);
+    play_renderer.pal.SetWormColour(0, *player_menu.ws, play_renderer.mode);
   }
   play_renderer.pal.Fade(play_renderer.fade_value);
-  single_screen_renderer.pal = single_screen_renderer.origpal;
-  single_screen_renderer.pal.RotateFrom(single_screen_renderer.origpal, 168, 174, menu_cycles);
-  single_screen_renderer.pal.SetWormColours(*settings);
+  single_screen_renderer.pal = single_screen_renderer.Origpal();
+  single_screen_renderer.pal.RotateFrom(single_screen_renderer.Origpal(), 168, 174, menu_cycles);
+  single_screen_renderer.pal.SetWormColours(*settings, single_screen_renderer.mode);
   if (cur_menu == &player_menu &&
       player_menu.ws == settings->worm_settings[Settings::kNetworkPlayerIdx]) {
-    single_screen_renderer.pal.SetWormColour(0, *player_menu.ws);
+    single_screen_renderer.pal.SetWormColour(0, *player_menu.ws, single_screen_renderer.mode);
   }
   single_screen_renderer.pal.Fade(single_screen_renderer.fade_value);
   Flip();
@@ -1176,15 +1195,17 @@ void PlayerMenu::DrawItemOverlay(Common& /*common*/, MenuItem& item, int x, int 
   if (item.id >= PlayerMenu::kPlRed && item.id <= PlayerMenu::kPlBlue)  // Color settings
   {
     int const kRgbcol = item.id - PlayerMenu::kPlRed;
+    // Bar geometry predates 8-bit channels: map 0..255 back to 0..63 pixels.
+    int const kBarWidth = ws->rgb[kRgbcol] >> 2;
 
     if (selected) {
-      DrawRoundedBox(gfx.play_renderer.bmp, x + 24, y, 168, 7, ws->rgb[kRgbcol] - 1);
+      DrawRoundedBox(gfx.play_renderer.bmp, x + 24, y, 168, 7, kBarWidth - 1);
     } else  // CE98
     {
-      DrawRoundedBox(gfx.play_renderer.bmp, x + 24, y, 0, 7, ws->rgb[kRgbcol] - 1);
+      DrawRoundedBox(gfx.play_renderer.bmp, x + 24, y, 0, 7, kBarWidth - 1);
     }
 
-    FillRect(gfx.play_renderer.bmp, x + 25, y + 1, ws->rgb[kRgbcol], 5, ws->color);
+    FillRect(gfx.play_renderer.bmp, x + 25, y + 1, kBarWidth, 5, ws->color);
   }  // CED9
 }
 
@@ -1205,9 +1226,15 @@ ItemBehavior* PlayerMenu::GetItemBehavior(Common& common, MenuItem& item) {
     case kPlRed:
     case kPlGreen:
     case kPlBlue: {
-      auto* b =
-          new IntegerBehavior(common, ws->rgb[item.id - kPlRed], 0, 63, 1, /*percentage=*/false);
-      b->scroll_interval = 4;
+      bool const kClassic = gfx.play_renderer.mode == ColorMode::kClassic;
+      // Classic mode reproduces the original VGA picker exactly: 64
+      // positions shown as 0..63 (stored on the 0..252 grid). Modern mode
+      // moves one value at a time across the full 0..255 range, with a
+      // faster repeat so a sweep takes about as long as in classic.
+      auto* b = new IntegerBehavior(common, ws->rgb[item.id - kPlRed], 0, kClassic ? 252 : 255,
+                                    kClassic ? 4 : 1, /*percentage=*/false);
+      b->display_div = kClassic ? 4 : 1;
+      b->scroll_interval = kClassic ? 4 : 1;
       return b;
     }
 

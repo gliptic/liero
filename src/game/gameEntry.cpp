@@ -67,6 +67,7 @@ int GameEntry(int argc, char* argv[]) try {
   kCommon->load(kLieroRoot);
   gfx.common = kCommon;
   gfx.play_renderer.LoadPalette(*kCommon);
+  gfx.SetColorMode(gfx.settings->modern_colors ? ColorMode::kModern : ColorMode::kClassic);
 
   gfx.SetVideoMode();
   gfx.sound_player = std::make_shared<DefaultSoundPlayer>(*kCommon);

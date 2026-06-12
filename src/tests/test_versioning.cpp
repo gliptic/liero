@@ -328,7 +328,7 @@ TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config",
   CHECK(kToml.contains("[player2]"));
   CHECK(kToml.contains("[network_player]"));
   // Version field present for future-proofing
-  CHECK(kToml.contains("version = 3"));
+  CHECK(kToml.contains("version = 4"));
   // No ptr_wrapper noise
   CHECK(!kToml.contains("ptr_wrapper"));
   CHECK(!kToml.contains("[s]"));
@@ -348,4 +348,81 @@ TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config",
   CHECK(dst.worm_settings[2]->name == "NetPlayer");
   CHECK(dst.worm_settings[0]->health == 100);
   CHECK(dst.worm_settings[2]->health == 102);
+}
+
+TEST_CASE("versioning: worm rgb TOML round-trips 0..255 with rgbDepth marker", "[versioning]") {
+  WormSettings src;
+  src.rgb[0] = 255;
+  src.rgb[1] = 128;
+  src.rgb[2] = 33;  // not a multiple of 4: must survive exactly
+
+  std::string const kToml = src.ToToml();
+  CHECK(kToml.contains("rgbDepth = 8"));
+
+  WormSettings dst;
+  dst.FromToml(kToml);
+  CHECK(dst.rgb[0] == 255);
+  CHECK(dst.rgb[1] == 128);
+  CHECK(dst.rgb[2] == 33);
+}
+
+TEST_CASE("versioning: worm TOML without rgbDepth expands 6-bit rgb", "[versioning]") {
+  // Old profiles / configs stored channels in 0..63 and had no marker.
+  WormSettings dst;
+  dst.FromToml("rgb = [26, 26, 63]\n");
+  CHECK(dst.rgb[0] == 104);
+  CHECK(dst.rgb[1] == 104);
+  CHECK(dst.rgb[2] == 252);
+}
+
+TEST_CASE("versioning: settings TOML without rgbDepth expands worm rgb", "[versioning]") {
+  Settings const kSrc;
+  std::string toml = kSrc.ToToml();
+  // Simulate an old config: strip the markers and write 6-bit channels.
+  std::string::size_type pos;
+  while ((pos = toml.find("rgbDepth = 8")) != std::string::npos) {
+    toml.erase(pos, std::string("rgbDepth = 8").length());
+  }
+  // Sections render alphabetically; anchor on [player1] to hit its rgb.
+  pos = toml.find("[player1]");
+  REQUIRE(pos != std::string::npos);
+  pos = toml.find("rgb = [", pos);
+  REQUIRE(pos != std::string::npos);
+  toml.replace(pos, toml.find(']', pos) - pos + 1, "rgb = [15, 43, 15]");
+
+  Settings dst;
+  dst.FromToml(toml);
+  CHECK(dst.worm_settings[0]->rgb[0] == 60);
+  CHECK(dst.worm_settings[0]->rgb[1] == 172);
+  CHECK(dst.worm_settings[0]->rgb[2] == 60);
+}
+
+TEST_CASE("versioning: modernColors round-trips and defaults to classic", "[versioning]") {
+  Settings src;
+  src.modern_colors = true;
+  std::string const kToml = src.ToToml();
+  CHECK(kToml.contains("modernColors = true"));
+
+  Settings dst;
+  dst.FromToml(kToml);
+  CHECK(dst.modern_colors == true);
+
+  // Configs predating the field stay classic (missing key keeps the
+  // struct default).
+  Settings legacy;
+  std::string toml = kToml;
+  auto const kPos = toml.find("modernColors = true");
+  REQUIRE(kPos != std::string::npos);
+  toml.replace(kPos, std::string("modernColors = true").length(), "");
+  legacy.FromToml(toml);
+  CHECK(legacy.modern_colors == false);
+}
+
+TEST_CASE("versioning: out-of-range worm rgb in TOML is clamped on load", "[versioning]") {
+  // A picker bug briefly stored 256; loads must clamp into 0..255.
+  WormSettings dst;
+  dst.FromToml("rgbDepth = 8\nrgb = [256, -4, 300]\n");
+  CHECK(dst.rgb[0] == 255);
+  CHECK(dst.rgb[1] == 0);
+  CHECK(dst.rgb[2] == 255);
 }

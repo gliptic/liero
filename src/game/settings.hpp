@@ -35,6 +35,8 @@ struct AppSettings {
   bool single_screen_replay{false};
   bool spectator_window{false};
   int32_t blood_particle_max{700};
+  // Default colour mode for the renderers (sticky; live mode is per-renderer).
+  bool modern_colors{false};
 };
 
 struct Rand;
@@ -81,7 +83,9 @@ struct Settings : GameplayExtensions, AppSettings {
 
   static int const kNumWormSettings = 3;  // 0=left, 1=right, 2=network
   static int const kNetworkPlayerIdx = 2;
-  static int const kConfigVersion = 3;  // bump when adding fields to the TOML config
+  // bump when adding fields to the TOML config
+  // v4: added modernColors (default false = classic palette).
+  static int const kConfigVersion = 4;
   std::shared_ptr<WormSettings> worm_settings[kNumWormSettings];
 
   uint64_t hash;

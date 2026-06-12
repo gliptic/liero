@@ -12,7 +12,8 @@ void Renderer::SetRenderResolution(int x, int y) {
 
 void Renderer::LoadPalette(Common const& common) {
   origpal = common.exepal;
-  pal = origpal;
+  origpal_modern = common.modernpal;
+  pal = Origpal();
 }
 
 void Renderer::Clear() { Fill(bmp, 0); }

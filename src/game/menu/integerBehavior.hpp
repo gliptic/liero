@@ -23,6 +23,10 @@ struct IntegerBehavior : ItemBehavior {
   int& v;
   int min, max, step;
   int scroll_interval{5};
+  // Displayed value = v / display_div; typed input is multiplied back.
+  // Lets the classic colour picker show the VGA 0..63 range while the
+  // stored channel stays 0..255.
+  int display_div{1};
   bool percentage;
   bool allow_entry{true};
 };

@@ -228,6 +228,9 @@ struct Gfx {
   void SetSpectatorFullscreen(bool new_fullscreen);
   void SetFullscreen(bool new_fullscreen);
   void SetDoubleRes(bool new_double_res);
+  // Switches the live colour mode of the game renderers and remembers the
+  // choice in settings.
+  void SetColorMode(ColorMode new_mode);
 
   void SaveSettings(const FsNode& node);
   bool LoadSettings(const FsNode& node);

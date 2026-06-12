@@ -102,6 +102,7 @@ static bool IsNoRock(Common& /*common*/, Level& level, int size, int x, int y) {
 
 void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand) {
   origpal.ResetPalette(common.exepal, settings);
+  has_custom_palette = false;
 
   GenerateDirtPattern(common, rand);
 
@@ -226,6 +227,7 @@ bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
         Palette pal;
         pal.Read(r);
         origpal.ResetPalette(pal, settings);
+        has_custom_palette = true;
 
         reset_palette = false;
       }
@@ -238,6 +240,7 @@ bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
 
   if (reset_palette) {
     origpal.ResetPalette(common.exepal, settings);
+    has_custom_palette = false;
   }
 
   return true;

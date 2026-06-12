@@ -174,10 +174,10 @@ void Game::Draw(Renderer& renderer, GameState state, bool use_spectator_viewport
 
   // common->font.drawText(toString(cycles / 70), 10, 10, 7);
 
-  renderer.pal = renderer.origpal;
+  renderer.pal = renderer.Origpal();
 
   for (auto& w : common->color_anim) {
-    renderer.pal.RotateFrom(renderer.origpal, w.from, w.to, cycles >> 3);
+    renderer.pal.RotateFrom(renderer.Origpal(), w.from, w.to, cycles >> 3);
   }
 
   renderer.pal.Fade(renderer.fade_value);
@@ -465,11 +465,15 @@ void Game::Focus(Renderer& renderer) { UpdateSettings(renderer); }
 
 void Game::UpdateSettings(Renderer& renderer) {
   renderer.origpal = level.origpal;  // Activate the Level palette
+  // A level's custom palette wins in both modes; the modern palette only
+  // replaces the stock one.
+  renderer.origpal_modern = level.has_custom_palette ? level.origpal : common->modernpal;
 
   for (auto& i : worms) {
     Worm const& worm = *i;
     if (worm.index >= 0 && worm.index < 2) {
-      renderer.origpal.SetWormColour(worm.index, *worm.settings);
+      renderer.origpal.SetWormColour(worm.index, *worm.settings, ColorMode::kClassic);
+      renderer.origpal_modern.SetWormColour(worm.index, *worm.settings, ColorMode::kModern);
     }
   }
 }

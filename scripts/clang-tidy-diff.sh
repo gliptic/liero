@@ -58,7 +58,10 @@ fi
 # so we must disable both -e and pipefail (not just pipefail).
 set +e
 set +o pipefail
-output=$(git diff -U0 "${base_ref}"...HEAD -- 'src/*' \
+# --no-ext-diff: a user-configured external diff tool (e.g. difftastic)
+# produces output clang-tidy-diff can't parse, making it silently report
+# "No relevant changes found" on any diff.
+output=$(git diff --no-ext-diff -U0 "${base_ref}"...HEAD -- 'src/*' \
 	| "$diff_cmd" \
 		-p1 \
 		-path "$build_dir" \

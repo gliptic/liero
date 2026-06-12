@@ -189,7 +189,7 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
       if (kTimingOut) {
         contender_color = contender->MinimapColor();
       } else {
-        contender_color = Palette::kWormColourIndexes[contender->index] + 5;
+        contender_color = Palette::kWormColorBlocks[contender->index].colour_index + 5;
       }
     } else {
       contender_color = kColor;

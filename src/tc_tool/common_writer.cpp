@@ -25,10 +25,11 @@ static void WriteSpriteTga(io::Writer& w, int image_width, int image_height, con
   w.Put(8);  // Bits per pixel
   w.Put(0);  // Descriptor
 
+  // Palette entries are already 8-bit; TGA carries them as-is.
   for (auto const& entry : pal.entries) {
-    w.Put(entry.b << 2);
-    w.Put(entry.g << 2);
-    w.Put(entry.r << 2);
+    w.Put(entry.b);
+    w.Put(entry.g);
+    w.Put(entry.r);
   }
 
   // Bottom to top

@@ -180,6 +180,9 @@ struct Common {
   SpriteSet large_sprites;  // 16x16, sprites 0-109
   SpriteSet text_sprites;   // 4x4, sprites 240-265
   Palette exepal;
+  // Modern colour mode palette: the TC's modern.pal if it ships one,
+  // otherwise a full-range expansion of exepal.
+  Palette modernpal;
   Font font;
   vector<SfxSample> sounds;
 

@@ -261,7 +261,8 @@ void OnlineConnectState::Draw() {
   Common& common = *gfx->common;
   Font& font = common.font;
 
-  gfx->play_renderer.pal = common.exepal;
+  gfx->play_renderer.pal =
+      gfx->play_renderer.mode == ColorMode::kModern ? common.modernpal : common.exepal;
   Fill(gfx->play_renderer.bmp, 0);
 
   int const kCx = 160;

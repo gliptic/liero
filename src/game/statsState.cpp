@@ -359,8 +359,8 @@ void StatsState::Draw() {
 
     renderer.Section(cell().Ref() << "Total health difference", 0);
 
-    renderer.Graph(wormTotalHpDiff_, 100, Palette::kWormColourIndexes[0],
-                   Palette::kWormColourIndexes[1], /*balanced=*/true);
+    renderer.Graph(wormTotalHpDiff_, 100, Palette::kWormColorBlocks[0].colour_index,
+                   Palette::kWormColorBlocks[1].colour_index, /*balanced=*/true);
 
     renderer.Section(cell().Ref() << "Presence", 0);
     renderer.Heatmap(recorder_.presence);
@@ -373,7 +373,8 @@ void StatsState::Draw() {
       renderer.WeaponStats(weaponStats_[i]);
 
       renderer.Section(cell().Ref() << "Damage over time", 0);
-      renderer.Graph(wormDamages_[i], 50, Palette::kWormColourIndexes[i], 0, /*balanced=*/false);
+      renderer.Graph(wormDamages_[i], 50, Palette::kWormColorBlocks[i].colour_index, 0,
+                     /*balanced=*/false);
 
       renderer.Section(cell().Ref() << "Presence", 0);
       renderer.Heatmap(recorder_.worms[i].presence);

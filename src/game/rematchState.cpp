@@ -19,6 +19,7 @@ RematchState::RematchState(Game& last_game)
 void RematchState::Enter() {
   Fill(gfx->play_renderer.bmp, 0);
   gfx->play_renderer.origpal = gfx->common->exepal;
+  gfx->play_renderer.origpal_modern = gfx->common->modernpal;
   gfx->ClearKeys();
 
   prevRandomLevel_ = gfx->settings->random_level;

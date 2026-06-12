@@ -10,6 +10,7 @@
 #include <serialization/cereal_types.hpp>
 
 #include <cassert>
+#include <set>
 #include <sstream>
 #include <utility>
 
@@ -23,6 +24,35 @@ constexpr uint8_t kReplayTagEmptyFrame = 0x80;    // frame with no input change
 constexpr uint8_t kReplayTagSettings = 0x81;      // cereal'd Settings follows
 constexpr uint8_t kReplayTagWormSettings = 0x82;  // worm index + cereal'd WormSettings
 constexpr uint8_t kReplayTagEnd = 0x83;           // end of stream
+
+// Pre-7 replays stored worm colours as 6-bit VGA channels; expand to the
+// 0..255 range used since version 7.
+void ExpandLegacyWormRgb(WormSettings& ws) {
+  for (int& v : ws.rgb) {
+    v = (v & 63) << 2;
+  }
+}
+
+// Expands exactly the WormSettings objects a cereal read just produced.
+// Worm settings are shared_ptrs that may alias the global settings'
+// entries, so dedupe to avoid double-scaling.
+void ExpandLegacyWormRgb(Settings& settings, std::set<WormSettings*>& seen) {
+  for (auto const& ws : settings.worm_settings) {
+    if (ws && seen.insert(ws.get()).second) {
+      ExpandLegacyWormRgb(*ws);
+    }
+  }
+}
+
+void ExpandLegacyWormRgb(Game& game) {
+  std::set<WormSettings*> seen;
+  ExpandLegacyWormRgb(*game.settings, seen);
+  for (auto const& worm : game.worms) {
+    if (worm->settings && seen.insert(worm->settings.get()).second) {
+      ExpandLegacyWormRgb(*worm->settings);
+    }
+  }
+}
 }  // namespace
 
 // Helper: serialize an object to a binary blob via cereal and write
@@ -96,6 +126,19 @@ std::unique_ptr<Game> ReplayReader::BeginPlayback(
   std::unique_ptr<Game> game(new Game(common, kSettings, sound_player));
 
   CerealRead(reader, *game);
+
+  if (replay_version < 7) {
+    // Pre-7 replays stored the level palette as 6-bit VGA channels.
+    for (auto& e : game->level.origpal.entries) {
+      e.r <<= 2;
+      e.g <<= 2;
+      e.b <<= 2;
+    }
+    ExpandLegacyWormRgb(*game);
+  }
+
+  // The replay stream carries the palette but not the custom-palette flag.
+  game->level.DeriveHasCustomPalette(common->exepal);
 
   return game;
 }
@@ -225,12 +268,21 @@ bool ReplayReader::PlaybackFrame(Renderer& renderer) {
     }
     if (kFirst == kReplayTagSettings) {
       CerealRead(reader, *game.settings);
+      if (replay_version < 7) {
+        // Only the freshly read Settings carry 6-bit values; the worms'
+        // own settings objects were not re-read here.
+        std::set<WormSettings*> seen;
+        ExpandLegacyWormRgb(*game.settings, seen);
+      }
       settings_changed = true;
     } else if (kFirst == kReplayTagWormSettings) {
       uint32_t const kWormId = io::ReadUint32(reader);
       Worm const* w = game.WormByIdx(kWormId);
       if (w) {
         CerealRead(reader, *w->settings);
+        if (replay_version < 7) {
+          ExpandLegacyWormRgb(*w->settings);
+        }
         settings_changed = true;
       }
     } else if (kFirst == kReplayTagEnd) {

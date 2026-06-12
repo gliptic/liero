@@ -270,10 +270,13 @@ static int ReadSpriteTga(io::Reader& r, int dest_image_width, int dest_image_hei
   CHECK(image_height == dest_image_height);
 
   if (pal) {
+    // Quantize the 24-bit TGA palette to the classic 6-bit VGA grid
+    // (entries are 8-bit; dropping the low 2 bits keeps classic rendering
+    // byte-identical to the original >>2-then-<<2 pipeline).
     for (auto& entry : pal->entries) {
-      entry.b = r.Get() >> 2;
-      entry.g = r.Get() >> 2;
-      entry.r = r.Get() >> 2;
+      entry.b = r.Get() & 0xfc;
+      entry.g = r.Get() & 0xfc;
+      entry.r = r.Get() & 0xfc;
     }
   } else {
     r.TrySkip(256 * 3);  // Ignore palette
@@ -371,6 +374,20 @@ void Common::load(const FsNode& node) {
       io::Reader& r = *r_ptr;
 
       ReadSpriteTga(r, small_sprites, &exepal);
+    }
+
+    {
+      auto modern_pal_node = node / "modern.pal";
+      if (modern_pal_node.Exists()) {
+        // A TC can ship a curated full-8-bit palette for modern mode.
+        auto r_ptr = modern_pal_node.ToReader();
+        modernpal.ReadFull(*r_ptr);
+      } else {
+        // The modern palette stays true to the original: just the classic
+        // palette expanded to the full 8-bit range.
+        modernpal = exepal;
+        modernpal.ExpandToFullRange();
+      }
     }
 
     {

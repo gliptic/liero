@@ -23,6 +23,7 @@ struct HiddenMenu : Menu {
     kAllowViewingSpawnPoint,
     kSingleScreenReplay,
     kSpectatorWindow,
+    kColorMode,
   };
 
   HiddenMenu(int x, int y) : Menu(x, y) {}

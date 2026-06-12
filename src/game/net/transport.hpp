@@ -24,7 +24,9 @@ struct IceAgent;
 struct NetTransport {
   // Peers running a different version handshake-mismatch and disconnect
   // rather than play with mismatched packet semantics.
-  static constexpr uint8_t kProtocolVersion = 5;
+  // v6: worm rgb and the level palette bytes carry 0..255 channels
+  //     (previously 6-bit VGA values).
+  static constexpr uint8_t kProtocolVersion = 6;
 
   // Wire sizes for hand-serialized structs (no compiler padding).
   static constexpr size_t kPlayerInfoWireSize = 5 * 4 + 4 + 3 * 4 + 24;

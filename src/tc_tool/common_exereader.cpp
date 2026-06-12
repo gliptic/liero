@@ -373,13 +373,14 @@ static void LoadConstants(Common& common, ReaderFile& exe) {
 static void LoadPalette(Common& common, ReaderFile& exe) {
   exe.Seekg(132774);
 
-  for (auto& entrie : common.exepal.entries) {
+  for (auto& entry : common.exepal.entries) {
     unsigned char rgb[3];
     exe.Get(reinterpret_cast<uint8_t*>(rgb), 3);
 
-    entrie.r = rgb[0] & 63;
-    entrie.g = rgb[1] & 63;
-    entrie.b = rgb[2] & 63;
+    // Expand the EXE's 6-bit VGA channels to the 8-bit range Palette holds.
+    entry.r = (rgb[0] & 63) << 2;
+    entry.g = (rgb[1] & 63) << 2;
+    entry.b = (rgb[2] & 63) << 2;
   }
 
   exe.Seekg(0x1AF0C);
