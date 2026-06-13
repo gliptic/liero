@@ -130,9 +130,12 @@ void MainMenuState::Enter() {
   gfx->frozen_screen.Copy(gfx->play_renderer.bmp);
   gfx->single_screen_renderer.Clear();
   if (gfx->controller->CurrentLevel()) {
-    gfx->controller->CurrentLevel()->DrawMiniature(gfx->single_screen_renderer.bmp, kCenterX - 126,
-                                                   gfx->single_screen_renderer.render_res_y - 208,
-                                                   2);
+    Level const* level = gfx->controller->CurrentLevel();
+    int const kMinimapStepX = std::max((level->width + 251) / 252, 1);
+    int const kMinimapStepY = std::max((level->height + 174) / 175, 1);
+    level->DrawMiniature(gfx->single_screen_renderer.bmp, kCenterX - 126,
+                         gfx->single_screen_renderer.render_res_y - 208, kMinimapStepX,
+                         kMinimapStepY);
   }
   gfx->frozen_spectator_screen.Copy(gfx->single_screen_renderer.bmp);
 

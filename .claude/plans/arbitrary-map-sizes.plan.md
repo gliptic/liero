@@ -123,28 +123,32 @@ No behavior change; level still loads at 504×350. De-risks everything downstrea
   config version, TOML round-trip, backward-compat (missing keys fall back to
   504×350), and `GenerateFromSettings` at non-default and default dimensions.
 
-### PR 4 — Zooming spectator viewport (render-to-scratch + downscale)
-- Split `SpectatorViewport::Draw` (`spectatorviewport.cpp:33`) into a **world
-  pass** (level + objects + worm sprites at 1:1 into a scratch bitmap sized to
-  the visible region) and an **HUD overlay pass** (health bars/names/weapon
-  lists/banner at native res on top, using the existing `kMultiplier` layout).
-- Compute zoom each frame from both worms' bounding box (+ margin), clamp to map
-  bounds and to **1× max** (never zoom in past native). Area-downscale scratch →
-  spectator rect (extend `ScaleDraw`). Keep `Process()` clamp logic; floats are
-  fine (display-only).
-- Make HUD `stats_x`/`+68` offsets resolution-relative.
-- **Fix minimap scaling**: the minimap currently assumes 504×350 and overwrites
-  the lower-right corner of the HUD on non-standard map sizes. Scale the minimap
-  render to fit its allocated HUD rect regardless of level dimensions.
-- **Fix weapon-select spectator view**: the spectator view in the weapon-selection
-  screen does not handle non-standard map sizes correctly (layout breaks / clips).
-  Fix alongside the render-to-scratch restructuring since the same HUD/world
-  split resolves both issues naturally.
-- **Mergeable because**: on 504×350 maps the bounding box fits, zoom stays 1×,
-  output is visually unchanged.
-- **Validate**: smoke-launch hotseat on the 4096² level, drive worms far apart,
-  confirm both stay visible, HUD stays crisp at 1×, minimap renders within its
-  rect, and weapon-select spectator view is correct at non-standard sizes.
+### PR 4 — Zooming spectator viewport (render-to-scratch + downscale) — **DONE**
+
+Delivered on branch `arbitrary-map-sizes-pr4`:
+
+- `ScaleDrawArea` CPU box-filter downscale added to `gfx/blit.cpp`; 4 Catch2
+  cases in `src/tests/test_blit.cpp`.
+- `SpectatorViewport::Draw` split into world pass (scratch bitmap at visible
+  world region, 1:1 pixel scale) + `ScaleDrawArea` composite + HUD overlay at
+  native renderer resolution.
+- `SpectatorViewport::Process` computes zoom from both worms' bounding box +
+  60 px margin, clamped to 1.0× max (never zooms in past native pixels).
+- Controller viewport rects changed to `Rect(0, 0, 640, 400)`; the old
+  `504+68` centering hack removed.
+- `DrawMiniature` gains independent `step_x`/`step_y` axes (two-axis overload,
+  single-step wrapper kept for call-site compat) and is now `const`-qualified.
+  All minimap draw sites updated; `fileSelectorState.cpp` adds `FillRect` before
+  each draw to clear stale pixels when switching level previews.
+- Spectator window renders at native pixel resolution: `OnWindowResize` queries
+  `SDL_GetWindowSize` and calls `single_screen_renderer.SetRenderResolution(w,h)`;
+  `SpectatorViewport` caches `render_w`/`render_h` from the renderer so
+  `Process()` stays consistent without a `Renderer&` parameter. During
+  single-screen replay `single_screen_renderer` is reset to 640×400 (it doubles
+  as the main window primary renderer in that mode) and restored on game exit.
+
+> **Known limitation**: extreme CPU slowdown when worms move far apart and
+> zoom-out is triggered on a large native spectator window. Addressed in PR 7.
 
 ### PR 5 — Configurable videotool output resolution
 - **`tools_main.cpp`**: add `-w/-h` (or `--res WxH`) parsing alongside `-d/-s/-r`.
@@ -184,6 +188,88 @@ completely blowing out L3 cache every tick. Local play is unaffected (no rollbac
   `test_snapshot_fast` (add a dirty-tracking round-trip case); confirm online play
   on the 4096² level is no longer noticeably slower than local play.
 
+### PR 7 — Rendering pipeline optimisation
+
+With large maps and large native spectator windows, the rendering pipeline can
+exceed the 14 ms frame budget in several places.  This PR opens with a profiling
+pass to identify every hot path, then fixes them in priority order.  Any
+findings that don't fit the scope (e.g. a major bottleneck in simulation,
+networking, or palette handling) are noted as follow-on work rather than
+stretching this PR.
+
+#### Known bottleneck: spectator world pass
+
+`SpectatorViewport::Draw` allocates a scratch bitmap sized to the visible world
+region:
+
+```
+scratch_w = min(render_w / zoom, level.width)
+scratch_h = min(render_h / zoom, level.height)
+```
+
+Every draw pass (level tiles, shadow pass, all sprite types) iterates over
+every pixel of the scratch bitmap.  At a 1280×800 native window with zoom = 0.5
+the scratch is 2560×1600 — 16× more pixels than the old fixed 640×400 case.
+The subsequent `ScaleDrawArea` box-filter is also O(scratch_w × scratch_h), so
+total cost scales as `(render_w × render_h) / zoom²`.
+
+#### Tasks
+
+0. **Profile first.**
+   Run with a 4096² level and the spectator window at a large native size (e.g.
+   1280×800), worms at maximum separation to force full zoom-out.  Use
+   `perf record` / Instruments / Tracy (or even a manual frame timer around the
+   key call sites) to confirm which functions actually dominate.  Let the profile
+   guide which of the tasks below to tackle and in what order; skip tasks that
+   don't appear in the hot path.  If the profiler surfaces a major bottleneck
+   outside the rendering pipeline (simulation tick, palette rebuild, network
+   processing) open a separate follow-on issue rather than folding it here.
+
+1. **Cap the world-pass scratch at a fixed size and GPU-scale to the window.**
+   Render the world pass into a bitmap capped at `min(render_w, level.width) ×
+   min(render_h, level.height)` (i.e. never larger than the level itself,
+   regardless of zoom).  Upload it to an SDL streaming texture and let
+   `SDL_RenderTexture` with `SDL_SCALEMODE_LINEAR` (or `NEAREST` for the chunky
+   pixel look) scale it to the native window on the GPU.  Draw the HUD overlay
+   afterwards at native resolution via a second texture or directly into the
+   renderer surface.  This decouples world-pass cost from native window size
+   entirely and is expected to be the highest-ROI fix.
+
+2. **Frustum-cull the sprite and shadow passes.**
+   Currently every worm, wobject, nobject, bonus, and sobject is visited even
+   when off-screen after zoom-out.  Add a cheap AABB check against the visible
+   world rect `[x, x+scratch_w) × [y, y+scratch_h)` before each
+   `BlitImage` / `BlitShadowImage` call.  On large maps with many off-screen
+   objects this can cut the sprite-pass cost significantly.
+
+3. **SIMD / vectorised `ScaleDrawArea`.**
+   If the CPU downscale path is retained (e.g. for the videotool offline
+   render), the inner accumulation loop in `ScaleDrawArea` (`blit.cpp`) is a
+   natural auto-vectorisation candidate.  Only pursue this if tasks 1 and 2
+   leave a measurable remainder in the profile.
+
+4. **Cap minimum zoom.**
+   A configurable floor (e.g. 0.25×) below which the viewport stops zooming out
+   and pans to the midpoint instead gives a hard upper bound on scratch size
+   independent of worm separation.  Expose as a hidden-menu option.  This is a
+   UX trade-off rather than a pure optimisation, so treat it as optional and
+   decide based on playtest feedback.
+
+5. **Audit and fix any other hot paths found in step 0.**
+   Document findings and fixes here as they are discovered.
+
+#### Ordering
+
+Do step 0 first.  Steps 1 and 2 are independent; step 1 gives the larger
+speedup.  Steps 3 and 4 are conditional on profiling results.
+
+- **Mergeable because**: purely display-side; does not touch simulation, net
+  protocol, or on-disk format.
+- **Validate**: confirm frame time is within budget at 1280×800 and 1920×1080
+  with a 4096² level and worms at maximum separation.  Run `test_blit` to
+  confirm `ScaleDrawArea` correctness is unchanged.  Smoke-launch +
+  clang-format/tidy diff.
+
 ## Validation (every PR)
 
 ```bash
@@ -206,13 +292,15 @@ scripts/clang-format-diff.sh && scripts/clang-tidy-diff.sh build/linux-x64
 | Memory at 4096² (~117 MB layers + AI) | Medium | D2 cap; fail loudly past 4096; document cost |
 | Determinism regressions from PR1/PR3 sim touch | Medium | `test_determinism`/`test_rollback_*` on every PR |
 | Rollback snapshot too large for online play on big maps | High (4096²) | PR6 — dirty-cell tracking; PR2 already fixed correctness |
+| Spectator world-pass cost O((W×H)/zoom²) on large native windows | High | PR7 — GPU-scale world pass; frustum cull sprites |
 
 ## Acceptance
 
 - [x] PR1: all 504×350 hardcodes read `level.width/height`; behavior unchanged; suites green.
 - [x] PR2: new sized format loads/saves; legacy files still load; 4096² level generates on demand; tools + doc updated.
 - [x] PR3: random map size editable in MATCH SETUP; config v5; defaults reproduce 504×350.
-- [ ] PR4: spectator auto-zooms to keep both worms visible; 1× on small maps unchanged; minimap scales correctly; weapon-select spectator view correct at all sizes.
+- [x] PR4: spectator auto-zooms to keep both worms visible; 1× on small maps unchanged; minimap scales correctly; weapon-select spectator view correct at all sizes; native-resolution spectator window.
 - [ ] PR5: videotool output resolution selectable; scaler input dynamic.
 - [ ] PR6: online play on 4096² level no longer noticeably slower than local play; rollback tests green.
+- [ ] PR7: spectator viewport frame time within budget at ≥1280×800 with worms at maximum separation on a 4096² level.
 - [ ] Determinism/rollback suites + format checks pass on every PR.

@@ -482,22 +482,22 @@ bool Level::SelectSpawn(Rand& rand, int w, int h, IVec2& selected) {
   return i > 0;
 }
 
-void Level::DrawMiniature(Bitmap& dest, int map_x, int map_y, int step) {
-  int my = step / 2;
+void Level::DrawMiniature(Bitmap& dest, int map_x, int map_y, int step_x, int step_y) const {
+  int my = step_y / 2;
 
-  int const kMapEndY = map_y + ((height + step / 2) / step);
-  int const kMapEndX = map_x + ((width + step / 2) / step);
+  int const kMapEndY = map_y + ((height + step_y / 2) / step_y);
+  int const kMapEndX = map_x + ((width + step_x / 2) / step_x);
 
   for (int y = map_y; y < kMapEndY; ++y) {
-    int mx = step / 2;
+    int mx = step_x / 2;
     for (int x = map_x; x < kMapEndX; ++x) {
       auto const kIdx = static_cast<unsigned int>(mx + my * width);
       if (kIdx < material_id.size() && dest.clip_rect.Inside(x, y)) {
         dest.GetPixel(x, y) =
             AppearanceAt(static_cast<int>(kIdx), dest.mode, dest.pal32, dest.cycles);
       }
-      mx += step;
+      mx += step_x;
     }
-    my += step;
+    my += step_y;
   }
 }

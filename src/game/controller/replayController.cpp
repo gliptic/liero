@@ -140,14 +140,12 @@ void ReplayController::ChangeState(GameState new_state) {
     game->worms[0]->stats_x = 0;
     game->worms[1]->stats_x = 218;
 
-    // spectator viewport is always full size
-    // +68 on x to align the viewport in the middle
-    game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350)));
+    game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 640, 400)));
     if (gfx.settings->single_screen_replay) {
       // on single screen replay, use the spectator viewport for the
       // main screen as well
       // we can't use the same object, as the vector's clean function will delete them
-      game->AddViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350)));
+      game->AddViewport(new SpectatorViewport(Rect(0, 0, 640, 400)));
     } else {
       game->AddViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index));
       game->AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index));

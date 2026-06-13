@@ -30,7 +30,10 @@ struct Level {
   void MakeShadow(Common& common);
   void GenerateFromSettings(Common& common, Settings const& settings, Rand& rand);
   bool SelectSpawn(Rand& rand, int w, int h, IVec2& selected);
-  void DrawMiniature(Bitmap& dest, int map_x, int map_y, int step);
+  void DrawMiniature(Bitmap& dest, int map_x, int map_y, int step_x, int step_y) const;
+  void DrawMiniature(Bitmap& dest, int map_x, int map_y, int step) const {
+    DrawMiniature(dest, map_x, map_y, step, step);
+  }
 
   // Per-level animation ramp: a short list of ARGB colours that cycle each
   // frame. `shift` controls speed: phase = (cycles >> shift) % colors.size().

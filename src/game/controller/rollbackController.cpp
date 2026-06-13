@@ -59,7 +59,7 @@ RollbackController::RollbackController(const std::shared_ptr<Common>& common,
                                  : settings->worm_settings[idx];
   }
   ConfigureGameSlots(game, ws);
-  game.AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350)));
+  game.AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 640, 400)));
 }
 
 RollbackController::~RollbackController() = default;

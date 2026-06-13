@@ -336,6 +336,39 @@ TEST_CASE("scaledraw magnifies argb and applies the composition fade", "[blit][a
   REQUIRE(dest1[0] == 0xFF000000U);
 }
 
+TEST_CASE("scaledrawarea 1x1 src to 1x1 dest copies the pixel", "[blit][scaledrawarea]") {
+  uint32_t const kSrc = 0xFF102030U;
+  uint32_t dest = 0;
+  ScaleDrawArea(&kSrc, 1, 1, 1, &dest, 1, 1, 1);
+  REQUIRE(dest == 0xFF102030U);
+}
+
+TEST_CASE("scaledrawarea 2x2 src to 1x1 dest averages all four pixels", "[blit][scaledrawarea]") {
+  // Four pixels: R channels 0x10, 0x30, 0x50, 0x70 — avg = 0x40.
+  uint32_t const kSrc[4] = {0xFF100000U, 0xFF300000U, 0xFF500000U, 0xFF700000U};
+  uint32_t dest = 0;
+  ScaleDrawArea(kSrc, 2, 2, 2, &dest, 1, 1, 1);
+  REQUIRE(dest == 0xFF400000U);
+}
+
+TEST_CASE("scaledrawarea 4x1 src to 2x1 dest averages pairs", "[blit][scaledrawarea]") {
+  // Two pairs: (0x04, 0x08) avg 0x06; (0x10, 0x20) avg 0x18.
+  uint32_t const kSrc[4] = {0xFF040000U, 0xFF080000U, 0xFF100000U, 0xFF200000U};
+  uint32_t dest[2] = {};
+  ScaleDrawArea(kSrc, 4, 1, 4, dest, 2, 1, 2);
+  REQUIRE(dest[0] == 0xFF060000U);
+  REQUIRE(dest[1] == 0xFF180000U);
+}
+
+TEST_CASE("scaledrawarea 1x4 src to 1x2 dest averages column pairs", "[blit][scaledrawarea]") {
+  // Vertical: (0x04, 0x08) avg 0x06; (0x20, 0x40) avg 0x30.
+  uint32_t const kSrc[4] = {0xFF000004U, 0xFF000008U, 0xFF000020U, 0xFF000040U};
+  uint32_t dest[2] = {};
+  ScaleDrawArea(kSrc, 1, 4, 1, dest, 1, 2, 1);
+  REQUIRE(dest[0] == 0xFF000006U);
+  REQUIRE(dest[1] == 0xFF000030U);
+}
+
 TEST_CASE("updatemenupalettes repacks pal32 with the menu animation", "[blit][pal32]") {
   // Regression: the menu palette rebuild must end with an UpdatePal32 (and
   // must not compose) — menus draw through pal32, so a stale LUT freezes

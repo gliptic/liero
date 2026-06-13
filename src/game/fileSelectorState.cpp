@@ -113,9 +113,16 @@ void LevelSelectorState::DrawExtra() {
       if (level.load(common, *gfx->settings, r)) {
         int const kCenterX = gfx->single_screen_renderer.render_res_x / 2;
 
-        level.DrawMiniature(gfx->frozen_screen, 134, 162, 10);
-        level.DrawMiniature(gfx->frozen_spectator_screen, kCenterX - 126,
-                            gfx->single_screen_renderer.render_res_y - 208, 2);
+        int const kHudStepX = std::max((level.width + 51) / 52, 1);
+        int const kHudStepY = std::max((level.height + 35) / 36, 1);
+        FillRect(gfx->frozen_screen, 134, 162, 52, 36, 0);
+        level.DrawMiniature(gfx->frozen_screen, 134, 162, kHudStepX, kHudStepY);
+        int const kSpecStepX = std::max((level.width + 251) / 252, 1);
+        int const kSpecStepY = std::max((level.height + 174) / 175, 1);
+        int const kSpecY = gfx->single_screen_renderer.render_res_y - 208;
+        FillRect(gfx->frozen_spectator_screen, kCenterX - 126, kSpecY, 252, 175, 0);
+        level.DrawMiniature(gfx->frozen_spectator_screen, kCenterX - 126, kSpecY, kSpecStepX,
+                            kSpecStepY);
       }
     } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — bad preview is non-fatal; we
                                      // just skip drawing it.

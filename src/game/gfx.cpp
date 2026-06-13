@@ -397,11 +397,19 @@ void Gfx::OnWindowResize(uint32_t window_id) {
     }
 
     if (settings->spectator_window) {
+      int w = 0;
+      int h = 0;
+      SDL_GetWindowSize(sdl_spectator_window, &w, &h);
       sdl_spectator_texture = SDL_CreateTexture(sdl_spectator_renderer, SDL_PIXELFORMAT_ARGB8888,
-                                                SDL_TEXTUREACCESS_STREAMING, 640, 400);
-      sdl_spectator_draw_surface = SDL_CreateSurface(640, 400, SDL_PIXELFORMAT_ARGB8888);
-      SDL_SetRenderLogicalPresentation(sdl_spectator_renderer, 640, 400,
+                                                SDL_TEXTUREACCESS_STREAMING, w, h);
+      sdl_spectator_draw_surface = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_ARGB8888);
+      SDL_SetRenderLogicalPresentation(sdl_spectator_renderer, w, h,
                                        SDL_LOGICAL_PRESENTATION_LETTERBOX);
+      // Only resize the renderer when it isn't being used as primary renderer
+      // for the main window (i.e. during single-screen replay).
+      if (primary_renderer != &single_screen_renderer) {
+        single_screen_renderer.SetRenderResolution(w, h);
+      }
     }
   }
 }
@@ -1368,10 +1376,14 @@ bool Gfx::RunOneFrame() {
         controller = std::move(new_controller);
       } else if (kMenuSelection == MainMenu::kMaResumeGame) {
         if (controller->IsReplay()) {
+          // single_screen_renderer is drawn to the main window in replay mode,
+          // so it must fit in the main window surface (max 640×400).
+          single_screen_renderer.SetRenderResolution(640, 400);
           primary_renderer = &single_screen_renderer;
         }
       } else if (kMenuSelection == MainMenu::kMaReplay) {
         if (settings->single_screen_replay) {
+          single_screen_renderer.SetRenderResolution(640, 400);
           primary_renderer = &single_screen_renderer;
         }
       } else if (kMenuSelection == MainMenu::kMaHostGame) {
@@ -1438,6 +1450,15 @@ bool Gfx::RunOneFrame() {
       primary_renderer = &play_renderer;
       controller->Unfocus();
       ClearKeys();
+
+      // Restore spectator renderer to the actual window pixel size now that
+      // it's no longer shared with the main window.
+      if (sdl_spectator_window && settings->spectator_window) {
+        int w = 0;
+        int h = 0;
+        SDL_GetWindowSize(sdl_spectator_window, &w, &h);
+        single_screen_renderer.SetRenderResolution(w, h);
+      }
 
       // Draw one frame so the menu background captures the final game state
       play_renderer.Clear();

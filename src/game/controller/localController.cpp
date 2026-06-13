@@ -49,8 +49,7 @@ LocalController::LocalController(const std::shared_ptr<Common>& common,
   game.AddWorm(worm1);
   game.AddWorm(worm2);
 
-  // +68 on x to align the viewport in the middle
-  game.AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350)));
+  game.AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 640, 400)));
 }
 
 LocalController::~LocalController() { EndRecord(); }

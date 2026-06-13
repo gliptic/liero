@@ -52,6 +52,11 @@ void DrawGraph(Bitmap& scr, std::vector<double> const& data, int height, int sta
 void ScaleDraw(uint32_t const* src, int w, int h, std::size_t src_pitch, uint8_t* dest,
                std::size_t dest_pitch, int mag, int fade);
 
+// Box-filter (area-averaging) downscale from ARGB src to ARGB dest.
+// Pitches are in uint32_t units (pixels, not bytes).
+void ScaleDrawArea(uint32_t const* src, int src_w, int src_h, std::size_t src_pitch, uint32_t* dest,
+                   int dest_w, int dest_h, std::size_t dest_pitch);
+
 int FitScreen(int back_w, int back_h, int scr_w, int scr_h, int& offset_x, int& offset_y);
 
 struct Heatmap {
