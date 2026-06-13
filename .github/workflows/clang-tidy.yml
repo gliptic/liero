@@ -74,7 +74,7 @@ jobs:
 
       - name: Restore last-success SHA (nightly)
         if: github.event_name == 'schedule'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .last-clang-tidy-success-sha
           key: clang-tidy-success-${{ github.sha }}
@@ -112,7 +112,7 @@ jobs:
 
       - name: Save last-success SHA (nightly)
         if: github.event_name == 'schedule' && steps.gate.outputs.skip != 'true' && success()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .last-clang-tidy-success-sha
           key: clang-tidy-success-${{ github.sha }}
