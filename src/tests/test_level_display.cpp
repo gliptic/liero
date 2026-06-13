@@ -160,7 +160,7 @@ static constexpr int kLevW = 504, kLevH = 350;
 static constexpr std::size_t kLevCells = kLevW * kLevH;
 
 // Append MODERNLV block (magic + display_data + display_valid) to buf.
-// Does NOT write ramp_count; produces a Stage-3-format block for compat tests.
+// Does NOT write ramp_count; produces a display-only block for compat tests.
 static void AppendModernBlock(std::vector<uint8_t>& buf, std::vector<uint32_t> const& dd,
                               std::vector<uint8_t> const& dv) {
   static constexpr uint8_t kMagic[8] = {'M', 'O', 'D', 'E', 'R', 'N', 'L', 'V'};
@@ -170,8 +170,8 @@ static void AppendModernBlock(std::vector<uint8_t>& buf, std::vector<uint32_t> c
   buf.insert(buf.end(), dv.begin(), dv.end());
 }
 
-// Append Stage 4 ramp table + display_anim after the display_valid data.
-// Pass empty ramps to write ramp_count=0 (static Stage 4 block).
+// Append ramp table + display_anim after the display_valid data.
+// Pass empty ramps to write ramp_count=0 (no anim layer).
 static void AppendRampData(std::vector<uint8_t>& buf, std::vector<Level::ArgbRamp> const& ramps,
                            std::vector<uint8_t> const& display_anim) {
   buf.push_back(static_cast<uint8_t>(ramps.size()));
@@ -188,7 +188,7 @@ static void AppendRampData(std::vector<uint8_t>& buf, std::vector<Level::ArgbRam
   }
 }
 
-TEST_CASE("Level::load classic level leaves display layers empty", "[level][stage3]") {
+TEST_CASE("Level::load classic level leaves display layers empty", "[level][display-layer]") {
   Common common;
   FillMaterials(common);
   Settings settings;
@@ -203,7 +203,7 @@ TEST_CASE("Level::load classic level leaves display layers empty", "[level][stag
   CHECK(level.display_valid.empty());
 }
 
-TEST_CASE("Level::load MODERNLV block populates display layers", "[level][stage3]") {
+TEST_CASE("Level::load MODERNLV block populates display layers", "[level][display-layer]") {
   Common common;
   FillMaterials(common);
   Settings settings;
@@ -232,9 +232,9 @@ TEST_CASE("Level::load MODERNLV block populates display layers", "[level][stage3
   CHECK(level.display_valid[1] == 0);
 }
 
-// Stage 4: animated true-color terrain tests.
+// Animated terrain (ramp layer) tests.
 
-TEST_CASE("Level has argb_ramps and display_anim empty by default", "[level][stage4]") {
+TEST_CASE("Level has argb_ramps and display_anim empty by default", "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Level const kLevel(common);
@@ -242,7 +242,7 @@ TEST_CASE("Level has argb_ramps and display_anim empty by default", "[level][sta
   CHECK(kLevel.display_anim.empty());
 }
 
-TEST_CASE("Level::Swap also swaps argb_ramps and display_anim", "[level][stage4]") {
+TEST_CASE("Level::Swap also swaps argb_ramps and display_anim", "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Level a = MakeClassicLevel(common);
@@ -267,7 +267,7 @@ TEST_CASE("Level::Swap also swaps argb_ramps and display_anim", "[level][stage4]
 }
 
 TEST_CASE("AppearanceAt animated pixel cycles through colors as cycles advances",
-          "[level][stage4]") {
+          "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Level level = MakeClassicLevel(common);
@@ -293,7 +293,7 @@ TEST_CASE("AppearanceAt animated pixel cycles through colors as cycles advances"
   CHECK(level.AppearanceAt(5, ColorMode::kClassic, pal32, 1) == 0xFF112233U);
 }
 
-TEST_CASE("AppearanceAt shift controls cycle speed", "[level][stage4]") {
+TEST_CASE("AppearanceAt shift controls cycle speed", "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Level level = MakeClassicLevel(common);
@@ -313,7 +313,8 @@ TEST_CASE("AppearanceAt shift controls cycle speed", "[level][stage4]") {
   CHECK(level.AppearanceAt(5, ColorMode::kModern, pal32, 3) == 0xFF00BB00U);
 }
 
-TEST_CASE("AppearanceAt phase offset in display_data shifts the cycle start", "[level][stage4]") {
+TEST_CASE("AppearanceAt phase offset in display_data shifts the cycle start",
+          "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Level level = MakeClassicLevel(common);
@@ -333,7 +334,8 @@ TEST_CASE("AppearanceAt phase offset in display_data shifts the cycle start", "[
   CHECK(level.AppearanceAt(5, ColorMode::kModern, pal32, 2) == 0xFFAA0000U);  // (1+2)%3=0
 }
 
-TEST_CASE("AppearanceAt out-of-range display_anim falls back to display_data", "[level][stage4]") {
+TEST_CASE("AppearanceAt out-of-range display_anim falls back to display_data",
+          "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Level level = MakeClassicLevel(common);
@@ -341,7 +343,7 @@ TEST_CASE("AppearanceAt out-of-range display_anim falls back to display_data", "
   level.display_valid.assign(16, 1);
   level.display_anim.assign(16, 0);
 
-  // display_anim[5] = 0 → static authored (Stage 3 behavior)
+  // display_anim[5] = 0 → static authored pixel
   level.display_data[5] = 0xFF112233U;
   uint32_t pal32[256] = {};
   CHECK(level.AppearanceAt(5, ColorMode::kModern, pal32, 0) == 0xFF112233U);
@@ -356,7 +358,7 @@ TEST_CASE("AppearanceAt out-of-range display_anim falls back to display_data", "
   CHECK(level.AppearanceAt(7, ColorMode::kModern, pal32, 0) == 0xFF445566U);
 }
 
-TEST_CASE("AppearanceAt no-ramps path is identical to stage-3 static", "[level][stage4]") {
+TEST_CASE("AppearanceAt no-ramps path matches static display behavior", "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Level level = MakeClassicLevel(common);
@@ -374,12 +376,12 @@ TEST_CASE("AppearanceAt no-ramps path is identical to stage-3 static", "[level][
   CHECK(level.AppearanceAt(5, ColorMode::kClassic, pal32, 42) == 0xFFABCDEFU);
 }
 
-TEST_CASE("Bitmap cycles field defaults to 0", "[level][stage4]") {
+TEST_CASE("Bitmap cycles field defaults to 0", "[level][anim-layer]") {
   Bitmap bmp;  // NOLINT(misc-const-correctness)
   CHECK(bmp.cycles == 0);
 }
 
-TEST_CASE("Bitmap::Copy propagates cycles", "[level][stage4]") {
+TEST_CASE("Bitmap::Copy propagates cycles", "[level][anim-layer]") {
   Bitmap src;
   src.Alloc(4, 4);
   src.cycles = 99;
@@ -388,7 +390,7 @@ TEST_CASE("Bitmap::Copy propagates cycles", "[level][stage4]") {
   CHECK(dest.cycles == 99);
 }
 
-TEST_CASE("Level::load POWERLEVEL then MODERNLV block", "[level][stage3]") {
+TEST_CASE("Level::load POWERLEVEL then MODERNLV block", "[level][display-layer]") {
   Common common;
   FillMaterials(common);
   Settings settings;
@@ -417,9 +419,9 @@ TEST_CASE("Level::load POWERLEVEL then MODERNLV block", "[level][stage3]") {
   CHECK(level.display_valid[7] == 1);
 }
 
-// Stage 4: MODERNLV extended loader tests.
+// MODERNLV animation extension loader tests.
 
-TEST_CASE("Level::load MODERNLV with ramp_count=0 leaves anim layer empty", "[level][stage4]") {
+TEST_CASE("Level::load MODERNLV with ramp_count=0 leaves anim layer empty", "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Settings settings;
@@ -445,7 +447,7 @@ TEST_CASE("Level::load MODERNLV with ramp_count=0 leaves anim layer empty", "[le
 }
 
 TEST_CASE("Level::load MODERNLV with ramps populates argb_ramps and display_anim",
-          "[level][stage4]") {
+          "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Settings settings;
@@ -484,7 +486,7 @@ TEST_CASE("Level::load MODERNLV with ramps populates argb_ramps and display_anim
   CHECK(level.AppearanceAt(0, ColorMode::kModern, pal32, 2) == 0xFF00BB00U);
 }
 
-TEST_CASE("Level::load MODERNLV truncated ramp data drops anim layer", "[level][stage4]") {
+TEST_CASE("Level::load MODERNLV truncated ramp data drops anim layer", "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Settings settings;
@@ -512,7 +514,7 @@ TEST_CASE("Level::load MODERNLV truncated ramp data drops anim layer", "[level][
   REQUIRE(level.display_data.size() == kLevCells);
 }
 
-TEST_CASE("Level::load MODERNLV zero-length ramp drops anim layer", "[level][stage4]") {
+TEST_CASE("Level::load MODERNLV zero-length ramp drops anim layer", "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Settings settings;
@@ -535,7 +537,7 @@ TEST_CASE("Level::load MODERNLV zero-length ramp drops anim layer", "[level][sta
   CHECK(level.display_anim.empty());
 }
 
-TEST_CASE("Level::load MODERNLV display_anim OOB value drops anim layer", "[level][stage4]") {
+TEST_CASE("Level::load MODERNLV display_anim OOB value drops anim layer", "[level][anim-layer]") {
   Common common;
   FillMaterials(common);
   Settings settings;
@@ -562,13 +564,13 @@ TEST_CASE("Level::load MODERNLV display_anim OOB value drops anim layer", "[leve
   CHECK(level.display_anim.empty());
 }
 
-// Stage 4 file-based round-trip: modern_test.lev must carry one animated ramp.
+// File-based round-trip: modern_test.lev carries one animated ramp.
 // The ramp and animated band are written by tools/gen_stage4_anim.py.
 // A full-width band of kBandH rows at the top is animated (display_anim==1).
 // Phase offset = (x + y) % 4 for a diagonal shimmer.
 // Ramp: shift=1, colors=[0xFF1A3A6A, 0xFF2A4A7A, 0xFF3A5A8A, 0xFF0A2A5A].
-TEST_CASE("modern_test.lev has Stage 4 anim layer and AppearanceAt cycles correctly",
-          "[level][stage4][file]") {
+TEST_CASE("modern_test.lev has anim layer and AppearanceAt cycles correctly",
+          "[level][anim-layer][file]") {
   Common common;
   FillMaterials(common);
   Settings settings;

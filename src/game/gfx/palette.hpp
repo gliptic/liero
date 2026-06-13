@@ -24,7 +24,6 @@ struct ColorBlock {
   int base;          // centre of the shaded sprite ramp (pixels use base-2 .. base+2)
   int colour_index;  // start of the secondary 6-entry copy block
   int status_index;  // start of the 3-entry minimap / status copy
-  int width;         // ramp entries centred on base
 };
 
 struct Palette {

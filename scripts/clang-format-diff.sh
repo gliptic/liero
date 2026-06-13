@@ -23,20 +23,29 @@ if ! command -v git-clang-format >/dev/null 2>&1; then
 	exit 1
 fi
 
+# git clang-format --diff exits 1 even when output is "No syntactic
+# changes." (newer versions), so we must not let set -e kill us here.
 patch=$(git clang-format \
 	--binary "$clang_format" \
 	--diff \
 	--extensions cpp,hpp,h,cc,cxx \
-	"$base_ref" -- 'src/')
+	"$base_ref" -- 'src/' || true)
 
 # git-clang-format prints one of these strings (and nothing else) when
-# the changed lines are already correctly formatted.
+# no files were touched by the diff.
 case "$patch" in
 	"" | "no modified files to format" | \
 	"clang-format did not modify any files")
 		exit 0
 		;;
 esac
+
+# Newer git-clang-format versions emit per-file "No syntactic changes."
+# lines when the changed lines are already correctly formatted; those
+# contain no actual diff hunks (@@). Treat that as clean too.
+if ! echo "$patch" | grep -q "^@@"; then
+	exit 0
+fi
 
 echo "$patch"
 echo "clang-format would change formatting on the lines above" >&2

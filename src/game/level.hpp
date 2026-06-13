@@ -149,7 +149,7 @@ struct Level {
   // for classic levels — empty means "always use the palette path."
   std::vector<uint32_t> display_data;
   std::vector<uint8_t> display_valid;
-  // Optional animation layer (Stage 4). Empty when the level has no ramps.
+  // Optional animation layer. Empty when the level has no ramps.
   // argb_ramps: the ramp table; display_anim[idx]: 0=static, N=ramp N-1.
   // For animated pixels, display_data[idx] is a per-pixel phase offset, not
   // a colour. All three fields are immutable after load; never snapshotted.
@@ -181,7 +181,11 @@ struct Level {
     if (r.colors.empty()) {
       return display_data[idx];
     }
-    unsigned const kPhase = display_data[idx] + (static_cast<unsigned>(cycles) >> r.shift);
+    // `shift` comes from level data (file/wire/snapshot); a value >= 32 would
+    // be undefined behaviour in the shift below (and platform-divergent), so
+    // treat it as a frozen animation (advance only by the per-pixel offset).
+    unsigned const kInc = r.shift < 32 ? (static_cast<unsigned>(cycles) >> r.shift) : 0U;
+    unsigned const kPhase = display_data[idx] + kInc;
     return r.colors[kPhase % r.colors.size()];
   }
 };

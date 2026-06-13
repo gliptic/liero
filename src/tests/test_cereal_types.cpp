@@ -299,7 +299,8 @@ TEST_CASE("cereal_types: Level round-trip preserves data and palette", "[cereal_
   CHECK(static_cast<int>(dst.origpal.entries[255].r) == 255);
 }
 
-TEST_CASE("cereal_types: Level round-trip preserves display layer", "[cereal_types][stage3]") {
+TEST_CASE("cereal_types: Level round-trip preserves display layer",
+          "[cereal_types][display-layer]") {
   Common common;
   Level src(common);
   src.width = 4;
@@ -361,8 +362,7 @@ TEST_CASE("cereal_types: Rand round-trip preserves stream", "[cereal_types]") {
   CHECK(bin() == src());
 }
 
-TEST_CASE("cereal_types: Level round-trip preserves anim layer (stage4)",
-          "[cereal_types][stage4]") {
+TEST_CASE("cereal_types: Level round-trip preserves anim layer", "[cereal_types][anim-layer]") {
   Common common;
   Level src(common);
   src.width = 3;
@@ -398,8 +398,8 @@ TEST_CASE("cereal_types: Level round-trip preserves anim layer (stage4)",
   CHECK(dst.display_anim[0] == 0);
 }
 
-TEST_CASE("cereal_types: Level v8 stream loads with empty anim layer (stage4)",
-          "[cereal_types][stage4]") {
+TEST_CASE("cereal_types: Level v8 stream loads with empty anim layer",
+          "[cereal_types][anim-layer]") {
   Common common;
   Level src(common);
   src.width = 2;

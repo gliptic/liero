@@ -84,7 +84,7 @@ TEST_CASE("updatepal32 tracks palette mutations", "[blit][pal32]") {
 }
 
 TEST_CASE("shadowedargb in modern mode darkens display_data for authored seeshadow cell",
-          "[blit][shadow][stage3]") {
+          "[blit][shadow][display-layer]") {
   ShadowFixture f;
 
   // Pixel (2,3): SeeShadow terrain (material 10) with an authored ARGB.
@@ -118,7 +118,7 @@ TEST_CASE("shadowedargb in modern mode darkens display_data for authored seeshad
 }
 
 TEST_CASE("shadowedargb animated modern mode darkens the resolved animated color",
-          "[blit][shadow][stage4]") {
+          "[blit][shadow][anim-layer]") {
   ShadowFixture f;
 
   int const kIdx = 2 + 3 * 8;

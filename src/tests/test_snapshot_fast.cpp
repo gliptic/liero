@@ -233,7 +233,7 @@ TEST_CASE("Fast snapshot save/restore microbenchmark", "[snapshot][rollback][!be
   REQUIRE(kLoadUs < 2000.0);
 }
 
-TEST_CASE("Fast snapshot round-trips the display layer", "[snapshot][rollback][stage3]") {
+TEST_CASE("Fast snapshot round-trips the display layer", "[snapshot][rollback][display-layer]") {
   GameRunner r(0xD1500);
   Game& game = *r.game;
 

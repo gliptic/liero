@@ -339,11 +339,11 @@ TEST_CASE("NetSession TC sync skips transfer when hashes match", "[session][tc]"
   REQUIRE_FALSE(tc_reloaded);
 }
 
-TEST_CASE("NetTransport protocol version is 8 for stage4 anim blob (stage4)", "[session][stage4]") {
+TEST_CASE("NetTransport protocol version is 8 for anim blob", "[session][anim-layer]") {
   CHECK(NetTransport::kProtocolVersion == 8);
 }
 
-TEST_CASE("level blob round-trip preserves anim layer (stage4)", "[session][stage4]") {
+TEST_CASE("level blob round-trip preserves anim layer", "[session][anim-layer]") {
   SessionFixture const kF;
   RollbackController ctrl(kF.common, kF.settings, /*local_player_idx=*/0);
 

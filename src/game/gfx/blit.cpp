@@ -130,7 +130,7 @@ void DrawDashedLineBox(Bitmap& scr, int x, int y, int color, int color2, int num
 // them. Disable the check for this region.
 // NOLINTBEGIN(misc-const-correctness)
 // Paints the level's appearance into the screen at (x, y) — the only place
-// terrain reaches the screen. Stage 3 makes AppearanceAt mode-aware.
+// terrain reaches the screen. AppearanceAt is mode-aware.
 void DrawLevel(Bitmap& scr, Level const& level, int x, int y) {
   int width = level.width;
   int height = level.height;

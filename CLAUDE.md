@@ -73,6 +73,26 @@ Lives in `server/`. Standard Go workflow:
 cd server && go build -o openliero-relay && go test ./...
 ```
 
+### Before committing
+
+Run clang-format and clang-tidy on every commit that touches `src/`. Both must be clean before pushing — CI blocks on either.
+
+```bash
+# Check formatting on lines changed vs origin/master (exits 0 if clean):
+scripts/clang-format-diff.sh
+
+# Check tidy on changed lines (requires a configured build dir):
+scripts/clang-tidy-diff.sh build/linux-x64
+
+# Apply clang-format auto-fixes in-place:
+git clang-format origin/master -- src/
+
+# Apply clang-tidy auto-fixes tree-wide (use the fix script, not run-clang-tidy directly):
+scripts/clang-tidy-fix.sh build/linux-x64
+```
+
+clang-format version is pinned to 22 — see the Conventions section.
+
 ## Architecture
 
 ### Top-level layout

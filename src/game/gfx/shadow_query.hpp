@@ -11,8 +11,8 @@
 // semantic change: shadows and explosion masks key off terrain, not off
 // whatever sprite happened to be drawn earlier on the screen.
 //
-// Stage 3 seam: when terrain gains an ARGB display layer, ShadowedArgb
-// becomes a darkened display_data sample; the call sites stay unchanged.
+// When terrain has an ARGB display layer, ShadowedArgb becomes a darkened
+// display_data sample; the call sites stay unchanged.
 struct ShadowQuery {
   Common const& common;
   Level const& level;
@@ -40,7 +40,9 @@ struct ShadowQuery {
     if (kP < 0 || !common.materials[kP].SeeShadow()) {
       return -1;
     }
-    return kP + 4;
+    // The +4 shadow offset can leave the 256-entry palette for materials near
+    // the top of the range; keep the index in bounds.
+    return kP + 4 < 256 ? kP + 4 : kP;
   }
 
   // ARGB to paint at screen (sx, sy) if a shadow falls there, else 0.
@@ -62,6 +64,6 @@ struct ShadowQuery {
       uint32_t const kArgb = level.ResolveDisplayAt(kLevelIdx, cycles);
       return 0xFF000000U | ((kArgb & 0x00FEFEFE) >> 1);
     }
-    return pal32[kP + 4];
+    return pal32[kP + 4 < 256 ? kP + 4 : kP];
   }
 };

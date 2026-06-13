@@ -275,8 +275,8 @@ bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
       r.Get(raw_dd + prepend, kCells * sizeof(uint32_t) - prepend);
       r.Get(display_valid.data(), kCells);
 
-      // Stage 4 extension: ramp_count(1) + ramps + display_anim(cells).
-      // TryGet so Stage-3-format files (stream ends here) still load fine.
+      // Animation extension: ramp_count(1) + ramps + display_anim(cells).
+      // TryGet so files without the anim extension (stream ends here) still load fine.
       uint8_t ramp_count = 0;
       if (r.TryGet(&ramp_count, 1) == 1 && ramp_count > 0) {
         static constexpr uint16_t kMaxColors = 4096;

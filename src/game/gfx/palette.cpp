@@ -75,8 +75,8 @@ void Palette::Read(io::Reader& r) {
 // worm 1, with secondary copies at 0x58 / 0x78 and minimap / status colours
 // at 129 / 133. TODO: Read from EXE?
 ColorBlock const Palette::kWormColorBlocks[2] = {
-    {.base = 32, .colour_index = 0x58, .status_index = 129, .width = 5},
-    {.base = 41, .colour_index = 0x78, .status_index = 133, .width = 5}};
+    {.base = 32, .colour_index = 0x58, .status_index = 129},
+    {.base = 41, .colour_index = 0x78, .status_index = 133}};
 
 void Palette::ReadFull(io::Reader& r) {
   for (auto& entry : entries) {
