@@ -23,3 +23,6 @@ server/openliero-relay
 
 # Claude
 /.claude/worktrees/
+
+# Generated large test level (not committed — generate via tools/gen_large_test.py)
+data/TC/openliero/Levels/large_test.lev

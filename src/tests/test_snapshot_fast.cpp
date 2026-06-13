@@ -249,13 +249,16 @@ TEST_CASE("Fast snapshot round-trips the display layer", "[snapshot][rollback][d
   snap.Prepare(game);
   game.SaveSnapshotFast(snap);
 
-  // Corrupt the display layer, then restore.
-  game.level.display_data[0] = 0xDEADBEEFU;
+  // display_valid changes during gameplay (terrain destruction zeroes it) and
+  // must be restored by rollback.  display_data is static (never written during
+  // simulation) and is intentionally excluded from the fast snapshot to avoid
+  // copying 64 MB/slot on large levels — so it is NOT restored on load.
   game.level.display_valid[0] = 0;
   game.LoadSnapshotFast(snap);
 
-  REQUIRE(game.level.display_data[0] == 0xFF112233U);
   REQUIRE(game.level.display_valid[0] == 1);
+  // display_data unchanged (not saved/restored):
+  REQUIRE(game.level.display_data[0] == 0xFF112233U);
 
   // Classic level (no display layer): Prepare must not allocate,
   // LoadSnapshotFast must not restore when snap has no display layer.

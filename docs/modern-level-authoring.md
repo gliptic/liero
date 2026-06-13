@@ -26,7 +26,16 @@ older replays and netplay peers without the modern extension) ignore the
 
 ### Canvas size
 
-Every level is exactly **504 × 350 pixels**. The game does not resize or crop.
+Levels can be any size from **1 × 1** up to **4096 × 4096 pixels**. The
+default and most-tested size is **504 × 350** (the original Liero dimensions).
+The game auto-sizes to the level on load; no cropping or padding occurs.
+
+> **File format note**: 504 × 350 levels are stored in the legacy
+> headerless format for full compatibility with older game versions.
+> All other sizes use an `OLLEVEL2` header that encodes the dimensions
+> (see [Appendix: File Format Specification](#appendix-file-format-specification)).
+> `lev_gen.py` writes this header automatically when the material image
+> is not 504 × 350.
 
 ### Material indices
 
@@ -76,7 +85,9 @@ Suggested palette for `material.png`:
 | Yellow | `#FFFF00` | 30 — worm barrier (solid to worms, shots pass through) |
 | Dark navy | `#1A3A6A` | 168 — water shimmer (solid, palette-animated) |
 
-1. Open Krita and create a new document: **504 × 350 px** at any resolution.
+1. Open Krita and create a new document at your chosen dimensions (e.g.
+   **504 × 350 px** for the default size, or any size up to 4096 × 4096) at
+   any resolution.
 2. In **Brush Settings**, set **Anti-aliasing** to off and brush opacity to
    100 %. Anti-aliased edges produce blended colors that the conversion script
    cannot map to a material index; those pixels are treated as open space
@@ -129,10 +140,10 @@ script handles the ordering automatically.
 
 ## 3. Modern Display Layer
 
-The `MODERNLV` block adds a **display layer** — a parallel ARGB32 array of the
-same 504 × 350 dimensions. In modern mode, any pixel where `display_valid == 1`
-is rendered using the authored color from `display_data` instead of the palette
-lookup.
+The `MODERNLV` block adds a **display layer** — a parallel ARGB32 array with
+the same dimensions as the level. In modern mode, any pixel where
+`display_valid == 1` is rendered using the authored color from `display_data`
+instead of the palette lookup.
 
 ### Key rules
 
@@ -150,7 +161,7 @@ lookup.
 You need two PNG files: the `material.png` from section 1, and a new
 `display.png` for what the terrain looks like.
 
-1. Create a new **504 × 350 px** document in Krita: `display.png`.
+1. Create a new document in Krita at the same dimensions as your level: `display.png`.
 2. Paint your terrain in full color, layer by layer.
 3. Where you want the **palette** to control the color (e.g. palette-animated
    water, or any area you haven't painted), set those pixels to fully
@@ -233,8 +244,8 @@ Up to 255 ramps, up to 4096 colors each.
 
 ### Krita workflow for animated terrain
 
-Create an **anim map** PNG (`anim.png`, 504 × 350, RGBA) with this encoding
-per pixel:
+Create an **anim map** PNG (`anim.png`, same dimensions as your level, RGBA)
+with this encoding per pixel:
 
 | Channel | Value | Meaning |
 |---------|-------|---------|
@@ -314,7 +325,7 @@ To select your level in-game: open the **Settings** menu, navigate to
 Requires [uv](https://docs.astral.sh/uv/). All command forms:
 
 ```bash
-# Classic
+# Classic (504×350 — legacy headerless format)
 uv run tools/lev_gen.py --mat material.png --out level.lev
 
 # + custom palette
@@ -327,6 +338,12 @@ uv run tools/lev_gen.py --mat material.png --disp display.png --out level.lev
 uv run tools/lev_gen.py --mat material.png --disp display.png \
     --ramps ramps.json --anim anim.png --out level.lev
 ```
+
+The level dimensions are read from `--mat`. Any size from 1 × 1 to
+4096 × 4096 is accepted. 504 × 350 produces a legacy headerless file;
+all other sizes write an `OLLEVEL2` header automatically. All other
+image inputs (`--disp`, `--anim`) must be the same size as `--mat`; the
+script errors out if they differ.
 
 ---
 
@@ -363,8 +380,9 @@ uv run tools/lev_extract.py data/TC/openliero/Levels/modern_test.lev \
 
 This produces four files in `krita/modern_test/`:
 
-- **`material.png`** — the 504×350 material map. White pixels are open space
-  (index 160), brown is dirt (12), dark navy is the water band (168).
+- **`material.png`** — the material map (504×350 for this file). White pixels
+  are open space (index 160), brown is dirt (12), dark navy is the water band
+  (168).
 - **`display.png`** — true-color display pixels with transparency where the
   palette takes over. Open the material and display PNGs as layers in Krita;
   paint on `display.png`, keep the terrain structure in `material.png`.
@@ -385,26 +403,62 @@ uv run tools/lev_gen.py \
 
 ---
 
+## 8. `tools/gen_large_test.py`
+
+Generates a 4096 × 4096 OLLEVEL2 test level (`data/TC/openliero/Levels/large_test.lev`)
+that exercises the large-map code path. This file is **not committed to git**
+(~268 MB on disk) and must be generated before smoke-testing large maps.
+
+```bash
+python3 tools/gen_large_test.py
+```
+
+The generated level has an open sky top half, rock border, dirt lower half,
+and an animated MODERNLV band at the sky/dirt boundary — modeled on
+`modern_test.lev` so the same ramp constants apply.
+
+---
+
 ## Appendix: File Format Specification
 
 ### File layout
 
+There are two on-disk formats:
+
+**Legacy (504 × 350 only)**
 ```
 [material_id : 504 x 350 bytes]         <- always present (palette indices 0-255)
 ["POWERLEVEL" + palette : 778 bytes]    <- optional; must appear before MODERNLV
 ["MODERNLV" + display block + anim]     <- optional; must appear at end of file
 ```
 
+**Sized (any dimension, identified by the `OLLEVEL2` magic)**
+```
+["OLLEVEL2" : 8 bytes]                  <- magic; distinguishes sized from legacy
+[version : 1 byte]                      <- currently 0 (reserved for future use)
+[width  : 2 bytes LE uint16]            <- level width  in pixels; 1–4096
+[height : 2 bytes LE uint16]            <- level height in pixels; 1–4096
+[material_id : width x height bytes]    <- palette indices 0-255
+["POWERLEVEL" + palette : 778 bytes]    <- optional; must appear before MODERNLV
+["MODERNLV" + display block + anim]     <- optional; must appear at end of file
+```
+
+The body layout after the header (or after the material bytes for legacy files)
+is identical in both formats. All tools and the game loader handle both.
+
 ### MODERNLV block layout
 
 | Field | Size (bytes) | Description |
 |-------|-------------|-------------|
 | magic | 8 | ASCII `MODERNLV` |
-| display_data | 504 x 350 x 4 | ARGB32 little-endian (`0xAARRGGBB`), alpha always `0xFF` |
-| display_valid | 504 x 350 | 1 = authored pixel, 0 = palette fallback |
+| display_data | W × H × 4 | ARGB32 little-endian (`0xAARRGGBB`), alpha always `0xFF` |
+| display_valid | W × H | 1 = authored pixel, 0 = palette fallback |
 | ramp_count | 1 | Number of animation ramps (0 = no animation layer) |
 | ramp table | variable | Present only when ramp_count > 0 |
-| display_anim | 504 x 350 | Per-pixel ramp index; present only when ramp_count > 0 |
+| display_anim | W × H | Per-pixel ramp index; present only when ramp_count > 0 |
+
+*W and H are the level dimensions: 504 × 350 for legacy files, or the values
+from the `OLLEVEL2` header for sized files.*
 
 ### Ramp table (one entry per ramp)
 

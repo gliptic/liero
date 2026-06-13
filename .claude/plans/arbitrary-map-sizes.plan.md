@@ -76,28 +76,29 @@ No behavior change; level still loads at 504×350. De-risks everything downstrea
 - **Mergeable because**: everything still runs at 504×350; identical behavior.
 - **Validate**: full ctest + `test_determinism`/`test_rollback_*`; smoke-launch; clang-format/tidy diff.
 
-### PR 2 — New sized on-disk format + tools + 4096² test level
-- **Format**: file beginning with a distinctive 8-byte magic (e.g. `OLLEVEL2`)
-  + `version:u8` + `width:u16` + `height:u16`, then the **existing body layout**
-  (material bytes → optional `POWERLEVEL` → optional `MODERNLV`…) so
-  encoder/decoder code is shared. No magic ⇒ legacy 504×350 path
-  (`level.cpp:213-344`). Enforce the **D2 4096² cap** with a clear error on load.
-- **`load`**: replace `Resize(504, 350)` (`level.cpp:214`) with header-driven
-  sizing on the new path.
-- **Tools**: parametrize `tools/lev_gen.py` (`LEVEL_W/H`, line 26),
-  `tools/lev_extract.py` (line 33), `tools/gen_stage4_anim.py` (lines 19-20) to
-  read/emit the header and arbitrary sizes.
-- **Test level (D5)**: `tools/gen_large_test.py` produces the 4096² modern level
-  modeled on `modern_test.lev`, **generated on demand** (CMake/test fixture or
-  documented one-liner) — not committed.
-- **Doc**: update `docs/modern-level-authoring.md` — remove the fixed-504×350
-  assumption, document the sized header, the 4096² max, and the larger-level
-  workflow.
-- **Mergeable because**: legacy files unchanged; random gen still 504×350; new
-  files additionally supported.
-- **Validate**: round-trip several sizes through gen/extract; load a stock legacy
-  `.lev` and a new-format file; load the 4096² level and smoke-launch on it
-  (exercises PR1's dynamic AI/stats); `test_level_display`; `test_paths`.
+### PR 2 — New sized on-disk format + tools + 4096² test level — **DONE**
+- **Format**: `OLLEVEL2` 8-byte magic + `version:u8` + `width:u16 LE` + `height:u16 LE`
+  (13-byte header total), then the existing body (material bytes → optional
+  `POWERLEVEL` → optional `MODERNLV`). No magic ⇒ legacy 504×350 path.
+  4096 cap enforced in loader, `lev_gen.py`, and `lev_extract.py`.
+- **`Level::load`** (`level.cpp`): probes first 8 bytes via `TryGet`; on magic
+  match reads 5-byte header and calls `Resize(w,h)`; otherwise prepends the
+  probed bytes to the legacy material read (no seek on `io::Reader` needed).
+- **Tools**:
+  - `tools/lev_gen.py`: removed `--width`/`--height`; dims derived from `--mat`
+    image; `open_and_check()` validates all other images match; OLLEVEL2 header
+    written automatically for non-504×350 sizes.
+  - `tools/lev_extract.py`: detects OLLEVEL2 magic; bounds-checks parsed dims;
+    all MODERNLV parsing uses dynamic `cells = level_w * level_h`.
+  - `tools/gen_stage4_anim.py`: deleted (outlived its usefulness).
+  - `tools/gen_large_test.py` (new): generates a 4096×4096 OLLEVEL2 level with
+    MODERNLV animated band; output gitignored; not committed.
+- **Tests**: `src/tests/test_sized_level.cpp` — 12 Catch2 cases: legacy
+  regression, sized load, material round-trip, 4096 cap, zero-dim rejection,
+  MODERNLV at non-standard size, POWERLEVEL+MODERNLV combo, 1×1 boundary.
+- **Doc**: `docs/modern-level-authoring.md` updated — canvas size 1×1–4096×4096;
+  OLLEVEL2 header documented; lev_gen auto-dim detection; gen_large_test section;
+  appendix with both file layouts side-by-side.
 
 ### PR 3 — Random map size in MATCH SETUP
 - **Settings**: add `int32_t random_map_width{504}; int32_t random_map_height{350};`
@@ -124,10 +125,18 @@ No behavior change; level still loads at 504×350. De-risks everything downstrea
   spectator rect (extend `ScaleDraw`). Keep `Process()` clamp logic; floats are
   fine (display-only).
 - Make HUD `stats_x`/`+68` offsets resolution-relative.
+- **Fix minimap scaling**: the minimap currently assumes 504×350 and overwrites
+  the lower-right corner of the HUD on non-standard map sizes. Scale the minimap
+  render to fit its allocated HUD rect regardless of level dimensions.
+- **Fix weapon-select spectator view**: the spectator view in the weapon-selection
+  screen does not handle non-standard map sizes correctly (layout breaks / clips).
+  Fix alongside the render-to-scratch restructuring since the same HUD/world
+  split resolves both issues naturally.
 - **Mergeable because**: on 504×350 maps the bounding box fits, zoom stays 1×,
   output is visually unchanged.
 - **Validate**: smoke-launch hotseat on the 4096² level, drive worms far apart,
-  confirm both stay visible and HUD stays crisp at 1×.
+  confirm both stay visible, HUD stays crisp at 1×, minimap renders within its
+  rect, and weapon-select spectator view is correct at non-standard sizes.
 
 ### PR 5 — Configurable videotool output resolution
 - **`tools_main.cpp`**: add `-w/-h` (or `--res WxH`) parsing alongside `-d/-s/-r`.
@@ -139,6 +148,33 @@ No behavior change; level still loads at 504×350. De-risks everything downstrea
 - **Mergeable because**: absent the flags it defaults to today's behavior.
 - **Validate**: render a replay at 1280×720 and 1920×1080, spectator + normal
   mode; confirm output dimensions and no scaler mismatch.
+
+### PR 6 — Rollback snapshot optimization: dirty-cell tracking for large levels
+
+Online play on large maps (e.g. 4096×4096) is slow because `SaveSnapshotFast`
+memcpys ~48 MB per rollback frame (material_id + material flags + display_valid),
+completely blowing out L3 cache every tick. Local play is unaffected (no rollback).
+
+- **Dirty-cell bitset**: maintain a per-level bitset (or small sorted list) of cells
+  modified since the last snapshot. Terrain destruction is already funneled through
+  `Level::Modify` / the two `SetMaterial` helpers in `level.hpp` — add a dirty-mark
+  there. Snapshot saves the full block on the first frame after `Prepare()`, then
+  saves only dirty cells (index + value pairs) on subsequent frames.
+- **Restore path**: restore full block from the last full snapshot, then apply
+  the forward delta chain (or store snapshots as full + delta in alternation).
+- **Alternatively**: store snapshots as always-full but skip `display_valid` cells
+  that haven't been touched, using a dirty-bitset to know which 64-byte cache lines
+  to copy. This keeps the restore path simple (one memcpy pass) at the cost of
+  slightly more complex save logic.
+- **`level.materials` deduplication**: `level.materials[i]` is always
+  `common.materials[level.material_id[i]]`; after restoring `material_id` we can
+  recompute `materials` in one O(W×H) pass and drop the 16 MB `level_materials`
+  slot entirely.
+- **Mergeable because**: snapshot is entirely in-memory; wire format and disk
+  format are unaffected; existing rollback tests verify correctness.
+- **Validate**: `test_rollback_correctness`, `test_rollback_desync`,
+  `test_snapshot_fast` (add a dirty-tracking round-trip case); confirm online play
+  on the 4096² level is no longer noticeably slower than local play.
 
 ## Validation (every PR)
 
@@ -161,12 +197,14 @@ scripts/clang-format-diff.sh && scripts/clang-tidy-diff.sh build/linux-x64
 | Net play with mismatched sizes | Low | Wire transfer already sends + validates w/h |
 | Memory at 4096² (~117 MB layers + AI) | Medium | D2 cap; fail loudly past 4096; document cost |
 | Determinism regressions from PR1/PR3 sim touch | Medium | `test_determinism`/`test_rollback_*` on every PR |
+| Rollback snapshot too large for online play on big maps | High (4096²) | PR6 — dirty-cell tracking; PR2 already fixed correctness |
 
 ## Acceptance
 
 - [x] PR1: all 504×350 hardcodes read `level.width/height`; behavior unchanged; suites green.
-- [ ] PR2: new sized format loads/saves; legacy files still load; 4096² level generates on demand; tools + doc updated.
+- [x] PR2: new sized format loads/saves; legacy files still load; 4096² level generates on demand; tools + doc updated.
 - [ ] PR3: random map size editable in MATCH SETUP; config v5; defaults reproduce 504×350.
-- [ ] PR4: spectator auto-zooms to keep both worms visible; 1× on small maps unchanged.
+- [ ] PR4: spectator auto-zooms to keep both worms visible; 1× on small maps unchanged; minimap scales correctly; weapon-select spectator view correct at all sizes.
 - [ ] PR5: videotool output resolution selectable; scaler input dynamic.
+- [ ] PR6: online play on 4096² level no longer noticeably slower than local play; rollback tests green.
 - [ ] Determinism/rollback suites + format checks pass on every PR.

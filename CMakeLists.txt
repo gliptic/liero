@@ -466,6 +466,10 @@ if(OPENLIERO_BUILD_TESTS)
     DISCOVERY_MODE PRE_TEST
   )
 
+  add_executable(test_sized_level src/tests/test_sized_level.cpp)
+  target_link_libraries(test_sized_level PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_sized_level DISCOVERY_MODE PRE_TEST)
+
   # Headless replay frame hasher (not a Catch2 test): prints per-frame
   # hashes of the composed screen so renderer refactors can be verified
   # pixel-identical against a baseline build. See src/tests/framehash_main.cpp.

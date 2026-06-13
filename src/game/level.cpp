@@ -211,7 +211,37 @@ void Level::Resize(int width_new, int height_new) {
 }
 
 bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
-  Resize(504, 350);
+  // Probe for OLLEVEL2 sized-format header: magic(8) + version(1) + w(2LE) + h(2LE).
+  static constexpr uint8_t kSizedMagic[8] = {'O', 'L', 'L', 'E', 'V', 'E', 'L', '2'};
+  static constexpr int kMaxDim = 4096;
+
+  uint8_t probe[8] = {};
+  std::size_t const kProbeRead = r.TryGet(probe, 8);
+
+  int load_width;
+  int load_height;
+  uint8_t leftover[8] = {};
+  std::size_t leftover_count = 0;
+
+  if (kProbeRead == 8 && std::memcmp(kSizedMagic, probe, 8) == 0) {
+    uint8_t hdr[5] = {};
+    if (r.TryGet(hdr, 5) != 5) {
+      return false;
+    }
+    load_width = hdr[1] | (static_cast<int>(hdr[2]) << 8);
+    load_height = hdr[3] | (static_cast<int>(hdr[4]) << 8);
+    if (load_width < 1 || load_width > kMaxDim || load_height < 1 || load_height > kMaxDim) {
+      return false;
+    }
+  } else {
+    // Legacy 504×350: the probed bytes are the first kProbeRead material bytes.
+    load_width = 504;
+    load_height = 350;
+    std::memcpy(leftover, probe, kProbeRead);
+    leftover_count = kProbeRead;
+  }
+
+  Resize(load_width, load_height);
   display_data.clear();
   display_valid.clear();
   argb_ramps.clear();
@@ -219,7 +249,12 @@ bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
 
   bool reset_palette = true;
 
-  r.Get(reinterpret_cast<uint8_t*>(material_id.data()), width * height);
+  auto* mat_data = reinterpret_cast<uint8_t*>(material_id.data());
+  if (leftover_count > 0) {
+    std::memcpy(mat_data, leftover, leftover_count);
+  }
+  r.Get(mat_data + leftover_count,
+        static_cast<std::size_t>(load_width) * load_height - leftover_count);
 
   // Probe buffer for optional extension blocks.  Both "POWERLEVEL" (10 bytes)
   // and "MODERNLV" (8 bytes) may follow the pixel data.  Read the longer

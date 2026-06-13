@@ -14,7 +14,8 @@ Writes into --out-dir (default: current directory):
   ramps.json    — animation ramp definitions
   anim.png      — animation map (R=ramp index 1-based, G=phase offset, alpha=255 where animated)
 
-Only files present in the level are written.
+Only files present in the level are written.  Handles both legacy 504×350 files
+and OLLEVEL2-headed files of arbitrary size.
 
 Usage:
   uv run tools/lev_extract.py level.lev
@@ -30,8 +31,8 @@ import sys
 from pathlib import Path
 from PIL import Image
 
-LEVEL_W, LEVEL_H = 504, 350
-CELLS = LEVEL_W * LEVEL_H
+LEGACY_W, LEGACY_H = 504, 350
+SIZED_MAGIC = b"OLLEVEL2"
 
 
 def err(msg: str) -> None:
@@ -74,16 +75,17 @@ def _index_colour(idx: int) -> tuple[int, int, int]:
     return (200, 0, 200)
 
 
-def write_material(mat: bytes, path: Path) -> None:
-    img = Image.new("RGB", (LEVEL_W, LEVEL_H))
+def write_material(mat: bytes, level_w: int, level_h: int, path: Path) -> None:
+    img = Image.new("RGB", (level_w, level_h))
     img.putdata([_index_colour(b) for b in mat])
     img.save(path)
-    print(f"  material.png   — {LEVEL_W}×{LEVEL_H} material map")
+    print(f"  material.png   — {level_w}×{level_h} material map")
 
 
-def write_display(dd: bytes, dv: bytes, path: Path) -> None:
+def write_display(dd: bytes, dv: bytes, level_w: int, level_h: int, path: Path) -> None:
+    cells = level_w * level_h
     pixels: list[tuple[int, int, int, int]] = []
-    for i in range(CELLS):
+    for i in range(cells):
         if dv[i]:
             argb = struct.unpack_from("<I", dd, i * 4)[0]
             r = (argb >> 16) & 0xFF
@@ -92,7 +94,7 @@ def write_display(dd: bytes, dv: bytes, path: Path) -> None:
             pixels.append((r, g, b, 255))
         else:
             pixels.append((0, 0, 0, 0))
-    img = Image.new("RGBA", (LEVEL_W, LEVEL_H))
+    img = Image.new("RGBA", (level_w, level_h))
     img.putdata(pixels)
     img.save(path)
     authored = sum(1 for v in dv if v)
@@ -114,13 +116,15 @@ def write_palette(raw: bytes, path: Path) -> None:
 
 
 def write_anim(ramps: list[dict], da: bytes, dd: bytes,
+               level_w: int, level_h: int,
                ramps_path: Path, anim_path: Path) -> None:
+    cells = level_w * level_h
     with open(ramps_path, "w") as f:
         json.dump(ramps, f, indent=2)
     print(f"  ramps.json     — {len(ramps)} ramp(s)")
 
     pixels: list[tuple[int, int, int, int]] = []
-    for i in range(CELLS):
+    for i in range(cells):
         r_idx = da[i]
         if r_idx:
             # Phase offset was packed as uint32 LE in display_data.
@@ -128,7 +132,7 @@ def write_anim(ramps: list[dict], da: bytes, dd: bytes,
             pixels.append((r_idx, phase, 0, 255))
         else:
             pixels.append((0, 0, 0, 0))
-    img = Image.new("RGBA", (LEVEL_W, LEVEL_H))
+    img = Image.new("RGBA", (level_w, level_h))
     img.putdata(pixels)
     img.save(anim_path)
     animated = sum(1 for b in da if b)
@@ -153,11 +157,28 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     data = lev_path.read_bytes()
-    if len(data) < CELLS:
-        err(f"file too small: {len(data)} bytes (need at least {CELLS})")
 
-    mat = data[:CELLS]
-    rest = data[CELLS:]
+    # Detect OLLEVEL2 sized-format header.
+    body_start = 0
+    if data[:8] == SIZED_MAGIC:
+        if len(data) < 13:
+            err("file too small to contain a complete OLLEVEL2 header")
+        # version = data[8]  (reserved)
+        level_w = data[9] | (data[10] << 8)
+        level_h = data[11] | (data[12] << 8)
+        if not (1 <= level_w <= 4096 and 1 <= level_h <= 4096):
+            err(f"OLLEVEL2 header has invalid dimensions {level_w}×{level_h} (must be 1–4096)")
+        body_start = 13
+        print(f"OLLEVEL2 header: {level_w}×{level_h}")
+    else:
+        level_w, level_h = LEGACY_W, LEGACY_H
+
+    cells = level_w * level_h
+    if len(data) < body_start + cells:
+        err(f"file too small: {len(data)} bytes (need at least {body_start + cells})")
+
+    mat = data[body_start:body_start + cells]
+    rest = data[body_start + cells:]
     pos = 0
 
     raw_palette: bytes | None = None
@@ -177,13 +198,13 @@ def main() -> None:
 
         elif rest[pos:pos + 8] == b"MODERNLV":
             pos += 8
-            if pos + CELLS * 5 + 1 > len(rest):
+            if pos + cells * 5 + 1 > len(rest):
                 print("WARNING: MODERNLV block truncated, skipping")
                 break
-            dd = rest[pos:pos + CELLS * 4]
-            dv = rest[pos + CELLS * 4:pos + CELLS * 5]
-            ramp_count = rest[pos + CELLS * 5]
-            pos += CELLS * 5 + 1
+            dd = rest[pos:pos + cells * 4]
+            dv = rest[pos + cells * 4:pos + cells * 5]
+            ramp_count = rest[pos + cells * 5]
+            pos += cells * 5 + 1
 
             for ri in range(ramp_count):
                 if pos + 3 > len(rest):
@@ -206,22 +227,23 @@ def main() -> None:
                 ramps.append({"shift": int(shift), "colors": colours})
 
             if ramp_count > 0:
-                if pos + CELLS > len(rest):
+                if pos + cells > len(rest):
                     print("WARNING: display_anim truncated")
                 else:
-                    da = rest[pos:pos + CELLS]
-                    pos += CELLS
+                    da = rest[pos:pos + cells]
+                    pos += cells
         else:
             break  # unknown or no more blocks
 
     print(f"Extracting {lev_path.name}:")
-    write_material(mat, out_dir / "material.png")
+    write_material(mat, level_w, level_h, out_dir / "material.png")
     if raw_palette is not None:
         write_palette(raw_palette, out_dir / "palette.png")
     if dd is not None and dv is not None:
-        write_display(dd, dv, out_dir / "display.png")
+        write_display(dd, dv, level_w, level_h, out_dir / "display.png")
         if ramps and da is not None:
-            write_anim(ramps, da, dd, out_dir / "ramps.json", out_dir / "anim.png")
+            write_anim(ramps, da, dd, level_w, level_h,
+                       out_dir / "ramps.json", out_dir / "anim.png")
     print(f"Done. Output in {out_dir}/")
 
 

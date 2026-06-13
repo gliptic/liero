@@ -158,8 +158,10 @@ struct GameSnapshot {
 
   std::vector<uint8_t> level_data;
   std::vector<Material> level_materials;
-  // Optional display layer; only sized when the level has one at Prepare time.
-  std::vector<uint32_t> level_display_data;
+  // display_valid is snapshotted because terrain destruction zeroes it.
+  // display_data is static (never written during simulation) and intentionally
+  // omitted here — omitting 64 MB/slot (4096² ARGB) keeps the ring buffer
+  // from bloating to ~500 MB for large levels.
   std::vector<uint8_t> level_display_valid;
 
   uint32_t checksum = 0;
@@ -173,7 +175,6 @@ struct GameSnapshot {
     level_data.resize(kCells);
     level_materials.resize(kCells);
     if (!game.level.display_data.empty()) {
-      level_display_data.resize(kCells);
       level_display_valid.resize(kCells);
     }
   }
