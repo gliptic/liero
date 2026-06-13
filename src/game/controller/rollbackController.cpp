@@ -31,8 +31,8 @@ static void ConfigureGameSlots(Game& g, std::array<std::shared_ptr<WormSettings>
     worm->stats_x = idx == 0 ? 0 : 218;
     g.AddWorm(worm);
   }
-  g.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-  g.AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), 1, 504, 350));
+  g.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0));
+  g.AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), 1));
 }
 
 RollbackController::RollbackController(const std::shared_ptr<Common>& common,
@@ -59,7 +59,7 @@ RollbackController::RollbackController(const std::shared_ptr<Common>& common,
                                  : settings->worm_settings[idx];
   }
   ConfigureGameSlots(game, ws);
-  game.AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+  game.AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350)));
 }
 
 RollbackController::~RollbackController() = default;

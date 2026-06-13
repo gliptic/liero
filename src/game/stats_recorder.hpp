@@ -24,6 +24,8 @@ struct StatsRecorder {
 
   virtual void AiProcessTime(Worm* worm, std::chrono::nanoseconds time);
 
+  virtual void Reset(int lev_w, int lev_h);
+
   // When true, all recording is suppressed. Set during predicted /
   // resim frames to avoid double-counting.
   bool speculative = false;
@@ -62,6 +64,11 @@ struct WormStats {
     for (int i = 0; i < 40; ++i) {
       weapons[i].index = i;
     }
+  }
+
+  void Reset(int lev_w, int lev_h) {
+    damage_hm = Heatmap(lev_w / 2, lev_h / 2, lev_w, lev_h);
+    presence = Heatmap(lev_w / 2, lev_h / 2, lev_w, lev_h);
   }
 
   std::vector<std::pair<int, int> > life_spans;
@@ -128,4 +135,5 @@ struct NormalStatsRecorder : StatsRecorder {
 
   void Finish(Game& game) override;
   void AiProcessTime(Worm* worm, std::chrono::nanoseconds time) override;
+  void Reset(int lev_w, int lev_h) override;
 };

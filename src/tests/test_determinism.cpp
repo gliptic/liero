@@ -63,10 +63,10 @@ struct DualGameFixture {
     }
 
     // Add viewports (needed for processFrame's viewport logic)
-    game_a->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    game_a->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
-    game_b->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    game_b->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    game_a->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0));
+    game_a->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1));
+    game_b->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0));
+    game_b->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1));
 
     // Generate levels with the same RNG state
     game_a->level.GenerateFromSettings(*common, *settings, game_a->rand);
@@ -191,10 +191,10 @@ TEST_CASE("Same inputs produce same state regardless of construction order", "[d
     game2.AddWorm(w2);
   }
 
-  game1.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-  game1.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
-  game2.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-  game2.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+  game1.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0));
+  game1.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1));
+  game2.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0));
+  game2.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1));
 
   game1.level.GenerateFromSettings(*common, *settings, game1.rand);
   game2.level.GenerateFromSettings(*common, *settings, game2.rand);
@@ -280,10 +280,10 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
       game_b.AddWorm(w_b);
     }
 
-    game_a.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    game_a.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
-    game_b.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    game_b.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    game_a.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0));
+    game_a.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1));
+    game_b.AddViewport(new Viewport(Rect(0, 0, 158, 158), 0));
+    game_b.AddViewport(new Viewport(Rect(160, 0, 318, 158), 1));
 
     game_a.level.GenerateFromSettings(*common, *settings, game_a.rand);
     game_b.level.GenerateFromSettings(*common, *settings, game_b.rand);

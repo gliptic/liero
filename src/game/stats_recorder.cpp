@@ -26,6 +26,8 @@ void StatsRecorder::Tick(Game& game) {}
 
 void StatsRecorder::AiProcessTime(Worm* worm, std::chrono::nanoseconds time) {}
 
+void StatsRecorder::Reset(int /*lev_w*/, int /*lev_h*/) {}
+
 void NormalStatsRecorder::DamagePotential(Worm* by_worm, WormWeapon* weapon, int hp) {
   if (speculative) {
     return;
@@ -196,4 +198,11 @@ void NormalStatsRecorder::AiProcessTime(Worm* worm, std::chrono::nanoseconds tim
   }
   WormStats& w = worms[worm->index];
   w.ai_process_time += time;
+}
+
+void NormalStatsRecorder::Reset(int lev_w, int lev_h) {
+  presence = Heatmap(lev_w / 2, lev_h / 2, lev_w, lev_h);
+  for (auto& w : worms) {
+    w.Reset(lev_w, lev_h);
+  }
 }

@@ -9,9 +9,9 @@
 struct Renderer;
 
 struct Viewport {
-  Viewport(Rect rect, int worm_idx, int levwidth, int levheight)
-      : max_x(levwidth - rect.Width()),
-        max_y(levheight - rect.Height()),
+  Viewport(Rect rect, int worm_idx)
+      : max_x(0),
+        max_y(0),
         center_x(rect.Width() >> 1),
         center_y(rect.Height() >> 1),
         x(0),

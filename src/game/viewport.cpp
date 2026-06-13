@@ -20,6 +20,9 @@ struct PreserveClipRect {
 };
 
 void Viewport::Process(Game& game) {
+  max_x = game.level.width - rect.Width();
+  max_y = game.level.height - rect.Height();
+
   Worm const& worm = *game.WormByIdx(worm_idx);
 
   if (worm.killed_timer <= 0) {

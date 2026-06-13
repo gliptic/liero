@@ -510,6 +510,7 @@ void Game::SpawnZone() {
 void Game::StartGame() {
   sound_player->Play(common->sound_hook[SoundBegin]);
   bobjects.Resize(settings->blood_particle_max);
+  stats_recorder->Reset(level.width, level.height);
 
   if (settings->game_mode == Settings::kGmHoldazone) {
     SpawnZone();

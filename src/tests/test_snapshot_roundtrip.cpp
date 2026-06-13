@@ -55,8 +55,8 @@ struct GameRunner {
       game->AddWorm(w);
     }
 
-    game->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0, 504, 350));
-    game->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1, 504, 350));
+    game->AddViewport(new Viewport(Rect(0, 0, 158, 158), 0));
+    game->AddViewport(new Viewport(Rect(160, 0, 318, 158), 1));
 
     game->level.GenerateFromSettings(*common, *settings, game->rand);
     for (auto const& w : game->worms) {

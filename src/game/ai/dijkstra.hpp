@@ -117,13 +117,14 @@ struct LevelCell : PathNode {
   int cost;  // 1 = air, 2 = dirt, -1 = rock
 };
 
-extern int const kLevelCellOffsets[8];
 extern int const kLevelCellCosts[8];
 
 struct LevelCellSucc {
-  void Begin(LevelCell* c) {
+  explicit LevelCellSucc(int const* off) : offsets(off) {}
+
+  void Begin(LevelCell* c_init) {
     i = -1;
-    this->c = c;
+    c = c_init;
   }
 
   bool Advance() {
@@ -137,29 +138,27 @@ struct LevelCellSucc {
     return true;
   }
 
-  LevelCell* Node() const { return &c[kLevelCellOffsets[i]]; }
+  LevelCell* Node() const { return c + offsets[i]; }
 
   int Cost() const {
-    LevelCell const* n = c + kLevelCellOffsets[i];
+    LevelCell const* n = c + offsets[i];
     return kLevelCellCosts[i] * n->cost;
   }
 
+  int const* offsets;
   LevelCell* c;
   LevelCell* target;
   int i;
 };
 
 struct DijkstraLevel : DijkstraState<LevelCell*, DijkstraLevel> {
-  static int const kFullWidth = 504;
-  static int const kFullHeight = 350;
-
   static int const kFactor = 4;
 
-  static int const kWidth = kFullWidth / kFactor;
-  static int const kPitch = kWidth + 2;
-  static int const kHeight = kFullHeight / kFactor;
+  int full_width{0}, full_height{0};
+  int width{0}, pitch{0}, height{0};
+  int cell_offsets[8]{};
 
-  LevelCell cells[(kWidth + 2) * (kHeight + 2)];
+  std::vector<LevelCell> cells;
 
   static path_node_t* GetNode(LevelCell* c) { return c; }
 
@@ -168,42 +167,61 @@ struct DijkstraLevel : DijkstraState<LevelCell*, DijkstraLevel> {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-static-cast-downcast)
   static LevelCell* GetNodeId(path_node_t* c) { return static_cast<LevelCell*>(c); }
 
-  LevelCell* Cell(int x, int y) { return &cells[(y + 1) * kPitch + x + 1]; }
+  LevelCell* Cell(int x, int y) { return &cells[(y + 1) * pitch + x + 1]; }
 
   IVec2 Coords(LevelCell* c) {
-    int const kOffset = static_cast<int>(c - cells);
-    int const kY = kOffset / kPitch;
-    int const kX = kOffset % kPitch;
+    int const kOffset = static_cast<int>(c - cells.data());
+    int const kY = kOffset / pitch;
+    int const kX = kOffset % pitch;
     return {kX - 1, kY - 1};
   }
 
   IVec2 CoordsLevel(LevelCell* c) { return Coords(c) * kFactor + IVec2(kFactor / 2, kFactor / 2); }
 
   LevelCell* CellFromPx(int x, int y) {
-    x = std::min(std::max(x, 0), kFullWidth - 1);
-    y = std::min(std::max(y, 0), kFullHeight - 1);
+    x = std::min(std::max(x, 0), full_width - 1);
+    y = std::min(std::max(y, 0), full_height - 1);
     x /= kFactor;
     y /= kFactor;
     return Cell(x, y);
   }
 
+  LevelCellSucc MakeSucc() const { return LevelCellSucc(cell_offsets); }
+
   void Build(Level& level, Common& common) {
+    full_width = level.width;
+    full_height = level.height;
+    width = full_width / kFactor;
+    pitch = width + 2;
+    height = full_height / kFactor;
+
+    cell_offsets[0] = -pitch;
+    cell_offsets[1] = pitch;
+    cell_offsets[2] = -1;
+    cell_offsets[3] = 1;
+    cell_offsets[4] = -pitch - 1;
+    cell_offsets[5] = -pitch + 1;
+    cell_offsets[6] = pitch - 1;
+    cell_offsets[7] = pitch + 1;
+
+    cells.assign((width + 2) * (height + 2), LevelCell{});
+
     this->Reset();
 
     Material const* mat = common.materials;
 
-    for (int x = 0; x < kWidth + 2; ++x) {
+    for (int x = 0; x < width + 2; ++x) {
       cells[x].cost = -1;
-      cells[(kHeight + 1) * kPitch + x].cost = -1;
+      cells[(height + 1) * pitch + x].cost = -1;
     }
 
-    for (int y = 0; y < kHeight + 2; ++y) {
-      cells[y * kPitch].cost = -1;
-      cells[y * kPitch + (kWidth + 1)].cost = -1;
+    for (int y = 0; y < height + 2; ++y) {
+      cells[y * pitch].cost = -1;
+      cells[y * pitch + (width + 1)].cost = -1;
     }
 
-    for (int ly = 0; ly < kHeight; ++ly) {
-      for (int lx = 0; lx < kWidth; ++lx) {
+    for (int ly = 0; ly < height; ++ly) {
+      for (int lx = 0; lx < width; ++lx) {
         int cost = 1;
 
         for (int cy = ly * kFactor; cy < (ly + 1) * kFactor; ++cy) {

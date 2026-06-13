@@ -43,14 +43,14 @@ LocalController::LocalController(const std::shared_ptr<Common>& common,
   worm2->stats_x = 218;
   worm2->ai = CreateAi(worm2->settings->controller, *worm2, *settings);
 
-  game.AddViewport(new Viewport(Rect(0, 0, 158, 158), worm1->index, 504, 350));
-  game.AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), worm2->index, 504, 350));
+  game.AddViewport(new Viewport(Rect(0, 0, 158, 158), worm1->index));
+  game.AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), worm2->index));
 
   game.AddWorm(worm1);
   game.AddWorm(worm2);
 
   // +68 on x to align the viewport in the middle
-  game.AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+  game.AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350)));
 }
 
 LocalController::~LocalController() { EndRecord(); }

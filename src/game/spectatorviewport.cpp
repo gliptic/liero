@@ -11,6 +11,9 @@
 #include "text.hpp"
 
 void SpectatorViewport::Process(Game& game) {
+  max_x = game.level.width - rect.Width();
+  max_y = game.level.height - rect.Height();
+
   int const kRealShake = Ftoi(shake);
 
   // FIXME this is a bit broken

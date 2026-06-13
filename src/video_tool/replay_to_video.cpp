@@ -57,9 +57,9 @@ void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
 
   // spectator viewport is always full size
   // +68 on x to align the viewport in the middle
-  game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
-  game->AddViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
-  game->AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index, 504, 350));
+  game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350)));
+  game->AddViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index));
+  game->AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index));
   game->StartGame();
   game->Focus(renderer);
 

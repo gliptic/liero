@@ -227,17 +227,28 @@ struct CellState {
 struct FollowAI;
 
 struct AiContext {
-  static int const kWidth = (504 + 31) >> 5;
-  static int const kHeight = (350 + 31) >> 5;
-
   AiContext() = default;
 
   DijkstraLevel dlevel;
 
-  CellState state[kWidth][kHeight];
+  std::vector<std::vector<CellState>> state;
+  int state_width{0}, state_height{0};
 
   int prev_hp{0};
   double max_damage{0}, max_presence{0};
+
+  void EnsureState() {
+    if (dlevel.full_width == 0 || dlevel.full_height == 0) {
+      return;
+    }
+    int const kW = (dlevel.full_width + 31) >> 5;
+    int const kH = (dlevel.full_height + 31) >> 5;
+    if (state_width != kW || state_height != kH) {
+      state_width = kW;
+      state_height = kH;
+      state.assign(kW, std::vector<CellState>(kH));
+    }
+  }
 
   void IncArea(int fx, int fy, double presence, double damage) {
     int const kWx = Ftoi(fx) >> 5;
@@ -245,7 +256,7 @@ struct AiContext {
 
     for (int y = kWy - 1; y <= kWy + 1; ++y) {
       for (int x = kWx - 1; x <= kWx + 1; ++x) {
-        if (y >= 0 && y < kHeight && x >= 0 && x < kWidth) {
+        if (y >= 0 && y < state_height && x >= 0 && x < state_width) {
           double d = 1.0;
           if (x != kWx) {
             d *= 0.5;
@@ -267,8 +278,8 @@ struct AiContext {
     int wx = Ftoi(fx) >> 5;
     int wy = Ftoi(fy) >> 5;
 
-    wx = std::max(std::min(wx, kWidth), 0);
-    wy = std::max(std::min(wy, kHeight), 0);
+    wx = std::max(std::min(wx, state_width - 1), 0);
+    wy = std::max(std::min(wy, state_height - 1), 0);
 
     return state[wx][wy];
   }

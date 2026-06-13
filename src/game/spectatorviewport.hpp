@@ -10,8 +10,7 @@
 struct Renderer;
 
 struct SpectatorViewport : Viewport {
-  SpectatorViewport(Rect rect, int levwidth, int levheight)
-      : Viewport(rect, 0, levwidth, levheight) {}
+  explicit SpectatorViewport(Rect rect) : Viewport(rect, 0) {}
 
   void Draw(Game& game, Renderer& renderer, GameState state, bool is_replay) override;
   void Process(Game& game) override;

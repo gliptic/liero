@@ -87,12 +87,12 @@ int main(int argc, char* argv[]) try {
     game->worms[0]->stats_x = 0;
     game->worms[1]->stats_x = 218;
   }
-  game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350), 504, 350));
+  game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350)));
   if (!game->worms.empty()) {
-    game->AddViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index, 504, 350));
+    game->AddViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index));
   }
   if (game->worms.size() >= 2) {
-    game->AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index, 504, 350));
+    game->AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index));
   }
   game->StartGame();
   game->Focus(renderer);
