@@ -150,7 +150,7 @@ Delivered on branch `arbitrary-map-sizes-pr4`:
 > **Known limitation**: extreme CPU slowdown when worms move far apart and
 > zoom-out is triggered on a large native spectator window. Addressed in PR 7.
 
-### PR 5 — Configurable videotool output resolution
+### PR 5 — Configurable videotool output resolution — **DONE**
 - **`tools_main.cpp`**: add `-w/-h` (or `--res WxH`) parsing alongside `-d/-s/-r`.
 - **`replay_to_video.{hpp,cpp}`**: thread output dims through; remove hardcoded
   `kW=1280/kH=720` (lines 66-67); set spectator render resolution from the
@@ -300,7 +300,7 @@ scripts/clang-format-diff.sh && scripts/clang-tidy-diff.sh build/linux-x64
 - [x] PR2: new sized format loads/saves; legacy files still load; 4096² level generates on demand; tools + doc updated.
 - [x] PR3: random map size editable in MATCH SETUP; config v5; defaults reproduce 504×350.
 - [x] PR4: spectator auto-zooms to keep both worms visible; 1× on small maps unchanged; minimap scales correctly; weapon-select spectator view correct at all sizes; native-resolution spectator window.
-- [ ] PR5: videotool output resolution selectable; scaler input dynamic.
+- [x] PR5: videotool output resolution selectable; scaler input dynamic.
 - [ ] PR6: online play on 4096² level no longer noticeably slower than local play; rollback tests green.
 - [ ] PR7: spectator viewport frame time within budget at ≥1280×800 with worms at maximum separation on a 4096² level.
 - [ ] Determinism/rollback suites + format checks pass on every PR.

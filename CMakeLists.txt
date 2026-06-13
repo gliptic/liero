@@ -656,6 +656,12 @@ if(OPENLIERO_BUILD_TESTS)
     target_include_directories(test_sfx_loader PRIVATE src src/game)
     catch_discover_tests(test_sfx_loader DISCOVERY_MODE PRE_TEST)
   endif()
+
+  if(OPENLIERO_BUILD_VIDEOTOOL)
+    add_executable(test_videotool_args src/tests/test_videotool_args.cpp)
+    target_link_libraries(test_videotool_args PRIVATE game Catch2::Catch2WithMain)
+    catch_discover_tests(test_videotool_args DISCOVERY_MODE PRE_TEST)
+  endif()
 endif()
 
 # documentation

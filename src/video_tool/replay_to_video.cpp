@@ -21,12 +21,13 @@ extern "C" {
 #include "game/mixer/mixer.hpp"
 
 void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
-                   std::string const& full_path, std::string const& replay_video_name) {
+                   std::string const& full_path, std::string const& replay_video_name, int width,
+                   int height) {
   ReplayReader replay_reader(std::make_unique<io::FileReader>(full_path.c_str(), "rb"));
   Renderer renderer;
 
   if (spectator) {
-    renderer.Init(640, 400);
+    renderer.Init(width, height);
     renderer.LoadPalette(*common);
   } else {
     renderer.Init(320, 200);
@@ -55,16 +56,11 @@ void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
     game->worms[1]->stats_x = 218;
   }
 
-  // spectator viewport is always full size
-  // +68 on x to align the viewport in the middle
-  game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, 504 + 68, 350)));
+  game->AddSpectatorViewport(new SpectatorViewport(Rect(0, 0, width, height)));
   game->AddViewport(new Viewport(Rect(0, 0, 158, 158), game->worms[0]->index));
   game->AddViewport(new Viewport(Rect(160, 0, 158 + 160, 158), game->worms[1]->index));
   game->StartGame();
   game->Focus(renderer);
-
-  int const kW = 1280;
-  int const kH = 720;
 
   AVRational framerate;
   framerate.num = 1;
@@ -75,7 +71,7 @@ void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
   native_framerate.den = 70;
 
   video_recorder vidrec;
-  VidrecInit(&vidrec, replay_video_name.c_str(), kW, kH, framerate);
+  VidrecInit(&vidrec, replay_video_name.c_str(), width, height, framerate);
 
   std::vector<int16_t> sound_buffer = std::vector<int16_t>();
 
@@ -91,7 +87,7 @@ void ReplayToVideo(std::shared_ptr<Common> const& common, bool spectator,
 
   int offset_x = 0;
   int offset_y = 0;
-  int const kMag = FitScreen(640, 400, renderer.bmp.w, renderer.bmp.h, offset_x, offset_y);
+  int const kMag = FitScreen(width, height, renderer.bmp.w, renderer.bmp.h, offset_x, offset_y);
 
   int f = 0;
 

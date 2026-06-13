@@ -136,7 +136,7 @@ int VidrecInit(video_recorder* self, char const* filename, int width, int height
 		}
 
 		/* Allocate temporary picture for source format conversion */
-		self->tmp_picture = alloc_frame(SOURCE_PIX_FMT, 640, 400);
+		self->tmp_picture = alloc_frame(SOURCE_PIX_FMT, width, height);
 		if (!self->tmp_picture) {
 			fprintf(stderr, "Could not allocate temporary picture\n");
 			return 1;
@@ -324,7 +324,7 @@ int VidrecWriteVideoFrame(video_recorder* self, AVFrame* pic)
 
 	/* Set up the conversion context if needed */
 	if (self->img_convert_ctx == NULL) {
-		self->img_convert_ctx = sws_getContext(640, 400,
+		self->img_convert_ctx = sws_getContext(pic->width, pic->height,
 		                                       SOURCE_PIX_FMT,
 		                                       c->width, c->height,
 		                                       c->pix_fmt,
@@ -343,7 +343,7 @@ int VidrecWriteVideoFrame(video_recorder* self, AVFrame* pic)
 	}
 
 	sws_scale(self->img_convert_ctx, (const uint8_t * const*) pic->data,
-	          pic->linesize, 0, 400, self->picture->data,
+	          pic->linesize, 0, pic->height, self->picture->data,
 	          self->picture->linesize);
 
 	self->picture->pts = self->frame_count++;
