@@ -96,6 +96,7 @@ bool LevelSelectorState::OnSelected(FileNode* node) {
     gfx->settings->random_level = false;
     gfx->settings->level_file = node->full_path;
   }
+  gfx->settings_menu.UpdateItems(*gfx->common);
   return true;
 }
 

@@ -9,8 +9,6 @@
 #include <cstring>
 
 void Level::GenerateDirtPattern(Common& common, Rand& rand) {
-  Resize(504, 350);
-
   SetPixel(0, 0, rand(7) + 12, common);
 
   for (int y = 1; y < height; ++y) {
@@ -104,6 +102,7 @@ void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand)
   origpal.ResetPalette(common.exepal, settings);
   has_custom_palette = false;
 
+  Resize(settings.random_map_width, settings.random_map_height);
   GenerateDirtPattern(common, rand);
 
   int count = rand(50) + 5;
@@ -135,10 +134,16 @@ void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand)
     }
   }
 
+  // Retry cap: on small maps the rock formations can fill the level completely,
+  // making the do-while unsatisfiable. Use kMaxTries = width * height so large
+  // maps are never affected while small ones terminate instead of looping forever.
+  int const kMaxTries = width * height;
+
   count = rand(15) + 5;
   for (int i = 0; i < count; ++i) {
     int cx = 0;
     int cy = 0;
+    int tries = 0;
     do {
       cx = rand(width) - 16;
 
@@ -147,7 +152,10 @@ void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand)
       } else {
         cy = rand(height) - 16;
       }
-    } while (!IsNoRock(common, *this, 32, cx, cy));
+    } while (!IsNoRock(common, *this, 32, cx, cy) && ++tries < kMaxTries);
+    if (tries >= kMaxTries) {
+      continue;
+    }
 
     int const kRock = rand(3);
 
@@ -166,6 +174,7 @@ void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand)
   for (int i = 0; i < count; ++i) {
     int cx = 0;
     int cy = 0;
+    int tries = 0;
     do {
       cx = rand(width) - 8;
 
@@ -174,7 +183,10 @@ void Level::GenerateRandom(Common& common, Settings const& settings, Rand& rand)
       } else {
         cy = rand(height) - 8;
       }
-    } while (!IsNoRock(common, *this, 15, cx, cy));
+    } while (!IsNoRock(common, *this, 15, cx, cy) && ++tries < kMaxTries);
+    if (tries >= kMaxTries) {
+      continue;
+    }
 
     BlitStone(common, *this, /*p1=*/false, common.large_sprites.SpritePtr(rand(6) + 3), cx, cy);
   }
@@ -404,6 +416,8 @@ void Level::GenerateFromSettings(Common& common, Settings const& settings, Rand&
 
   old_random_level = settings.random_level;
   old_level_file = settings.level_file;
+  old_random_map_width = settings.random_map_width;
+  old_random_map_height = settings.random_map_height;
 
   if (settings.shadow) {
     MakeShadow(common);

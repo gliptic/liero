@@ -91,6 +91,14 @@ git clang-format origin/master -- src/
 scripts/clang-tidy-fix.sh build/linux-x64
 ```
 
+`clang-format-diff.sh` only checks *changed lines*, so it can miss violations in unchanged context that a deletion makes invalid — for example, removing a line can leave a blank line at the start of a block, which the diff check never sees. After any edit that deletes lines, also run a full-file dry-run on every file touched:
+
+```bash
+clang-format --dry-run -Werror src/game/foo.cpp src/game/bar.hpp
+```
+
+CI runs tree-wide and will catch what the diff check misses.
+
 clang-format version is pinned to 22 — see the Conventions section.
 
 ## Architecture

@@ -80,12 +80,15 @@ struct Settings : GameplayExtensions, AppSettings {
   // Frames of artificial input delay. Host-authoritative; synced to
   // the client via MatchSettingsData.
   int32_t input_delay{1};
+  int32_t random_map_width{504};
+  int32_t random_map_height{350};
 
   static int const kNumWormSettings = 3;  // 0=left, 1=right, 2=network
   static int const kNetworkPlayerIdx = 2;
   // bump when adding fields to the TOML config
   // v4: added modernColors (default false = classic palette).
-  static int const kConfigVersion = 4;
+  // v5: added randomMapWidth/Height (defaults 504x350).
+  static int const kConfigVersion = 5;
   std::shared_ptr<WormSettings> worm_settings[kNumWormSettings];
 
   uint64_t hash;

@@ -328,7 +328,7 @@ TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config",
   CHECK(kToml.contains("[player2]"));
   CHECK(kToml.contains("[network_player]"));
   // Version field present for future-proofing
-  CHECK(kToml.contains("version = 4"));
+  CHECK(kToml.contains("version = 5"));
   // No ptr_wrapper noise
   CHECK(!kToml.contains("ptr_wrapper"));
   CHECK(!kToml.contains("[s]"));

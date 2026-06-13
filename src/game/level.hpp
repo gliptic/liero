@@ -120,6 +120,8 @@ struct Level {
     std::swap(has_custom_palette, other.has_custom_palette);
     std::swap(old_random_level, other.old_random_level);
     std::swap(old_level_file, other.old_level_file);
+    std::swap(old_random_map_width, other.old_random_map_width);
+    std::swap(old_random_map_height, other.old_random_map_height);
     std::swap(zero_material, other.zero_material);
   }
 
@@ -158,6 +160,8 @@ struct Level {
 
   bool old_random_level;
   std::string old_level_file;
+  int32_t old_random_map_width{504};
+  int32_t old_random_map_height{350};
   int width{0}, height{0};
   Palette origpal;
   // True when the level shipped its own palette (e.g. POWERLEVEL); such a

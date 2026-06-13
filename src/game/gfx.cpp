@@ -456,6 +456,8 @@ void Gfx::LoadMenus() {
   settings_menu.AddItem(MenuItem(48, 7, "FLAGS TO WIN", SettingsMenu::kSiFlagsToWin));
   settings_menu.AddItem(MenuItem(48, 7, "LIVES", SettingsMenu::kSiLives));
   settings_menu.AddItem(MenuItem(48, 7, "LEVEL", SettingsMenu::kSiLevel));
+  settings_menu.AddItem(MenuItem(48, 7, "MAP WIDTH", SettingsMenu::kSiRandomMapWidth));
+  settings_menu.AddItem(MenuItem(48, 7, "MAP HEIGHT", SettingsMenu::kSiRandomMapHeight));
   settings_menu.AddItem(MenuItem(48, 7, "LOADING TIMES", SettingsMenu::kSiLoadingTimes));
   settings_menu.AddItem(MenuItem(48, 7, "WEAPON OPTIONS", SettingsMenu::kSiWeaponOptions));
   settings_menu.AddItem(MenuItem(48, 7, "MAX BONUSES", SettingsMenu::kSiMaxBonuses));
@@ -1137,6 +1139,10 @@ ItemBehavior* SettingsMenu::GetItemBehavior(Common& common, MenuItem& item) {
 
     case kSiLevel:
       return new LevelSelectBehavior(common);
+    case kSiRandomMapWidth:
+      return new IntegerBehavior(common, gfx.settings->random_map_width, 64, 4096, 8);
+    case kSiRandomMapHeight:
+      return new IntegerBehavior(common, gfx.settings->random_map_height, 64, 4096, 8);
 
     case kSiGameMode:
       return new ArrayEnumBehavior(common, gfx.settings->game_mode, common.texts.game_modes);
@@ -1159,6 +1165,8 @@ void SettingsMenu::OnUpdate() {
   SetVisibility(kSiTimeToWin, /*state=*/false);
   SetVisibility(kSiZoneTimeout, /*state=*/false);
   SetVisibility(kSiFlagsToWin, /*state=*/false);
+  SetVisibility(kSiRandomMapWidth, gfx.settings->random_level);
+  SetVisibility(kSiRandomMapHeight, gfx.settings->random_level);
 
   switch (gfx.settings->game_mode) {
     case Settings::kGmKillEmAll:
@@ -1348,7 +1356,9 @@ bool Gfx::RunOneFrame() {
 
         if (old_level && !settings->regenerate_level &&
             settings->random_level == old_level->old_random_level &&
-            settings->level_file == old_level->old_level_file) {
+            settings->level_file == old_level->old_level_file &&
+            settings->random_map_width == old_level->old_random_map_width &&
+            settings->random_map_height == old_level->old_random_map_height) {
           new_controller->SwapLevel(*old_level);
         } else {
           Level new_level(*common);

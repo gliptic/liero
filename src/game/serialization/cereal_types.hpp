@@ -186,6 +186,9 @@ void SerializeSettingsScalars(Archive& ar, Settings& s) {
   ar(cereal::make_nvp("bonusTimeout", s.bonus_timeout));
   // v3 fields. Missing on older configs → defaults remain.
   ar(cereal::make_nvp("inputDelay", s.input_delay));
+  // v5 fields. Missing on older configs → defaults remain (504x350).
+  ar(cereal::make_nvp("randomMapWidth", s.random_map_width));
+  ar(cereal::make_nvp("randomMapHeight", s.random_map_height));
 }
 
 // Full Settings fields for binary archives (indexed weapon keys).

@@ -83,6 +83,8 @@ struct SettingsMenu : Menu {
     kSiMap,
     kSiAmountOfBlood,
     kSiLevel,
+    kSiRandomMapWidth,
+    kSiRandomMapHeight,
     kSiRegenerateLevel,
     kSiWeaponOptions,
     kLoadOptions,

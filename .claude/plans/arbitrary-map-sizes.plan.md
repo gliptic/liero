@@ -100,20 +100,28 @@ No behavior change; level still loads at 504×350. De-risks everything downstrea
   OLLEVEL2 header documented; lev_gen auto-dim detection; gen_large_test section;
   appendix with both file layouts side-by-side.
 
-### PR 3 — Random map size in MATCH SETUP
-- **Settings**: add `int32_t random_map_width{504}; int32_t random_map_height{350};`
-  (`settings.hpp`), serialize in `SerializeSettingsScalars`
-  (`cereal_types.hpp:189`), bump `kConfigVersion` **4 → 5** with comment.
-- **Menu**: `kSiRandomMapWidth/Height` enum (`gfx.hpp`), `AddItem` near `kSiLevel`
-  (`gfx.cpp:458`), `IntegerBehavior(common, …, 64, 4096, step)` cases in
-  `GetItemBehavior`. Consider gating visibility on `random_level` (mirror
-  `LevelSelectBehavior` interplay).
-- **Generation**: feed the setting into `GenerateDirtPattern`/`GenerateRandom`
-  (`level.cpp:12`) instead of hardcoded `Resize(504, 350)`.
-- **Mergeable because**: defaults reproduce today's 504×350; older configs
-  missing the fields fall back to defaults (existing v3-comment pattern).
-- **Validate**: generate + smoke-launch a non-default random size; round-trip
-  config; determinism suite.
+### PR 3 — Random map size in MATCH SETUP — **DONE**
+- **Settings**: added `int32_t random_map_width{504}; int32_t random_map_height{350};`
+  (`settings.hpp`), serialized in `SerializeSettingsScalars` (`cereal_types.hpp`),
+  bumped `kConfigVersion` **4 → 5**.
+- **Menu**: `kSiRandomMapWidth/Height` enum (`gfx.hpp`), items added near `kSiLevel`
+  (`gfx.cpp`), `IntegerBehavior(common, …, 64, 4096, 8)` cases in `GetItemBehavior`,
+  visibility gated on `gfx.settings->random_level` in `SettingsMenu::OnUpdate`.
+- **Generation**: `GenerateRandom` calls `Resize(settings.random_map_width,
+  settings.random_map_height)` instead of the hardcoded `Resize(504, 350)`.
+  Added a `kMaxTries = width * height` retry cap to the rock-placement loops to
+  prevent infinite spin on unusually small maps.
+- **Bug fix**: `LevelSelectorState::OnSelected` now calls
+  `gfx->settings_menu.UpdateItems()` after changing `random_level`, so MAP
+  WIDTH/HEIGHT items appear immediately when switching to random in the same
+  session (pre-existing gap, made visible by this PR).
+- **Bug fix**: `Level` tracks `old_random_map_width/height` alongside the existing
+  `old_random_level/old_level_file`; the new-game reuse condition in `gfx.cpp`
+  now includes them, so changing the map size triggers regeneration without
+  needing to toggle the REGENERATE LEVEL flag.
+- **Tests**: `src/tests/test_random_map_size.cpp` — 8 Catch2 cases: default values,
+  config version, TOML round-trip, backward-compat (missing keys fall back to
+  504×350), and `GenerateFromSettings` at non-default and default dimensions.
 
 ### PR 4 — Zooming spectator viewport (render-to-scratch + downscale)
 - Split `SpectatorViewport::Draw` (`spectatorviewport.cpp:33`) into a **world
@@ -203,7 +211,7 @@ scripts/clang-format-diff.sh && scripts/clang-tidy-diff.sh build/linux-x64
 
 - [x] PR1: all 504×350 hardcodes read `level.width/height`; behavior unchanged; suites green.
 - [x] PR2: new sized format loads/saves; legacy files still load; 4096² level generates on demand; tools + doc updated.
-- [ ] PR3: random map size editable in MATCH SETUP; config v5; defaults reproduce 504×350.
+- [x] PR3: random map size editable in MATCH SETUP; config v5; defaults reproduce 504×350.
 - [ ] PR4: spectator auto-zooms to keep both worms visible; 1× on small maps unchanged; minimap scales correctly; weapon-select spectator view correct at all sizes.
 - [ ] PR5: videotool output resolution selectable; scaler input dynamic.
 - [ ] PR6: online play on 4096² level no longer noticeably slower than local play; rollback tests green.
