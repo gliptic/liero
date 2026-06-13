@@ -9,8 +9,9 @@ This is a design document. **Stages 1, 2, and 3 are implemented** (see
 `docs/plans/modern-colors-stage1.md`, `docs/plans/modern-colors-stage2.md`,
 and `docs/plans/modern-colors-stage3.md` for the task-level records; the
 Stage 2 and 3 plans record where the implementation deviated from the design
-below). **Stage 4 remains an unimplemented design** and can be shipped or
-abandoned independently.
+below). **Stage 4 is planned but unimplemented** — see
+`docs/ideas/modern-colors-stage4.md` for its task-level plan (and the decisions
+that refine the design below) — and can be shipped or abandoned independently.
 
 ---
 
@@ -554,6 +555,14 @@ the animation-ramp additions.
 
 ## Stage 4 — Animated True-Color Terrain
 
+**Planned** — `docs/ideas/modern-colors-stage4.md` is the task-level plan.
+Decisions taken there that refine this section: Stage 3 has not shipped, so
+Stage 4 carries no back-compat burden with the Stage 3 formats; the animation
+data extends the existing `MODERNLV` block in place (no separate magic block);
+the ramp table and `display_anim` layer are immutable and are **not**
+snapshotted (only `cycles`, already snapshotted, drives the animation); and the
+format change bumps replay `kMyReplayVersion` 8→9 and `kProtocolVersion` 7→8.
+
 ### Goal
 
 Let authored terrain *cycle colours* in true colour — true-color water, lava,
@@ -614,14 +623,17 @@ signature is unchanged.
 - **No new sim state.** `cycles` is already part of the simulation and already
   snapshotted (`GameSnapshot::cycles`). The ramp tables and the `display_anim`
   layer are **immutable level data** loaded once; they travel with the level
-  exactly like `display_data` (cereal + wire blob from Stage 3), with the same
-  version bumps already paid there. Animated terrain is therefore
-  byte-deterministic and rollback-safe for free — it recomputes from `cycles`
-  on every peer, same as palette rotation does today.
+  exactly like `display_data` (cereal + wire blob from Stage 3), behind a fresh
+  pair of version bumps (replay 8→9, protocol 7→8 — Stage 3 already locked v8/v7
+  without anim fields). Animated terrain is therefore byte-deterministic and
+  rollback-safe for free — it recomputes from `cycles` on every peer, same as
+  palette rotation does today.
 - **Mutation policy is unchanged.** A hit cell clears `display_valid[idx]`
   (Stage 3 clear-on-hit), so shot-up animated terrain falls back to
-  palette-derived appearance like everything else. `display_anim` is immutable;
-  only the valid mask changes, so the snapshot cost is identical to Stage 3's.
+  palette-derived appearance like everything else. `display_anim` and the ramp
+  table are immutable; only the valid mask changes, and it is already
+  snapshotted — so the ramp table and `display_anim` are **not** snapshotted at
+  all, and the snapshot cost is *lower* than Stage 3's, not equal.
 - **Classic mode is untouched** — animated authored pixels are gated behind
   `mode == kModern`; a classic renderer never consults the ramp table.
 

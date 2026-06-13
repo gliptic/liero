@@ -20,6 +20,7 @@ struct ShadowQuery {
   int world_offset_x;
   int world_offset_y;
   ColorMode mode{ColorMode::kClassic};
+  int cycles{0};
 
   // Palette index of the level pixel under screen (sx, sy), or -1 outside
   // the level.
@@ -58,8 +59,8 @@ struct ShadowQuery {
     }
     if (mode == ColorMode::kModern && !level.display_valid.empty() &&
         level.display_valid[kLevelIdx]) {
-      // Darken each channel by 50%; keep alpha opaque.
-      return 0xFF000000U | ((level.display_data[kLevelIdx] & 0x00FEFEFE) >> 1);
+      uint32_t const kArgb = level.ResolveDisplayAt(kLevelIdx, cycles);
+      return 0xFF000000U | ((kArgb & 0x00FEFEFE) >> 1);
     }
     return pal32[kP + 4];
   }

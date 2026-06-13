@@ -700,9 +700,19 @@ void NetSession::GenerateAndSendMap() {
   uint32_t rand_last = g.rand.last;
   size_t const kPixelDataSize = static_cast<size_t>(w) * h;
   bool const kHasDisplay = !level.display_data.empty();
+  bool const kHasAnim = kHasDisplay && !level.argb_ramps.empty();
   // has_display_layer(1) + display_data(kPixelDataSize*4) + display_valid(kPixelDataSize)
   size_t const kDisplayExtra = kHasDisplay ? 1 + kPixelDataSize * 4 + kPixelDataSize : 1;
-  size_t const kRawSize = 4 + 4 + rand_state_len + 4 + kPixelDataSize + 768 + kDisplayExtra;
+  // anim section: ramp_count(1) + per-ramp[shift(1)+color_count(2)+colors(N*4)] + display_anim
+  size_t anim_extra = 1;  // ramp_count byte (0 if no anim)
+  if (kHasAnim) {
+    for (auto const& ramp : level.argb_ramps) {
+      anim_extra += 1 + 2 + ramp.colors.size() * 4;
+    }
+    anim_extra += kPixelDataSize;
+  }
+  size_t const kRawSize =
+      4 + 4 + rand_state_len + 4 + kPixelDataSize + 768 + kDisplayExtra + anim_extra;
 
   std::vector<uint8_t> raw(kRawSize);
   std::memcpy(raw.data(), &w, 2);
@@ -728,6 +738,24 @@ void NetSession::GenerateAndSendMap() {
   if (kHasDisplay) {
     std::memcpy(disp_ptr + 1, level.display_data.data(), kPixelDataSize * sizeof(uint32_t));
     std::memcpy(disp_ptr + 1 + kPixelDataSize * 4, level.display_valid.data(), kPixelDataSize);
+  }
+
+  // Anim layer: ramp_count(1) + [shift(1)+color_count(2LE)+colors(N*4)]... + display_anim(cells)
+  uint8_t* anim_ptr = disp_ptr + (kHasDisplay ? 1 + kPixelDataSize * 4 + kPixelDataSize : 1);
+  if (kHasAnim) {
+    auto const kRampCount = static_cast<uint8_t>(level.argb_ramps.size());
+    *anim_ptr++ = kRampCount;
+    for (auto const& ramp : level.argb_ramps) {
+      *anim_ptr++ = ramp.shift;
+      auto const kColorCount = static_cast<uint16_t>(ramp.colors.size());
+      std::memcpy(anim_ptr, &kColorCount, 2);
+      anim_ptr += 2;
+      std::memcpy(anim_ptr, ramp.colors.data(), ramp.colors.size() * 4);
+      anim_ptr += ramp.colors.size() * 4;
+    }
+    std::memcpy(anim_ptr, level.display_anim.data(), kPixelDataSize);
+  } else {
+    *anim_ptr = 0;  // ramp_count = 0
   }
 
   // Compress with miniz

@@ -214,6 +214,8 @@ bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
   Resize(504, 350);
   display_data.clear();
   display_valid.clear();
+  argb_ramps.clear();
+  display_anim.clear();
 
   bool reset_palette = true;
 
@@ -272,6 +274,60 @@ bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
       }
       r.Get(raw_dd + prepend, kCells * sizeof(uint32_t) - prepend);
       r.Get(display_valid.data(), kCells);
+
+      // Stage 4 extension: ramp_count(1) + ramps + display_anim(cells).
+      // TryGet so Stage-3-format files (stream ends here) still load fine.
+      uint8_t ramp_count = 0;
+      if (r.TryGet(&ramp_count, 1) == 1 && ramp_count > 0) {
+        static constexpr uint16_t kMaxColors = 4096;
+        bool valid = true;
+        std::vector<ArgbRamp> ramps;
+        ramps.reserve(ramp_count);
+
+        for (uint8_t ri = 0; ri < ramp_count && valid; ++ri) {
+          uint8_t shift_byte = 0;
+          if (r.TryGet(&shift_byte, 1) != 1) {
+            valid = false;
+            break;
+          }
+          uint8_t count_bytes[2] = {};
+          if (r.TryGet(count_bytes, 2) != 2) {
+            valid = false;
+            break;
+          }
+          auto const kColorCount = static_cast<uint16_t>(
+              static_cast<uint16_t>(count_bytes[0]) | (static_cast<uint16_t>(count_bytes[1]) << 8));
+          if (kColorCount == 0 || kColorCount > kMaxColors) {
+            valid = false;
+            break;
+          }
+          ArgbRamp ramp;
+          ramp.shift = shift_byte;
+          ramp.colors.resize(kColorCount);
+          auto* raw = reinterpret_cast<uint8_t*>(ramp.colors.data());
+          if (r.TryGet(raw, kColorCount * 4U) != kColorCount * 4U) {
+            valid = false;
+            break;
+          }
+          ramps.push_back(ramp);
+        }
+
+        if (valid) {
+          std::vector<uint8_t> anim(kCells);
+          if (r.TryGet(anim.data(), kCells) == kCells) {
+            for (uint8_t const kRampIdx : anim) {
+              if (kRampIdx > ramp_count) {
+                valid = false;
+                break;
+              }
+            }
+            if (valid) {
+              argb_ramps = std::move(ramps);
+              display_anim = std::move(anim);
+            }
+          }
+        }
+      }
     }
   }
 
@@ -388,7 +444,8 @@ void Level::DrawMiniature(Bitmap& dest, int map_x, int map_y, int step) {
     for (int x = map_x; x < kMapEndX; ++x) {
       auto const kIdx = static_cast<unsigned int>(mx + my * width);
       if (kIdx < material_id.size() && dest.clip_rect.Inside(x, y)) {
-        dest.GetPixel(x, y) = AppearanceAt(static_cast<int>(kIdx), dest.mode, dest.pal32);
+        dest.GetPixel(x, y) =
+            AppearanceAt(static_cast<int>(kIdx), dest.mode, dest.pal32, dest.cycles);
       }
       mx += step;
     }

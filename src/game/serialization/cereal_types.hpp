@@ -110,18 +110,26 @@ void serialize(Archive& ar, Palette& p) {
   }
 }
 
+// ---- Level::ArgbRamp ----
+template <class Archive>
+void serialize(Archive& ar, Level::ArgbRamp& r) {
+  ar(cereal::make_nvp("shift", r.shift), cereal::make_nvp("colors", r.colors));
+}
+
 // ---- Level ----
 // `materials` is re-derived from `data` + Common at load time (matching
 // the existing replay behaviour), so we don't serialize it. `oldRandomLevel`
 // / `oldLevelFile` / `zeroMaterial` are also not part of the wire format.
-// Split save/load so that the display layer (v8+) is always written but is
-// only read when g_cereal_replay_version >= 8.
+// Split save/load so that newer layers are always written but are only read
+// when g_cereal_replay_version >= the version that introduced them (v8 for
+// display layer, v9 for anim layer).
 template <class Archive>
 void save(Archive& ar, Level const& lvl) {
   ar(cereal::make_nvp("width", lvl.width), cereal::make_nvp("height", lvl.height),
      cereal::make_nvp("data", lvl.material_id), cereal::make_nvp("origpal", lvl.origpal),
      cereal::make_nvp("displayData", lvl.display_data),
-     cereal::make_nvp("displayValid", lvl.display_valid));
+     cereal::make_nvp("displayValid", lvl.display_valid),
+     cereal::make_nvp("argbRamps", lvl.argb_ramps), cereal::make_nvp("animData", lvl.display_anim));
 }
 
 template <class Archive>
@@ -131,6 +139,10 @@ void load(Archive& ar, Level& lvl) {
   if (g_cereal_replay_version >= 8) {
     ar(cereal::make_nvp("displayData", lvl.display_data),
        cereal::make_nvp("displayValid", lvl.display_valid));
+  }
+  if (g_cereal_replay_version >= 9) {
+    ar(cereal::make_nvp("argbRamps", lvl.argb_ramps),
+       cereal::make_nvp("animData", lvl.display_anim));
   }
 }
 

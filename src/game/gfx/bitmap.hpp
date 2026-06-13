@@ -19,6 +19,8 @@ struct Bitmap {
   uint32_t const* pal32{nullptr};
   // Colour mode of the owning renderer; set beside pal32 each frame.
   ColorMode mode{ColorMode::kClassic};
+  // Simulation frame counter for animated terrain; 0 for menu previews.
+  int cycles{0};
   Rect clip_rect;
 
   Bitmap() = default;
@@ -55,6 +57,7 @@ struct Bitmap {
     Alloc(other.w, other.h, other.pitch);
     pal32 = other.pal32;
     mode = other.mode;
+    cycles = other.cycles;
     std::memcpy(pixels, other.pixels, sizeof(uint32_t) * other.pitch * other.h);
   }
 

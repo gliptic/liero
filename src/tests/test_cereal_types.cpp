@@ -361,6 +361,73 @@ TEST_CASE("cereal_types: Rand round-trip preserves stream", "[cereal_types]") {
   CHECK(bin() == src());
 }
 
+TEST_CASE("cereal_types: Level round-trip preserves anim layer (stage4)",
+          "[cereal_types][stage4]") {
+  Common common;
+  Level src(common);
+  src.width = 3;
+  src.height = 2;
+  src.material_id.assign(6, 0);
+  src.display_data.assign(6, 0U);
+  src.display_valid.assign(6, 0);
+
+  Level::ArgbRamp ramp;
+  ramp.shift = 1;
+  ramp.colors = {0xFF204060U, 0xFF408020U};
+  src.argb_ramps.push_back(ramp);
+  src.display_anim.assign(6, 0);
+  src.display_anim[2] = 1;
+
+  Level dst(common);
+  std::stringstream ss;
+  {
+    cereal::PortableBinaryOutputArchive ar(ss);
+    ar(cereal::make_nvp("lvl", src));
+  }
+  {
+    cereal::PortableBinaryInputArchive ar(ss);
+    ar(cereal::make_nvp("lvl", dst));
+  }
+  REQUIRE(dst.argb_ramps.size() == 1);
+  CHECK(dst.argb_ramps[0].shift == 1);
+  REQUIRE(dst.argb_ramps[0].colors.size() == 2);
+  CHECK(dst.argb_ramps[0].colors[0] == 0xFF204060U);
+  CHECK(dst.argb_ramps[0].colors[1] == 0xFF408020U);
+  REQUIRE(dst.display_anim.size() == 6);
+  CHECK(dst.display_anim[2] == 1);
+  CHECK(dst.display_anim[0] == 0);
+}
+
+TEST_CASE("cereal_types: Level v8 stream loads with empty anim layer (stage4)",
+          "[cereal_types][stage4]") {
+  Common common;
+  Level src(common);
+  src.width = 2;
+  src.height = 2;
+  src.material_id.assign(4, 0);
+  src.display_data.assign(4, 0xFF112233U);
+  src.display_valid.assign(4, 1);
+
+  // Write with version 8 (no anim data in stream).
+  g_cereal_replay_version = 8;
+  std::stringstream ss;
+  {
+    cereal::PortableBinaryOutputArchive ar(ss);
+    ar(cereal::make_nvp("lvl", src));
+  }
+
+  Level dst(common);
+  {
+    cereal::PortableBinaryInputArchive ar(ss);
+    ar(cereal::make_nvp("lvl", dst));
+  }
+  g_cereal_replay_version = kMyReplayVersion;
+
+  CHECK(dst.display_data[0] == 0xFF112233U);
+  CHECK(dst.argb_ramps.empty());
+  CHECK(dst.display_anim.empty());
+}
+
 TEST_CASE("cereal_types: WormWeapon round-trip excludes type pointer", "[cereal_types]") {
   WormWeapon src;
   src.ammo = 17;

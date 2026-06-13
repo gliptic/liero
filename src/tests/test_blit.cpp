@@ -117,6 +117,54 @@ TEST_CASE("shadowedargb in modern mode darkens display_data for authored seeshad
   REQUIRE(kQModern2.ShadowedArgb(0, 3) == 0xFF112233U);  // pixel 0+3*8=24, display_valid==0
 }
 
+TEST_CASE("shadowedargb animated modern mode darkens the resolved animated color",
+          "[blit][shadow][stage4]") {
+  ShadowFixture f;
+
+  int const kIdx = 2 + 3 * 8;
+  f.level.display_data.assign(64, 0);
+  f.level.display_valid.assign(64, 0);
+  f.level.display_anim.assign(64, 0);
+  f.level.display_valid[kIdx] = 1;
+  f.level.display_anim[kIdx] = 1;
+  f.level.display_data[kIdx] = 0;  // phase offset 0
+
+  Level::ArgbRamp ramp;
+  ramp.colors = {0xFF204060U, 0xFF408020U};
+  ramp.shift = 0;
+  f.level.argb_ramps.push_back(ramp);
+
+  // cycles=0 → resolves to 0xFF204060 → darkened = 0xFF102030
+  ShadowQuery const kQCycles0{.common = f.common,
+                              .level = f.level,
+                              .pal32 = f.renderer.pal32,
+                              .world_offset_x = 0,
+                              .world_offset_y = 0,
+                              .mode = ColorMode::kModern,
+                              .cycles = 0};
+  REQUIRE(kQCycles0.ShadowedArgb(2, 3) == 0xFF102030U);
+
+  // cycles=1 → resolves to 0xFF408020 → darkened = 0xFF204010
+  ShadowQuery const kQCycles1{.common = f.common,
+                              .level = f.level,
+                              .pal32 = f.renderer.pal32,
+                              .world_offset_x = 0,
+                              .world_offset_y = 0,
+                              .mode = ColorMode::kModern,
+                              .cycles = 1};
+  REQUIRE(kQCycles1.ShadowedArgb(2, 3) == 0xFF204010U);
+
+  // Classic mode always uses the palette path, regardless of ramps.
+  ShadowQuery const kQClassic{.common = f.common,
+                              .level = f.level,
+                              .pal32 = f.renderer.pal32,
+                              .world_offset_x = 0,
+                              .world_offset_y = 0,
+                              .mode = ColorMode::kClassic,
+                              .cycles = 1};
+  REQUIRE(kQClassic.ShadowedArgb(2, 3) == 0xFF112233U);
+}
+
 TEST_CASE("shadowquery reads material from the level, not the screen", "[blit][shadow]") {
   ShadowFixture const kFixture;
   ShadowQuery const kQ = kFixture.Query();
@@ -238,7 +286,7 @@ TEST_CASE("appearanceat resolves level pixels through pal32", "[blit][argb]") {
   f.renderer.pal.entries[10] = {.r = 4, .g = 5, .b = 6, .unused = 0};
   f.renderer.UpdatePal32();
 
-  REQUIRE(f.level.AppearanceAt(0, f.renderer.mode, f.renderer.pal32) == 0xFF040506U);
+  REQUIRE(f.level.AppearanceAt(0, f.renderer.mode, f.renderer.pal32, 0) == 0xFF040506U);
 }
 
 TEST_CASE("drawlevel paints terrain and blitbitmap restores argb", "[blit][argb]") {

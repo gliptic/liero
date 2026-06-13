@@ -144,7 +144,7 @@ void DrawLevel(Bitmap& scr, Level const& level, int x, int y) {
 
   for (int dy = 0; dy < height; ++dy) {
     for (int dx = 0; dx < width; ++dx) {
-      scrptr[dx] = level.AppearanceAt(idx + dx, scr.mode, scr.pal32);
+      scrptr[dx] = level.AppearanceAt(idx + dx, scr.mode, scr.pal32, scr.cycles);
     }
 
     scrptr += scr.pitch;

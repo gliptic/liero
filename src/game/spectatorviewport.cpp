@@ -43,7 +43,8 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
                             .pal32 = renderer.pal32,
                             .world_offset_x = -kOffs.x,
                             .world_offset_y = -kOffs.y,
-                            .mode = renderer.mode};
+                            .mode = renderer.mode,
+                            .cycles = game.cycles};
 
   for (std::size_t i = 0; i < game.worms.size(); ++i) {
     Worm const& worm = *game.worms[i];
@@ -184,6 +185,7 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
     }
   }
 
+  renderer.bmp.cycles = game.cycles;
   DrawLevel(renderer.bmp, game.level, kOffs.x, kOffs.y);
 
   if (game.settings->game_mode == Settings::kGmHoldazone) {

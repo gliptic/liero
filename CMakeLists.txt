@@ -454,7 +454,10 @@ if(OPENLIERO_BUILD_TESTS)
 
   add_executable(test_level_display src/tests/test_level_display.cpp)
   target_link_libraries(test_level_display PRIVATE game Catch2::Catch2WithMain)
-  catch_discover_tests(test_level_display DISCOVERY_MODE PRE_TEST)
+  catch_discover_tests(test_level_display
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
 
   # Headless replay frame hasher (not a Catch2 test): prints per-frame
   # hashes of the composed screen so renderer refactors can be verified

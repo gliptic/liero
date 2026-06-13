@@ -338,3 +338,85 @@ TEST_CASE("NetSession TC sync skips transfer when hashes match", "[session][tc]"
   // TC should NOT have been reloaded (same hash → skip)
   REQUIRE_FALSE(tc_reloaded);
 }
+
+TEST_CASE("NetTransport protocol version is 8 for stage4 anim blob (stage4)", "[session][stage4]") {
+  CHECK(NetTransport::kProtocolVersion == 8);
+}
+
+TEST_CASE("level blob round-trip preserves anim layer (stage4)", "[session][stage4]") {
+  SessionFixture const kF;
+  RollbackController ctrl(kF.common, kF.settings, /*local_player_idx=*/0);
+
+  constexpr uint16_t kW = 4;
+  constexpr uint16_t kH = 3;
+  constexpr size_t kCells = kW * kH;
+
+  Rand const kRng(42U);
+  std::string const kRandState = kRng.serialize();
+  auto const kRandStatLen = static_cast<uint32_t>(kRandState.size());
+  uint32_t const kRandLast = kRng.last;
+
+  std::vector<uint8_t> blob;
+  auto push8 = [&](uint8_t v) { blob.push_back(v); };
+  auto push16le = [&](uint16_t v) {
+    blob.push_back(v & 0xFF);
+    blob.push_back((v >> 8) & 0xFF);
+  };
+  auto push32le = [&](uint32_t v) {
+    blob.push_back(v & 0xFF);
+    blob.push_back((v >> 8) & 0xFF);
+    blob.push_back((v >> 16) & 0xFF);
+    blob.push_back((v >> 24) & 0xFF);
+  };
+
+  push16le(kW);
+  push16le(kH);
+  push32le(kRandStatLen);
+  for (char const kByte : kRandState) {
+    push8(static_cast<uint8_t>(kByte));
+  }
+  push32le(kRandLast);
+  for (size_t i = 0; i < kCells; ++i) {
+    push8(0);
+  }  // material_id
+  for (int i = 0; i < 768; ++i) {
+    push8(0);
+  }  // palette
+  push8(1);  // has_display_layer
+  for (size_t i = 0; i < kCells; ++i) {
+    push32le(0xFF102030U);
+  }  // display_data
+  for (size_t i = 0; i < kCells; ++i) {
+    push8(1);
+  }  // display_valid
+  // anim section
+  push8(1);  // ramp_count = 1
+  push8(2);  // shift
+  push8(2);
+  push8(0);  // color_count LE = 2
+  push32le(0xFF204060U);
+  push32le(0xFF608020U);
+  for (size_t i = 0; i < kCells; ++i) {
+    push8(i == 5 ? 1 : 0);
+  }  // display_anim
+
+  // LoadLevelFromData expects: compressed_flag(1) + raw_size(4) + raw_data
+  auto const kRawSize32 = static_cast<uint32_t>(blob.size());
+  std::vector<uint8_t> packet;
+  packet.push_back(0);  // not compressed
+  for (int bi = 0; bi < 4; ++bi) {
+    packet.push_back((kRawSize32 >> (8 * bi)) & 0xFF);
+  }
+  packet.insert(packet.end(), blob.begin(), blob.end());
+
+  ctrl.LoadLevelFromData(packet);
+
+  REQUIRE(ctrl.game.level.argb_ramps.size() == 1);
+  CHECK(ctrl.game.level.argb_ramps[0].shift == 2);
+  REQUIRE(ctrl.game.level.argb_ramps[0].colors.size() == 2);
+  CHECK(ctrl.game.level.argb_ramps[0].colors[0] == 0xFF204060U);
+  CHECK(ctrl.game.level.argb_ramps[0].colors[1] == 0xFF608020U);
+  REQUIRE(ctrl.game.level.display_anim.size() == kCells);
+  CHECK(ctrl.game.level.display_anim[5] == 1);
+  CHECK(ctrl.game.level.display_anim[0] == 0);
+}

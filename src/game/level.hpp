@@ -18,6 +18,7 @@ struct Game;
 struct Settings;
 struct Rand;
 struct Common;
+struct ShadowQuery;
 
 struct Level {
   Level(Common& common) : zero_material(common.materials[0]) {}
@@ -31,12 +32,21 @@ struct Level {
   bool SelectSpawn(Rand& rand, int w, int h, IVec2& selected);
   void DrawMiniature(Bitmap& dest, int map_x, int map_y, int step);
 
+  // Per-level animation ramp: a short list of ARGB colours that cycle each
+  // frame. `shift` controls speed: phase = (cycles >> shift) % colors.size().
+  struct ArgbRamp {
+    std::vector<uint32_t> colors;
+    uint8_t shift{0};
+  };
+
   // What the renderer shows for level pixel `idx`. In modern mode, returns
-  // the authored display_data[idx] when valid; otherwise the palette-derived
-  // colour. Classic mode and empty display layers always use the palette path.
-  uint32_t AppearanceAt(int idx, ColorMode mode, uint32_t const* pal32) const {
+  // the authored or animated colour; otherwise the palette-derived colour.
+  // `cycles` is the simulation frame counter (from Bitmap::cycles, 0 for
+  // menu previews). Classic mode and empty display layers always use the
+  // palette path.
+  uint32_t AppearanceAt(int idx, ColorMode mode, uint32_t const* pal32, int cycles) const {
     if (mode == ColorMode::kModern && !display_valid.empty() && display_valid[idx]) {
-      return display_data[idx];
+      return ResolveDisplayAt(idx, cycles);
     }
     return pal32[material_id[idx]];
   }
@@ -102,6 +112,8 @@ struct Level {
     materials.swap(other.materials);
     display_data.swap(other.display_data);
     display_valid.swap(other.display_valid);
+    argb_ramps.swap(other.argb_ramps);
+    display_anim.swap(other.display_anim);
     std::swap(width, other.width);
     std::swap(height, other.height);
     std::swap(origpal, other.origpal);
@@ -137,6 +149,12 @@ struct Level {
   // for classic levels — empty means "always use the palette path."
   std::vector<uint32_t> display_data;
   std::vector<uint8_t> display_valid;
+  // Optional animation layer (Stage 4). Empty when the level has no ramps.
+  // argb_ramps: the ramp table; display_anim[idx]: 0=static, N=ramp N-1.
+  // For animated pixels, display_data[idx] is a per-pixel phase offset, not
+  // a colour. All three fields are immutable after load; never snapshotted.
+  std::vector<ArgbRamp> argb_ramps;
+  std::vector<uint8_t> display_anim;
 
   bool old_random_level;
   std::string old_level_file;
@@ -147,4 +165,23 @@ struct Level {
   // replay-received levels re-derive it (DeriveHasCustomPalette).
   bool has_custom_palette = false;
   Material zero_material;
+
+ private:
+  friend struct ShadowQuery;
+
+  // Resolves the modern-authored colour at `idx` (caller must ensure
+  // display_valid[idx] is true). Returns the animated colour when ramps are
+  // active, otherwise the static display_data value.
+  uint32_t ResolveDisplayAt(int idx, int cycles) const {
+    uint8_t const kA = display_anim.empty() ? 0 : display_anim[idx];
+    if (kA == 0 || static_cast<std::size_t>(kA) > argb_ramps.size()) {
+      return display_data[idx];
+    }
+    ArgbRamp const& r = argb_ramps[kA - 1];
+    if (r.colors.empty()) {
+      return display_data[idx];
+    }
+    unsigned const kPhase = display_data[idx] + (static_cast<unsigned>(cycles) >> r.shift);
+    return r.colors[kPhase % r.colors.size()];
+  }
 };

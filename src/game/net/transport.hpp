@@ -27,7 +27,8 @@ struct NetTransport {
   // v6: worm rgb and the level palette bytes carry 0..255 channels
   //     (previously 6-bit VGA values).
   // v7: level map blob includes display layer (display_data/display_valid).
-  static constexpr uint8_t kProtocolVersion = 7;
+  // v8: level map blob includes anim layer (argb_ramps/display_anim).
+  static constexpr uint8_t kProtocolVersion = 8;
 
   // Wire sizes for hand-serialized structs (no compiler padding).
   static constexpr size_t kPlayerInfoWireSize = 5 * 4 + 4 + 3 * 4 + 24;

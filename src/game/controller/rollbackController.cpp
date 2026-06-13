@@ -144,6 +144,7 @@ void RollbackController::LoadLevelFromData(const std::vector<uint8_t>& data) {
   // Display layer: has_display_layer(1) + [display_data(cells*4) +
   // display_valid(cells)] when present (v7+ blob).
   size_t const kDispOffset = kPixelsOffset + kPixelDataSize + 768;
+  bool has_display = false;
   if (raw.size() > kDispOffset && raw[kDispOffset] == 1) {
     size_t const kNeeded = kDispOffset + 1 + kPixelDataSize * 4 + kPixelDataSize;
     if (raw.size() >= kNeeded) {
@@ -153,10 +154,67 @@ void RollbackController::LoadLevelFromData(const std::vector<uint8_t>& data) {
                   kPixelDataSize * sizeof(uint32_t));
       std::memcpy(game.level.display_valid.data(),
                   raw.data() + kDispOffset + 1 + kPixelDataSize * 4, kPixelDataSize);
+      has_display = true;
     }
   } else {
     game.level.display_data.clear();
     game.level.display_valid.clear();
+  }
+
+  // Anim layer (v8+ blob): ramp_count(1) + [shift(1)+color_count(2LE)+colors(N*4)]...
+  // + display_anim(cells). ramp_count=0 means no anim.
+  game.level.argb_ramps.clear();
+  game.level.display_anim.clear();
+  if (has_display) {
+    size_t const kAnimOffset = kDispOffset + 1 + kPixelDataSize * 4 + kPixelDataSize;
+    if (raw.size() > kAnimOffset) {
+      uint8_t const kRampCount = raw[kAnimOffset];
+      if (kRampCount > 0) {
+        static constexpr uint16_t kMaxColors = 4096;
+        bool valid = true;
+        std::vector<Level::ArgbRamp> ramps;
+        ramps.reserve(kRampCount);
+        size_t pos = kAnimOffset + 1;
+        for (uint8_t ri = 0; ri < kRampCount && valid; ++ri) {
+          if (pos + 3 > raw.size()) {
+            valid = false;
+            break;
+          }
+          Level::ArgbRamp ramp;
+          ramp.shift = raw[pos];
+          auto const kColorCount = static_cast<uint16_t>(
+              static_cast<uint16_t>(raw[pos + 1]) | (static_cast<uint16_t>(raw[pos + 2]) << 8));
+          pos += 3;
+          if (kColorCount == 0 || kColorCount > kMaxColors) {
+            valid = false;
+            break;
+          }
+          if (pos + kColorCount * 4U > raw.size()) {
+            valid = false;
+            break;
+          }
+          ramp.colors.resize(kColorCount);
+          std::memcpy(ramp.colors.data(), raw.data() + pos, kColorCount * 4U);
+          pos += kColorCount * 4U;
+          ramps.push_back(std::move(ramp));
+        }
+        if (valid && pos + kPixelDataSize <= raw.size()) {
+          std::vector<uint8_t> anim(kPixelDataSize);
+          std::memcpy(anim.data(), raw.data() + pos, kPixelDataSize);
+          bool anim_valid = true;
+          for (uint8_t const kRampIdx : anim) {
+            if (kRampIdx > kRampCount) {
+              anim_valid = false;
+              break;
+            }
+          }
+          if (anim_valid) {
+            game.level.argb_ramps = std::move(ramps);
+            game.level.display_anim = std::move(anim);
+          }
+        }
+      }
+    }
   }
 
   game.rand.Deserialize(kRandState);
@@ -661,6 +719,10 @@ void RollbackController::SetupShadowGame() {
   if (!game.level.display_data.empty()) {
     shadowGame_->level.display_data.resize(kCells);
     shadowGame_->level.display_valid.resize(kCells);
+  }
+  if (!game.level.argb_ramps.empty()) {
+    shadowGame_->level.argb_ramps = game.level.argb_ramps;
+    shadowGame_->level.display_anim = game.level.display_anim;
   }
   // origpal is the level's palette. It isn't sim state, so the fast
   // snapshot doesn't carry it — but the cereal Game serializer used by

@@ -200,8 +200,10 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState /*state*/, bool is
                               .pal32 = renderer.pal32,
                               .world_offset_x = -kOffs.x,
                               .world_offset_y = -kOffs.y,
-                              .mode = renderer.mode};
+                              .mode = renderer.mode,
+                              .cycles = game.cycles};
 
+    renderer.bmp.cycles = game.cycles;
     DrawLevel(renderer.bmp, game.level, kOffs.x, kOffs.y);
 
     if (game.settings->game_mode == Settings::kGmHoldazone) {
