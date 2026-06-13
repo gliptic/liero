@@ -125,7 +125,9 @@ std::unique_ptr<Game> ReplayReader::BeginPlayback(
   std::shared_ptr<Settings> const kSettings = std::make_shared<Settings>();
   std::unique_ptr<Game> game(new Game(common, kSettings, sound_player));
 
+  g_cereal_replay_version = replay_version;
   CerealRead(reader, *game);
+  g_cereal_replay_version = kMyReplayVersion;
 
   if (replay_version < 7) {
     // Pre-7 replays stored the level palette as 6-bit VGA channels.
@@ -249,7 +251,7 @@ uint32_t WideRollbackChecksum(Game& game) {
   std::size_t const kCells =
       static_cast<std::size_t>(game.level.width) * static_cast<std::size_t>(game.level.height);
   if (kCells > 0) {
-    MixBytes(h, game.level.data.data(), kCells);
+    MixBytes(h, game.level.material_id.data(), kCells);
   }
 
   return h;

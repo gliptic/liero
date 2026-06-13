@@ -232,3 +232,38 @@ TEST_CASE("Fast snapshot save/restore microbenchmark", "[snapshot][rollback][!be
   REQUIRE(kSaveUs < 2000.0);
   REQUIRE(kLoadUs < 2000.0);
 }
+
+TEST_CASE("Fast snapshot round-trips the display layer", "[snapshot][rollback][stage3]") {
+  GameRunner r(0xD1500);
+  Game& game = *r.game;
+
+  // Inject a display layer: mark pixel 0 with a specific ARGB.
+  std::size_t const kCells =
+      static_cast<std::size_t>(game.level.width) * static_cast<std::size_t>(game.level.height);
+  game.level.display_data.assign(kCells, 0);
+  game.level.display_valid.assign(kCells, 0);
+  game.level.display_data[0] = 0xFF112233U;
+  game.level.display_valid[0] = 1;
+
+  GameSnapshot snap;
+  snap.Prepare(game);
+  game.SaveSnapshotFast(snap);
+
+  // Corrupt the display layer, then restore.
+  game.level.display_data[0] = 0xDEADBEEFU;
+  game.level.display_valid[0] = 0;
+  game.LoadSnapshotFast(snap);
+
+  REQUIRE(game.level.display_data[0] == 0xFF112233U);
+  REQUIRE(game.level.display_valid[0] == 1);
+
+  // Classic level (no display layer): Prepare must not allocate,
+  // LoadSnapshotFast must not restore when snap has no display layer.
+  game.level.display_data.clear();
+  game.level.display_valid.clear();
+  GameSnapshot snap2;
+  snap2.Prepare(game);
+  game.SaveSnapshotFast(snap2);
+  game.LoadSnapshotFast(snap2);
+  REQUIRE(game.level.display_data.empty());
+}

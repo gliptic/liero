@@ -31,25 +31,38 @@ struct Level {
   bool SelectSpawn(Rand& rand, int w, int h, IVec2& selected);
   void DrawMiniature(Bitmap& dest, int map_x, int map_y, int step);
 
-  // What the renderer shows for level pixel `idx`. Stage 2: the palette
-  // colour of the material index. Stage 3 makes this mode-aware (authored
-  // ARGB terrain where present).
-  uint32_t AppearanceAt(int idx, uint32_t const* pal32) const { return pal32[data[idx]]; }
+  // What the renderer shows for level pixel `idx`. In modern mode, returns
+  // the authored display_data[idx] when valid; otherwise the palette-derived
+  // colour. Classic mode and empty display layers always use the palette path.
+  uint32_t AppearanceAt(int idx, ColorMode mode, uint32_t const* pal32) const {
+    if (mode == ColorMode::kModern && !display_valid.empty() && display_valid[idx]) {
+      return display_data[idx];
+    }
+    return pal32[material_id[idx]];
+  }
 
-  unsigned char Pixel(int x, int y) { return data[x + y * width]; }
+  unsigned char Pixel(int x, int y) { return material_id[x + y * width]; }
 
-  unsigned char Pixel(fixedvec pos) { return data[pos.x + pos.y * width]; }
+  unsigned char Pixel(fixedvec pos) { return material_id[pos.x + pos.y * width]; }
 
-  unsigned char* Pixelp(int x, int y) { return &data[x + y * width]; }
+  unsigned char* Pixelp(int x, int y) { return &material_id[x + y * width]; }
 
   void SetPixel(int x, int y, PalIdx w, Common& common) {
-    data[x + y * width] = w;
-    materials[x + y * width] = common.materials[w];
+    int const kIdx = x + y * width;
+    material_id[kIdx] = w;
+    materials[kIdx] = common.materials[w];
+    if (!display_valid.empty()) {
+      display_valid[kIdx] = 0;
+    }
   }
 
   void SetPixel(fixedvec pos, PalIdx w, Common& common) {
-    data[pos.x + pos.y * width] = w;
-    materials[pos.x + pos.y * width] = common.materials[w];
+    int const kIdx = pos.x + pos.y * width;
+    material_id[kIdx] = w;
+    materials[kIdx] = common.materials[w];
+    if (!display_valid.empty()) {
+      display_valid[kIdx] = 0;
+    }
   }
 
   Material& Mat(int x, int y) { return materials[x + y * width]; }
@@ -60,8 +73,8 @@ struct Level {
 
   unsigned char CheckedPixelWrap(int x, int y) {
     auto const kIdx = static_cast<unsigned int>(x + y * width);
-    if (kIdx < data.size()) {
-      return data[kIdx];
+    if (kIdx < material_id.size()) {
+      return material_id[kIdx];
     }
     return 0;
   }
@@ -85,8 +98,10 @@ struct Level {
   }
 
   void Swap(Level& other) {
-    data.swap(other.data);
+    material_id.swap(other.material_id);
     materials.swap(other.materials);
+    display_data.swap(other.display_data);
+    display_valid.swap(other.display_valid);
     std::swap(width, other.width);
     std::swap(height, other.height);
     std::swap(origpal, other.origpal);
@@ -116,8 +131,12 @@ struct Level {
 
   void Resize(int width_new, int height_new);
 
-  std::vector<unsigned char> data;
+  std::vector<unsigned char> material_id;
   std::vector<Material> materials;
+  // Optional true-colour display layer (modern levels only). Both stay empty
+  // for classic levels — empty means "always use the palette path."
+  std::vector<uint32_t> display_data;
+  std::vector<uint8_t> display_valid;
 
   bool old_random_level;
   std::string old_level_file;

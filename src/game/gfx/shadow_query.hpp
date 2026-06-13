@@ -19,6 +19,7 @@ struct ShadowQuery {
   uint32_t const* pal32;
   int world_offset_x;
   int world_offset_y;
+  ColorMode mode{ColorMode::kClassic};
 
   // Palette index of the level pixel under screen (sx, sy), or -1 outside
   // the level.
@@ -28,7 +29,7 @@ struct ShadowQuery {
     if (!level.Inside(kWx, kWy)) {
       return -1;
     }
-    return level.data[kWx + kWy * level.width];
+    return level.material_id[kWx + kWy * level.width];
   }
 
   // Shadowed palette index for screen (sx, sy) — the level pixel shifted to
@@ -42,8 +43,24 @@ struct ShadowQuery {
   }
 
   // ARGB to paint at screen (sx, sy) if a shadow falls there, else 0.
+  // In modern mode, authored display pixels are darkened in-place (channels
+  // halved) instead of shifted to a palette shadow entry.
   uint32_t ShadowedArgb(int sx, int sy) const {
-    int const kIdx = ShadowedIndex(sx, sy);
-    return kIdx < 0 ? 0 : pal32[kIdx];
+    int const kWx = sx + world_offset_x;
+    int const kWy = sy + world_offset_y;
+    if (!level.Inside(kWx, kWy)) {
+      return 0;
+    }
+    int const kLevelIdx = kWx + kWy * level.width;
+    int const kP = level.material_id[kLevelIdx];
+    if (!common.materials[kP].SeeShadow()) {
+      return 0;
+    }
+    if (mode == ColorMode::kModern && !level.display_valid.empty() &&
+        level.display_valid[kLevelIdx]) {
+      // Darken each channel by 50%; keep alpha opaque.
+      return 0xFF000000U | ((level.display_data[kLevelIdx] & 0x00FEFEFE) >> 1);
+    }
+    return pal32[kP + 4];
   }
 };

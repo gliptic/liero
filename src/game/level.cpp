@@ -206,36 +206,77 @@ void Level::MakeShadow(Common& common) {
 void Level::Resize(int width_new, int height_new) {
   width = width_new;
   height = height_new;
-  data.resize(width * height);
+  material_id.resize(width * height);
   materials.resize(width * height);
 }
 
 bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
   Resize(504, 350);
+  display_data.clear();
+  display_valid.clear();
 
-  // std::size_t len = f.len;
   bool reset_palette = true;
 
-  r.Get(reinterpret_cast<uint8_t*>(data.data()), width * height);
+  r.Get(reinterpret_cast<uint8_t*>(material_id.data()), width * height);
 
-  if (/*len >= 504*350 + 10 + 256*3
-   &&*/
-      (Settings::kExtensions && settings.load_powerlevel_palette)) {
-    uint8_t buf[10] = {};
-    if (r.TryGet(buf, 10)) {
-      if (std::memcmp("POWERLEVEL", buf, 10) == 0) {
-        Palette pal;
-        pal.Read(r);
-        origpal.ResetPalette(pal, settings);
-        has_custom_palette = true;
+  // Probe buffer for optional extension blocks.  Both "POWERLEVEL" (10 bytes)
+  // and "MODERNLV" (8 bytes) may follow the pixel data.  Read the longer
+  // probe first so that MODERNLV detection can reuse any unconsumed bytes.
+  uint8_t ext_buf[10] = {};
+  std::size_t ext_used = 0;
 
-        reset_palette = false;
-      }
+  if (Settings::kExtensions && settings.load_powerlevel_palette) {
+    std::size_t const kN = r.TryGet(ext_buf, 10);
+    if (kN == 10 && std::memcmp("POWERLEVEL", ext_buf, 10) == 0) {
+      Palette pal;
+      pal.Read(r);
+      origpal.ResetPalette(pal, settings);
+      has_custom_palette = true;
+      reset_palette = false;
+      // ext_buf fully consumed; ext_used stays 0 → MODERNLV probe below reads
+      // fresh bytes from the stream.
+    } else {
+      ext_used = kN;  // bytes pre-read but not matching POWERLEVEL
     }
   }
 
-  for (std::size_t i = 0; i < data.size(); ++i) {
-    materials[i] = common.materials[data[i]];
+  // Check for "MODERNLV" block (8-byte magic).
+  if (Settings::kExtensions) {
+    uint8_t magic_buf[8] = {};
+    std::size_t magic_read = 0;
+
+    if (ext_used >= 8) {
+      // Pre-read bytes cover the full magic.
+      std::memcpy(magic_buf, ext_buf, 8);
+      magic_read = 8;
+    } else if (ext_used == 0) {
+      // No unconsumed bytes (either POWERLEVEL was found/consumed, or the
+      // POWERLEVEL check was skipped).  Read fresh bytes for the magic.
+      magic_read = r.TryGet(magic_buf, 8);
+    }
+    // If ext_used in [1,7] the stream was nearly exhausted; no complete block.
+
+    if (magic_read == 8 && std::memcmp("MODERNLV", magic_buf, 8) == 0) {
+      std::size_t const kCells = static_cast<std::size_t>(width) * height;
+      display_data.resize(kCells);
+      display_valid.resize(kCells);
+
+      auto* raw_dd = reinterpret_cast<uint8_t*>(display_data.data());
+
+      // If the POWERLEVEL probe consumed more bytes than the magic (ext_used >
+      // 8), those extra bytes are the first bytes of display_data.
+      std::size_t prepend = 0;
+      if (ext_used > 8) {
+        prepend = ext_used - 8;
+        std::memcpy(raw_dd, ext_buf + 8, prepend);
+      }
+      r.Get(raw_dd + prepend, kCells * sizeof(uint32_t) - prepend);
+      r.Get(display_valid.data(), kCells);
+    }
+  }
+
+  for (std::size_t i = 0; i < material_id.size(); ++i) {
+    materials[i] = common.materials[material_id[i]];
   }
 
   if (reset_palette) {
@@ -345,7 +386,10 @@ void Level::DrawMiniature(Bitmap& dest, int map_x, int map_y, int step) {
   for (int y = map_y; y < kMapEndY; ++y) {
     int mx = step / 2;
     for (int x = map_x; x < kMapEndX; ++x) {
-      dest.SetPixel(x, y, CheckedPixelWrap(mx, my));
+      auto const kIdx = static_cast<unsigned int>(mx + my * width);
+      if (kIdx < material_id.size() && dest.clip_rect.Inside(x, y)) {
+        dest.GetPixel(x, y) = AppearanceAt(static_cast<int>(kIdx), dest.mode, dest.pal32);
+      }
       mx += step;
     }
     my += step;

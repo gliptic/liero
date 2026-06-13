@@ -19,7 +19,7 @@ inline uint32_t HashGameState(Game& game) {
   h = h * 31 + static_cast<uint32_t>(game.cycles);
 
   for (int i = 0; i < game.level.width * game.level.height; ++i) {
-    h = h * 33 ^ game.level.data[i];
+    h = h * 33 ^ game.level.material_id[i];
   }
 
   for (auto const& w : game.worms) {
@@ -134,7 +134,7 @@ inline ComponentHashes HashGameComponents(Game& game) {
   {
     uint32_t h = 1;
     for (int i = 0; i < game.level.width * game.level.height; ++i) {
-      h = h * 33 ^ game.level.data[i];
+      h = h * 33 ^ game.level.material_id[i];
     }
     c.level = h;
   }

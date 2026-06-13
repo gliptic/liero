@@ -135,16 +135,16 @@ void DrawLevel(Bitmap& scr, Level const& level, int x, int y) {
   int width = level.width;
   int height = level.height;
   int const pitch = level.width;
-  PalIdx const* mem = level.data.data();
+  PalIdx const* mem = level.material_id.data();
 
   CLIP_IMAGE(scr.clip_rect);
 
   uint32_t* scrptr = scr.pixels + y * scr.pitch + x;
-  int idx = static_cast<int>(mem - level.data.data());
+  int idx = static_cast<int>(mem - level.material_id.data());
 
   for (int dy = 0; dy < height; ++dy) {
     for (int dx = 0; dx < width; ++dx) {
-      scrptr[dx] = level.AppearanceAt(idx + dx, scr.pal32);
+      scrptr[dx] = level.AppearanceAt(idx + dx, scr.mode, scr.pal32);
     }
 
     scrptr += scr.pitch;
@@ -353,7 +353,9 @@ void BlitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int
 
   CLIP_IMAGE(kClipRect);
 
-  BLITL(level.data.data(), level.width, level.materials.data(), {
+  PalIdx const* const kBase = level.material_id.data();
+  uint8_t* const kDv = level.display_valid.empty() ? nullptr : level.display_valid.data();
+  BLITL(level.material_id.data(), level.width, level.materials.data(), {
     if (c) {
       PalIdx n;
       if (rowmatdest->DirtBack())
@@ -362,6 +364,7 @@ void BlitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int
         n = c + 3;
       *rowdest = n;
       *rowmatdest = common.materials[n];
+      if (kDv) kDv[rowdest - kBase] = 0;
     }
   });
 }
@@ -406,6 +409,8 @@ void BlitStone(Common& common, Level& level, bool p1, const PalIdx* mem, int x, 
 
   PalIdx* dest = level.Pixelp(x, y);
   Material* matdest = level.Matp(x, y);
+  PalIdx const* const kBase = level.material_id.data();
+  uint8_t* const kDv = level.display_valid.empty() ? nullptr : level.display_valid.data();
 
   if (p1) {
     for (int y = 0; y < height; ++y) {
@@ -423,6 +428,9 @@ void BlitStone(Common& common, Level& level, bool p1, const PalIdx* mem, int x, 
         }
         *rowdest = n;
         *rowmatdest = common.materials[n];
+        if (kDv) {
+          kDv[rowdest - kBase] = 0;
+        }
         ++rowsrc;
         ++rowdest;
         ++rowmatdest;
@@ -443,6 +451,9 @@ void BlitStone(Common& common, Level& level, bool p1, const PalIdx* mem, int x, 
         if (kC) {
           *rowdest = kC;
           *rowmatdest = common.materials[kC];
+          if (kDv) {
+            kDv[rowdest - kBase] = 0;
+          }
         }
 
         ++rowsrc;
@@ -472,8 +483,10 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
 
   CLIP_IMAGE(kClip);
 
+  PalIdx const* const kBase = level.material_id.data();
+  uint8_t* const kDv = level.display_valid.empty() ? nullptr : level.display_valid.data();
   if (tex.n_draw_back) {
-    BLITL(level.data.data(), level.width, level.materials.data(), {
+    BLITL(level.material_id.data(), level.width, level.materials.data(), {
       switch (c) {
         case 6:
           if (rowmatdest->AnyDirt()) {
@@ -482,6 +495,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
 
             *rowdest = t_frame[((my & 15) << 4) + (mx & 15)];
             *rowmatdest = common.materials[*rowdest];
+            if (kDv) kDv[rowdest - kBase] = 0;
           }
           break;
 
@@ -490,9 +504,11 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
           if (m.Dirt2()) {
             *rowdest = 2;
             *rowmatdest = common.materials[2];
+            if (kDv) kDv[rowdest - kBase] = 0;
           } else if (m.Dirt()) {
             *rowdest = 1;
             *rowmatdest = common.materials[1];
+            if (kDv) kDv[rowdest - kBase] = 0;
           }
         } break;
         default:
@@ -500,7 +516,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
       }
     });
   } else {
-    BLITL(level.data.data(), level.width, level.materials.data(), {
+    BLITL(level.material_id.data(), level.width, level.materials.data(), {
       switch (c) {
         case 10:
         case 6:
@@ -510,6 +526,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
 
             *rowdest = t_frame[((my & 15) << 4) + (mx & 15)];
             *rowmatdest = common.materials[*rowdest];
+            if (kDv) kDv[rowdest - kBase] = 0;
           }
           break;
 
@@ -517,6 +534,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
           if (rowmatdest->Background()) {
             *rowdest = 2;
             *rowmatdest = common.materials[2];
+            if (kDv) kDv[rowdest - kBase] = 0;
           }
           break;
 
@@ -524,6 +542,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
           if (rowmatdest->Background()) {
             *rowdest = 1;
             *rowmatdest = common.materials[1];
+            if (kDv) kDv[rowdest - kBase] = 0;
           }
           break;
         default:

@@ -722,8 +722,13 @@ void Game::SaveSnapshotFast(GameSnapshot& snap) const {
     snap.level_materials.resize(kCells);
   }
   if (kCells > 0) {
-    std::memcpy(snap.level_data.data(), level.data.data(), kCells);
+    std::memcpy(snap.level_data.data(), level.material_id.data(), kCells);
     std::memcpy(snap.level_materials.data(), level.materials.data(), kCells * sizeof(Material));
+  }
+  if (!level.display_data.empty() && !snap.level_display_data.empty()) {
+    std::memcpy(snap.level_display_data.data(), level.display_data.data(),
+                kCells * sizeof(uint32_t));
+    std::memcpy(snap.level_display_valid.data(), level.display_valid.data(), kCells);
   }
 }
 
@@ -753,7 +758,19 @@ void Game::LoadSnapshotFast(GameSnapshot const& snap) {
   std::size_t const kCells =
       static_cast<std::size_t>(level.width) * static_cast<std::size_t>(level.height);
   if (kCells > 0) {
-    std::memcpy(level.data.data(), snap.level_data.data(), kCells);
+    std::memcpy(level.material_id.data(), snap.level_data.data(), kCells);
     std::memcpy(level.materials.data(), snap.level_materials.data(), kCells * sizeof(Material));
+  }
+  if (!snap.level_display_data.empty()) {
+    if (level.display_data.size() != kCells) {
+      level.display_data.resize(kCells);
+      level.display_valid.resize(kCells);
+    }
+    std::memcpy(level.display_data.data(), snap.level_display_data.data(),
+                kCells * sizeof(uint32_t));
+    std::memcpy(level.display_valid.data(), snap.level_display_valid.data(), kCells);
+  } else {
+    level.display_data.clear();
+    level.display_valid.clear();
   }
 }

@@ -199,7 +199,8 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState /*state*/, bool is
                               .level = game.level,
                               .pal32 = renderer.pal32,
                               .world_offset_x = -kOffs.x,
-                              .world_offset_y = -kOffs.y};
+                              .world_offset_y = -kOffs.y,
+                              .mode = renderer.mode};
 
     DrawLevel(renderer.bmp, game.level, kOffs.x, kOffs.y);
 
@@ -263,152 +264,229 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState /*state*/, bool is
       }
     }
 
-    auto br = game.bonuses.All();
-    for (Bonus const* i = nullptr; (i = br.Next());) {
-      if (i->timer > LC(BonusFlickerTime) || (game.cycles & 3) == 0) {
-        int const kF = common.bonus_frames[i->frame];
-
-        BlitImage(renderer.bmp, common.small_sprites[kF], Ftoi(i->x) - 3 + kOffs.x,
-                  Ftoi(i->y) - 3 + kOffs.y);
-
-        if (game.settings->shadow) {
-          BlitShadowImage(kShadow, renderer.bmp, common.small_sprites.SpritePtr(kF),
-                          Ftoi(i->x) - 5 + kOffs.x,  // TODO: Use offsX
-                          Ftoi(i->y) - 1 + kOffs.y, 7, 7);
-        }
-
-        if (game.settings->names_on_bonuses && i->frame == 0) {
-          std::string const& name = common.weapons[i->weapon].name;
-          int const kLen = static_cast<int>(name.size()) * 4;
-
-          common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(i->x) - kLen / 2 + kOffs.x,
-                               Ftoi(i->y) - 10 + kOffs.y);
-        }
-      }
-    }
-
-    auto sr = game.sobjects.All();
-    for (SObject const* i = nullptr; (i = sr.Next());) {
-      SObjectType const& t = common.sobject_types[i->id];
-      int const kFrame = i->cur_frame + t.start_frame;
-
-      BlitImageR(kShadow, renderer.bmp, common.large_sprites.SpritePtr(kFrame), i->x + kOffs.x,
-                 i->y + kOffs.y, 16, 16);
-
-      if (game.settings->shadow) {
-        BlitShadowImage(kShadow, renderer.bmp, common.large_sprites.SpritePtr(kFrame),
-                        i->x + kOffs.x - 3,
-                        i->y + kOffs.y + 3,  // TODO: Original doesn't offset the shadow, which is
-                                             // clearly wrong. Check that this offset is correct.
-                        16, 16);
-      }
-    }
-
-    auto wr = game.wobjects.All();
-    for (WObject* i = nullptr; (i = wr.Next());) {
-      Weapon const& w = *i->type;
-
-      if (w.start_frame > -1) {
-        int cur_frame = i->cur_frame;
-        int const kShotType = w.shot_type;
-
-        if (kShotType == 2) {
-          cur_frame += 4;
-          cur_frame >>= 3;
-          if (cur_frame < 0) {
-            cur_frame = 16;
-          } else if (cur_frame > 15) {
-            cur_frame -= 16;
-          }
-        } else if (kShotType == 3) {
-          if (cur_frame > 64) {
-            --cur_frame;
-          }
-          cur_frame -= 12;
-          cur_frame >>= 3;
-          if (cur_frame < 0) {
-            cur_frame = 0;
-          } else if (cur_frame > 12) {
-            cur_frame = 12;
-          }
-        }
-
-        int const kPosX = Ftoi(i->pos.x) - 3;
-        int const kPosY = Ftoi(i->pos.y) - 3;
-
-        if (game.settings->shadow && w.shadow) {
-          BlitShadowImage(kShadow, renderer.bmp,
-                          common.small_sprites.SpritePtr(w.start_frame + cur_frame),
-                          kPosX - 3 + kOffs.x, kPosY + 3 + kOffs.y, 7, 7);
-        }
-
-        BlitImage(renderer.bmp, common.small_sprites[w.start_frame + cur_frame], kPosX + kOffs.x,
-                  kPosY + kOffs.y);
-      } else if (i->cur_frame > 0) {
-        int pos_x = Ftoi(i->pos.x) - x + rect.x1;
-        int pos_y = Ftoi(i->pos.y) - y + rect.y1;
-
-        renderer.bmp.SetPixel(pos_x, pos_y, static_cast<PalIdx>(i->cur_frame));
-
-        if (game.settings->shadow) {
-          pos_x -= 3;
-          pos_y += 3;
-
-          uint32_t const kShadowed = kShadow.ShadowedArgb(pos_x, pos_y);
-          if (kShadowed != 0 && renderer.bmp.clip_rect.Inside(pos_x, pos_y)) {
-            renderer.bmp.GetPixel(pos_x, pos_y) = kShadowed;
-          }
-        }
-      }
-
-      if (!common.h[HRemExp] && i->type - common.weapons.data() == 34 &&
-          game.settings->names_on_bonuses)  // TODO: Read from EXE
+    // Pass 1: all shadows. Every shadow is drawn before any sprite so no
+    // object's shadow can overwrite another object's already-rendered sprite.
+    if (game.settings->shadow) {
       {
-        if (i->cur_frame == 0) {
-          int const kNameNum =
-              static_cast<int>(&*i - game.wobjects.arr) %
-              static_cast<int>(common.weapons.size());  // TODO: Something nicer maybe
+        auto br = game.bonuses.All();
+        for (Bonus const* i = nullptr; (i = br.Next());) {
+          if (i->timer > LC(BonusFlickerTime) || (game.cycles & 3) == 0) {
+            int const kF = common.bonus_frames[i->frame];
+            BlitShadowImage(kShadow, renderer.bmp, common.small_sprites.SpritePtr(kF),
+                            Ftoi(i->x) - 5 + kOffs.x,  // TODO: Use offsX
+                            Ftoi(i->y) - 1 + kOffs.y, 7, 7);
+          }
+        }
+      }
 
-          std::string const& name = common.weapons[kNameNum].name;
-          int const kWidth = static_cast<int>(name.size()) * 4;
+      {
+        auto sr = game.sobjects.All();
+        for (SObject const* i = nullptr; (i = sr.Next());) {
+          SObjectType const& t = common.sobject_types[i->id];
+          int const kFrame = i->cur_frame + t.start_frame;
+          BlitShadowImage(kShadow, renderer.bmp, common.large_sprites.SpritePtr(kFrame),
+                          i->x + kOffs.x - 3,
+                          i->y + kOffs.y + 3,  // TODO: Original doesn't offset the shadow, which is
+                                               // clearly wrong. Check that this offset is correct.
+                          16, 16);
+        }
+      }
 
-          common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(i->pos.x) - kWidth / 2 + kOffs.x,
-                               Ftoi(i->pos.y) - 10 + kOffs.y);
+      {
+        auto wr = game.wobjects.All();
+        for (WObject const* i = nullptr; (i = wr.Next());) {
+          Weapon const& w = *i->type;
+          if (w.start_frame > -1) {
+            int cur_frame = i->cur_frame;
+            int const kShotType = w.shot_type;
+            if (kShotType == 2) {
+              cur_frame += 4;
+              cur_frame >>= 3;
+              if (cur_frame < 0) {
+                cur_frame = 16;
+              } else if (cur_frame > 15) {
+                cur_frame -= 16;
+              }
+            } else if (kShotType == 3) {
+              if (cur_frame > 64) {
+                --cur_frame;
+              }
+              cur_frame -= 12;
+              cur_frame >>= 3;
+              if (cur_frame < 0) {
+                cur_frame = 0;
+              } else if (cur_frame > 12) {
+                cur_frame = 12;
+              }
+            }
+            int const kPosX = Ftoi(i->pos.x) - 3;
+            int const kPosY = Ftoi(i->pos.y) - 3;
+            if (w.shadow) {
+              BlitShadowImage(kShadow, renderer.bmp,
+                              common.small_sprites.SpritePtr(w.start_frame + cur_frame),
+                              kPosX - 3 + kOffs.x, kPosY + 3 + kOffs.y, 7, 7);
+            }
+          } else if (i->cur_frame > 0) {
+            int const kPosX = Ftoi(i->pos.x) + kOffs.x - 3;
+            int const kPosY = Ftoi(i->pos.y) + kOffs.y + 3;
+            uint32_t const kShadowed = kShadow.ShadowedArgb(kPosX, kPosY);
+            if (kShadowed != 0 && renderer.bmp.clip_rect.Inside(kPosX, kPosY)) {
+              renderer.bmp.GetPixel(kPosX, kPosY) = kShadowed;
+            }
+          }
+        }
+      }
+
+      {
+        auto nr = game.nobjects.All();
+        for (NObject const* i = nullptr; (i = nr.Next());) {
+          NObjectType const& t = *i->type;
+          if (t.start_frame > 0) {
+            auto pos = Ftoi(i->pos) - IVec2(3, 3);
+            BlitShadowImage(kShadow, renderer.bmp,
+                            common.small_sprites.SpritePtr(t.start_frame + i->cur_frame),
+                            pos.x - 3 + kOffs.x, pos.y + 3 + kOffs.y, 7, 7);
+          } else if (i->cur_frame > 1) {
+            auto pos = Ftoi(i->pos) + kOffs;
+            pos.x -= 3;
+            pos.y += 3;
+            if (renderer.bmp.clip_rect.Encloses(pos)) {
+              uint32_t const kShadowed = kShadow.ShadowedArgb(pos.x, pos.y);
+              if (kShadowed != 0) {
+                renderer.bmp.GetPixel(pos.x, pos.y) = kShadowed;
+              }
+            }
+          }
+        }
+      }
+
+      for (auto const& worm_ptr : game.worms) {
+        Worm const& w = *worm_ptr;
+        if (w.visible) {
+          int const kTempX = Ftoi(w.pos.x) - 7 + kOffs.x;
+          int const kTempY = Ftoi(w.pos.y) - 5 + kOffs.y;
+          if (w.ninjarope.out) {
+            int const kNinjaropeX = Ftoi(w.ninjarope.pos.x) + kOffs.x;
+            int const kNinjaropeY = Ftoi(w.ninjarope.pos.y) + kOffs.y;
+            DrawShadowLine(kShadow, renderer.bmp, kNinjaropeX - 3, kNinjaropeY + 3, kTempX + 7 - 3,
+                           kTempY + 4 + 3);
+            BlitShadowImage(kShadow, renderer.bmp, common.large_sprites.SpritePtr(84),
+                            kNinjaropeX - 4, kNinjaropeY + 2, 16, 16);
+          }
+          BlitShadowImage(kShadow, renderer.bmp,
+                          common.WormSprite(w.current_frame, w.direction, w.index), kTempX - 3,
+                          kTempY + 3, 16, 16);
+        }
+      }
+
+      for (Game::BObjectList::Iterator i = game.bobjects.Begin(); i != game.bobjects.End(); ++i) {
+        auto ipos = Ftoi(i->pos) + kOffs;
+        ipos.x -= 3;
+        ipos.y += 3;
+        if (renderer.bmp.clip_rect.Encloses(ipos)) {
+          uint32_t const kShadowed = kShadow.ShadowedArgb(ipos.x, ipos.y);
+          if (kShadowed != 0) {
+            renderer.bmp.GetPixel(ipos.x, ipos.y) = kShadowed;
+          }
         }
       }
     }
 
-    auto nr = game.nobjects.All();
-    for (NObject const* i = nullptr; (i = nr.Next());) {
-      NObjectType const& t = *i->type;
-
-      if (t.start_frame > 0) {
-        auto pos = Ftoi(i->pos) - IVec2(3, 3);
-
-        if (game.settings->shadow) {
-          BlitShadowImage(kShadow, renderer.bmp,
-                          common.small_sprites.SpritePtr(t.start_frame + i->cur_frame),
-                          pos.x - 3 + kOffs.x, pos.y + 3 + kOffs.y, 7, 7);
+    // Pass 2: all sprites, drawn on top of the fully-composited shadow layer.
+    {
+      auto br = game.bonuses.All();
+      for (Bonus const* i = nullptr; (i = br.Next());) {
+        if (i->timer > LC(BonusFlickerTime) || (game.cycles & 3) == 0) {
+          int const kF = common.bonus_frames[i->frame];
+          BlitImage(renderer.bmp, common.small_sprites[kF], Ftoi(i->x) - 3 + kOffs.x,
+                    Ftoi(i->y) - 3 + kOffs.y);
+          if (game.settings->names_on_bonuses && i->frame == 0) {
+            std::string const& name = common.weapons[i->weapon].name;
+            int const kLen = static_cast<int>(name.size()) * 4;
+            common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(i->x) - kLen / 2 + kOffs.x,
+                                 Ftoi(i->y) - 10 + kOffs.y);
+          }
         }
+      }
+    }
 
-        BlitImage(renderer.bmp, common.small_sprites[t.start_frame + i->cur_frame], pos.x + kOffs.x,
-                  pos.y + kOffs.y);
+    {
+      auto sr = game.sobjects.All();
+      for (SObject const* i = nullptr; (i = sr.Next());) {
+        SObjectType const& t = common.sobject_types[i->id];
+        int const kFrame = i->cur_frame + t.start_frame;
+        BlitImageR(kShadow, renderer.bmp, common.large_sprites.SpritePtr(kFrame), i->x + kOffs.x,
+                   i->y + kOffs.y, 16, 16);
+      }
+    }
 
-      } else if (i->cur_frame > 1) {
-        auto pos = Ftoi(i->pos) + kOffs;
-        if (renderer.bmp.clip_rect.Encloses(pos)) {
-          renderer.bmp.SetPixel(pos.x, pos.y, static_cast<PalIdx>(i->cur_frame));
-        }
-
-        if (game.settings->shadow) {
-          pos.x -= 3;
-          pos.y += 3;
-
-          if (renderer.bmp.clip_rect.Encloses(pos)) {
-            uint32_t const kShadowed = kShadow.ShadowedArgb(pos.x, pos.y);
-            if (kShadowed != 0) {
-              renderer.bmp.GetPixel(pos.x, pos.y) = kShadowed;
+    {
+      auto wr = game.wobjects.All();
+      for (WObject* i = nullptr; (i = wr.Next());) {
+        Weapon const& w = *i->type;
+        if (w.start_frame > -1) {
+          int cur_frame = i->cur_frame;
+          int const kShotType = w.shot_type;
+          if (kShotType == 2) {
+            cur_frame += 4;
+            cur_frame >>= 3;
+            if (cur_frame < 0) {
+              cur_frame = 16;
+            } else if (cur_frame > 15) {
+              cur_frame -= 16;
             }
+          } else if (kShotType == 3) {
+            if (cur_frame > 64) {
+              --cur_frame;
+            }
+            cur_frame -= 12;
+            cur_frame >>= 3;
+            if (cur_frame < 0) {
+              cur_frame = 0;
+            } else if (cur_frame > 12) {
+              cur_frame = 12;
+            }
+          }
+          int const kPosX = Ftoi(i->pos.x) - 3;
+          int const kPosY = Ftoi(i->pos.y) - 3;
+          BlitImage(renderer.bmp, common.small_sprites[w.start_frame + cur_frame], kPosX + kOffs.x,
+                    kPosY + kOffs.y);
+        } else if (i->cur_frame > 0) {
+          int const kPosX = Ftoi(i->pos.x) + kOffs.x;
+          int const kPosY = Ftoi(i->pos.y) + kOffs.y;
+          renderer.bmp.SetPixel(kPosX, kPosY, static_cast<PalIdx>(i->cur_frame));
+        }
+
+        if (!common.h[HRemExp] && i->type - common.weapons.data() == 34 &&
+            game.settings->names_on_bonuses)  // TODO: Read from EXE
+        {
+          if (i->cur_frame == 0) {
+            int const kNameNum =
+                static_cast<int>(&*i - game.wobjects.arr) %
+                static_cast<int>(common.weapons.size());  // TODO: Something nicer maybe
+
+            std::string const& name = common.weapons[kNameNum].name;
+            int const kWidth = static_cast<int>(name.size()) * 4;
+
+            common.DrawTextSmall(renderer.bmp, name.c_str(), Ftoi(i->pos.x) - kWidth / 2 + kOffs.x,
+                                 Ftoi(i->pos.y) - 10 + kOffs.y);
+          }
+        }
+      }
+    }
+
+    {
+      auto nr = game.nobjects.All();
+      for (NObject const* i = nullptr; (i = nr.Next());) {
+        NObjectType const& t = *i->type;
+        if (t.start_frame > 0) {
+          auto pos = Ftoi(i->pos) - IVec2(3, 3);
+          BlitImage(renderer.bmp, common.small_sprites[t.start_frame + i->cur_frame],
+                    pos.x + kOffs.x, pos.y + kOffs.y);
+        } else if (i->cur_frame > 1) {
+          auto pos = Ftoi(i->pos) + kOffs;
+          if (renderer.bmp.clip_rect.Encloses(pos)) {
+            renderer.bmp.SetPixel(pos.x, pos.y, static_cast<PalIdx>(i->cur_frame));
           }
         }
       }
@@ -446,13 +524,6 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState /*state*/, bool is
           DrawNinjarope(common, renderer.bmp, kNinjaropeX, kNinjaropeY, kTempX + 7, kTempY + 4);
 
           BlitImage(renderer.bmp, common.large_sprites[84], kNinjaropeX - 1, kNinjaropeY - 1);
-
-          if (game.settings->shadow) {
-            DrawShadowLine(kShadow, renderer.bmp, kNinjaropeX - 3, kNinjaropeY + 3, kTempX + 7 - 3,
-                           kTempY + 4 + 3);
-            BlitShadowImage(kShadow, renderer.bmp, common.large_sprites.SpritePtr(84),
-                            kNinjaropeX - 4, kNinjaropeY + 2, 16, 16);
-          }
         }
 
         if (w.weapons[w.current_weapon].type->fire_cone > 0 && w.fire_cone > 0) {
@@ -468,11 +539,6 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState /*state*/, bool is
 
         BlitImage(renderer.bmp, common.WormSpriteObj(w.current_frame, w.direction, w.index), kTempX,
                   kTempY);
-        if (game.settings->shadow) {
-          BlitShadowImage(kShadow, renderer.bmp,
-                          common.WormSprite(w.current_frame, w.direction, w.index), kTempX - 3,
-                          kTempY + 3, 16, 16);
-        }
       }
 
       if (w.ai) {
@@ -515,18 +581,6 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState /*state*/, bool is
       auto ipos = Ftoi(i->pos) + kOffs;
       if (renderer.bmp.clip_rect.Encloses(ipos)) {
         renderer.bmp.SetPixel(ipos.x, ipos.y, static_cast<PalIdx>(i->color));
-      }
-
-      if (game.settings->shadow) {
-        ipos.x -= 3;
-        ipos.y += 3;
-
-        if (renderer.bmp.clip_rect.Encloses(ipos)) {
-          uint32_t const kShadowed = kShadow.ShadowedArgb(ipos.x, ipos.y);
-          if (kShadowed != 0) {
-            renderer.bmp.GetPixel(ipos.x, ipos.y) = kShadowed;
-          }
-        }
       }
     }
   }

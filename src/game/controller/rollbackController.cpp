@@ -129,7 +129,7 @@ void RollbackController::LoadLevelFromData(const std::vector<uint8_t>& data) {
 
   const uint8_t* pixels = raw.data() + kPixelsOffset;
   for (size_t i = 0; i < kPixelDataSize; ++i) {
-    game.level.data[i] = pixels[i];
+    game.level.material_id[i] = pixels[i];
     game.level.materials[i] = common.materials[pixels[i]];
   }
 
@@ -140,6 +140,24 @@ void RollbackController::LoadLevelFromData(const std::vector<uint8_t>& data) {
     game.level.origpal.entries[i].b = pal_data[i * 3 + 2];
   }
   game.level.DeriveHasCustomPalette(common.exepal);
+
+  // Display layer: has_display_layer(1) + [display_data(cells*4) +
+  // display_valid(cells)] when present (v7+ blob).
+  size_t const kDispOffset = kPixelsOffset + kPixelDataSize + 768;
+  if (raw.size() > kDispOffset && raw[kDispOffset] == 1) {
+    size_t const kNeeded = kDispOffset + 1 + kPixelDataSize * 4 + kPixelDataSize;
+    if (raw.size() >= kNeeded) {
+      game.level.display_data.resize(kPixelDataSize);
+      game.level.display_valid.resize(kPixelDataSize);
+      std::memcpy(game.level.display_data.data(), raw.data() + kDispOffset + 1,
+                  kPixelDataSize * sizeof(uint32_t));
+      std::memcpy(game.level.display_valid.data(),
+                  raw.data() + kDispOffset + 1 + kPixelDataSize * 4, kPixelDataSize);
+    }
+  } else {
+    game.level.display_data.clear();
+    game.level.display_valid.clear();
+  }
 
   game.rand.Deserialize(kRandState);
   game.rand.last = rand_last;
@@ -638,8 +656,12 @@ void RollbackController::SetupShadowGame() {
   shadowGame_->level.height = game.level.height;
   std::size_t const kCells =
       static_cast<std::size_t>(game.level.width) * static_cast<std::size_t>(game.level.height);
-  shadowGame_->level.data.resize(kCells);
+  shadowGame_->level.material_id.resize(kCells);
   shadowGame_->level.materials.resize(kCells);
+  if (!game.level.display_data.empty()) {
+    shadowGame_->level.display_data.resize(kCells);
+    shadowGame_->level.display_valid.resize(kCells);
+  }
   // origpal is the level's palette. It isn't sim state, so the fast
   // snapshot doesn't carry it — but the cereal Game serializer used by
   // ReplayWriter::beginRecord does. Without this copy the recorded

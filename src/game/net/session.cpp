@@ -699,7 +699,10 @@ void NetSession::GenerateAndSendMap() {
   auto rand_state_len = static_cast<uint32_t>(rand_state.size());
   uint32_t rand_last = g.rand.last;
   size_t const kPixelDataSize = static_cast<size_t>(w) * h;
-  size_t const kRawSize = 4 + 4 + rand_state_len + 4 + kPixelDataSize + 768;
+  bool const kHasDisplay = !level.display_data.empty();
+  // has_display_layer(1) + display_data(kPixelDataSize*4) + display_valid(kPixelDataSize)
+  size_t const kDisplayExtra = kHasDisplay ? 1 + kPixelDataSize * 4 + kPixelDataSize : 1;
+  size_t const kRawSize = 4 + 4 + rand_state_len + 4 + kPixelDataSize + 768 + kDisplayExtra;
 
   std::vector<uint8_t> raw(kRawSize);
   std::memcpy(raw.data(), &w, 2);
@@ -708,7 +711,7 @@ void NetSession::GenerateAndSendMap() {
   std::memcpy(raw.data() + 8, rand_state.data(), rand_state_len);
   std::memcpy(raw.data() + 8 + rand_state_len, &rand_last, 4);
   size_t const kPixelsOffset = 8 + rand_state_len + 4;
-  std::memcpy(raw.data() + kPixelsOffset, level.data.data(), kPixelDataSize);
+  std::memcpy(raw.data() + kPixelsOffset, level.material_id.data(), kPixelDataSize);
 
   // Palette
   uint8_t* pal_ptr = raw.data() + kPixelsOffset + kPixelDataSize;
@@ -716,6 +719,15 @@ void NetSession::GenerateAndSendMap() {
     pal_ptr[i * 3 + 0] = level.origpal.entries[i].r;
     pal_ptr[i * 3 + 1] = level.origpal.entries[i].g;
     pal_ptr[i * 3 + 2] = level.origpal.entries[i].b;
+  }
+
+  // Display layer: has_display_layer(1) + [display_data(kPixelDataSize*4) +
+  // display_valid(kPixelDataSize)] when present.
+  uint8_t* disp_ptr = pal_ptr + 768;
+  disp_ptr[0] = kHasDisplay ? 1 : 0;
+  if (kHasDisplay) {
+    std::memcpy(disp_ptr + 1, level.display_data.data(), kPixelDataSize * sizeof(uint32_t));
+    std::memcpy(disp_ptr + 1 + kPixelDataSize * 4, level.display_valid.data(), kPixelDataSize);
   }
 
   // Compress with miniz

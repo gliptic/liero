@@ -270,9 +270,9 @@ TEST_CASE("cereal_types: Level round-trip preserves data and palette", "[cereal_
   Level src(common);
   src.width = 4;
   src.height = 3;
-  src.data.assign(src.width * src.height, 0);
+  src.material_id.assign(src.width * src.height, 0);
   for (int i = 0; i < src.width * src.height; ++i) {
-    src.data[i] = static_cast<unsigned char>(i * 7 + 1);
+    src.material_id[i] = static_cast<unsigned char>(i * 7 + 1);
   }
   for (int i = 0; i < 256; ++i) {
     src.origpal.entries[i].r = static_cast<uint8_t>(i);
@@ -291,12 +291,64 @@ TEST_CASE("cereal_types: Level round-trip preserves data and palette", "[cereal_
   }
   CHECK(dst.width == 4);
   CHECK(dst.height == 3);
-  REQUIRE(dst.data.size() == src.data.size());
-  for (size_t i = 0; i < src.data.size(); ++i) {
-    CHECK(dst.data[i] == src.data[i]);
+  REQUIRE(dst.material_id.size() == src.material_id.size());
+  for (size_t i = 0; i < src.material_id.size(); ++i) {
+    CHECK(dst.material_id[i] == src.material_id[i]);
   }
   CHECK(static_cast<int>(dst.origpal.entries[0].r) == 0);
   CHECK(static_cast<int>(dst.origpal.entries[255].r) == 255);
+}
+
+TEST_CASE("cereal_types: Level round-trip preserves display layer", "[cereal_types][stage3]") {
+  Common common;
+  Level src(common);
+  src.width = 4;
+  src.height = 3;
+  src.material_id.assign(12, 0);
+
+  // Authored display layer: pixel 0 and pixel 5.
+  src.display_data.assign(12, 0);
+  src.display_valid.assign(12, 0);
+  src.display_data[0] = 0xFF102030U;
+  src.display_valid[0] = 1;
+  src.display_data[5] = 0xFF405060U;
+  src.display_valid[5] = 1;
+
+  Level dst(common);
+  std::stringstream ss;
+  {
+    cereal::PortableBinaryOutputArchive ar(ss);
+    ar(cereal::make_nvp("lvl", src));
+  }
+  {
+    cereal::PortableBinaryInputArchive ar(ss);
+    ar(cereal::make_nvp("lvl", dst));
+  }
+  REQUIRE(dst.display_data.size() == 12);
+  REQUIRE(dst.display_valid.size() == 12);
+  CHECK(dst.display_data[0] == 0xFF102030U);
+  CHECK(dst.display_valid[0] == 1);
+  CHECK(dst.display_data[5] == 0xFF405060U);
+  CHECK(dst.display_valid[5] == 1);
+  CHECK(dst.display_valid[1] == 0);
+
+  // Classic level (no display layer): round-trip produces empty vectors.
+  Level src2(common);
+  src2.width = 2;
+  src2.height = 2;
+  src2.material_id.assign(4, 0);
+  Level dst2(common);
+  std::stringstream ss2;
+  {
+    cereal::PortableBinaryOutputArchive ar(ss2);
+    ar(cereal::make_nvp("lvl", src2));
+  }
+  {
+    cereal::PortableBinaryInputArchive ar(ss2);
+    ar(cereal::make_nvp("lvl", dst2));
+  }
+  CHECK(dst2.display_data.empty());
+  CHECK(dst2.display_valid.empty());
 }
 
 TEST_CASE("cereal_types: Rand round-trip preserves stream", "[cereal_types]") {

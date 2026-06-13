@@ -26,4 +26,5 @@ void Renderer::UpdatePal32() {
     pal32[i] =
         0xFF000000U | (static_cast<uint32_t>(e.r) << 16) | (static_cast<uint32_t>(e.g) << 8) | e.b;
   }
+  bmp.mode = mode;
 }

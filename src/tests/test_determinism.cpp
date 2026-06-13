@@ -359,7 +359,7 @@ TEST_CASE("Death and respawn determinism fuzz", "[determinism][death]") {
         // Check level pixels
         bool level_match = true;
         for (int i = 0; i < game_a.level.width * game_a.level.height; ++i) {
-          if (game_a.level.data[i] != game_b.level.data[i]) {
+          if (game_a.level.material_id[i] != game_b.level.material_id[i]) {
             level_match = false;
             break;
           }

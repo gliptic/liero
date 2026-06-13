@@ -4,6 +4,7 @@
 #include <cstring>
 #include "color.hpp"
 #include "math/rect.hpp"
+#include "palette.hpp"
 
 // ARGB8888 screen surface. Drawing primitives take palette indices and
 // resolve them at draw time through `pal32`, the owning renderer's
@@ -16,6 +17,8 @@ struct Bitmap {
   // Borrowed from the Renderer that draws into this bitmap (Copy propagates
   // it to capture bitmaps like frozen_screen).
   uint32_t const* pal32{nullptr};
+  // Colour mode of the owning renderer; set beside pal32 each frame.
+  ColorMode mode{ColorMode::kClassic};
   Rect clip_rect;
 
   Bitmap() = default;
@@ -51,6 +54,7 @@ struct Bitmap {
   void Copy(Bitmap const& other) {
     Alloc(other.w, other.h, other.pitch);
     pal32 = other.pal32;
+    mode = other.mode;
     std::memcpy(pixels, other.pixels, sizeof(uint32_t) * other.pitch * other.h);
   }
 
