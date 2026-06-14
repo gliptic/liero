@@ -1548,7 +1548,11 @@ void Gfx::DrawSpectatorInfo() {
   int const kCenterX = single_screen_renderer.render_res_x / 2;
   int const kCenterY = single_screen_renderer.render_res_y / 4;
 
-  single_screen_renderer.bmp.Copy(frozen_spectator_screen);
+  Fill(single_screen_renderer.bmp, 0);
+  if (frozen_spectator_screen.pixels != nullptr) {
+    BlitBitmap(single_screen_renderer.bmp, frozen_spectator_screen, 0, 0, frozen_spectator_screen.w,
+               frozen_spectator_screen.h);
+  }
   if (settings->level_file.empty()) {
     common.font.DrawCenteredText(single_screen_renderer.bmp, LS(LevelRandom), kCenterX,
                                  kCenterY - 32, 7, 2);

@@ -136,7 +136,11 @@ void WeaponSelection::DrawSpectatorViewports(Renderer& renderer, GameState /*sta
     cached_spectator_background = true;
   }
 
-  renderer.bmp.Copy(gfx.frozen_spectator_screen);
+  Fill(renderer.bmp, 0);
+  if (gfx.frozen_spectator_screen.pixels != nullptr) {
+    BlitBitmap(renderer.bmp, gfx.frozen_spectator_screen, 0, 0, gfx.frozen_spectator_screen.w,
+               gfx.frozen_spectator_screen.h);
+  }
 
   if (!focused) {
     return;

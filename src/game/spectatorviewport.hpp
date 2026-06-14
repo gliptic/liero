@@ -17,8 +17,9 @@ struct SpectatorViewport : Viewport {
   // Reused scratch buffer for the world pass; sized to the visible world
   // region each frame and downscaled into the spectator rect.
   Bitmap scratch_bmp;
-  // Current zoom factor (1.0 = native, <1.0 = zoomed out). Display-only —
-  // never touches the simulation and may use floats freely.
+  // Current zoom factor (>1.0 = small level upscaled to fill window,
+  // 1.0 = native, <1.0 = zoomed out). Display-only — never touches the
+  // simulation and may use floats freely.
   float zoom{1.0F};
   // Render dimensions cached from the renderer at the start of each Draw()
   // call. Process() reads these so it stays consistent with the current

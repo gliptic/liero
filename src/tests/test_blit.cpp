@@ -408,3 +408,53 @@ TEST_CASE("updatemenupalettes repacks pal32 with the menu animation", "[blit][pa
   int const kBase = Palette::kWormColorBlocks[0].base;
   REQUIRE(gfx.play_renderer.pal32[kBase] == pack(gfx.play_renderer.pal.entries[kBase]));
 }
+
+TEST_CASE("scaledrawarea upscales small src to fill larger dest", "[blit][scaledrawarea]") {
+  // Verifies the kCount==0 nearest-neighbour path used when dest > src.
+  // SpectatorViewport::Draw relies on this to upscale a small level to fill
+  // a large spectator window.
+  uint32_t const kSrc[2] = {0xFF112233U, 0xFF445566U};
+  uint32_t dest[8] = {};
+  ScaleDrawArea(kSrc, 2, 1, 2, dest, 4, 2, 4);
+  // Left two columns map to src[0], right two to src[1], both rows.
+  REQUIRE(dest[0] == 0xFF112233U);
+  REQUIRE(dest[1] == 0xFF112233U);
+  REQUIRE(dest[2] == 0xFF445566U);
+  REQUIRE(dest[3] == 0xFF445566U);
+  REQUIRE(dest[4] == 0xFF112233U);
+  REQUIRE(dest[5] == 0xFF112233U);
+  REQUIRE(dest[6] == 0xFF445566U);
+  REQUIRE(dest[7] == 0xFF445566U);
+}
+
+TEST_CASE("spectator-resize: freeze-restore must not shrink renderer bmp",
+          "[blit][spectator-resize]") {
+  // Regression for resize-while-paused segfault (introduced a634c3b).
+  // After OnWindowResize, SetRenderResolution sets render_res=1920x1080 and
+  // bmp.pitch=1920.  DrawSpectatorInfo (and WeaponSelection::DrawSpectatorViewports)
+  // called bmp.Copy(frozen_spectator_screen), which shrank bmp.pitch back to
+  // the frozen screen's pre-resize pitch (640).  Flip() then called
+  // ScaleDraw(bmp.pixels, render_res_x=1920, render_res_y=1080, pitch=640,...),
+  // which reads at row y*640 for y up to 1079, accessing offset 690560 in a
+  // 256000-element array — out-of-bounds read — segfault.
+  //
+  // The fix: replace bmp.Copy(frozen) with Fill(bmp,0)+BlitBitmap so the bmp
+  // pitch/dimensions are preserved at the render resolution.
+  Renderer renderer;
+  renderer.Init(1920, 1080);
+
+  Bitmap frozen;
+  frozen.Alloc(640, 400);
+
+  // Correct restore path (the fix): Fill keeps bmp at render resolution;
+  // BlitBitmap copies the frozen content without resizing.
+  Fill(renderer.bmp, 0);
+  if (frozen.pixels != nullptr) {
+    BlitBitmap(renderer.bmp, frozen, 0, 0, frozen.w, frozen.h);
+  }
+
+  // ScaleDraw reads at y*pitch for y in [0, render_res_y), so pitch must
+  // equal render_res_x to stay in bounds.
+  REQUIRE(renderer.bmp.pitch == static_cast<unsigned int>(renderer.render_res_x));
+  REQUIRE(renderer.bmp.h == renderer.render_res_y);
+}

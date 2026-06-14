@@ -1,6 +1,7 @@
 #include "spectatorviewport.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include "constants.hpp"
 #include "game.hpp"
 #include "gfx/bitmap.hpp"
@@ -33,7 +34,12 @@ void SpectatorViewport::Process(Game& game) {
   int const kBboxH = std::max(1, wmax_y - wmin_y + 2 * kMargin);
   float const kZoomX = static_cast<float>(kRenderW) / static_cast<float>(kBboxW);
   float const kZoomY = static_cast<float>(kRenderH) / static_cast<float>(kBboxH);
-  zoom = std::min({kZoomX, kZoomY, 1.0F});
+  // Cap at the zoom that shows the entire level — can be >1 for maps smaller
+  // than the spectator window so the level fills the available space.
+  float const kLevelFillZoom =
+      std::min(static_cast<float>(kRenderW) / static_cast<float>(game.level.width),
+               static_cast<float>(kRenderH) / static_cast<float>(game.level.height));
+  zoom = std::min({kZoomX, kZoomY, kLevelFillZoom});
 
   int const kVisibleW = static_cast<int>(static_cast<float>(kRenderW) / zoom);
   int const kVisibleH = static_cast<int>(static_cast<float>(kRenderH) / zoom);
@@ -412,11 +418,27 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
   }
 
   // ── Composite scratch → renderer ─────────────────────────────────────────
-  if (zoom >= 1.0F) {
-    BlitBitmap(renderer.bmp, scratch_bmp, 0, 0, kScrW, kScrH);
+  // Scale the scratch into a centred output rect that preserves the level's
+  // aspect ratio; any remaining bars are filled black.
+  int const kOutW =
+      std::min(static_cast<int>(std::lroundf(static_cast<float>(kScrW) * zoom)), render_w);
+  int const kOutH =
+      std::min(static_cast<int>(std::lroundf(static_cast<float>(kScrH) * zoom)), render_h);
+  int const kOutX = (render_w - kOutW) / 2;
+  int const kOutY = (render_h - kOutH) / 2;
+
+  if (kOutX > 0 || kOutY > 0) {
+    Fill(renderer.bmp, 0);
+  }
+
+  if (kScrW == kOutW && kScrH == kOutH) {
+    BlitBitmap(renderer.bmp, scratch_bmp, kOutX, kOutY, kScrW, kScrH);
   } else {
-    ScaleDrawArea(scratch_bmp.pixels, kScrW, kScrH, scratch_bmp.pitch, renderer.bmp.pixels,
-                  render_w, render_h, renderer.bmp.pitch);
+    uint32_t* const kDest = renderer.bmp.pixels +
+                            static_cast<std::size_t>(kOutY) * renderer.bmp.pitch +
+                            static_cast<std::size_t>(kOutX);
+    ScaleDrawArea(scratch_bmp.pixels, kScrW, kScrH, scratch_bmp.pitch, kDest, kOutW, kOutH,
+                  renderer.bmp.pitch);
   }
 
   // ── HUD overlay (native resolution, drawn on top) ─────────────────────────
