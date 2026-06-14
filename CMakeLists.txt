@@ -452,6 +452,10 @@ if(OPENLIERO_BUILD_TESTS)
   target_link_libraries(test_blit PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_blit DISCOVERY_MODE PRE_TEST)
 
+  add_executable(test_minimap src/tests/test_minimap.cpp)
+  target_link_libraries(test_minimap PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_minimap DISCOVERY_MODE PRE_TEST)
+
   add_executable(test_level_display src/tests/test_level_display.cpp)
   target_link_libraries(test_level_display PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_level_display

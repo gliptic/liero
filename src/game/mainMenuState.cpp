@@ -131,9 +131,11 @@ void MainMenuState::Enter() {
   gfx->single_screen_renderer.Clear();
   if (gfx->controller->CurrentLevel()) {
     Level const* level = gfx->controller->CurrentLevel();
-    int const kMinimapStepX = std::max((level->width + 251) / 252, 1);
-    int const kMinimapStepY = std::max((level->height + 174) / 175, 1);
-    level->DrawMiniature(gfx->single_screen_renderer.bmp, kCenterX - 126,
+    int const kMinimapStepX =
+        std::max((level->width + Level::kSpecMinimapW - 1) / Level::kSpecMinimapW, 1);
+    int const kMinimapStepY =
+        std::max((level->height + Level::kSpecMinimapH - 1) / Level::kSpecMinimapH, 1);
+    level->DrawMiniature(gfx->single_screen_renderer.bmp, kCenterX - Level::kSpecMinimapW / 2,
                          gfx->single_screen_renderer.render_res_y - 208, kMinimapStepX,
                          kMinimapStepY);
   }

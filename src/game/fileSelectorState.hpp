@@ -41,6 +41,10 @@ struct LevelSelectorState : FileSelectorState {
  private:
   std::shared_ptr<FileNode> randomNode_;
   FileNode* previewNode_ = nullptr;
+  // Maximum columns/rows the HUD minimap can draw (Level::kHudMinimapW/H).
+  // Reset on Enter(); used to clear residue from a wider previous level.
+  int prev_hud_cols_ = 52;
+  int prev_hud_rows_ = 36;
 };
 
 // Replay selector

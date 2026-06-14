@@ -594,9 +594,11 @@ void Viewport::Draw(Game& game, Renderer& renderer, GameState /*state*/, bool is
     int const kMapX = kCenterX - 26;
     int const kMapY = renderer.render_res_y - 38;
 
-    // Fit the minimap into a 52×36 pixel area regardless of map size.
-    int const kMinimapStepX = std::max((game.level.width + 51) / 52, 1);
-    int const kMinimapStepY = std::max((game.level.height + 35) / 36, 1);
+    // Fit the minimap into kHudMinimapW×kHudMinimapH pixels regardless of map size.
+    int const kMinimapStepX =
+        std::max((game.level.width + Level::kHudMinimapW - 1) / Level::kHudMinimapW, 1);
+    int const kMinimapStepY =
+        std::max((game.level.height + Level::kHudMinimapH - 1) / Level::kHudMinimapH, 1);
     game.level.DrawMiniature(renderer.bmp, kMapX, kMapY, kMinimapStepX, kMinimapStepY);
 
     for (auto& worm : game.worms) {

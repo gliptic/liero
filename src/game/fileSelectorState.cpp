@@ -86,6 +86,8 @@ void LevelSelectorState::Enter() {
   selector_->Select(gfx->settings->level_file);
 
   previewNode_ = nullptr;
+  prev_hud_cols_ = Level::kHudMinimapW;
+  prev_hud_rows_ = Level::kHudMinimapH;
 }
 
 bool LevelSelectorState::OnSelected(FileNode* node) {
@@ -113,16 +115,25 @@ void LevelSelectorState::DrawExtra() {
       if (level.load(common, *gfx->settings, r)) {
         int const kCenterX = gfx->single_screen_renderer.render_res_x / 2;
 
-        int const kHudStepX = std::max((level.width + 51) / 52, 1);
-        int const kHudStepY = std::max((level.height + 35) / 36, 1);
-        FillRect(gfx->frozen_screen, 134, 162, 52, 36, 0);
+        int const kHudStepX =
+            std::max((level.width + Level::kHudMinimapW - 1) / Level::kHudMinimapW, 1);
+        int const kHudStepY =
+            std::max((level.height + Level::kHudMinimapH - 1) / Level::kHudMinimapH, 1);
+        // Clear only what the previous minimap drew; Enter() initialises these to the
+        // maximum bounding box so the first switch always covers any residue.
+        FillRect(gfx->frozen_screen, 134, 162, prev_hud_cols_, prev_hud_rows_, 0);
         level.DrawMiniature(gfx->frozen_screen, 134, 162, kHudStepX, kHudStepY);
-        int const kSpecStepX = std::max((level.width + 251) / 252, 1);
-        int const kSpecStepY = std::max((level.height + 174) / 175, 1);
+        prev_hud_cols_ = (level.width + kHudStepX / 2) / kHudStepX;
+        prev_hud_rows_ = (level.height + kHudStepY / 2) / kHudStepY;
+        int const kSpecStepX =
+            std::max((level.width + Level::kSpecMinimapW - 1) / Level::kSpecMinimapW, 1);
+        int const kSpecStepY =
+            std::max((level.height + Level::kSpecMinimapH - 1) / Level::kSpecMinimapH, 1);
         int const kSpecY = gfx->single_screen_renderer.render_res_y - 208;
-        FillRect(gfx->frozen_spectator_screen, kCenterX - 126, kSpecY, 252, 175, 0);
-        level.DrawMiniature(gfx->frozen_spectator_screen, kCenterX - 126, kSpecY, kSpecStepX,
-                            kSpecStepY);
+        FillRect(gfx->frozen_spectator_screen, kCenterX - Level::kSpecMinimapW / 2, kSpecY,
+                 Level::kSpecMinimapW, Level::kSpecMinimapH, 0);
+        level.DrawMiniature(gfx->frozen_spectator_screen, kCenterX - Level::kSpecMinimapW / 2,
+                            kSpecY, kSpecStepX, kSpecStepY);
       }
     } catch (std::runtime_error&) {  // NOLINT(bugprone-empty-catch) — bad preview is non-fatal; we
                                      // just skip drawing it.

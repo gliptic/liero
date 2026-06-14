@@ -23,6 +23,15 @@ struct ShadowQuery;
 struct Level {
   Level(Common& common) : zero_material(common.materials[0]) {}
 
+  // Minimap bounding-box targets used by all call sites.
+  // For a 504×350 level these produce the original Liero 1.36 step values:
+  //   HUD:       ceil(504/52)=10, ceil(350/36)=10  → 50×35 minimap
+  //   Spectator: ceil(504/252)=2, ceil(350/175)=2  → 252×175 minimap (exact fit)
+  static constexpr int kHudMinimapW = 52;
+  static constexpr int kHudMinimapH = 36;
+  static constexpr int kSpecMinimapW = 252;
+  static constexpr int kSpecMinimapH = 175;
+
   bool load(Common& common, Settings const& settings, io::Reader& r);
 
   void GenerateDirtPattern(Common& common, Rand& rand);
