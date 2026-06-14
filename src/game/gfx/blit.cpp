@@ -365,6 +365,7 @@ void BlitImageOnMap(Common& common, Level& level, PalIdx* mem, int x, int y, int
       *rowdest = n;
       *rowmatdest = common.materials[n];
       if (kDv) kDv[rowdest - kBase] = 0;
+      level.MarkDirty(static_cast<int>(rowdest - kBase));
     }
   });
 }
@@ -431,6 +432,7 @@ void BlitStone(Common& common, Level& level, bool p1, const PalIdx* mem, int x, 
         if (kDv) {
           kDv[rowdest - kBase] = 0;
         }
+        level.MarkDirty(static_cast<int>(rowdest - kBase));
         ++rowsrc;
         ++rowdest;
         ++rowmatdest;
@@ -454,6 +456,7 @@ void BlitStone(Common& common, Level& level, bool p1, const PalIdx* mem, int x, 
           if (kDv) {
             kDv[rowdest - kBase] = 0;
           }
+          level.MarkDirty(static_cast<int>(rowdest - kBase));
         }
 
         ++rowsrc;
@@ -496,6 +499,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
             *rowdest = t_frame[((my & 15) << 4) + (mx & 15)];
             *rowmatdest = common.materials[*rowdest];
             if (kDv) kDv[rowdest - kBase] = 0;
+            level.MarkDirty(static_cast<int>(rowdest - kBase));
           }
           break;
 
@@ -505,10 +509,12 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
             *rowdest = 2;
             *rowmatdest = common.materials[2];
             if (kDv) kDv[rowdest - kBase] = 0;
+            level.MarkDirty(static_cast<int>(rowdest - kBase));
           } else if (m.Dirt()) {
             *rowdest = 1;
             *rowmatdest = common.materials[1];
             if (kDv) kDv[rowdest - kBase] = 0;
+            level.MarkDirty(static_cast<int>(rowdest - kBase));
           }
         } break;
         default:
@@ -527,6 +533,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
             *rowdest = t_frame[((my & 15) << 4) + (mx & 15)];
             *rowmatdest = common.materials[*rowdest];
             if (kDv) kDv[rowdest - kBase] = 0;
+            level.MarkDirty(static_cast<int>(rowdest - kBase));
           }
           break;
 
@@ -535,6 +542,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
             *rowdest = 2;
             *rowmatdest = common.materials[2];
             if (kDv) kDv[rowdest - kBase] = 0;
+            level.MarkDirty(static_cast<int>(rowdest - kBase));
           }
           break;
 
@@ -543,6 +551,7 @@ void DrawDirtEffect(Common& common, Rand& rand, Level& level, int dirt_effect, i
             *rowdest = 1;
             *rowmatdest = common.materials[1];
             if (kDv) kDv[rowdest - kBase] = 0;
+            level.MarkDirty(static_cast<int>(rowdest - kBase));
           }
           break;
         default:

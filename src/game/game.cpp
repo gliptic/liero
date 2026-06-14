@@ -686,7 +686,7 @@ void Game::LoadSnapshot(std::vector<uint8_t> const& in) {
   LoadGameSnapshot(ar, *this);
 }
 
-void Game::SaveSnapshotFast(GameSnapshot& snap) const {
+void Game::SaveSnapshotFast(GameSnapshot& snap) {
   snap.rand = rand;
   snap.cycles = cycles;
   snap.screen_flash = screen_flash;
@@ -719,18 +719,40 @@ void Game::SaveSnapshotFast(GameSnapshot& snap) const {
   if (snap.level_data.size() != kCells) {
     snap.level_data.resize(kCells);
   }
-  if (snap.level_materials.size() != kCells) {
-    snap.level_materials.resize(kCells);
+
+  if (level.dirty_bits.empty() || !snap.initialized) {
+    // Full copy: either the first save ever (initialise dirty tracking) or the
+    // first save to this particular slot (populate its base level state).
+    // Deferring the per-slot copy to here (rather than doing it eagerly in
+    // Prepare) spreads 8 × W×H bytes across the first 8 gameplay frames
+    // instead of blocking the weapon-selection init loop with a large upfront
+    // allocation on large levels.
+    if (kCells > 0) {
+      std::memcpy(snap.level_data.data(), level.material_id.data(), kCells);
+    }
+    if (!level.display_valid.empty() && !snap.level_display_valid.empty()) {
+      std::memcpy(snap.level_display_valid.data(), level.display_valid.data(), kCells);
+    }
+    if (level.dirty_bits.empty()) {
+      level.InitDirtyTracking();
+    }
+    snap.initialized = true;
+  } else {
+    // Sparse update: overwrite only the cells modified since game start.
+    // dirty_list accumulates and is never cleared, so every slot always
+    // reflects the cumulative diff from its initial full-copy baseline,
+    // making every slot independently restorable.
+    bool const kHasDv = !level.display_valid.empty() && !snap.level_display_valid.empty();
+    for (int32_t const kDirtyIdx : level.dirty_list) {
+      auto const kI = static_cast<std::size_t>(kDirtyIdx);
+      snap.level_data[kI] = level.material_id[kI];
+      if (kHasDv) {
+        snap.level_display_valid[kI] = level.display_valid[kI];
+      }
+    }
   }
-  if (kCells > 0) {
-    std::memcpy(snap.level_data.data(), level.material_id.data(), kCells);
-    std::memcpy(snap.level_materials.data(), level.materials.data(), kCells * sizeof(Material));
-  }
-  // display_data is static (never modified during simulation) so only
-  // display_valid is snapshotted; display_data is left untouched on restore.
-  if (!level.display_valid.empty() && !snap.level_display_valid.empty()) {
-    std::memcpy(snap.level_display_valid.data(), level.display_valid.data(), kCells);
-  }
+  // level_materials is omitted from the snapshot (see fast_snapshot.hpp).
+  // display_data is static (never modified during simulation); left untouched.
 }
 
 void Game::LoadSnapshotFast(GameSnapshot const& snap) {
@@ -759,8 +781,25 @@ void Game::LoadSnapshotFast(GameSnapshot const& snap) {
   std::size_t const kCells =
       static_cast<std::size_t>(level.width) * static_cast<std::size_t>(level.height);
   if (kCells > 0) {
+    // Restore material_id (full memcpy; the slot is pre-filled at Prepare() and
+    // dirty cells are overwritten on each save, so the slot is always complete).
     std::memcpy(level.material_id.data(), snap.level_data.data(), kCells);
-    std::memcpy(level.materials.data(), snap.level_materials.data(), kCells * sizeof(Material));
+
+    // Restore materials without storing them in the snapshot.  Clean cells
+    // were never modified, so their materials are still valid from level
+    // initialisation.  Only dirty cells need recomputing.  Fall back to a
+    // full O(W×H) pass when dirty tracking hasn't been initialised yet (e.g.
+    // on the shadow-game bootstrap LoadSnapshotFast).
+    if (level.dirty_bits.empty()) {
+      for (std::size_t i = 0; i < kCells; ++i) {
+        level.materials[i] = common->materials[level.material_id[i]];
+      }
+    } else {
+      for (int32_t const kDirtyIdx : level.dirty_list) {
+        auto const kI = static_cast<std::size_t>(kDirtyIdx);
+        level.materials[kI] = common->materials[level.material_id[kI]];
+      }
+    }
   }
   // display_data is static; restore only display_valid.
   if (!snap.level_display_valid.empty() && !level.display_valid.empty()) {

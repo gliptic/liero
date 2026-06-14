@@ -87,7 +87,9 @@ struct Game {
   // Fast in-memory snapshot path used by the rollback ring buffer.
   // Writes/reads directly into a pre-allocated GameSnapshot — no
   // serialisation, no allocation in the steady state.
-  void SaveSnapshotFast(struct GameSnapshot& snap) const;
+  // SaveSnapshotFast is non-const: on the first call it initialises dirty
+  // tracking on the level (Level::InitDirtyTracking).
+  void SaveSnapshotFast(struct GameSnapshot& snap);
   void LoadSnapshotFast(struct GameSnapshot const& snap);
 
   void SpawnZone();

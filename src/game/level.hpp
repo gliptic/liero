@@ -67,6 +67,7 @@ struct Level {
     if (!display_valid.empty()) {
       display_valid[kIdx] = 0;
     }
+    MarkDirty(kIdx);
   }
 
   void SetPixel(fixedvec pos, PalIdx w, Common& common) {
@@ -75,6 +76,25 @@ struct Level {
     materials[kIdx] = common.materials[w];
     if (!display_valid.empty()) {
       display_valid[kIdx] = 0;
+    }
+    MarkDirty(kIdx);
+  }
+
+  // Initialise dirty tracking for rollback snapshot optimisation.
+  // Called once by SaveSnapshotFast before the first rollback save.
+  void InitDirtyTracking() {
+    dirty_bits.assign(static_cast<std::size_t>(width) * static_cast<std::size_t>(height), false);
+    dirty_list.clear();
+  }
+
+  // Mark a flat cell index as dirty for rollback snapshot optimisation.
+  // The single choke-point for dirty tracking: SetPixel delegates here, and
+  // blit helpers that write material_id directly (bypassing SetPixel) call it
+  // explicitly. No-op before InitDirtyTracking is called.
+  void MarkDirty(int idx) {
+    if (!dirty_bits.empty() && !dirty_bits[static_cast<std::size_t>(idx)]) {
+      dirty_bits[static_cast<std::size_t>(idx)] = true;
+      dirty_list.push_back(idx);
     }
   }
 
@@ -117,6 +137,8 @@ struct Level {
     display_valid.swap(other.display_valid);
     argb_ramps.swap(other.argb_ramps);
     display_anim.swap(other.display_anim);
+    dirty_bits.swap(other.dirty_bits);
+    dirty_list.swap(other.dirty_list);
     std::swap(width, other.width);
     std::swap(height, other.height);
     std::swap(origpal, other.origpal);
@@ -160,6 +182,13 @@ struct Level {
   // a colour. All three fields are immutable after load; never snapshotted.
   std::vector<ArgbRamp> argb_ramps;
   std::vector<uint8_t> display_anim;
+
+  // Rollback snapshot optimisation: dirty tracking for SaveSnapshotFast.
+  // Both are empty until InitDirtyTracking() is called (first rollback save).
+  // dirty_list accumulates indices of every cell ever modified via SetPixel;
+  // dirty_bits prevents duplicates. Neither is ever cleared during a game.
+  std::vector<bool> dirty_bits;
+  std::vector<int32_t> dirty_list;
 
   bool old_random_level;
   std::string old_level_file;

@@ -156,9 +156,16 @@ struct GameSnapshot {
   std::vector<BObject> bobjects_arr;
   std::size_t bobjects_count = 0;
 
+  // Level material_id bytes.  On the first save to this slot a full copy of
+  // the live level is written; only dirty cells are overwritten on each
+  // subsequent save to the same slot.
+  // level_materials is omitted: it is always derivable as
+  //   common.materials[material_id[i]]
+  // and is recomputed on restore (see Game::LoadSnapshotFast).
   std::vector<uint8_t> level_data;
-  std::vector<Material> level_materials;
   // display_valid is snapshotted because terrain destruction zeroes it.
+  // First save to this slot copies the full live array; dirty cells are
+  // overwritten on each subsequent save to the same slot.
   // display_data is static (never written during simulation) and intentionally
   // omitted here — omitting 64 MB/slot (4096² ARGB) keeps the ring buffer
   // from bloating to ~500 MB for large levels.
@@ -166,16 +173,26 @@ struct GameSnapshot {
 
   uint32_t checksum = 0;
 
-  // Pre-size the dynamic buffers so save/load can avoid allocations.
-  // Call once after the level is generated.
+  // True after the first SaveSnapshotFast call to this slot.  Until then the
+  // level_data / level_display_valid buffers are allocated but contain
+  // uninitialised data; SaveSnapshotFast uses this flag to trigger a one-time
+  // full copy instead of the sparse dirty-cell path.
+  bool initialized = false;
+
+  // Pre-size the dynamic buffers so that the first SaveSnapshotFast call can
+  // write directly without reallocating.  Intentionally does NOT copy level
+  // data — that copy is deferred to the first SaveSnapshotFast call so that
+  // initialising all ring-buffer slots during weapon-selection setup does not
+  // block the main loop with a large upfront memcpy.
+  // Call once after the level is generated, before the first SaveSnapshotFast.
   void Prepare(Game const& game) {
     bobjects_arr.resize(game.bobjects.limit);
     std::size_t const kCells =
         static_cast<std::size_t>(game.level.width) * static_cast<std::size_t>(game.level.height);
     level_data.resize(kCells);
-    level_materials.resize(kCells);
     if (!game.level.display_data.empty()) {
       level_display_valid.resize(kCells);
     }
+    initialized = false;
   }
 };

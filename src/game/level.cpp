@@ -220,6 +220,10 @@ void Level::Resize(int width_new, int height_new) {
   height = height_new;
   material_id.resize(width * height);
   materials.resize(width * height);
+  // Dirty tracking is size-dependent; reset so the next SaveSnapshotFast
+  // re-initialises for the new dimensions.
+  dirty_bits.clear();
+  dirty_list.clear();
 }
 
 bool Level::load(Common& common, Settings const& settings, io::Reader& r) {
