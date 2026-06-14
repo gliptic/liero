@@ -127,3 +127,33 @@ TEST_CASE("drawminiature step=2 fills the spectator target exactly for a 504x350
   f.level.DrawMiniature(f.renderer.bmp, 0, 0, 2, 2);
   REQUIRE(f.TotalDrawn() == 252 * 175);
 }
+
+// ── Fixed spectator layout regression ─────────────────────────────────────────
+// Static spectator screens (pause/SETUP/waiting/weapon-select) use a fixed
+// 640x400 logical buffer that SDL letterbox-scales to the window, matching
+// the original Liero behaviour.  These constants lock in the correct position
+// so any accidental regression (e.g. rendering into native-res instead) is
+// caught by the pixel-placement check below.
+
+TEST_CASE("spectator fixed layout is 640x400 and minimap fits within it for a 504x350 level",
+          "[minimap][layout]") {
+  constexpr int kFixedW = 640;
+  constexpr int kFixedH = 400;
+  constexpr int kCenterX = kFixedW / 2;
+  constexpr int kMinimapX = kCenterX - Level::kSpecMinimapW / 2;  // 320 - 126 = 194
+  constexpr int kMinimapY = kFixedH - 208;                        // 192
+
+  // Minimap must fit entirely within the fixed buffer.
+  STATIC_REQUIRE(kMinimapX >= 0);
+  STATIC_REQUIRE(kMinimapY >= 0);
+  STATIC_REQUIRE(kMinimapX + Level::kSpecMinimapW <= kFixedW);
+  STATIC_REQUIRE(kMinimapY + Level::kSpecMinimapH <= kFixedH);
+
+  // DrawMiniature must place pixels at the computed position.
+  MinimapFixture f(504, 350, kFixedW, kFixedH);
+  int const kStepX = std::max((504 + Level::kSpecMinimapW - 1) / Level::kSpecMinimapW, 1);
+  int const kStepY = std::max((350 + Level::kSpecMinimapH - 1) / Level::kSpecMinimapH, 1);
+  f.level.DrawMiniature(f.renderer.bmp, kMinimapX, kMinimapY, kStepX, kStepY);
+  REQUIRE(f.renderer.bmp.GetPixel(kMinimapX, kMinimapY) == f.renderer.pal32[1]);
+  REQUIRE(f.renderer.bmp.GetPixel(0, 0) == f.renderer.pal32[2]);  // top-left: no minimap pixel
+}

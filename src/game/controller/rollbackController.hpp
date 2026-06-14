@@ -109,6 +109,7 @@ struct RollbackController : CommonController {
 
   uint32_t CurrentFrame() const { return simFrame_; }
   GameState State() const { return state_; }
+  bool InWeaponSelection() override { return state_ == kStateWeaponSelection; }
   void SetLocalControlState(uint8_t packed) { localControlState_.Unpack(packed); }
   // Must be called before the first sim tick. Clamped to kMaxRollback:
   // the send path encodes (localFrame - baseFrame) as a uint8_t equal to

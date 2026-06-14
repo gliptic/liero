@@ -93,6 +93,7 @@ static std::unique_ptr<AppState> MakeSaveAsState(
 MainMenuState::MainMenuState() = default;
 
 void MainMenuState::Enter() {
+  gfx->SetSpectatorLayout(/*fixed=*/true);
   Common& common = *gfx->common;
   int const kCenterX = gfx->single_screen_renderer.render_res_x / 2;
 
@@ -611,6 +612,7 @@ bool MainMenuState::Update() {
 }
 
 void MainMenuState::Draw() {
+  gfx->SetSpectatorLayout(/*fixed=*/true);
   gfx->DrawBasicMenu();
   gfx->DrawSpectatorInfo();
 

@@ -1543,6 +1543,27 @@ void Gfx::DrawBasicMenu(/*int curSel*/) {
                  /*show_disabled_selection=*/true);
 }
 
+void Gfx::SetSpectatorLayout(bool fixed) {
+  if (primary_renderer == &single_screen_renderer) {
+    return;  // single-screen replay: renderer is the primary; don't resize it
+  }
+  if (!sdl_spectator_window || !settings->spectator_window) {
+    return;
+  }
+  int target_w = 0;
+  int target_h = 0;
+  if (fixed) {
+    target_w = 640;
+    target_h = 400;
+  } else {
+    SDL_GetWindowSize(sdl_spectator_window, &target_w, &target_h);
+  }
+  if (single_screen_renderer.render_res_x != target_w ||
+      single_screen_renderer.render_res_y != target_h) {
+    single_screen_renderer.SetRenderResolution(target_w, target_h);
+  }
+}
+
 void Gfx::DrawSpectatorInfo() {
   Common& common = *this->common;
   int const kCenterX = single_screen_renderer.render_res_x / 2;

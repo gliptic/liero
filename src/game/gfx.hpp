@@ -231,6 +231,11 @@ struct Gfx {
   static std::string GetGamepadKeyName(uint32_t gamepad_key);
   void SetSpectatorFullscreen(bool new_fullscreen);
   void SetFullscreen(bool new_fullscreen);
+  // Switches the spectator single_screen_renderer between the fixed 640x400
+  // layout (used by static screens: pause/SETUP/waiting/weapon-select) and
+  // native window resolution (used during live gameplay for zoom/pan).
+  // No-op when the spectator window is disabled or renderer is primary (replay).
+  void SetSpectatorLayout(bool fixed);
   void SetDoubleRes(bool new_double_res);
   // Switches the live colour mode of the game renderers and remembers the
   // choice in settings.

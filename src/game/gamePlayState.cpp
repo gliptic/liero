@@ -100,6 +100,7 @@ void GamePlayState::Draw() {
   gfx->play_renderer.Clear();
   gfx->controller->Draw(gfx->play_renderer, /*use_spectator_viewports=*/false);
 
+  gfx->SetSpectatorLayout(gfx->controller->InWeaponSelection());
   gfx->single_screen_renderer.Clear();
   gfx->controller->Draw(gfx->single_screen_renderer, /*use_spectator_viewports=*/true);
 }

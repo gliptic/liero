@@ -431,12 +431,20 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
     Fill(renderer.bmp, 0);
   }
 
+  uint32_t* const kDest = renderer.bmp.pixels +
+                          static_cast<std::size_t>(kOutY) * renderer.bmp.pitch +
+                          static_cast<std::size_t>(kOutX);
   if (kScrW == kOutW && kScrH == kOutH) {
-    BlitBitmap(renderer.bmp, scratch_bmp, kOutX, kOutY, kScrW, kScrH);
+    // BlitBitmap reads from src at position (x,y), not (0,0) — wrong for a
+    // scratch bitmap whose content always starts at (0,0). Copy row-by-row.
+    uint32_t const* src_row = scratch_bmp.pixels;
+    uint32_t* dst_row = kDest;
+    for (int row = 0; row < kScrH; ++row) {
+      std::memcpy(dst_row, src_row, sizeof(uint32_t) * static_cast<std::size_t>(kScrW));
+      dst_row += renderer.bmp.pitch;
+      src_row += scratch_bmp.pitch;
+    }
   } else {
-    uint32_t* const kDest = renderer.bmp.pixels +
-                            static_cast<std::size_t>(kOutY) * renderer.bmp.pitch +
-                            static_cast<std::size_t>(kOutX);
     ScaleDrawArea(scratch_bmp.pixels, kScrW, kScrH, scratch_bmp.pitch, kDest, kOutW, kOutH,
                   renderer.bmp.pitch);
   }
