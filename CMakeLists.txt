@@ -5,6 +5,7 @@ option(OPENLIERO_BUILD_TCTOOL "Build tctool" OFF)
 option(OPENLIERO_BUILD_VIDEOTOOL "Build videotool" OFF)
 option(OPENLIERO_USE_VCPKG "Use vcpkg to manage dependencies" ON)
 option(OPENLIERO_ENABLE_CLANG_TIDY "Run clang-tidy during every C++ compile" OFF)
+option(OPENLIERO_ENABLE_TRACY "Build with Tracy profiler instrumentation" OFF)
 
 # tell cmake we have goodies in the cmake/ directory
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
@@ -47,6 +48,9 @@ if(OPENLIERO_USE_VCPKG)
   set(VCPKG_INSTALL_OPTIONS "--no-print-usage")
   set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
   set(X_VCPKG_APPLOCAL_DEPS_INSTALL ON)
+  if(OPENLIERO_ENABLE_TRACY)
+    list(APPEND VCPKG_MANIFEST_FEATURES "profiling")
+  endif()
 else()
   message(STATUS "Using system-provided dependencies")
 endif()
@@ -246,6 +250,15 @@ target_link_libraries(game
   tomlplusplus::tomlplusplus
   xxHash::xxhash
 )
+
+if(OPENLIERO_ENABLE_TRACY)
+  if(EMSCRIPTEN)
+    message(FATAL_ERROR "OPENLIERO_ENABLE_TRACY is not supported for Emscripten builds")
+  endif()
+  find_package(Tracy CONFIG REQUIRED)
+  target_link_libraries(game PUBLIC Tracy::TracyClient)
+  target_compile_definitions(game PUBLIC OPENLIERO_ENABLE_TRACY)
+endif()
 
 if(APPLE)
   add_executable(openliero src/game/main.cpp)

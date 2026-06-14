@@ -21,6 +21,8 @@
 #include <sstream>
 #include <utility>
 
+#include "profiling.hpp"
+
 Game::Game(const std::shared_ptr<Common>& common, std::shared_ptr<Settings> settings_init,
            const std::shared_ptr<SoundPlayer>& sound_player, bool install_global_sound_player)
     : common(common),
@@ -263,6 +265,7 @@ void Game::CreateBonus() {
 }
 
 void Game::ProcessFrame() {
+  ZoneScopedN("Game::ProcessFrame");
   stats_recorder->PreTick(*this);
 
   if (screen_flash > 0) {

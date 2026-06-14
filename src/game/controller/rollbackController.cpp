@@ -2,6 +2,7 @@
 
 #include "../gfx.hpp"
 #include "../mixer/player.hpp"
+#include "../profiling.hpp"
 #include "../replay.hpp"
 #include "../spectatorviewport.hpp"
 #include "../viewport.hpp"
@@ -417,6 +418,7 @@ void RollbackController::Focus() {
 }
 
 bool RollbackController::Process() {
+  ZoneScopedN("Rollback::Process");
   if (IsPaused()) {
     if (fadeValue_ < 33) {
       fadeValue_ += 1;
@@ -1074,6 +1076,7 @@ void RollbackController::AdvanceWeaponSelection() {
 // Mirror of advanceWeaponSelection() for the game phase. Keep the two
 // in sync — a fix here likely needs to land in the sibling too.
 void RollbackController::AdvanceSimulation() {
+  ZoneScopedN("Rollback::AdvanceSimulation");
   uint32_t const kInputFrame = simFrame_ + inputDelay_;
   if (!lastSentFrameValid_ || kInputFrame != lastSentFrame_) {
     uint32_t const kSlot = kInputFrame % kInputBufferSize;
@@ -1136,6 +1139,7 @@ void RollbackController::AdvanceSimulation() {
   // with the freshest input available. Speculative across the window so
   // previously-emitted sounds/stats don't duplicate.
   if (rollback_to >= 0) {
+    ZoneScopedN("Rollback::Resim");
     ++rollbackCount_;
     lastTickResimFrames_ +=
         static_cast<uint32_t>(static_cast<int32_t>(simFrame_) - rollback_to - 1);
@@ -1292,6 +1296,7 @@ void RollbackController::AdvanceSimulation() {
 }
 
 void RollbackController::Draw(Renderer& renderer, bool use_spectator_viewports) {
+  ZoneScopedN("Rollback::Draw");
   if (state_ == kStateWeaponSelection) {
     ws_->Draw(renderer, state_, use_spectator_viewports);
   } else if (state_ == kStateGame || state_ == kStateGameEnded) {

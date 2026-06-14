@@ -115,6 +115,41 @@ Options:
 - `--jobs N`, `-j N` — parallel worker threads (default: 16)
 - `--jitter N` — random packet delivery delay of 0–N ticks (default: 0)
 
+## Profiling with Tracy
+
+[Tracy](https://github.com/wolfpld/tracy) is an opt-in, native-only profiler. It is
+**off by default** — normal builds and CI are unaffected.
+
+```bash
+cmake --preset $PRESET -DOPENLIERO_ENABLE_TRACY=ON
+cmake --build build/$PRESET --config Release
+cmake --install build/$PRESET --config Release
+```
+
+Install the Tracy profiler GUI: https://github.com/wolfpld/tracy
+
+Run the game and connect the profiler:
+
+```bash
+# Launch the game — Tracy will try to connect automatically on startup
+./install/$PRESET/bin/openliero
+
+# In the Tracy GUI: click "Connect" (localhost, port 8086 by default)
+```
+
+For connecting **after** startup (e.g. to profile a specific in-game moment),
+build with `TRACY_ON_DEMAND=1` defined. Zones are then activated only when the
+profiler is attached:
+
+```bash
+cmake --preset $PRESET -DOPENLIERO_ENABLE_TRACY=ON \
+  -DCMAKE_CXX_FLAGS="-DTRACY_ON_DEMAND=1"
+cmake --build build/$PRESET --config Release
+```
+
+> **Note:** Tracy is native-only. Passing `-DOPENLIERO_ENABLE_TRACY=ON` to the
+> Emscripten preset is an error.
+
 ## Linting and formatting
 
 CI runs `clang-format` tree-wide on every PR and blocks merge on any drift,

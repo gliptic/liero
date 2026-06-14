@@ -32,6 +32,7 @@ Optional build targets are gated by CMake options (off by default):
 - `-DOPENLIERO_BUILD_TCTOOL=ON` — extracts assets from original Liero `.exe` for total conversions
 - `-DOPENLIERO_BUILD_VIDEOTOOL=ON` — renders `.lrp` replays to video (requires system ffmpeg)
 - `-DOPENLIERO_BUILD_TESTS=ON` — Catch2 test suite (requires `Catch2 3` from vcpkg)
+- `-DOPENLIERO_ENABLE_TRACY=ON` — build with [Tracy](https://github.com/wolfpld/tracy) profiler instrumentation (native-only; not supported for Emscripten)
 
 ### Tests
 
@@ -172,4 +173,5 @@ Polymorphism over how the simulation is driven, all under `Controller` (`control
 - **clang-format version is pinned to 22.** CI installs `clang-format-22` from apt.llvm.org. Locally, install a v22 binary (Homebrew's `llvm` formula or apt.llvm.org) and either symlink it as `clang-format` or set `CLANG_FORMAT=clang-format-22` when running the scripts. Other versions produce subtly different output and will fail CI.
 - Don't edit generated files: `src/game/metadata.cpp`, anything in `build/`, `install/`, or `tools/vcpkg/vcpkg/`.
 - Determinism is load-bearing. Anything called from `Game::processFrame` (or via a controller's `process()`) must be fully deterministic across platforms — no `rand()`, no time, no floats with platform-dependent behavior, no hash-iteration order. The simulation uses the fixed-point math in `src/game/math.hpp`. If you change sim code, run the `test_rollback_*` and `test_determinism` suites.
+- Profiling instrumentation goes through `src/game/profiling.hpp`. Include it and use `ZoneScopedN("name")` / `FrameMark` — these macros are no-ops unless `-DOPENLIERO_ENABLE_TRACY=ON` is passed at configure time. Tracy zones only read the clock; they do not touch simulation state, RNG, or control flow, so they are safe inside `Game::ProcessFrame` without affecting determinism.
 - New tests need a matching `add_executable` + `catch_discover_tests` block in `CMakeLists.txt`; tests that read `data/` must set `WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"`.

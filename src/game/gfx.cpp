@@ -28,6 +28,7 @@
 #include "controller/controller.hpp"
 #include "controller/localController.hpp"
 #include "controller/replayController.hpp"
+#include "profiling.hpp"
 
 #include "gamePlayState.hpp"
 #include "mainMenuState.hpp"
@@ -981,6 +982,7 @@ void Gfx::UpdateMenuPalettes(bool quitting) {
 
 void Gfx::Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_renderer,
                Renderer& renderer) {
+  ZoneScopedN("Gfx::Draw");
   Rect update_rect;
   int offset_x = 0;
   int offset_y = 0;
@@ -1020,6 +1022,7 @@ void Gfx::Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_ren
 }
 
 void Gfx::Flip() {
+  ZoneScopedN("Gfx::Flip");
   // draw into the play window. This uses either the normal split screen renderer
   // or the single screen renderer if this is a replay and single screen replay
   // is turned on
@@ -1319,6 +1322,7 @@ void Gfx::InitFrameStepping() {
 }
 
 bool Gfx::RunOneFrame() {
+  ZoneScopedN("RunOneFrame");
   if (state_stack.Empty()) {
     return false;
   }
@@ -1487,6 +1491,7 @@ bool Gfx::RunOneFrame() {
     ++menu_cycles;
   }
   Flip();
+  FrameMark;
 
   return true;
 }

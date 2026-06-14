@@ -8,6 +8,7 @@
 #include "../common.hpp"
 #include "../constants.hpp"
 #include "../level.hpp"
+#include "../profiling.hpp"
 #include "../rand.hpp"
 #include "../settings.hpp"
 #include "bitmap.hpp"
@@ -738,6 +739,7 @@ static inline uint32_t FadeArgb(uint32_t c, int amount) {
 
 void ScaleDraw(uint32_t const* src, int w, int h, std::size_t src_pitch, uint8_t* dest,
                std::size_t dest_pitch, int mag, int fade) {
+  ZoneScopedN("ScaleDraw");
   bool const kFaded = fade < 32;
 
   if (mag == 1 && !kFaded) {

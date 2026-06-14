@@ -1,4 +1,10 @@
 {
+  "features": {
+    "profiling": {
+      "description": "Tracy profiler client",
+      "dependencies": ["tracy"]
+    }
+  },
   "dependencies": [
     "enet",
     "miniz",

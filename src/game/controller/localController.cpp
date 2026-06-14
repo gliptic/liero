@@ -4,6 +4,7 @@
 #include "../filesystem.hpp"
 #include "../gfx.hpp"
 #include "../keys.hpp"
+#include "../profiling.hpp"
 #include "../reader.hpp"
 
 #include "../ai/predictive_ai.hpp"
@@ -119,6 +120,7 @@ void LocalController::Focus() {
 }
 
 bool LocalController::Process() {
+  ZoneScopedN("Local::Process");
   if (state == kStateWeaponSelection) {
     // Apply key repeat for held keys during weapon selection.
     // Without SDL repeat events, we need to re-set control bits that
@@ -200,6 +202,7 @@ bool LocalController::Process() {
 }
 
 void LocalController::Draw(Renderer& renderer, bool use_spectator_viewports) {
+  ZoneScopedN("Local::Draw");
   if (state == kStateWeaponSelection) {
     ws->Draw(renderer, state, use_spectator_viewports);
   } else if (state == kStateGame || state == kStateGameEnded || state == kStateInitial) {

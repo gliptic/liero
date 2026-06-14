@@ -6,6 +6,7 @@
 #include <cstring>
 #include <ctime>
 
+#include "../profiling.hpp"
 #include "memoryFs.hpp"
 #include "tcArchive.hpp"
 
@@ -137,6 +138,7 @@ bool NetSession::ConnectWithTransport(NetTransport&& transport, const std::strin
 }
 
 void NetSession::Update() {
+  ZoneScopedN("Net::Update");
   if (sessionState_ == kIdle || sessionState_ == kFailed || sessionState_ == kDisconnected) {
     return;
   }

@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include "../profiling.hpp"
+
 #define ENET_IMPLEMENTATION
 #include <enet.h>
 
@@ -239,6 +241,7 @@ void NetTransport::AttachIce(std::unique_ptr<IceBridge> bridge, std::unique_ptr<
 // --- Poll ---
 
 bool NetTransport::Poll() {
+  ZoneScopedN("Net::Poll");
   if (!enetHost_) {
     return false;
   }
