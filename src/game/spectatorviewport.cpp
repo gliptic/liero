@@ -11,6 +11,22 @@
 #include "math.hpp"
 #include "text.hpp"
 
+float ComputeSpectatorZoom(int render_w, int render_h, int bbox_w, int bbox_h, int level_w,
+                           int level_h) {
+  float const kZoomX = static_cast<float>(render_w) / static_cast<float>(bbox_w);
+  float const kZoomY = static_cast<float>(render_h) / static_cast<float>(bbox_h);
+  // Zoom that shows the entire level — can be >1 for maps smaller than the
+  // spectator window so the level fills the available space.
+  float const kLevelFillZoom = std::min(static_cast<float>(render_w) / static_cast<float>(level_w),
+                                        static_cast<float>(render_h) / static_cast<float>(level_h));
+  // Never zoom out past the whole-level fit (kLevelFillZoom floor); never
+  // upscale past native unless the level is smaller than the window
+  // (kLevelFillZoom ceiling). The floor is what keeps a level that already
+  // fits from shrinking when worms reach the edges.
+  float const kMaxZoom = std::max(1.0F, kLevelFillZoom);
+  return std::clamp(std::min(kZoomX, kZoomY), kLevelFillZoom, kMaxZoom);
+}
+
 void SpectatorViewport::Process(Game& game) {
   int const kRenderW = render_w;
   int const kRenderH = render_h;
@@ -32,14 +48,8 @@ void SpectatorViewport::Process(Game& game) {
 
   int const kBboxW = std::max(1, wmax_x - wmin_x + 2 * kMargin);
   int const kBboxH = std::max(1, wmax_y - wmin_y + 2 * kMargin);
-  float const kZoomX = static_cast<float>(kRenderW) / static_cast<float>(kBboxW);
-  float const kZoomY = static_cast<float>(kRenderH) / static_cast<float>(kBboxH);
-  // Cap at the zoom that shows the entire level — can be >1 for maps smaller
-  // than the spectator window so the level fills the available space.
-  float const kLevelFillZoom =
-      std::min(static_cast<float>(kRenderW) / static_cast<float>(game.level.width),
-               static_cast<float>(kRenderH) / static_cast<float>(game.level.height));
-  zoom = std::min({kZoomX, kZoomY, kLevelFillZoom});
+  zoom =
+      ComputeSpectatorZoom(kRenderW, kRenderH, kBboxW, kBboxH, game.level.width, game.level.height);
 
   int const kVisibleW = static_cast<int>(static_cast<float>(kRenderW) / zoom);
   int const kVisibleH = static_cast<int>(static_cast<float>(kRenderH) / zoom);

@@ -8,6 +8,13 @@
 
 struct Renderer;
 
+// Computes the spectator zoom factor that frames the worm bounding box while
+// never zooming out past the whole-level fit. Pure (ints in, float out) so it
+// can be unit-tested without a live Game/Renderer. Display-only: never touches
+// the simulation, so floats are fine here.
+float ComputeSpectatorZoom(int render_w, int render_h, int bbox_w, int bbox_h, int level_w,
+                           int level_h);
+
 struct SpectatorViewport : Viewport {
   explicit SpectatorViewport(Rect rect) : Viewport(rect, 0) {}
 
