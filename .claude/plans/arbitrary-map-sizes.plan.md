@@ -161,7 +161,7 @@ Delivered on branch `arbitrary-map-sizes-pr4`:
 - **Validate**: render a replay at 1280×720 and 1920×1080, spectator + normal
   mode; confirm output dimensions and no scaler mismatch.
 
-### PR 6 — Rollback snapshot optimization: dirty-cell tracking for large levels
+### PR 6 — Rollback snapshot optimization: dirty-cell tracking for large levels — **DONE** ([#108](https://github.com/openliero/openliero/pull/108))
 
 Online play on large maps (e.g. 4096×4096) is slow because `SaveSnapshotFast`
 memcpys ~48 MB per rollback frame (material_id + material flags + display_valid),
@@ -197,21 +197,100 @@ findings that don't fit the scope (e.g. a major bottleneck in simulation,
 networking, or palette handling) are noted as follow-on work rather than
 stretching this PR.
 
-#### Known bottleneck: spectator world pass
+#### Profiling result (2026-06-15, 4096² level, 1280×800 spectator, worms apart)
 
-`SpectatorViewport::Draw` allocates a scratch bitmap sized to the visible world
-region:
+Tracy zones confirm the cost split inside `SpectatorViewport::Draw` (~45 ms):
+
+| Stage | Code | Cost |
+|---|---|---|
+| World pass → `scratch_bmp` (DrawLevel + shadows + sprites, 1:1) | `spectatorviewport.cpp:94-489` | DrawLevel **6 ms** + sprites |
+| **`ScaleDrawArea` CPU box-filter** scratch → `single_screen_renderer.bmp` (native res) | `spectatorviewport.cpp:521`, impl `blit.cpp:770-799` | **~38 ms** ← dominant |
+| `ScaleDraw` integer-magnify in `Gfx::Draw` (kMag=1 at native ⇒ plain copy) | `gfx.cpp:1013` | redundant |
+| `SDL_UpdateTexture`/`SDL_RenderTexture`/present | `gfx.cpp:1016-1019` | already GPU |
+
+`ScaleDrawArea` reads **every** source pixel with a per-output-pixel divide; at
+zoom 0.5 the source is 2560×1600 = 4M px/frame. Cost scales as
+`(render_w × render_h) / zoom²`. **The CPU composite — not the world drawing — is
+the bottleneck.** The world pass itself (DrawLevel 6 ms + sprites) is comparatively
+cheap, so shrinking or caching it is low-ROI; eliminating the composite is the win.
+
+#### Current presentation pipeline (the code being restructured)
+
+The spectator window goes through **two** CPU scaling passes today. Dataflow:
 
 ```
-scratch_w = min(render_w / zoom, level.width)
-scratch_h = min(render_h / zoom, level.height)
+SpectatorViewport::Draw(game, single_screen_renderer, ...)   spectatorviewport.cpp:82
+  ├─ world pass → scratch_bmp           1:1 world pixels, size capped to level
+  │                                      (spectatorviewport.cpp:94-489)
+  ├─ Composite: scratch_bmp ─ScaleDrawArea(box filter)→ single_screen_renderer.bmp
+  │                                      (spectatorviewport.cpp:491-524)  ← ~38 ms
+  │     • memcpy fast path when scratch dims == output dims (510-519)
+  │     • ScaleDrawArea otherwise (521)
+  │     • Fill(renderer.bmp, 0) clears letterbox bars OPAQUE black (503-505)
+  └─ HUD: drawn directly into single_screen_renderer.bmp at native res (526-664)
+
+Gfx::Flip()                                                   gfx.cpp:1024
+  ├─ Draw(*sdl_draw_surface, *sdl_texture, *sdl_renderer, *primary_renderer)        // main window
+  └─ Draw(*sdl_spectator_draw_surface, *sdl_spectator_texture,
+          *sdl_spectator_renderer, single_screen_renderer)    // spectator window (1030-1033)
+
+Gfx::Draw(surface, texture, sdl_renderer, renderer)           gfx.cpp:983
+  ├─ ScaleDraw(renderer.bmp → surface, kMag)  integer magnify; kMag==1 at native ⇒ plain copy (1013)
+  ├─ SDL_UpdateTexture(texture, surface.pixels, ...)          (1016)
+  ├─ SDL_RenderClear / SDL_RenderTexture(texture, NULL, NULL) (1017-1018)
+  └─ SDL_RenderPresent                                        (1019)
 ```
 
-Every draw pass (level tiles, shadow pass, all sprite types) iterates over
-every pixel of the scratch bitmap.  At a 1280×800 native window with zoom = 0.5
-the scratch is 2560×1600 — 16× more pixels than the old fixed 640×400 case.
-The subsequent `ScaleDrawArea` box-filter is also O(scratch_w × scratch_h), so
-total cost scales as `(render_w × render_h) / zoom²`.
+Relevant SDL setup (`Gfx::OnWindowResize`, gfx.cpp:390-414): the spectator texture
+`sdl_spectator_texture` is `SDL_TEXTUREACCESS_STREAMING` sized to the **window**
+(w,h); `sdl_spectator_draw_surface` is a matching ARGB8888 surface; and
+`SDL_SetRenderLogicalPresentation(sdl_spectator_renderer, w, h, LETTERBOX)` is
+already applied (gfx.cpp:407). `single_screen_renderer.bmp` is sized to the window
+via `SetRenderResolution(w,h)` (gfx.cpp:412).
+
+So today both the world downscale (`ScaleDrawArea`) and a redundant native-res copy
+(`ScaleDraw`, kMag=1) run on the CPU before the single GPU upload+present.
+
+#### Decision: GPU-scale the composite, keep the 1:1 world pass
+
+The earlier "cap scratch to render resolution" attempt was reverted (`8e1b028`,
+PR7 Task 1a) because the world pass blits at 1:1 — capping the scratch below the
+visible region merely clips the view. The corrected approach keeps the 1:1 world
+pass (its drawing cost was never the problem) and replaces the **CPU composite**
+with a **GPU scale**:
+
+1. World pass still renders into `scratch_bmp` at 1:1 (unchanged).
+2. Upload `scratch_bmp` to a dedicated SDL **streaming texture**, then
+   `SDL_RenderTexture` it to the letterboxed dest rect on the GPU
+   (`SDL_SCALEMODE_LINEAR`). This **deletes the ~38 ms `ScaleDrawArea` and the
+   redundant `ScaleDraw` copy**, replacing them with a texture upload (~16 MB DMA,
+   a few ms) plus a sub-ms GPU blit.
+3. HUD renders into a native-res layer with a **transparent background** → overlay
+   texture → second `SDL_RenderTexture` on top with alpha blend.
+
+To avoid recreating a texture every frame as zoom (and thus scratch size) changes,
+allocate the world texture **once at max size** (level dims clamped to a ceiling),
+upload only the used sub-rect, and pass that sub-rect as `SDL_RenderTexture`'s
+srcrect.
+
+`ScaleDrawArea` **stays** — `video_tool` renders offline with no GPU/window and
+still needs the CPU path. The GPU path is **spectator-window-only**, guarded on a
+live SDL renderer (must not crash under the dummy driver in CI smoke).
+
+#### Dirty-rectangle sharing — evaluated, declined
+
+Considered sharing the rollback dirty-tracking to lessen rendering. Finding:
+there is **no dirty-rect system in `RollbackController`**; the dirty tracking
+lives in **`Level`** (`level.hpp:94-106,199-200`: `dirty_bits` + `dirty_list`)
+and feeds `SaveSnapshotFast` (PR6). It is unsuitable for rendering reuse:
+
+- It is **cumulative and never cleared** (`level.hpp:197-198`) — it only grows;
+  rendering needs per-frame dirty regions.
+- It tracks **terrain cells only**. But terrain draw (`DrawLevel`) is just 6 ms,
+  not the bottleneck; sprites/shadows/worms move every frame and aren't tracked.
+
+At best it could cache the terrain layer (~6 ms) at real complexity cost, and the
+GPU composite makes that moot. **Not pursued.**
 
 #### Tasks
 
@@ -225,22 +304,116 @@ total cost scales as `(render_w × render_h) / zoom²`.
    outside the rendering pipeline (simulation tick, palette rebuild, network
    processing) open a separate follow-on issue rather than folding it here.
 
-1. **Cap the world-pass scratch at a fixed size and GPU-scale to the window.**
-   Render the world pass into a bitmap capped at `min(render_w, level.width) ×
-   min(render_h, level.height)` (i.e. never larger than the level itself,
-   regardless of zoom).  Upload it to an SDL streaming texture and let
-   `SDL_RenderTexture` with `SDL_SCALEMODE_LINEAR` (or `NEAREST` for the chunky
-   pixel look) scale it to the native window on the GPU.  Draw the HUD overlay
-   afterwards at native resolution via a second texture or directly into the
-   renderer surface.  This decouples world-pass cost from native window size
-   entirely and is expected to be the highest-ROI fix.
+1. **GPU-scale the world composite (keep the 1:1 world pass).** ← see Decision above
+   Do NOT cap the scratch below the visible region (that was Task 1a, reverted in
+   `8e1b028` — it clips the view). Highest-ROI fix (removes the ~38 ms composite +
+   redundant copy). Files: `spectatorviewport.{hpp,cpp}`, `gfx.{hpp,cpp}`
+   (`Draw`/`Flip`/`OnWindowResize` + new texture members in `gfx.hpp`),
+   `src/tests/test_spectator_zoom.cpp`. Sub-steps:
 
-2. **Frustum-cull the sprite and shadow passes.**
-   Currently every worm, wobject, nobject, bonus, and sobject is visited even
-   when off-screen after zoom-out.  Add a cheap AABB check against the visible
-   world rect `[x, x+scratch_w) × [y, y+scratch_h)` before each
-   `BlitImage` / `BlitShadowImage` call.  On large maps with many off-screen
-   objects this can cut the sprite-pass cost significantly.
+   - **1a. Spike the SDL scaling path first. — RESOLVED (2026-06-15): keep logical
+     presentation; manual dest rect cooperates.** The spectator renderer runs
+     `SDL_SetRenderLogicalPresentation(w,h,LETTERBOX)` (gfx.cpp:407). The question was
+     whether a manual letterboxed `SDL_RenderTexture` dest rect cooperates with that
+     or whether logical presentation must be dropped.
+     **Finding (empirical):** an SDL3 software-renderer spike replicating the
+     spectator setup (logical size == window pixel size, LETTERBOX) blitted a world
+     texture into a manually-computed centred dest rect and read pixels back: the
+     readback framebuffer is the logical size (1280×800), the world colour lands
+     pixel-exactly inside the manual dest rect, and `SDL_RenderClear` produces exact
+     black bars outside it. Because the logical size **equals** the window pixel size,
+     the logical→physical transform is uniform (identity modulo HiDPI), so there is
+     **no double-letterboxing**.
+     **Decision for 1b/1c:** keep `SDL_SetRenderLogicalPresentation(w,h,LETTERBOX)`
+     untouched; render coordinates are then in logical == window pixels. Reuse the
+     existing CPU-composite aspect math (`kOutX/kOutY/kOutW/kOutH`,
+     spectatorviewport.cpp:496-501) directly as the `SDL_RenderTexture` dstrect (as
+     `SDL_FRect`); `SDL_RenderClear` the spectator renderer to opaque black for the
+     bars before the world blit. No `FitScreen`-style manual letterbox is needed.
+     The "allocate world texture once at max size, upload only the used sub-rect, pass
+     that sub-rect as `srcrect`" approach (1b) is orthogonal to logical presentation
+     (standard `SDL_RenderTexture` srcrect semantics) and is low-risk — not separately
+     spiked. (Spike source kept out-of-tree under `/tmp/sdl_spike_1a.cpp`; not committed.)
+   - **1b. World texture. — DONE (2026-06-15, `cc0ae79`).** Added
+     `sdl_spectator_world_texture` (STREAMING, ARGB8888), allocated **once per
+     level** at the level size clamped to `kSpectatorWorldTextureMax` (4096) via
+     the pure, unit-tested `SpectatorWorldTextureSize`. Implemented as a lazy
+     `EnsureSpectatorWorldTexture(need_w, need_h)` (grows only; no per-frame
+     realloc) rather than in `OnWindowResize`, because the world texture is
+     level-sized and window-resize-independent (the spectator renderer persists
+     across window resizes; only `SetVideoMode`'s renderer-destroy invalidates
+     it, where it's nulled for lazy rebuild). Each frame `SDL_UpdateTexture`
+     uploads only the used `kScrW×kScrH` sub-rect, then `Gfx::DrawSpectatorGpu`
+     `SDL_RenderTexture`s it (sub-rect srcrect → letterboxed dstrect from the
+     shared `ComputeSpectatorDstRect`, `SDL_SCALEMODE_LINEAR`). Replaced the
+     `ScaleDrawArea`/memcpy composite block in `SpectatorViewport::Draw`.
+   - **1c. HUD overlay. — DONE (2026-06-15, `cc0ae79`).** In the GPU path the
+     world-pass clear of `renderer.bmp` switched from `Fill(renderer.bmp, 0)`
+     (opaque `pal32[0]`) to the new `FillTransparent` (ARGB `0x00000000`); the
+     HUD draws into that same native-res `single_screen_renderer.bmp` (now
+     HUD-only) and uploads to the existing `sdl_spectator_texture` (now
+     `SDL_BLENDMODE_BLEND`), `SDL_RenderTexture`d on top of the world. Bars/text
+     helpers write opaque `pal32` ARGB and keep working. `ScaleDraw`'s
+     per-channel fade is reproduced via `SDL_SetTextureColorMod` on both layers
+     so the spectator fade-in survives.
+   - **1d. Scope the GPU path correctly. — DONE (2026-06-15, `cc0ae79`).**
+     `Gfx::SpectatorGpuComposite()` enables the path only when `spectator_window`
+     is set, a live `sdl_spectator_renderer`/`sdl_spectator_texture` exist, and
+     `primary_renderer != &single_screen_renderer` (so single-screen replay to
+     the main window keeps the CPU `Gfx::Draw` path). The flag is set per frame
+     before each spectator-viewport draw and `gpu_world_src` reset, so a frame
+     that doesn't redraw the viewport (menu over a frozen game) falls back to the
+     CPU present. The dummy driver / videotool never satisfy the guard. Headless
+     smoke (dummy driver) launches clean.
+   - **1e. Retain `ScaleDrawArea`. — DONE (kept intact).** The CPU composite
+     branch (videotool / single-screen replay) still box-filters the scratch into
+     `bmp` via `ScaleDrawArea`; `test_blit` unchanged (83 assertions, green).
+     Note: videotool is off by default (needs system ffmpeg) so it wasn't
+     rebuilt; its `ScaleDrawArea` caller is untouched.
+   - **1f. Profile to confirm. — DONE (2026-06-15, on real hardware).** Tracy on
+     the 4096² level, worms at max separation:
+     - GPU composite alone (`cc0ae79`): the ~38 ms CPU composite zone dropped to
+       ~0, but the 1:1 world pass + 64 MB texture upload remained → **~34 ms**
+       total at 1280×800 (`local:draw` 21 ms incl. `DrawLevel` 5.9 ms; `Gfx::Flip`
+       11 ms incl. the upload). Over budget.
+     - Downscaled world pass (`e0a0d6c`, see 1g): **~20 ms** at 3440×1440 (4.95 Mpx
+       window) at max zoom-out. The world pass and its upload are now bounded by
+       the window, not the level; the residual is dominated by the two
+       full-window texture uploads (world + HUD overlay) + present, which scale
+       with window pixels.
+     - **Outcome:** a large improvement (≈34→20 ms) but **still above the 14 ms
+       budget at very large windows**. Accepted for now per playtest. Further
+       gains would come from shrinking/scoping the per-frame uploads (HUD
+       dirty-region upload, or capping the spectator render resolution
+       independently of window size) — tracked as a follow-on, not blocking.
+   - **1g. Downscaled world pass. — DONE (2026-06-15, `e0a0d6c`).** Render the
+     world pass at ~output resolution when `zoom < 1` instead of 1:1, so its CPU
+     cost and texture upload are bounded by the window rather than the level
+     area. `ComputeWorldPassScratch` (unit-tested) gives `scale = min(1, zoom)`
+     and a scratch ≤ the render surface; new `DrawLevelScaled` / `BlitImageScaled`
+     (nearest-neighbour) render terrain and sprites scaled down. `zoom ≥ 1` keeps
+     the existing 1:1 path byte-for-byte (no change for small maps). The
+     downscaled path draws the visually-significant world (terrain, worms +
+     ninjarope, bonuses, s/w/n-objects, blood) and **omits** detail that is
+     sub-pixel/illegible at that zoom (shadows, text labels, fire cones, laser
+     sight, aim crosshair, AI debug). The world texture is now window-bounded, so
+     `SpectatorWorldTextureSize`/the 4096 ceiling were removed.
+   - **1h. Spectator presentation bug fixes (found on real hardware).**
+     - **Pause crash / blank (`703af23`).** `MainMenuState::Enter` calls `Flip()`
+       directly (outside `RunOneFrame`), so a stale `gpu_world_src` from the last
+       gameplay frame drove `DrawSpectatorGpu` against the just-resized menu
+       layout → heap overread. Fixed by making `gpu_world_src` a strict one-shot
+       (gated on, and cleared by, every Flip); non-gameplay frames fall back to
+       the CPU present.
+     - **Black spectator at start / pause until resize (`4f7a187`).** The GPU
+       fade `SDL_SetTextureColorMod` leaked onto the shared `sdl_spectator_texture`
+       (at fade 0 → multiply-by-black); the CPU present path never reset it.
+       Fixed by restoring neutral colormod after each GPU present.
+
+2. **Frustum-cull the sprite and shadow passes.** — **DONE** (`bd8cb77`, PR7 Task 2)
+   Every worm, wobject, nobject, bonus, and sobject now gets a cheap AABB check
+   against the visible world rect `[x, x+scratch_w) × [y, y+scratch_h)` before each
+   `BlitImage` / `BlitShadowImage`.
 
 3. **SIMD / vectorised `ScaleDrawArea`.**
    If the CPU downscale path is retained (e.g. for the videotool offline
@@ -293,6 +466,10 @@ scripts/clang-format-diff.sh && scripts/clang-tidy-diff.sh build/linux-x64
 | Determinism regressions from PR1/PR3 sim touch | Medium | `test_determinism`/`test_rollback_*` on every PR |
 | Rollback snapshot too large for online play on big maps | High (4096²) | PR6 — dirty-cell tracking; PR2 already fixed correctness |
 | Spectator world-pass cost O((W×H)/zoom²) on large native windows | High | PR7 — GPU-scale world pass; frustum cull sprites |
+| PR7-1a: `SDL_SetRenderLogicalPresentation(LETTERBOX)` conflicts with manual dest-rect scaling | ~~Medium~~ **Resolved** | Spike (Task 1a, 2026-06-15) proved no conflict: logical size == window pixels ⇒ uniform transform, manual dest rect lands pixel-exact. Keep logical presentation. |
+| PR7-1b: per-frame world-texture upload (≤16 MB+, grows with scratch) becomes the new cost | Medium | Still ≪ 38 ms; cap world-texture max size; measure in Task 1f |
+| PR7-1c: HUD transparency/blend regressions (today's clear is opaque black) | Low | Clear HUD buffer to alpha 0; visual check; HUD is small |
+| PR7-1d: GPU path crashes/no-ops under dummy driver (CI smoke) or in single-screen-replay primary-renderer mode | Medium | Guard on live spectator renderer/window; keep `Gfx::Draw` CPU path for those modes |
 
 ## Acceptance
 
@@ -301,6 +478,10 @@ scripts/clang-format-diff.sh && scripts/clang-tidy-diff.sh build/linux-x64
 - [x] PR3: random map size editable in MATCH SETUP; config v5; defaults reproduce 504×350.
 - [x] PR4: spectator auto-zooms to keep both worms visible; 1× on small maps unchanged; minimap scales correctly; weapon-select spectator view correct at all sizes; native-resolution spectator window.
 - [x] PR5: videotool output resolution selectable; scaler input dynamic.
-- [ ] PR6: online play on 4096² level no longer noticeably slower than local play; rollback tests green.
-- [ ] PR7: spectator viewport frame time within budget at ≥1280×800 with worms at maximum separation on a 4096² level.
+- [x] PR6: online play on 4096² level no longer noticeably slower than local play; rollback tests green.
+- [~] PR7: spectator frame time greatly improved (≈34→20 ms) via GPU composite +
+  downscaled world pass; pause/start spectator bugs fixed. **Not strictly within
+  the 14 ms budget** at very large windows (≈20 ms at 3440×1440, max zoom-out) —
+  the residual is the two full-window texture uploads, accepted for now. Frustum
+  cull (Task 2) done; Tasks 3/4 (SIMD, min-zoom cap) left as optional follow-ons.
 - [ ] Determinism/rollback suites + format checks pass on every PR.

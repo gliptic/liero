@@ -127,6 +127,19 @@ struct Gfx {
   // draws a given surface onto an SDL texture/renderer, using a given Renderer
   void Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_renderer,
             Renderer& renderer);
+  // Spectator-window-only GPU present (PR7 Task 1b/1c): upload the 1:1 world
+  // pass recorded on `renderer` to a streaming texture, scale it on the GPU
+  // into the letterboxed dest rect, then blend the transparent HUD overlay on
+  // top — replacing the CPU box-filter composite.
+  void DrawSpectatorGpu(Renderer& renderer);
+  // (Re)allocates `sdl_spectator_world_texture` to at least need_w×need_h. A
+  // no-op when the current texture already covers the size, so it allocates
+  // once per level rather than per frame.
+  void EnsureSpectatorWorldTexture(int need_w, int need_h);
+  // Whether this frame's spectator present should use the GPU composite. False
+  // for the CPU paths (Task 1d): no spectator window / renderer, or the
+  // single-screen renderer is currently the main window's primary renderer.
+  bool SpectatorGpuComposite() const;
   void Flip();
   // Per-frame menu palette rebuild (fade step, rotation, worm colours).
   // Runs before state drawing so blits resolve through fresh pal32.
@@ -327,6 +340,13 @@ struct Gfx {
   SDL_Texture* sdl_texture = nullptr;
   // full spectator window size texture that represents the spectator window
   SDL_Texture* sdl_spectator_texture = nullptr;
+  // Streaming texture holding the spectator world pass for the GPU composite
+  // (PR7 Task 1b). Allocated once at the level size (clamped to the ceiling);
+  // each frame only the used sub-rect is uploaded. Belongs to
+  // sdl_spectator_renderer.
+  SDL_Texture* sdl_spectator_world_texture = nullptr;
+  int sdl_spectator_world_texture_w = 0;
+  int sdl_spectator_world_texture_h = 0;
   // a software surface to do the actual drawing into
   SDL_Surface* sdl_draw_surface = nullptr;
   // a software surface to do the actual drawing of the spectator view into

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <map>
@@ -37,6 +38,54 @@ void FillRect(Bitmap& scr, int x, int y, int w, int h, int color) {
 
 void Fill(Bitmap& scr, int color) {
   std::fill(scr.pixels, scr.pixels + scr.pitch * scr.h, scr.pal32[color]);
+}
+
+void FillTransparent(Bitmap& scr) { std::fill(scr.pixels, scr.pixels + scr.pitch * scr.h, 0U); }
+
+void DrawLevelScaled(Bitmap& scr, Level const& level, int view_x, int view_y, float scale) {
+  float const kInv = 1.0F / scale;
+  for (int py = 0; py < scr.h; ++py) {
+    int const kWy = view_y + static_cast<int>(static_cast<float>(py) * kInv);
+    if (kWy < 0 || kWy >= level.height) {
+      continue;
+    }
+    uint32_t* row = scr.pixels + static_cast<std::size_t>(py) * scr.pitch;
+    int const kBase = kWy * level.width;
+    for (int px = 0; px < scr.w; ++px) {
+      int const kWx = view_x + static_cast<int>(static_cast<float>(px) * kInv);
+      if (kWx < 0 || kWx >= level.width) {
+        continue;
+      }
+      row[px] = level.AppearanceAt(kBase + kWx, scr.mode, scr.pal32, scr.cycles);
+    }
+  }
+}
+
+void BlitImageScaled(Bitmap& scr, Sprite spr, int x, int y, float scale) {
+  int const kDw =
+      std::max(1, static_cast<int>(std::lroundf(static_cast<float>(spr.width) * scale)));
+  int const kDh =
+      std::max(1, static_cast<int>(std::lroundf(static_cast<float>(spr.height) * scale)));
+  float const kInv = 1.0F / scale;
+  for (int dy = 0; dy < kDh; ++dy) {
+    int const kPy = y + dy;
+    if (kPy < scr.clip_rect.y1 || kPy >= scr.clip_rect.y2) {
+      continue;
+    }
+    PalIdx const* srcrow =
+        spr.mem + static_cast<std::size_t>(static_cast<float>(dy) * kInv) * spr.pitch;
+    uint32_t* dstrow = scr.pixels + static_cast<std::size_t>(kPy) * scr.pitch;
+    for (int dx = 0; dx < kDw; ++dx) {
+      int const kPx = x + dx;
+      if (kPx < scr.clip_rect.x1 || kPx >= scr.clip_rect.x2) {
+        continue;
+      }
+      PalIdx const kC = srcrow[static_cast<int>(static_cast<float>(dx) * kInv)];
+      if (kC) {
+        dstrow[kPx] = scr.pal32[kC];
+      }
+    }
+  }
 }
 
 void DrawBar(Bitmap& scr, int x, int y, int width, int color) {
@@ -769,6 +818,7 @@ void ScaleDraw(uint32_t const* src, int w, int h, std::size_t src_pitch, uint8_t
 
 void ScaleDrawArea(uint32_t const* src, int src_w, int src_h, std::size_t src_pitch, uint32_t* dest,
                    int dest_w, int dest_h, std::size_t dest_pitch) {
+  ZoneScopedN("ScaleDrawArea");
   for (int dy = 0; dy < dest_h; ++dy) {
     int const kSy1 = dy * src_h / dest_h;
     int const kSy2 = (dy + 1) * src_h / dest_h;

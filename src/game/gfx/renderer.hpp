@@ -37,4 +37,28 @@ struct Renderer {
   // setRenderResolution() to ensure that the bitmap is re-allocated
   int render_res_x = 320;
   int render_res_y = 200;
+
+  // ── Spectator GPU world composite (PR7 Task 1b/1c) ────────────────────────
+  // When true, the spectator viewport hands its 1:1 world pass to the GPU for
+  // scaling instead of running the ~38 ms CPU box-filter into `bmp`, and clears
+  // `bmp` to a transparent HUD-only overlay. Gfx sets this only for the live
+  // spectator window (Task 1d); it stays false for the CPU paths (videotool,
+  // single-screen replay, dummy driver), which keep compositing into `bmp`.
+  bool gpu_world_composite = false;
+  // The 1:1 world pass for the GPU composite, owned by the SpectatorViewport
+  // (valid until its next Draw). Null when no world layer was emitted this
+  // frame — Gfx then falls back to the CPU present path.
+  Bitmap const* gpu_world_src = nullptr;
+  // Used sub-rect of `gpu_world_src` actually drawn (≤ the texture size).
+  int gpu_world_used_w = 0;
+  int gpu_world_used_h = 0;
+  // Texture size to allocate (level dims clamped to the ceiling, once per
+  // level). See SpectatorWorldTextureSize.
+  int gpu_world_max_w = 0;
+  int gpu_world_max_h = 0;
+  // Centred, letterboxed destination rect for the world blit (window pixels).
+  int gpu_world_dst_x = 0;
+  int gpu_world_dst_y = 0;
+  int gpu_world_dst_w = 0;
+  int gpu_world_dst_h = 0;
 };

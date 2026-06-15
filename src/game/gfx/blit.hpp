@@ -16,12 +16,28 @@ void Vline(Bitmap& scr, int x, int y1, int y2, int color);
 
 void FillRect(Bitmap& scr, int x, int y, int w, int h, int color);
 void Fill(Bitmap& scr, int color);
+// Clears `scr` to fully transparent (ARGB 0x00000000) rather than to a palette
+// colour. Used for the spectator HUD overlay layer (PR7 Task 1c), which must
+// blend over the GPU-scaled world: only the drawn HUD pixels (opaque pal32)
+// show, everything else is see-through.
+void FillTransparent(Bitmap& scr);
 void DrawBar(Bitmap& scr, int x, int y, int width, int color);
 void DrawBar(Bitmap& scr, int x, int y, int width, int height, int color);
 void DrawRoundedBox(Bitmap& scr, int x, int y, int color, int height, int width);
 void DrawRoundedLineBox(Bitmap& scr, int x, int y, int color, int width, int height);
 // Paints the level's appearance into the screen (the terrain draw).
 void DrawLevel(Bitmap& scr, Level const& level, int x, int y);
+
+// Downscaled terrain render for the zoomed-out spectator world pass (PR7
+// Task 1): fills `scr` (sized to ~output resolution) by nearest-sampling the
+// level, so terrain cost is bounded by the window, not the level area. Scratch
+// pixel (px,py) samples world ((view_x,view_y) + (px,py)/scale). `scale` < 1.
+void DrawLevelScaled(Bitmap& scr, Level const& level, int view_x, int view_y, float scale);
+
+// Nearest-neighbour scaled sprite blit (transparent: palette index 0 skipped)
+// for the downscaled spectator world pass. (x,y) is the already-scaled
+// top-left in `scr`; the sprite is drawn at `scale` of its native size.
+void BlitImageScaled(Bitmap& scr, Sprite spr, int x, int y, float scale);
 // ARGB rectangle copy at identical coordinates (frozen_screen restores).
 void BlitBitmap(Bitmap& scr, Bitmap const& src, int x, int y, int width, int height);
 void BlitImage(Bitmap& scr, Sprite spr, int x, int y);

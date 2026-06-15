@@ -296,6 +296,11 @@ void Gfx::SetVideoMode() {
   if (sdl_spectator_renderer) {
     SDL_DestroyRenderer(sdl_spectator_renderer);
     sdl_spectator_renderer = nullptr;
+    // SDL_DestroyRenderer frees the renderer's textures; drop the dangling
+    // world-texture handle so EnsureSpectatorWorldTexture rebuilds it lazily.
+    sdl_spectator_world_texture = nullptr;
+    sdl_spectator_world_texture_w = 0;
+    sdl_spectator_world_texture_h = 0;
   }
   if (settings->spectator_window) {
     if (!sdl_spectator_window) {
@@ -403,6 +408,9 @@ void Gfx::OnWindowResize(uint32_t window_id) {
       SDL_GetWindowSize(sdl_spectator_window, &w, &h);
       sdl_spectator_texture = SDL_CreateTexture(sdl_spectator_renderer, SDL_PIXELFORMAT_ARGB8888,
                                                 SDL_TEXTUREACCESS_STREAMING, w, h);
+      // Blend so the GPU HUD overlay (PR7 Task 1c) composites over the world;
+      // harmless for the CPU present path, whose frames are fully opaque.
+      SDL_SetTextureBlendMode(sdl_spectator_texture, SDL_BLENDMODE_BLEND);
       sdl_spectator_draw_surface = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_ARGB8888);
       SDL_SetRenderLogicalPresentation(sdl_spectator_renderer, w, h,
                                        SDL_LOGICAL_PRESENTATION_LETTERBOX);
@@ -1021,6 +1029,90 @@ void Gfx::Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_ren
   last_update_rect = update_rect;
 }
 
+bool Gfx::SpectatorGpuComposite() const {
+  // The GPU composite is spectator-window-only (Task 1d). It needs a live
+  // spectator renderer + overlay texture, and must not fire when the
+  // single-screen renderer is currently the main window's primary renderer
+  // (single-screen replay) — that frame is presented via the CPU Draw path.
+  return settings->spectator_window && sdl_spectator_renderer != nullptr &&
+         sdl_spectator_texture != nullptr && primary_renderer != &single_screen_renderer;
+}
+
+void Gfx::EnsureSpectatorWorldTexture(int need_w, int need_h) {
+  if (!sdl_spectator_renderer || need_w <= 0 || need_h <= 0) {
+    return;
+  }
+  if (sdl_spectator_world_texture && sdl_spectator_world_texture_w >= need_w &&
+      sdl_spectator_world_texture_h >= need_h) {
+    return;  // already big enough — allocated once per level, not per frame
+  }
+  if (sdl_spectator_world_texture) {
+    SDL_DestroyTexture(sdl_spectator_world_texture);
+    sdl_spectator_world_texture = nullptr;
+  }
+  sdl_spectator_world_texture = SDL_CreateTexture(sdl_spectator_renderer, SDL_PIXELFORMAT_ARGB8888,
+                                                  SDL_TEXTUREACCESS_STREAMING, need_w, need_h);
+  sdl_spectator_world_texture_w = need_w;
+  sdl_spectator_world_texture_h = need_h;
+  if (sdl_spectator_world_texture) {
+    // Linear scaling is the whole point: the world is downscaled to the
+    // letterboxed dest rect on the GPU. Opaque base layer — no blend.
+    SDL_SetTextureScaleMode(sdl_spectator_world_texture, SDL_SCALEMODE_LINEAR);
+    SDL_SetTextureBlendMode(sdl_spectator_world_texture, SDL_BLENDMODE_NONE);
+  }
+}
+
+void Gfx::DrawSpectatorGpu(Renderer& renderer) {
+  ZoneScopedN("Gfx::DrawSpectatorGpu");
+  EnsureSpectatorWorldTexture(renderer.gpu_world_max_w, renderer.gpu_world_max_h);
+  if (!sdl_spectator_world_texture) {
+    // Allocation failed; present via the CPU path so the window isn't black.
+    Draw(*sdl_spectator_draw_surface, *sdl_spectator_texture, *sdl_spectator_renderer, renderer);
+    return;
+  }
+
+  Bitmap const& world = *renderer.gpu_world_src;
+  // Upload only the used sub-rect; the scratch content is anchored at (0,0).
+  SDL_Rect const kUsed{
+      .x = 0, .y = 0, .w = renderer.gpu_world_used_w, .h = renderer.gpu_world_used_h};
+  SDL_UpdateTexture(sdl_spectator_world_texture, &kUsed, world.pixels,
+                    static_cast<int>(world.pitch * sizeof(uint32_t)));
+  // HUD overlay: native-res, transparent background, opaque HUD pixels.
+  SDL_UpdateTexture(sdl_spectator_texture, nullptr, renderer.bmp.pixels,
+                    static_cast<int>(renderer.bmp.pitch * sizeof(uint32_t)));
+
+  // Replicate ScaleDraw's per-channel fade ((v*fade)>>5, fade 0..32) via RGB
+  // texture modulation so the spectator fade-in survives; alpha is left intact
+  // so the HUD overlay still blends.
+  Uint8 const kMod =
+      renderer.fade_value >= 32 ? 255 : static_cast<Uint8>((renderer.fade_value * 255) >> 5);
+  SDL_SetTextureColorMod(sdl_spectator_world_texture, kMod, kMod, kMod);
+  SDL_SetTextureColorMod(sdl_spectator_texture, kMod, kMod, kMod);
+
+  SDL_SetRenderDrawColor(sdl_spectator_renderer, 0, 0, 0, 255);
+  SDL_RenderClear(sdl_spectator_renderer);  // opaque-black letterbox bars
+  SDL_FRect const kSrc{.x = 0.0F,
+                       .y = 0.0F,
+                       .w = static_cast<float>(renderer.gpu_world_used_w),
+                       .h = static_cast<float>(renderer.gpu_world_used_h)};
+  SDL_FRect const kDst{.x = static_cast<float>(renderer.gpu_world_dst_x),
+                       .y = static_cast<float>(renderer.gpu_world_dst_y),
+                       .w = static_cast<float>(renderer.gpu_world_dst_w),
+                       .h = static_cast<float>(renderer.gpu_world_dst_h)};
+  SDL_RenderTexture(sdl_spectator_renderer, sdl_spectator_world_texture, &kSrc, &kDst);
+  SDL_RenderTexture(sdl_spectator_renderer, sdl_spectator_texture, nullptr, nullptr);
+  SDL_RenderPresent(sdl_spectator_renderer);
+
+  // sdl_spectator_texture is shared with the CPU present path (menus, pause,
+  // weapon select), which applies fade itself via ScaleDraw and expects a
+  // neutral texture. Restore the modulation so this frame's fade value doesn't
+  // leak — at fade 0 it would otherwise leave the texture multiplying by black
+  // and the CPU path would render an all-black spectator window until a resize
+  // recreated the texture.
+  SDL_SetTextureColorMod(sdl_spectator_world_texture, 255, 255, 255);
+  SDL_SetTextureColorMod(sdl_spectator_texture, 255, 255, 255);
+}
+
 void Gfx::Flip() {
   ZoneScopedN("Gfx::Flip");
   // draw into the play window. This uses either the normal split screen renderer
@@ -1028,8 +1120,18 @@ void Gfx::Flip() {
   // is turned on
   Draw(*sdl_draw_surface, *sdl_texture, *sdl_renderer, *primary_renderer);
   if (settings->spectator_window) {
-    Draw(*sdl_spectator_draw_surface, *sdl_spectator_texture, *sdl_spectator_renderer,
-         single_screen_renderer);
+    // gpu_world_src is a strict one-shot: it is non-null only for the single
+    // Flip that immediately follows the SpectatorViewport::Draw which set it.
+    // Any other frame — a menu/pause/weapon-select frame, or a direct Flip()
+    // such as MainMenuState::Enter's — finds it null and presents bmp via the
+    // CPU path, so a stale handoff can never blit a freed/mismatched buffer.
+    if (single_screen_renderer.gpu_world_src) {
+      DrawSpectatorGpu(single_screen_renderer);
+    } else {
+      Draw(*sdl_spectator_draw_surface, *sdl_spectator_texture, *sdl_spectator_renderer,
+           single_screen_renderer);
+    }
+    single_screen_renderer.gpu_world_src = nullptr;
   }
 
   static unsigned int const kDelay = 14U;
@@ -1313,6 +1415,8 @@ void Gfx::InitFrameStepping() {
   play_renderer.Clear();
   controller->Draw(this->play_renderer, /*use_spectator_viewports=*/false);
   single_screen_renderer.Clear();
+  single_screen_renderer.gpu_world_composite = SpectatorGpuComposite();
+  single_screen_renderer.gpu_world_src = nullptr;
   controller->Draw(this->single_screen_renderer, /*use_spectator_viewports=*/true);
 
   // Push the initial menu state
@@ -1468,6 +1572,8 @@ bool Gfx::RunOneFrame() {
       play_renderer.Clear();
       controller->Draw(this->play_renderer, /*use_spectator_viewports=*/false);
       single_screen_renderer.Clear();
+      single_screen_renderer.gpu_world_composite = SpectatorGpuComposite();
+      single_screen_renderer.gpu_world_src = nullptr;
       controller->Draw(this->single_screen_renderer, /*use_spectator_viewports=*/true);
 
       auto new_menu = std::make_unique<MainMenuState>();
@@ -1484,6 +1590,12 @@ bool Gfx::RunOneFrame() {
   if (kUseMenuFlip) {
     UpdateMenuPalettes(kMenuFadingOut);
   }
+
+  // Decide per frame whether the spectator viewport hands its world to the GPU
+  // (Task 1b/1d); reset the handoff so a frame that doesn't redraw the viewport
+  // (e.g. a menu over a frozen game) falls back to the CPU present path.
+  single_screen_renderer.gpu_world_composite = SpectatorGpuComposite();
+  single_screen_renderer.gpu_world_src = nullptr;
 
   state_stack.Draw();
 
