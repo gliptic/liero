@@ -2,8 +2,8 @@
 // game-draw path and prints one FNV-1a hash per frame of the composed RGB
 // screen (palette-resolved). Two builds rendering the same replay must
 // print identical streams for the renderer to count as pixel-identical;
-// used to verify the modern-colors stage 2 refactor keeps classic output
-// byte-for-byte stable.
+// useful for verifying renderer refactors keep visual output byte-for-byte
+// stable.
 #include <cinttypes>
 #include <cstdint>
 #include <cstdio>

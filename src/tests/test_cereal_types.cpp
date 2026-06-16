@@ -1,7 +1,6 @@
-// Phase 4 tests: per-type cereal serialize() round-trips through both
-// the binary (PortableBinaryArchive) and TOML (cereal::TomlOutputArchive)
-// archives. The old archive() functions stay in place; this verifies
-// the new cereal-based path before Phase 6 swaps the call sites.
+// Per-type cereal serialize() round-trips through both the binary
+// (PortableBinaryArchive) and TOML (cereal::TomlOutputArchive) archives.
+// Guards against regressions in each type's serialize() implementation.
 
 #include <catch2/catch_test_macros.hpp>
 

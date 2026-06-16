@@ -1,4 +1,4 @@
-// Phase 2 tests: cereal::TomlOutputArchive / TomlInputArchive in isolation.
+// Unit tests for cereal::TomlOutputArchive / TomlInputArchive.
 // Cover primitives, nested objects, arrays of primitives, arrays of objects,
 // missing-key tolerance, and version-tagged types.
 

@@ -1,10 +1,11 @@
-// Phase 5 tests: versioning proof-of-concept.
+// Settings serialization regression tests: binary and TOML round-trips,
+// plus backward-compatibility with old config files.
 //
-// Settings binary round-trip and TOML round-trip tests. The v1 binary
-// fixture backward-compat test was removed when the serialization format
-// was changed to always write bonusTimeout before wormSettings.
+// The v1 binary fixture backward-compat test was removed when the
+// serialization format was changed to always write bonusTimeout before
+// wormSettings.
 //
-// Remaining tests:
+// Tests:
 //   1. v2 binary round-trip — all fields preserved.
 //   2. v2 TOML round-trip — all fields preserved (generic serialize path).
 //   3. v1 TOML fixture → generic reader — missing fields get defaults.

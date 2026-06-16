@@ -64,8 +64,8 @@ TEST_CASE("TC loads without errors", "[tc_load]") {
     REQUIRE(kI >= 0);
   }
 
-  // Step 5: sound fields in weapon / sobject configs are now name-typed.
-  // Anchor a couple of known values so regressions in soundRefFromStr
+  // Sound fields in weapon / sobject configs are name-typed; anchor a
+  // couple of known values so regressions in soundRefFromStr
   // (e.g. unknown-name returning 0 instead of -1) get caught.
   auto find_weapon = [&](std::string const& id) -> Weapon const& {
     for (auto& w : common->weapons) {
