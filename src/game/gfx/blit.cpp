@@ -42,6 +42,16 @@ void Fill(Bitmap& scr, int color) {
 
 void FillTransparent(Bitmap& scr) { std::fill(scr.pixels, scr.pixels + scr.pitch * scr.h, 0U); }
 
+void FillTransparentBand(Bitmap& scr, int y, int h) {
+  int const kY0 = std::max(0, y);
+  int const kY1 = std::min(scr.h, y + h);
+  if (kY1 <= kY0) {
+    return;
+  }
+  std::fill(scr.pixels + static_cast<std::size_t>(kY0) * scr.pitch,
+            scr.pixels + static_cast<std::size_t>(kY1) * scr.pitch, 0U);
+}
+
 void DrawLevelScaled(Bitmap& scr, Level const& level, int view_x, int view_y, float scale) {
   float const kInv = 1.0F / scale;
   for (int py = 0; py < scr.h; ++py) {

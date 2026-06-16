@@ -189,6 +189,8 @@ void SerializeSettingsScalars(Archive& ar, Settings& s) {
   // v5 fields. Missing on older configs → defaults remain (504x350).
   ar(cereal::make_nvp("randomMapWidth", s.random_map_width));
   ar(cereal::make_nvp("randomMapHeight", s.random_map_height));
+  // v6 field. Missing on older configs → default remains (1080).
+  ar(cereal::make_nvp("maxSpectatorRenderHeight", s.max_spectator_render_height));
 }
 
 // Full Settings fields for binary archives (indexed weapon keys).

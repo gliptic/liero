@@ -133,6 +133,105 @@ TEST_CASE("world pass scratch never collapses below 1 pixel", "[spectator][world
   CHECK(kP.h >= 1);
 }
 
+TEST_CASE("capped render resolution is a no-op when the window fits the cap",
+          "[spectator][rescap]") {
+  // Window shorter than the cap: render at native, byte-for-byte unchanged. This
+  // is the small-window guarantee — the cap must never upscale.
+  CappedRenderResolution const kR = ComputeCappedRenderResolution(1280, 800, 1080);
+  CHECK(kR.w == 1280);
+  CHECK(kR.h == 800);
+}
+
+TEST_CASE("capped render resolution is a no-op when the window equals the cap",
+          "[spectator][rescap]") {
+  // Boundary: window height exactly the cap stays untouched (no off-by-one
+  // downscale of a 1080p window under a 1080 cap).
+  CappedRenderResolution const kR = ComputeCappedRenderResolution(1920, 1080, 1080);
+  CHECK(kR.w == 1920);
+  CHECK(kR.h == 1080);
+}
+
+TEST_CASE("capped render resolution caps a 4K window preserving aspect", "[spectator][rescap]") {
+  // 3840x2160 under a 1080 cap → 1920x1080: height pinned to the cap, width
+  // derived from the 16:9 window aspect (3840*1080/2160 = 1920).
+  CappedRenderResolution const kR = ComputeCappedRenderResolution(3840, 2160, 1080);
+  CHECK(kR.h == 1080);
+  CHECK(kR.w == 1920);
+}
+
+TEST_CASE("capped render resolution caps an ultrawide window preserving aspect",
+          "[spectator][rescap]") {
+  // 3440x1440 under a 1080 cap → 2580x1080 (3440*1080/1440 = 2580): the
+  // ultrawide aspect (~2.39:1) is preserved, not squashed to 16:9.
+  CappedRenderResolution const kR = ComputeCappedRenderResolution(3440, 1440, 1080);
+  CHECK(kR.h == 1080);
+  CHECK(kR.w == 2580);
+}
+
+TEST_CASE("capped render resolution is disabled when the cap is non-positive",
+          "[spectator][rescap]") {
+  // cap_h <= 0 disables the cap entirely → render at the full window.
+  CappedRenderResolution const kDisabled = ComputeCappedRenderResolution(3840, 2160, 0);
+  CHECK(kDisabled.w == 3840);
+  CHECK(kDisabled.h == 2160);
+  CappedRenderResolution const kNeg = ComputeCappedRenderResolution(3840, 2160, -1);
+  CHECK(kNeg.w == 3840);
+  CHECK(kNeg.h == 2160);
+}
+
+TEST_CASE("capped render resolution never collapses width below 1 pixel", "[spectator][rescap]") {
+  // Degenerate guard: a sliver window under a tiny cap must still leave a >=1px
+  // width the renderer can allocate.
+  CappedRenderResolution const kR = ComputeCappedRenderResolution(1, 4000, 1);
+  CHECK(kR.h == 1);
+  CHECK(kR.w >= 1);
+}
+
+TEST_CASE("hud dirty bands always cover the bottom strip and reloading text",
+          "[spectator][hudbands]") {
+  // Banner hidden (-8 == hidden sentinel): only the static bands. Bottom strip
+  // is the 40px stats area; reloading text sits at y=164.
+  HudDirtyBands const kB = ComputeHudDirtyBands(1080, -8, -8);
+  REQUIRE(kB.count == 2);
+  // Bottom strip [H-40, H).
+  CHECK(kB.bands[0].y == 1040);
+  CHECK(kB.bands[0].h == 40);
+  // Reloading text band [164, 164+8).
+  CHECK(kB.bands[1].y == 164);
+  CHECK(kB.bands[1].h == 8);
+}
+
+TEST_CASE("hud dirty bands add a stationary banner band when visible", "[spectator][hudbands]") {
+  HudDirtyBands const kB = ComputeHudDirtyBands(1080, 100, 100);
+  REQUIRE(kB.count == 3);
+  // Banner glyph (8px) + its 1px shadow row → 9px tall at y=100.
+  CHECK(kB.bands[2].y == 100);
+  CHECK(kB.bands[2].h == 9);
+}
+
+TEST_CASE("hud dirty bands union covers a scrolling banner with no stale row",
+          "[spectator][hudbands]") {
+  // Banner scrolled from y=100 (prev) to y=92 (cur). The band must cover both
+  // extents — [92,101) ∪ [100,109) = [92,109) — so the vacated rows are cleared.
+  HudDirtyBands const kB = ComputeHudDirtyBands(1080, 92, 100);
+  REQUIRE(kB.count == 3);
+  HudBand const kBanner = kB.bands[2];
+  CHECK(kBanner.y == 92);
+  CHECK(kBanner.y + kBanner.h == 109);
+  // Both the current and previous banner extents fall inside the band.
+  CHECK(kBanner.y <= 92);
+  CHECK(kBanner.y + kBanner.h >= 100 + 9);
+}
+
+TEST_CASE("hud dirty bands clamp to the render surface", "[spectator][hudbands]") {
+  // Tiny overlay: the bottom strip clamps into [0,H) and the off-screen
+  // reloading band (y=164 >= H) is dropped.
+  HudDirtyBands const kB = ComputeHudDirtyBands(20, -8, -8);
+  REQUIRE(kB.count == 1);
+  CHECK(kB.bands[0].y == 0);
+  CHECK(kB.bands[0].h == 20);
+}
+
 TEST_CASE("spectator zoom tracks the bounding box in the mid-range", "[spectator][zoom]") {
   // Large level, bbox between "fits" and "whole level": zoom follows the
   // worm-framing value and sits strictly inside (fill, 1.0).

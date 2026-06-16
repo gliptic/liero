@@ -38,6 +38,7 @@
 #include "gfx/macros.hpp"
 
 #include "menu/arrayEnumBehavior.hpp"
+#include "spectatorviewport.hpp"
 
 // NOLINTNEXTLINE(bugprone-throwing-static-initialization, cert-err58-cpp) — global Gfx is the platform singleton; an exception here means program startup itself has failed.
 Gfx gfx;
@@ -403,21 +404,34 @@ void Gfx::OnWindowResize(uint32_t window_id) {
     }
 
     if (settings->spectator_window) {
-      int w = 0;
-      int h = 0;
-      SDL_GetWindowSize(sdl_spectator_window, &w, &h);
+      int window_w = 0;
+      int window_h = 0;
+      SDL_GetWindowSize(sdl_spectator_window, &window_w, &window_h);
+      // PR8 Task 1: cap the internal render resolution so the world pass, its
+      // memsets and its texture uploads are bounded by a constant on 4K-class
+      // windows. SDL_SetRenderLogicalPresentation (below) upscales the capped
+      // surface back to the physical window. A no-op when window_h <= cap.
+      CappedRenderResolution const kCap =
+          ComputeCappedRenderResolution(window_w, window_h, settings->max_spectator_render_height);
+      int const kW = kCap.w;
+      int const kH = kCap.h;
       sdl_spectator_texture = SDL_CreateTexture(sdl_spectator_renderer, SDL_PIXELFORMAT_ARGB8888,
-                                                SDL_TEXTUREACCESS_STREAMING, w, h);
+                                                SDL_TEXTUREACCESS_STREAMING, kW, kH);
       // Blend so the GPU HUD overlay (PR7 Task 1c) composites over the world;
       // harmless for the CPU present path, whose frames are fully opaque.
       SDL_SetTextureBlendMode(sdl_spectator_texture, SDL_BLENDMODE_BLEND);
-      sdl_spectator_draw_surface = SDL_CreateSurface(w, h, SDL_PIXELFORMAT_ARGB8888);
-      SDL_SetRenderLogicalPresentation(sdl_spectator_renderer, w, h,
+      // Point-sample the HUD overlay so the small pixel font stays crisp when
+      // SDL upscales the capped surface to a larger window (PR8 cap). The world
+      // texture keeps linear sampling (smooth downscaled overview); only the
+      // HUD must avoid the blur, which made it unreadable above the cap.
+      SDL_SetTextureScaleMode(sdl_spectator_texture, SDL_SCALEMODE_NEAREST);
+      sdl_spectator_draw_surface = SDL_CreateSurface(kW, kH, SDL_PIXELFORMAT_ARGB8888);
+      SDL_SetRenderLogicalPresentation(sdl_spectator_renderer, kW, kH,
                                        SDL_LOGICAL_PRESENTATION_LETTERBOX);
       // Only resize the renderer when it isn't being used as primary renderer
       // for the main window (i.e. during single-screen replay).
       if (primary_renderer != &single_screen_renderer) {
-        single_screen_renderer.SetRenderResolution(w, h);
+        single_screen_renderer.SetRenderResolution(kW, kH);
       }
     }
   }
@@ -439,6 +453,8 @@ void Gfx::LoadMenus() {
   hidden_menu.AddItem(MenuItem(48, 7, "SEE SPAWN POINT", HiddenMenu::kAllowViewingSpawnPoint));
   hidden_menu.AddItem(MenuItem(48, 7, "SINGLE SCREEN REPLAY", HiddenMenu::kSingleScreenReplay));
   hidden_menu.AddItem(MenuItem(48, 7, "SPECTATOR WINDOW", HiddenMenu::kSpectatorWindow));
+  hidden_menu.AddItem(
+      MenuItem(48, 7, "MAX SPECTATOR RES (H)", HiddenMenu::kMaxSpectatorRenderHeight));
 
   player_menu.AddItem(MenuItem(3, 7, "PROFILE LOADED", PlayerMenu::kPlLoadedProfile));
   player_menu.AddItem(MenuItem(3, 7, "SAVE PROFILE", PlayerMenu::kPlSaveProfile));
@@ -1068,6 +1084,7 @@ void Gfx::DrawSpectatorGpu(Renderer& renderer) {
   if (!sdl_spectator_world_texture) {
     // Allocation failed; present via the CPU path so the window isn't black.
     Draw(*sdl_spectator_draw_surface, *sdl_spectator_texture, *sdl_spectator_renderer, renderer);
+    spectator_prev_present_gpu = false;
     return;
   }
 
@@ -1077,9 +1094,24 @@ void Gfx::DrawSpectatorGpu(Renderer& renderer) {
       .x = 0, .y = 0, .w = renderer.gpu_world_used_w, .h = renderer.gpu_world_used_h};
   SDL_UpdateTexture(sdl_spectator_world_texture, &kUsed, world.pixels,
                     static_cast<int>(world.pitch * sizeof(uint32_t)));
-  // HUD overlay: native-res, transparent background, opaque HUD pixels.
-  SDL_UpdateTexture(sdl_spectator_texture, nullptr, renderer.bmp.pixels,
-                    static_cast<int>(renderer.bmp.pitch * sizeof(uint32_t)));
+  // HUD overlay: transparent background, opaque HUD pixels. Upload only the
+  // dirty bands (PR8 Task 2) — except the first GPU frame after a resolution
+  // change or a CPU present, which must refresh the whole overlay since the
+  // texture's untouched rows would otherwise hold stale content.
+  int const kHudPitchBytes = static_cast<int>(renderer.bmp.pitch * sizeof(uint32_t));
+  bool const kFullHud = renderer.hud_overlay_full_refresh || !spectator_prev_present_gpu;
+  if (kFullHud) {
+    SDL_UpdateTexture(sdl_spectator_texture, nullptr, renderer.bmp.pixels, kHudPitchBytes);
+  } else {
+    for (int i = 0; i < renderer.hud_overlay_band_count; ++i) {
+      int const kY = renderer.hud_overlay_band_y[i];
+      SDL_Rect const kBand{
+          .x = 0, .y = kY, .w = renderer.render_res_x, .h = renderer.hud_overlay_band_h[i]};
+      uint32_t const* const kRows =
+          renderer.bmp.pixels + static_cast<std::size_t>(kY) * renderer.bmp.pitch;
+      SDL_UpdateTexture(sdl_spectator_texture, &kBand, kRows, kHudPitchBytes);
+    }
+  }
 
   // Replicate ScaleDraw's per-channel fade ((v*fade)>>5, fade 0..32) via RGB
   // texture modulation so the spectator fade-in survives; alpha is left intact
@@ -1111,6 +1143,10 @@ void Gfx::DrawSpectatorGpu(Renderer& renderer) {
   // recreated the texture.
   SDL_SetTextureColorMod(sdl_spectator_world_texture, 255, 255, 255);
   SDL_SetTextureColorMod(sdl_spectator_texture, 255, 255, 255);
+
+  // This GPU present owns the overlay texture now, so the next GPU frame may
+  // upload just its dirty bands (PR8 Task 2).
+  spectator_prev_present_gpu = true;
 }
 
 void Gfx::Flip() {
@@ -1130,6 +1166,9 @@ void Gfx::Flip() {
     } else {
       Draw(*sdl_spectator_draw_surface, *sdl_spectator_texture, *sdl_spectator_renderer,
            single_screen_renderer);
+      // This CPU present fully overwrote the overlay texture; force the next GPU
+      // frame to re-upload the whole overlay rather than just its dirty bands.
+      spectator_prev_present_gpu = false;
     }
     single_screen_renderer.gpu_world_src = nullptr;
   }
@@ -1559,13 +1598,17 @@ bool Gfx::RunOneFrame() {
       controller->Unfocus();
       ClearKeys();
 
-      // Restore spectator renderer to the actual window pixel size now that
-      // it's no longer shared with the main window.
+      // Restore the spectator renderer to its windowed render resolution now
+      // that it's no longer shared with the main window. Route through
+      // OnWindowResize so the render resolution, the SDL logical presentation
+      // and the textures are all re-derived together through the PR8 render
+      // cap (ComputeCappedRenderResolution). Setting render_res to the raw
+      // window size here instead would desync it from the capped logical
+      // presentation: the world dst rect would be computed in the larger
+      // window space while SDL clips it to the smaller capped canvas, pushing
+      // the right/bottom of the world — and any worm there — off-screen.
       if (sdl_spectator_window && settings->spectator_window) {
-        int w = 0;
-        int h = 0;
-        SDL_GetWindowSize(sdl_spectator_window, &w, &h);
-        single_screen_renderer.SetRenderResolution(w, h);
+        OnWindowResize(SDL_GetWindowID(sdl_spectator_window));
       }
 
       // Draw one frame so the menu background captures the final game state
@@ -1673,7 +1716,20 @@ void Gfx::SetSpectatorLayout(bool fixed) {
     target_w = 640;
     target_h = 400;
   } else {
-    SDL_GetWindowSize(sdl_spectator_window, &target_w, &target_h);
+    int win_w = 0;
+    int win_h = 0;
+    SDL_GetWindowSize(sdl_spectator_window, &win_w, &win_h);
+    // Apply the PR8 render cap so this per-frame render resolution matches the
+    // capped textures and SDL logical presentation that OnWindowResize set.
+    // Without it, on a window taller than the cap (e.g. 3440x1440 -> 2580x1080)
+    // render_res would be reset to the full window every frame while the HUD
+    // and world textures stay capped: the HUD's bottom rows then fall outside
+    // the shorter HUD texture (the HUD vanishes) and the world is clipped to
+    // the capped canvas (worms can leave the screen).
+    CappedRenderResolution const kCap =
+        ComputeCappedRenderResolution(win_w, win_h, settings->max_spectator_render_height);
+    target_w = kCap.w;
+    target_h = kCap.h;
   }
   if (single_screen_renderer.render_res_x != target_w ||
       single_screen_renderer.render_res_y != target_h) {

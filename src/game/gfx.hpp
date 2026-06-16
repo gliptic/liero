@@ -347,6 +347,11 @@ struct Gfx {
   SDL_Texture* sdl_spectator_world_texture = nullptr;
   int sdl_spectator_world_texture_w = 0;
   int sdl_spectator_world_texture_h = 0;
+  // Whether the previous spectator present went through DrawSpectatorGpu. The
+  // HUD overlay partial upload (PR8 Task 2) is only safe to apply over a texture
+  // the GPU path itself last wrote; after a CPU present (menu/pause/fallback)
+  // the next GPU frame must re-upload the whole overlay.
+  bool spectator_prev_present_gpu = false;
   // a software surface to do the actual drawing into
   SDL_Surface* sdl_draw_surface = nullptr;
   // a software surface to do the actual drawing of the spectator view into

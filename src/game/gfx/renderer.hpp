@@ -61,4 +61,17 @@ struct Renderer {
   int gpu_world_dst_y = 0;
   int gpu_world_dst_w = 0;
   int gpu_world_dst_h = 0;
+
+  // ── Spectator HUD overlay partial present (PR8 Task 2) ─────────────────────
+  // The HUD overlay only touches a few full-width rows; the spectator viewport
+  // clears and the GPU present uploads just these bands instead of the whole
+  // window-sized overlay. When hud_overlay_full_refresh is true (first frame /
+  // resolution change) the whole overlay is cleared and uploaded so the
+  // never-touched regions start transparent. Bands are kept as plain ints to
+  // avoid a renderer→spectator header dependency; see ComputeHudDirtyBands.
+  bool hud_overlay_full_refresh = true;
+  static constexpr int kMaxHudBands = 3;
+  int hud_overlay_band_count = 0;
+  int hud_overlay_band_y[kMaxHudBands] = {};
+  int hud_overlay_band_h[kMaxHudBands] = {};
 };

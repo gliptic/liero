@@ -24,6 +24,7 @@ struct HiddenMenu : Menu {
     kSingleScreenReplay,
     kSpectatorWindow,
     kColorMode,
+    kMaxSpectatorRenderHeight,
   };
 
   HiddenMenu(int x, int y) : Menu(x, y) {}

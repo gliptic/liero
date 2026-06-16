@@ -328,7 +328,7 @@ TEST_CASE("versioning: Settings toToml/fromToml produces human-readable config",
   CHECK(kToml.contains("[player2]"));
   CHECK(kToml.contains("[network_player]"));
   // Version field present for future-proofing
-  CHECK(kToml.contains("version = 5"));
+  CHECK(kToml.contains("version = 6"));
   // No ptr_wrapper noise
   CHECK(!kToml.contains("ptr_wrapper"));
   CHECK(!kToml.contains("[s]"));
@@ -416,6 +416,26 @@ TEST_CASE("versioning: modernColors round-trips and defaults to classic", "[vers
   toml.replace(kPos, std::string("modernColors = true").length(), "");
   legacy.FromToml(toml);
   CHECK(legacy.modern_colors == false);
+}
+
+TEST_CASE("versioning: maxSpectatorRenderHeight round-trips and defaults to 1080", "[versioning]") {
+  Settings src;
+  src.max_spectator_render_height = 1440;
+  std::string const kToml = src.ToToml();
+  CHECK(kToml.contains("maxSpectatorRenderHeight = 1440"));
+
+  Settings dst;
+  dst.FromToml(kToml);
+  CHECK(dst.max_spectator_render_height == 1440);
+
+  // Configs predating the v6 field keep the struct default (1080).
+  Settings legacy;
+  std::string toml = kToml;
+  auto const kPos = toml.find("maxSpectatorRenderHeight = 1440");
+  REQUIRE(kPos != std::string::npos);
+  toml.replace(kPos, std::string("maxSpectatorRenderHeight = 1440").length(), "");
+  legacy.FromToml(toml);
+  CHECK(legacy.max_spectator_render_height == 1080);
 }
 
 TEST_CASE("versioning: out-of-range worm rgb in TOML is clamped on load", "[versioning]") {

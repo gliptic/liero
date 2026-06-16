@@ -37,6 +37,12 @@ struct AppSettings {
   int32_t blood_particle_max{700};
   // Default colour mode for the renderers (sticky; live mode is per-renderer).
   bool modern_colors{false};
+  // PR8 Task 1: cap on the spectator window's internal render height. The world
+  // pass, its memsets and texture uploads scale with the render surface, so this
+  // bounds them by a constant on 4K-class windows (width derived from the window
+  // aspect; see ComputeCappedRenderResolution). <=0 disables the cap; a no-op
+  // when the spectator window is no taller than this. Display-only.
+  int32_t max_spectator_render_height{1080};
 };
 
 struct Rand;
@@ -88,7 +94,8 @@ struct Settings : GameplayExtensions, AppSettings {
   // bump when adding fields to the TOML config
   // v4: added modernColors (default false = classic palette).
   // v5: added randomMapWidth/Height (defaults 504x350).
-  static int const kConfigVersion = 5;
+  // v6: added maxSpectatorRenderHeight (default 1080).
+  static int const kConfigVersion = 6;
   std::shared_ptr<WormSettings> worm_settings[kNumWormSettings];
 
   uint64_t hash;

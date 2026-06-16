@@ -469,6 +469,13 @@ if(OPENLIERO_BUILD_TESTS)
   target_link_libraries(test_spectator_zoom PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_spectator_zoom DISCOVERY_MODE PRE_TEST)
 
+  add_executable(test_spectator_visibility src/tests/test_spectator_visibility.cpp)
+  target_link_libraries(test_spectator_visibility PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_spectator_visibility
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
   add_executable(test_minimap src/tests/test_minimap.cpp)
   target_link_libraries(test_minimap PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_minimap DISCOVERY_MODE PRE_TEST)

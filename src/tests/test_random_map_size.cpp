@@ -23,8 +23,8 @@ TEST_CASE("Settings random_map_height defaults to 350", "[random-map-size]") {
   CHECK(kS.random_map_height == 350);
 }
 
-TEST_CASE("Settings config version is 5", "[random-map-size]") {
-  CHECK(Settings::kConfigVersion == 5);
+TEST_CASE("Settings config version is 6", "[random-map-size]") {
+  CHECK(Settings::kConfigVersion == 6);
 }
 
 // ---------------------------------------------------------------------------
@@ -45,9 +45,9 @@ TEST_CASE("Settings random_map dimensions round-trip through TOML", "[random-map
   CHECK(loaded.random_map_height == 192);
 }
 
-TEST_CASE("Settings TOML contains version = 5", "[random-map-size]") {
+TEST_CASE("Settings TOML contains version = 6", "[random-map-size]") {
   Settings const kSettings;
-  CHECK(kSettings.ToToml().contains("version = 5"));
+  CHECK(kSettings.ToToml().contains("version = 6"));
 }
 
 // Configs written before v5 lack randomMapWidth/randomMapHeight.

@@ -21,6 +21,10 @@ void Fill(Bitmap& scr, int color);
 // blend over the GPU-scaled world: only the drawn HUD pixels (opaque pal32)
 // show, everything else is see-through.
 void FillTransparent(Bitmap& scr);
+// Clears just the full-width rows [y, y+h) of `scr` to transparent (clamped to
+// the bitmap). The spectator partial-present path (PR8 Task 2) uses this to
+// clear only the HUD's dirty bands instead of the whole window-sized overlay.
+void FillTransparentBand(Bitmap& scr, int y, int h);
 void DrawBar(Bitmap& scr, int x, int y, int width, int color);
 void DrawBar(Bitmap& scr, int x, int y, int width, int height, int color);
 void DrawRoundedBox(Bitmap& scr, int x, int y, int color, int height, int width);

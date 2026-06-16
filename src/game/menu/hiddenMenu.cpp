@@ -49,6 +49,11 @@ ItemBehavior* HiddenMenu::GetItemBehavior(Common& common, MenuItem& item) {
         gfx.settings->spectator_window = v;
         gfx.SetVideoMode();
       });
+    // 0 disables the cap (render at the full window); steps of 120 line up with
+    // standard heights (720/1080/1440/2160). Applied on the next spectator
+    // window resize / video-mode change (see Gfx::OnWindowResize).
+    case kMaxSpectatorRenderHeight:
+      return new IntegerBehavior(common, gfx.settings->max_spectator_render_height, 0, 4320, 120);
 
     default:
       return Menu::GetItemBehavior(common, item);
