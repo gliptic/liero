@@ -307,7 +307,7 @@ TEST_CASE("Dirty-cell tracking: sparse save, correct restore", "[snapshot][rollb
   REQUIRE(snap_a.level_data.size() == kCells);
   REQUIRE(std::equal(snap_a.level_data.begin(), snap_a.level_data.end(),
                      game.level.material_id.begin()));
-  // dirty_list must now be initialised (empty, since no SetPixel since tracking start).
+  // dirty_list must be empty — no SetPixel has run since tracking started.
   REQUIRE(game.level.dirty_list.empty());
 
   // Capture the initial material layout for later comparison.
@@ -363,7 +363,7 @@ TEST_CASE("Dirty-cell tracking: sparse save, correct restore", "[snapshot][rollb
   // materials must be consistent with material_id after restore (no level_materials in slot).
   REQUIRE(game.level.materials[static_cast<std::size_t>(kIdx)].flags ==
           game.common->materials[kNewMat].flags);
-  // display_valid must reflect the post-modification snapshot (cell was zeroed).
+  // display_valid must reflect the snapshot taken after the modification (cell zeroed).
   REQUIRE(game.level.display_valid[static_cast<std::size_t>(kIdx)] == 0);
 
   // Restore from snap_b (saved before the modification) — should recover kOldMat.

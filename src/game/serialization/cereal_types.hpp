@@ -208,7 +208,7 @@ void serialize(Archive& ar, Settings& s, std::uint32_t const kVersion) {
   for (int i = 0; i < Settings::kNumWormSettings; ++i) {
     ar(cereal::make_nvp("worm" + std::to_string(i), s.worm_settings[i]));
   }
-  (void)kVersion;  // all fields always written now (breaking change)
+  (void)kVersion;  // all fields always written regardless of version
 }
 CEREAL_CLASS_VERSION(Settings, 3);
 

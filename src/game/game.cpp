@@ -354,8 +354,6 @@ void Game::ProcessFrame() {
     }
   }
 
-  // NOTE: This was originally the beginning of the processing, but has been rotated down to
-  // separate out the drawing
   ++cycles;
 
   if (!common->h[HBonusDisable] && settings->max_bonuses > 0 &&

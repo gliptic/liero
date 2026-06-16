@@ -15,8 +15,7 @@
 
 // Drives a real Game + SpectatorViewport::Process at a capped spectator render
 // resolution and asserts that, wherever the two worms are, they both land inside
-// the world region the spectator actually draws. Reproduces the report that with
-// PR8's render-resolution cap a worm can be moved off the spectator screen.
+// the world region the spectator actually draws.
 namespace {
 
 struct SpectatorFixture {

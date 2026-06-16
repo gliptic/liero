@@ -29,8 +29,7 @@ TEST_CASE("DijkstraLevel CellFromPx clamps to actual level bounds, not hardcoded
   dlevel.Build(level, *common);
 
   // Pixel far outside the 252x175 level must clamp to within level bounds.
-  // Before PR1: CellFromPx clamps to kFullWidth-1=503, kFullHeight-1=349
-  // (hardcoded), so CoordsLevel returns (502, 350) — both outside 252x175.
+  // CellFromPx must use the live level dimensions, not hardcoded constants.
   LevelCell* cell = dlevel.CellFromPx(9999, 9999);
   IVec2 const kCoords = dlevel.CoordsLevel(cell);
 

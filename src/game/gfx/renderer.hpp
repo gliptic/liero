@@ -38,12 +38,12 @@ struct Renderer {
   int render_res_x = 320;
   int render_res_y = 200;
 
-  // ── Spectator GPU world composite (PR7 Task 1b/1c) ────────────────────────
+  // ── Spectator GPU world composite ────────────────────────────────────────
   // When true, the spectator viewport hands its 1:1 world pass to the GPU for
-  // scaling instead of running the ~38 ms CPU box-filter into `bmp`, and clears
-  // `bmp` to a transparent HUD-only overlay. Gfx sets this only for the live
-  // spectator window (Task 1d); it stays false for the CPU paths (videotool,
-  // single-screen replay, dummy driver), which keep compositing into `bmp`.
+  // scaling instead of a CPU box-filter into `bmp`, and clears `bmp` to a
+  // transparent HUD-only overlay. Set only for the live spectator window; stays
+  // false for CPU paths (videotool, single-screen replay, dummy driver), which
+  // keep compositing into `bmp`.
   bool gpu_world_composite = false;
   // The 1:1 world pass for the GPU composite, owned by the SpectatorViewport
   // (valid until its next Draw). Null when no world layer was emitted this
@@ -62,7 +62,7 @@ struct Renderer {
   int gpu_world_dst_w = 0;
   int gpu_world_dst_h = 0;
 
-  // ── Spectator HUD overlay partial present (PR8 Task 2) ─────────────────────
+  // ── Spectator HUD overlay partial present ───────────────────────────────────
   // The HUD overlay only touches a few full-width rows; the spectator viewport
   // clears and the GPU present uploads just these bands instead of the whole
   // window-sized overlay. When hud_overlay_full_refresh is true (first frame /

@@ -196,8 +196,8 @@ TEST_CASE("blitshadowimage shadows only seeshadow terrain", "[blit][shadow]") {
 
   Bitmap& bmp = f.renderer.bmp;
   Fill(bmp, 10);
-  // Old semantics keyed off the screen; paint a screen pixel with rock
-  // colour over SeeShadow terrain to prove the level now decides.
+  // Paint a rock-colour pixel over SeeShadow terrain to verify the level
+  // material decides shadowing, not the screen pixel colour.
   bmp.GetPixel(3, 3) = f.renderer.pal32[20];
 
   PalIdx const kSprite[9] = {7, 7, 7, 7, 7, 7, 7, 7, 7};
@@ -429,17 +429,13 @@ TEST_CASE("scaledrawarea upscales small src to fill larger dest", "[blit][scaled
 
 TEST_CASE("spectator-resize: freeze-restore must not shrink renderer bmp",
           "[blit][spectator-resize]") {
-  // Regression for resize-while-paused segfault (introduced a634c3b).
   // After OnWindowResize, SetRenderResolution sets render_res=1920x1080 and
-  // bmp.pitch=1920.  DrawSpectatorInfo (and WeaponSelection::DrawSpectatorViewports)
-  // called bmp.Copy(frozen_spectator_screen), which shrank bmp.pitch back to
-  // the frozen screen's pre-resize pitch (640).  Flip() then called
-  // ScaleDraw(bmp.pixels, render_res_x=1920, render_res_y=1080, pitch=640,...),
-  // which reads at row y*640 for y up to 1079, accessing offset 690560 in a
-  // 256000-element array — out-of-bounds read — segfault.
-  //
-  // The fix: replace bmp.Copy(frozen) with Fill(bmp,0)+BlitBitmap so the bmp
-  // pitch/dimensions are preserved at the render resolution.
+  // bmp.pitch=1920. If freeze-restore uses bmp.Copy(frozen_spectator_screen),
+  // it shrinks bmp.pitch back to the frozen screen's pre-resize pitch (640).
+  // Flip() then calls ScaleDraw(bmp.pixels, render_res_x=1920,
+  // render_res_y=1080, pitch=640,...), reading at row y*640 for y up to 1079
+  // — accessing offset 690560 in a 256000-element array → segfault.
+  // freeze-restore must use Fill+BlitBitmap to preserve bmp pitch/dimensions.
   Renderer renderer;
   renderer.Init(1920, 1080);
 

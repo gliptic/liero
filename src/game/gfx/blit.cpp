@@ -786,9 +786,8 @@ void DrawHeatmap(Bitmap& scr, int x, int y, Heatmap& hm) {
 }
 
 // Per-channel fade at composition time. Identical arithmetic to
-// Palette::Fade ((v * amount) >> 5), so fading at composition is
-// value-identical to the old palette fade — and it also applies to
-// frozen/captured ARGB content, which palette fade used to cover.
+// Palette::Fade ((v * amount) >> 5), so it also applies to frozen/captured
+// ARGB content that palette-index fade cannot reach.
 static inline uint32_t FadeArgb(uint32_t c, int amount) {
   uint32_t const kR = (((c >> 16) & 0xFFU) * amount) >> 5;
   uint32_t const kG = (((c >> 8) & 0xFFU) * amount) >> 5;

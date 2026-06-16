@@ -160,9 +160,8 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
   // kViewW/kViewH is the visible world region at 1:1. When the level fits
   // (zoom >= 1) the scratch is that region and the world is drawn 1:1 (the GPU
   // upscales it). When zoomed out (zoom < 1) the world is instead rendered at
-  // ~output resolution into a smaller scratch (PR7 Task 1, downscaled pass), so
-  // the world pass and its texture upload are bounded by the window, not the
-  // level area.
+  // ~output resolution into a smaller scratch, so the world pass and its
+  // texture upload are bounded by the window, not the level area.
   int const kViewW =
       std::min(static_cast<int>(static_cast<float>(render_w) / zoom), game.level.width);
   int const kViewH =
@@ -705,11 +704,10 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
   SpectatorDstRect const kDst = ComputeSpectatorDstRect(render_w, render_h, kViewW, kViewH, zoom);
 
   if (renderer.gpu_world_composite) {
-    // GPU path (PR7 Task 1b): hand the world pass to Gfx, which uploads the used
-    // sub-rect to a streaming texture and scales it on the GPU
-    // (SDL_RenderTexture), deleting the ~38 ms CPU box-filter. `bmp` becomes a
-    // transparent HUD-only overlay (Task 1c) blended on top of the world. The
-    // scratch is now bounded by the window, so the texture is sized to the
+    // GPU path: hand the world pass to Gfx, which uploads the used sub-rect
+    // to a streaming texture and scales it on the GPU (SDL_RenderTexture).
+    // `bmp` becomes a transparent HUD-only overlay blended on top of the world.
+    // The scratch is bounded by the window, so the texture is sized to the
     // render surface rather than the level.
     ZoneScopedN("Spectator::Composite::GpuHandoff");
     renderer.gpu_world_src = &scratch_bmp;
@@ -722,12 +720,11 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
     renderer.gpu_world_dst_w = kDst.w;
     renderer.gpu_world_dst_h = kDst.h;
 
-    // Partial overlay clear (PR8 Task 2): clear only the rows the HUD will draw
-    // into this frame plus the previous frame's banner row, leaving the rest of
-    // the (already transparent) overlay untouched. Force a full clear on the
-    // first frame / after a resolution change so the never-touched regions start
-    // transparent. The same bands drive the partial texture upload in
-    // Gfx::DrawSpectatorGpu.
+    // Clear only the rows the HUD will draw into this frame plus the previous
+    // frame's banner row, leaving the rest of the overlay untouched. Force a
+    // full clear on the first frame / after a resolution change so untouched
+    // regions start transparent. The same bands drive the partial texture
+    // upload in Gfx::DrawSpectatorGpu.
     bool const kFullRefresh = (render_w != hud_overlay_w || render_h != hud_overlay_h);
     HudDirtyBands const kBands = ComputeHudDirtyBands(render_h, banner_y, prev_banner_y);
     if (kFullRefresh) {
@@ -745,7 +742,7 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
     }
   } else {
     // CPU path (videotool, single-screen replay, dummy driver): box-filter the
-    // scratch straight into `bmp` as before. Retains ScaleDrawArea (Task 1e).
+    // scratch straight into `bmp` via ScaleDrawArea.
     ZoneScopedN("Spectator::Composite");
     renderer.gpu_world_src = nullptr;
     if (kDst.x > 0 || kDst.y > 0) {
@@ -915,9 +912,8 @@ void SpectatorViewport::Draw(Game& game, Renderer& renderer, GameState state, bo
     }
   }  // end HUD zone
 
-  // Remember this frame's banner position and overlay size so next frame's
-  // partial-present (PR8 Task 2) can union the banner band and detect a
-  // resolution change.
+  // Remember this frame's banner position and overlay size so the next frame
+  // can union the banner band and detect a resolution change.
   prev_banner_y = banner_y;
   hud_overlay_w = render_w;
   hud_overlay_h = render_h;

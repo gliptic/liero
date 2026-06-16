@@ -17,13 +17,11 @@ void Vline(Bitmap& scr, int x, int y1, int y2, int color);
 void FillRect(Bitmap& scr, int x, int y, int w, int h, int color);
 void Fill(Bitmap& scr, int color);
 // Clears `scr` to fully transparent (ARGB 0x00000000) rather than to a palette
-// colour. Used for the spectator HUD overlay layer (PR7 Task 1c), which must
-// blend over the GPU-scaled world: only the drawn HUD pixels (opaque pal32)
-// show, everything else is see-through.
+// colour. Used for the spectator HUD overlay, which blends over the GPU-scaled
+// world: only drawn HUD pixels (opaque pal32) show; everything else is clear.
 void FillTransparent(Bitmap& scr);
 // Clears just the full-width rows [y, y+h) of `scr` to transparent (clamped to
-// the bitmap). The spectator partial-present path (PR8 Task 2) uses this to
-// clear only the HUD's dirty bands instead of the whole window-sized overlay.
+// the bitmap), for partial HUD overlay updates without clearing the whole surface.
 void FillTransparentBand(Bitmap& scr, int y, int h);
 void DrawBar(Bitmap& scr, int x, int y, int width, int color);
 void DrawBar(Bitmap& scr, int x, int y, int width, int height, int color);
@@ -32,10 +30,10 @@ void DrawRoundedLineBox(Bitmap& scr, int x, int y, int color, int width, int hei
 // Paints the level's appearance into the screen (the terrain draw).
 void DrawLevel(Bitmap& scr, Level const& level, int x, int y);
 
-// Downscaled terrain render for the zoomed-out spectator world pass (PR7
-// Task 1): fills `scr` (sized to ~output resolution) by nearest-sampling the
-// level, so terrain cost is bounded by the window, not the level area. Scratch
-// pixel (px,py) samples world ((view_x,view_y) + (px,py)/scale). `scale` < 1.
+// Downscaled terrain render for the zoomed-out spectator world pass: fills
+// `scr` (sized to ~output resolution) by nearest-sampling the level, so
+// terrain cost is bounded by the window, not the level area. Scratch pixel
+// (px,py) samples world ((view_x,view_y) + (px,py)/scale). `scale` < 1.
 void DrawLevelScaled(Bitmap& scr, Level const& level, int view_x, int view_y, float scale);
 
 // Nearest-neighbour scaled sprite blit (transparent: palette index 0 skipped)

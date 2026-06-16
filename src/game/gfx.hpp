@@ -127,18 +127,17 @@ struct Gfx {
   // draws a given surface onto an SDL texture/renderer, using a given Renderer
   void Draw(SDL_Surface& surface, SDL_Texture& texture, SDL_Renderer& sdl_renderer,
             Renderer& renderer);
-  // Spectator-window-only GPU present (PR7 Task 1b/1c): upload the 1:1 world
-  // pass recorded on `renderer` to a streaming texture, scale it on the GPU
-  // into the letterboxed dest rect, then blend the transparent HUD overlay on
-  // top — replacing the CPU box-filter composite.
+  // Spectator-window-only GPU present: uploads the 1:1 world pass from
+  // `renderer` to a streaming texture, scales it on the GPU into the
+  // letterboxed dest rect, then blends the transparent HUD overlay on top.
   void DrawSpectatorGpu(Renderer& renderer);
   // (Re)allocates `sdl_spectator_world_texture` to at least need_w×need_h. A
   // no-op when the current texture already covers the size, so it allocates
   // once per level rather than per frame.
   void EnsureSpectatorWorldTexture(int need_w, int need_h);
   // Whether this frame's spectator present should use the GPU composite. False
-  // for the CPU paths (Task 1d): no spectator window / renderer, or the
-  // single-screen renderer is currently the main window's primary renderer.
+  // when there is no spectator window/renderer, or when the single-screen
+  // renderer is currently the main window's primary renderer.
   bool SpectatorGpuComposite() const;
   void Flip();
   // Per-frame menu palette rebuild (fade step, rotation, worm colours).
@@ -340,17 +339,16 @@ struct Gfx {
   SDL_Texture* sdl_texture = nullptr;
   // full spectator window size texture that represents the spectator window
   SDL_Texture* sdl_spectator_texture = nullptr;
-  // Streaming texture holding the spectator world pass for the GPU composite
-  // (PR7 Task 1b). Allocated once at the level size (clamped to the ceiling);
-  // each frame only the used sub-rect is uploaded. Belongs to
-  // sdl_spectator_renderer.
+  // Streaming texture holding the spectator world pass for the GPU composite.
+  // Allocated once at the level size (clamped to the ceiling); each frame only
+  // the used sub-rect is uploaded. Belongs to sdl_spectator_renderer.
   SDL_Texture* sdl_spectator_world_texture = nullptr;
   int sdl_spectator_world_texture_w = 0;
   int sdl_spectator_world_texture_h = 0;
   // Whether the previous spectator present went through DrawSpectatorGpu. The
-  // HUD overlay partial upload (PR8 Task 2) is only safe to apply over a texture
-  // the GPU path itself last wrote; after a CPU present (menu/pause/fallback)
-  // the next GPU frame must re-upload the whole overlay.
+  // HUD overlay partial upload is only safe over a texture the GPU path itself
+  // last wrote; after a CPU present (menu/pause/fallback) the next GPU frame
+  // must re-upload the whole overlay.
   bool spectator_prev_present_gpu = false;
   // a software surface to do the actual drawing into
   SDL_Surface* sdl_draw_surface = nullptr;
