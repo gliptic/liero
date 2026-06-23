@@ -437,6 +437,20 @@ if(OPENLIERO_BUILD_TESTS)
     DISCOVERY_MODE PRE_TEST
   )
 
+  add_executable(test_net_full_game src/tests/test_net_full_game.cpp)
+  target_link_libraries(test_net_full_game PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_net_full_game
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
+  add_executable(test_net_session_full_game src/tests/test_net_session_full_game.cpp)
+  target_link_libraries(test_net_session_full_game PRIVATE game Catch2::Catch2WithMain)
+  catch_discover_tests(test_net_session_full_game
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    DISCOVERY_MODE PRE_TEST
+  )
+
   add_executable(test_transport src/tests/test_transport.cpp)
   target_link_libraries(test_transport PRIVATE game Catch2::Catch2WithMain)
   catch_discover_tests(test_transport DISCOVERY_MODE PRE_TEST)
