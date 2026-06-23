@@ -8,6 +8,7 @@
 #include "SDL.h"
 #include "SDLMain.h"
 #include <sys/param.h> /* for MAXPATHLEN */
+#include <sys/stat.h>
 #include <unistd.h>
 
 /* For some reaon, Apple removed setAppleMenu from the headers in 10.4,
@@ -81,9 +82,14 @@ static NSString *getApplicationName(void)
 /* The main class of the application, the application's delegate */
 @implementation SDLMain
 
-/* Set the working directory to the .app's Resources directory, for config file loading */
+/* Set the working directory to the .app's Resources directory, for config file loading,
+   unless TC data already exists in the current working directory (e.g. running from source). */
 - (void) setupWorkingDirectory
 {
+    struct stat st;
+    if (stat("TC", &st) == 0 && S_ISDIR(st.st_mode)) {
+        return; /* TC data found in cwd, no need to chdir */
+    }
     char resourcesDir[MAXPATHLEN];
     CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(CFBundleGetMainBundle());
     if (CFURLGetFileSystemRepresentation(resourcesURL, 1, (UInt8 *)resourcesDir, MAXPATHLEN)) {

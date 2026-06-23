@@ -62,13 +62,17 @@
 #  define GVL_X86_64 1
 # elif defined(__i386__) || defined(_M_IX86) || defined(i386) || defined(i486) || defined(intel) || defined(x86) || defined(i86pc)
 #  define GVL_X86 1
+# elif defined(__arm__) || defined(_M_ARM)
+#  define GVL_ARM 1
+# elif defined(__aarch64__) || defined(_M_ARM64)
+#  define GVL_ARM_64 1
 # else
 #  error "Unknown architecture, please add it"
 # endif
 #endif
 
 #if !GVL_LITTLE_ENDIAN && !GVL_BIG_ENDIAN
-# if GVL_X86 || GVL_X86_64
+# if GVL_X86 || GVL_X86_64 || GVL_ARM || GVL_ARM_64
 #  define GVL_LITTLE_ENDIAN 1
 # else
 #  define GVL_BIG_ENDIAN 1
@@ -100,8 +104,8 @@
 #if !defined(GVL_X87)
 # if GVL_X86
 #  define GVL_X87 1 // Assume the compiler generates x87 code on x86 unless otherwise stated
-# elif GVL_X86_64
-#  define GVL_X87 0 // SSE2 is typically used on GVL_X86_64
+# elif GVL_X86_64 || GVL_ARM || GVL_ARM_64
+#  define GVL_X87 0
 # endif
 #endif
 

@@ -110,6 +110,7 @@ target_link_libraries(videotool SDL2::SDL2 avcodec avformat avutil dl pthread sw
 include_directories(src/game)
 
 if(APPLE)
+    target_link_libraries(openliero "-framework Cocoa" "-framework CoreFoundation")
     set_target_properties(openliero PROPERTIES MACOSX_BUNDLE TRUE)
     set_target_properties(openliero PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in")
     set(MACOSX_BUNDLE_ICON_FILE liero)
