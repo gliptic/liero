@@ -75,6 +75,18 @@ TEST_CASE("Full game run is deterministic", "[full_game][determinism]") {
   REQUIRE(hash1 == hash2);
 }
 
+TEST_CASE("KillEmAll terminates across a sweep of seeds", "[full_game][sweep]") {
+  for (uint32_t seed = 0; seed < 100; ++seed) {
+    INFO("seed=" << seed);
+    auto game = MakeHeadlessGame({.seed = seed, .lives = 2, .health = 25});
+    Rand input_rng(kInputSeed);
+    auto const kResult = RunToCompletion(
+        *game, [&input_rng](int idx, int) { return CombatInput(input_rng, idx); }, kMaxFrames);
+    REQUIRE(kResult.reached_game_over);
+    REQUIRE(kResult.frames_elapsed < kMaxFrames);
+  }
+}
+
 TEST_CASE("GameOfTag terminates when it-timer reaches time_to_lose", "[full_game][smoke]") {
   // Timer increments once per 70 frames while the last killer is visible;
   // time_to_lose=1 means a single 70-frame tick after the first kill suffices.
