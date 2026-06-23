@@ -84,8 +84,8 @@ using InputFn = std::function<uint8_t(int worm_index, int frame)>;
 
 inline RunResult RunToCompletion(Game& game, InputFn const& input_fn, int max_frames = 500000) {
   for (int frame = 0; frame < max_frames; ++frame) {
-    for (int idx = 0; idx < static_cast<int>(game.worms.size()); ++idx) {
-      game.worms[idx]->control_states.Unpack(input_fn(idx, frame));
+    for (size_t idx = 0; idx < game.worms.size(); ++idx) {
+      game.worms[idx]->control_states.Unpack(input_fn(static_cast<int>(idx), frame));
     }
     game.ProcessFrame();
     if (game.IsGameOver()) {
