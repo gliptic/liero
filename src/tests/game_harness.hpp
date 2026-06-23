@@ -82,15 +82,15 @@ struct RunResult {
 // input_fn(worm_index, frame) returns a 7-bit control byte (matches Unpack).
 using InputFn = std::function<uint8_t(int worm_index, int frame)>;
 
-inline RunResult RunToCompletion(Game& game, InputFn input_fn, int max_frames = 500000) {
+inline RunResult RunToCompletion(Game& game, InputFn const& input_fn, int max_frames = 500000) {
   for (int frame = 0; frame < max_frames; ++frame) {
     for (int idx = 0; idx < static_cast<int>(game.worms.size()); ++idx) {
       game.worms[idx]->control_states.Unpack(input_fn(idx, frame));
     }
     game.ProcessFrame();
     if (game.IsGameOver()) {
-      return {frame + 1, true};
+      return {.frames_elapsed = frame + 1, .reached_game_over = true};
     }
   }
-  return {max_frames, false};
+  return {.frames_elapsed = max_frames, .reached_game_over = false};
 }
